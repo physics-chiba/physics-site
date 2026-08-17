@@ -2275,15 +2275,16 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
     if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.6; ctx.stroke(); }
   }
-  // コイル：緑のばね（helix）を、水路の中点から「完全に垂直（軸＝上方向）」に立てて描く。
+  // コイル：緑のばね（helix）を垂直に立てて描く。高さ＝両端の電位差（＝コイルにかかる電圧）。
   function draw3dCoil(ctx, e, z1, z2) {
-    var mx = (e[0] + e[2]) / 2, my = (e[1] + e[3]) / 2, mz = (z1 + z2) / 2;
-    var turns = 5, r = 0.16, H = 0.9 * V.tile;
+    var mx = (e[0] + e[2]) / 2, my = (e[1] + e[3]) / 2;
+    var zlo = Math.min(z1, z2), H = Math.abs(z2 - z1); // 高さは両端の電位差（zはすでに電位×スケール）
+    var turns = 5, r = 0.16;
     ctx.strokeStyle = '#2e9e5b'; ctx.lineWidth = 3.2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.beginPath(); var first = true;
     for (var u = 0; u <= 1 + 1e-6; u += 0.02) {
       var th = u * turns * 2 * Math.PI;
-      var pt = proj(mx + r * Math.cos(th), my + r * Math.sin(th), mz + u * H); // 軸は鉛直(z)、半径rで巻く
+      var pt = proj(mx + r * Math.cos(th), my + r * Math.sin(th), zlo + u * H); // 下の端の電位から上の端の電位まで
       if (first) { ctx.moveTo(pt[0], pt[1]); first = false; } else ctx.lineTo(pt[0], pt[1]);
     }
     ctx.stroke();
@@ -4620,16 +4621,11 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     },
     combo: function () { // R1 直列 (R2 // R3)。共有URLから正確に再現：R1=5Ω・R2=2Ω・R3=10Ω・電池6V
       return mk([
-        ['V', 3, 4, 'h', { value: 6, plus: 'p2' }],   // 下中央 電池 (3,4)-(4,4), + は(4,4)
-        ['SW', 4, 4, 'h'],                            // 右下 スイッチ (4,4)-(5,4)
-        w(2, 4, 'h'),
-        w(2, 2, 'v'), w(2, 3, 'v'),
-        ['R', 2, 1, 'h', { value: 5 }],               // R1 上 (2,1)-(3,1)
-        w(3, 1, 'h'),
-        ['R', 4, 2, 'v', { value: 2 }],               // R2 (4,2)-(4,3)
-        ['R', 5, 2, 'v', { value: 10 }],              // R3 (5,2)-(5,3)
-        w(4, 1, 'h'), w(4, 3, 'h'),
-        w(5, 3, 'v'), w(5, 1, 'v'), w(4, 1, 'v'), w(2, 1, 'v')
+        ['V', 3, 4, 'h', { value: 6, plus: 'p2' }], ['SW', 4, 4, 'h'],
+        w(2, 4, 'h'), w(2, 2, 'v'), w(2, 3, 'v'),
+        ['R', 2, 1, 'h', { value: 5 }], w(3, 1, 'h'),
+        ['R', 4, 2, 'v', { value: 2 }], ['R', 6, 2, 'v', { value: 10 }],
+        w(4, 1, 'h'), w(4, 3, 'h'), w(5, 3, 'v'), w(6, 1, 'v'), w(4, 1, 'v'), w(2, 1, 'v'), w(5, 1, 'h'), w(5, 3, 'h')
       ]);
     },
     wheatstone: function () { // ホイートストンブリッジ（平衡：2/3 = 4/6）。抵抗と抵抗の間に導線を入れて中点の電位を見せる
@@ -4890,8 +4886,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       ['diode', '⑨ ダイオード'], ['idealdiode', '⑩ 整流ダイオード']
     ],
     cl: [ // ② コンデンサー・コイルの直流回路（①から連番）
-      ['rc', '① コンデンサー充放電'], ['cap_series', '② コンデンサー直列'], ['cap_parallel', '③ コンデンサー並列'],
-      ['rc_series', '④ 抵抗とコンデンサー'], ['cap_reconnect1', '⑤ コンデンサーのつなぎ替え（レベル１）'],
+      ['rc_series', '① 抵抗とコンデンサー'], ['rc', '② コンデンサー充放電'], ['cap_series', '③ コンデンサー直列'],
+      ['cap_parallel', '④ コンデンサー並列'], ['cap_reconnect1', '⑤ コンデンサーのつなぎ替え（レベル１）'],
       ['res_cap', '⑥ コンデンサーのつなぎ替え（レベル２）'], ['cap_dc', '⑦ コンデンサーと直流回路'],
       ['rl', '⑧ 抵抗とコイル（自己誘導）']
     ],
@@ -5055,7 +5051,7 @@ window.MIZU_IMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQDAwMD
   // プリセット名 → モード（3モード）
   var MODES = {
     dc: ['basic', 'series2', 'parallel2', 'combo', 'wheatstone', 'internal_r', 'bulb_series', 'bulb_parallel', 'diode', 'idealdiode'],
-    cl: ['rc', 'cap_series', 'cap_parallel', 'rc_series', 'cap_reconnect1', 'res_cap', 'cap_dc', 'rl'],
+    cl: ['rc_series', 'rc', 'cap_series', 'cap_parallel', 'cap_reconnect1', 'res_cap', 'cap_dc', 'rl'],
     ac: ['ac_r', 'ac_c', 'ac_l', 'rlc_osc', 'rlc_series', 'rlc_parallel', 'ac_diode']
   };
   function modeOf(name) { for (var m in MODES) if (MODES[m].indexOf(name) >= 0) return m; return 'dc'; }
