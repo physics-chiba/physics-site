@@ -153,7 +153,7 @@ button.ctl.convert.noloop,button.ctl.convert.small.noloop{background:#f7e4e4;bor
 .lightbox img{max-width:96vw;max-height:94vh;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
 .leftcol .card{margin:0}
 /* 保存・共有 */
-.savebox{margin-top:0}
+.savebox{margin-top:16px}
 .saverow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .saverow select{font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);max-width:200px}
 #save-msg{color:#1a6b3a;margin:7px 0 0;min-height:1em}
@@ -261,6 +261,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
 .ivpanel .clegend .clgd{display:inline-flex;align-items:center;gap:4px}
 .ivpanel .clegend .chip{width:11px;height:11px;border-radius:3px;display:inline-block}
 .ivpanel canvas{width:100%;height:auto;display:block}
+.ivpanel .ivgrid.phgrid{grid-template-columns:1fr}
+.ivpanel .phcell{padding:6px 8px}
 
 /* ---- 練習問題 ---- */
 .quiz .q{margin:14px 0;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fff}
@@ -372,6 +374,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
         <table class="result" id="result"><tbody></tbody></table>
         <div class="ivpanel" id="itpanel" hidden></div>
         <div class="ivpanel" id="vtpanel" hidden></div>
+        <div class="ivpanel" id="phasorpanel" hidden></div>
         <div class="ivpanel" id="respanel" hidden></div>
         <div class="ivpanel" id="ivpanel" hidden></div>
       </div>
@@ -389,6 +392,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       <select id="load-select" aria-label="保存した回路を読み込む"><option value="">保存した回路を開く…</option></select>
       <button class="ctl" id="btn-delsave" title="選んだ保存回路を削除">🗑 削除</button>
       <button class="ctl" id="btn-share">共有URLをコピー</button>
+      <button class="ctl" id="btn-plink" title="今選んでいるプリセットを直接ひらくURL（授業用）">🔗 このプリセットのリンク</button>
     </div>
     <p class="mini" id="save-msg"></p>
   </div>
@@ -2829,9 +2833,9 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     ['palette', 'grid', 'view3d', 'trash', 'editor', 'presetbtns', 'msg',
      'btn-convert', 'btn-convert2', 'clickhint1', 'clickhint2', 'chk-simple', 'btn-clear', 'btn-clearparts', 'btn-expand', 'btn-play', 'btn-reset', 'chk-slow',
      'btn-undo', 'btn-redo', 'btn-side', 'btn-top', 'wirenote',
-     'tab-dc', 'tab-cl', 'tab-ac', 'quiz', 'result', 'results-area', 'resreminder', 'thnote', 'preset-explain', 'playbar', 'clock', 'itpanel', 'vtpanel', 'respanel', 'ivpanel',
+     'tab-dc', 'tab-cl', 'tab-ac', 'quiz', 'result', 'results-area', 'resreminder', 'thnote', 'preset-explain', 'playbar', 'clock', 'itpanel', 'vtpanel', 'phasorpanel', 'respanel', 'ivpanel',
      'sc-t', 'sc-i', 'sc-v', 'sv-t', 'sv-i', 'sv-v', 'btn-opt', 'lbl-slow', 'lbl-tscale', 'sc-scrub', 'sv-scrub', 'lbl-scrub',
-     'btn-save', 'load-select', 'btn-delsave', 'btn-share', 'save-msg'].forEach(function (id) {
+     'btn-save', 'load-select', 'btn-delsave', 'btn-share', 'btn-plink', 'save-msg'].forEach(function (id) {
       el[id] = document.getElementById(id);
     });
 
@@ -3116,6 +3120,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   // ---- 元に戻す／やり直し（履歴） ----
   function snap() { return JSON.parse(JSON.stringify(parts())); }
   function pushUndo() {
+    saveMsg(''); // 回路を組んだり・プリセットを変えたら、保存/共有/リンクのメッセージは消す
     var s = snap(), last = ST.hist.u[ST.hist.u.length - 1];
     if (last && JSON.stringify(last) === JSON.stringify(s)) return; // 変化なしは積まない
     ST.hist.u.push(s); if (ST.hist.u.length > 60) ST.hist.u.shift();
@@ -3483,8 +3488,9 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     // 手動で「変換」を押したとき（ライブ更新でない）は電流アニメを最初から再生
     if (!keepScale) {
       ST.anim.t = 0; ST.anim.playing = true; if (el['btn-play']) el['btn-play'].textContent = '⏸ 一時停止'; ST.graph.tSpan = 0; ST.graph.yMulI = 1; ST.graph.yMulV = 1; ST.graph.tEnd = null; ST.graph.yOffI = 0; ST.graph.yOffV = 0;
-      // アニメ開始時のスイッチ状態を記録（「最初から」で戻すため）
+      // アニメ開始時のスイッチ状態を記録（「最初から」で戻すため）＋開閉の記録をまっさらに
       ST.initSwitches = {}; parts().forEach(function (p) { if (p.type === 'SW') ST.initSwitches[p.id] = p.closed; });
+      ST.swLog = []; ST.swReplayIdx = 0;
     }
     renderTable(); draw2d(); Draw3D.render(el['view3d'], ST);
     drawEditorIV(); // 選択中の R/豆電球/ダイオードの動作点グラフを更新
@@ -3503,7 +3509,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     else { // 記録がまだ無い瞬間だけ：現在値の平らな線を仮表示（次のフレームからローリング履歴に）
       var a = { t: 0, I: {}, V: {} }, b = { t: 1, I: {}, V: {} };
       entries.forEach(function (e) {
-        var g = loopSign(e.id), I = (s.res.elemI[e.id] || 0) * g, V = (s.res.elemV[e.id] || 0) * g;
+        var I = (s.res.elemI[e.id] || 0) * loopSign(e.id), V = (s.res.elemV[e.id] || 0) * loopSignV(e.id);
         a.I[e.id] = I; b.I[e.id] = I; a.V[e.id] = V; b.V[e.id] = V;
       });
       hist = [a, b];
@@ -3515,8 +3521,147 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     var vtTitle = combined ? 'V-t グラフ（電圧と時間・全素子をまとめて表示。番号と色で識別）' : '各素子の V-t グラフ（電圧と時間・ドラッグで軸拡大縮小）';
     buildTimePanel(el['itpanel'], itTitle, hist, entries, 'I', 'A', ST.graph.yMulI, combined);
     buildTimePanel(el['vtpanel'], vtTitle, hist, entries, 'V', 'V', ST.graph.yMulV, combined);
-    drawResonancePanel(); // V-tグラフの下に共振グラフ（交流のRLCのとき）
+    drawPhasorPanel(); // V-tグラフの下に「回転ベクトル＋波形」の図（交流のみ）
+    drawResonancePanel(); // 共振グラフ（交流のRLCのとき）
     drawAllIV();
+  }
+  // ---- 各素子の「回転ベクトル＋波形」図（交流のみ）----
+  // 電圧・電流を、角速度ωで回る矢印で表す。矢印の「縦成分」が右の正弦波グラフの値になり、
+  // 今の瞬間を赤い丸で示す。抵抗＝同相、コイル＝電圧が電流より90°進み、コンデンサー＝90°遅れ、が一目で分かる。
+  function computePhasors() {
+    var s = ST.solved; if (!s || !s.ok || ST.mode !== 'ac' || !Solver.solveAC) return null;
+    var vac = parts().filter(function (p) { return p.type === 'VAC'; })[0]; if (!vac) return null;
+    var omega = 2 * Math.PI * (vac.freq || 0.5);
+    // 値・周波数・表示符号が変わらなければ再計算しない（毎フレームの複素解を避ける）
+    var sig = parts().filter(function (p) { return /^(R|L|C|VAC|DIODE|IDEALDIODE|BULB|SW)$/.test(p.type); })
+      .map(function (p) { return p.type + (p.value || '') + (p.freq || '') + (p.closed ? 'c' : ''); }).join('|')
+      + '#' + JSON.stringify(ST.loopSign || {}) + JSON.stringify(ST.loopSignV || {});
+    if (ST.phasorCache && ST.phasorCache.sig === sig) return ST.phasorCache.data;
+    var r = Solver.solveAC(s.net.elements, omega); if (!r.ok) return null;
+    function vph(net) { return (net === 'GND') ? [0, 0] : (r.nodeVph[net] || [0, 0]); }
+    var elMap = {}; s.net.elements.forEach(function (e) { if (!elMap[e.id]) elMap[e.id] = e; });
+    var items = [];
+    parts().forEach(function (p) {
+      if (!(p.id in ST.numbering)) return;
+      var e = elMap[p.id]; if (!e) return;
+      var ip = r.elemIph[p.id] || [0, 0];
+      var va = vph(e.a), vb = vph(e.b), vp = [va[0] - vb[0], va[1] - vb[1]];
+      var si = loopSign(p.id), sv = loopSignV(p.id);
+      var ipd = [ip[0] * si, ip[1] * si], vpd = [vp[0] * sv, vp[1] * sv];
+      var m = CFG.PARTS[p.type];
+      items.push({
+        id: p.id, num: ST.numbering[p.id], jp: m.jp,
+        Ai: Math.hypot(ipd[0], ipd[1]), pi: Math.atan2(ipd[1], ipd[0]),
+        Av: Math.hypot(vpd[0], vpd[1]), pv: Math.atan2(vpd[1], vpd[0])
+      });
+    });
+    var data = { omega: omega, items: items };
+    ST.phasorCache = { sig: sig, data: data };
+    return data;
+  }
+  var COL_V = '#c0392b', COL_I = '#188038';
+  function drawPhasorPanel() {
+    var panel = el['phasorpanel']; if (!panel) return;
+    var data = computePhasors();
+    if (!data || !data.items.length) { panel.hidden = true; panel.innerHTML = ''; panel._sig = ''; return; }
+    panel.hidden = false;
+    var sig = 'P:' + data.items.map(function (it) { return it.id; }).join(',');
+    if (panel._sig !== sig) {
+      var head = '<div class="ivhead">各素子の 回転ベクトルと波形'
+        + '（<span style="color:' + COL_V + '">■</span> 電圧 v ／ <span style="color:' + COL_I + '">■</span> 電流 i　'
+        + '― 矢印の<b>縦成分</b>が右のグラフの値。赤い丸が今の瞬間の対応点。）</div>';
+      var cells = data.items.map(function (it) {
+        return '<div class="ivcell phcell"><div class="cap"><span class="chip" style="background:' + CFG.PARTS[partTypeOf(it.id)].color + '"></span>'
+          + circled(it.num) + '　' + it.jp + '</div><canvas class="phcanvas"></canvas></div>';
+      }).join('');
+      panel.innerHTML = head + '<div class="ivgrid phgrid">' + cells + '</div>';
+      panel._sig = sig;
+    }
+    var canvases = panel.querySelectorAll('.phcanvas');
+    var theta = data.omega * (ST.anim.t || 0);
+    data.items.forEach(function (it, i) { if (canvases[i]) drawPhasorFig(canvases[i], it, theta); });
+  }
+  function partTypeOf(id) { var p = find(id); return p ? p.type : 'R'; }
+  function drawPhasorFig(cvs, it, theta) {
+    var dpr = Math.max(1, Math.min(2, global.devicePixelRatio || 1));
+    var cw = cvs.clientWidth || 420, ch = Math.max(150, Math.round(cw * 0.40));
+    cvs.width = Math.round(cw * dpr); cvs.height = Math.round(ch * dpr); cvs.style.height = ch + 'px';
+    var ctx = cvs.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cw, ch);
+    var pad = 10, cy = ch / 2;
+    var R = Math.min(cy - pad, 62);                 // ベクトルの最大長（＝正弦波の振幅の画素）
+    var LV = R, LI = R * 0.78;                       // 電圧・電流の矢印長（区別しやすいよう電流を少し短く）
+    var cx = pad + R;                                // 円の中心 x
+    var plotL = cx + R + 26, plotR = cw - 44;        // 波形の左端・右端
+    var plotW = Math.max(40, plotR - plotL);
+    // --- 左：ベクトル円 ---
+    ctx.strokeStyle = '#e3e7ea'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();          // 外円
+    ctx.beginPath(); ctx.arc(cx, cy, LI, 0, 2 * Math.PI); ctx.stroke();         // 内円（電流の半径）
+    ctx.strokeStyle = '#c8ced3';
+    ctx.beginPath(); ctx.moveTo(cx - R - 4, cy); ctx.lineTo(cx + R + 4, cy); ctx.stroke(); // 横軸
+    ctx.beginPath(); ctx.moveTo(cx, cy - R - 4); ctx.lineTo(cx, cy + R + 4); ctx.stroke(); // 縦軸
+    // 回転の向き（反時計回り）を示す ω 矢印
+    ctx.strokeStyle = '#9aa5af'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(cx, cy, R + 6, -1.15, -0.35); ctx.stroke();
+    ctx.fillStyle = '#7b8792'; ctx.font = '11px ' + CFG.FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('ω', cx + R + 8, cy - R + 2);
+    // ベクトル本体（電圧・電流）。角度 = theta + 位相、縦成分 = 振幅·sin(角度)
+    function vec(len, ang, color) {
+      var tx = cx + len * Math.cos(ang), ty = cy - len * Math.sin(ang);
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+      var a = Math.atan2(ty - cy, tx - cx), hl = 8;
+      ctx.beginPath(); ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - hl * Math.cos(a - 0.4), ty - hl * Math.sin(a - 0.4));
+      ctx.lineTo(tx - hl * Math.cos(a + 0.4), ty - hl * Math.sin(a + 0.4));
+      ctx.closePath(); ctx.fill();
+      return { tx: tx, ty: ty };
+    }
+    var angV = theta + it.pv, angI = theta + it.pi;
+    var tipV = vec(LV, angV, COL_V);
+    var tipI = vec(LI, angI, COL_I);
+    // --- 右：正弦波（1周期 0〜2π）＋今の瞬間の縦線・赤丸・横連結線 ---
+    ctx.strokeStyle = '#c8ced3'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(plotL, cy); ctx.lineTo(plotR, cy); ctx.stroke();            // 横軸(0線)
+    ctx.beginPath(); ctx.moveTo(plotL, cy - R - 4); ctx.lineTo(plotL, cy + R + 4); ctx.stroke(); // 縦軸
+    ctx.fillStyle = '#9aa5af'; ctx.font = '10px ' + CFG.FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ['π/2', 'π', '3π/2', '2π'].forEach(function (lb, k) {
+      var xx = plotL + plotW * (k + 1) / 4;
+      ctx.strokeStyle = '#eef1f3'; ctx.beginPath(); ctx.moveTo(xx, cy - R); ctx.lineTo(xx, cy + R); ctx.stroke();
+      ctx.fillText(lb, xx, cy + R + 5);
+    });
+    function wave(len, phase, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+      for (var k = 0; k <= plotW; k++) {
+        var ph = (k / plotW) * 2 * Math.PI;
+        var yy = cy - len * Math.sin(ph + phase);
+        if (k === 0) ctx.moveTo(plotL + k, yy); else ctx.lineTo(plotL + k, yy);
+      }
+      ctx.stroke();
+    }
+    wave(LV, it.pv, COL_V);
+    wave(LI, it.pi, COL_I);
+    // 今の瞬間 = theta（1周期に折り返す）。縦線＋赤丸＋ベクトル先端からの横連結線。
+    var frac = ((theta % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (2 * Math.PI);
+    var curX = plotL + plotW * frac;
+    ctx.strokeStyle = 'rgba(120,130,140,.5)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(curX, cy - R - 2); ctx.lineTo(curX, cy + R + 2); ctx.stroke();
+    function link(tip, len, ang, color) {
+      var val = len * Math.sin(ang), yy = cy - val;
+      ctx.strokeStyle = 'rgba(120,130,140,.5)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(tip.tx, tip.ty); ctx.lineTo(curX, yy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#c0392b'; ctx.fillStyle = 'rgba(192,57,49,.15)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(curX, yy, 5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
+    link(tipV, LV, angV, COL_V);
+    link(tipI, LI, angI, COL_I);
+    ctx.setLineDash([]);
+    // 振幅の数値ラベル（左上の空きスペースへ。曲線やベクトルと重ならない）
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.font = '11px ' + CFG.FONT;
+    ctx.fillStyle = COL_V; ctx.fillText('Vm = ' + CFG.fmtVal(it.Av, 'V'), pad, 2);
+    ctx.fillStyle = COL_I; ctx.fillText('Im = ' + CFG.fmtVal(it.Ai, 'A'), pad, 16);
   }
   // 結果エリアの共振グラフ（交流モードでコイル・コンデンサーがあるとき）。値が変わったときだけ掃引し直す。
   function drawResonancePanel() {
@@ -3632,6 +3777,14 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     panel.addEventListener('dblclick', function () {
       ST.graph.tSpan = 0; ST.graph[ykey] = 1; ST.graph.tEnd = null; ST.graph[offkey] = 0; drawTimeGraphs();
     });
+    // ホイール＝縦（値）スケールの拡大縮小。上に回す＝拡大、下に回す＝縮小。ダブルクリックで元に戻る。
+    panel.addEventListener('wheel', function (ev) {
+      if (!ev.target || ev.target.tagName !== 'CANVAS') return;
+      ev.preventDefault();
+      var factor = (ev.deltaY < 0) ? 1.15 : (1 / 1.15);
+      ST.graph[ykey] = Math.max(0.02, Math.min(100, (ST.graph[ykey] || 1) * factor));
+      drawTimeGraphs();
+    }, { passive: false });
   }
   // 各素子（抵抗・豆電球・ダイオード）のI-Vグラフを、動作点つきで一覧表示
   function drawAllIV() {
@@ -3660,8 +3813,26 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     var p = find(id); if (!p || p.type !== 'SW') return;
     pushUndo();
     p.closed = !p.closed; onSwitchToggled();
+    // アニメ中の開閉は「時刻つき」で記録しておく → 「最初から」で同じ時刻に自動で開閉を再現する。
+    if (ST.solved && ST.solved.ok && ST.trans.dynamic) {
+      if (!ST.swLog) ST.swLog = [];
+      if (ST.swReplayIdx == null) ST.swReplayIdx = 0;
+      ST.swLog = ST.swLog.slice(0, ST.swReplayIdx);          // 未再生の未来の記録は、手動操作で上書き（分岐）
+      ST.swLog.push({ t: ST.anim.t || 0, id: id, closed: p.closed });
+      ST.swReplayIdx = ST.swLog.length;                       // いま適用済み＝末尾まで
+    }
     if (ST.sel === id) renderEditor();
     reflow();
+  }
+  // 「最初から」で記録した開閉を、同じ時刻に自動で再現する（アニメの前進中に呼ぶ）。
+  function applyReplayToggles() {
+    if (!ST.swLog || ST.swReplayIdx == null || ST.swReplayIdx >= ST.swLog.length) return;
+    var changed = false, tNow = ST.anim.t || 0;
+    while (ST.swReplayIdx < ST.swLog.length && ST.swLog[ST.swReplayIdx].t <= tNow + 1e-9) {
+      var ev = ST.swLog[ST.swReplayIdx++], sp = find(ev.id);
+      if (sp && sp.type === 'SW' && sp.closed !== ev.closed) { sp.closed = ev.closed; changed = true; }
+    }
+    if (changed) { onSwitchToggled(); convert(true); draw2d(); }
   }
 
   // ---- 表示ヘルパー ----
@@ -3794,6 +3965,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   // ---- タブ ----
   function switchMode(mode) {
     if (ST.mode === mode) return;
+    saveMsg(''); // モードを変えたら、保存/共有/リンクのメッセージは消す
     // 3Dアニメ再生中に他モードへ移ったら、そのモードのアニメは自動停止（解を破棄して最初の状態へ）。
     if (cur().solved) cur().solved = null;
     ST.anim.playing = false; if (el['btn-play']) el['btn-play'].textContent = '▶ 再生';
@@ -3816,24 +3988,36 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   //   交流：素子ごとにバラバラに「最初に流れる向き」を正にすると、素子間の相対的な位相が壊れる
   //         （コイルとコンデンサーが同位相に見える等）。そこで、電流矢印・水流と同じ「一貫した
   //         分岐電流(branchI)の向き」に合わせる。これで直列は全素子が同位相、並列はL/Cが逆位相になる。
+  //   グラフの符号は電流用(loopSign)と電圧用(loopSignV)を分けて持つ。
+  //   交流：(a) 電流は「消費素子＝流れ(branchI)の向き／電源＝＋端子から出る向き（＝流れの逆）」を正にする
+  //         →直列は全素子が同位相、並列はL/Cが逆位相になる。
+  //         (b) 電圧は「消費素子＝電位が下がる向き（＝電流と同符号）／電源＝EMF（＋端子が高い＝正）」
+  //         →電源とその負荷の V が教科書どおり同位相（純抵抗）や位相角ぶんのずれ（RLC）で描ける。
   function computeLoopSigns() {
-    var ps = parts(), sign = {};
+    var ps = parts(), signI = {}, signV = {};
     if (ST.mode === 'ac') {
       var ref = (ST.solved && ST.solved.res) ? ST.solved.res.elemI : {};
       var bI = (ST.solved && ST.solved.branchI) || {};
       ps.forEach(function (p) {
         if (isPassiveWire(p.type)) return;
-        var ei = ref[p.id] || 0, bi = bI[p.id] || 0; // branchI[id]=elemI[id]×（一貫した向きの符号）
-        sign[p.id] = (Math.abs(ei) > 1e-12) ? ((ei * bi >= 0) ? 1 : -1) : 1;
+        var ei = ref[p.id] || 0, bi = bI[p.id] || 0;
+        var base = (Math.abs(ei) > 1e-12) ? ((ei * bi >= 0) ? 1 : -1) : 1; // elemI×base = branchI（流れの向き）
+        if (p.type === 'V' || p.type === 'VAC') {
+          signI[p.id] = -base; // 電源：電流は流れ(ポンプ向き)の逆＝＋端子から出る向きを正
+          signV[p.id] = -1;    // 電源：電圧は EMF（＋端子が高い＝正）。ソルバの elemV は −EMF なので反転
+        } else {
+          signI[p.id] = base; signV[p.id] = base; // 消費素子：電圧は電流と同符号（電位が下がる向き＝正）
+        }
       });
     } else {
-      // 直流：代表解での実際の電流の向きを正にする（＝電池の＋から出る向き）。ほぼ0の素子は+1。
-      var ref = (ST.solved && ST.solved.res) ? ST.solved.res.elemI : {};
-      ps.forEach(function (p) { if (!isPassiveWire(p.type)) sign[p.id] = ((ref[p.id] || 0) >= 0) ? 1 : -1; });
+      // 直流：代表解での実際の電流の向きを正にする（＝電池の＋から出る向き）。電圧も同符号。ほぼ0は+1。
+      var refDC = (ST.solved && ST.solved.res) ? ST.solved.res.elemI : {};
+      ps.forEach(function (p) { if (!isPassiveWire(p.type)) { var s = ((refDC[p.id] || 0) >= 0) ? 1 : -1; signI[p.id] = s; signV[p.id] = s; } });
     }
-    ST.loopSign = sign;
+    ST.loopSign = signI; ST.loopSignV = signV;
   }
   function loopSign(id) { return (ST.loopSign && ST.loopSign[id]) || 1; }
+  function loopSignV(id) { return (ST.loopSignV && ST.loopSignV[id]) || 1; }
   function assign(dst, src) { if (src) for (var k in src) dst[k] = src[k]; return dst; }
   function cloneTransState(s) {
     if (!s) return { vcap: {}, icap: {}, iind: {}, vind: {} };
@@ -3846,7 +4030,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (h.length && t - h[h.length - 1].t < minDt) return;  // 間隔以上あいたら記録
     var snap = { t: t, I: {}, V: {} };
     parts().forEach(function (p) {
-      if (p.id in ST.numbering) { var g = loopSign(p.id); snap.I[p.id] = (r.elemI[p.id] || 0) * g; snap.V[p.id] = (r.elemV[p.id] || 0) * g; }
+      if (p.id in ST.numbering) { snap.I[p.id] = (r.elemI[p.id] || 0) * loopSign(p.id); snap.V[p.id] = (r.elemV[p.id] || 0) * loopSignV(p.id); }
     });
     // 時間スクラブ（巻き戻し／早送り）用に、その瞬間の状態を丸ごと記録しておく。
     // これで途中でスイッチを開閉しても、実際に起きたとおりに巻き戻して見られる。
@@ -3863,10 +4047,13 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     }
   }
   function stepDynamic(realDt) {
-    var s = ST.solved; if (!s || !s.ok) return;
-    var els = s.net.elements, timeScale = ST.scale.time || 1;
+    var s0 = ST.solved; if (!s0 || !s0.ok) return;
+    var timeScale = ST.scale.time || 1;
     var advance = Math.min(realDt * ST.anim.speed * timeScale, 1.0); // 1フレームで進みすぎない（時間スケールを上げても追従）
     ST.anim.t += advance;
+    applyReplayToggles(); // 記録した開閉を同じ時刻に再現（convert(true) で回路を組み直すので els は後で取り直す）
+    var s = ST.solved; if (!s || !s.ok) return;
+    var els = s.net.elements;
     var h = ST.trans.dt, guard = 0;
     while (ST.trans.simT < ST.anim.t - 1e-9 && guard++ < 3000) {
       var step = Math.min(h, ST.anim.t - ST.trans.simT);
@@ -3965,6 +4152,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
         else stepDynamic(dt);                                 // 末尾＝ライブでそのまま前進（記録を延長）
         advanceFlow(dt);
         draw2d(); // 左の回路図も毎フレーム更新（交流の電流矢印の向きが変わる）
+        if (ST.mode === 'ac') drawPhasorPanel(); // 回転ベクトル図は毎フレーム回す（計算はキャッシュ）
         if (++graphTick % 5 === 0) { drawTimeGraphs(); renderTable(); syncScrubSlider(); } // 数フレームごとにグラフ・表・スクラブ位置を更新
       } else {
         ST.anim.t += dt * ST.anim.speed;
@@ -4070,6 +4258,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       if (el['sc-scrub']) el['sc-scrub'].value = 0; updateScrubLabel();
       // スイッチの状態を「アニメを始めたとき」に戻す（途中で入れ替えていても最初の配置へ）
       if (ST.initSwitches) { parts().forEach(function (p) { if (p.type === 'SW' && p.id in ST.initSwitches) p.closed = ST.initSwitches[p.id]; }); }
+      // 記録した開閉（swLog）は保持し、再生ポインタだけ先頭へ → 再生すると同じ時刻に自動で開閉が再現される
+      ST.swReplayIdx = 0;
       // コンデンサーの初期電荷(v0)・コイルの初期電流(i0)を復元して最初の状態へ（LC振動・還流などが元に戻る）
       if (ST.trans.dynamic) { ST.trans.state = initTransState(); ST.trans.last = null; }
       // スイッチ状態が変わったので回路を解き直してから再表示
@@ -4089,6 +4279,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (el['load-select']) el['load-select'].addEventListener('change', doLoad);
     if (el['btn-delsave']) el['btn-delsave'].addEventListener('click', doDelSave);
     if (el['btn-share']) el['btn-share'].addEventListener('click', doShare);
+    if (el['btn-plink']) el['btn-plink'].addEventListener('click', copyPresetLink);
     bindGraphDrag(el['itpanel'], 'yMulI', 'yOffI'); bindGraphDrag(el['vtpanel'], 'yMulV', 'yOffV');
     global.addEventListener('resize', function () { Draw2D.resize(el['grid'], ST); draw2d(); Draw3D.fit(el['view3d'], ST); });
     global.addEventListener('keydown', function (e) {
@@ -4298,6 +4489,17 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (global.navigator && global.navigator.clipboard) global.navigator.clipboard.writeText(url).then(ok, function () { global.prompt('このURLをコピーしてください', url); });
     else global.prompt('このURLをコピーしてください', url);
   }
+  // 授業用：今えらんでいるプリセットを直接ひらくURL（#preset=名前）をコピーする。
+  // 開くとモードもプリセットもその状態から始まる（ブラウザのブックマークに登録しておける）。
+  function copyPresetLink() {
+    var name = ST.activePreset;
+    if (!name) { saveMsg('先に下の「プリセット」から回路を1つ選んでください。'); return; }
+    var url = location.href.split('#')[0] + '#preset=' + name;
+    var title = (global.Presets && global.Presets.titleFor) ? global.Presets.titleFor(name) : name;
+    function ok() { saveMsg('「' + title + '」を直接ひらくURLをコピーしました。'); }
+    if (global.navigator && global.navigator.clipboard) global.navigator.clipboard.writeText(url).then(ok, function () { global.prompt('このURLをコピーしてください', url); });
+    else global.prompt('このURLをコピーしてください', url);
+  }
   // 新形式（コンパクト：';'や','を含む）と旧形式（base64+JSON）の両方を読める
   function loadFromEncoded(enc) {
     enc = decodeURIComponent(enc);
@@ -4337,6 +4539,25 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       timeScale: function () { return ST.scale.time; },
       reconvertLive: function () { convert(true); },
       loopSignJSON: function () { return JSON.stringify(ST.loopSign || {}); },
+      // スイッチ開閉の「記録→最初から→同時刻に自動再現」を検証
+      swReplayTest: function () {
+        this.convert();
+        var sw = parts().filter(function (p) { return p.type === 'SW'; })[0];
+        if (!sw) return 'スイッチのあるプリセットで実行してください';
+        var init = sw.closed, out = ['初期: closed=' + init];
+        this.simTo(0.5); toggleSwitch(sw.id);
+        out.push('t=0.5でトグル → closed=' + sw.closed + ' / 記録数=' + ST.swLog.length + ' 記録時刻=' + (ST.swLog[0] ? ST.swLog[0].t.toFixed(2) : '-'));
+        this.simTo(2.0);
+        // 「最初から」相当
+        parts().forEach(function (p) { if (p.type === 'SW' && p.id in ST.initSwitches) p.closed = ST.initSwitches[p.id]; });
+        ST.swReplayIdx = 0; ST.anim.t = 0; ST.trans.simT = 0; ST.trans.hist = []; ST.trans.state = initTransState(); convert(true);
+        out.push('最初からリセット後: closed=' + sw.closed + '（初期へ復帰）');
+        ST.anim.t = 0.3; applyReplayToggles();
+        out.push('t=0.3: closed=' + sw.closed + '  ' + (sw.closed === init ? 'まだ初期のまま ✓' : '早すぎ ✗'));
+        ST.anim.t = 0.6; applyReplayToggles();
+        out.push('t=0.6: closed=' + sw.closed + '  ' + (sw.closed !== init ? '記録どおり同時刻に開閉 ✓' : '再現されず ✗'));
+        return out.join('\n');
+      },
       // 交流の物理検証：定常状態で各素子の I/V が「対称に振動」「直列は同一電流」「L/Cは90°位相差(平均電力0)」か
       acCheck: function () {
         this.convert(); this.simTo(8);
@@ -4723,7 +4944,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     },
     rc_series: function () { // 抵抗とコンデンサー（直列）。共有URLから正確に再現
       return mk([
-        ['C', 2, 2, 'h', { value: 0.05 }], w(3, 2, 'h'), ['R', 4, 2, 'h', { value: 4 }], w(5, 2, 'h'), ['SW', 6, 2, 'v'], w(6, 3, 'v'),
+        ['C', 2, 2, 'h', { value: 0.05 }], w(3, 2, 'h'), ['R', 4, 2, 'h', { value: 10 }], w(5, 2, 'h'), ['SW', 6, 2, 'v'], w(6, 3, 'v'),
         w(5, 4, 'h'), ['V', 4, 4, 'h', { value: 6, plus: 'p2' }], w(3, 4, 'h'), w(2, 4, 'h'),
         w(1, 3, 'v'), w(1, 2, 'v'), w(1, 4, 'h'), w(1, 2, 'h')
       ]);
@@ -5163,6 +5384,14 @@ window.MIZU_IMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQDAwMD
         boxAc.style.cssText = 'position:fixed;inset:0;background:#fff;color:#111;font:14px monospace;padding:12px;z-index:99999;white-space:pre-wrap';
         boxAc.textContent = '=== ' + (m ? m[1] : '') + ' 交流検証 ===\n' + Rac;
         document.body.appendChild(boxAc);
+      }
+      // 検証用：スイッチ開閉の記録→最初から→同時刻に自動再現
+      if (/swreplay/.test(location.hash) && global.TEST.swReplayTest) {
+        var Rsr = global.TEST.swReplayTest();
+        var boxSr = document.createElement('pre');
+        boxSr.style.cssText = 'position:fixed;inset:0;background:#fff;color:#111;font:14px monospace;padding:12px;z-index:99999;white-space:pre-wrap';
+        boxSr.textContent = '=== ' + (m ? m[1] : '') + ' スイッチ再生検証 ===\n' + Rsr;
+        document.body.appendChild(boxSr);
       }
       // 検証用：時間スクラブ（巻き戻し／早送り）で状態が復元されるか
       if (/scrubtest/.test(location.hash) && global.TEST.scrubTest) {
