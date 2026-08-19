@@ -450,8 +450,6 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   ・<b>「グラフで正とする向き」</b>を切りかえると、グラフの符号と軸が反転します。<br>
   ・変数は＋／−ボタンで変えられます。変えると自動的にはじめに戻ります。<br>
   ・<b>「4 入試物理」</b>の斜面のシミュレーションは、キャンバスを<b>ドラッグすると視点が回り</b>、ホイールで拡大縮小できます。<br>
-  ・上の URL（例 <code>…#m3-3</code>）をそのまま開くと、そのシミュレーションが直接ひらきます。<br>
-  ・URL のうしろに <code>!q</code> をつける（例 <code>…#m2-2!q</code>）と、<b>問題モードの状態で開きます</b>（生徒に配るリンク用）。<br>
   ・このページは1つのファイルで動きます（インターネット不要）。</p>
 </div>
 
@@ -2002,6 +2000,7 @@ DEFS['m1-1'] = {
   ],
   toggles: [],
   actions: [
+    { label: '速度0にする（v₀＝0）', fn: function (s) { s.v.v0 = 0; }, is: function (v) { return v.v0 === 0; } },
     { label: '下り坂にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
     { label: '斜面にする（θ＝−30°）', fn: function (s) { s.v.th = -30; }, is: function (v) { return v.th === -30; } },
     { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
@@ -4421,26 +4420,37 @@ DEFS['m4-2'] = {
     '<li><b>斜面に当たる直前の速度</b>を聞かれたら、<span class="tex">v_Y(T) = -v_0\\sin\\Phi</span>（打ち出しと同じ大きさ・逆向き）を使うと速い。' +
     'エネルギー保存（同じ高さにもどる）からも確認できる。</li>' +
     '<li>下り坂は <span class="tex">\\theta &lt; 0</span> として同じ式で扱える。<b>符号を場合分けせず一本の式で書く</b>と検算がラク。</li>' +
+    '<li><b>観測者を切りかえて確かめる。</b>「斜面の上の観測者」の絵にすると斜面が水平になり、' +
+    '<b>重力だけが θ 傾いた「ふつうの斜方投射」</b>に見える。同じ運動でも、' +
+    '<span class="tex">(x,y)</span> で書くか <span class="tex">(X,Y)</span> で書くかで式の見た目が変わるだけ、' +
+    'ということが目で分かる。<b>座標の取り方は自由</b>で、ラクなほうを選んでよい。</li>' +
     '</ol></div>' +
     '<p class="src">※ 横浜市立大学 2018 年の問題を教材用に単純化しています。数値・設問は入試そのものではありません。</p>',
   id: 'm4-2', mode: 4, tab: '4-2 斜面上の斜方投射',
   quizKey: 'vy', quizName: 'このボールの $v_Y$–$t$ 図（斜面に垂直な向き）',
   title: '4-2　斜面上の斜方投射（出典：横浜市大2018）',
-  desc: '斜面の傾きを $\\theta$（のぼりが正）、斜面から測った投射角を $\\Phi$ とする。<b>座標は斜面にそって $X$、斜面に垂直に $Y$</b> をとる。',
-  sub: '斜面にそった軸 X・斜面に垂直な軸 Y で考えると、<b>Y 方向はただの投げ上げ（加速度 −g cosθ）、X 方向は等加速度（加速度 −g sinθ）</b>になる。斜面に落ちるのは Y＝0 にもどったとき。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂。<b>ボールの初速度の矢印をドラッグすると Φ を変えられる。</b>',
+  desc: '斜面の傾きを $\\theta$（のぼりが正）、斜面から測った投射角を $\\Phi$ とする。<b>座標は斜面にそって $X$、斜面に垂直に $Y$</b> をとる。<b>水平面の観測者</b>と<b>斜面の上の観測者</b>を切りかえて見くらべよう。'
+    ,
+  sub: '斜面にそった軸 X・斜面に垂直な軸 Y で考えると、<b>Y 方向はただの投げ上げ（加速度 −g cosθ）、X 方向は等加速度（加速度 −g sinθ）</b>になる。斜面に落ちるのは Y＝0 にもどったとき。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂。<b>ボールの初速度の矢印をドラッグすると Φ を変えられる。</b><br><b>「斜面の上の観測者から見る」に切りかえると、絵ぜんたいが −θ だけ回って斜面が水平になる</b>。斜面が「地面」に見えるかわりに、重力の矢印が θ だけ傾く。うすい x・y 軸がもとの水平・鉛直の向きを示している。',
   cw: 520, ch: 360,
   vis: ['F', 'V', 'Vc'],
   signLabels: ['斜面上向き・面から離れる向きを正', '逆向きを正'],
-  mainVars: ['v0', 'phi', 'th'],
+  mainVars: ['v0', 'phi', 'th'], mainOpts: true,
   vars: [
     { k: 'v0', label: '初速度 $v_0$', unit: ' m/s', min: 5, max: 28, step: 1, dec: 0, def: 14 },
     { k: 'th', label: '斜面の傾き $\\theta$（のぼりが正）', unit: '°', min: -45, max: 45, step: 5, dec: 0, def: 30 },
     { k: 'phi', label: '斜面から測った投射角 $\\Phi$', unit: '°', min: 5, max: 85, step: 5, dec: 0, def: 45 }
   ],
   toggles: [],
+  selects: [{
+    k: 'obs', label: '観測者', def: 'ground',
+    options: [{ v: 'ground', label: '水平面の観測者から見る（x・y）' }, { v: 'slope', label: '斜面の上の観測者から見る（X・Y）' }]
+  }],
   drag: function (s, wx, wy) {
-    var a = Math.atan2(wy, Math.max(0.001, wx)) / DEG;    /* 水平から測った向き */
-    s.v.phi = clamp(Math.round((a - s.v.th) / 5) * 5, 5, 85);
+    var a = Math.atan2(wy, Math.max(0.001, wx)) / DEG;
+    /* 斜面の観測者の絵では、そのまま斜面から測った角になっている */
+    var ph = (s.o.obs === 'slope') ? a : (a - s.v.th);
+    s.v.phi = clamp(Math.round(ph / 5) * 5, 5, 85);
   },
   tEnd: function (v) { return P.m25.tEnd(v); },
   sample: function (v, t) { return P.m25.sample(v, t); },
@@ -4512,64 +4522,115 @@ DEFS['m4-2'] = {
   ],
   draw: function (ctx, s, t, W, H) {
     var v = V(s), T = P.m25.tEnd(v);
-    var land = P.m25.sample(v, T);
-    var box = trajBox(v, T, P.m25.sample, [{ x: -3, y: -3 * P.m25.tan(v) }, { x: land.x + 3, y: land.y + (v.th >= 0 ? 1 : -1) }]);
+    var sl = (v.obs === 'slope');                 /* 斜面の上に立った観測者から見るか */
+    var thR = v.th * DEG, ctS = Math.cos(thR), stS = Math.sin(thR);
+    /* 画面にえがく座標。斜面の観測者のときは、絵ぜんたいを −θ 回して斜面を水平にする */
+    function dsam(vv, tt) {
+      var q = P.m25.sample(vv, tt);
+      return sl ? { x: q.X, y: q.Y, vx: q.vX, vy: q.vY } : q;
+    }
+    var land = dsam(v, T);
+    var box = sl
+      ? trajBox(v, T, dsam, [{ x: -3, y: -1.2 }, { x: land.x + 3, y: 1.2 }])
+      : trajBox(v, T, dsam, [{ x: -3, y: -3 * P.m25.tan(v) },
+        { x: land.x + 3, y: land.y + (v.th >= 0 ? 1 : -1) }]);
     var vw = mkView(W, H, { l: 44, r: 22, t: 30, b: 34 }, box);
     var tt = P.m25.tan(v);
     s.view = vw;
-    hatchLine(ctx, vw.X(box.x0), vw.Y(box.x0 * tt), vw.X(box.x1), vw.Y(box.x1 * tt), v.th > 0 ? -1 : 1);
-    /* もとの水平・鉛直の x 軸・y 軸（うすく表示） */
-    (function () {
-      var FA = '#c3ccd5';
-      ctx.save(); ctx.strokeStyle = FA; ctx.lineWidth = 1.1;
-      ctx.beginPath(); ctx.moveTo(vw.X(box.x0), vw.Y(0)); ctx.lineTo(vw.X(box.x1), vw.Y(0));
-      ctx.moveTo(vw.X(0), vw.Y(box.y0)); ctx.lineTo(vw.X(0), vw.Y(box.y1)); ctx.stroke();
-      ctx.restore();
-      var sg = s.sign >= 0 ? 1 : -1;
-      if (sg > 0) {
-        arrowHead(ctx, vw.X(box.x1) + 7, vw.Y(0), 1, 0, FA);
-        arrowHead(ctx, vw.X(0), vw.Y(box.y1) - 7, 0, -1, FA);
-        label(ctx, 'x', vw.X(box.x1) - 4, vw.Y(0) - 16, { size: 11, color: FA, align: 'right' });
-        label(ctx, 'y', vw.X(0) + 12, vw.Y(box.y1) + 6, { size: 11, color: FA, align: 'left' });
-      } else {
-        arrowHead(ctx, vw.X(box.x0) - 7, vw.Y(0), -1, 0, FA);
-        arrowHead(ctx, vw.X(0), vw.Y(box.y0) + 7, 0, 1, FA);
-        label(ctx, 'x', vw.X(box.x0) + 12, vw.Y(0) - 16, { size: 11, color: FA, align: 'left' });
-        label(ctx, 'y', vw.X(0) + 12, vw.Y(box.y0) - 6, { size: 11, color: FA, align: 'left' });
-      }
-    })();
-    /* 斜面にそった X 軸・斜面に垂直な Y 軸 */
-    var thR = v.th * DEG, ctS = Math.cos(thR), stS = Math.sin(thR);
-    var Xlo = Math.min(-1.5, box.x0 * 0.9), Xhi = Math.max(2, (box.x1 - 0.6) / Math.max(0.2, ctS));
-    var Ymax = Math.max(2, (box.y1 - 0.4));
-    function posX(u2) { return { x: vw.X(u2 * ctS), y: vw.Y(u2 * stS) }; }
-    function posY(u2) { return { x: vw.X(-u2 * stS), y: vw.Y(u2 * ctS) }; }
-    axisLine(ctx, posX, Xlo, Xhi, { x: stS, y: ctS }, 'X [m]', s.sign, { target: 5 });
-    axisLine(ctx, posY, -0.6, Ymax, { x: ctS, y: -stS }, 'Y [m]', s.sign, { target: 4 });
-    originMark(ctx, vw.X(0), vw.Y(0), -14, 14);
-    ctx.save();                                   /* θ をはかる水平の線 */
-    ctx.strokeStyle = '#b6bfc8'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.1;
-    ctx.beginPath(); ctx.moveTo(vw.X(0), vw.Y(0)); ctx.lineTo(vw.X(0) + 96, vw.Y(0)); ctx.stroke();
-    ctx.restore();
-    angArc(ctx, vw.X(0), vw.Y(0), 34, -v.th * DEG, 0, 'θ = ' + fmt(v.th, 0) + '°', -v.th * DEG * 0.5, 50);
+    /* 斜面 */
+    if (sl) hatchLine(ctx, vw.X(box.x0), vw.Y(0), vw.X(box.x1), vw.Y(0), 1);
+    else hatchLine(ctx, vw.X(box.x0), vw.Y(box.x0 * tt), vw.X(box.x1), vw.Y(box.x1 * tt), v.th > 0 ? -1 : 1);
 
-    var b = P.m25.beta(v);
+    /* 「いま主役でないほうの軸」をうすく表示する */
+    (function () {
+      var FA = '#c3ccd5', sg = s.sign >= 0 ? 1 : -1;
+      /* うすく出すのは、いつも「もとの水平・鉛直の x 軸・y 軸」。
+         斜面の観測者の絵では、絵ぜんたいが −θ 回っているので x・y も傾いて見える */
+      var e1 = sl ? { x: ctS, y: -stS } : { x: 1, y: 0 };         /* x 軸の向き（画面の座標） */
+      var e2 = sl ? { x: stS, y: ctS } : { x: 0, y: 1 };          /* y 軸の向き */
+      var n1 = 'x', n2 = 'y';
+      /* 図の枠の中におさまる長さを求める */
+      function fitLen(e) {
+        var f = 1e9;
+        if (e.x > 1e-6) f = Math.min(f, box.x1 / e.x);
+        if (e.x < -1e-6) f = Math.min(f, box.x0 / e.x);
+        if (e.y > 1e-6) f = Math.min(f, box.y1 / e.y);
+        if (e.y < -1e-6) f = Math.min(f, box.y0 / e.y);
+        return Math.max(0.5, f * 0.94);
+      }
+      ctx.save(); ctx.strokeStyle = FA; ctx.lineWidth = 1.1;
+      [e1, e2].forEach(function (e) {
+        var lp = fitLen(e), lm = fitLen({ x: -e.x, y: -e.y });
+        ctx.beginPath();
+        ctx.moveTo(vw.X(-e.x * lm), vw.Y(-e.y * lm));
+        ctx.lineTo(vw.X(e.x * lp), vw.Y(e.y * lp));
+        ctx.stroke();
+      });
+      ctx.restore();
+      [[e1, n1], [e2, n2]].forEach(function (p) {
+        var e = { x: p[0].x * sg, y: p[0].y * sg };
+        var L2 = fitLen(e);
+        var px2 = vw.X(e.x * L2), py2 = vw.Y(e.y * L2);
+        var ux = e.x, uy = -e.y;                                  /* 画面での向き（y は下が正） */
+        arrowHead(ctx, px2, py2, ux, uy, FA);
+        label(ctx, p[1], px2 - ux * 6 - uy * 13, py2 - uy * 6 + ux * 13,
+          { size: 11, color: FA, align: 'center' });
+      });
+    })();
+
+    /* 主役の軸 */
+    var Xlo, Xhi, Ymax, posX, posY;
+    if (sl) {
+      Xlo = Math.min(-1.5, box.x0 * 0.92); Xhi = Math.max(2, box.x1 - 0.5);
+      Ymax = Math.max(2, box.y1 - 0.4);
+      posX = function (u2) { return { x: vw.X(u2), y: vw.Y(0) }; };
+      posY = function (u2) { return { x: vw.X(0), y: vw.Y(u2) }; };
+      axisLine(ctx, posX, Xlo, Xhi, { x: 0, y: 1 }, 'X [m]', s.sign, { target: 5 });
+      axisLine(ctx, posY, -0.6, Ymax, { x: -1, y: 0 }, 'Y [m]', s.sign, { target: 4 });
+    } else {
+      Xlo = Math.min(-1.5, box.x0 * 0.9); Xhi = Math.max(2, (box.x1 - 0.6) / Math.max(0.2, ctS));
+      Ymax = Math.max(2, (box.y1 - 0.4));
+      posX = function (u2) { return { x: vw.X(u2 * ctS), y: vw.Y(u2 * stS) }; };
+      posY = function (u2) { return { x: vw.X(-u2 * stS), y: vw.Y(u2 * ctS) }; };
+      axisLine(ctx, posX, Xlo, Xhi, { x: stS, y: ctS }, 'X [m]', s.sign, { target: 5 });
+      axisLine(ctx, posY, -0.6, Ymax, { x: ctS, y: -stS }, 'Y [m]', s.sign, { target: 4 });
+    }
+    originMark(ctx, vw.X(0), vw.Y(0), -14, 14);
+
+    /* θ（斜面の向きと水平の間の角） */
+    var slopeScr = sl ? 0 : thR;                  /* 斜面の向き（数学の角・反時計まわりが正） */
+    var horizScr = sl ? -thR : 0;                 /* ほんとうの水平の向き */
+    ctx.save();
+    ctx.strokeStyle = '#b6bfc8'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(vw.X(0), vw.Y(0));
+    ctx.lineTo(vw.X(0) + Math.cos(horizScr) * 96, vw.Y(0) - Math.sin(horizScr) * 96); ctx.stroke();
+    ctx.restore();
+    angArc(ctx, vw.X(0), vw.Y(0), 34, -slopeScr, -horizScr,
+      'θ = ' + fmt(v.th, 0) + '°', -(slopeScr + horizScr) / 2, 50);
+
+    /* Φ（斜面から測った投射角） */
+    var phiScr = sl ? v.phi * DEG : P.m25.beta(v);
     ctx.save(); ctx.strokeStyle = '#9aa3ac'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(vw.X(0), vw.Y(0));
-    ctx.lineTo(vw.X(0) + Math.cos(b) * 78, vw.Y(0) - Math.sin(b) * 78); ctx.stroke();
+    ctx.lineTo(vw.X(0) + Math.cos(phiScr) * 78, vw.Y(0) - Math.sin(phiScr) * 78); ctx.stroke();
     ctx.restore();
-    angArc(ctx, vw.X(0), vw.Y(0), 64, -b, -v.th * DEG, 'Φ = ' + fmt(v.phi, 0) + '°', -(b + v.th * DEG) / 2 - 0.25, 86);
+    angArc(ctx, vw.X(0), vw.Y(0), 64, -phiScr, -slopeScr,
+      'Φ = ' + fmt(v.phi, 0) + '°', -(phiScr + slopeScr) / 2 - 0.25, 86);
 
-    drawTraj(ctx, vw, v, P.m25.sample, T, t, 0.2);
-    var m = P.m25.sample(v, t);
-    var px = vw.X(m.x), py = vw.Y(m.y);
+    drawTraj(ctx, vw, v, dsam, T, t, 0.2);
+    var m = P.m25.sample(v, t), md = dsam(v, t);
+    var px = vw.X(md.x), py = vw.Y(md.y);
     ball(ctx, px, py, 8);
     if (s.o.showF) {
-      arrow(ctx, px, py, px, py + 44, 'force');
-      label(ctx, 'mg', px - 8, py + 38, { align: 'right', size: 11.5, color: COL.force });
+      /* 重力の向きは「ほんとうの下」。斜面の観測者の絵では θ だけかたむいて見える */
+      var gx = sl ? -stS : 0, gy = sl ? ctS : 1;
+      arrow(ctx, px, py, px + gx * 46, py + gy * 46, 'force');
+      label(ctx, 'mg', px + gx * 40 - 10, py + gy * 40, { align: 'right', size: 11.5, color: COL.force });
     }
-    drawVel(ctx, px, py, m, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
+    drawVel(ctx, px, py, md, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
     label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
+    label(ctx, sl ? '斜面の上の観測者（X・Y）' : '水平面の観測者（x・y）', W - 10, 16,
+      { align: 'right', size: 12, bold: true, color: COL.sub });
     if (t < 1e-9) label(ctx, 'ドラッグ→投射角 Φ が変わる', 10, 34, { align: 'left', size: 10.5, color: COL.sub });
     if (t >= T - 1e-9) bubble(ctx, '斜面に落下', px, py - 16, { size: 12.5 });
   },
