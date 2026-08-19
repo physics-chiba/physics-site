@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>運動の表し方 〜 運動方程式　シミュレーション集（2年物理）</title>
+<title>一次元運動と平面運動のグラフ・シミュレーション</title>
 
 <style>
 /* ===== KaTeX 0.16.45 (fonts embedded / offline) ===== */
@@ -156,11 +156,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,
   border-radius:var(--r-l) var(--r-l) 0 0;padding:9px 12px 8px}
 .cvbar .acts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .cvbar .acts button{font-size:.79rem;padding:3px 11px;border-radius:999px}
+/* いまの状態がその条件になっているボタンは薄く見せる */
+.cvbar .acts button.off{opacity:.42;background:#fff;border-color:var(--line2);color:var(--sub)}
+.cvbar .acts button.off:hover{opacity:.7;background:var(--orange-l);border-color:#e6bb85;color:var(--orange-d)}
 .cvbar .cvopts{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;font-size:.81rem;
   margin-bottom:8px;background:#fff;border:1px solid var(--accent);border-radius:var(--r-m);
   padding:6px 11px;box-shadow:0 0 0 3px var(--accent-l)}
 .cvbar .cvopts label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer;
   font-weight:600;color:var(--ink2)}
+.cvbar .cvopts .optsl{display:inline-flex;align-items:center;gap:7px}
+.cvbar .cvopts .optsl input[type=range]{width:120px;accent-color:var(--accent)}
+.cvbar .cvopts .optsl .vval{font-family:var(--mono);font-variant-numeric:tabular-nums;
+  font-size:.82rem;font-weight:600;min-width:5.2em;text-align:right}
 .cvbar .cvopts select{font-family:var(--jp);font-size:.81rem;padding:2px 6px;
   border:1px solid var(--line2);border-radius:var(--r-s);margin-left:4px;background:#fff}
 .cvbar .opts{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;font-size:.81rem}
@@ -317,19 +324,39 @@ table.read td.v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-a
 
 /* 「次はここ！」の合図（問題モードの誘導） */
 @keyframes pulseNext{
-  0%{box-shadow:0 0 0 0 rgba(224,123,24,.6)}
-  70%{box-shadow:0 0 0 11px rgba(224,123,24,0)}
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
+  60%{box-shadow:0 0 0 17px rgba(224,123,24,0)}
   100%{box-shadow:0 0 0 0 rgba(224,123,24,0)}
 }
-.pulse{animation:pulseNext 1.6s ease-out infinite}
-button.pulse{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700}
+@keyframes blinkNext{
+  0%,100%{background:var(--orange);border-color:var(--orange)}
+  50%{background:#f7a13f;border-color:#f7a13f}
+}
+.pulse{animation:pulseNext 1.35s ease-out infinite}
+button.pulse{background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700;
+  animation:pulseNext 1.35s ease-out infinite, blinkNext 1.35s ease-in-out infinite}
 button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
-.gquiz.pulse{border-color:var(--orange);border-width:2px;background:var(--orange-l)}
-.nextmark{color:var(--orange-d);font-weight:700}
+.gquiz.pulse{border-color:var(--orange);border-width:3px;background:var(--orange-l)}
+.nextmark{color:var(--orange-d);font-weight:700;font-size:1.02em}
 @media (prefers-reduced-motion:reduce){
-  .pulse{animation:none;box-shadow:0 0 0 3px rgba(224,123,24,.35)}
+  .pulse,button.pulse{animation:none;box-shadow:0 0 0 4px rgba(224,123,24,.45)}
   button{transition:none}
 }
+
+/* ===== 入試物理のくわしい解説 ===== */
+.longbox{font-size:.88rem;line-height:1.85}
+.longbox h3{margin:0 0 8px}
+.longbox h4{font-size:.9rem;margin:16px 0 4px;color:var(--accent-d);
+  border-left:4px solid var(--accent-l);padding-left:8px}
+.longbox p{margin:4px 0}
+.longbox ol,.longbox ul{margin:4px 0;padding-left:1.5em}
+.longbox li{margin:2px 0}
+.longbox .exam{background:var(--orange-l);border:1px solid #f0d6ac;border-radius:var(--r-m);
+  padding:9px 12px;margin:10px 0}
+.longbox .exam b{color:var(--orange-d)}
+.longbox .fmlbox{background:var(--panel2);border:1px solid #dde5ee;border-radius:var(--r-m);
+  padding:8px 12px;margin:6px 0;overflow-x:auto}
+.longbox .src{font-size:.8rem;color:var(--sub);margin-top:10px}
 
 /* ===== 矢印の凡例・URL ===== */
 #legend{display:flex;flex-wrap:wrap;gap:3px 14px;align-items:center;
@@ -367,9 +394,8 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 <body>
 <div class="wrap">
 
-<h1>一次元運動と平面運動の基本</h1>
-<p class="subtitle">〜グラフと力、運動方程式から理解しよう〜</p>
-<p class="mini">物理の一番の基本である「等加速度直線運動・平面内の運動・運動方程式」を、自分で数値を変えながら動かして確かめるページ。<br>
+<h1>一次元運動と平面運動のグラフ・シミュレーション</h1>
+<p class="mini">物理の基本中の基本「等加速度直線運動・運動方程式・平面内の運動」を、自分で数値を変えながら動かして確かめるページ。<br>
 それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、グラフがなぜそうなるかを納得いくまで考えよう。</p>
 
 <div class="card purpose">
@@ -377,8 +403,12 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   <ol>
     <li>いろいろな等加速度運動について、<b>v–t 図</b>などのグラフがどんな形になるかをつかむ。</li>
     <li><b>位置・速度・加速度</b>のちがいを区別できるようになる。</li>
+    <li><b>等加速度運動の公式</b>
+      <span class="tex">① v = v_0 + at</span>、
+      <span class="tex">② x = v_0 t + \tfrac{1}{2}at^2</span>、
+      <span class="tex">③ v^2 - v_0^{\,2} = 2ax</span>
+      をもとにグラフを理解する。</li>
     <li>加速度が生じる原因が<b>力</b>であることを、運動方程式 <span class="tex">ma=F</span> とつなげて理解する。</li>
-    <li>2物体の運動を同時に見て、<b>相対速度</b>をイメージできるようになる。</li>
   </ol>
 </div>
 
@@ -386,6 +416,8 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 <div class="tabs sub" id="simtabs"></div>
 
 <div class="card" id="simhost"></div>
+
+<div class="card longbox" id="longbox" style="display:none"></div>
 
 <div id="legend">
   <span class="lg"><canvas data-kind="force"></canvas>力</span>
@@ -446,7 +478,8 @@ var P = {};
 
 /* 1-1 なめらかな斜面上の物体（斜面上向きを正） */
 P.m11 = {
-  a: function (v) { return -G * Math.sin(v.th * DEG); },
+  /* 1-1 は「θ>0 が下り坂」。x 軸は斜面にそって右向きが正なので a = +g sinθ */
+  a: function (v) { return G * Math.sin(v.th * DEG); },
   tEnd: function (v) {
     var a = P.m11.a(v), v0 = v.v0;
     if (Math.abs(a) < 1e-9) return 4.0;                 /* 水平：等速直線運動 */
@@ -656,11 +689,17 @@ P.m25 = {
     return Math.max(0.2, T);
   },
   sample: function (v, t) {
-    var b = P.m25.beta(v);
+    var b = P.m25.beta(v), th = v.th * DEG;
+    var ct = Math.cos(th), stn = Math.sin(th);
     var vx = v.v0 * Math.cos(b), vy0 = v.v0 * Math.sin(b);
+    var x = vx * t, y = vy0 * t - 0.5 * G * t * t;
+    var vy = vy0 - G * t;
     return {
-      x: vx * t, y: vy0 * t - 0.5 * G * t * t,
-      vx: vx, vy: vy0 - G * t, v: Math.hypot(vx, vy0 - G * t), ax: 0, ay: -G
+      x: x, y: y, vx: vx, vy: vy, v: Math.hypot(vx, vy), ax: 0, ay: -G,
+      /* 斜面にそった座標：X は斜面を上る向き、Y は斜面に垂直（面から離れる向き） */
+      X: x * ct + y * stn, Y: -x * stn + y * ct,
+      vX: vx * ct + vy * stn, vY: -vx * stn + vy * ct,
+      aX: -G * stn, aY: -G * ct
     };
   },
   /* 斜面にそった飛距離 */
@@ -959,10 +998,10 @@ function arrow(ctx, x1, y1, x2, y2, kind, scale) {
   if (kind === 'force') { ctx.strokeStyle = COL.force; ctx.fillStyle = COL.force; ctx.lineWidth = 3.4 * k; }
   else if (kind === 'acc') { ctx.strokeStyle = COL.acc; ctx.fillStyle = COL.acc; ctx.lineWidth = 3.0 * k; }
   else if (kind === 'vel') { ctx.strokeStyle = COL.vel; ctx.fillStyle = '#ffffff'; ctx.lineWidth = 2.2 * k; }
-  else if (kind === 'velcomp') { ctx.strokeStyle = COL.vel; ctx.fillStyle = '#ffffff'; ctx.lineWidth = 1.7 * k; ctx.setLineDash([6 * k, 4 * k]); }
+  else if (kind === 'velcomp') { ctx.strokeStyle = COL.vel; ctx.fillStyle = 'rgba(22,99,181,.35)'; ctx.lineWidth = 2.0 * k; ctx.setLineDash([6 * k, 4 * k]); }
   else if (kind === 'velx') { ctx.strokeStyle = COL.velx; ctx.fillStyle = COL.velx; ctx.lineWidth = 2.2 * k; ctx.setLineDash([7 * k, 4 * k]); }
   else if (kind === 'vely') { ctx.strokeStyle = COL.vely; ctx.fillStyle = COL.vely; ctx.lineWidth = 2.2 * k; ctx.setLineDash([7 * k, 4 * k]); }
-  else if (kind === 'comp') { ctx.strokeStyle = COL.comp; ctx.fillStyle = '#ffffff'; ctx.lineWidth = 1.9 * k; ctx.setLineDash([6 * k, 4 * k]); }
+  else if (kind === 'comp') { ctx.strokeStyle = COL.comp; ctx.fillStyle = 'rgba(209,53,43,.38)'; ctx.lineWidth = 2.1 * k; ctx.setLineDash([6 * k, 4 * k]); }
   else { ctx.strokeStyle = COL.dim; ctx.fillStyle = COL.dim; ctx.lineWidth = 1.2 * k; ctx.setLineDash([5 * k, 4 * k]); }
 
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(bx, by); ctx.stroke();
@@ -972,7 +1011,7 @@ function arrow(ctx, x1, y1, x2, y2, kind, scale) {
     ctx.arc(x1, y1, 3.1 * k, 0, Math.PI * 2);
     ctx.fillStyle = COL.force; ctx.fill();
     if (kind === 'comp') { ctx.lineWidth = 1.2 * k; ctx.strokeStyle = '#fff'; ctx.stroke(); }
-    ctx.fillStyle = (kind === 'comp') ? '#ffffff' : COL.force;
+    ctx.fillStyle = (kind === 'comp') ? 'rgba(209,53,43,.38)' : COL.force;
   }
   var wA = head * 0.5;
   ctx.beginPath();
@@ -981,7 +1020,11 @@ function arrow(ctx, x1, y1, x2, y2, kind, scale) {
   ctx.lineTo(bx + uy * wA, by - ux * wA);
   ctx.closePath();
   ctx.fill();
-  if (kind === 'vel' || kind === 'comp' || kind === 'velcomp') ctx.stroke();
+  if (kind === 'vel' || kind === 'comp' || kind === 'velcomp') {
+    ctx.lineWidth = Math.max(2.0 * k, ctx.lineWidth);
+    ctx.setLineDash([]);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -1576,7 +1619,7 @@ function plot(cv, spec) {
 'use strict';
 var DEFS = {};
 var MODES = [
-  { n: 1, label: '1　一次元の等加速度直線運動', tip: '直線上の運動は単純に見えて、奥が深いです。',
+  { n: 1, label: '1　一次元の等加速度直線運動', tip: '直線上の運動は単純に見えて、奥が深いです。<b>※物理基礎の内容はここまで</b>',
     ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6'] },
   { n: 2, label: '2　平面上の運動', tip: '基本的にベクトル的に考える。必要なら分解して成分を見る。',
     ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4'] },
@@ -1833,7 +1876,7 @@ function slopeScene(W, H, thDeg, sLo, sHi) {
 }
 
 /* 斜面の板・ハッチ・角 θ・斜面にそった x 軸 */
-function drawSlopeBase(ctx, sn, W, H, thDeg, sign) {
+function drawSlopeBase(ctx, sn, W, H, thDeg, sign, labelDeg, labelUp) {
   var e = sn.pos(sn.sLo + sn.span);
   var b = sn.pos(sn.sLo);
   var down = thDeg < -0.5;
@@ -1850,10 +1893,12 @@ function drawSlopeBase(ctx, sn, W, H, thDeg, sign) {
   ctx.strokeStyle = '#98a0a8'; ctx.lineWidth = 1.2;
   ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(e.x, b.y); ctx.stroke();
   ctx.restore();
+  var thShow = (labelDeg === undefined) ? thDeg : labelDeg;
   if (Math.abs(thDeg) > 0.5) angArc(ctx, b.x, b.y, 30, Math.min(0, -sn.th), Math.max(0, -sn.th),
-    'θ = ' + fmt(thDeg, 0) + '°', -sn.th * 0.42, 78);
+    'θ = ' + fmt(thShow, 0) + '°', -sn.th * 0.42, 78);
+  var lside = labelUp ? { x: sn.n.x, y: sn.n.y } : { x: -sn.n.x, y: -sn.n.y };
   axisLine(ctx, sn.pos, sn.sLo + 0.15, sn.sLo + sn.span - 0.15,
-    { x: -sn.n.x, y: -sn.n.y }, 'x [m]', sign, { target: 5 });
+    lside, 'x [m]', sign, { target: 5 });
   var o = sn.pos(0);
   originMark(ctx, o.x, o.y, -sn.n.x * 17 - 6, -sn.n.y * 17 + 4);
 }
@@ -1864,21 +1909,21 @@ DEFS['m1-1'] = {
   quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
   title: '1-1　なめらかな水平面・斜面をすべる物体',
   desc: '斜面に変更可能。斜面なら重力の斜面方向成分が加速度をつくる。',
-  sub: '初速度をもったまま水平面をすべると、速度は変わらない（等速直線運動）。θ を大きくすると、重力の斜面方向成分 mg sinθ だけが残り、これが加速度の原因になる。',
-  cw: 520, ch: 360,
+  sub: '初速度をもったまま水平面をすべると、速度は変わらない（等速直線運動）。<b>このシムでは θ＞0 が下り坂、θ＜0 がのぼりの斜面</b>で、x は斜面にそって右向きが正。重力の斜面方向成分 mg sinθ だけが残り、これが加速度の原因になる。',
+  cw: 520, ch: function (v) { return 176 + 210 * Math.abs(Math.sin(v.th * DEG)); },
   vis: ['F', 'Fc', 'V'],
   signLabels: ['斜面にそって右向きを正', '斜面にそって左向きを正'],
   mainVars: ['v0', 'th'],
   vars: [
-    { k: 'th', label: '斜面の角 $\\theta$', unit: '°', min: -45, max: 45, step: 5, dec: 0, def: 0 },
+    { k: 'th', label: '斜面の角 $\\theta$（下り坂が正）', unit: '°', min: -45, max: 45, step: 5, dec: 0, def: 0 },
     { k: 'v0', label: '初速度 $v_0$（右向きが正）', unit: ' m/s', min: -12, max: 12, step: 0.5, dec: 1, def: 6.0 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 5, step: 0.5, dec: 1, def: 1.0 }
   ],
   toggles: [],
   actions: [
-    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; } },
-    { label: '下り坂にする（θ＝−30°）', fn: function (s) { s.v.th = -30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; } }
+    { label: '下り坂にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
+    { label: '斜面にする（θ＝−30°）', fn: function (s) { s.v.th = -30; }, is: function (v) { return v.th === -30; } },
+    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
   ],
   tEnd: function (v) { return P.m11.tEnd(v); },
   sample: function (v, t) { return P.m11.sample(v, t); },
@@ -1888,7 +1933,7 @@ DEFS['m1-1'] = {
       fml: function (v, sg) {
         var a = P.m11.a(v) * sg, v0 = v.v0 * sg;
         return ['x = v_0 t + \\tfrac{1}{2}a t^2',
-          Math.abs(v.th) < 0.5 ? 'x = v_0 t' : 'x = v_0 t - \\tfrac{1}{2}(g\\sin\\theta) t^2',
+          Math.abs(v.th) < 0.5 ? 'x = v_0 t' : 'x = v_0 t + \\tfrac{1}{2}(g\\sin\\theta) t^2',
           'x = ' + fmt(v0, 1) + 't' + (Math.abs(a) < 1e-9 ? '' : ' + \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2')];
       } },
     { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速度）', ylabel: 'v [m/s]', open: true, signed: true,
@@ -1896,7 +1941,7 @@ DEFS['m1-1'] = {
       fml: function (v, sg) {
         var a = P.m11.a(v) * sg, v0 = v.v0 * sg;
         return ['v = v_0 + at',
-          Math.abs(v.th) < 0.5 ? 'v = v_0' : 'v = v_0 - (g\\sin\\theta) t',
+          Math.abs(v.th) < 0.5 ? 'v = v_0' : 'v = v_0 + (g\\sin\\theta) t',
           'v = ' + fmt(v0, 1) + (Math.abs(a) < 1e-9 ? '' : ' + (' + fmt(a, 2) + ')t')];
       } },
     { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）', ylabel: 'a [m/s²]', open: false, signed: true,
@@ -1904,7 +1949,7 @@ DEFS['m1-1'] = {
       fml: function (v, sg) {
         var a = P.m11.a(v) * sg;
         return [EQM + 'ma = F \\;\\Rightarrow\\; a = \\dfrac{F}{m}\\;(\\text{一定})',
-          EQM + (Math.abs(v.th) < 0.5 ? 'ma = 0 \\;\\Rightarrow\\; a = 0' : 'ma = -mg\\sin\\theta \\;\\Rightarrow\\; a = -g\\sin\\theta'),
+          EQM + (Math.abs(v.th) < 0.5 ? 'ma = 0 \\;\\Rightarrow\\; a = 0' : 'ma = mg\\sin\\theta \\;\\Rightarrow\\; a = g\\sin\\theta'),
           'a = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}'];
       } }
   ],
@@ -1912,8 +1957,8 @@ DEFS['m1-1'] = {
     var v = V(s), T = P.m11.tEnd(v);
     var sMin = 0, sMax = 0, i;
     for (i = 0; i <= 60; i++) { var q = P.m11.s(v, T * i / 60); sMin = Math.min(sMin, q); sMax = Math.max(sMax, q); }
-    var sn = slopeScene(W, H, v.th, sMin - 0.7, sMax + 1.0);
-    drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
+    var sn = slopeScene(W, H, -v.th, sMin - 0.7, sMax + 1.0);
+    drawSlopeBase(ctx, sn, W, H, -v.th, s.sign, v.th);
 
     var sm = P.m11.sample(v, t);
     var bw = 30, bh = 22;
@@ -1983,11 +2028,12 @@ DEFS['m1-1'] = {
         arrow(ctx, ax0, ay0, ax0 + sn.u.x * 44 * asg1, ay0 + sn.u.y * 44 * asg1, 'acc');
         label(ctx, '加速度 a = ' + fmt(sm.a * s.sign, 2) + ' m/s²', ax0 + 8, ay0 + 14, { size: 12, color: COL.acc, align: 'right' });
       } else {
-        label(ctx, 'a = 0（力がつり合っている）→ 等速直線運動', W * 0.46, 62, { size: 12, color: COL.acc });
+        label(ctx, 'a = 0（力がつり合っている）→ 等速直線運動', W - 10, H - 12,
+          { size: 12, color: COL.acc, align: 'right' });
       }
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    label(ctx, '正の向き：' + dirWord(v.th, s.sign), W - 10, 36, { align: 'right', size: 11, color: COL.sub });
+    label(ctx, '正の向き：' + dirWord(-v.th, s.sign), W - 10, 36, { align: 'right', size: 11, color: COL.sub });
   },
   info: function (s, t) {
     var v = V(s), m = P.m11.sample(v, t);
@@ -2001,7 +2047,7 @@ DEFS['m1-1'] = {
   eq: function (s) {
     var v = V(s);
     if (Math.abs(v.th) < 0.5) return EQM + 'ma = 0 \\quad\\Rightarrow\\quad a = 0 \\;(\\text{等速直線運動})';
-    return EQM + 'ma = -mg\\sin\\theta \\quad\\Rightarrow\\quad a = -g\\sin\\theta = ' + fmt(P.m11.a(v), 2) + '\\ \\mathrm{m/s^2}';
+    return EQM + 'ma = mg\\sin\\theta \\quad\\Rightarrow\\quad a = g\\sin\\theta = ' + fmt(P.m11.a(v), 2) + '\\ \\mathrm{m/s^2}';
   },
   note: '力は<b>重力と垂直抗力の2本だけ</b>（「動く向きの力」はない）。θ＝0° では2本がつり合って a＝0。θ を大きくすると、重力の<b>斜面方向の分力 mg sinθ</b> だけが残り、これが加速度の原因になる。のぼりでもくだりでも加速度はずっと<b>斜面下向きに g sinθ</b>。'
 };
@@ -2024,7 +2070,8 @@ DEFS['m1-2'] = {
   ],
   toggles: [],
   actions: [
-    { label: 'h＝19.6 m（自由落下でちょうど2.0 s）', fn: function (s) { s.v.h = 19.6; s.v.v0 = 0; } }
+    { label: 'h＝19.6 m（自由落下でちょうど2.0 s）', fn: function (s) { s.v.h = 19.6; s.v.v0 = 0; },
+      is: function (v) { return Math.abs(v.h - 19.6) < 1e-6 && Math.abs(v.v0) < 1e-6; } }
   ],
   tEnd: function (v) { return P.m12.tEnd(v); },
   sample: function (v, t) { return P.m12.sample(v, t); },
@@ -2138,8 +2185,8 @@ DEFS['m1-3'] = {
   ],
   toggles: [],
   actions: [
-    { label: 'ビルの上から（H＝19.6 m）', fn: function (s) { s.v.H = 19.6; } },
-    { label: '地面から（H＝0）', fn: function (s) { s.v.H = 0; } }
+    { label: 'ビルの上から（H＝19.6 m）', fn: function (s) { s.v.H = 19.6; }, is: function (v) { return Math.abs(v.H - 19.6) < 1e-6; } },
+    { label: '地面から（H＝0）', fn: function (s) { s.v.H = 0; }, is: function (v) { return v.H === 0; } }
   ],
   tEnd: function (v) { return P.m13.tEnd(v); },
   sample: function (v, t) { return P.m13.sample(v, t); },
@@ -2248,7 +2295,7 @@ DEFS['m1-4'] = {
   title: '1-4　摩擦のある水平面・斜面をすべる物体',
   desc: '力は加えず、初速度だけをあたえてすべらせる。動摩擦力 μ′N が運動と逆向きにはたらき、一定の割合で減速する。',
   sub: '止まったあとに動き出すかどうかは、静止摩擦（最大 μN）と重力の斜面成分 mg sinθ の大小で決まる。',
-  cw: 520, ch: 360,
+  cw: 520, ch: function (v) { return 182 + 210 * Math.abs(Math.sin(v.th * DEG)); },
   vis: ['F', 'Fc', 'V'],
   signLabels: ['進む向きを正', '逆向きを正'],
   consts: { F: 0, LEN: 9, TMAX: 6 },
@@ -2262,8 +2309,8 @@ DEFS['m1-4'] = {
   ],
   toggles: [],
   actions: [
-    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; } }
+    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
+    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
   ],
   tEnd: function (v) { return Math.min(P.m14.tStop(v) + 0.6, P.m14.tEnd(v)); },
   sample: function (v, t) { return P.m14.sample(v, t); },
@@ -2399,7 +2446,7 @@ DEFS['m1-5'] = {
   title: '1-5　斜面で押す（摩擦あり）',
   desc: '手で斜面の下側から、斜面上向きに力 F で押す。運動方程式から加速度が決まる。',
   sub: 'F が小さいと静止摩擦とつり合って動かない（|F − mg sinθ| ≦ μN）。動き出すと動摩擦 μ′N がはたらく。',
-  cw: 520, ch: 360,
+  cw: 520, ch: function (v) { return 196 + 210 * Math.abs(Math.sin(v.th * DEG)); },
   vis: ['F', 'Fc', 'V'],
   signLabels: ['斜面上向きを正', '斜面下向きを正'],
   mainVars: ['F', 'th', 'v0', 'mu', 'mud'],
@@ -2413,10 +2460,11 @@ DEFS['m1-5'] = {
   ],
   toggles: [],
   actions: [
-    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; } },
-    { label: 'F を小さくして動かなくする（F＝5 N）', fn: function (s) { s.v.F = 5; } },
-    { label: 'はじめの設定にもどす', fn: function (s) { s.v.F = 20; s.v.th = 30; s.v.m = 2; s.v.mu = 0.5; s.v.mud = 0.3; s.v.v0 = 0; } }
+    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
+    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
+    { label: 'F を小さくして動かなくする（F＝5 N）', fn: function (s) { s.v.F = 5; }, is: function (v) { return v.F === 5; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.F = 20; s.v.th = 30; s.v.m = 2; s.v.mu = 0.5; s.v.mud = 0.3; s.v.v0 = 0; },
+      is: function (v) { return v.F === 20 && v.th === 30 && v.m === 2 && v.mu === 0.5 && v.mud === 0.3 && v.v0 === 0; } }
   ],
   tEnd: function (v) { return P.m14.tEnd(v); },
   sample: function (v, t) { return P.m14.sample(v, t); },
@@ -2472,7 +2520,7 @@ DEFS['m1-5'] = {
       var Nn = mg * Math.cos(sn.th);
       var nt2x = c.x + sn.n.x * Nn * fs, nt2y = c.y + sn.n.y * Nn * fs;
       arrow(ctx, c.x, c.y, nt2x, nt2y, 'force');
-      label(ctx, '垂直抗力 N', nt2x + sn.u.x * 12 + sn.n.x * 2, nt2y + sn.u.y * 12 + sn.n.y * 2,
+      label(ctx, '垂直抗力 N', nt2x + sn.u.x * 14 + sn.n.x * 12, nt2y + sn.u.y * 14 + sn.n.y * 12,
         { align: 'left', size: 11.5, color: COL.force });
       var fx = c.x - sn.u.x * bw * 0.28, fy = c.y - sn.u.y * bw * 0.28;
       if (Math.abs(m.f) > 0.3) {
@@ -2539,46 +2587,54 @@ DEFS['m1-6'] = {
   id: 'm1-6', mode: 1, tab: '1-6 カーリングゲーム', game: true,
   title: '1-6　カーリングゲーム 〜的にピタリと止めよう！〜',
   desc: 'ストーンを初速度 v₀ ですべらせて、的にちょうど止められるかな？',
-  sub: '動摩擦力だけで減速するので、止まるまでの距離は v₀²/(2|a|)。<b>ストーンを左へドラッグ（スワイプ）して放つと、その強さで v₀ が決まる。</b>的もドラッグで動かせる。',
+  sub: '動摩擦力だけで減速するので、止まるまでの距離は v₀²/(2|a|)。<b>ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まり、そのまま動き出す。</b>「スライダーで v₀ を決める」に切りかえると、v₀ をスライダーで決めてからドラッグで放つこともできる。的もドラッグで動かせる。',
   cw: 520, ch: 250,
   vis: ['F', 'V'],
   signLabels: ['進む向きを正', '逆向きを正'],
-  consts: { F: 0, LEN: 60, TMAX: 20, m: 18, mu: 0.6 },
+  consts: { F: 0, LEN: 50, TMAX: 20, m: 18, mu: 0.6 },
   mainVars: ['v0', 'mud'],
   vars: [
     { k: 'v0', label: '投げ出す速さ $v_0$', unit: ' m/s', min: 1, max: 12, step: 0.2, dec: 1, def: 5.0 },
-    { k: 'mud', label: '氷の動摩擦係数 $\\mu\'$', unit: '', min: 0.02, max: 0.20, step: 0.01, dec: 2, def: 0.05 },
+    { k: 'mud', label: '氷の動摩擦係数 $\\mu\'$', unit: '', min: 0.005, max: 0.20, step: 0.005, dec: 3, def: 0.050 },
     { k: 'th', label: '面の傾き $\\theta$（のぼり）', unit: '°', min: 0, max: 8, step: 1, dec: 0, def: 0 },
     { k: 'tx', label: '的の位置', unit: ' m', min: 5, max: 45, step: 1, dec: 0, def: 22 }
   ],
-  toggles: [],
+  toggles: [{ k: 'useSlider', label: 'スライダーで $v_0$ を決める', def: false }],
+  mainOpts: true,
+  optSlider: { when: 'useSlider', k: 'v0' },
   actions: [
-    { label: '斜面にする（θ＝3°ののぼり）', fn: function (s) { s.v.th = 3; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; } }
+    { label: 'もっとつるつるにする', fn: function (s) { s.v.mud = +Math.max(0.005, s.v.mud * 0.6).toFixed(3); },
+      is: function (v) { return v.mud <= 0.005 + 1e-9; } },
+    { label: '氷をもとにもどす（μ′＝0.050）', fn: function (s) { s.v.mud = 0.050; }, is: function (v) { return Math.abs(v.mud - 0.05) < 1e-9; } },
+    { label: '斜面にする（θ＝3°ののぼり）', fn: function (s) { s.v.th = 3; }, is: function (v) { return v.th === 3; } },
+    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
   ],
+  dragStart: true,                            /* スタートはボタンではなくドラッグで */
   HOUSE: 1.6,
+  RINK: 52,                                   /* 図に見せる氷の長さ [m] */
   tEnd: function (v) { return Math.min(P.m14.tStop(v) + 0.8, P.m14.tEnd(v)); },
   sample: function (v, t) { return P.m14.sample(v, t); },
   PULL: 4.0,                                  /* いっぱいに引いた長さ [m] */
   PULL_PX: 130,                               /* 画面で「いっぱいに引く」長さ（キャンバス座標） */
   dragDown: function (s, wx, wy, lx) {
-    /* ストーンの近く（左のほう）を押したら「引いて放つ」、的の近くなら的を動かす */
+    /* ストーンの近くを押したら「右へスワイプして放つ」、的の近くなら的を動かす */
     if (Math.abs(wx - s.v.tx) < 2.6) { s._m = 'tx'; return true; }
-    if (wx < 4) { s._m = 'aim'; s._pull = 0; s._px0 = lx; s._hi = null; return true; }
+    if (wx < 6) { s._m = 'aim'; s._pull = 0; s._px0 = lx; s._hi = null; return true; }
     s._m = 'tx'; return true;
   },
   drag: function (s, wx, wy, lx) {
     if (s._m === 'aim') {
-      var px = clamp((s._px0 || 0) - lx, 0, DEFS['m1-6'].PULL_PX);   /* 左へ引いた長さ（画面） */
+      var px = clamp(lx - (s._px0 || 0), 0, DEFS['m1-6'].PULL_PX);   /* 右へすべらせた長さ（画面） */
+      if (px < 3) return;                                            /* 押しただけでは値を変えない */
       s._pull = px / DEFS['m1-6'].PULL_PX;                           /* 0〜1 */
-      s.v.v0 = +clamp(1 + s._pull * 11, 1, 12).toFixed(1);
+      if (!s.o.useSlider) s.v.v0 = +clamp(1 + s._pull * 11, 1, 12).toFixed(1);
     } else {
       s.v.tx = clamp(Math.round(wx), 5, 45);
     }
   },
   dragUp: function (s) {
-    var go = (s._m === 'aim' && s._pull > 0.04);
-    s._m = null; s._pull = 0; s._hi = null;
+    var go = (s._m === 'aim' && s._pull > 0.02);
+    s._m = null; s._pull = 0;
     return go;                                             /* 放したらすべり出す */
   },
   win: function (s, t) {
@@ -2612,9 +2668,8 @@ DEFS['m1-6'] = {
   draw: function (ctx, s, t, W, H) {
     var v = V(s);
     var xs = P.m14.xStop(v);
-    var hi = Math.max(xs, v.tx) + 4;
-    if (s._m === 'aim') { if (!s._hi) s._hi = hi; hi = s._hi; }   /* 引いている間は図をゆらさない */
-    var sn = slopeScene(W, H, v.th, -DEFS['m1-6'].PULL - 1.2, hi);
+    var hi = DEFS['m1-6'].RINK;              /* いつも同じ目盛り（リンクの長さ） */
+    var sn = slopeScene(W, H, v.th, -2.0, hi);
     /* 氷の面 */
     var e = sn.pos(sn.sLo + sn.span), b = sn.pos(sn.sLo);
     ctx.save();
@@ -2624,7 +2679,7 @@ DEFS['m1-6'] = {
     hatchLine(ctx, b.x, b.y, e.x, e.y, 1);
     if (v.th > 0.5) angArc(ctx, b.x, b.y, 26, -sn.th, 0, 'θ = ' + fmt(v.th, 0) + '°');
     axisLine(ctx, sn.pos, sn.sLo + 0.5, sn.sLo + sn.span - 0.5,
-      { x: -sn.n.x, y: -sn.n.y }, 'x [m]', s.sign, { target: 5 });
+      { x: sn.n.x, y: sn.n.y }, 'x [m]', s.sign, { target: 5 });   /* 目盛りは上側（かごとぶつからない） */
     var o = sn.pos(0);
     originMark(ctx, o.x, o.y, -sn.n.x * 16 - 5, -sn.n.y * 16 + 4);
     s.view = { invX: function (px) { return sn.sLo + (px - sn.bx) / (sn.u.x * sn.sc); }, invY: function () { return 0; } };
@@ -2638,7 +2693,7 @@ DEFS['m1-6'] = {
     ctx.fillRect(hp.x - bw2 / 2 - 1, hp.y + 1, bw2 + 2, bh2 + 3);
     ctx.restore();
     basketShape(ctx, hp.x, hp.y, bw2, bh2);                /* 的のかごは地面にうめる（上端＝地面） */
-    if (t < 1e-9 && s._m !== 'aim') label(ctx, '的のかご（ドラッグで動かせる）', hp.x, hp.y - 14, { size: 10.5, color: '#2c5f8f' });
+    if (t < 1e-9 && s._m !== 'aim') label(ctx, '的のかご（ドラッグで動かせる）', hp.x, hp.y - 30, { size: 10, color: '#2c5f8f' });
 
     /* ストーン */
     var m = P.m14.sample(v, t);
@@ -2669,25 +2724,27 @@ DEFS['m1-6'] = {
       label(ctx, 'v = ' + fmt(m.v * s.sign, 1) + ' m/s', vx0 + sn.u.x * vl * 0.5 + sn.n.x * 13, vy0 + sn.u.y * vl * 0.5 + sn.n.y * 13,
         { size: 11.5, color: COL.vel });
     }
-    if (s._m === 'aim') {                                   /* 引いているようす */
-      var pp = sn.pos(-(s._pull || 0) * DEFS['m1-6'].PULL);
+    if (s._m === 'aim') {                                   /* 右へすべらせているようす */
       var st0 = sn.pos(0);
+      var swp = (s._pull || 0) * DEFS['m1-6'].PULL_PX;
       ctx.save(); ctx.strokeStyle = '#8a949e'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.moveTo(pp.x, pp.y + sn.n.y * 10); ctx.lineTo(st0.x, st0.y + sn.n.y * 10); ctx.stroke();
-      ctx.restore();
+      ctx.beginPath();
+      ctx.moveTo(st0.x + sn.n.x * 10, st0.y + sn.n.y * 10);
+      ctx.lineTo(st0.x + sn.n.x * 10 + sn.u.x * swp, st0.y + sn.n.y * 10 + sn.u.y * swp);
+      ctx.stroke(); ctx.restore();
       arrow(ctx, st0.x + sn.n.x * 20, st0.y + sn.n.y * 20,
         st0.x + sn.n.x * 20 + sn.u.x * (16 + (s._pull || 0) * 60),
         st0.y + sn.n.y * 20 + sn.u.y * (16 + (s._pull || 0) * 60), 'vel');
-      label(ctx, '引いて放つ！　v₀ = ' + fmt(v.v0, 1) + ' m/s',
+      label(ctx, (s.o.useSlider ? '放すとスタート！　v₀ = ' : '右へスワイプして放つ！　v₀ = ') + fmt(v.v0, 1) + ' m/s',
         st0.x + sn.n.x * 52 + 4, st0.y + sn.n.y * 52, { size: 12.5, bold: true, color: COL.vel, align: 'left' });
     } else if (t < 1e-9) {
-      label(ctx, 'ストーンをドラッグ（スワイプ）して放つと、その強さで v₀ が決まる',
+      label(ctx, s.o.useSlider ? 'v₀ はスライダーで決める。ストーンをドラッグして放すとスタート'
+        : 'ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まってスタート',
         14, 34, { size: 10.5, color: COL.sub, align: 'left' });
     }
     var done = t >= DEFS['m1-6'].tEnd(v) - 1e-9;
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 16, { align: 'right', size: 13, bold: true });
-    label(ctx, '止まる位置 = v₀²/(2|a|)' + (done ? ' = ' + fmt(xs, 1) + ' m' : '（まず予想してみよう）'),
-      W - 10, 34, { align: 'right', size: 11, color: COL.sub });
+
 
     if (done) {
       var dd = xs - v.tx, ad = Math.abs(dd);
@@ -2983,8 +3040,8 @@ DEFS['m2-2'] = {
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 5, step: 0.5, dec: 1, def: 1.0 }
   ],
   toggles: [],
-  actions: [{ label: '斜方投射にする（θ＝45°）', fn: function (s) { s.v.th = 45; } },
-    { label: '水平投射にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; } }],
+  actions: [{ label: '斜方投射にする（θ＝45°）', fn: function (s) { s.v.th = 45; }, is: function (v) { return v.th === 45; } },
+    { label: '水平投射にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }],
   drag: function (s, wx, wy) {
     var a = Math.atan2(wy, Math.max(0.001, wx)) / DEG;
     s.v.th = clamp(Math.round(a / 5) * 5, 0, 80);
@@ -3158,7 +3215,7 @@ DEFS['m2-4'] = {
     { k: 'by', label: 'かごの高さ', unit: ' m', min: 0, max: 25, step: 1, dec: 0, def: 0 }
   ],
   toggles: [],
-  actions: [{ label: 'かごを地面にもどす', fn: function (s) { s.v.by = 0; } }],
+  actions: [{ label: 'かごを地面にもどす', fn: function (s) { s.v.by = 0; }, is: function (v) { return v.by === 0; } }],
   tEnd: function (v) { return P.m24.tEnd(v); },
   sample: function (v, t) { return P.m24.sample(v, t); },
   win: function (s) { return P.m24.catchT(V(s)) !== null; },
@@ -3412,8 +3469,8 @@ DEFS['m3-2'] = {
   ],
   toggles: [{ k: 'guide', label: '台車と小球を結ぶ線を表示', def: true }],
   actions: [
-    { label: '台車を止める（V＝0）', fn: function (s) { s.v.V = 0; } },
-    { label: '台車を走らせる（V＝4 m/s）', fn: function (s) { s.v.V = 4; } }
+    { label: '台車を止める（V＝0）', fn: function (s) { s.v.V = 0; }, is: function (v) { return v.V === 0; } },
+    { label: '台車を走らせる（V＝4 m/s）', fn: function (s) { s.v.V = 4; }, is: function (v) { return v.V === 4; } }
   ],
   quiz: {
     q: 'Bは、どこに落ちる？',
@@ -3703,7 +3760,49 @@ DEFS['m3-3'] = {
 /* 4　入試物理 */
 'use strict';
 
+/* 視点がそのプリセットと同じか */
+function camIs(s, az, el, zoom) {
+  return !!s.cam && Math.abs(s.cam.az - az) < 0.5 && Math.abs(s.cam.el - el) < 0.5 &&
+    Math.abs(s.cam.zoom - zoom) < 0.02;
+}
+
 DEFS['m4-1'] = {
+  long: '<h3>4-1 斜面上を転がる小球（東京大学 2012 改）— くわしい解説</h3>' +
+    '<h4>1. どんな設定か</h4>' +
+    '<p>水平な地面に、折り目（図の y 軸）を軸にして角 <span class="tex">\\theta</span> だけ持ち上げた「なめらかな板」を置く。' +
+    '板の上で小球を、斜面を上る向き（<b>X 軸</b>）から角 <span class="tex">\\alpha</span> だけ傾けて、速さ <span class="tex">v_0</span> で打ち出す。' +
+    '板はなめらか（摩擦なし）なので、小球は板から離れない限り <b>板の面内だけで運動</b>する。</p>' +
+    '<h4>2. まず力を分解する（ここが出発点）</h4>' +
+    '<p>小球にはたらく力は<b>重力 <span class="tex">mg</span>（下向き）と垂直抗力 <span class="tex">N</span>（板に垂直）の2つだけ</b>。' +
+    '重力を「板に垂直な向き」と「板に沿った向き」に分けると、</p>' +
+    '<div class="fmlbox"><span class="tex">板に垂直：\\;N = mg\\cos\\theta \\quad(\\text{つり合い、板から離れない})</span><br>' +
+    '<span class="tex">板に沿って：\\; ma = -mg\\sin\\theta \\;\\Rightarrow\\; a = -g\\sin\\theta \\quad(\\text{斜面を上る向きが正})</span></div>' +
+    '<p>つまり板の上では、<b>重力加速度が <span class="tex">g</span> から <span class="tex">g\\sin\\theta</span> に「弱められた」</b>のと同じ状況になる。' +
+    '加速度は<b>つねに斜面を下る向き（−X 向き）</b>で一定、Y 方向（斜面の横方向）には力がはたらかない。</p>' +
+    '<h4>3. 運動を X・Y に分けて式にする</h4>' +
+    '<div class="fmlbox"><span class="tex">X（斜面上向き）：\\; X = v_0\\cos\\alpha\\, t - \\tfrac{1}{2}(g\\sin\\theta)t^2,\\quad v_X = v_0\\cos\\alpha - (g\\sin\\theta)t</span><br>' +
+    '<span class="tex">Y（斜面の横方向）：\\; Y = v_0\\sin\\alpha\\, t,\\quad v_Y = v_0\\sin\\alpha\\;(\\text{一定})</span></div>' +
+    '<p>これは<b>「重力が <span class="tex">g\\sin\\theta</span> の平面上の斜方投射」</b>そのもの。' +
+    'したがって軌道は板の上の<b>放物線</b>になり、鉛直投げ上げ・水平投射で覚えた式がそのまま使える。</p>' +
+    '<h4>4. よく問われる量</h4>' +
+    '<ul>' +
+    '<li><b>最も高く上がる（X が最大の）時刻</b>：<span class="tex">v_X=0</span> より <span class="tex">t_1 = \\dfrac{v_0\\cos\\alpha}{g\\sin\\theta}</span>、' +
+    'そのときの <span class="tex">X_{\\max} = \\dfrac{(v_0\\cos\\alpha)^2}{2g\\sin\\theta}</span></li>' +
+    '<li><b>もとの高さ（X＝0）にもどる時刻</b>：<span class="tex">t_2 = 2t_1 = \\dfrac{2v_0\\cos\\alpha}{g\\sin\\theta}</span></li>' +
+    '<li><b>そのときの横のずれ</b>：<span class="tex">Y = v_0\\sin\\alpha\\cdot t_2 = \\dfrac{2v_0^{\\,2}\\sin\\alpha\\cos\\alpha}{g\\sin\\theta} = \\dfrac{v_0^{\\,2}\\sin 2\\alpha}{g\\sin\\theta}</span>' +
+    '（<span class="tex">\\alpha = 45^\\circ</span> で最大：斜方投射の到達距離と同じ形）</li>' +
+    '<li><b>速さの最小値</b>：<span class="tex">v_X=0</span> の瞬間で <span class="tex">v_{\\min}=v_0\\sin\\alpha</span></li>' +
+    '</ul>' +
+    '<div class="exam"><b>入試のポイント</b><ol>' +
+    '<li><b>座標軸は「斜面にそって」取る。</b>水平・鉛直のまま解くと式が2倍やっかいになる。' +
+    '「なめらかな斜面上の運動＝重力が <span class="tex">g\\sin\\theta</span> の平面運動」と読みかえるのが定石。</li>' +
+    '<li><b>垂直抗力は運動に効かない</b>（板に垂直な向きでつり合うだけ）。' +
+    'ただし「板から離れないか」を問う問題では <span class="tex">N \\ge 0</span> の確認が必要。</li>' +
+    '<li><b>Y 方向は等速</b>。ここに気づけば「時間 t を Y の式から出して X に代入」で軌道の式 <span class="tex">X = f(Y)</span> がすぐ出る。</li>' +
+    '<li>数値が出たら<b>極限で検算</b>：<span class="tex">\\theta \\to 90^\\circ</span> なら普通の斜方投射、<span class="tex">\\theta \\to 0</span> なら等速直線運動に近づく。</li>' +
+    '<li>3次元の図に惑わされない。<b>板の上だけを見れば2次元の問題</b>。図の視点を変えて（「z 軸の上から見る」）確かめよう。</li>' +
+    '</ol></div>' +
+    '<p class="src">※ 東京大学 2012 年の問題を教材用に単純化しています。数値・設問は入試そのものではありません。</p>',
   id: 'm4-1', mode: 4, tab: '4-1 斜面上を転がる小球',
   quizKey: 'vy', quizName: '小球の $v_X$–$t$ 図（斜面を上る向きが $X$）',
   title: '4-1　斜面上を転がる小球（出展：東京大学2012）',
@@ -3723,10 +3822,14 @@ DEFS['m4-1'] = {
   ],
   toggles: [{ k: 'flat', label: '斜面を正面から見た図もならべる', def: false }],
   actions: [
-    { label: 'ふつうの視点', fn: function (s) { s.cam.az = -38; s.cam.el = 22; s.cam.zoom = 1; } },
-    { label: 'z 軸の上から見る', fn: function (s) { s.cam.az = -90; s.cam.el = 88; s.cam.zoom = 1.35; } },
-    { label: 'y 軸の上から見る', fn: function (s) { s.cam.az = 0; s.cam.el = 0; s.cam.zoom = 2.2; } },
-    { label: 'x 軸の上から見る', fn: function (s) { s.cam.az = 90; s.cam.el = 0; s.cam.zoom = 1.1; } }
+    { label: 'ふつうの視点', fn: function (s) { s.cam.az = -38; s.cam.el = 22; s.cam.zoom = 1; },
+      is: function (v, s) { return camIs(s, -38, 22, 1); } },
+    { label: 'z 軸の上から見る', fn: function (s) { s.cam.az = -90; s.cam.el = 88; s.cam.zoom = 1.35; },
+      is: function (v, s) { return camIs(s, -90, 88, 1.35); } },
+    { label: 'y 軸の上から見る', fn: function (s) { s.cam.az = 0; s.cam.el = 0; s.cam.zoom = 2.2; },
+      is: function (v, s) { return camIs(s, 0, 0, 2.2); } },
+    { label: 'x 軸の上から見る', fn: function (s) { s.cam.az = 90; s.cam.el = 0; s.cam.zoom = 1.1; },
+      is: function (v, s) { return camIs(s, 90, 0, 1.1); } }
   ],
   tEnd: function (v) { return P.m26.tEnd(v); },
   sample: function (v, t) { return P.m26.sample(v, t); },
@@ -3742,7 +3845,7 @@ DEFS['m4-1'] = {
       series: [{ color: COL.vely, f: function (m) { return m.x; } }],
       fml: function (v, sg) {
         var vx = v.v0 * Math.sin(v.al * DEG);
-        return ['Y = v_Y t \\;(\\text{等速})', 'Y = v_0\\sin\\alpha\\, t', 'Y = ' + fmt(vx, 2) + 't'];
+        return ['Y = v_Y t ;(\\text{等速})', 'Y = v_0\\sin\\alpha\\, t', 'Y = ' + fmt(vx, 2) + 't'];
       } },
     { key: 'vy', short: '$v_X$–$t$ 図', title: '$v_X$–$t$ 図（斜面上向きの速度）', ylabel: 'vX [m/s]', open: true, signed: true,
       series: [{ color: COL.velx, f: function (m) { return m.vy; } }],
@@ -3755,8 +3858,8 @@ DEFS['m4-1'] = {
       series: [{ color: COL.acc, f: function (m) { return m.ay; } }],
       fml: function (v, sg) {
         var a = P.m26.a(v) * sg;
-        return [EQM + 'ma = F \\;\\Rightarrow\\; a = \\dfrac{F}{m}', EQM + 'ma = -mg\\sin\\theta \\;\\Rightarrow\\; a = -g\\sin\\theta',
-          'a = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}\\;(\\text{斜面に垂直な向きは } N = mg\\cos\\theta \\text{ でつり合う})'];
+        return [EQM + 'ma = F ;\\Rightarrow; a = \\dfrac{F}{m}', EQM + 'ma = -mg\\sin\\theta ;\\Rightarrow; a = -g\\sin\\theta',
+          'a = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2};(\\text{斜面に垂直な向きは } N = mg\\cos\\theta \\text{ でつり合う})'];
       } }
   ],
   freeGraph: { defX: 'x', defY: 'y' },
@@ -3923,13 +4026,17 @@ DEFS['m4-1'] = {
     }
     ctx.stroke(); ctx.restore();
     for (i = 1; i * 0.15 < t - 1e-9; i++) {
-      var g3 = P.m26.sample(v, i * 0.15), r3 = PJ(P3(g3.x, g3.y));
+      var g3 = P.m26.sample(v, i * 0.15), b3 = P3(g3.x, g3.y);
+      var r3 = PJ([b3[0] + uN[0] * 0.30, b3[1] + uN[1] * 0.30, b3[2] + uN[2] * 0.30]);
       ball(ctx, r3.x, r3.y, 4, 'faint');
     }
 
     /* --- 小球と矢印 --- */
     var m = P.m26.sample(v, t);
+    /* 小球は板にめり込まないよう、板の面から少し浮かせて描く */
+    var RB = 0.30;                                   /* 小球の半径ぶん（板に垂直な向き） */
     var Pb = P3(m.x, m.y);
+    Pb = [Pb[0] + uN[0] * RB, Pb[1] + uN[1] * RB, Pb[2] + uN[2] * RB];
     var pb = PJ(Pb);
     ball(ctx, pb.x, pb.y, 8);
 
@@ -4005,14 +4112,44 @@ DEFS['m4-1'] = {
 
 /* ============ 2-5 斜面の上からの斜方投射 ============ */
 DEFS['m4-2'] = {
-  id: 'm4-2', mode: 4, tab: '4-2 斜面から斜方投射',
-  quizKey: 'vy', quizName: 'このボールの $v_y$–$t$ 図（鉛直方向）',
-  title: '4-2　斜面から斜方投射',
-  desc: '斜面の傾きを $\\theta$（のぼりが正）、斜面から測った投射角を $\\Phi$ とする。水平から測った投射角は $\\Phi + \\theta$。',
-  sub: '斜面に落ちるまでの時間と、斜面にそった飛距離を調べよう。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂になる。<b>ボールの初速度の矢印をドラッグすると向き（Φ）を変えられる。</b>',
+  long: '<h3>4-2 斜面上の斜方投射 — くわしい解説</h3>' +
+    '<h4>1. どんな設定か</h4>' +
+    '<p>傾き <span class="tex">\\theta</span> の斜面の上の点から、<b>斜面から測って角 <span class="tex">\\Phi</span></b>、速さ <span class="tex">v_0</span> でボールを打ち出す。' +
+    'ボールは空中を飛び、やがて斜面にもどってくる。水平から測った投射角は <span class="tex">\\Phi + \\theta</span>。' +
+    'この教材では <b><span class="tex">\\theta &gt; 0</span> がのぼり坂、<span class="tex">\\theta &lt; 0</span> が下り坂</b>。</p>' +
+    '<h4>2. 座標の取り方で難しさが変わる</h4>' +
+    '<p>空中なので力は<b>重力だけ</b>。水平・鉛直で解いてもよいが、<b>「斜面にそって X、斜面に垂直に Y」</b>と取ると、' +
+    '<b>着地の条件がただの <span class="tex">Y = 0</span></b> になって一気に簡単になる。重力を X・Y に分けると</p>' +
+    '<div class="fmlbox"><span class="tex">a_X = -g\\sin\\theta,\\qquad a_Y = -g\\cos\\theta</span></div>' +
+    '<p>初速度の成分は <span class="tex">v_{X0} = v_0\\cos\\Phi</span>、<span class="tex">v_{Y0} = v_0\\sin\\Phi</span>。したがって</p>' +
+    '<div class="fmlbox"><span class="tex">X = v_0\\cos\\Phi\\, t - \\tfrac{1}{2}(g\\sin\\theta)t^2, \\qquad Y = v_0\\sin\\Phi\\, t - \\tfrac{1}{2}(g\\cos\\theta)t^2</span></div>' +
+    '<p><b>Y 方向はただの鉛直投げ上げ</b>（重力加速度が <span class="tex">g\\cos\\theta</span> になっただけ）、' +
+    '<b>X 方向は等加速度直線運動</b>（水平投射の「等速」ではないことに注意）。</p>' +
+    '<h4>3. 着地までの時間と斜面にそった飛距離</h4>' +
+    '<div class="fmlbox"><span class="tex">Y = 0 \\;\\Rightarrow\\; T = \\dfrac{2v_0\\sin\\Phi}{g\\cos\\theta}</span><br>' +
+    '<span class="tex">L = X(T) = \\dfrac{2v_0^{\\,2}\\sin\\Phi\\,\\cos(\\Phi+\\theta)}{g\\cos^2\\theta}</span></div>' +
+    '<p>飛距離 <span class="tex">L</span> が最大になる角は、和積の公式で <span class="tex">\\sin\\Phi\\cos(\\Phi+\\theta) = \\tfrac{1}{2}\\{\\sin(2\\Phi+\\theta) - \\sin\\theta\\}</span> と直すと、</p>' +
+    '<div class="fmlbox"><span class="tex">2\\Phi + \\theta = 90^\\circ \\;\\Rightarrow\\; \\Phi = 45^\\circ - \\dfrac{\\theta}{2}\\quad(\\text{このとき } L_{\\max} = \\dfrac{v_0^{\\,2}(1-\\sin\\theta)}{g\\cos^2\\theta})</span></div>' +
+    '<p>のぼり坂（<span class="tex">\\theta&gt;0</span>）では 45° より<b>浅く</b>、下り坂（<span class="tex">\\theta&lt;0</span>）では 45° より<b>深く</b>打つのが最適。' +
+    '水平（<span class="tex">\\theta = 0</span>）なら <span class="tex">\\Phi = 45^\\circ</span> で、いつもの斜方投射にもどる。' +
+    'シミュレーションで <span class="tex">\\Phi</span> を変えて確かめよう（θ＝30° なら 30°、θ＝−30° なら 60° 付近が最大）。</p>' +
+    '<div class="exam"><b>入試のポイント</b><ol>' +
+    '<li><b>「斜面に落ちる」＝斜面座標で <span class="tex">Y=0</span></b>。水平・鉛直で解くと「<span class="tex">y = -x\\tan\\theta</span> を代入」という連立になり、計算量が増える。' +
+    '<b>着地条件が簡単になる向きに軸を取る</b>のが鉄則。</li>' +
+    '<li>斜面座標では <b>X 方向にも加速度がある</b>（<span class="tex">-g\\sin\\theta</span>）。「水平投射だから等速」と早合点しない。</li>' +
+    '<li>最大飛距離は<b>三角関数の合成（和積）</b>で <span class="tex">\\Phi = 45^\\circ - \\theta/2</span>。頻出なので導出ごと覚える。</li>' +
+    '<li><b>斜面に当たる直前の速度</b>を聞かれたら、<span class="tex">v_Y(T) = -v_0\\sin\\Phi</span>（打ち出しと同じ大きさ・逆向き）を使うと速い。' +
+    'エネルギー保存（同じ高さにもどる）からも確認できる。</li>' +
+    '<li>下り坂は <span class="tex">\\theta &lt; 0</span> として同じ式で扱える。<b>符号を場合分けせず一本の式で書く</b>と検算がラク。</li>' +
+    '</ol></div>',
+  id: 'm4-2', mode: 4, tab: '4-2 斜面上の斜方投射',
+  quizKey: 'vy', quizName: 'このボールの $v_Y$–$t$ 図（斜面に垂直な向き）',
+  title: '4-2　斜面上の斜方投射',
+  desc: '斜面の傾きを $\\theta$（のぼりが正）、斜面から測った投射角を $\\Phi$ とする。<b>座標は斜面にそって $X$、斜面に垂直に $Y$</b> をとる。',
+  sub: '斜面にそった軸 X・斜面に垂直な軸 Y で考えると、<b>Y 方向はただの投げ上げ（加速度 −g cosθ）、X 方向は等加速度（加速度 −g sinθ）</b>になる。斜面に落ちるのは Y＝0 にもどったとき。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂。<b>ボールの初速度の矢印をドラッグすると Φ を変えられる。</b>',
   cw: 520, ch: 360,
   vis: ['F', 'V', 'Vc'],
-  signLabels: ['上向きを正', '下向きを正'],
+  signLabels: ['斜面上向き・面から離れる向きを正', '逆向きを正'],
   mainVars: ['v0', 'phi', 'th'],
   vars: [
     { k: 'v0', label: '初速度 $v_0$', unit: ' m/s', min: 5, max: 28, step: 1, dec: 0, def: 14 },
@@ -4027,28 +4164,43 @@ DEFS['m4-2'] = {
   tEnd: function (v) { return P.m25.tEnd(v); },
   sample: function (v, t) { return P.m25.sample(v, t); },
   graphs: [
-    { key: 'y', short: '$y$–$t$ 図', title: '$y$–$t$ 図（高さ）', ylabel: 'y [m]', open: true, signed: true,
-      series: [{ color: COL.ink, f: function (m) { return m.y; } }],
+    { key: 'y', short: '$X$–$t$ 図', title: '$X$–$t$ 図（斜面にそった位置）', ylabel: 'X [m]', open: true, signed: true,
+      series: [{ color: COL.ink, f: function (m) { return m.X; } }],
       fml: function (v, sg) {
-        var b = P.m25.beta(v), vy0 = v.v0 * Math.sin(b);
-        return ['y = v_{y0}t + \\tfrac{1}{2}at^2', 'y = v_0\\sin(\\Phi+\\theta)\\,t - \\tfrac{1}{2}gt^2',
-          'y = ' + fmt(vy0 * sg, 2) + 't + \\tfrac{1}{2}(' + fmt(-G * sg, 2) + ')t^2'];
+        var vX0 = v.v0 * Math.cos(v.phi * DEG), aX = -G * Math.sin(v.th * DEG);
+        return ['X = v_{X0}t + \\tfrac{1}{2}a_X t^2', 'X = v_0\\cos\\Phi\\, t - \\tfrac{1}{2}(g\\sin\\theta)t^2',
+          'X = ' + fmt(vX0 * sg, 2) + 't + \\tfrac{1}{2}(' + fmt(aX * sg, 2) + ')t^2'];
       } },
-    { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（水平位置）', ylabel: 'x [m]', open: false, signed: false,
-      series: [{ color: COL.ink, f: function (m) { return m.x; } }],
+    { key: 'x', short: '$Y$–$t$ 図', title: '$Y$–$t$ 図（斜面からの高さ）', ylabel: 'Y [m]', open: true, signed: true,
+      series: [{ color: COL.vely, f: function (m) { return m.Y; } }],
       fml: function (v, sg) {
-        var b = P.m25.beta(v), vx = v.v0 * Math.cos(b);
-        return ['x = v_x t', 'x = v_0\\cos(\\Phi+\\theta)\\, t', 'x = ' + fmt(vx, 2) + 't'];
+        var vY0 = v.v0 * Math.sin(v.phi * DEG), aY = -G * Math.cos(v.th * DEG);
+        return ['Y = v_{Y0}t + \\tfrac{1}{2}a_Y t^2', 'Y = v_0\\sin\\Phi\\, t - \\tfrac{1}{2}(g\\cos\\theta)t^2',
+          'Y = ' + fmt(vY0 * sg, 2) + 't + \\tfrac{1}{2}(' + fmt(aY * sg, 2) + ')t^2'];
       } },
-    { key: 'vy', short: '$v_y$–$t$ 図', title: '$v_y$–$t$ 図', ylabel: 'vy [m/s]', open: true, signed: true,
-      series: [{ color: COL.vely, f: function (m) { return m.vy; } }],
+    { key: 'vy', short: '$v_Y$–$t$ 図', title: '$v_Y$–$t$ 図（斜面に垂直な向きの速度）', ylabel: 'vY [m/s]', open: true, signed: true,
+      series: [{ color: COL.vely, f: function (m) { return m.vY; } }],
       fml: function (v, sg) {
-        var b = P.m25.beta(v), vy0 = v.v0 * Math.sin(b);
-        return ['v_y = v_{y0} + at', 'v_y = v_0\\sin(\\Phi+\\theta) - gt',
-          'v_y = ' + fmt(vy0 * sg, 2) + ' + (' + fmt(-G * sg, 2) + ')t'];
+        var vY0 = v.v0 * Math.sin(v.phi * DEG), aY = -G * Math.cos(v.th * DEG);
+        return ['v_Y = v_{Y0} + a_Y t', 'v_Y = v_0\\sin\\Phi - (g\\cos\\theta)t',
+          'v_Y = ' + fmt(vY0 * sg, 2) + ' + (' + fmt(aY * sg, 2) + ')t'];
       } },
-    { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図', ylabel: 'ay [m/s²]', open: false, signed: true,
-      series: [{ color: COL.acc, f: function (m) { return m.ay; } }], fml: function (v, sg) { return projFml(v, sg, 'a'); } }
+    { key: 'vx', short: '$v_X$–$t$ 図', title: '$v_X$–$t$ 図（斜面にそった速度）', ylabel: 'vX [m/s]', open: false, signed: true,
+      series: [{ color: COL.velx, f: function (m) { return m.vX; } }],
+      fml: function (v, sg) {
+        var vX0 = v.v0 * Math.cos(v.phi * DEG), aX = -G * Math.sin(v.th * DEG);
+        return ['v_X = v_{X0} + a_X t', 'v_X = v_0\\cos\\Phi - (g\\sin\\theta)t',
+          'v_X = ' + fmt(vX0 * sg, 2) + ' + (' + fmt(aX * sg, 2) + ')t'];
+      } },
+    { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（X・Y 方向とも一定）', ylabel: 'a [m/s²]', open: false, signed: true, legend: true,
+      series: [{ name: 'a_X', color: COL.velx, f: function (m) { return m.aX; } },
+        { name: 'a_Y', color: COL.vely, f: function (m) { return m.aY; }, dash: [6, 4] }],
+      fml: function (v, sg) {
+        var aX = -G * Math.sin(v.th * DEG), aY = -G * Math.cos(v.th * DEG);
+        return [EQM + 'ma = mg ;（重力だけ）',
+          'a_X = -g\\sin\\theta \\qquad a_Y = -g\\cos\\theta',
+          'a_X = ' + fmt(aX * sg, 2) + ' \\qquad a_Y = ' + fmt(aY * sg, 2)];
+      } }
   ],
   draw: function (ctx, s, t, W, H) {
     var v = V(s), T = P.m25.tEnd(v);
@@ -4058,7 +4210,19 @@ DEFS['m4-2'] = {
     var tt = P.m25.tan(v);
     s.view = vw;
     hatchLine(ctx, vw.X(box.x0), vw.Y(box.x0 * tt), vw.X(box.x1), vw.Y(box.x1 * tt), v.th > 0 ? -1 : 1);
-    worldAxes(ctx, vw, box, 'x [m]', 'y [m]', s.sign);
+    /* 斜面にそった X 軸・斜面に垂直な Y 軸 */
+    var thR = v.th * DEG, ctS = Math.cos(thR), stS = Math.sin(thR);
+    var Xlo = Math.min(-1.5, box.x0 * 0.9), Xhi = Math.max(2, (box.x1 - 0.6) / Math.max(0.2, ctS));
+    var Ymax = Math.max(2, (box.y1 - 0.4));
+    function posX(u2) { return { x: vw.X(u2 * ctS), y: vw.Y(u2 * stS) }; }
+    function posY(u2) { return { x: vw.X(-u2 * stS), y: vw.Y(u2 * ctS) }; }
+    axisLine(ctx, posX, Xlo, Xhi, { x: stS, y: ctS }, 'X [m]', s.sign, { target: 5 });
+    axisLine(ctx, posY, -0.6, Ymax, { x: ctS, y: -stS }, 'Y [m]', s.sign, { target: 4 });
+    originMark(ctx, vw.X(0), vw.Y(0), -14, 14);
+    ctx.save();                                   /* θ をはかる水平の線 */
+    ctx.strokeStyle = '#b6bfc8'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(vw.X(0), vw.Y(0)); ctx.lineTo(vw.X(0) + 96, vw.Y(0)); ctx.stroke();
+    ctx.restore();
     angArc(ctx, vw.X(0), vw.Y(0), 34, -v.th * DEG, 0, 'θ = ' + fmt(v.th, 0) + '°', -v.th * DEG * 0.5, 50);
 
     var b = P.m25.beta(v);
@@ -4093,7 +4257,7 @@ DEFS['m4-2'] = {
     ];
   },
   eq: function (s) {
-    return 'y = x\\tan\\theta \\;\\text{に落ちる} \\;\\Rightarrow\\; t = \\dfrac{2v_0\\{\\sin(\\Phi+\\theta) - \\cos(\\Phi+\\theta)\\tan\\theta\\}}{g}';
+    return 'y = x\\tan\\theta ;\\text{に落ちる} ;\\Rightarrow; t = \\dfrac{2v_0\\{\\sin(\\Phi+\\theta) - \\cos(\\Phi+\\theta)\\tan\\theta\\}}{g}';
   },
   note: '斜面に落ちる条件は「軌道の式」と「斜面の式 <span class="tex">y=-x\\tan\\theta</span>」の<b>連立</b>。飛距離が最大になる Φ を、Φ を動かしながらさがしてみよう（答えは 45°ではない）。'
 };
@@ -4180,7 +4344,7 @@ function buildTabs() {
     tip.id = 'modetip';
     mt.parentNode.insertBefore(tip, mt.nextSibling);
   }
-  tip.textContent = (curMode && curMode.tip) ? curMode.tip : '';
+  tip.innerHTML = (curMode && curMode.tip) ? curMode.tip : '';
   st._tipBtn = curBtn;
   placeModeTip();
   stb.innerHTML = '';
@@ -4226,7 +4390,7 @@ function buildPanel() {
   h.push('<div class="cvbar">');
   if (d.actions && d.actions.length) {
     h.push('<div class="acts">');
-    d.actions.forEach(function (a, i) { h.push('<button class="warm" data-act="' + i + '">' + a.label + '</button>'); });
+    d.actions.forEach(function (a, i) { h.push('<button class="warm" data-act="' + i + '" id="act_' + i + '">' + a.label + '</button>'); });
     h.push('</div>');
   }
   var mainKeys = mainVarKeys(d);
@@ -4240,8 +4404,17 @@ function buildPanel() {
         '</select></label>');
     });
     topTog.forEach(function (td) {
-      h.push('<label><input type="checkbox" data-tog="' + td.k + '"' + (s.o[td.k] ? ' checked' : '') + '> ' + td.label + '</label>');
+      h.push('<label><input type="checkbox" data-tog="' + td.k + '"' + (s.o[td.k] ? ' checked' : '') + '> ' + mathHtml(td.label) + '</label>');
     });
+    if (d.optSlider && s.o[d.optSlider.when]) {          /* チェックを入れたときだけ出るスライダー */
+      var sv = null;
+      d.vars.forEach(function (x) { if (x.k === d.optSlider.k) sv = x; });
+      if (sv) {
+        h.push('<span class="optsl"><input type="range" class="vsl" data-vsl="' + sv.k + '" ' +
+          'min="' + sv.min + '" max="' + sv.max + '" step="' + sv.step + '">' +
+          '<span class="vval" data-vval="' + sv.k + '"></span></span>');
+      }
+    }
     h.push('</div>');
   }
   if (d.vis && d.vis.length) {
@@ -4334,6 +4507,7 @@ function buildPanel() {
     h[h.length - 2] = '';
   }
   h.push('<div class="note" id="notebox"><b>見るポイント</b>：' + d.note + '</div>');
+  renderLong(d);
   h.push('</div></div>');
   $('simhost').innerHTML = h.join('');
 
@@ -4381,7 +4555,12 @@ function buildPanel() {
     el.addEventListener('change', function () { s.o[el.getAttribute('data-sel')] = el.value; resetSim(); renderActive(); });
   });
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-tog]'), function (el) {
-    el.addEventListener('change', function () { s.o[el.getAttribute('data-tog')] = el.checked; renderActive(); });
+    el.addEventListener('change', function () {
+      var k = el.getAttribute('data-tog');
+      s.o[k] = el.checked;
+      if (d.optSlider && d.optSlider.when === k) { buildPanel(); }   /* スライダーを出し入れ */
+      renderActive();
+    });
   });
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-vis]'), function (el) {
     el.addEventListener('change', function () { s.o[el.getAttribute('data-vis')] = el.checked; renderActive(); });
@@ -4437,10 +4616,10 @@ function varRowHtml(vd, tag) {
   var lab = (tag === 'a') ? vd.label.replace(/（[^）]*）/g, '') : vd.label;
   var h = '<div class="vrow"><span class="vlab">' + mathHtml(lab) + '</span>' +
     '<button class="stp" data-var="' + vd.k + '" data-dir="-1">−</button>' +
-    '<span class="vval" id="vv' + tag + '_' + vd.k + '"></span>' +
+    '<span class="vval" data-vval="' + vd.k + '"></span>' +
     '<button class="stp" data-var="' + vd.k + '" data-dir="1">＋</button>';
   if (tag === 'a') {                     /* メイン値はスライドでも変えられる */
-    h += '<input type="range" class="vsl" id="vs_' + vd.k + '" data-vsl="' + vd.k + '" ' +
+    h += '<input type="range" class="vsl" data-vsl="' + vd.k + '" ' +
       'min="' + vd.min + '" max="' + vd.max + '" step="' + vd.step + '">';
   }
   return h + '</div>';
@@ -4465,6 +4644,17 @@ function setQmode(on) {
   updateUrlBar();
 }
 
+/* 入試物理の「くわしい解説」（ページの下・矢印の凡例の上） */
+function renderLong(d) {
+  var box = $('longbox');
+  if (!box) return;
+  if (!d.long) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  box.innerHTML = d.long;
+  renderMath(box);
+  refitFormulas();
+}
+
 /* ===== 再生ボタン（問題モードの流れもここで処理） ===== */
 function onPlay() {
   var d = DEFS[st.cur], s = st.sims[st.cur];
@@ -4486,33 +4676,41 @@ function syncQuiz() {
   gq.className = 'gquiz';
   setPlayLabel();
   if (!quizOn()) {
-    gq.style.display = 'none'; hint.style.display = 'none'; play.disabled = false;
+    gq.style.display = 'none'; hint.style.display = 'none';
     return;
   }
   if (s.qphase === 0) {
     gq.style.display = 'none';
     hint.style.display = '';
     hint.innerHTML = '<span class="nextmark">① まず「スタート」</span>：運動のようすだけを見てみよう（グラフはまだ出ません）。';
-    play.disabled = false;
   } else if (s.qphase === 1) {
     gq.style.display = ''; $('gqmsg').textContent = ''; $('gqmsg').className = 'gqmsg';
     hint.style.display = '';
     hint.innerHTML = '<span class="nextmark">② 下の3つから選ぼう</span>：運動は「スタート」で何度でも見られます。';
     gq.className = 'gquiz pulse';
-    play.disabled = false;
   } else if (s.qphase === 2) {
     gq.style.display = '';
     hint.style.display = '';
     hint.innerHTML = '<span class="nextmark">③ もう一度「スタート」</span>：運動といっしょに、本当のグラフが出ます。';
-    play.disabled = false;
   } else {
     gq.style.display = s.qpick === null ? 'none' : '';
     hint.style.display = 'none';
-    play.disabled = false;
   }
 }
 
 /* 問題文に「正の向き」を書き添える（向きを変えたらすぐ直る） */
+/* いまの状態がすでに条件を満たしているボタンを薄くする */
+function refreshActs() {
+  var d = DEFS[st.cur], s = st.sims[st.cur];
+  if (!d.actions) return;
+  d.actions.forEach(function (a, i) {
+    var b = $('act_' + i);
+    if (!b) return;
+    var on = a.is ? !!a.is(V(s), s) : false;
+    b.className = 'warm' + (on ? ' off' : '');
+  });
+}
+
 function renderQuizSign() {
   var el = $('qsign');
   if (!el) return;
@@ -4691,7 +4889,7 @@ function attachSimDrag(d, s) {
     var r = cv.getBoundingClientRect();
     var lx = (ev.clientX - r.left) / r.width * d.cw;
     var pd = cv._pad || 0;
-    var ly = (ev.clientY - r.top) / r.height * (d.ch + pd) - pd;
+    var ly = (ev.clientY - r.top) / r.height * ((cv._ch || d.ch) + pd) - pd;
     if (!s.view) return null;
     return { x: s.view.invX(lx), y: s.view.invY(ly), lx: lx, ly: ly };
   }
@@ -4741,9 +4939,15 @@ function refreshSignBtns() {
 }
 
 function setPlayLabel() {
-  var s = st.sims[st.cur], b = $('bPlay');
+  var s = st.sims[st.cur], d = DEFS[st.cur], b = $('bPlay');
   if (!b) return;
+  b.disabled = false;
   if (s.playing) { b.textContent = '❚❚ 一時停止'; b.className = ''; return; }
+  if (d.dragStart && s.t < 1e-9) {          /* ドラッグでスタートするゲーム */
+    b.textContent = '▶ ストーンをドラッグしてスタート';
+    b.className = ''; b.disabled = true;
+    return;
+  }
   b.textContent = (quizOn() && s.qphase === 2) ? '▶ スタートしてグラフを見る' : '▶ スタート';
   /* 問題モードでは「次に押すところ」を光らせる */
   b.className = (quizOn() && (s.qphase === 0 || s.qphase === 2)) ? 'pulse' : '';
@@ -4779,13 +4983,16 @@ function stepVar(k, dir) {
 }
 
 function syncVarVals() {
-  var d = DEFS[st.cur], s = st.sims[st.cur];
+  var d = DEFS[st.cur], s = st.sims[st.cur], host = $('simhost');
+  if (!host) return;
   d.vars.forEach(function (vd) {
     var txt = fmt(s.v[vd.k], vd.dec) + vd.unit;
-    var a = $('vva_' + vd.k), b = $('vvb_' + vd.k), r = $('vs_' + vd.k);
-    if (a) a.textContent = txt;
-    if (b) b.textContent = txt;
-    if (r && +r.value !== s.v[vd.k]) r.value = s.v[vd.k];
+    Array.prototype.forEach.call(host.querySelectorAll('[data-vval="' + vd.k + '"]'), function (el) {
+      el.textContent = txt;
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-vsl="' + vd.k + '"]'), function (r) {
+      if (+r.value !== s.v[vd.k]) r.value = s.v[vd.k];
+    });
   });
 }
 
@@ -4967,8 +5174,13 @@ function renderEq(d, s) {
   } else el.textContent = src;
 }
 
+/* キャンバスの高さ（def の ch は関数でもよい：斜面の角度で高さを変えるため） */
+function chOf(d, s) {
+  return (typeof d.ch === 'function') ? Math.round(d.ch(V(s))) : d.ch;
+}
+
 /* 図の上に空ける帯の高さ（「よく変える値」のカードがのる場所） */
-function cvTopPad(d, cv) {
+function cvTopPad(d, cv, ch) {
   var el = $('cvvars');
   if (!el) return 0;
   var wcss = cv.clientWidth || d.cw;
@@ -4976,7 +5188,7 @@ function cvTopPad(d, cv) {
   if (!hpx) return 0;
   /* 画面が狭いときはカードが図の下に出るので、帯は空けない */
   if (window.getComputedStyle(el).position !== 'absolute') return 0;
-  return Math.min(Math.round(d.ch * 0.45), Math.round((hpx + 16) * (d.cw / wcss)));
+  return Math.min(Math.round(ch * 0.45), Math.round((hpx + 16) * (d.cw / wcss)));
 }
 
 function renderActive() {
@@ -4985,25 +5197,27 @@ function renderActive() {
   if (!cv) return;
   var T = d.tEnd(V(s));
   if (s.t > T) s.t = T;
-  var pad = cvTopPad(d, cv);
-  cv._pad = pad;
-  var ctx = prep(cv, d.cw, d.ch + pad);
+  var ch = chOf(d, s);
+  var pad = cvTopPad(d, cv, ch);
+  cv._pad = pad; cv._ch = ch;
+  var ctx = prep(cv, d.cw, ch + pad);
   ctx.save();
   ctx.translate(0, pad);
-  ctx.beginPath(); ctx.rect(0, 0, d.cw, d.ch); ctx.clip();   /* 絵が値のカードの帯にはみ出さないように */
-  d.draw(ctx, s, s.t, d.cw, d.ch);
+  ctx.beginPath(); ctx.rect(0, 0, d.cw, ch); ctx.clip();   /* 絵が値のカードの帯にはみ出さないように */
+  d.draw(ctx, s, s.t, d.cw, ch);
   drawEqualTicks(ctx);                       /* 同じ大きさの力・速度に「｜」印 */
   if (d.win) {                               /* ゲームに成功したら1回だけ音を鳴らす */
     if (s.t < T - 1e-9) s._sfx = null;
     else if (d.win(s, s.t) && s._sfx !== 'win') { s._sfx = 'win'; sfx('win'); }
   }
-  if (d.game) label(ctx, '画面をダブルクリックでリセット', d.cw - 10, d.ch - 9,
+  if (d.game) label(ctx, '画面をダブルクリックでリセット', d.cw - 10, ch - 9,
     { align: 'right', size: 10.5, color: COL.sub });
   ctx.restore();
   var Tg = d.tGraph ? d.tGraph(V(s)) : T;
   renderGraphs(d, s, Tg, Math.min(s.t, Tg));
   renderFormulas(d, s);
   renderQuizSign();
+  refreshActs();
   renderReadout(d, s, s.t);
   renderEq(d, s);
   var bar = $('tBar');
@@ -5232,14 +5446,15 @@ function tick(ts) {
       var u2 = { v0: 9.8, y0: 0, H: 19.6, m: 1 };
       r.up_building_tEnd = +P.m13.tEnd(u2).toFixed(6);
       r.up_building_vEnd = +P.m13.sample(u2, P.m13.tEnd(u2)).v.toFixed(6);
-      /* 斜面 θ=30° */
-      r.slope30_a = +Math.abs(P.m11.a({ th: 30, v0: 6, m: 1 })).toFixed(6);
-      r.slope30_tBack = +P.m11.tEnd({ th: 30, v0: 6, m: 1 }).toFixed(6);
+      /* 斜面 1-1（θ>0 が下り坂・x は斜面にそって右向きが正） */
+      r.slope30_a = +Math.abs(P.m11.a({ th: 30, v0: 6, m: 1 })).toFixed(6);   /* 大きさは g sin30 */
+      r.slope_down_a = +P.m11.a({ th: 30, v0: 6, m: 1 }).toFixed(6);          /* 下り坂は正 */
+      r.slope_up_a = +P.m11.a({ th: -30, v0: 6, m: 1 }).toFixed(6);           /* のぼりは負 */
+      r.slope_up_tBack = +P.m11.tEnd({ th: -30, v0: 6, m: 1 }).toFixed(6);    /* のぼって戻るまで */
       r.slope0_a = +P.m11.a({ th: 0, v0: 6, m: 1 }).toFixed(6);
-      /* 1-1 マイナスの θ・v0（下り坂）：a の符号と終わりの時刻 */
-      r.slope_neg_a = +P.m11.a({ th: -30, v0: 6, m: 1 }).toFixed(6);
-      r.slope_neg_tEnd = +P.m11.tEnd({ th: -30, v0: -4, m: 1 }).toFixed(6);
-      r.slope_neg_back = +P.m11.s({ th: -30, v0: -4, m: 1 }, P.m11.tEnd({ th: -30, v0: -4, m: 1 })).toFixed(6);
+      /* 1-1 マイナスの v0（左向き）でも出発点にもどる */
+      r.slope_neg_tEnd = +P.m11.tEnd({ th: 30, v0: -4, m: 1 }).toFixed(6);
+      r.slope_neg_back = +P.m11.s({ th: 30, v0: -4, m: 1 }, P.m11.tEnd({ th: 30, v0: -4, m: 1 })).toFixed(6);
       /* 摩擦つき斜面（既定値） */
       var w = { F: 20, v0: 0, m: 2, th: 30, mu: 0.5, mud: 0.3 };
       r.pull_a0 = +P.m14.a0(w).toFixed(4);
@@ -5269,6 +5484,13 @@ function tick(ts) {
         var vv = { th: th, phi: 45, v0: 14 }, T = P.m25.tEnd(vv), q = P.m25.sample(vv, T);
         return +Math.abs(q.y - q.x * Math.tan(th * DEG)).toFixed(9);
       }).join(',');
+      /* 4-2 斜面座標：着地は Y=0、T = 2v0 sinΦ/(g cosθ)、飛距離は X(T) */
+      var sp = { th: 30, phi: 45, v0: 14 }, Tsp = P.m25.tEnd(sp), qsp = P.m25.sample(sp, Tsp);
+      r.slopeXY_T = +Tsp.toFixed(6);
+      r.slopeXY_T_formula = +(2 * sp.v0 * Math.sin(sp.phi * DEG) / (G * Math.cos(sp.th * DEG))).toFixed(6);
+      r.slopeXY_Yend = +Math.abs(qsp.Y).toFixed(9);
+      r.slopeXY_L = +qsp.X.toFixed(6);
+      r.slopeXY_aY = +qsp.aY.toFixed(6);
       /* 3-3 弾は地面ではね返る（y は 0 より下に行かない） */
       var mk = { v0: 20, th: 10, mx: 20, my: 12 }, below = 0;
       for (var bi = 0; bi <= 200; bi++) if (P.m33.path(mk, P.m33.tEnd(mk) * bi / 200).y < -1e-9) below++;
