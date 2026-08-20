@@ -83,11 +83,11 @@ p{margin:.5em 0}
 .ctlcard{border:1px solid #dfe6ee;border-radius:9px;background:#fbfcfe;padding:9px 12px;min-width:0}
 .ctlcard .dh{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px}
 .ctlcard .sliders{grid-template-columns:1fr;margin-top:4px}
-.ctlcard .sl{grid-template-columns:150px minmax(0,1fr) 108px}
-.ctlcard .sl.sl-wide{grid-template-columns:150px minmax(0,1fr) 178px}
+.ctlcard .sl{grid-template-columns:150px auto minmax(0,1fr) auto 108px}
+.ctlcard .sl.sl-wide{grid-template-columns:150px auto minmax(0,1fr) auto 178px}
 @media(max-width:700px){
-  .ctlcard .sl{grid-template-columns:104px minmax(0,1fr) 92px}
-  .ctlcard .sl.sl-wide{grid-template-columns:104px minmax(0,1fr) 104px}
+  .ctlcard .sl{grid-template-columns:92px auto minmax(0,1fr) auto 92px}
+  .ctlcard .sl.sl-wide{grid-template-columns:92px auto minmax(0,1fr) auto 104px}
 }
 .ctlcard .checks{margin-top:8px}
 .onlylabel{display:inline-block;margin-top:8px;font-size:13px;color:var(--sub);cursor:pointer}
@@ -105,6 +105,10 @@ button.stepbox>.sb{font-size:12.5px;color:var(--sub);line-height:1.65}
 button.stepbox>.sv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;
   color:#28405c;background:#eef4fb;border-radius:6px;padding:4px 8px}
 button.stepbox.on{border-color:var(--accent);background:#f2f7fd;box-shadow:0 0 0 2px rgba(31,116,208,.18)}
+.stepbox.static{display:flex;flex-direction:column;gap:4px;text-align:left;
+  border:1px solid var(--line);border-radius:9px;background:#fcfdfe;padding:9px 12px}
+.stepbox.static>b{color:#1a4e86;font-size:13.5px}
+.stepbox.static>.sb{font-size:12.5px;color:var(--sub);line-height:1.65}
 button.stepbox.on>.sv{background:#fff3d6;color:#8a5300}
 button.stepbox .ng{color:#a12a1c;font-weight:700}
 
@@ -201,7 +205,7 @@ button.ctl.alt:hover{background:#dce8f5}
 .seg .seg-b:first-child{border-radius:7px 0 0 7px;margin-left:0}
 .seg .seg-b:last-child{border-radius:0 7px 7px 0}
 .seg .seg-b[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
-canvas#view.grab{cursor:ns-resize}
+canvas#view.grab{cursor:pointer}
 
 .sliders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 22px;margin-top:12px}
 @media(max-width:620px){.sliders{grid-template-columns:1fr}}
@@ -217,6 +221,9 @@ canvas#view.grab{cursor:ns-resize}
 }
 .sl.sl-seg .seg-b{padding:4px 8px;font-size:11.5px}
 .sl label{color:var(--sub)}
+/* スライダーの ＋ − ボタン（細かく合わせたいとき用） */
+.ctl.stepb{padding:2px 7px;font-size:14px;line-height:1.1;min-width:28px;font-weight:700;color:#2b5a78}
+.ctl.stepb:hover:not(:disabled){background:#eaf2fb}
 .sl input[type=range]{width:100%;min-width:0}
 .sl .val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;text-align:right;white-space:nowrap}
 .swatch{display:inline-block;width:12px;height:12px;border:1px solid #999;border-radius:2px;vertical-align:-2px;margin-left:6px}
@@ -276,9 +283,17 @@ body.scale-only details.more,
 body.scale-only footer,
 body.scale-only .controls,
 body.scale-only .panel,
-body.scale-only .canvas-hint{display:none !important}
+body.scale-only .tabs,
+body.scale-only .ctlrow,
+body.scale-only .steps,
+body.scale-only .readout{display:none !important}
+/* 操作列は残すが、実寸に関係のないボタンだけ隠す */
+body.scale-only .btnrow > .grp:not(#grp-scalewrap),
+body.scale-only .btnrow > .vsep{display:none !important}
 body.scale-only .sim{grid-template-columns:minmax(0,1fr)}
 body.scale-only .wrap{padding-top:10px}
+#scale-scenes .ctl{padding:3px 9px;font-size:12px}
+@media(max-width:760px){#scale-scenes .sc-name{display:none}}
 
 /* 高さを固定して、数式が出てもレイアウトが動かないようにする */
 .fixed-msg{min-height:56px;display:flex;align-items:center;justify-content:center;
@@ -359,6 +374,7 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
   <div class="tabs" role="tablist">
     <button class="tab" id="tab-path" role="tab" aria-selected="true">光路差の位置と式の原理</button>
     <button class="tab" id="tab-wave" role="tab" aria-selected="false">実際の波の動きを見る</button>
+    <button class="tab" id="tab-field" role="tab" aria-selected="false">各場所でどのように波が重なり合うか</button>
   </div>
 
   <!-- 操作列（図の上・1 行にまとめる） -->
@@ -380,7 +396,9 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
 
     <span class="grp" id="grp-light">
       <label for="sl-lambda" class="mini">波長 λ</label>
+      <button class="ctl stepb" id="lam-dn" aria-label="波長を小さく">−</button>
       <input type="range" id="sl-lambda" min="380" max="780" step="1" value="600" style="width:88px">
+      <button class="ctl stepb" id="lam-up" aria-label="波長を大きく">＋</button>
       <span class="val" style="min-width:12ch"><span id="v-lambda">600</span> nm<span class="lamcol" id="v-lamcol">（橙色）</span><span class="swatch" id="sw-lambda"></span></span>
       <span class="seg">
         <button class="ctl seg-b" id="btn-mono" aria-pressed="true">単色光</button>
@@ -388,14 +406,16 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
       </span>
     </span>
 
-    <span class="grp">
+    <span class="grp" id="grp-scalewrap">
       <span class="sp2"></span>
       <button class="ctl alt" id="btn-scale">🔍 実寸</button>
       <span class="grp" id="grp-scale" hidden>
         <span class="sp2"></span>
-        <button class="ctl primary" id="btn-scale-pause">▶ 再生</button>
+        <button class="ctl primary" id="btn-scale-pause">⏸ 一時停止</button>
         <button class="ctl" id="btn-scale-slow" aria-pressed="false">🐢 スロー</button>
         <button class="ctl" id="btn-scale-reset">⏮ 最初から</button>
+        <span class="sp2"></span>
+        <span class="orderbtns" id="scale-scenes"></span>
       </span>
     </span>
   </div>
@@ -406,23 +426,31 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
       <div class="dh">装置の設定</div>
       <div class="sliders">
         <div class="sl sl-wide">
-          <label for="sl-lines">格子定数 d</label>
-          <input type="range" id="sl-lines" min="300" max="2000" step="10" value="500">
+          <label for="sl-d">格子定数 d</label>
+          <button class="ctl stepb" id="d-dn" aria-label="d を小さく">−</button>
+          <input type="range" id="sl-d" min="500" max="3340" step="10" value="2000">
+          <button class="ctl stepb" id="d-up" aria-label="d を大きく">＋</button>
           <span class="val"><span id="v-d">2.00</span> μm<span class="lamcol" id="v-lines">（500 本/mm）</span></span>
         </div>
         <div class="sl">
-          <label for="sl-L">スクリーンまで L</label>
+          <label for="sl-L">スクリーンまでの距離 L</label>
+          <button class="ctl stepb" id="L-dn" aria-label="L を小さく">−</button>
           <input type="range" id="sl-L" min="0.20" max="2.00" step="0.05" value="1.00">
+          <button class="ctl stepb" id="L-up" aria-label="L を大きく">＋</button>
           <span class="val"><span id="v-L">1.00</span> m</span>
         </div>
       </div>
       <div class="checks" id="checks-row">
         <label><input type="checkbox" id="ck-lab" checked> 説明ラベルを表示</label>
+        <label id="lb-wave"><input type="checkbox" id="ck-wave" checked> 波（sin カーブ）を表示</label>
         <label id="lb-sum" hidden><input type="checkbox" id="ck-sum" checked> 合成波を表示</label>
+        <label id="lb-gamma" hidden><input type="checkbox" id="ck-gamma" checked> パターンを強調</label>
+        <label id="lb-mx" hidden><input type="checkbox" id="ck-mx" checked> 強めあいの線</label>
+        <label id="lb-min" hidden><input type="checkbox" id="ck-min" checked> 弱めあいの線</label>
       </div>
     </div>
 
-    <div class="ctlcard dirbox">
+    <div class="ctlcard dirbox" id="dirbox">
       <div class="dh">見る方向（何次の明線を見ているか）　－　ボタンか、図のスクリーン上をクリック・ドラッグして選べます</div>
       <div class="orderbtns" id="order-btns"></div>
       <label class="onlylabel"><input type="checkbox" id="ck-only" checked> 明線の位置のみ選ぶ</label>
@@ -437,28 +465,61 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
   <button class="ctl figfull-btn" id="btn-figfull" aria-pressed="false">⛶ 図だけを大きく表示</button>
   <p class="figfull-note">画面を横向きにすると、さらに大きく見えます</p>
 
-  <!-- ステップの説明（4 つとも読めるように、重ねずに並べる） -->
+  <!-- ステップの説明（3 つとも読めるように、重ねずに並べる） -->
   <div class="steps" id="steps">
     <button type="button" class="stepbox" data-step="1">
-      <b>ステップ 1　平行光線とみなせるわけ</b>
-      <span class="sb">格子とスクリーンの距離 l は、格子の間隔 d にくらべてきわめて長いので、各スリットを通って点 P に向かう光は<strong>たがいに平行</strong>とみなせます。</span>
+      <b>ステップ 1　経路差を求める</b>
+      <span class="sb">格子とスクリーンの距離 L は、格子の間隔 d にくらべてきわめて長いので、各スリットを通って点 P に向かう光は<strong>たがいに平行</strong>とみなせます。その平行な光では、隣りあう光の道のりに <strong>d sinθ</strong> の差（経路差）ができます。どの隣りあう 2 本をとっても同じ値です。</span>
       <span class="sv" id="sv1">—</span>
     </button>
     <button type="button" class="stepbox" data-step="2">
-      <b>ステップ 2　隣りあう光の経路差 ＝ d sinθ</b>
-      <span class="sb">入射方向と角 θ をなす方向に進む光では、隣りあう光の道のりに <strong>d sinθ</strong> の差ができます。どの隣りあう 2 本をとっても同じ値です。</span>
+      <b>ステップ 2　明線の条件 d sinθ ＝ mλ</b>
+      <span class="sb">経路差が λ の整数倍になる方向では、すべてのスリットからの光が同位相でそろい、<strong>明線</strong>ができます。<br>d sinθ ＝ mλ　(m ＝ 0, 1, 2, …)</span>
       <span class="sv" id="sv2">—</span>
     </button>
     <button type="button" class="stepbox" data-step="3">
-      <b>ステップ 3　明線の条件 d sinθ ＝ mλ</b>
-      <span class="sb">経路差が λ の整数倍になる方向では、すべてのスリットからの光が同位相でそろい、<strong>明線</strong>ができます。<br>d sinθ ＝ mλ　(m ＝ 0, 1, 2, …)</span>
+      <b>ステップ 3　スクリーン上の位置 x ＝ L tanθ</b>
+      <span class="sb">m 次の明線は、中心 O から <strong>x ＝ L tanθ</strong> の位置に現れます。θ が小さいときは sinθ ≒ tanθ なので x ≒ mλL/d と書けます。</span>
       <span class="sv" id="sv3">—</span>
     </button>
-    <button type="button" class="stepbox" data-step="4">
-      <b>ステップ 4　スクリーン上の位置 x ＝ l tanθ</b>
-      <span class="sb">m 次の明線は、中心 O から <strong>x ＝ l tanθ</strong> の位置に現れます。θ が小さいときは sinθ ≒ tanθ なので x ≒ mλl/d と書けます。</span>
-      <span class="sv" id="sv4">—</span>
-    </button>
+  </div>
+
+  <div class="steps" id="wavenotes" hidden>
+    <div class="stepbox static">
+      <b>図は①とまったく同じ。波が動くだけ</b>
+      <span class="sb">同じ装置・同じ設定のまま、<strong>波の動き</strong>を見るモードです。左の拡大図の sin カーブ、点 P の拡大図、下の緑のカードの波がいっしょに動き、光線は破線が流れて進む向きを示します。</span>
+    </div>
+    <div class="stepbox static">
+      <b>点 P の拡大図（右）</b>
+      <span class="sb">スクリーン上の点 P に届く 2 本の波を並べたものです。<span class="hl">経路差が λ の整数倍なら山と山がそろい</span>、そうでなければずれます。見やすいように上下にずらして描いていますが、実際には重なっています。</span>
+    </div>
+    <div class="stepbox static">
+      <b>合成波（中央）</b>
+      <span class="sb">図に描いた 6 本のスリットからの波をぜんぶ足したものが紫の線です。<strong>明線の方向では振幅が本数ぶん</strong>になり、少しずれると急に小さくなります。「合成波を表示」で消せます。</span>
+    </div>
+    <div class="stepbox static">
+      <b>スクリーンの見え方（右）</b>
+      <span class="sb">スクリーンの面に、N ＝ 20 本ぶんで計算した明るさをそのまま描いています。<strong>単色光なら細い明線</strong>、<strong>白色光なら 0 次が白・1 次からは虹色</strong>（紫が内・赤が外）。面をクリックすると、その方向を選べます。</span>
+    </div>
+  </div>
+
+  <div class="steps" id="fieldnotes" hidden>
+    <div class="stepbox static">
+      <b>この図は縮尺どおり</b>
+      <span class="sb">格子のすぐ先の、2 次元の波のようすです。スリットの間隔 d を 40 px で描いているので、<span class="hl">画面上の波長も同じものさし</span>になっています。ここは格子の<strong>すぐ近く</strong>を見ているので、スリットは 4 本にしてあります（本数を増やすと、まだ「平行」とみなせず、明線の向きでもきれいにそろわない図になってしまうため）。</span>
+    </div>
+    <div class="stepbox static">
+      <b>色の意味</b>
+      <span class="sb"><b style="color:#e8862a">橙</b>＝波の山、<b style="color:#1f74d0">青</b>＝波の谷。白いところは山と谷が打ち消しあって<strong>ゆれていない</strong>場所です。「▶ スタート」で波が動きます。</span>
+    </div>
+    <div class="stepbox static">
+      <b>点 P はスクリーンの上を動かす</b>
+      <span class="sb">右はしの<strong>スクリーン</strong>の上で <b style="color:#d0342c">P</b> を上下にドラッグすると、そこへ届く 6 本の波と合成波が、スクリーンの右わきに<strong>たてに並んで</strong>出ます。<span class="hl">隣りあうスリットからの距離の差が λ の整数倍</span>のところで山と山がそろいます。</span>
+    </div>
+    <div class="stepbox static">
+      <b>強めあいの線・弱めあいの線</b>
+      <span class="sb"><b style="color:#0d7a3f">実線</b>＝強めあう方向（d sinθ ＝ mλ）、<b style="color:#8b3fa8">破線</b>＝弱めあう方向（d sinθ ＝ (m+½)λ）。格子から扇のようにのびます。チェックで消せます。</span>
+    </div>
   </div>
 
   <div class="readout">
@@ -483,8 +544,8 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
   <div class="stepgrid">
     <div class="step">
       <b>① 平行光線とみなせるわけ</b>
-      <p class="note">格子とスクリーンの距離 l は、格子の間隔 d にくらべてきわめて長いので、各スリットを通ってスクリーン上の点 P に向かう光は<strong>たがいに平行</strong>とみなせます。</p>
-      <p class="note">d ＝ 2 μm、l ＝ 1 m なら、l は d の <b>50 万倍</b>。図では横の途中を省略記号で省いて描いています。</p>
+      <p class="note">格子とスクリーンの距離 L は、格子の間隔 d にくらべてきわめて長いので、各スリットを通ってスクリーン上の点 P に向かう光は<strong>たがいに平行</strong>とみなせます。</p>
+      <p class="note">d ＝ 2 μm、L ＝ 1 m なら、L は d の <b>50 万倍</b>。図では横の途中を省略記号で省いて描いています。</p>
     </div>
 
     <div class="step">
@@ -504,9 +565,9 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
 
     <div class="step">
       <b>④ スクリーン上の位置</b>
-      <p class="note">格子からスクリーンまでの距離を l とすると、m 次の明線は中心 O から</p>
-      <div class="eq" data-tex="x = l\tan\theta"></div>
-      <p class="note">の位置に現れます。θ が小さいときは sinθ ≒ tanθ なので x ≒ mλl/d と書けますが、このページの図は<b>つねに x ＝ l tanθ</b> で描いています。</p>
+      <p class="note">格子からスクリーンまでの距離を L とすると、m 次の明線は中心 O から</p>
+      <div class="eq" data-tex="x = L\tan\theta"></div>
+      <p class="note">の位置に現れます。θ が小さいときは sinθ ≒ tanθ なので x ≒ mλL/d と書けますが、このページの図は<b>つねに x ＝ L tanθ</b> で描いています。</p>
       <div class="fixed-msg" id="now-msg"></div>
     </div>
 
@@ -516,9 +577,20 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
     </div>
 
     <div class="step">
+      <b>⑦ 「実際の波の動きを見る」で確かめること</b>
+      <p class="note">タブを切りかえると、同じ設定で<b>波の動き</b>を見られます。見るのは次の 3 つ。</p>
+      <p class="note">1. スリットから広がる<b>素元波</b>に、選んだ方向の波面がぴったり接するか<br>
+      2. 隣りあう波が <b>d sinθ</b> だけずれていて、波面の上で山と山がそろうか<br>
+      3. <b>合成波</b>の振幅が本数ぶんになるか、それとも消えるか</p>
+      <p class="note">明線の方向では 3 つとも「そろう」になり、そこから少しずらすと合成波が急に小さくなります。<span class="hl">スリットが多いほど、この消え方が急になる</span>ので、回折格子の明線は細く鋭くなります。</p>
+    </div>
+
+    <div class="step">
       <b>⑥ 図の見方（縮尺について）</b>
-      <p class="note">図の<b>たて</b>（スクリーン上の位置）は正しい縮尺で描いています。<b>よこ</b>（格子からスクリーンまでの l）は、d にくらべてけた違いに長いため、省略記号で途中を省いています。したがって右の全体図の角の見かけは本当の θ とはちがいます。<span class="hl">本当の角と長さは、左の拡大図で確かめてください。</span></p>
-      <p class="note">図に描くスリットは 6 本ですが、明るさの計算は N ＝ 20 本ぶんで行い、明線が細く鋭くなるようすを再現しています。</p>
+      <p class="note">図の<b>たて</b>（スクリーン上の位置）は正しい縮尺で描いています。<b>よこ</b>（格子からスクリーンまでの L）は、d にくらべてけた違いに長いため、省略記号で途中を省いています。したがって右の全体図の角の見かけは本当の θ とはちがいます。<span class="hl">本当の角と長さは、左の拡大図で確かめてください。</span></p>
+      <p class="note">図に描くスリットは 6 本ですが、明るさの計算は N ＝ 20 本ぶんで行い、明線が細く鋭くなるようすを再現しています。入射光は<b>そのスリットに当たるぶんだけ</b>描いています（スリットのないところに当たった光は、格子を通り抜けないため）。</p>
+      <p class="note">波（<b>sin カーブ</b>）は、縮尺が正しい<b>左の拡大図だけ</b>に描いています。1 nm が何 px かは d ＝ 104 px から決まるので、画面上の波長も経路差も同じものさしです。図の中の「<b>⚡ 経路差を強調</b>」を押すと、経路差の部分と下の緑のカードが光ります。</p>
+      <p class="note">上の「<b>🔍 実寸</b>」を押すと、①装置の並び ②格子の表面（縮尺どおり） ③扇状に広がるようす（<b>たてもよこも同じ縮尺・角度も本当の値</b>） ④λ・d・髪の毛・L の大きさくらべ　の 4 場面が順に流れます。省略なしで「本当の大きさ」を確かめたいときに使ってください。</p>
     </div>
   </div>
 </div>
@@ -816,13 +888,14 @@ DG.draw = (function () {
     DIV: 300,           // 左パネルと右パネルの境目
     CY: 262,            // 光軸の y
     GX: 560,            // 回折格子の x（固定）
-    SX: 1120,           // スクリーンの x（固定）
+    SX: 1090,           // スクリーンの x（固定）
+    SCR_W: 30,          // スクリーンの面の幅 [px]（②はここに干渉パターンを描く）
     BREAK_X: 812,       // 省略記号の位置
     SH: 200,            // スクリーンの半分の高さ [px]
-    HALF_M: 0.90,       // スクリーンの半分が表す長さ [m]
+    HALF_M: 1.15,       // スクリーンの半分が表す長さ [m]（m = 4 まで写るように）
     STRIP_X0: 1128, STRIP_X1: 1174, // 干渉パターンの帯（②で使う）
     NSLIT: 6,           // 図に描くスリットの本数
-    SLIT_SP: 6.3,       // 図の上のスリット間隔 [px]（実際の d ではない）
+    SLIT_SP: 12,        // 図の上のスリット間隔 [px]（実際の d ではない）
     PLATE_H: 161,       // 回折格子の板の高さ [px]
     SRC_X: 356,         // 光源の x
     // 左パネル（拡大図）
@@ -1044,6 +1117,43 @@ DG.draw = (function () {
     return { x: bx, y: by, w: bw, h: bh };
   }
 
+  /**
+   * 決まった場所に置く吹き出し（引き出し線は anchor まで伸びる）。
+   * 位置を図の内容から計算すると、角度や次数によって別のラベルと重なる。
+   * ステップの吹き出しはこれを使い、置き場所を固定して衝突をなくす。
+   */
+  function calloutAt(ctx, anchor, bx, by, lines, opt) {
+    opt = opt || {};
+    ctx.save();
+    ctx.font = (opt.font || font(12));
+    var pad = 6, lh = 15.5;
+    var w = 0;
+    for (var i = 0; i < lines.length; i++) w = Math.max(w, ctx.measureText(lines[i]).width);
+    var bw = w + pad * 2, bh = lines.length * lh + pad * 2 - 3;
+    bx = P.clamp(bx, 4, L.W - bw - 4);
+    by = P.clamp(by, 4, L.BAND_Y - bh - 12);
+    if (anchor) {
+      // 引き出し線は、箱のいちばん近い辺から出す
+      var hx = P.clamp(anchor.x, bx, bx + bw);
+      var hy = (anchor.y < by) ? by : (anchor.y > by + bh ? by + bh : anchor.y);
+      if (hx > bx && hx < bx + bw) hx = P.clamp(anchor.x, bx + 8, bx + bw - 8);
+      ctx.strokeStyle = opt.border || '#9a9a9a'; ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(anchor.x, anchor.y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(anchor.x, anchor.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = opt.border || '#8a8a8a'; ctx.fill();
+    }
+    roundRect(ctx, bx, by, bw, bh, 6);
+    ctx.fillStyle = opt.bg || 'rgba(255,255,255,0.97)'; ctx.fill();
+    ctx.strokeStyle = opt.border || '#b9b9b9'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.fillStyle = opt.fg || '#222';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    for (var j = 0; j < lines.length; j++) ctx.fillText(lines[j], bx + pad, by + pad + j * lh);
+    ctx.restore();
+    return { x: bx, y: by, w: bw, h: bh };
+  }
+
   /** 決まったスロット（左端／右端）に置く吹き出し。図と重ならない */
   function calloutAbs(ctx, anchor, side, y, lines, opt) {
     opt = opt || {};
@@ -1190,6 +1300,9 @@ DG.draw = (function () {
     uiButtons.push({ x: x, y: y, w: w, h: h, id: id });
     return w;
   }
+  /** ボタンの見た目を描かずに、当たり判定だけ足す（図の中のラベルなど） */
+  function addHit(x, y, w, h, id) { uiButtons.push({ x: x, y: y, w: w, h: h, id: id }); }
+
   function hitButton(px, py) {
     for (var i = 0; i < uiButtons.length; i++) {
       var b = uiButtons[i];
@@ -1206,6 +1319,19 @@ DG.draw = (function () {
     var fade = 1 - t / 1.6;
     return fade * (0.55 + 0.45 * Math.cos(2 * Math.PI * 2.4 * t));
   }
+  /** 線を太く光らせる（「⚡ 経路差を強調」で使う） */
+  function glowLine(ctx, a, b, color, amount, dash) {
+    if (!(amount > 0.01)) return;
+    ctx.save();
+    ctx.setLineDash(dash || []);
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.25 + 0.75 * amount;
+    ctx.lineWidth = 4 + 11 * amount;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.restore();
+  }
+
   function boxGlow(ctx, box, amount, color) {
     if (!box || !(amount > 0.01)) return;
     var g = 3 + 11 * amount;
@@ -1384,19 +1510,19 @@ DG.draw = (function () {
 
   /** スクリーン（縦の板）と目盛り */
   function screenBar(ctx, sc) {
-    var x = L.SX, y0 = L.CY - L.SH, y1 = L.CY + L.SH;
+    var x = L.SX, y0 = L.CY - L.SH, y1 = L.CY + L.SH, w = L.SCR_W;
     ctx.save();
     ctx.fillStyle = COL.screen;
-    ctx.fillRect(x - 3, y0, 16, y1 - y0);
+    ctx.fillRect(x - 4, y0 - 4, w + 8, y1 - y0 + 8);
     // 明線がはっきり見えるよう、スクリーンの面は暗くしておく（図 1 の写真と同じ見え方）
     ctx.fillStyle = '#1d1f22';
-    ctx.fillRect(x, y0 + 3, 10, y1 - y0 - 6);
+    ctx.fillRect(x, y0, w, y1 - y0);
     ctx.strokeStyle = COL.screenEdge; ctx.lineWidth = 1.2;
-    ctx.strokeRect(x - 3, y0, 16, y1 - y0);
+    ctx.strokeRect(x - 4, y0 - 4, w + 8, y1 - y0 + 8);
     ctx.font = font(12, true);
     ctx.fillStyle = '#7a6a48';
     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText('スクリーン', x + 5, y0 - 8);
+    ctx.fillText('スクリーン', x + w / 2, y0 - 14);
     ctx.restore();
   }
 
@@ -1460,7 +1586,7 @@ DG.draw = (function () {
    * その上に波長 λ の波を並べる。波の個数がそのまま「経路差は λ の何倍か」。
    * 波は飾りではなく、図の中の波とまったく同じ関数 P.waveAt() から描く。
    */
-  function unwrapBand(ctx, st, sol) {
+  function unwrapBand(ctx, st, sol, glow) {
     var y0 = L.BAND_Y + 8, h = L.H - y0 - 8;
     var count = Math.abs(sol.ratio);
 
@@ -1495,6 +1621,7 @@ DG.draw = (function () {
     ctx.strokeStyle = COL.geo; ctx.lineWidth = 7;
     ctx.beginPath(); ctx.moveTo(lx, cy); ctx.lineTo(lx + lenPx, cy); ctx.stroke();
     ctx.globalAlpha = 1;
+    if (glow > 0.01) glowLine(ctx, vec(lx, cy), vec(lx + lenPx, cy), COL.geo, glow);
 
     // 波（図の中の波と同じ式）。経路 s [nm] を px になおして描く
     var nmToPx = (Math.abs(sol.delta) > 1e-9) ? (lenPx / Math.abs(sol.delta)) : 0;
@@ -1562,11 +1689,11 @@ DG.draw = (function () {
     shade: shade, setLightColor: setLightColor, pureColor: pureColor,
     buildScene: buildScene,
     roundRect: roundRect, line: line, dashLine: dashLine, arrow: arrow, dimLine: dimLine,
-    callout: callout, calloutAbs: calloutAbs,
+    callout: callout, calloutAbs: calloutAbs, calloutAt: calloutAt,
     eye: eye, pointLabel: pointLabel,
     rightAngle: rightAngle, angleArc: angleArc,
-    resetButtons: resetButtons, canvasButton: canvasButton, hitButton: hitButton,
-    pulseAmount: pulseAmount, boxGlow: boxGlow,
+    resetButtons: resetButtons, canvasButton: canvasButton, addHit: addHit, hitButton: hitButton,
+    pulseAmount: pulseAmount, boxGlow: boxGlow, glowLine: glowLine,
     lightBulb: lightBulb, waveChip: waveChip, lightText: lightText,
     panels: panels, gratingPlate: gratingPlate, gratingFace: gratingFace,
     screenBar: screenBar, screenRuler: screenRuler,
@@ -1576,6 +1703,562 @@ DG.draw = (function () {
   };
 })();
 
+/* ===== 45_scale.js ===== */
+/* 「🔍 実寸」オーバーレイ
+ * 図だけを見せる別画面で、装置全体のようすと大きさの実感を 4 場面で見せる。
+ *   ① 光源 → スリット → 回折格子 → スクリーン の並び
+ *   ② 回折格子の表面の拡大（筋と筋の間がスリット、そこから素元波が広がる）
+ *   ③ 引いて見ると、m = 0, 1, 2 の光が扇状に広がってスクリーンに届く
+ *   ④ 大きさくらべ（λ・d・髪の毛・1 mm・L を対数の物さしに並べる）
+ */
+window.DG = window.DG || {};
+DG.scaleOut = (function () {
+  'use strict';
+  var D = DG.draw, P = DG.phys;
+  var L = D.L, COL = D.COL;
+
+  var DUR = 24;                 // 4 場面ぜんぶで何秒か
+  var SCENES = ['装置全体', '格子の表面', '扇状に広がる', '大きさくらべ'];
+
+  /** 3 けたごとにコンマを打つ */
+  function comma(n) {
+    var s = String(Math.round(n)), out = '';
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 === 0) out += ',';
+      out += s.charAt(i);
+    }
+    return out;
+  }
+  /** 大きい数を「50 万」「120 万」のように読む */
+  function man(n) {
+    if (n >= 1e8) return (n / 1e8).toFixed(n >= 1e9 ? 0 : 1) + ' 億 ';
+    if (n >= 1e4) return Math.round(n / 1e4) + ' 万 ';
+    return comma(n) + ' ';
+  }
+
+  function sceneOf(prog) { return P.clamp(Math.floor(prog * 4), 0, 3); }
+  function localT(prog) { var s = sceneOf(prog); return P.clamp(prog * 4 - s, 0, 1); }
+
+  /* ---------- 共通の飾り ---------- */
+  function header(ctx, st, prog) {
+    var s = sceneOf(prog);
+    ctx.save();
+    ctx.font = D.font(16, true);
+    ctx.fillStyle = '#1a4e86';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('🔍 実寸　' + (s + 1) + '. ' + SCENES[s], 24, 18);
+    // 進み具合
+    var x0 = 24, x1 = L.W - 24, y = 46;
+    ctx.strokeStyle = '#dbe3ea'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+    ctx.strokeStyle = '#1663b5';
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + (x1 - x0) * prog, y); ctx.stroke();
+    for (var i = 0; i < 4; i++) {
+      var xx = x0 + (x1 - x0) * (i / 4);
+      ctx.fillStyle = (i <= s) ? '#1663b5' : '#c9d2da';
+      ctx.beginPath(); ctx.arc(xx, y, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function caption(ctx, lines, color) {
+    var x = 24, w = L.W - 48, h = 12 + lines.length * 19;
+    var y = L.H - h - 20;
+    ctx.save();
+    D.roundRect(ctx, x, y, w, h, 10);
+    ctx.fillStyle = '#f7f9fc'; ctx.fill();
+    ctx.strokeStyle = color || '#c4d2e2'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.font = D.font(13);
+    ctx.fillStyle = '#28405c';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    var maxW = w - 32;
+    for (var i = 0; i < lines.length; i++) {
+      // 長すぎる行は、はみ出さないように少しだけ字を小さくする
+      var size = 13;
+      ctx.font = D.font(size, i === 0);
+      while (ctx.measureText(lines[i]).width > maxW && size > 9.5) {
+        size -= 0.5;
+        ctx.font = D.font(size, i === 0);
+      }
+      ctx.fillText(lines[i], x + 16, y + 8 + i * 19);
+    }
+    ctx.restore();
+  }
+
+  /** 等角投影ふうの板（前の面＋奥行き） */
+  function plate(ctx, x, y0, y1, fill, edge, depth) {
+    var dx = depth || 64, dy = -(depth || 64) * 0.55;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, y0); ctx.lineTo(x + dx, y0 + dy);
+    ctx.lineTo(x + dx, y1 + dy); ctx.lineTo(x, y1);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = edge; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ================= ① 装置全体 ================= */
+  function scene1(ctx, st, t) {
+    var cy = 340;
+    var xs = { src: 150, slit: 360, gr: 600, scr: 1040 };
+    var dx = 64, dy = -35;
+
+    // 台（うすいグレーの床）
+    ctx.save();
+    ctx.fillStyle = '#f2f5f8';
+    ctx.beginPath();
+    ctx.moveTo(90, 520); ctx.lineTo(90 + dx, 520 + dy);
+    ctx.lineTo(1180 + dx, 520 + dy); ctx.lineTo(1180, 520);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // 光の道すじ（進むにつれて伸びる）
+    var reach = P.clamp(t * 1.6, 0, 1);
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = COL.ray; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    var endX = xs.src + (xs.gr - xs.src) * P.clamp(reach * 2, 0, 1);
+    ctx.beginPath(); ctx.moveTo(xs.src + 26, cy); ctx.lineTo(endX, cy); ctx.stroke();
+    ctx.restore();
+
+    // 格子から先は扇状
+    if (reach > 0.5) {
+      var f = P.clamp((reach - 0.5) * 2, 0, 1);
+      var mMax = Math.min(2, P.maxOrder(st.lambda, st.d));
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      for (var m = -mMax; m <= mMax; m++) {
+        var th = P.thetaOf(m, st.lambda, st.d);
+        if (th === null) continue;
+        var yy = cy - Math.tan(th) * (xs.scr - xs.gr) * 0.42;
+        ctx.strokeStyle = COL.ray; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(xs.gr, cy);
+        ctx.lineTo(xs.gr + (xs.scr - xs.gr) * f, cy + (yy - cy) * f);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 光源
+    D.lightBulb(ctx, D.vec(xs.src, cy), { scale: 1.4, white: st.light === 'white' });
+    // スリット板（まん中があいている ＝ 上下 2 枚に分けて、すきまを本当にあける）
+    plate(ctx, xs.slit, cy - 120, cy - 30, '#e8ecef', '#98a3ad');
+    plate(ctx, xs.slit, cy + 30, cy + 120, '#e8ecef', '#98a3ad');
+    // 回折格子
+    plate(ctx, xs.gr, cy - 110, cy + 110, 'rgba(207,230,242,0.92)', COL.plateEdge);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(40,90,120,0.55)'; ctx.lineWidth = 1;
+    for (var y = cy - 106; y < cy + 108; y += 5) {
+      ctx.beginPath(); ctx.moveTo(xs.gr, y); ctx.lineTo(xs.gr + 64, y - 35); ctx.stroke();
+    }
+    ctx.restore();
+    // スクリーン（一色の板。明線だけを光らせる）
+    plate(ctx, xs.scr, cy - 190, cy + 190, '#efe6d2', '#a89878', 74);
+    if (reach > 0.9) {
+      var mm = Math.min(2, P.maxOrder(st.lambda, st.d));
+      var spotCol = st.light === 'white' ? '#ffffff' : P.rgbCss(D.pureColor(st.lambda));
+      ctx.save();
+      ctx.shadowColor = spotCol; ctx.shadowBlur = 10;
+      ctx.strokeStyle = spotCol; ctx.lineWidth = 5; ctx.lineCap = 'round';
+      for (var k = -mm; k <= mm; k++) {
+        var th2 = P.thetaOf(k, st.lambda, st.d);
+        if (th2 === null) continue;
+        var yk = cy - Math.tan(th2) * (xs.scr - xs.gr) * 0.42;
+        ctx.beginPath();
+        ctx.moveTo(xs.scr + 8, yk - 4);
+        ctx.lineTo(xs.scr + 44, yk - 24);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 名札
+    var names = [['光源', xs.src], ['スリット', xs.slit + 32], ['回折格子', xs.gr + 32], ['スクリーン', xs.scr + 37]];
+    ctx.save();
+    ctx.font = D.font(13, true);
+    ctx.fillStyle = '#3a4550';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (var i = 0; i < names.length; i++) ctx.fillText(names[i][0], names[i][1], 545);
+    ctx.restore();
+
+    caption(ctx, [
+      '① 装置の並び：光源 → スリット → 回折格子 → スクリーン',
+      'スリットで細い光の筋にしてから回折格子にあてます。格子を通った光は、いくつかの決まった向き（m = 0, 1, 2, …）にだけ強く出ていきます。',
+      'この図は「置き方」を示すためのもので、大きさの比は正しくありません。② 以降で本当の大きさを見ます。'
+    ], '#e0a800');
+  }
+
+  /* ================= ② 格子の表面の拡大 ================= */
+  function scene2(ctx, st, t) {
+    var px = 480, top = 120, bot = 560;      // 板の面の位置
+    var nslit = 4, sp = 96;
+    var cy = (top + bot) / 2;
+    var slits = [];
+    for (var i = 0; i < nslit; i++) slits.push(cy + (i - (nslit - 1) / 2) * sp);
+
+    var nmToPx = sp / st.d;                  // 縮尺どおり（d を sp px で描く）
+    var lamPx = st.lambda * nmToPx;
+    var ph = ((P.V_NM_PER_S * nmToPx * (t * DUR / 4)) % lamPx + lamPx) % lamPx;
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(60, top - 10, L.W - 140, bot - top + 20); ctx.clip();
+
+    // 入射する平面波
+    ctx.strokeStyle = COL.rayDim; ctx.lineWidth = 2;
+    for (var k = 0; k < 20; k++) {
+      var x = px - 14 - (lamPx - ph) - k * lamPx;
+      if (x < 66) break;
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bot); ctx.stroke();
+    }
+    // 素元波（重なるので細く・うすく）
+    ctx.strokeStyle = COL.ray; ctx.lineWidth = 1.1; ctx.globalAlpha = 0.45;
+    for (i = 0; i < nslit; i++) {
+      for (k = 0; k < 26; k++) {
+        var r = ph + k * lamPx;
+        if (r > 660) break;
+        ctx.beginPath();
+        ctx.arc(px, slits[i], r, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // 板（筋とスリットが交互）
+    ctx.save();
+    ctx.fillStyle = COL.plate;
+    ctx.fillRect(px - 24, top, 24, bot - top);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    for (i = 0; i < nslit; i++) ctx.fillRect(px - 24, slits[i] - 5, 24, 10);
+    ctx.strokeStyle = COL.plateEdge; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(px - 24, top); ctx.lineTo(px, top);
+    ctx.moveTo(px - 24, bot); ctx.lineTo(px, bot);
+    ctx.moveTo(px - 24, top); ctx.lineTo(px - 24, bot);
+    ctx.stroke();
+    ctx.strokeStyle = '#3f7ba1'; ctx.lineWidth = 1.6;
+    D.gratingFace(ctx, px, top, bot, slits[0], sp, 5, 12, 10);
+    ctx.restore();
+
+    D.dimLine(ctx, D.vec(px - 44, slits[0]), D.vec(px - 44, slits[1]),
+      'd ＝ ' + (st.d / 1000).toFixed(2) + ' μm', '#3a4550', 22);
+
+    // 名札（波の上に置くので、白い箱を敷いて読めるようにする）
+    function tag(text, y, color) {
+      ctx.font = D.font(12.5, true);
+      var w = ctx.measureText(text).width;
+      D.roundRect(ctx, px + 22, y - 11, w + 16, 22, 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, px + 30, y + 1);
+      // 引き出し線
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(px + 22, y); ctx.lineTo(px + 4, y); ctx.stroke();
+    }
+    ctx.save();
+    tag('筋（けずってある）＝ 光は通らない', slits[0] - sp / 2, '#8a6d00');
+    tag('筋と筋の間がスリット ＝ ここから波が広がる', slits[2], '#2b5a78');
+    ctx.font = D.font(12);
+    ctx.fillStyle = '#5b6672';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('画面上の波長 ＝ ' + lamPx.toFixed(0) + ' px（d ＝ ' + sp + ' px と同じものさし）',
+      L.W - 40, top - 26);
+    ctx.restore();
+
+    caption(ctx, [
+      '② 回折格子の表面を拡大：筋と筋の間がスリット。そこから波が円形に広がる（回折）',
+      'ガラスに 1 mm あたり ' + Math.round(P.linesPerMmFromD(st.d)) + ' 本の筋がけずってあり、'
+        + '筋と筋のあいだ（＝ d ＝ ' + (st.d / 1000).toFixed(2) + ' μm）がスリットになります。',
+      'この図は縮尺どおりです。光の波長 λ ＝ ' + Math.round(st.lambda) + ' nm ＝ '
+        + (st.lambda / 1000).toFixed(2) + ' μm は、d ＝ ' + (st.d / 1000).toFixed(2)
+        + ' μm のちょうど ' + (st.lambda / st.d).toFixed(2) + ' 倍。けたが同じだから、大きく曲がるのです。'
+    ], COL.plateEdge);
+  }
+
+  /* ================= ③ 扇状に広がる ================= */
+  /* この場面は縦も横も同じ縮尺で描く。
+     格子〜スクリーンの距離を 620 px と決めると、1 m が何 px かが決まる。 */
+  var S3 = { gx: 460, sx: 1080, cy: 300, half: 225, dist: 620 };
+
+  function scene3(ctx, st, t) {
+    var gx = S3.gx, sx = S3.sx, cy = S3.cy, HALF = S3.half;
+    var ppm = S3.dist / st.L;                 // 1 m ＝ 何 px か
+    var halfM = HALF / ppm;                   // 図に写っている範囲 [m]
+    var mMax = P.maxOrder(st.lambda, st.d);
+    var reach = P.clamp(t * 1.4, 0, 1);
+    var col = P.rgbCss(D.pureColor(st.lambda));
+
+    // スクリーン
+    ctx.save();
+    ctx.fillStyle = '#efe6d2';
+    ctx.fillRect(sx - 5, cy - HALF - 6, 44, HALF * 2 + 12);
+    ctx.fillStyle = '#1d1f22';
+    ctx.fillRect(sx, cy - HALF, 34, HALF * 2);
+    ctx.strokeStyle = '#a89878'; ctx.lineWidth = 1.2;
+    ctx.strokeRect(sx - 5, cy - HALF - 6, 44, HALF * 2 + 12);
+    ctx.restore();
+
+    /* 扇（角度は本当の θ どおり）。
+       スクリーンからはずれる光は、スクリーンの上下をすりぬけて図の外へ出ていく。 */
+    var FIELD = 268;                          // 図に描ける上下のはば [px]
+    var off = [];                             // スクリーンからはずれた次数
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(gx - 4, cy - FIELD, L.W - gx, FIELD * 2);
+    ctx.clip();
+    /* 1 本の光線を引く。白色光のときは波長ごとに細い線を重ねて虹にする */
+    function fan(m, lam, width) {
+      var th = P.thetaOf(m, lam, st.d);
+      if (th === null) return null;
+      var tn = Math.tan(th);
+      var ey = cy - tn * (sx - gx);           // スクリーンの面に届く高さ
+      var onScr = Math.abs(ey - cy) <= HALF;
+      var ex = sx;
+      if (!onScr) {
+        var xLim = gx + FIELD / Math.abs(tn);
+        if (xLim < sx) { ex = xLim; ey = cy - (tn > 0 ? FIELD : -FIELD); }
+      }
+      var c = D.pureColor(lam);
+      var grad = ctx.createLinearGradient(gx, cy, ex, ey);
+      grad.addColorStop(0, P.rgbCss(c, 0.85));
+      grad.addColorStop(1, P.rgbCss(c, onScr ? 0.45 : 0.14));
+      ctx.strokeStyle = grad; ctx.lineWidth = width; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(gx, cy);
+      ctx.lineTo(gx + (ex - gx) * reach, cy + (ey - cy) * reach);
+      ctx.stroke();
+      return { ey: ey, onScr: onScr };
+    }
+
+    /* スクリーンに当たったところを光らせる */
+    function spot(y, c) {
+      ctx.save();
+      ctx.shadowColor = c; ctx.shadowBlur = 12;
+      ctx.strokeStyle = c; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx + 34, y); ctx.stroke();
+      ctx.restore();
+    }
+
+    var WHITE_LAMS = [400, 450, 500, 550, 600, 650, 700];
+    var WHITE_MMAX = 2;                       // 白色光は本数が多いので 2 次まで描く
+    if (st.light === 'white') {
+      // 白色光：0 次は白、1 次からは波長ごとに分かれる
+      mMax = Math.min(WHITE_MMAX, Math.ceil(st.d / 380 - 1e-12) - 1);
+      for (var mw = -mMax; mw <= mMax; mw++) {
+        if (mw === 0) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(120,128,136,0.30)'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(gx, cy); ctx.lineTo(gx + (sx - gx) * reach, cy);
+          ctx.stroke();
+          ctx.restore();
+          if (reach > 0.98) spot(cy, '#ffffff');
+          continue;
+        }
+        var anyOn = false;
+        for (var wi = 0; wi < WHITE_LAMS.length; wi++) {
+          var rr = fan(mw, WHITE_LAMS[wi], 4);
+          if (rr && rr.onScr) {
+            anyOn = true;
+            if (reach > 0.98) spot(rr.ey, P.rgbCss(D.pureColor(WHITE_LAMS[wi])));
+          }
+        }
+        if (!anyOn && mw > 0) off.push(mw);
+      }
+    } else
+    for (var m = -mMax; m <= mMax; m++) {
+      var r0 = fan(m, st.lambda, 7);
+      if (r0 === null) continue;
+      var ey = r0.ey, onScr = r0.onScr;
+      if (!onScr && m > 0) off.push(m);
+      if (reach > 0.98 && onScr) {
+        spot(ey, col);
+        if (m >= 0) {
+          ctx.font = D.font(12, true);
+          ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+          ctx.fillStyle = '#5b6672';
+          ctx.fillText('m = ' + m, sx + 46, ey);
+        }
+      }
+    }
+    ctx.restore();
+
+    // 回折格子（縮尺どおりなら d ＝ 0.0004 px。「点」にしか見えないのが正しい）
+    ctx.save();
+    ctx.fillStyle = COL.plate;
+    ctx.fillRect(gx - 6, cy - 46, 11, 92);
+    ctx.strokeStyle = COL.plateEdge; ctx.lineWidth = 1.3;
+    ctx.strokeRect(gx - 6, cy - 46, 11, 92);
+    ctx.strokeStyle = 'rgba(40,90,120,0.5)'; ctx.lineWidth = 1;
+    for (var y = cy - 43; y < cy + 45; y += 3.5) {
+      ctx.beginPath(); ctx.moveTo(gx - 6, y); ctx.lineTo(gx + 5, y); ctx.stroke();
+    }
+    // 入射光（格子の高さのぶんだけ）
+    for (var i = -1; i <= 1; i++) {
+      D.arrow(ctx, D.vec(gx - 250, cy + i * 30), D.vec(1, 0), 236, COL.rayDim, 2, 8);
+    }
+    // 名札（扇の上に重なるので、白い箱を敷く）
+    ctx.font = D.font(12.5, true);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    function nameTag(text, tx, ty, color) {
+      var w = ctx.measureText(text).width;
+      D.roundRect(ctx, tx - w / 2 - 7, ty - 11, w + 14, 22, 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.fill();
+      ctx.fillStyle = color; ctx.fillText(text, tx, ty + 1);
+    }
+    nameTag('回折格子', gx, cy + 64, '#2b5a78');
+    nameTag('スクリーン', sx + 17, cy + HALF + 24, '#7a6a48');
+    ctx.restore();
+
+    // 寸法（縮尺どおりであることを示す）
+    D.dimLine(ctx, D.vec(gx, cy + HALF + 52), D.vec(sx, cy + HALF + 52),
+      'L ＝ ' + st.L.toFixed(2) + ' m', '#3a4550', 16);
+    D.dimLine(ctx, D.vec(sx + 130, cy), D.vec(sx + 130, cy - HALF),
+      D.fmtCm(halfM), '#3a4550', 18);
+
+    caption(ctx, [
+      '③ 引いて見ると：格子を通った光は m = 0, 1, 2, … の決まった向きにだけ扇のように広がる',
+      '②で見た素元波が、遠くではこの何本かの向きにだけ残ります（ほかの向きは打ち消しあって消えます）。その向きが d sinθ ＝ mλ。',
+      '縦も横も同じ縮尺（角度も本当の値）。スクリーンは中心から ±' + D.fmtCm(halfM) + '。'
+        + (st.light === 'white'
+          ? '0 次は白、1 次からは虹色（紫が内・赤が外）。'
+          : (mMax === 0
+            ? 'いまは 1 次の明線が出ない設定です。'
+            : '1 次は θ ＝ ' + (P.thetaOf(1, st.lambda, st.d) * 180 / Math.PI).toFixed(1) + '°。'))
+        + (off.length ? '　m = ' + off[0] + ' 以上はスクリーンからはずれます。' : '')
+    ], '#1663b5');
+  }
+
+  /* ================= ④ 大きさくらべ ================= */
+  function scene4(ctx, st, t) {
+    // 対数の物さし：0.1 μm 〜 10 m
+    var x0 = 120, x1 = L.W - 120, y = 330;
+    var lo = Math.log10(1e-7), hi = Math.log10(10);       // m 単位
+    function px(mm) { return x0 + (x1 - x0) * (Math.log10(mm) - lo) / (hi - lo); }
+
+    ctx.save();
+    ctx.strokeStyle = '#98a3ad'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+    var ticks = [[1e-7, '0.1 μm'], [1e-6, '1 μm'], [1e-5, '10 μm'], [1e-4, '0.1 mm'],
+      [1e-3, '1 mm'], [1e-2, '1 cm'], [1e-1, '10 cm'], [1, '1 m'], [10, '10 m']];
+    ctx.font = D.font(11);
+    ctx.textAlign = 'center';
+    for (var i = 0; i < ticks.length; i++) {
+      var tx = px(ticks[i][0]);
+      ctx.strokeStyle = '#c9d2da';
+      ctx.beginPath(); ctx.moveTo(tx, y - 8); ctx.lineTo(tx, y + 8); ctx.stroke();
+      ctx.fillStyle = '#8d8163'; ctx.textBaseline = 'top';
+      ctx.fillText(ticks[i][1], tx, y + 12);
+    }
+
+    var lamCol = P.rgbCss(D.pureColor(st.lambda));
+    var items = [
+      { v: st.lambda * 1e-9, t: '光の波長 λ ＝ ' + Math.round(st.lambda) + ' nm', c: lamCol, up: 1 },
+      { v: st.d * 1e-9, t: '格子の間隔 d ＝ ' + (st.d / 1000).toFixed(2) + ' μm', c: '#2b5a78', up: 2 },
+      { v: 8e-5, t: '髪の毛の太さ ≒ 80 μm', c: '#8a6d00', up: 3 },
+      { v: 1e-3, t: '1 mm（この中に筋が ' + Math.round(P.linesPerMmFromD(st.d)) + ' 本）', c: '#5b6672', up: 4 },
+      { v: st.L, t: 'スクリーンまで L ＝ ' + st.L.toFixed(2) + ' m', c: '#1663b5', up: 5 }
+    ];
+    var show = P.clamp(Math.floor(t * 7), 0, 5);
+    var i2, it, ix, iy;
+    // 引き出し線を先に全部、そのあとで札を全部（札が線に切られないように）
+    for (i2 = 0; i2 < show; i2++) {
+      it = items[i2]; ix = px(it.v); iy = y - 30 - it.up * 34;
+      ctx.strokeStyle = it.c; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(ix, y - 6); ctx.lineTo(ix, iy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(ix, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = it.c; ctx.fill();
+    }
+    for (i2 = 0; i2 < show; i2++) {
+      it = items[i2]; ix = px(it.v); iy = y - 30 - it.up * 34;
+      ctx.font = D.font(12.5, true);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      var tw = ctx.measureText(it.t).width;
+      var bx = P.clamp(ix + 12, 20, L.W - tw - 30);
+      D.roundRect(ctx, bx - 8, iy - 12, tw + 16, 24, 7);
+      ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.strokeStyle = it.c; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = it.c;
+      ctx.fillText(it.t, bx, iy + 1);
+    }
+    ctx.restore();
+
+    /* 下：d と λ だけを拡大して並べる（けたが同じことを目で見る） */
+    if (show >= 5) zoomCompare(ctx, st);
+
+    var times = Math.round(st.L * 1e9 / st.d / 1000) * 1000;
+    caption(ctx, [
+      '④ 大きさくらべ：d と λ はけたが同じ。L はその ' + man(times) + '倍',
+      '格子の間隔 d ＝ ' + (st.d / 1000).toFixed(2) + ' μm と光の波長 λ ＝ '
+        + (st.lambda / 1000).toFixed(2) + ' μm はけたが同じ大きさ（λ/d ＝ '
+        + (st.lambda / st.d).toFixed(2) + '）。だから sinθ ＝ mλ/d が大きな値になり、光は大きく曲がります。',
+      'いっぽうスクリーンまでの距離 L ＝ ' + st.L.toFixed(2) + ' m は d の約 '
+        + comma(times) + ' 倍。だから「各スリットから P へ向かう光は平行」とみなせます。'
+    ], '#8b3fa8');
+  }
+
+  /** d と λ を同じ倍率で並べた棒（d を 620 px にする） */
+  function zoomCompare(ctx, st) {
+    var bx = 360, wd = 620, yd = 452, yl = 496, h = 16;
+    var wl = wd * st.lambda / st.d;
+    ctx.save();
+    ctx.font = D.font(12, true);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = '#2b5a78';
+    ctx.fillText('格子の間隔 d', bx - 14, yd + h / 2);
+    D.roundRect(ctx, bx, yd, wd, h, 4);
+    ctx.fillStyle = '#cfe6f2'; ctx.fill();
+    ctx.strokeStyle = COL.plateEdge; ctx.lineWidth = 1.3; ctx.stroke();
+
+    ctx.fillStyle = '#8a6d00';
+    ctx.fillText('光の波長 λ', bx - 14, yl + h / 2);
+    D.roundRect(ctx, bx, yl, wl, h, 4);
+    ctx.fillStyle = P.rgbCss(D.pureColor(st.lambda), 0.6); ctx.fill();
+    ctx.strokeStyle = '#8a6d00'; ctx.lineWidth = 1.3; ctx.stroke();
+
+    // λ が d の中に何個ぶん入るか
+    var n = st.d / st.lambda;
+    ctx.strokeStyle = 'rgba(138,109,0,0.55)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    for (var k = 1; k < n; k++) {
+      var xx = bx + wl * k;
+      ctx.beginPath(); ctx.moveTo(xx, yd - 4); ctx.lineTo(xx, yl + h + 4); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    ctx.textAlign = 'left';
+    ctx.font = D.font(12.5, true);
+    ctx.fillStyle = '#5a3a7a';
+    ctx.fillText('d の中に λ は ' + n.toFixed(1) + ' 個ぶん', bx + wd + 16, yd + h / 2);
+    ctx.font = D.font(11);
+    ctx.fillStyle = '#5b6672';
+    ctx.fillText('（同じ倍率で拡大して並べたもの）', bx + wd + 16, yl + h / 2);
+    ctx.restore();
+  }
+
+  /* ================= 本体 ================= */
+  function render(ctx, st, sol, prog) {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, L.W, L.H);
+    ctx.restore();
+    var s = sceneOf(prog), t = localT(prog);
+    if (s === 0) scene1(ctx, st, t);
+    else if (s === 1) scene2(ctx, st, t);
+    else if (s === 2) scene3(ctx, st, t);
+    else scene4(ctx, st, t);
+    header(ctx, st, prog);
+  }
+
+  return { render: render, DUR: DUR, SCENES: SCENES, sceneOf: sceneOf };
+})();
 
 /* ===== 50_mode_path.js ===== */
 /* ① 光路差の位置と式の原理（波を止めて、ステップを 1 つずつ進める）
@@ -1590,11 +2273,30 @@ DG.modePath = (function () {
   var L = D.L, COL = D.COL;
 
   var STEPS = [
-    '平行光線とみなせるわけ',
-    '隣りあう光の経路差 ＝ d sinθ',
-    '明線の条件 d sinθ ＝ mλ',
-    'スクリーン上の位置 x ＝ l tanθ'
+    '経路差を求める',
+    '明線の条件を立てる',
+    'スクリーン上の位置を求める'
   ];
+  var CIRC = ['①', '②', '③'];
+
+  /**
+   * ステップの見出し（図の左上）。
+   * 薄膜ページと同じ作法：左上に「① …」を出し、図の中の該当する場所には
+   * 同じ番号を付けた吹き出しを出して、どこの話かをすぐ結びつけられるようにする。
+   */
+  function stepTitle(ctx, step) {
+    var t = CIRC[step - 1] + ' ' + STEPS[step - 1];
+    ctx.save();
+    ctx.font = D.font(13.5, true);
+    var w = ctx.measureText(t).width + 26;
+    D.roundRect(ctx, 12, 10, w, 28, 8);
+    ctx.fillStyle = '#fff8e6'; ctx.fill();
+    ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = '#8a5300';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(t, 25, 25);
+    ctx.restore();
+  }
 
   var SUB = '₀₁₂₃₄₅₆₇₈₉';
   function sub(n) {
@@ -1633,7 +2335,13 @@ DG.modePath = (function () {
     // 描くことになってしまうため。
     var x0 = bx + 42, x1 = sc.gx - 9;
     for (var i = 0; i < sc.slits.length; i++) {
-      D.arrow(ctx, D.vec(x0, sc.slits[i].y), D.vec(1, 0), x1 - x0, COL.rayDim, 1.6, 5.5);
+      var a = D.vec(x0, sc.slits[i].y), b2 = D.vec(x1, sc.slits[i].y);
+      ctx.save(); ctx.globalAlpha = 0.3;
+      D.line(ctx, a, b2, COL.rayDim, 1);
+      ctx.restore();
+      // スリットのところ（右端）で位相が 0 になるようにそろえる
+      beamWave(ctx, st, a, b2, 0, -2 * Math.PI * (x1 - x0) / LAM_DISP, COL.rayDim, 1.3);
+      D.arrow(ctx, D.vec(x1 - 9, sc.slits[i].y), D.vec(1, 0), 9, COL.rayDim, 1.5, 5.5);
     }
     ctx.save();
     ctx.font = D.font(11.5);
@@ -1643,8 +2351,22 @@ DG.modePath = (function () {
     ctx.restore();
   }
 
+  /* スクリーンの下に出す注記。描く前にためて、最後にまとめて 1 行ずつ並べる */
+  var screenNotes = [];
+  function addNote(s) { if (screenNotes.length < 5) screenNotes.push(s); }
+  function drawNotes(ctx) {
+    ctx.save();
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#8d8163';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    for (var i = 0; i < screenNotes.length; i++) {
+      ctx.fillText(screenNotes[i], L.SX + L.SCR_W + 36, L.CY + L.SH + 10 + i * 14);
+    }
+    ctx.restore();
+  }
+
   /** 次数のラベル（重なるものは省く）。chips = [{m, y, on}] */
-  function orderChips(ctx, chips, avoidY) {
+  function orderChips(ctx, chips, avoidY, hover) {
     var order = chips.slice().sort(function (a, b) {
       if (a.on !== b.on) return a.on ? -1 : 1;
       return Math.abs(a.m) - Math.abs(b.m);
@@ -1664,18 +2386,17 @@ DG.modePath = (function () {
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       var txt = 'm = ' + Math.abs(it.m);
       var w = ctx.measureText(txt).width;
-      D.roundRect(ctx, L.SX + 40, it.y - 9, w + 10, 18, 5);
-      ctx.fillStyle = it.on ? '#fff3d6' : 'rgba(255,255,255,0.9)'; ctx.fill();
-      ctx.strokeStyle = it.on ? '#e0a800' : '#cfd6dd'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = it.on ? '#8a5300' : '#5b6672';
-      ctx.fillText(txt, L.SX + 45, it.y + 1);
+      var hot = (hover === 'ord:' + it.m);
+      D.roundRect(ctx, L.SX + L.SCR_W + 36, it.y - 9, w + 10, 18, 5);
+      ctx.fillStyle = it.on ? '#fff3d6' : (hot ? '#eaf1fa' : 'rgba(255,255,255,0.9)'); ctx.fill();
+      ctx.strokeStyle = it.on ? '#e0a800' : (hot ? '#1f74d0' : '#cfd6dd');
+      ctx.lineWidth = (it.on || hot) ? 1.6 : 1; ctx.stroke();
+      ctx.fillStyle = it.on ? '#8a5300' : (hot ? '#28405c' : '#5b6672');
+      ctx.fillText(txt, L.SX + L.SCR_W + 41, it.y + 1);
+      // クリックでその次数を選べるようにする（当たり判定は少し広めに）
+      D.addHit(L.SX + L.SCR_W + 30, it.y - 12, w + 22, 24, 'ord:' + it.m);
     }
-    if (skipped > 0) {
-      ctx.font = D.font(10.5);
-      ctx.fillStyle = '#8d8163';
-      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-      ctx.fillText('※ 明線が密集：ラベルは一部だけ', L.SX - 16, L.CY + L.SH + 6);
-    }
+    if (skipped > 0) addNote('※ ラベルは一部だけ');
     ctx.restore();
   }
 
@@ -1685,7 +2406,7 @@ DG.modePath = (function () {
    *   1 次以降 … sinθ = mλ/d が波長ごとにちがうので虹色に分かれる
    *              （短い波長ほど内側＝紫が内・赤が外）
    */
-  function whiteOrders(ctx, st, sc, avoidY) {
+  function whiteOrders(ctx, st, sc, avoidY, hover) {
     var d = st.d, Lm = st.L, ppm = sc.ppm;
     var chips = [];
 
@@ -1693,7 +2414,7 @@ DG.modePath = (function () {
     ctx.save();
     ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(L.SX - 1, L.CY); ctx.lineTo(L.SX + 11, L.CY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(L.SX, L.CY); ctx.lineTo(L.SX + L.SCR_W, L.CY); ctx.stroke();
     ctx.restore();
     chips.push({ m: 0, y: L.CY, on: false });
 
@@ -1717,23 +2438,17 @@ DG.modePath = (function () {
           if (hi2 < L.CY - L.SH || lo2 > L.CY + L.SH) continue;
           lo2 = Math.max(lo2, L.CY - L.SH); hi2 = Math.min(hi2, L.CY + L.SH);
           ctx.fillStyle = cols[j];
-          ctx.fillRect(L.SX - 1, lo2, 12, Math.max(0.8, hi2 - lo2 + 0.6));
+          ctx.fillRect(L.SX, lo2, L.SCR_W, Math.max(0.8, hi2 - lo2 + 0.6));
           drawn++; yMin = Math.min(yMin, lo2); yMax = Math.max(yMax, hi2);
         }
         ctx.restore();
         if (drawn > 0) chips.push({ m: m, y: (yMin + yMax) / 2, on: false });
       }
     }
-    orderChips(ctx, chips, avoidY);
+    orderChips(ctx, chips, avoidY, hover);
 
-    ctx.save();
-    ctx.font = D.font(10.5);
-    ctx.fillStyle = '#8d8163';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-    ctx.fillText('0 次は白、1 次からは', L.SX + 40, L.CY + L.SH + 6);
-    ctx.fillText('虹色に分かれる', L.SX + 40, L.CY + L.SH + 20);
-    ctx.fillText('（紫が内・赤が外）', L.SX + 40, L.CY + L.SH + 34);
-    ctx.restore();
+    addNote('0 次は白、1 次からは');
+    addNote('虹色に分かれる（紫が内・赤が外）');
   }
 
   /**
@@ -1742,7 +2457,7 @@ DG.modePath = (function () {
    * （いま選んでいる次数を最優先、あとは次数の小さい順）。
    */
   function brightLines(ctx, st, sol, sc, selM, avoidY) {
-    if (st.light === 'white') { whiteOrders(ctx, st, sc, avoidY); return; }
+    if (st.light === 'white') { whiteOrders(ctx, st, sc, avoidY, st.hoverBtn); return; }
     var col = P.rgbCss(D.pureColor(st.lambda));
     var vis = [];
     var i, o, px, y;
@@ -1756,23 +2471,65 @@ DG.modePath = (function () {
       ctx.save();
       ctx.shadowColor = col; ctx.shadowBlur = on ? 10 : 6;
       ctx.strokeStyle = col; ctx.lineWidth = on ? 4.5 : 3;
-      ctx.beginPath(); ctx.moveTo(L.SX - 1, y); ctx.lineTo(L.SX + 11, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(L.SX, y); ctx.lineTo(L.SX + L.SCR_W, y); ctx.stroke();
       ctx.restore();
       vis.push({ m: o.m, y: y, on: on });
     }
     ctx.restore();
 
-    orderChips(ctx, vis, avoidY);
+    orderChips(ctx, vis, avoidY, st.hoverBtn);
   }
 
-  /** 各スリットから点 P へ向かう光線 */
-  function rays(ctx, sc) {
+  /* ---------- 図の上の光線に描く波 ----------
+   * 右の全体図は横を省略して描いているので、本当の波長では描けない
+   * （1 m のあいだに波が 160 万個入る）。そこで
+   *   ・画面上の波長は見やすい大きさ（LAM_DISP）にする
+   *   ・そのかわり「点 P に届いたときの隣どうしのずれ」は
+   *     正しく d sinθ ぶん（＝ extraLam 波長ぶん）になるように、
+   *     光線の長さに比例して位相を足していく
+   * こうすると、m 次の明線の方向では P で山と山がそろう。
+   */
+  var LAM_DISP = 26;      // 図の上の見かけの波長 [px]
+  var AMP_DISP = 2.3;     // 図の上の見かけの振幅 [px]
+
+  function beamWave(ctx, st, from, to, extraLam, phase0, color, width) {
+    var dx = to.x - from.x, dy = to.y - from.y;
+    var Lp = Math.hypot(dx, dy);
+    if (Lp < 2) return;
+    var ux = dx / Lp, uy = dy / Lp, nx = -uy, ny = ux;
+    var wt = 2 * Math.PI * (P.V_NM_PER_S / st.lambda) * (st.t || 0);
+    var steps = Math.max(40, Math.round(Lp / 1.6));
     ctx.save();
-    ctx.strokeStyle = COL.ray; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
-    ctx.globalAlpha = 0.92;
+    ctx.strokeStyle = color; ctx.lineWidth = width || 1.3;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (var i = 0; i <= steps; i++) {
+      var e = Lp * i / steps;
+      var ph = phase0 + 2 * Math.PI * (e / LAM_DISP + extraLam * e / Lp) - wt;
+      var u = Math.sin(ph) * AMP_DISP;
+      var x = from.x + ux * e + nx * u;
+      var y = from.y + uy * e + ny * u;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * 各スリットから点 P へ向かう光線。
+   * ② では、波が進んでいることがわかるように破線を流す
+   * （右の全体図は横を省略して描いているので、ここに波形は描かない）。
+   */
+  function rays(ctx, sc, st, sol) {
+    var ratio = sol.delta / st.lambda;      // 隣どうしが P で何波長ずれるか
+    ctx.save();
     for (var i = 0; i < sc.slits.length; i++) {
-      var s = sc.slits[i];
-      ctx.beginPath(); ctx.moveTo(s.x + 4, s.y); ctx.lineTo(sc.P1.x, sc.P1.y); ctx.stroke();
+      var s = D.vec(sc.slits[i].x + 4, sc.slits[i].y);
+      // 進む向きがわかるように、うすい直線を下じきにする
+      ctx.globalAlpha = 0.28;
+      D.line(ctx, s, sc.P1, COL.ray, 1);
+      ctx.globalAlpha = 1;
+      beamWave(ctx, st, s, sc.P1, i * ratio, 0, COL.ray, 1.25);
     }
     ctx.restore();
   }
@@ -1792,7 +2549,7 @@ DG.modePath = (function () {
     ctx.font = D.font(11);
     ctx.fillStyle = '#6b7580';
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('l は d にくらべてけた違いに長いので', L.BREAK_X + 13, yBreakBot + 6);
+    ctx.fillText('L は d にくらべてけた違いに長いので', L.BREAK_X + 13, yBreakBot + 6);
     ctx.fillText('途中を省略しています', L.BREAK_X + 13, yBreakBot + 21);
     ctx.restore();
 
@@ -1800,7 +2557,7 @@ DG.modePath = (function () {
     ctx.save();
     ctx.font = D.font(12.5, true);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    var lt = 'l ＝ ' + st.L.toFixed(2) + ' m';
+    var lt = 'L ＝ ' + st.L.toFixed(2) + ' m';
     var lw = ctx.measureText(lt).width;
     var lcx = (sc.gx + L.BREAK_X) / 2;
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -1822,9 +2579,9 @@ DG.modePath = (function () {
     }
 
     // x の寸法線（ステップ 4）
-    if (step >= 4 && sc.pOn && Math.abs(sol.sinT) > 1e-6) {
+    if (step >= 3 && sc.pOn && Math.abs(sol.sinT) > 1e-6) {
       // スクリーンの右どなり（目盛りの数字と重ならない側）に引く
-      var xd = L.SX + 22;
+      var xd = L.SX + L.SCR_W + 10;
       D.dimLine(ctx, D.vec(xd, L.CY), D.vec(xd, sc.P1.y), '', '#1663b5', 0);
       ctx.save();
       ctx.font = D.font(12.5, true);
@@ -1859,19 +2616,71 @@ DG.modePath = (function () {
   }
 
   /* ---------- 左パネル：格子の拡大 ---------- */
+
+  /**
+   * 光線に沿った 1 次元の波（sin カーブ）。
+   * 拡大図は正しい縮尺なので、d ＝ LD px から「1 nm が何 px か」が決まる。
+   * したがって画面上の波長も、経路差も、すべて同じものさしで描ける。
+   *   s0: 始点での光路長 [nm]（スリットを 0 とする）
+   */
+  function rayWave(ctx, st, from, dir, lenPx, s0, nmToPx, color, amp, width) {
+    var n = D.nrmOf(dir);
+    var steps = Math.max(60, Math.round(lenPx));
+    ctx.save();
+    ctx.strokeStyle = color; ctx.lineWidth = width || 2;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (var i = 0; i <= steps; i++) {
+      var px = lenPx * i / steps;
+      var u = P.waveAt(s0 + px / nmToPx, st.t || 0, st.lambda) * amp;
+      var x = from.x + dir.x * px + n.x * u;
+      var y = from.y + dir.y * px + n.y * u;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * 「⚡ 経路差を強調」の強さ（0〜1）。
+   * 押してから 2.2 秒かけて数回ピクッと光って消える。
+   * 暗くなりすぎると何が光っているかわからないので、下限を高めにとってある。
+   * ステップ 2 のあいだは、押さなくても 5.5 秒ごとに自動で光る。
+   */
+  function pulseProfile(t, dur) {
+    if (!(t >= 0) || t > dur) return 0;
+    var fade = 1 - t / dur;
+    return fade * (0.72 + 0.28 * Math.cos(2 * Math.PI * 2.2 * t));
+  }
+  function pathGlow(st) {
+    var amt = 0;
+    if (st.pulse && st.pulse.kind === 'path') {
+      amt = pulseProfile((st.nowSec || 0) - st.pulse.t0, 2.2);
+    }
+    if (st.mode === 'path' && st.step === 1) {
+      amt = Math.max(amt, pulseProfile((st.nowSec || 0) % 5.5, 2.2));
+    }
+    return amt;
+  }
+
   function zoomPanel(ctx, st, sol, sc, step) {
     var s1 = sc.s1, s2 = sc.s2, F = sc.F, dir = sc.dir;
+    var nmToPx = L.LD / st.d;               // 1 nm が何 px か（拡大図は正しい縮尺）
+    var amp = 7;
 
     ctx.save();
     ctx.font = D.font(11.5, true);
     ctx.fillStyle = '#2b5a78';
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('回折格子の拡大（隣りあう 2 本のスリット）', L.DIV / 2, 14);
+    ctx.fillText('回折格子の拡大（隣りあう 2 本のスリット）', L.DIV / 2, 84);
     ctx.font = D.font(11);
     ctx.fillStyle = '#5b6672';
-    ctx.fillText('ここでは角も長さも正しい縮尺です', L.DIV / 2, 33);
+    ctx.fillText('ここでは角も長さも波長も正しい縮尺です', L.DIV / 2, 102);
+    ctx.restore();
 
+    // ---- 板（右の面は 筋（ギザギザ）と スリット（平ら）が交互）----
     var plateTop = L.CY - 122, plateBot = L.CY + 122;
+    ctx.save();
     ctx.fillStyle = COL.plate;
     ctx.fillRect(L.LX - 10, plateTop, 20, plateBot - plateTop);
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
@@ -1883,42 +2692,71 @@ DG.modePath = (function () {
     ctx.moveTo(L.LX - 10, plateBot); ctx.lineTo(L.LX + 10, plateBot);
     ctx.moveTo(L.LX - 10, plateTop); ctx.lineTo(L.LX - 10, plateBot);
     ctx.stroke();
-    // 右の面：筋（ギザギザ）と、筋と筋のあいだ（平ら＝スリット）が交互
     ctx.strokeStyle = '#3f7ba1'; ctx.lineWidth = 1.3;
     D.gratingFace(ctx, L.LX + 10, plateTop, plateBot, s1.y, L.LD, 3.4, 7, 8);
     ctx.font = D.font(10.5);
     ctx.fillStyle = '#5b6672';
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('← 筋', L.LX + 22, s1.y - L.LD / 2);
-    ctx.fillText('← 筋と筋の間がスリット', L.LX + 22, s2.y + 16);
+    ctx.fillText('← 筋', L.LX + 24, s1.y - L.LD / 2);
+    ctx.fillText('← 筋と筋の間がスリット', L.LX + 24, s2.y + 18);
     ctx.restore();
 
-    for (var i = -1; i <= 1; i++) {
-      D.arrow(ctx, D.vec(22, L.CY + i * 50), D.vec(1, 0), L.LX - 32, COL.rayDim, 2, 7);
+    /* ---- 入射光：スリットに当たるぶんだけ描く ----
+     * スリットのないところに矢印を描くと、格子を通ったあとに
+     * 何も出ていない光を描くことになるので、描かない。 */
+    var inX0 = 20, inX1 = L.LX - 12;
+    var slitsL = [s1, s2];
+    for (var k = 0; k < 2; k++) {
+      var sy = slitsL[k].y;
+      if (st.showWave) {
+        rayWave(ctx, st, D.vec(inX0, sy), D.vec(1, 0), inX1 - inX0,
+          (inX0 - L.LX) / nmToPx, nmToPx, COL.rayDim, amp, 1.8);
+      }
+      D.arrow(ctx, D.vec(inX1 - 12, sy), D.vec(1, 0), 12, COL.rayDim, 1.8, 7);
     }
+    ctx.save();
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#8d8163';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('入射光', inX0 + 2, s1.y - amp - 6);
+    ctx.restore();
 
+    // ---- d の寸法 ----
     D.dimLine(ctx, D.vec(L.LX - 26, s1.y), D.vec(L.LX - 26, s2.y), 'd', '#3a4550', 12);
 
-    var rayLen = 162;
-    D.line(ctx, s1, D.add(s1, D.mul(dir, rayLen)), COL.ray, 2);
-    D.line(ctx, s2, D.add(s2, D.mul(dir, rayLen)), COL.ray, 2);
-    D.arrow(ctx, D.add(s1, D.mul(dir, rayLen - 13)), dir, 13, COL.ray, 2, 7);
-    D.arrow(ctx, D.add(s2, D.mul(dir, rayLen - 13)), dir, 13, COL.ray, 2, 7);
+    // ---- 出ていく 2 本の光（軸＋ sin カーブ）----
+    var rayLen = 168, startPx = 12;
+    for (k = 0; k < 2; k++) {
+      var sp = slitsL[k];
+      var from = D.add(sp, D.mul(dir, startPx));
+      D.dashLine(ctx, sp, D.add(sp, D.mul(dir, rayLen)), 'rgba(120,130,140,0.5)', [4, 4], 1);
+      if (st.showWave) {
+        rayWave(ctx, st, from, dir, rayLen - startPx, startPx / nmToPx, nmToPx, COL.ray, amp, 2);
+      } else {
+        D.line(ctx, sp, D.add(sp, D.mul(dir, rayLen)), COL.ray, 2);
+      }
+      D.arrow(ctx, D.add(sp, D.mul(dir, rayLen - 12)), dir, 12, COL.ray, 2, 7);
+    }
     D.pointLabel(ctx, s1, '', 0, 0, '#2b2118');
     D.pointLabel(ctx, s2, '', 0, 0, '#2b2118');
 
-    if (step >= 2) {
-      D.dashLine(ctx, s1, F, '#8a8a8a', [5, 4], 1.2);
+    if (step >= 1) {
+      // 波面（ここから先は 2 本とも同じ長さ）
+      D.dashLine(ctx, s1, F, '#8a8a8a', [5, 4], 1.4);
+      // 経路差（緑）
       ctx.save();
       ctx.globalAlpha = 0.82;
       D.line(ctx, s2, F, COL.geo, 6);
       ctx.restore();
+      D.glowLine(ctx, s2, F, COL.geo, pathGlow(st));
+
       if (Math.abs(sol.theta) > 0.05) {
         D.rightAngle(ctx, F, D.unit(D.sub(s1, F)), D.mul(dir, -1), 9, '#666');
         D.angleArc(ctx, s2, Math.min(0, -sol.theta), Math.max(0, -sol.theta), 46, COL.ang, 'θ');
         var aP = Math.PI / 2;
         D.angleArc(ctx, s1, Math.min(aP, aP - sol.theta), Math.max(aP, aP - sol.theta), 34, COL.ang, 'θ');
       }
+      // 経路差のラベル
       ctx.save();
       ctx.font = D.font(12.5, true);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1933,47 +2771,245 @@ DG.modePath = (function () {
       ctx.restore();
       var mid = D.mul(D.add(s2, F), 0.5);
       D.dashLine(ctx, mid, D.vec(lx, ly - 11), COL.geo, [3, 3], 1);
+      // 強調中は、経路差の線だけでなくラベルも光らせる（線が短いので見落としやすい）
+      D.boxGlow(ctx, { x: lx - w / 2 - 8, y: ly - 11, w: w + 16, h: 22 },
+        pathGlow(st), COL.geo);
+    }
+
+    // ---- 「⚡ 経路差を強調」ボタン ----
+    if (step >= 1) {
+      D.canvasButton(ctx, 14, 46, '⚡ 経路差を強調', 'pulse-path',
+        st.hoverBtn === 'pulse-path', pathGlow(st) > 0.01);
     }
   }
 
-  /* ---------- ステップの吹き出し（該当するところのそばに置く） ---------- */
+  /* ---------- ステップ①：なぜ「平行」とみなせるのか ----------
+   * ことばだけでは伝わらないので、数で示す。
+   *   ・図に描いた 6 本のスリットの幅 ＝ 5d（例：10 μm）
+   *   ・スクリーンまでの距離 L（例：1 m）は、その 10 万倍
+   *   ・だから両端のスリットから点 P へ向かう光の「向きの差」は
+   *     Δθ ≒ 5d cosθ / L ＝ 0.00055°（θ ＝ 17.46° の 3 万分の 1）
+   * これを、角の差をわざと大きく描いた小さな図といっしょに出す。
+   */
+  function comma(n) {
+    var t = String(Math.round(n)), out = '';
+    for (var i = 0; i < t.length; i++) {
+      if (i > 0 && (t.length - i) % 3 === 0) out += ',';
+      out += t.charAt(i);
+    }
+    return out;
+  }
+
+  function parallelInset(ctx, st, sol, sc, glow) {
+    var x0 = 852, y0 = 292, w = 208, h = 176;
+    var spanNm = (L.NSLIT - 1) * st.d;                  // 図に描いた格子の幅 [nm]
+    var Lnm = st.L * 1e9;
+    var dth = spanNm * Math.cos(sol.theta) / Lnm;       // 向きの差 [rad]
+    var dthDeg = dth * 180 / Math.PI;
+
+    ctx.save();
+    D.roundRect(ctx, x0, y0, w, h, 10);
+    ctx.fillStyle = '#fffaf0'; ctx.fill();
+    ctx.strokeStyle = '#e0a800'; ctx.lineWidth = 1.6; ctx.stroke();
+    if (glow > 0.01) D.boxGlow(ctx, { x: x0, y: y0, w: w, h: h }, glow);
+
+    ctx.font = D.font(11.5, true);
+    ctx.fillStyle = '#8a5300';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('両端のスリットから P へ向かう光', x0 + w / 2, y0 + 9);
+
+    // 角の差をわざと大きく描いた図
+    var ax = x0 + 24, ay = y0 + 62, bx = x0 + w - 24, by = y0 + 52;
+    ctx.strokeStyle = COL.ray; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay - 16); ctx.lineTo(bx, by);
+    ctx.moveTo(ax, ay + 16); ctx.lineTo(bx, by);
+    ctx.stroke();
+    ctx.fillStyle = '#2b2118';
+    ctx.beginPath(); ctx.arc(ax, ay - 16, 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ax, ay + 16, 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#5b6672';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('上端', ax - 22, ay - 16);
+    ctx.fillText('下端', ax - 22, ay + 16);
+    ctx.fillText('P', bx + 7, by);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('（角の差は大きく描いています）', x0 + w / 2, y0 + 84);
+
+    // 数で示す
+    ctx.font = D.font(11);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#3a4550';
+    var yy = y0 + 104;
+    ctx.fillText('格子 6 本ぶんの幅 5d ＝ ' + (spanNm / 1000).toFixed(1) + ' μm', x0 + 12, yy);
+    ctx.fillText('L ＝ ' + st.L.toFixed(2) + ' m ＝ その ' + comma(Lnm / spanNm) + ' 倍', x0 + 12, yy + 15);
+    ctx.fillStyle = '#8a5300';
+    ctx.font = D.font(11, true);
+    ctx.fillText('向きの差 ＝ ' + dthDeg.toFixed(5) + '°', x0 + 12, yy + 32);
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#5b6672';
+    if (Math.abs(sol.thetaDeg) > 0.01) {
+      ctx.fillText('（θ ＝ ' + sol.thetaDeg.toFixed(2) + '° の '
+        + comma(Math.abs(sol.thetaDeg) / dthDeg) + ' 分の 1）', x0 + 12, yy + 48);
+    } else {
+      ctx.fillText('（θ ＝ 0° のときも同じくらい小さい）', x0 + 12, yy + 48);
+    }
+    ctx.font = D.font(11.5, true);
+    ctx.fillStyle = '#1b6b34';
+    ctx.fillText('→ ほとんど平行とみなせる', x0 + 12, yy + 63);
+    ctx.restore();
+  }
+
+  /* ---------- 点 P の拡大図（教科書 図 8 と同じ見せ方） ----------
+   * スクリーン上の点 P を赤い丸で囲み、赤い矢印で大きな円に引き出して、
+   * 「そこに届く 2 本の波」を並べて見せる。経路差が λ の整数倍なら
+   * 山と山がそろい、そうでなければずれていることが一目でわかる。
+   */
+  function zoomGlow(st) {
+    if (st.mode === 'path' && st.step === 2) return pulseProfile((st.nowSec || 0) % 5.5, 2.2);
+    return 0;
+  }
+
+  function pointZoom(ctx, st, sol, sc) {
+    var Py = P.clamp(sc.P1.y, L.CY - L.SH, L.CY + L.SH);
+    var above = (Py <= L.CY);                 // P が上側なら拡大図は下側へ
+    var c = D.vec(952, above ? 378 : 152);
+    var r = 96;
+    var sx = L.SX + L.SCR_W / 2;
+    var strong = (sol.kind === 'strong');
+    var glow = zoomGlow(st);
+
+    // スクリーン上の P を赤い小円で囲む
+    ctx.save();
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.arc(sx, Py, 17, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 赤い矢印（小円 → 大円）
+    var a0 = D.vec(sx - 18, Py + (above ? 12 : -12));
+    var dirTo = D.unit(D.sub(a0, c));
+    var a1 = D.add(c, D.mul(dirTo, r + 10));
+    var mid0 = D.mul(D.add(a0, a1), 0.5);
+    var bulge = D.mul(D.nrmOf(D.unit(D.sub(a1, a0))), above ? 26 : -26);
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(a0.x, a0.y);
+    ctx.quadraticCurveTo(mid0.x + bulge.x, mid0.y + bulge.y, a1.x, a1.y);
+    ctx.stroke();
+    var hd = D.unit(D.sub(a1, D.vec(mid0.x + bulge.x, mid0.y + bulge.y)));
+    var hn = D.nrmOf(hd);
+    ctx.fillStyle = '#d0342c';
+    ctx.beginPath();
+    ctx.moveTo(a1.x + hd.x * 12, a1.y + hd.y * 12);
+    ctx.lineTo(a1.x + hn.x * 9, a1.y + hn.y * 9);
+    ctx.lineTo(a1.x - hn.x * 9, a1.y - hn.y * 9);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // 大きい円
+    ctx.save();
+    ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.98)'; ctx.fill();
+    if (glow > 0.01) {
+      ctx.save();
+      ctx.strokeStyle = '#e0a800';
+      ctx.globalAlpha = 0.85 * glow;
+      ctx.lineWidth = 3 + 12 * glow;
+      ctx.beginPath(); ctx.arc(c.x, c.y, r + 4 + 6 * glow, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.8;
+    ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.clip();
+
+    // 見出し
+    var nm = strong ? ('点 P' + sub(sol.m) + ' は強めあう') : '点 P は弱めあう';
+    ctx.font = D.font(13, true);
+    ctx.fillStyle = strong ? '#1b6b34' : '#a12a1c';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(nm, c.x, c.y - r + 22);
+
+    // 届く 2 本の波（下の光線のほうが d sinθ だけ余分に進んでいる）
+    var u = D.vec(Math.cos(sol.theta), -Math.sin(sol.theta));
+    var n = D.nrmOf(u);
+    var nmToPx = L.LD / st.d;
+    var len = 112 * (0.55 + 0.45 * Math.cos(sol.theta));
+    var mid = D.vec(c.x - 6, c.y - 26);
+    var delta = Math.abs(P.pathDiff(st.d, sol.theta));
+    for (var k = 0; k < 2; k++) {
+      var base = D.add(mid, D.mul(n, k === 0 ? -13 : 11));
+      var from = D.add(base, D.mul(u, -len / 2));
+      var tip = D.add(base, D.mul(u, len / 2));
+      D.line(ctx, from, tip, 'rgba(232,134,42,0.5)', 1.4);
+      rayWave(ctx, st, from, u, len, (k === 1 ? delta : 0), nmToPx, COL.ray, 6, 1.8);
+      D.pointLabel(ctx, tip, 'P' + (strong ? sub(sol.m) : ''), 15, -9, '#3a4550');
+    }
+    // 到着面
+    var tm = D.add(mid, D.mul(u, len / 2));
+    D.dashLine(ctx, D.add(tm, D.mul(n, -36)), D.add(tm, D.mul(n, 30)), '#2b2118', [5, 4], 1.3);
+
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#5b6672';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('注：2 本は見やすいように', c.x, c.y + r - 52);
+    ctx.fillText('ずらして描いています', c.x, c.y + r - 38);
+    ctx.fillText('（実際には重なります）', c.x, c.y + r - 24);
+    ctx.restore();
+  }
+
+  /* ---------- ステップの吹き出し ----------
+   * 図の左上に「① …」を出すのと同時に、図の中の該当する場所に
+   * 同じ番号を付けた吹き出しを出す（薄膜ページと同じ作法）。
+   * 置き場所は固定にする。図の内容から計算すると、角度や次数によって
+   * ほかのラベルと重なってしまうため。
+   */
+  var BOX = {
+    1: { x: 12, y: 452 },     // 左パネルの下（経路差のカードの下）
+    2: { x: 322, y: 388 },    // 光軸の下・格子の手前（点 P の拡大図とぶつからない）
+    3: { x: 322, y: 388 }
+  };
+  var BOX_PAR = { x: 578, y: 52 };   // 「平行とみなせる」の吹き出し（光線の束の上）
+
   function stepCallout(ctx, st, sol, sc, step) {
-    var box = null;
+    var box = null, b = BOX[step];
     if (step === 1) {
-      // 光線の束のそば
-      var f = 0.28;
+      // ①では 2 つ出す。
+      //   ・光線の束のところに「d ≪ L だから平行とみなせる」
+      //   ・経路差の直角三角形のところに「経路差はいつも同じ d sinθ」
+      var f = 0.3;
       var a1 = D.vec(sc.gx + (L.SX - sc.gx) * f, L.CY + (sc.P1.y - L.CY) * f);
-      box = D.callout(ctx, a1, -110, -168, [
-        'd ≪ l なので、各スリットを通って',
-        '点 P に向かう光は平行とみなせる'
+      D.calloutAt(ctx, a1, BOX_PAR.x, BOX_PAR.y, [
+        'd ≪ L なので、各スリットを通った',
+        '光は平行とみなせる（左下で確かめられます）'
       ], { border: '#e0a800', bg: '#fffaf0' });
-    } else if (step === 2) {
-      // 左の拡大図の、経路差（緑）のそば
-      box = D.callout(ctx, sc.F, -132, 150, [
-        '隣りあう光の道のりの差（経路差）は',
-        'いつも同じ　d sinθ ＝ ' + Math.round(Math.abs(sol.delta)) + ' nm',
-        '（下の緑のカードで λ と比べます）'
+      box = D.calloutAt(ctx, sc.F, b.x, b.y, [
+        '① 隣りあう光の道のりの差（経路差）は',
+        '　 いつも同じ　d sinθ ＝ ' + Math.round(Math.abs(sol.delta)) + ' nm',
+        '　（下の緑のカードで λ と比べます）'
       ], { border: COL.geo, bg: '#f0faf4' });
-    } else if (step === 3) {
-      // スクリーンの明線のそば
-      var lines3 = [
-        '経路差が λ の整数倍 d sinθ ＝ mλ',
-        'の方向で、全部の光がそろって明線'
+    } else if (step === 2) {
+      var lines2 = [
+        '② 経路差が λ の整数倍 d sinθ ＝ mλ',
+        '　 の方向で、全部の光がそろって明線'
       ];
-      lines3.push(sol.kind === 'strong'
-        ? '→ いまは ' + D.about(Math.abs(sol.ratio)) + ' λ ＝ m = ' + Math.abs(sol.m) + ' の明線'
-        : '→ いまは ' + D.about(Math.abs(sol.ratio)) + ' λ なので明線ではない');
-      box = D.callout(ctx, sc.P1, -286, 96, lines3,
+      lines2.push(sol.kind === 'strong'
+        ? '　→ いまは ' + D.about(Math.abs(sol.ratio)) + ' λ ＝ m = ' + Math.abs(sol.m) + ' の明線'
+        : '　→ いまは ' + D.about(Math.abs(sol.ratio)) + ' λ なので明線ではない');
+      // 引き出し線は、点 P の拡大図（左端）へ向ける
+      box = D.calloutAt(ctx, D.vec(856, sc.P1.y <= L.CY ? 378 : 152), b.x, b.y, lines2,
         { border: '#1663b5', bg: '#f2f7fd' });
     } else {
-      var mid = D.vec(L.SX + 22, (L.CY + sc.P1.y) / 2);
-      var lines4 = [
-        'スクリーン上の位置',
-        'x ＝ l tanθ ＝ ' + D.fmtLenM(Math.abs(sol.x))
+      var lines3 = [
+        '③ スクリーン上の位置',
+        '　 x ＝ L tanθ ＝ ' + st.L.toFixed(2) + ' × tan ' + sol.thetaDeg.toFixed(2) + '°',
+        '　 　 ＝ ' + D.fmtLenM(Math.abs(sol.x))
       ];
-      if (!sc.pOn) lines4.push('※ この方向はスクリーンの外');
-      box = D.callout(ctx, mid, -292, 104, lines4,
-        { border: '#1663b5', bg: '#f2f7fd' });
+      if (!sc.pOn) lines3.push('　※ この方向はスクリーンの外');
+      var mid = D.vec(L.SX + 22, (L.CY + sc.P1.y) / 2);
+      box = D.calloutAt(ctx, mid, b.x, b.y, lines3, { border: '#1663b5', bg: '#f2f7fd' });
     }
     var glow = D.pulseAmount(
       st.stepPulse ? { kind: 'step' + st.stepPulse.step, t0: st.stepPulse.t0 } : null,
@@ -1981,27 +3017,864 @@ DG.modePath = (function () {
     if (glow > 0) D.boxGlow(ctx, box, glow);
   }
 
-  /* ---------- 本体 ---------- */
-  function render(ctx, st, sol, sc, step) {
+  /* ---------- 本体 ----------
+   * ① と ② は同じレイアウト。②（opt.wave）では
+   *   ・拡大図の sin カーブと、下の帯の波が動く（st.t が進む）
+   *   ・光線が破線で流れる
+   *   ・スクリーンに干渉パターンそのものを描く
+   *   ・合成波のカードを足す
+   * だけが変わる。
+   */
+  function render(ctx, st, sol, sc, step, opt) {
+    var wave = !!(opt && opt.wave);
+    screenNotes.length = 0;
     D.panels(ctx);
 
     incoming(ctx, st, sc);
     D.screenBar(ctx, sc);
     D.screenRuler(ctx, sc);
-    rays(ctx, sc);
+    rays(ctx, sc, st, sol);
     D.gratingPlate(ctx, sc);
     axisAndAngles(ctx, st, sol, sc, step);
     var ep = eyePoint(sc);
-    brightLines(ctx, st, sol, sc, sol.kind === 'strong' ? sol.m : null, ep.y - 30);
+    if (wave && DG.modeWave) {
+      DG.modeWave.screenPattern(ctx, st, sol, sc, ep.y - 30);
+    } else {
+      brightLines(ctx, st, sol, sc, sol.kind === 'strong' ? sol.m : null, ep.y - 30);
+    }
     observer(ctx, sol, sc, ep);
+    if (wave || step >= 2) {
+      pointZoom(ctx, st, sol, sc);
+    } else {
+      // ステップ①では「なぜ平行とみなせるか」を数で示す枠も同時に出す
+      parallelInset(ctx, st, sol, sc, pulseProfile((st.nowSec || 0) % 5.5, 2.2));
+    }
 
-    zoomPanel(ctx, st, sol, sc, step);
-    if (st.showLabels) stepCallout(ctx, st, sol, sc, step);
+    zoomPanel(ctx, st, sol, sc, wave ? 1 : step);
+
+    if (wave && DG.modeWave) {
+      DG.modeWave.sumCard(ctx, st, sol, sc);
+      DG.modeWave.title(ctx);
+    } else {
+      stepTitle(ctx, step);
+      if (st.showLabels) stepCallout(ctx, st, sol, sc, step);
+    }
+    ctx.save();
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#8d8163';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('※ 波長は見やすく拡大しています（P でのずれは正しく d sinθ）', 322, 496);
+    ctx.restore();
+    drawNotes(ctx);
   }
 
-  return { render: render, STEPS: STEPS };
+  return {
+    render: render, STEPS: STEPS, CIRC: CIRC, pathGlow: pathGlow,
+    orderChips: orderChips, addNote: addNote
+  };
 })();
 
+/* ===== 60_mode_wave.js ===== */
+/* ② 実際の波の動きを見る
+ *
+ * レイアウトは ①（光路差の位置と式の原理）とまったく同じ。
+ * 変わるのは次の 3 つだけ。
+ *   1. 拡大図の sin カーブ・点 P の拡大図・下の帯の波が動く（st.t が進む）
+ *      ／光線は破線が流れて、進んでいることを示す
+ *   2. スクリーンに、干渉パターンそのもの（＝スクリーンの見え方）を描く
+ *   3. 合成波（すべてのスリットからの波の和）のカードを足す
+ * 図そのものは 50_mode_path.js の render() を opt.wave 付きで呼んで描く。
+ */
+window.DG = window.DG || {};
+DG.modeWave = (function () {
+  'use strict';
+  var D = DG.draw, P = DG.phys;
+  var L = D.L, COL = D.COL;
+
+  /** 合成波のカード（右パネルの空いているところ） */
+  var SUM = { x0: 322, y0: 384, x1: 800, y1: 464 };
+  var GAMMA = 0.45, GAMMA_WHITE = 0.62;
+  /** 合成波に足しあわせる波の本数（図に描いてあるスリットの本数と同じ） */
+  var NSUM = L.NSLIT;
+
+  /* ================= スクリーンの見え方（干渉パターン） ================= */
+  var cache = { key: '', cv: null };
+
+  function patternKey(st) {
+    return [st.d, st.L, st.lambda, st.light, st.gammaOn ? 1 : 0, st.N].join('|');
+  }
+
+  /** 1 px 幅の縦画像として明るさをつくる（重いので、設定が変わったときだけ） */
+  function buildPattern(st) {
+    var h = L.SH * 2 + 1;
+    var cv = document.createElement('canvas');
+    cv.width = 1; cv.height = h;
+    var g = cv.getContext('2d');
+    var img = g.createImageData(1, h);
+    var gam = st.gammaOn ? (st.light === 'white' ? GAMMA_WHITE : GAMMA) : 1;
+    for (var i = 0; i < h; i++) {
+      var yPx = i - L.SH;                       // 中心からの px（下向きが +）
+      var xm = -yPx / L.PPM;                    // スクリーン上の位置 [m]
+      var r, gg, b;
+      if (st.light === 'white') {
+        var c = P.spectrumColorAtX(xm, st.d, st.L, st.N, 1);
+        r = 255 * Math.pow(c.r / 255, gam);
+        gg = 255 * Math.pow(c.g / 255, gam);
+        b = 255 * Math.pow(c.b / 255, gam);
+      } else {
+        var th = P.thetaFromX(xm, st.L);
+        var I = Math.pow(P.intensityN(th, st.d, st.lambda, st.N), gam);
+        var pc = D.pureColor(st.lambda);
+        r = pc.r * I; gg = pc.g * I; b = pc.b * I;
+      }
+      img.data[i * 4] = Math.round(r);
+      img.data[i * 4 + 1] = Math.round(gg);
+      img.data[i * 4 + 2] = Math.round(b);
+      img.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    return cv;
+  }
+
+  /** スクリーンの面に干渉パターンを描き、次数のラベルを添える */
+  function screenPattern(ctx, st, sol, sc, avoidY) {
+    var key = patternKey(st);
+    if (key !== cache.key) { cache.key = key; cache.cv = buildPattern(st); }
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(cache.cv, 0, 0, 1, L.SH * 2 + 1,
+      L.SX, L.CY - L.SH, L.SCR_W, L.SH * 2 + 1);
+    ctx.imageSmoothingEnabled = true;
+    ctx.restore();
+
+    // 次数のラベル（①と同じ作法。クリックできる）
+    var chips = [];
+    var mMax = (st.light === 'white') ? Math.ceil(st.d / 380 - 1e-12) - 1 : sol.mMax;
+    for (var m = -mMax; m <= mMax; m++) {
+      var lam = (st.light === 'white') ? 380 : st.lambda;
+      var s = Math.abs(m) * lam / st.d;
+      if (!(s < 1)) continue;
+      var th = (m < 0 ? -1 : 1) * Math.asin(s);
+      var y = L.CY - P.xOnScreen(th, st.L) * L.PPM;
+      if (Math.abs(y - L.CY) > L.SH) continue;
+      chips.push({ m: m, y: y, on: (st.light !== 'white' && sol.kind === 'strong' && m === sol.m) });
+    }
+    DG.modePath.orderChips(ctx, chips, avoidY, st.hoverBtn);
+
+    if (st.light === 'white') {
+      DG.modePath.addNote('0 次は白、1 次からは');
+      DG.modePath.addNote('虹色（紫が内・赤が外）');
+    }
+    DG.modePath.addNote(st.gammaOn ? '明るさ：強調あり' : '明るさ：計算そのまま');
+    DG.modePath.addNote('N ＝ ' + st.N + ' 本で計算');
+  }
+
+  /* ================= 合成波 ================= */
+  /** N 個の等振幅・位相差一定の波の合成振幅 |sin(Nπδ/λ) / sin(πδ/λ)| */
+  function amplitudeOf(N, delta, lambda) {
+    var b = Math.PI * delta / lambda;
+    var s = Math.sin(b);
+    if (Math.abs(s) < 1e-9) return N;
+    return Math.abs(Math.sin(N * b) / s);
+  }
+
+  function sumCard(ctx, st, sol, sc) {
+    var N = NSUM;
+    var nmToPx = L.LD / st.d;                 // 拡大図と同じものさし
+    var delta = P.pathDiff(st.d, sol.theta);  // 隣りあう波のずれ [nm]
+    var t = st.t || 0;
+    var x0 = SUM.x0 + 40, x1 = SUM.x1 - 148;
+    var cy = (SUM.y0 + SUM.y1) / 2 - 2;
+    var unit = 24 / N;                        // 振幅 1 ぶんの px
+
+    ctx.save();
+    D.roundRect(ctx, SUM.x0, SUM.y0, SUM.x1 - SUM.x0, SUM.y1 - SUM.y0, 9);
+    ctx.fillStyle = '#faf7fd'; ctx.fill();
+    ctx.strokeStyle = '#d6c8e6'; ctx.lineWidth = 1.3; ctx.stroke();
+
+    ctx.font = D.font(11.5, true);
+    ctx.fillStyle = '#5a3a7a';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('合成波（' + N + ' 本の和）', SUM.x0 + 2, SUM.y0 - 5);
+
+    ctx.strokeStyle = '#cfc4de'; ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x0, cy); ctx.lineTo(x1, cy);
+    ctx.moveTo(x0, cy - N * unit); ctx.lineTo(x1, cy - N * unit);
+    ctx.moveTo(x0, cy + N * unit); ctx.lineTo(x1, cy + N * unit);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    var steps = 460, i, j;
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(232,134,42,0.42)';
+    for (j = 0; j < N; j++) {
+      ctx.beginPath();
+      for (i = 0; i <= steps; i++) {
+        var px = (x1 - x0) * i / steps;
+        var y = cy - P.waveAt(px / nmToPx + j * delta, t, st.lambda) * unit;
+        if (i === 0) ctx.moveTo(x0 + px, y); else ctx.lineTo(x0 + px, y);
+      }
+      ctx.stroke();
+    }
+    if (st.showSum) {
+      ctx.strokeStyle = COL.sum; ctx.lineWidth = 2.2; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (i = 0; i <= steps; i++) {
+        var px2 = (x1 - x0) * i / steps;
+        var sum = 0;
+        for (j = 0; j < N; j++) sum += P.waveAt(px2 / nmToPx + j * delta, t, st.lambda);
+        var y2 = cy - sum * unit;
+        if (i === 0) ctx.moveTo(x0 + px2, y2); else ctx.lineTo(x0 + px2, y2);
+      }
+      ctx.stroke();
+    }
+
+    var amp = amplitudeOf(N, delta, st.lambda);
+    var rt = x1 + 16;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = D.font(11);
+    ctx.fillStyle = '#5a3a7a';
+    ctx.fillText('合成波の振幅', rt, cy - 18);
+    ctx.font = D.font(15, true);
+    ctx.fillStyle = amp > N * 0.7 ? '#1b6b34' : (amp < N * 0.3 ? '#a12a1c' : '#8a6d00');
+    ctx.fillText(amp.toFixed(2) + ' / ' + N.toFixed(2), rt, cy + 2);
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#5b6672';
+    ctx.fillText(sol.kind === 'strong' ? '→ そろっている（明線）' : '→ 打ち消しあう', rt, cy + 20);
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.font = D.font(10);
+    ctx.fillStyle = '#8d8163';
+    ctx.fillText('図に描いた ' + N + ' 本のスリットからの波の和。実際は数千本なので、少しずれただけで完全に消えます。',
+      SUM.x0 + 12, SUM.y1 - 7);
+    ctx.restore();
+  }
+
+  /* ================= 左上の見出し ================= */
+  function title(ctx) {
+    var t = '実際の波の動きを見る';
+    ctx.save();
+    ctx.font = D.font(13.5, true);
+    var w = ctx.measureText(t).width + 26;
+    D.roundRect(ctx, 12, 10, w, 28, 8);
+    ctx.fillStyle = '#f3ecfa'; ctx.fill();
+    ctx.strokeStyle = '#8b3fa8'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = '#6d2f86';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(t, 25, 25);
+    ctx.restore();
+  }
+
+  function render(ctx, st, sol, sc) {
+    DG.modePath.render(ctx, st, sol, sc, st.step, { wave: true });
+  }
+
+  return {
+    render: render, screenPattern: screenPattern, sumCard: sumCard, title: title,
+    amplitudeOf: amplitudeOf, NSUM: NSUM, SUM: SUM
+  };
+})();
+
+/* ===== 62_mode_field.js ===== */
+/* ③ 各場所でどのように波が重なり合うか
+ *
+ * 「格子のすぐ先の 2 次元の波のようす」を、縮尺どおりに描く。
+ *   ・スリットの間隔 d を SP px で描くので、1 px ＝ d/SP [nm]
+ *   ・したがって画面上の波長も λ×SP/d [px] で、d と同じものさしになる
+ *
+ * ある瞬間の変位 Σ sin(k rᵢ − ωt) を色で塗る（青＝谷／橙＝山）。
+ * 右はしにスクリーンを置き、その上の点 P を上下にドラッグすると、
+ * P に届く 6 本の波と合成波が、スクリーンの右わきにたてに並んで出る。
+ * 「強めあいの線（実線）」「弱めあいの線（破線）」も重ねられる。
+ *
+ * 場の計算は時間に依らない部分（A = Σcos k rᵢ、B = Σsin k rᵢ）を先に作っておき、
+ * 毎フレームは値 = −sin(ωt)·A + cos(ωt)·B を取るだけにする（軽い）。
+ */
+window.DG = window.DG || {};
+DG.modeField = (function () {
+  'use strict';
+  var D = DG.draw, P = DG.phys;
+  var L = D.L, COL = D.COL;
+
+  /* スリットの本数と間隔について（大事）
+   * ここは「格子のすぐ先」を縮尺どおりに描くので、
+   * 本数を増やす／間隔を広げると、格子の幅にくらべてスクリーンが近すぎ（近接場）になり、
+   * 「d sinθ = mλ の向きで全部そろう」がまだ成り立たない図になってしまう。
+   *   ・6 本・54 px … 明線の向きでも合成振幅は 6 本中 3 程度にしかならない
+   *   ・4 本・40 px … 明線の向きで 4 本中 3.2（＝ 0.79）まで上がる ← これを使う
+   * 4 本（偶数）にすると、経路差 (m+1/2)λ の向きでちょうど打ち消しあうのも都合がよい。
+   */
+  var FL = {
+    x0: 236, y0: 26, x1: 890, y1: 626,    // 場を描く範囲（右はしがスクリーンの面）
+    gx: 340,                              // 回折格子の x
+    n: 4, sp: 40,
+    step: 2                               // 場の計算の刻み [px]
+  };
+  FL.cy = (FL.y0 + FL.y1) / 2;
+
+  /** スクリーン（板）。面は FL.x1 */
+  var SCR = { x: FL.x1, w: 16 };
+  /** 右わきの「P に届く波」パネル */
+  var PN = { x0: 924, x1: 1288, y0: 34, y1: 626, lam: 46 };
+
+  var NS = FL.n, SP = FL.sp;
+
+  function slitY(i) { return FL.cy + (i - (NS - 1) / 2) * SP; }
+  /** 1 px が何 nm か */
+  function nmPerPx(st) { return st.d / SP; }
+
+  /* ---------- 場のキャッシュ ---------- */
+  var cache = { key: '', A: null, B: null, S: null, w: 0, h: 0 };
+
+  function fieldKey(st) { return [st.d, st.lambda, SP, NS].join('|'); }
+
+  function buildField(st) {
+    var w = Math.floor((FL.x1 - FL.x0) / FL.step);
+    var h = Math.floor((FL.y1 - FL.y0) / FL.step);
+    var A = new Float32Array(w * h), B = new Float32Array(w * h), S = new Float32Array(w * h);
+    var lamPx = st.lambda * SP / st.d;
+    var k = 2 * Math.PI / lamPx;
+    var ys = [];
+    for (var i = 0; i < NS; i++) ys.push(slitY(i));
+    for (var j = 0; j < h; j++) {
+      var y = FL.y0 + j * FL.step;
+      for (var ii = 0; ii < w; ii++) {
+        var x = FL.x0 + ii * FL.step;
+        var a = 0, b = 0, sm = 0;
+        for (var s = 0; s < NS; s++) {
+          var dx = x - FL.gx, dy = y - ys[s];
+          var r = Math.sqrt(dx * dx + dy * dy);
+          // 格子より左（入射側）は描かない
+          if (dx < 2) { a = 0; b = 0; sm = 0; break; }
+          var ph = k * r;
+          // 遠いほど弱く（円形に広がるので 1/√r）。近すぎるところは頭打ち
+          var amp = 1 / Math.sqrt(Math.max(r, 40) / 40);
+          a += amp * Math.cos(ph);
+          b += amp * Math.sin(ph);
+          sm += amp;
+        }
+        A[j * w + ii] = a; B[j * w + ii] = b;
+        S[j * w + ii] = (sm > 1e-6) ? sm : 1e9;   // 場のないところは 0 になるように
+      }
+    }
+    return { A: A, B: B, S: S, w: w, h: h };
+  }
+
+  function ensureField(st) {
+    var key = fieldKey(st);
+    if (key !== cache.key) {
+      var f = buildField(st);
+      cache = { key: key, A: f.A, B: f.B, S: f.S, w: f.w, h: f.h };
+    }
+    return cache;
+  }
+
+  var buf = { cv: null, ctx: null, img: null, w: 0, h: 0 };
+  function ensureBuf(w, h) {
+    if (buf.w !== w || buf.h !== h) {
+      buf.cv = document.createElement('canvas');
+      buf.cv.width = w; buf.cv.height = h;
+      buf.ctx = buf.cv.getContext('2d');
+      buf.img = buf.ctx.createImageData(w, h);
+      buf.w = w; buf.h = h;
+    }
+    return buf;
+  }
+
+  /** ある瞬間の変位を色で */
+  function drawSnapshot(ctx, st) {
+    var f = ensureField(st);
+    var b = ensureBuf(f.w, f.h);
+    var wt = 2 * Math.PI * (P.V_NM_PER_S / st.lambda) * (st.t || 0);
+    var cw = Math.cos(wt), sw = Math.sin(wt);
+    var dat = b.img.data;
+    for (var i = 0; i < f.w * f.h; i++) {
+      var v = (-sw * f.A[i] + cw * f.B[i]) / f.S[i];  // −1〜1（距離による弱まりは打ち消す）
+      var u = v > 1 ? 1 : (v < -1 ? -1 : v);
+      var m = Math.pow(Math.abs(u), 0.75);
+      var r, g, bl;
+      if (u >= 0) { r = 255 - 23 * m; g = 255 - 121 * m; bl = 255 - 213 * m; }
+      else { r = 255 - 224 * m; g = 255 - 139 * m; bl = 255 - 47 * m; }
+      dat[i * 4] = r; dat[i * 4 + 1] = g; dat[i * 4 + 2] = bl; dat[i * 4 + 3] = 255;
+    }
+    b.ctx.putImageData(b.img, 0, 0);
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(b.cv, FL.x0, FL.y0, f.w * FL.step, f.h * FL.step);
+    ctx.restore();
+  }
+
+  /* ---------- 共通の飾り ---------- */
+  function grating(ctx, st) {
+    var x = FL.gx;
+    ctx.save();
+    ctx.fillStyle = COL.plate;
+    ctx.fillRect(x - 10, FL.y0, 14, FL.y1 - FL.y0);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    for (var i = 0; i < NS; i++) ctx.fillRect(x - 10, slitY(i) - 2, 14, 4);
+    ctx.strokeStyle = COL.plateEdge; ctx.lineWidth = 1.2;
+    ctx.strokeRect(x - 10, FL.y0, 14, FL.y1 - FL.y0);
+    // 入射光（スリットのあるところにだけ）
+    for (i = 0; i < NS; i++) {
+      D.arrow(ctx, D.vec(FL.x0 + 6, slitY(i)), D.vec(1, 0), x - 34 - FL.x0, COL.rayDim, 1.6, 6);
+    }
+    ctx.font = D.font(11, true);
+    ctx.fillStyle = '#2b5a78';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('回折格子', x, FL.y1 + 6);
+    D.dimLine(ctx, D.vec(x - 20, slitY(0)), D.vec(x - 20, slitY(1)), 'd', '#3a4550', 11);
+    ctx.restore();
+  }
+
+  /* ---------- スクリーン ---------- */
+  var scrCache = { key: '', cv: null };
+
+  /** スクリーンの面の明るさ（合成波の振幅の 2 乗） */
+  function screenStrip(st) {
+    var key = [st.d, st.lambda, SP, NS, FL.x1].join('|');
+    if (key === scrCache.key) return scrCache.cv;
+    var h = FL.y1 - FL.y0;
+    var cv = document.createElement('canvas');
+    cv.width = 1; cv.height = h;
+    var g = cv.getContext('2d');
+    var img = g.createImageData(1, h);
+    var pc = D.pureColor(st.lambda);
+    for (var i = 0; i < h; i++) {
+      var c = combineAt(st, D.vec(FL.x1, FL.y0 + i));
+      var v = Math.pow(P.clamp(c.amp / NS, 0, 1), 1.4);
+      img.data[i * 4] = Math.round(pc.r * v);
+      img.data[i * 4 + 1] = Math.round(pc.g * v);
+      img.data[i * 4 + 2] = Math.round(pc.b * v);
+      img.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    scrCache = { key: key, cv: cv };
+    return cv;
+  }
+
+  function screen(ctx, st) {
+    ctx.save();
+    ctx.fillStyle = '#15171a';
+    ctx.fillRect(SCR.x, FL.y0, SCR.w, FL.y1 - FL.y0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(screenStrip(st), 0, 0, 1, FL.y1 - FL.y0,
+      SCR.x, FL.y0, SCR.w, FL.y1 - FL.y0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.strokeStyle = '#8a949e'; ctx.lineWidth = 1.2;
+    ctx.strokeRect(SCR.x + 0.5, FL.y0 + 0.5, SCR.w, FL.y1 - FL.y0);
+    ctx.font = D.font(11, true);
+    ctx.fillStyle = '#7a6a48';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('スクリーン', SCR.x + SCR.w / 2, FL.y1 + 6);
+    ctx.restore();
+  }
+
+  /* ---------- 強めあいの線・弱めあいの線 ----------
+   * 「隣りあうスリットから P までの距離の差が mλ」になる点をつないだ線。
+   * 2 つのスリットを焦点とする双曲線になる（教科書の作図と同じ）。
+   *   焦点の間 ＝ d（画面では SP px）、a ＝ 経路差 ÷ 2、b² ＝ (d/2)² − a²
+   *   u ＝ ±a√(1 + X²/b²)　　（X ＝ 格子からの横の距離）
+   * 遠ざかると u/X → a/b ＝ tanθ、すなわち sinθ ＝ a/(d/2) ＝ mλ/d の直線に近づく。
+   * 経路差 mλ が強めあい（実線）、(m+1/2)λ が弱めあい（破線）。
+   */
+  var C_MAX = '#0d7a3f', C_MIN = '#8b3fa8';
+
+  /** 経路差 delta [px] の双曲線を描く。上下 2 本。戻り値は右はしの上側の点 */
+  function hyperbola(ctx, st, deltaPx, color, dash, width) {
+    var c = SP / 2, a = deltaPx / 2;
+    if (a >= c) return null;                       // sinθ > 1（その次数は出ない）
+    var b2 = c * c - a * a;
+    var X1 = FL.x1 - FL.gx;
+    var pts = [], X, u, i;
+    for (i = 0; i <= 80; i++) {
+      X = X1 * i / 80;
+      u = a * Math.sqrt(1 + X * X / b2);
+      pts.push(FL.gx + X, u);
+    }
+    ctx.save();
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineJoin = 'round';
+    if (dash) ctx.setLineDash(dash);
+    var sgn, last = null, started;
+    for (sgn = -1; sgn <= 1; sgn += 2) {
+      ctx.beginPath();
+      started = false;
+      for (i = 0; i < pts.length; i += 2) {
+        var y = FL.cy + sgn * pts[i + 1];
+        if (y < FL.y0 + 2 || y > FL.y1 - 2) { ctx.stroke(); ctx.beginPath(); started = false; continue; }
+        if (!started) { ctx.moveTo(pts[i], y); started = true; } else ctx.lineTo(pts[i], y);
+        // 上側の枝の、図に残っている点。名ふだは 7 割あたりに置く
+        if (sgn < 0 && (last === null || i <= pts.length * 0.7)) last = D.vec(pts[i], y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    return last || D.vec(FL.gx, FL.cy);
+  }
+
+  function strongWeakLines(ctx, st) {
+    var lamPx = st.lambda * SP / st.d;
+    var m, end;
+    if (st.showMinima) {
+      for (m = 0; m < 12; m++) {
+        if (!hyperbola(ctx, st, (m + 0.5) * lamPx, C_MIN, [7, 5], 1.4)) break;
+      }
+    }
+    if (!st.showMaxima) return;
+    ctx.save();
+    ctx.font = D.font(11, true);
+    for (m = 0; m < 12; m++) {
+      end = hyperbola(ctx, st, m * lamPx, C_MAX, null, 2.2);
+      if (!end) break;
+      // 次数の名ふだ（上側の線の先。図からはみ出さないように寄せる）
+      var txt = 'm = ' + m;
+      var w = ctx.measureText(txt).width;
+      var lx = P.clamp(end.x - w / 2, FL.gx + 20, FL.x1 - w - 18);
+      var ly = P.clamp(end.y - 15, FL.y0 + 12, FL.y1 - 12);
+      if (m === 0) ly = FL.cy - 15;
+      D.roundRect(ctx, lx - 5, ly - 9, w + 10, 18, 5);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+      ctx.strokeStyle = C_MAX; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = C_MAX;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, lx, ly + 1);
+    }
+    ctx.restore();
+  }
+
+  /** 図の中の凡例 */
+  function legend(ctx, st) {
+    var x = FL.x0 + 12, y = FL.y1 - 30;
+    var items = [];
+    if (st.showMaxima) items.push(['強めあいの線　d sinθ ＝ mλ', C_MAX, false]);
+    if (st.showMinima) items.push(['弱めあいの線　d sinθ ＝ (m+½)λ', C_MIN, true]);
+    if (!items.length) return;
+    ctx.save();
+    ctx.font = D.font(11, true);
+    var w = 0, i;
+    for (i = 0; i < items.length; i++) w = Math.max(w, ctx.measureText(items[i][0]).width);
+    D.roundRect(ctx, x, y - items.length * 18 + 4, w + 52, items.length * 18 + 8, 6);
+    ctx.fillStyle = 'rgba(255,255,255,0.86)'; ctx.fill();
+    ctx.strokeStyle = '#c9d2da'; ctx.lineWidth = 1; ctx.stroke();
+    for (i = 0; i < items.length; i++) {
+      var yy = y - (items.length - 1 - i) * 18 - 4;
+      ctx.strokeStyle = items[i][1]; ctx.lineWidth = items[i][2] ? 1.4 : 2.2;
+      ctx.setLineDash(items[i][2] ? [7, 5] : []);
+      ctx.beginPath(); ctx.moveTo(x + 10, yy); ctx.lineTo(x + 40, yy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = items[i][1];
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(items[i][0], x + 48, yy + 1);
+    }
+    ctx.restore();
+  }
+
+  /* ---------- 点 P（スクリーンの上だけを動く） ---------- */
+  /** 経路差 delta [px] の線が、スクリーンの面と交わる y（上側） */
+  function yOfDelta(st, deltaPx) {
+    var c = SP / 2, a = deltaPx / 2;
+    if (a >= c) return FL.cy;
+    var b2 = c * c - a * a, X = FL.x1 - FL.gx;
+    return FL.cy - a * Math.sqrt(1 + X * X / b2);
+  }
+
+  function pointAt(st) {
+    // はじめは 1 次の「強めあいの線」の上に置く（そろっているようすが最初に見える）
+    var y0 = yOfDelta(st, st.lambda * SP / st.d);
+    var y = (st.fy === undefined || st.fy === null) ? y0 : st.fy;
+    return D.vec(SCR.x, P.clamp(y, FL.y0 + 8, FL.y1 - 8));
+  }
+
+  /** 点 P での合成の情報 */
+  function combineAt(st, p) {
+    var lamPx = st.lambda * SP / st.d;
+    var k = 2 * Math.PI / lamPx;
+    var a = 0, b = 0, rs = [];
+    for (var i = 0; i < NS; i++) {
+      var dx = p.x - FL.gx, dy = p.y - slitY(i);
+      var r = Math.sqrt(dx * dx + dy * dy);
+      rs.push(r);
+      a += Math.cos(k * r); b += Math.sin(k * r);
+    }
+    return { amp: Math.sqrt(a * a + b * b), rs: rs, lamPx: lamPx, k: k };
+  }
+
+  /** 各スリットから P へ向かう波（1 次元の sin カーブ） */
+  function pointWaves(ctx, st, p) {
+    var c = combineAt(st, p);
+    var wt = 2 * Math.PI * (P.V_NM_PER_S / st.lambda) * (st.t || 0);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(FL.gx, FL.y0, FL.x1 - FL.gx, FL.y1 - FL.y0);
+    ctx.clip();
+    for (var i = 0; i < NS; i++) {
+      var from = D.vec(FL.gx + 2, slitY(i));
+      var dx = p.x - from.x, dy = p.y - from.y;
+      var Lp = Math.hypot(dx, dy);
+      var ux = dx / Lp, uy = dy / Lp, nx = -uy, ny = ux;
+      ctx.strokeStyle = 'rgba(20,30,45,0.75)'; ctx.lineWidth = 1.3;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      var steps = Math.max(40, Math.round(Lp / 1.5));
+      for (var s = 0; s <= steps; s++) {
+        var e = Lp * s / steps;
+        var u = Math.sin(c.k * e - wt) * 4.5;
+        var x = from.x + ux * e + nx * u;
+        var y = from.y + uy * e + ny * u;
+        if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    // 点 P（スクリーンの面の上）
+    ctx.save();
+    ctx.beginPath(); ctx.arc(p.x + SCR.w / 2, p.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.font = D.font(12, true);
+    var tag = 'P（↑↓ ドラッグ）';
+    var tw = ctx.measureText(tag).width;
+    D.roundRect(ctx, p.x - 12 - tw - 8, p.y - 11, tw + 16, 22, 6);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.fillStyle = '#d0342c';
+    ctx.fillText(tag, p.x - 12, p.y + 1);
+    ctx.restore();
+    return c;
+  }
+
+  /* ---------- 右わき：P に届く波をたてに並べる ---------- */
+  function wavesPanel(ctx, st, p, c) {
+    var x0 = PN.x0, x1 = PN.x1;
+    var wx0 = x0 + 62, wx1 = x1 - 14;             // 波を描く横はば
+    var wt = 2 * Math.PI * (P.V_NM_PER_S / st.lambda) * (st.t || 0);
+    var rowY = [], i, j;
+    var top = PN.y0 + 48, botRows = 300;
+    var gap = Math.min(62, (botRows - top) / Math.max(1, NS - 1));
+    var ampR = Math.min(22, gap * 0.36);
+    for (i = 0; i < NS; i++) rowY.push(top + i * gap);
+    var sumCy = 430;
+    var full = 74;                                 // 「全部そろったとき」の振幅 [px]
+    var unit = full / NS;                          // 振幅 1 ぶんの px
+
+    ctx.save();
+    D.roundRect(ctx, x0, PN.y0, x1 - x0, PN.y1 - PN.y0, 10);
+    ctx.fillStyle = '#fbfcfe'; ctx.fill();
+    ctx.strokeStyle = '#c9d2da'; ctx.lineWidth = 1.3; ctx.stroke();
+
+    ctx.font = D.font(12.5, true);
+    ctx.fillStyle = '#1a4e86';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('点 P に届く波', x0 + 14, PN.y0 + 16);
+
+    // ---- 各スリットからの波 ----
+    var steps = 200;
+    for (i = 0; i < NS; i++) {
+      var ph = c.k * c.rs[i];                      // 本当の位相（幾何から）
+      ctx.strokeStyle = 'rgba(160,160,168,0.55)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(wx0, rowY[i]); ctx.lineTo(wx1, rowY[i]); ctx.stroke();
+      ctx.strokeStyle = COL.ray; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (j = 0; j <= steps; j++) {
+        var e = (wx1 - wx0) * j / steps;
+        var u = Math.sin(2 * Math.PI * e / PN.lam + ph - wt);
+        if (j === 0) ctx.moveTo(wx0 + e, rowY[i] - u * ampR);
+        else ctx.lineTo(wx0 + e, rowY[i] - u * ampR);
+      }
+      ctx.stroke();
+      ctx.font = D.font(10.5);
+      ctx.fillStyle = '#5b6672';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText('スリット ' + (i + 1), wx0 - 8, rowY[i]);
+    }
+
+    // ---- 合成波 ----
+    var sy0 = 330;
+    ctx.strokeStyle = '#e6e9ee'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0 + 8, sy0); ctx.lineTo(x1 - 8, sy0); ctx.stroke();
+
+    ctx.font = D.font(11.5, true);
+    ctx.fillStyle = '#5a3a7a';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('ぜんぶ足すと（合成波）', x0 + 14, sy0 + 16);
+
+    // 「全部そろったときの振幅」の目安
+    ctx.strokeStyle = 'rgba(120,128,136,0.55)'; ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(wx0, sumCy - full); ctx.lineTo(wx1, sumCy - full);
+    ctx.moveTo(wx0, sumCy + full); ctx.lineTo(wx1, sumCy + full);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(160,160,168,0.55)';
+    ctx.beginPath(); ctx.moveTo(wx0, sumCy); ctx.lineTo(wx1, sumCy); ctx.stroke();
+
+    ctx.font = D.font(10);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    var gl = '全部そろったときの振幅（' + NS + ' 本ぶん）';
+    var glw = ctx.measureText(gl).width;
+    ctx.fillStyle = '#fbfcfe';
+    ctx.fillRect(wx1 - glw - 6, sumCy - full - 8, glw + 8, 16);
+    ctx.fillStyle = '#8d8163';
+    ctx.fillText(gl, wx1 - 2, sumCy - full);
+
+    ctx.strokeStyle = COL.sum; ctx.lineWidth = 2.4; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (j = 0; j <= steps; j++) {
+      var e2 = (wx1 - wx0) * j / steps;
+      var sum = 0;
+      for (i = 0; i < NS; i++) {
+        sum += Math.sin(2 * Math.PI * e2 / PN.lam + c.k * c.rs[i] - wt);
+      }
+      if (j === 0) ctx.moveTo(wx0 + e2, sumCy - sum * unit);
+      else ctx.lineTo(wx0 + e2, sumCy - sum * unit);
+    }
+    ctx.stroke();
+
+    // ---- 数値 ----
+    var amp = c.amp;
+    var kind = amp > NS * 0.7 ? '強めあう' : (amp < NS * 0.3 ? '打ち消しあう' : 'その中間');
+    var kc = amp > NS * 0.7 ? '#1b6b34' : (amp < NS * 0.3 ? '#a12a1c' : '#8a6d00');
+    var ty = 540;
+    ctx.font = D.font(11.5);
+    ctx.fillStyle = '#5b6672';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('合成波の振幅', x0 + 14, ty);
+    ctx.font = D.font(16, true);
+    ctx.fillStyle = kc;
+    ctx.fillText(amp.toFixed(2) + ' / ' + NS.toFixed(2) + '　→　' + kind, x0 + 14, ty + 26);
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#8d8163';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('※ この枠の中だけ、波長を見やすく拡大しています。', x0 + 14, PN.y1 - 24);
+    ctx.fillText('　 波どうしのずれの割合は本当の値です。', x0 + 14, PN.y1 - 9);
+    ctx.restore();
+  }
+
+  /* ---------- 情報カード ---------- */
+  function infoCard(ctx, st, lines, title, color) {
+    var x = 14, y = 62, w = FL.x0 - 30;
+    ctx.save();
+    // 折り返したあとの行数で高さを決める（はみ出さないように）
+    ctx.font = D.font(11.5);
+    var rows = 0, q;
+    for (q = 0; q < lines.length; q++) rows += wrap(ctx, lines[q], w - 26).length;
+    var h = 20 + rows * 15 + lines.length * 5;
+    D.roundRect(ctx, x, y, w, h, 8);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.font = D.font(11.5, true);
+    var tw = ctx.measureText(title).width + 18;
+    D.roundRect(ctx, x + 14, y - 10, tw, 20, 10);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(title, x + 23, y + 1);
+    ctx.font = D.font(11.5);
+    ctx.fillStyle = '#28405c';
+    ctx.textBaseline = 'top';
+    // 左の列は幅がせまいので、必要なら 2 行に折り返す
+    var yy = y + 12;
+    for (var i = 0; i < lines.length; i++) {
+      var parts = wrap(ctx, lines[i], w - 26);
+      for (var j = 0; j < parts.length; j++) { ctx.fillText(parts[j], x + 13, yy); yy += 15; }
+      yy += 5;
+    }
+    ctx.restore();
+  }
+
+  /** 幅に収まるように、日本語のテキストを折り返す */
+  function wrap(ctx, s, maxw) {
+    var out = [], line = '';
+    for (var i = 0; i < s.length; i++) {
+      var t = line + s.charAt(i);
+      if (ctx.measureText(t).width > maxw && line) { out.push(line); line = s.charAt(i); }
+      else line = t;
+    }
+    if (line) out.push(line);
+    return out;
+  }
+
+  function title(ctx, t, col, bg, edge) {
+    ctx.save();
+    ctx.font = D.font(13.5, true);
+    var w = ctx.measureText(t).width + 26;
+    D.roundRect(ctx, 12, 10, w, 28, 8);
+    ctx.fillStyle = bg; ctx.fill();
+    ctx.strokeStyle = edge; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(t, 25, 25);
+    ctx.restore();
+  }
+
+  /* ================= 本体 ================= */
+  function render(ctx, st, sol, sc) {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, L.W, L.H);
+    ctx.restore();
+
+    drawSnapshot(ctx, st);
+    ctx.save();
+    ctx.strokeStyle = '#c9d2da'; ctx.lineWidth = 1;
+    ctx.strokeRect(FL.x0 + 0.5, FL.y0 + 0.5, FL.x1 - FL.x0, FL.y1 - FL.y0);
+    ctx.restore();
+    strongWeakLines(ctx, st);
+    grating(ctx, st);
+    screen(ctx, st);
+    var p = pointAt(st);
+    var c = pointWaves(ctx, st, p);
+    legend(ctx, st);
+    wavesPanel(ctx, st, p, c);
+
+    var npx = nmPerPx(st);
+    // まん中の隣りあう 2 本ぶんの差（強めあいの線を決めているのがこの組）
+    var mid = Math.floor(NS / 2);
+    var dr = (c.rs[mid] - c.rs[mid - 1]) * npx;
+    // 外側の組との食いちがい（格子に近いほど大きい）
+    var spread = Math.abs((c.rs[1] - c.rs[0]) - (c.rs[NS - 1] - c.rs[NS - 2])) * npx;
+    var amp = c.amp;
+    var kind = amp > NS * 0.7 ? '強めあう' : (amp < NS * 0.3 ? '打ち消しあう' : 'その中間');
+    infoCard(ctx, st, [
+      '隣りあうスリット（まん中の 2 本）から P までの差',
+      '＝ ' + Math.round(Math.abs(dr)) + ' nm ＝ ' + D.about(Math.abs(dr) / st.lambda) + ' λ',
+      (spread > st.lambda * 0.08
+        ? '※ 外側の組では ' + Math.round(spread) + ' nm ほどちがいます（まだ格子に近いため。遠くではそろいます）'
+        : '※ どの隣りあう組をとってもほぼ同じ値です'),
+      '合成波の振幅 ＝ ' + amp.toFixed(2) + ' / ' + NS.toFixed(2),
+      '→ ' + kind,
+      '橙＝山、青＝谷。スクリーンの上で P を上下にドラッグしてください。',
+      '（この図はスリット ' + NS + ' 本ぶん。実際の回折格子はもっと多くあります）'
+    ], '③ 点 P での重ね合わせ', '#1663b5');
+
+    title(ctx, '各場所でどのように波が重なり合うか', '#1a4e86', '#eef4fb', '#1663b5');
+
+    ctx.save();
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#8d8163';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('この図は縮尺どおり（1 px ＝ ' + npx.toFixed(0) + ' nm、画面上の波長 ＝ '
+      + (st.lambda / npx).toFixed(1) + ' px）', FL.x1, FL.y1 + 22);
+    ctx.restore();
+  }
+
+  /** スクリーンの上（P をつかめる範囲）か */
+  function inField(x, y) {
+    return x > SCR.x - 26 && x < SCR.x + SCR.w + 26 && y > FL.y0 && y < FL.y1;
+  }
+  function setPoint(st, x, y) {
+    st.fy = P.clamp(y, FL.y0 + 8, FL.y1 - 8);
+  }
+
+  return {
+    render: render, FL: FL, SCR: SCR, PN: PN,
+    inField: inField, setPoint: setPoint,
+    combineAt: combineAt, pointAt: pointAt, nmPerPx: nmPerPx
+  };
+})();
 
 /* ===== 70_ui.js ===== */
 /* UI：状態管理・スライダー・ボタン・数値表示・解説パネルの更新 */
@@ -2011,30 +3884,25 @@ DG.ui = (function () {
   var P = DG.phys, D = DG.draw;
   var L = D.L;
 
-  var RANGE = { lambda: [380, 780], lines: [300, 2000], L: [0.20, 2.00] };
+  var RANGE = { lambda: [380, 780], d: [500, 3340], L: [0.20, 2.00] };
 
-  var PRESET = { lambda: 600, d: 2000, L: 1.00, m: 1, sinT: 0.3, onlyBright: true, light: 'mono' };
-
-  /* モードごとに設定（λ・d・L・見る方向・白色光かどうか）を別々に保つ。
-     タブを行き来しても、それぞれの設定が保たれる。 */
-  var PKEYS = ['lambda', 'd', 'L', 'm', 'sinT', 'onlyBright', 'light'];
-  function copyParams(src) {
-    var o = {};
-    for (var i = 0; i < PKEYS.length; i++) o[PKEYS[i]] = src[PKEYS[i]];
-    return o;
-  }
-  var saved = { path: copyParams(PRESET), wave: copyParams(PRESET) };
+  /* 物理の条件（λ・d・L・見る方向・単色／白色）は、
+     どのモードでも同じものを使う。タブを切りかえても引き継がれる。 */
 
   var st = {
-    mode: 'path',                  // 'path' | 'wave'
+    mode: 'path',                  // 'path' | 'wave' | 'field'
     light: 'mono',                 // 'mono' | 'white'
     lambda: 600, d: 2000, L: 1.00,
     N: 20,                         // 強度計算に使うスリットの本数
     m: 1, sinT: 0.3, onlyBright: true,
     step: 1,
     playing: false, slow: false, t: 0,
-    showLabels: true, showSum: true,
+    showLabels: true, showSum: true, showWave: true, gammaOn: true,
+    showMaxima: true, showMinima: true, fy: null,
+    pulse: null, hoverBtn: null,
     figFull: false,
+    /* 「🔍 実寸」オーバーレイ。開いていないときは null */
+    scaleOut: null,
     stepPulse: null, nowSec: 0, dragging: false
   };
 
@@ -2066,12 +3934,24 @@ DG.ui = (function () {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, L.W, L.H);
 
-    if (st.mode === 'wave' && DG.modeWave) {
+    if (st.scaleOut && DG.scaleOut) {
+      DG.scaleOut.render(ctx, st, sol, P.clamp(st.scaleOut.prog, 0, 1));
+      ctx.restore();
+      updateReadout(sol);
+      return;
+    }
+
+    if (st.mode === 'field' && DG.modeField) {
+      DG.modeField.render(ctx, st, sol, sc);
+    } else if (st.mode === 'wave' && DG.modeWave) {
       DG.modeWave.render(ctx, st, sol, sc);
     } else {
       DG.modePath.render(ctx, st, sol, sc, st.step);
     }
-    D.unwrapBand(ctx, st, sol);
+    if (st.mode === 'path' || st.mode === 'wave') {
+      var glow = (st.mode === 'path' && DG.modePath) ? DG.modePath.pathGlow(st) : 0;
+      D.unwrapBand(ctx, st, sol, glow);
+    }
     ctx.restore();
 
     updateReadout(sol);
@@ -2082,6 +3962,16 @@ DG.ui = (function () {
     lastFrame = now;
     st.nowSec += dt;
     if (st.playing) st.t += dt * (st.slow ? 0.25 : 1);
+    if (st.scaleOut && DG.scaleOut && !st.scaleOut.paused) {
+      st.scaleOut.prog += dt / DG.scaleOut.DUR * (st.scaleOut.slow ? 0.35 : 1);
+      if (st.scaleOut.prog >= 1) {          // 最後まで来たら止める
+        st.scaleOut.prog = 1;
+        st.scaleOut.paused = true;
+        updateScaleBtns();
+      } else {
+        syncSceneBtns();
+      }
+    }
     render();
     requestAnimationFrame(loop);
   }
@@ -2092,8 +3982,12 @@ DG.ui = (function () {
     var pt = (ev.touches && ev.touches[0]) ? ev.touches[0] : ev;
     return { x: (pt.clientX - r.left) * L.W / r.width, y: (pt.clientY - r.top) * L.H / r.height };
   }
+  /** スクリーンの上（クリック・ドラッグで見る方向を選べる範囲）か。
+      ①②は同じレイアウトなので、判定も同じ。 */
   function inScreenZone(pos) {
-    return pos.x > L.SX - 60 && pos.y > L.CY - L.SH - 10 && pos.y < L.CY + L.SH + 10;
+    if (st.mode !== 'path' && st.mode !== 'wave') return false;
+    return pos.x > L.SX - 60 && pos.x < L.SX + L.SCR_W + 70
+      && pos.y > L.CY - L.SH - 10 && pos.y < L.CY + L.SH + 10;
   }
   /** スクリーン上の y から見る方向を決める */
   function setDirFromY(y) {
@@ -2117,7 +4011,30 @@ DG.ui = (function () {
   function bindPointer() {
     var c = $('view');
     function down(ev) {
+      if (st.scaleOut) return;             // 実寸オーバーレイ中は図の操作をしない
       var pos = canvasPos(ev);
+      var hit = D.hitButton(pos.x, pos.y);
+      if (hit) {
+        if (hit === 'pulse-path') {
+          st.pulse = { kind: 'path', t0: st.nowSec };
+        } else if (hit.indexOf('ord:') === 0) {
+          // スクリーン脇の「m = 1」などのラベルをクリックしたら、その次数を見る
+          var k = Math.abs(parseInt(hit.slice(4), 10));
+          st.m = k;
+          st.sinT = P.sinThetaOf(k, st.lambda, st.d);
+          syncOrderBtns();
+        }
+        render();
+        ev.preventDefault();
+        return;
+      }
+      if (st.mode === 'field' && DG.modeField && DG.modeField.inField(pos.x, pos.y)) {
+        st.dragging = true;
+        DG.modeField.setPoint(st, pos.x, pos.y);
+        render();
+        ev.preventDefault();
+        return;
+      }
       if (!inScreenZone(pos)) return;
       st.dragging = true;
       setDirFromY(pos.y);
@@ -2125,10 +4042,14 @@ DG.ui = (function () {
       ev.preventDefault();
     }
     function move(ev) {
+      if (st.scaleOut) { c.classList.remove('grab'); return; }
       var pos = canvasPos(ev);
-      c.classList.toggle('grab', inScreenZone(pos));
+      st.hoverBtn = D.hitButton(pos.x, pos.y);
+      var overField = (st.mode === 'field' && DG.modeField && DG.modeField.inField(pos.x, pos.y));
+      c.classList.toggle('grab', inScreenZone(pos) || overField || !!st.hoverBtn);
       if (!st.dragging) return;
-      setDirFromY(pos.y);
+      if (st.mode === 'field') DG.modeField.setPoint(st, pos.x, pos.y);
+      else setDirFromY(pos.y);
       render();
       ev.preventDefault();
     }
@@ -2180,22 +4101,23 @@ DG.ui = (function () {
       lastStepKey = key;
       var lines = Math.round(P.linesPerMmFromD(st.d));
       var times = Math.round(st.L * 1e9 / st.d / 1000) * 1000;
-      $('sv1').textContent = 'd = ' + (st.d / 1000).toFixed(2) + ' μm（' + lines + ' 本/mm）、'
-        + 'l = ' + st.L.toFixed(2) + ' m　→　l は d の約 ' + comma(times) + ' 倍';
-      $('sv2').textContent = 'θ = ' + sol.thetaDeg.toFixed(2) + '° のとき　'
+      // ① 平行とみなせるわけ ＋ 経路差
+      $('sv1').innerHTML = 'd = ' + (st.d / 1000).toFixed(2) + ' μm（' + lines + ' 本/mm）、'
+        + 'L = ' + st.L.toFixed(2) + ' m　→　L は d の約 ' + comma(times) + ' 倍<br>'
+        + 'θ = ' + sol.thetaDeg.toFixed(2) + '° のとき　'
         + 'd sinθ = ' + (st.d / 1000).toFixed(2) + ' μm × ' + sol.sinT.toFixed(3)
         + ' = ' + Math.round(Math.abs(sol.delta)) + ' nm';
-      var s3 = 'いまは ' + D.about(Math.abs(sol.ratio)) + ' λ　→　'
+      var s2 = 'いまは ' + D.about(Math.abs(sol.ratio)) + ' λ　→　'
         + (sol.kind === 'strong' ? 'm = ' + Math.abs(sol.m) + ' の明線' : '明線になりません');
       if (sol.mMax === 0) {
-        s3 += '<br><span class="ng">sinθ = λ/d = ' + (st.lambda / st.d).toFixed(2)
+        s2 += '<br><span class="ng">sinθ = λ/d = ' + (st.lambda / st.d).toFixed(2)
           + ' > 1 なので、1 次以上の明線は存在しません</span>';
       }
-      $('sv3').innerHTML = s3;
-      var s4 = 'x = ' + st.L.toFixed(2) + ' m × tan ' + sol.thetaDeg.toFixed(2) + '° = '
+      $('sv2').innerHTML = s2;
+      var s3 = 'x = ' + st.L.toFixed(2) + ' m × tan ' + sol.thetaDeg.toFixed(2) + '° = '
         + D.fmtLenM(Math.abs(sol.x));
-      if (!sc.pOn) s4 += '（スクリーン ±' + D.fmtCm(sc.halfM) + ' の外）';
-      $('sv4').textContent = s4;
+      if (!sc.pOn) s3 += '（スクリーン ±' + D.fmtCm(sc.halfM) + ' の外）';
+      $('sv3').textContent = s3;
     }
     var boxes = document.querySelectorAll('.stepbox');
     for (var i = 0; i < boxes.length; i++) {
@@ -2268,7 +4190,7 @@ DG.ui = (function () {
   }
   function syncD() {
     var lines = Math.round(P.linesPerMmFromD(st.d));
-    $('sl-lines').value = lines;
+    $('sl-d').value = st.d;
     $('v-d').textContent = (st.d / 1000).toFixed(2);
     $('v-lines').textContent = '（' + lines + ' 本/mm）';
   }
@@ -2285,36 +4207,44 @@ DG.ui = (function () {
   }
 
   /* ---------- 見る方向のボタン ---------- */
+  var MMAX_BTN = 4;          // ボタンに出す最大の次数
   function buildOrderBtns() {
     var mMax = P.maxOrder(st.lambda, st.d);
-    var key = 'm' + mMax;
+    var key = 'm' + mMax + '|' + Math.round(st.lambda) + '|' + Math.round(st.d);
     if (key === lastOrderKey) return;
     lastOrderKey = key;
     var root = $('order-btns');
     root.innerHTML = '';
-    for (var k = 0; k <= mMax; k++) {
+    for (var k = 0; k <= MMAX_BTN; k++) {
       (function (k) {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'ctl ord';
         b.textContent = 'm = ' + k;
         b.setAttribute('data-m', String(k));
-        b.addEventListener('click', function () {
-          st.m = k;
-          st.sinT = P.sinThetaOf(k, st.lambda, st.d);
-          syncOrderBtns();
-          render();
-        });
+        if (k > mMax) {
+          // sinθ = mλ/d > 1 になる次数は存在しないので押せない
+          b.disabled = true;
+          b.title = 'sinθ = ' + (k * st.lambda / st.d).toFixed(2) + ' > 1 なので出ません';
+        } else {
+          b.addEventListener('click', function () {
+            st.m = k;
+            st.sinT = P.sinThetaOf(k, st.lambda, st.d);
+            syncOrderBtns();
+            render();
+          });
+        }
         root.appendChild(b);
       })(k);
     }
     var note = document.createElement('span');
     note.className = 'mini';
-    note.textContent = mMax === 0
-      ? '（この設定では 0 次しか出ません）'
-      : '（下側にも同じ明線が出ます）';
+    note.textContent = (mMax >= MMAX_BTN)
+      ? '（下側にも同じ明線が出ます）'
+      : '（m = ' + (mMax + 1) + ' 以上は sinθ > 1 で出ません。d を大きくすると出ます）';
     root.appendChild(note);
   }
+
   function syncOrderBtns() {
     buildOrderBtns();
     var bs = $('order-btns').querySelectorAll('.ord');
@@ -2327,16 +4257,27 @@ DG.ui = (function () {
   /* ---------- モード ---------- */
   function setMode(m) {
     if (m === st.mode) return;
-    saved[st.mode] = copyParams(st);
     st.mode = m;
-    for (var i = 0; i < PKEYS.length; i++) st[PKEYS[i]] = saved[m][PKEYS[i]];
     syncAll();
-    $('tab-path').setAttribute('aria-selected', m === 'path' ? 'true' : 'false');
-    $('tab-wave').setAttribute('aria-selected', m === 'wave' ? 'true' : 'false');
+    var TABS = { path: 'tab-path', wave: 'tab-wave', field: 'tab-field' };
+    for (var kk in TABS) {
+      if (Object.prototype.hasOwnProperty.call(TABS, kk)) {
+        $(TABS[kk]).setAttribute('aria-selected', m === kk ? 'true' : 'false');
+      }
+    }
+    var anim = (m === 'wave' || m === 'field');
     $('grp-path').hidden = (m !== 'path');
-    $('grp-wave').hidden = (m !== 'wave');
+    $('grp-wave').hidden = !anim;
     $('lb-sum').hidden = (m !== 'wave');
-    if (m !== 'wave') { st.playing = false; updatePlayBtn(); }
+    $('lb-gamma').hidden = (m !== 'wave');
+    $('lb-mx').hidden = (m !== 'field');
+    $('lb-min').hidden = (m !== 'field');
+    $('lb-wave').hidden = (m !== 'path');
+    $('steps').hidden = (m !== 'path');
+    $('wavenotes').hidden = (m !== 'wave');
+    $('fieldnotes').hidden = (m !== 'field');
+    $('dirbox').hidden = (m === 'field');
+    if (!anim) { st.playing = false; updatePlayBtn(); }
   }
 
   function setLight(l) {
@@ -2362,16 +4303,69 @@ DG.ui = (function () {
   }
 
   function setStep(n) {
-    n = P.clamp(Math.round(n), 1, 4);
+    n = P.clamp(Math.round(n), 1, 3);
     if (n !== st.step && n >= 2) st.stepPulse = { step: n, t0: st.nowSec };
     if (n === 1) st.stepPulse = null;
     st.step = n;
     updateStepLabel();
   }
   function updateStepLabel() {
-    $('step-label').textContent = 'ステップ ' + st.step + ' / 4';
+    $('step-label').textContent = 'ステップ ' + st.step + ' / 3';
     $('btn-prev').disabled = (st.step <= 1);
-    $('btn-next').disabled = (st.step >= 4);
+    $('btn-next').disabled = (st.step >= 3);
+  }
+
+  /* ---------- 「🔍 実寸」オーバーレイ ---------- */
+  var lastSceneKey = '';
+  function buildSceneBtns() {
+    var root = $('scale-scenes');
+    if (!root || root.childNodes.length || !DG.scaleOut) return;
+    for (var i = 0; i < DG.scaleOut.SCENES.length; i++) {
+      (function (i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ctl ord';
+        // せまい画面では番号だけにする（名まえは CSS で隠す）
+        b.innerHTML = (i + 1) + '<span class="sc-name">. '
+          + DG.scaleOut.SCENES[i] + '</span>';
+        b.setAttribute('data-sc', String(i));
+        b.addEventListener('click', function () { jumpScene(i); });
+        root.appendChild(b);
+      })(i);
+    }
+  }
+  function syncSceneBtns() {
+    if (!DG.scaleOut) return;
+    var s = st.scaleOut ? DG.scaleOut.sceneOf(P.clamp(st.scaleOut.prog, 0, 1)) : -1;
+    if (String(s) === lastSceneKey) return;
+    lastSceneKey = String(s);
+    var bs = $('scale-scenes').querySelectorAll('.ord');
+    for (var i = 0; i < bs.length; i++) {
+      var k = parseInt(bs[i].getAttribute('data-sc'), 10);
+      bs[i].setAttribute('aria-pressed', k === s ? 'true' : 'false');
+    }
+  }
+  function jumpScene(i) {
+    if (!st.scaleOut) return;
+    st.scaleOut.prog = i / 4;
+    st.scaleOut.paused = false;
+    updateScaleBtns(); syncSceneBtns(); render();
+  }
+  function updateScaleBtns() {
+    var on = !!st.scaleOut;
+    $('btn-scale').textContent = on ? '✕ 実寸を閉じる' : '🔍 実寸';
+    $('btn-scale').setAttribute('aria-pressed', on ? 'true' : 'false');
+    $('grp-scale').hidden = !on;
+    $('btn-scale-pause').textContent = (on && st.scaleOut.paused) ? '▶ 再生' : '⏸ 一時停止';
+    $('btn-scale-slow').setAttribute('aria-pressed', (on && st.scaleOut.slow) ? 'true' : 'false');
+    document.body.classList.toggle('scale-only', on);
+  }
+  function setScaleOut(on) {
+    if (!DG.scaleOut) return;
+    st.scaleOut = on ? { prog: 0, paused: false, slow: false } : null;
+    if (on) buildSceneBtns();
+    lastSceneKey = '';
+    updateScaleBtns(); syncSceneBtns(); render();
   }
 
   /* ---------- 初期化 ---------- */
@@ -2391,8 +4385,8 @@ DG.ui = (function () {
       $('v-lambda').textContent = String(Math.round(st.lambda));
       updateSwatch(); syncOrderBtns();
     });
-    $('sl-lines').addEventListener('input', function () {
-      st.d = P.dFromLinesPerMm(parseFloat(this.value));
+    $('sl-d').addEventListener('input', function () {
+      st.d = parseFloat(this.value);
       syncD(); syncOrderBtns();
     });
     $('sl-L').addEventListener('input', function () {
@@ -2400,8 +4394,27 @@ DG.ui = (function () {
       $('v-L').textContent = st.L.toFixed(2);
     });
 
+    /* ＋ − ボタン。スライダーの 1 目もりずつ動かす（細かく合わせたいとき用） */
+    function nudge(btnId, slId, dir) {
+      $(btnId).addEventListener('click', function () {
+        var sl = $(slId);
+        var stp = parseFloat(sl.step) || 1;
+        var v = parseFloat(sl.value) + dir * stp;
+        v = P.clamp(v, parseFloat(sl.min), parseFloat(sl.max));
+        sl.value = v;
+        sl.dispatchEvent(new Event('input', { bubbles: true }));
+        render();
+      });
+    }
+    nudge('lam-dn', 'sl-lambda', -1); nudge('lam-up', 'sl-lambda', 1);
+    nudge('d-dn', 'sl-d', -1); nudge('d-up', 'sl-d', 1);
+    nudge('L-dn', 'sl-L', -1); nudge('L-up', 'sl-L', 1);
+
     $('tab-path').addEventListener('click', function () { setMode('path'); });
     $('tab-wave').addEventListener('click', function () { setMode('wave'); });
+    $('tab-field').addEventListener('click', function () { setMode('field'); });
+    $('ck-mx').addEventListener('change', function () { st.showMaxima = this.checked; });
+    $('ck-min').addEventListener('change', function () { st.showMinima = this.checked; });
     $('btn-mono').addEventListener('click', function () { setLight('mono'); });
     $('btn-white').addEventListener('click', function () { setLight('white'); });
 
@@ -2422,6 +4435,8 @@ DG.ui = (function () {
       syncOrderBtns();
     });
     $('ck-lab').addEventListener('change', function () { st.showLabels = this.checked; });
+    $('ck-wave').addEventListener('change', function () { st.showWave = this.checked; });
+    $('ck-gamma').addEventListener('change', function () { st.gammaOn = this.checked; });
     $('ck-sum').addEventListener('change', function () { st.showSum = this.checked; });
 
     var boxes = document.querySelectorAll('.stepbox');
@@ -2436,15 +4451,27 @@ DG.ui = (function () {
 
     $('btn-figfull').addEventListener('click', function () { setFigFull(!st.figFull); });
     document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape' && st.figFull) setFigFull(false);
+      if (ev.key !== 'Escape') return;
+      if (st.scaleOut) setScaleOut(false);
+      else if (st.figFull) setFigFull(false);
     });
 
+    $('btn-scale').addEventListener('click', function () { setScaleOut(!st.scaleOut); });
+    $('btn-scale-pause').addEventListener('click', function () {
+      if (!st.scaleOut) return;
+      if (st.scaleOut.paused && st.scaleOut.prog >= 1) st.scaleOut.prog = 0;
+      st.scaleOut.paused = !st.scaleOut.paused;
+      updateScaleBtns();
+    });
+    $('btn-scale-slow').addEventListener('click', function () {
+      if (!st.scaleOut) return;
+      st.scaleOut.slow = !st.scaleOut.slow;
+      updateScaleBtns();
+    });
+    $('btn-scale-reset').addEventListener('click', function () { jumpScene(0); });
+
     // まだ作っていない機能は押せないようにしておく
-    if (!DG.modeWave) {
-      $('tab-wave').disabled = true;
-      $('tab-wave').title = '次の段階で作ります';
-      $('tab-wave').style.opacity = '0.45';
-    }
+    if (!DG.modeField) { $('tab-field').disabled = true; }
     if (!DG.scaleOut) {
       $('btn-scale').disabled = true;
       $('btn-scale').title = '次の段階で作ります';
@@ -2470,7 +4497,30 @@ DG.ui = (function () {
       setStep: function (n) { setStep(n); render(); },
       setLight: function (l) { setLight(l); render(); },
       setDirFromY: function (y) { setDirFromY(y); render(); },
-      figFull: function (on) { setFigFull(on); }
+      pulse: function (kind) { st.pulse = { kind: kind, t0: st.nowSec }; render(); },
+      hitButton: function (x, y) { return D.hitButton(x, y); },
+      clickAt: function (x, y) {
+        var hit = D.hitButton(x, y);
+        if (hit && hit.indexOf('ord:') === 0) {
+          var k = Math.abs(parseInt(hit.slice(4), 10));
+          st.m = k; st.sinT = P.sinThetaOf(k, st.lambda, st.d);
+          syncOrderBtns(); render();
+        }
+        return hit;
+      },
+      figFull: function (on) { setFigFull(on); },
+      inScreenZone: function (pos) { return inScreenZone(pos); },
+      setPoint: function (y) {
+        if (DG.modeField) { DG.modeField.setPoint(st, DG.modeField.SCR.x, y); render(); }
+      },
+      scaleOut: function (on) { setScaleOut(on); },
+      scaleTo: function (prog) {
+        if (!st.scaleOut) setScaleOut(true);
+        st.scaleOut.prog = P.clamp(prog, 0, 1);
+        st.scaleOut.paused = true;
+        lastSceneKey = '';
+        updateScaleBtns(); syncSceneBtns(); render();
+      }
     }
   };
 })();
