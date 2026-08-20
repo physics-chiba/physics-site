@@ -79,6 +79,42 @@ p{margin:.5em 0}
 .canvas-box{position:relative;width:100%;max-width:700px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .canvas-hint{display:none;font-size:11.5px;color:var(--sub);text-align:center;margin-top:4px}
 @media(max-width:700px){.canvas-hint{display:block}}
+
+/* ---- スマホ用：図だけを画面いっぱいに ---- */
+.figfull-btn{display:none}
+/* スマホの縦（幅がせまい）だけでなく、横向き（高さがひくい）でも出す */
+@media(max-width:760px), (max-height:560px){
+  .figfull-btn{display:block;width:100%;margin:6px 0 2px;font-weight:700}
+}
+body.fig-full{overflow:hidden}
+body.fig-full .canvas-box{
+  position:fixed;inset:0;z-index:9998;margin:0;padding:6px;max-width:none;
+  background:#fff;display:flex;align-items:center;justify-content:center;overflow:auto;
+}
+body.fig-full canvas#view{
+  min-width:0;width:auto;height:auto;max-width:100%;max-height:100%;border-radius:0;
+}
+body.fig-full .figfull-btn{
+  display:block;position:fixed;z-index:9999;top:8px;right:8px;width:auto;margin:0;
+  background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.25);
+}
+body.fig-full .canvas-hint{display:none}
+/* 実寸モードで全画面にしたとき、再生などの操作だけは図の上に浮かせる */
+body.fig-full #grp-scale{
+  position:fixed;z-index:9999;left:50%;transform:translateX(-50%);bottom:10px;
+  background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:10px;
+  padding:6px 8px;box-shadow:0 1px 10px rgba(0,0,0,.22);max-width:96vw;flex-wrap:wrap;
+  justify-content:center;
+}
+@media(orientation:landscape){
+  body.fig-full .figfull-note{display:none !important}
+}
+body.fig-full .figfull-note{
+  display:block;position:fixed;z-index:9999;left:8px;top:10px;
+  font-size:11.5px;color:var(--sub);background:rgba(255,255,255,.9);
+  border:1px solid var(--line);border-radius:6px;padding:3px 8px;
+}
+.figfull-note{display:none}
 canvas#view{width:100%;min-width:620px;height:auto;display:block;border:1px solid #e3e6e9;border-radius:6px;background:#fff;touch-action:pan-y}
 
 /* ---- モードタブ ---- */
@@ -344,6 +380,8 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
       <canvas id="view" width="700" height="732" aria-label="薄膜の干渉の断面図"></canvas>
     </div>
     <p class="canvas-hint">← 図は横にスクロールできます →</p>
+    <button class="ctl figfull-btn" id="btn-figfull" aria-pressed="false">⛶ 図だけを大きく表示</button>
+    <p class="figfull-note">画面を横向きにすると、さらに大きく見えます</p>
 
     <div class="controls">
       <div class="flipbox" id="flip-box">
@@ -3328,11 +3366,35 @@ TF.modeBubble = (function () {
     }
     ctx.restore();
 
-    // 反射光（その角度で強めあう色）。選んだ角度のものは最後に太く描く
-    var sel = null, selD = 1e9;
-    for (i = 0; i < hit.length; i++) {
-      var dth = Math.abs(hit[i].th - st.theta);
-      if (dth < selD) { selD = dth; sel = hit[i]; }
+    // 反射光（その角度で強めあう色）。選んだ角度のものは最後に太く描く。
+    // 選んだ 1 本は「扇の中でいちばん近いもの」ではなく、いま指定されている角度そのもので作る
+    // （そうしないと、パネルの「見る角度 i」と太い光線の角度が最大 2°ほどずれる）
+    var sel = null;
+    var selTh = P.clamp(st.theta, 0, FAN.thMax);
+    var selX = S.x + drop * Math.tan(selTh * Math.PI / 180);
+    if (selX <= L.W - 150) {
+      var selR = selTh * Math.PI / 180;
+      var selDir = D.vec(Math.sin(selR), -Math.cos(selR));
+      var selP = D.vec(selX, surfY);
+      sel = { th: selTh, p: selP, dir: selDir, end: D.add(selP, D.mul(selDir, FAN.len)) };
+    } else {
+      var selD = 1e9;
+      for (i = 0; i < hit.length; i++) {
+        var dth = Math.abs(hit[i].th - st.theta);
+        if (dth < selD) { selD = dth; sel = hit[i]; }
+      }
+    }
+    // 選んだ角度の入射光も 1 本描く（扇の中になければ光源から線が出ていないように見えるため）
+    if (sel && hit.indexOf(sel) === -1) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(110,110,110,0.5)'; ctx.lineWidth = 3.4;
+      ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(sel.p.x, sel.p.y); ctx.stroke();
+      ctx.strokeStyle = white ? 'rgba(255,255,255,0.95)'
+        : P.rgbCss(P.wavelengthToRGB(st.lambda), 0.75);
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(sel.p.x, sel.p.y); ctx.stroke();
+      ctx.restore();
     }
     function drawRefl(h, big) {
       ctx.save();
@@ -3363,12 +3425,35 @@ TF.modeBubble = (function () {
       var thr2 = sel.th * Math.PI / 180;
       var rr = P.refractAngle(sel.th, st.n1);
       var scLike = { u: D.vec(Math.sin(thr2), Math.cos(thr2)), v: D.vec(Math.sin(rr), Math.cos(rr)) };
-      D.angleSet(ctx, scLike, { thetaRad: thr2 }, null, sel.p, null);
+      if (sel.th < 1.8) {
+        // 真上から見ているとき。共通の angleSet は断面図の位置（薄膜の説明文）に重なるので、
+        // このモード用に短い名札だけを光線のそばに置く。
+        ctx.save();
+        ctx.font = 'bold 11.5px ' + JP;
+        var zt = 'i = 0°（真上から見ている）';
+        var zw = ctx.measureText(zt).width;
+        D.roundRect(ctx, sel.p.x + 10, surfY - 40, zw + 14, 20, 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+        ctx.strokeStyle = '#b9c9de'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#1f5fa8';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(zt, sel.p.x + 17, surfY - 30);
+        ctx.restore();
+      } else {
+        D.angleSet(ctx, scLike, { thetaRad: thr2 }, null, sel.p, null);
+      }
       // 目は光線の延長線上に置く。「見える色」パネルに重なるときは手前へ下げる
       var t = FAN.len + 24;
+      // 「見える色」パネル（右上）と、光源の名札（左上）のどちらにも重ならない位置まで手前へ下げる
+      var hitsSeen = function (q) {
+        return q.x > SEEN.x - 34 && q.y < SEEN.y + SEEN.h + 42;
+      };
+      var hitsSrc = function (q) {         // 見る角度 0° 付近で光源の λ 表示に重なるのを防ぐ
+        return q.x < SRC.x + 215 && q.y < SRC.y + 52;
+      };
       for (; t > 50; t -= 3) {
         var q = D.add(sel.p, D.mul(sel.dir, t));
-        if (!(q.x > SEEN.x - 34 && q.y < SEEN.y + SEEN.h + 42)) break;  // ラベルの分も空ける
+        if (!hitsSeen(q) && !hitsSrc(q)) break;
       }
       var ep = D.add(sel.p, D.mul(sel.dir, t));
       ep = D.vec(P.clamp(ep.x, 26, L.W - 26), P.clamp(ep.y, 34, L.H - 26));
@@ -4015,6 +4100,18 @@ TF.ui = (function () {
     $('btn-white').setAttribute('aria-pressed', l === 'white' ? 'true' : 'false');
   }
 
+  /** スマホ用「図だけを大きく表示」。図を画面いっぱいに広げ、ほかは隠す */
+  function setFigFull(on) {
+    st.figFull = !!on;
+    document.body.classList.toggle('fig-full', st.figFull);
+    var b = $('btn-figfull');
+    if (b) {
+      b.textContent = st.figFull ? '✕ 閉じる' : '⛶ 図だけを大きく表示';
+      b.setAttribute('aria-pressed', st.figFull ? 'true' : 'false');
+    }
+    render();
+  }
+
   function updateScaleBtn() {
     var b = $('btn-scale');
     if (b) b.textContent = st.scaleOut ? '← もどる' : '🔍 実寸';
@@ -4104,6 +4201,11 @@ TF.ui = (function () {
     $('btn-scale').addEventListener('click', function () {
       st.scaleOut = st.scaleOut ? null : { prog: 0, slow: false, paused: true, dir: 'out' };
       updateScaleBtn();
+    });
+    // スマホ用：図だけを画面いっぱいに表示する
+    $('btn-figfull').addEventListener('click', function () { setFigFull(!st.figFull); });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && st.figFull) setFigFull(false);
     });
     $('btn-scale-pause').addEventListener('click', function () {
       if (st.scaleOut) { st.scaleOut.paused = !st.scaleOut.paused; updateScaleBtn(); }
@@ -4211,7 +4313,8 @@ TF.ui = (function () {
       /** ドラッグの当たり判定テスト用 */
       nearBottom: function (x, y) { return nearBottom({ x: x, y: y }); },
       pulse: function (kind) { st.pulse = { kind: kind, t0: st.nowSec }; },
-      dragTo: function (y) { setThicknessFromY(y); render(); }
+      dragTo: function (y) { setThicknessFromY(y); render(); },
+      figFull: function (on) { setFigFull(on); }
     }
   };
 })();
