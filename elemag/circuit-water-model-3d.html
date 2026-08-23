@@ -1117,7 +1117,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   // 部品メタ。color は回路図・立体図で共通に使う。
   var PARTS = {
     V:     { label: '電池', jp: '直流電源', unit: 'V', def: 3, min: 0.5, max: 10, step: 0.5, color: '#c2249a', source: true },
-    R:     { label: '抵抗', jp: '抵抗', unit: 'Ω', def: 5, min: 0, max: 10, step: 1, color: '#e07b18' },
+    R:     { label: '抵抗', jp: '抵抗', unit: 'Ω', def: 5, min: 0, max: 10, step: 0.5, color: '#e07b18' },
     BULB:  { label: '豆電球', jp: '豆電球', unit: '', def: 0, color: '#e0a800', nonlin: true },
     DIODE: { label: 'ダイオード', jp: 'ダイオード', unit: '', def: 0, color: '#2a7de1', nonlin: true, Von: 0.65 },
     IDEALDIODE: { label: 'ダイオード（整流作用のみ）', jp: 'ダイオード（整流作用のみ）', unit: '', def: 0, color: '#1c6fb0', nonlin: true, Von: 0, Ron: 0.001, ideal: true },
@@ -1499,6 +1499,10 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   function drawGroundSymbol(ctx, gx, gy, g) {
     var q = g.px(gx, gy), x = q[0], y = q[1], cell = g.cell;
     ctx.save();
+    // ドラッグで動かせることを示す丸ハンドル（結節点上）
+    ctx.beginPath(); ctx.arc(x, y, Math.max(6, cell * 0.17), 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(51,65,79,.08)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(51,65,79,.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]); ctx.stroke(); ctx.setLineDash([]);
     ctx.strokeStyle = '#33414f'; ctx.lineWidth = Math.max(2, cell * 0.06); ctx.lineCap = 'round';
     var stub = cell * 0.30;
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + stub); ctx.stroke();
@@ -2864,6 +2868,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     ground: null,  // アース（電位0の基準）ノード {x,y,v}
     probe: null,   // 立体図に電位を表示するノード {x,y,v}
     probeOverride: null, // ユーザーが○をドラッグして選んだ表示ノード 'x_y'（無ければ右上）
+    groundOverride: null, // ユーザーがアース記号をドラッグして選んだ基準ノード 'x_y'（無ければ左下）
     scaleDirty: false, // スケールが最適からずれているか
     // I-t/V-t グラフの軸スケール（軸付近ドラッグ）とパン（本体ドラッグ）。tEnd=null で最新に追従。
     graph: { tSpan: 0, autoSpan: 1, yMulI: 1, yMulV: 1, tEnd: null, yOffI: 0, yOffV: 0 },
@@ -2958,6 +2963,15 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   }
   function gridPointerDown(ev) {
     var pt = canvasPt(el['grid'], ev);
+    // アース記号をつかんだら、ドラッグで別の結節点へ移せる（基準点の位置を変えられる）
+    if (ST.ground) {
+      var gpG = Draw2D.pointToGrid(pt.x, pt.y);
+      if (Math.hypot(gpG.gx - ST.ground.x, gpG.gy - ST.ground.y) < 0.45) {
+        ST.drag = { kind: 'ground' };
+        window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
+        return;
+      }
+    }
     // 表示ノードの○をつかんだら、ドラッグで別の結節点へ移せる
     if (ST.probe) {
       var gp0 = Draw2D.pointToGrid(pt.x, pt.y);
@@ -2995,6 +3009,17 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       if (overGrid) {
         var gp = Draw2D.pointToGrid(pt.x, pt.y), nn = nearestAnyNode(gp.gx, gp.gy);
         if (nn && nn.pid !== ST.probeOverride) { ST.probeOverride = nn.pid; draw2d(); Draw3D.render(el['view3d'], ST); }
+      }
+      return;
+    }
+    if (ST.drag.kind === 'ground') {
+      if (overGrid) {
+        var gpg = Draw2D.pointToGrid(pt.x, pt.y), nng = nearestAnyNode(gpg.gx, gpg.gy);
+        if (nng && nng.pid !== ST.groundOverride) {
+          ST.groundOverride = nng.pid;
+          // 基準（0V点）が変わると各点の電位が付け替わるので、解いてあれば解き直す
+          if (cur().solved) convert(true); else { draw2d(); Draw3D.render(el['view3d'], ST); }
+        }
       }
       return;
     }
@@ -3126,7 +3151,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     tryRotate(id, [p.x, p.y], [x2, y2]);
   }
   function rotateSel() { if (ST.sel) rotatePart(ST.sel); }
-  function clearAll() { if (blockIfReviewing()) return; pushUndo(); cur().parts = []; ST.probeOverride = null; select(null); clearActivePreset(); invalidateSolve(); draw2d(); Draw3D.render(el['view3d'], ST); }
+  function clearAll() { if (blockIfReviewing()) return; pushUndo(); cur().parts = []; ST.probeOverride = null; ST.groundOverride = null; select(null); clearActivePreset(); invalidateSolve(); draw2d(); Draw3D.render(el['view3d'], ST); }
   // 電源と導線・スイッチは残し、素子（抵抗・豆電球・ダイオード・コンデンサ・コイル）だけ消す
   function clearNonSource() {
     if (blockIfReviewing()) return;
@@ -3241,9 +3266,9 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     var adjust = null;
     if (p.type === 'C') adjust = CFG.snapC;
     else if (p.type === 'R') adjust = function (v) {
-      if (ST.solved && ST.solved.ok && v < 1) {
+      if (ST.solved && ST.solved.ok && v < 0.5) {
         showMsg('アニメーション中は抵抗を0にできません。先に「アニメーションを終える（最初に戻る）」を押してください。', true);
-        return 1;
+        return 0.5;
       }
       return v;
     };
@@ -3407,8 +3432,9 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     for (var k in group) { var sp = k.split('_'); nodes[k] = { x: +sp[0], y: +sp[1], pid: k }; }
     return nodes;
   }
-  // アース＝メイン回路の一番左下（x最小→y最大）。位置は固定で、スイッチ等・孤立素子で動かない。
+  // アース＝基準ノード。手動でドラッグして選んでいればそちら（メイン回路外でも尊重）。無ければ左下（x最小→y最大）。
   function groundNode() {
+    if (ST.groundOverride) { var all = allNodes(); if (all[ST.groundOverride]) return all[ST.groundOverride]; }
     var best = null, nodes = mainNodes();
     for (var k in nodes) { var n = nodes[k]; if (!best || n.x < best.x || (n.x === best.x && n.y > best.y)) best = n; }
     return best;
@@ -4613,6 +4639,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     }
     cur().parts = built.parts; cur().nextId = built.nextId || 100;
     ST.probeOverride = null; // 表示ノードの選び直しはリセット
+    ST.groundOverride = built.ground || null; // プリセット指定のアース点（無ければ自動＝左下）
     ST.activePreset = name; highlightPresetButtons(); showPresetExplain(name);
     // プリセットを置いた段階では立体図は立ち上げない（変換ボタンで立ち上げる）
     select(null); invalidateSolve(); updateTimeControls(); draw2d(); Draw3D.fit(el['view3d'], ST); Draw3D.render(el['view3d'], ST);
@@ -4752,6 +4779,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       if (p.Rcold !== undefined) { f.push('R' + p.Rcold, 'k' + p.k, 'w' + p.pw); }
       return f.join(',');
     });
+    if (ST.groundOverride) { var gg = ST.groundOverride.split('_'); ps.push('G,' + gg[0] + ',' + gg[1]); } // アース点
     return head + ';' + ps.join(';');
   }
   function deserializeCompact(str) {
@@ -4763,9 +4791,11 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     var lbl = el['btn-expand'] && el['btn-expand'].querySelector('.exlabel');
     if (lbl) lbl.textContent = (ST.grid.cols >= 10) ? '狭くする' : 'エリアを広くする';
     Draw2D.resize(el['grid'], ST);
-    var counter = {}, ok = false, list = [];
+    var counter = {}, ok = false, list = [], gOverride = null;
     for (var i = 1; i < segs.length; i++) {
-      var f = segs[i].split(','); if (f.length < 4) continue;
+      var f = segs[i].split(',');
+      if (f[0] === 'G' && f.length >= 3) { gOverride = f[1] + '_' + f[2]; continue; } // アース点
+      if (f.length < 4) continue;
       var type = TDEC[f[0]] || f[0];
       counter[type] = (counter[type] || 0) + 1;
       var p = { id: type + counter[type], type: type, x: +f[1], y: +f[2], dir: f[3] };
@@ -4780,7 +4810,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       list.push(p); ok = true;
     }
     if (!ok) return false;
-    cur().parts = list; cur().nextId = 100; ST.probeOverride = null;
+    cur().parts = list; cur().nextId = 100; ST.probeOverride = null; ST.groundOverride = gOverride;
     clearActivePreset(); if (el['preset-explain']) el['preset-explain'].hidden = true;
     select(null); invalidateSolve(); updateTimeControls(); draw2d(); Draw3D.fit(el['view3d'], ST); Draw3D.render(el['view3d'], ST);
     return true;
@@ -5164,6 +5194,26 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
         w(5, 0, 'h'), w(5, 3, 'h'), w(4, 2, 'v'), w(6, 2, 'v'), w(3, 4, 'h'), w(1, 0, 'h'), w(1, 0, 'v')
       ]);
     },
+    res3_1: function () { // ３抵抗の回路①（共有URLから再現：R=1/2/3Ω・電池2V/7V）。アースは右下(6,4)。
+      var r = mk([
+        ['V', 4, 0, 'h', { value: 2, plus: 'p1' }], ['V', 4, 2, 'h', { value: 7, plus: 'p1' }], ['SW', 4, 4, 'h', { closed: true }],
+        ['R', 2, 0, 'h', { value: 1 }], ['R', 2, 2, 'h', { value: 2 }], ['R', 2, 4, 'h', { value: 3 }],
+        w(1, 4, 'h'), w(1, 2, 'v'), w(6, 3, 'v'), w(3, 0, 'h'), w(6, 1, 'v'), w(3, 2, 'h'), w(1, 3, 'v'),
+        w(6, 0, 'v'), w(1, 2, 'h'), w(1, 1, 'v'), w(5, 0, 'h'), w(5, 2, 'h'), w(5, 4, 'h'), w(6, 2, 'v'),
+        w(3, 4, 'h'), w(1, 0, 'h'), w(1, 0, 'v')
+      ]);
+      r.ground = '6_4'; return r;
+    },
+    res3_2: function () { // ３抵抗の回路②（共有URLから再現：R=6/3Ω＋10Ω→1.5Ω・電池9V/3V）。アースは右下(7,4)。
+      var r = mk([
+        ['V', 5, 2, 'h', { value: 9, plus: 'p1' }], ['V', 2, 4, 'h', { value: 3, plus: 'p1' }], ['SW', 4, 4, 'h', { closed: true }],
+        ['R', 5, 0, 'h', { value: 6 }], ['R', 2, 1, 'h', { value: 3 }], ['R', 4, 2, 'h', { value: 1.5 }],
+        w(1, 4, 'h'), w(1, 2, 'v'), w(7, 3, 'v'), w(3, 1, 'h'), w(7, 1, 'v'), w(6, 4, 'h'), w(1, 3, 'v'),
+        w(7, 0, 'v'), w(4, 1, 'v'), w(1, 1, 'v'), w(6, 0, 'h'), w(6, 2, 'h'), w(5, 4, 'h'), w(7, 2, 'v'),
+        w(3, 4, 'h'), w(1, 1, 'h'), w(4, 0, 'v'), w(4, 0, 'h')
+      ]);
+      r.ground = '7_4'; return r;
+    },
     wheatstone: function () { // ホイートストンブリッジ（平衡：2/3 = 4/6）。抵抗と抵抗の間に導線を入れて中点の電位を見せる
       // 上辺 A-①-[C導線]-②-B / 下辺 A-③-[D導線]-④-B / 橋 C-⑤-D（中央）/ 下に電池⑥＋スイッチ
       return mk([ // 共有URLから正確に再現
@@ -5417,9 +5467,10 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   var GROUPS = {
     dc: [ // ① 抵抗の直流回路（①から連番）
       ['basic', '① 電池と抵抗'], ['series2', '② 直列'], ['parallel2', '③ 並列'],
-      ['combo', '④ 直列＋並列'], ['wheatstone', '⑤ ホイートストンブリッジ'],
-      ['internal_r', '⑥ 内部抵抗'], ['bulb_series', '⑦ 豆電球直列'], ['bulb_parallel', '⑧ 豆電球並列'],
-      ['diode', '⑨ ダイオード'], ['idealdiode', '⑩ 整流ダイオード']
+      ['combo', '④ 直列＋並列'], ['res3_1', '⑤ ３抵抗の回路①'], ['res3_2', '⑥ ３抵抗の回路②'],
+      ['wheatstone', '⑦ ホイートストンブリッジ'],
+      ['internal_r', '⑧ 内部抵抗'], ['bulb_series', '⑨ 豆電球直列'], ['bulb_parallel', '⑩ 豆電球並列'],
+      ['diode', '⑪ ダイオード'], ['idealdiode', '⑫ 整流ダイオード']
     ],
     cl: [ // ② コンデンサー・コイルの直流回路（①から連番）
       ['rc_series', '① 抵抗とコンデンサー'], ['rc', '② コンデンサー充放電'], ['cap_series', '③ コンデンサー直列'],
@@ -5444,6 +5495,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     series2: '直列では電流が全抵抗で共通。電圧は抵抗の比で分かれます（大きい抵抗に大きい電圧）。合成抵抗＝和。立体図で「水車が2段」になり、高さの合計が電源電圧になることを確かめよう。',
     parallel2: '並列では各抵抗に同じ電圧がかかり、電流は抵抗に反比例して分かれます（小さい抵抗に多く流れる）。合成抵抗は各抵抗より小さい。枝ごとの水量の違いに注目。',
     combo: '直列と並列の組み合わせ。まず並列部分をまとめ、次に直列で足すのがコツ。どこが同電位（同じ高さ）になるか、立体図で追ってみよう。',
+    res3_1: '３抵抗の回路①。抵抗3つ（1Ω・2Ω・3Ω）と電池2つ（2V・7V）を組み合わせた回路です。アース（0Vの基準）は右下に置いてあります。アース記号はドラッグで別の点に動かせます（基準を変えると各点の電位＝高さが付け替わる）。各点の電位と、抵抗を流れる電流を、キルヒホッフの法則で考えてみよう。',
+    res3_2: '３抵抗の回路②。抵抗3つ（6Ω・3Ω・1.5Ω）と電池2つ（9V・3V）の回路です。アース（0Vの基準）は右下に置いてあります。アース記号はドラッグで動かせます。抵抗値をスライダーで変えると電流や電位がどう変わるか、立体図で確かめよう。',
     wheatstone: 'ブリッジ回路。向かい合う抵抗の比が等しい（2:3＝4:6）と中央の橋に電流が流れず、両端が同電位になります（平衡）。橋の水路が「同じ高さ＝色が同じ」になることに注目。抵抗を変えて平衡を崩してみよう。',
     rc: 'コンデンサーの充電と放電。はじめは「上のスイッチ＝開・下（左）のスイッチ＝閉」で、放電済み（電荷0・電位差0）のコンデンサーが抵抗を通して電池に充電されます（電流は初め大きく、満充電＝5Vに近づくと0へ。時定数τ＝RC）。「充電済みコンデンサ」と表示されたら、上のスイッチを閉じて下（左）を開くと、電池を切り離して充電済みのコンデンサーが抵抗を通して放電します（電流は逆向きに流れ0へ）。立体図のアニメ中でも、左の回路図でスイッチをクリックして切り替えられます。電流–時間グラフのカーブに注目。',
     coil_discharge: 'コイルと抵抗の並列（自己誘導）。5Ωの抵抗とコイル2Hが並列で、電池5V＋直列10Ω＋スイッチで駆動します。スイッチを入れた瞬間は、コイルが電流の変化を嫌う（自己誘導起電力）ので、コイルには電流が流れず、電流はすべて上の5Ωを通ります（＝5÷(10＋5)＝約0.33A）。時間がたつとコイルの電流変化がなくなり誘導起電力が消え、コイルは電位差0の「ただの導線」とみなせるので、5Ωを短絡して電流はすべてコイルへ移ります（＝5÷10＝0.5A）。※現実のコイルは、コンデンサーと違って電流をあらかじめ蓄えておくことはできません。はじめ電流を通さず、あとから通すことに注目。',
@@ -5453,8 +5506,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     internal_r: '本物の電池は内部抵抗 r をもちます。電流が流れると r で電圧が下がり、端子電圧＝起電力−r×電流に。電流を増やすと端子電圧がどう下がるか見てみよう。',
     bulb_series: '豆電球の直列。「暗い（高抵抗）」と「明るい（低抵抗）」の2球を直列につないでいます。直列なので同じ電流が流れ、電圧は抵抗の比で分かれます（抵抗の大きい暗い球に大きな電圧）。豆電球は温度で抵抗が変わる非直線素子で、I-Vグラフは「上に反った」曲線になります。各球をクリックすると標準・明るい・暗いを選べます。2球でどう電圧が分かれるか、I-Vグラフの曲がり方に注目。',
     bulb_parallel: '豆電球の並列。「明るい（低抵抗）」と「暗い（高抵抗）」の2球を並列につないでいます。並列なので各球に同じ電圧がかかり、電流は抵抗に反比例して分かれます（抵抗の小さい明るい球に多くの電流）。豆電球は温度で抵抗が変わる非直線素子です。どちらの球に多く電流が流れるか、明るさ（電力）の違いに注目。',
-    diode: 'ダイオードは一方向にだけ電流を通します（順方向で導通、逆方向で遮断）。この⑧は電池が0.5V（既定）で、シリコンダイオードの順方向電圧0.65Vより小さいので、順方向でも電流はほとんど流れません。電池の電圧を上げたり、向きを反転して、流れる／流れないが切り替わるのを確かめよう。',
-    idealdiode: '整流ダイオード（整流作用のみ）は、順方向では電圧の大きさによらず「抵抗ほぼ0の導線」として電流を通し、逆方向では「断線」として全く通しません（順方向電圧0V＝理想）。向きを反転して、流れる／流れないがはっきり切り替わるのを確かめよう。ふつうのダイオード（⑧）との違いに注目。',
+    diode: 'ダイオードは一方向にだけ電流を通します（順方向で導通、逆方向で遮断）。この回路は電池が0.5V（既定）で、シリコンダイオードの順方向電圧0.65Vより小さいので、順方向でも電流はほとんど流れません。電池の電圧を上げたり、向きを反転して、流れる／流れないが切り替わるのを確かめよう。',
+    idealdiode: '整流ダイオード（整流作用のみ）は、順方向では電圧の大きさによらず「抵抗ほぼ0の導線」として電流を通し、逆方向では「断線」として全く通しません（順方向電圧0V＝理想）。向きを反転して、流れる／流れないがはっきり切り替わるのを確かめよう。ふつうのダイオードとの違いに注目。',
     rc_series: '抵抗とコンデンサーの直列回路。スイッチを入れた直後はコンデンサーが空（＝導線と同じ）なので大きな電流が流れ、時間がたつとコンデンサーが満充電（＝開放）になって電流は0に近づきます（時定数τ＝RC）。電流–時間グラフの「減衰カーブ」と、抵抗を変えたときのカーブの変化に注目。',
     cap_reconnect1: 'コンデンサーのつなぎ替え（レベル１）。まず上のスイッチ（閉）で電池が1Fを充電します（右の2Fはつなぎ替えスイッチが開なので切り離されたまま）。「充電済みコンデンサ」と出たら、上のスイッチを開いて電池を切り離し、下（右）のつなぎ替えスイッチを閉じると、1Fにたまった電荷が2Fへ分配されます。電荷保存（Q一定）で、つなぎ替え後の電圧がどうなるか考えてみよう。',
     res_cap: 'コンデンサーのつなぎ替え（レベル２）。電源6Vから上の2Ωを通った先（節点B）に0.1Fと0.3Fがつながり、0.1Fの先（節点M）には0.2Fと「開スイッチ＋2Ω」の枝があります。スイッチを入れた直後はどのコンデンサーも空（＝導線と同じ）なので大きな電流が流れ、時間がたつと満充電（＝開放）になって電流は0に近づきます。中央のスイッチを閉じると2Ωの枝が加わり、電流の流れ方・電荷の分配が変わります。各コンデンサーの充電のようすと電流–時間グラフに注目。',
@@ -5677,7 +5730,7 @@ window.MIZU_IMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQDAwMD
   'use strict';
   // プリセット名 → モード（3モード）
   var MODES = {
-    dc: ['basic', 'series2', 'parallel2', 'combo', 'wheatstone', 'internal_r', 'bulb_series', 'bulb_parallel', 'diode', 'idealdiode'],
+    dc: ['basic', 'series2', 'parallel2', 'combo', 'res3_1', 'res3_2', 'wheatstone', 'internal_r', 'bulb_series', 'bulb_parallel', 'diode', 'idealdiode'],
     cl: ['rc_series', 'rc', 'cap_series', 'cap_parallel', 'cap_reconnect1', 'res_cap', 'cap_dc', 'rl'],
     ac: ['ac_r', 'ac_c', 'ac_l', 'rlc_osc', 'rlc_series', 'rlc_parallel', 'ac_diode']
   };
