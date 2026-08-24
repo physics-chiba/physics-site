@@ -95,13 +95,19 @@ p{margin:.5em 0}
  * 同じマスに置いてあるカードどうし（deltaxbox と settings など）は、
  * モードによってどちらか一方しか表示されないので衝突しない。 */
 .ctlcol{display:contents}
-#grp-settings{grid-column:1;grid-row:1}
+/* 図の上の段：ステップ操作｜いまのステップ（③の導入・実験の概要の説明もここ） */
+/* ステップ操作のカードは、右の「いまのステップ」カードが長いときに
+ * いっしょに引き伸ばされないよう、行の下端に自然な高さのまま置く
+ * （中身が上に取り残されて、下に大きな空白ができるのを防ぐ） */
+#grp-path{grid-column:1;grid-row:1;align-self:end}
 #deltaxbox{grid-column:1;grid-row:1}
-#grp-path{grid-column:1;grid-row:2}
+#scalebox{grid-column:2;grid-row:1}
+#stepnow{grid-column:2;grid-row:1}
+/* 図の下の段：装置の設定｜見る方向（補足モードでは N′ の吹き出し） */
+.ctlrow-below{margin:14px 0 10px}
+#grp-settings{grid-column:1;grid-row:1}
 #dirbox{grid-column:2;grid-row:1}
 #nbox{grid-column:2;grid-row:1}
-#scalebox{grid-column:2;grid-row:1}
-#stepnow{grid-column:2;grid-row:2}
 @media(max-width:860px){
   .ctlrow{grid-template-columns:1fr}
   /* 1 列のときは行の割り付けを解除して、書いてある順に縦へ並べる
@@ -190,12 +196,19 @@ body.fig-full .figfull-note{
   border:1px solid var(--line);border-radius:6px;padding:3px 8px;
 }
 .figfull-note{display:none}
-canvas#view{width:100%;min-width:900px;height:auto;display:block;border:1px solid #e3e6e9;border-radius:6px;background:#fff;touch-action:pan-y}
+/* touch-action は manipulation（縦横のスクロールとも許可）。
+ * pan-y だけにすると、スマホで図を横にスワイプしても横スクロールできなくなる
+ * （スクリーンの操作ゾーンでは touchstart の preventDefault が効くので、
+ *   ドラッグ操作とスクロールは衝突しない） */
+canvas#view{width:100%;min-width:900px;height:auto;display:block;border:1px solid #e3e6e9;border-radius:6px;background:#fff;touch-action:manipulation}
 
 /* ---- モードタブ ---- */
 /* 5 つ全部を横 1 行におさめる。入りきらない画面幅では折り返さず、
    タブの帯だけを横スクロールできるようにする（ページ全体は横スクロールさせない）。 */
-.tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 4px 2px 0}
+.tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 8px 2px 0}
+/* スクロールする帯の右はしでは、コンテナの padding-right がブラウザによって
+ * 無視されることがあるので、最後のタブ自身に余白を持たせて文字切れを防ぐ */
+.tabs .tab:last-child{margin-right:8px}
 .tab{
   appearance:none;border:1px solid var(--line);background:#fff;color:var(--sub);
   padding:8px 14px;border-radius:999px;font-size:13px;cursor:pointer;font-family:inherit;
@@ -418,6 +431,14 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
  * （min-width を効かせると、カードの中に横スクロールバーが出てしまう） */
 .stepnow .fig{margin:8px 0 0}
 .stepnow .fig svg{min-width:0}
+/* 図のあるステップ（1・4）では、図を約 30% に縮めて左・文章を右に置き、
+ * カードの縦幅を節約する。数値の行（.sv）は装置の設定や下の一覧にもあるので出さない */
+#stepnow.hasfig{display:grid;grid-template-columns:minmax(200px,31%) minmax(0,1fr);gap:2px 14px;align-items:start}
+#stepnow.hasfig .dh{grid-column:1/-1}
+#stepnow.hasfig .fig{grid-column:1;grid-row:2;margin:4px 0 0}
+#stepnow.hasfig .sb{grid-column:2;grid-row:2}
+#stepnow.hasfig .sv{display:none}
+@media(max-width:700px){#stepnow.hasfig{display:block}}
 .callout{margin:12px 0;padding:11px 14px;border-left:5px solid var(--orange);
   background:#fff8ef;border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.75}
 .callout b{color:#8a5300}
@@ -495,7 +516,7 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
         <div class="flowarrow">↓</div>
         <div class="flowbox"><b>② 明線条件を立てる</b>d sinθ ＝ mλ</div>
         <div class="flowarrow"><span class="flowcond">θ が小さいとき</span>↓</div>
-        <div class="flowbox"><b>③ 明線の位置を求める</b><span class="eq" data-tex="x \fallingdotseq \dfrac{m\lambda L}{d}"></span></div>
+        <div class="flowbox"><b>③ 明線の位置を求める</b><span class="eq" data-tex="x_m \fallingdotseq \dfrac{m\lambda L}{d}"></span></div>
         <div class="flowarrow">↓</div>
         <div class="flowbox"><b>④ 明線間隔を求める</b><span class="eq" data-tex="\Delta x \fallingdotseq \dfrac{\lambda L}{d}"></span></div>
       </div>
@@ -534,7 +555,49 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
   <!-- 図のすぐ上：左＝装置の設定、右＝見る方向 -->
   <div class="ctlrow">
    <div class="ctlcol">
-    <div class="ctlcard" id="grp-settings">
+    <div class="ctlcard stepnav" id="grp-path">
+      <div class="dh">強め合いの条件　経路差 ＝ mλ、d sinθ ＝ mλ<br>を用いて、強め合いの位置 x<sub>m</sub> ≒ <span class="eq" data-tex="\dfrac{m\lambda L}{d}"></span> を求めるステップ</div>
+      <p class="nudge">↓ 下の図の説明を読んだら、「次へ ▶」を押して次のステップに進みましょう</p>
+      <div class="btnrow">
+        <button class="ctl minor" id="btn-prev">◀ 前へ</button>
+        <button class="ctl primary nextcta" id="btn-next">次へ ▶</button>
+        <button class="ctl minor" id="btn-step-reset">最初に戻る</button>
+        <span class="mini" id="step-label"></span>
+      </div>
+    </div>
+
+    <div class="ctlcard dirbox" id="deltaxbox" hidden>
+      <div class="dnote">ここからの話は、① 光路差の位置と式の原理　ステップ③ の x<sub>m</sub> ≒ <span class="eq" data-tex="\dfrac{m\lambda L}{d}"></span> の式の続きです。引き続き、θ が小さいときのみ成り立ちます。</div>
+    </div>
+   </div>
+
+   <div class="ctlcol">
+    <div class="ctlcard dirbox" id="scalebox" hidden>
+      <div class="dh">実験の概要（「回折」格子と呼ばれる理由）</div>
+      <div class="dnote">回折格子の実験を、<b>本当の大きさ</b>で 4 つの場面に分けて見ます。▶ で進み、下のボタンで場面を選べます。波長 λ・格子定数 d・スクリーンまでの距離 L は、ほかのモードと同じ値を使っています。</div>
+    </div>
+
+    <div class="ctlcard stepnow" id="stepnow" hidden>
+      <div class="dh" id="sn-title">—</div>
+      <div class="sb" id="sn-body">—</div>
+      <div class="fig" id="sn-fig" hidden></div>
+      <div class="sv" id="sn-val">—</div>
+    </div>
+
+   </div>
+  </div>
+
+  <div class="canvas-box">
+    <canvas id="view" width="1300" height="700" aria-label="回折格子による光の干渉の図"></canvas>
+  </div>
+  <p class="canvas-hint">← 図は横にスクロールできます →</p>
+  <p class="screen-note" id="screen-note" hidden>—</p>
+  <button class="ctl figfull-btn" id="btn-figfull" aria-pressed="false">⛶ 図だけを大きく表示</button>
+  <p class="figfull-note">画面を横向きにすると、さらに大きく見えます</p>
+
+  <!-- 装置の設定・見る方向は、図を先に見せるため図の下に置く（スタート等の操作列は図の上のまま） -->
+  <div class="ctlrow ctlrow-below">
+<div class="ctlcard" id="grp-settings">
       <div class="dh">装置の設定</div>
       <div class="sliders">
         <div class="sl sl-wide" id="sl-Nrow" hidden>
@@ -579,66 +642,26 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
         <label id="lb-gamma" hidden><input type="checkbox" id="ck-gamma" checked> パターンを強調</label>
         <label id="lb-mx" hidden><input type="checkbox" id="ck-mx" checked> 強めあいの線</label>
         <label id="lb-min" hidden><input type="checkbox" id="ck-min" checked> 弱めあいの線（N′＝2 のとき）</label>
-        <label id="lb-only3" class="pushme" hidden><input type="checkbox" id="ck-only3" checked> <b>明線の位置のみ選ぶ</b><span class="tap" id="only3-tap">← ここをクリックして、明線以外の点はどうなっているのか見てみよう！</span></label>
+        <label id="lb-only3" class="pushme" hidden><input type="checkbox" id="ck-only3"> <b>明線の位置のみ選ぶ</b><span class="tap" id="only3-tap">現在、明線もそれ以外も選べます</span></label>
         <label id="lb-lab"><input type="checkbox" id="ck-lab" checked> 説明ラベルを表示</label>
       </div>
     </div>
-
-    <div class="ctlcard stepnav" id="grp-path">
-      <div class="dh">強め合いの条件　経路差 ＝ mλ、d sinθ ＝ mλ<br>を用いて、強め合いの位置 x<sub>m</sub> ≒ <span class="eq" data-tex="\dfrac{m\lambda L}{d}"></span> を求めるステップ</div>
-      <p class="nudge">↓ 下の図の説明を読んだら、「次へ ▶」を押して次のステップに進みましょう</p>
-      <div class="btnrow">
-        <button class="ctl minor" id="btn-prev">◀ 前へ</button>
-        <button class="ctl primary nextcta" id="btn-next">次へ ▶</button>
-        <button class="ctl minor" id="btn-step-reset">最初に戻る</button>
-        <span class="mini" id="step-label"></span>
-      </div>
-    </div>
-
-    <div class="ctlcard dirbox" id="deltaxbox" hidden>
-      <div class="dnote">ここからの話は、① 光路差の位置と式の原理　ステップ③ の x<sub>m</sub> ≒ <span class="eq" data-tex="\dfrac{m\lambda L}{d}"></span> の式の続きです。引き続き、θ が小さいときのみ成り立ちます。</div>
-    </div>
-   </div>
-
-   <div class="ctlcol">
-    <div class="bubble" id="nbox" hidden>
-      <div class="bh">この <b>N′</b> って何？</div>
-      <p>この <b>N′</b> は、<b>波の重なりあいを実際に計算する本数</b>です。</p>
-      <p>本数を <b>2 → 10 → 100 → 1000</b> と増やしていくと、<b>強め合いの位置以外が急激に弱めあっていく（＝暗くなっていく）</b>ことが分かります。ぜひ変えてみてください。</p>
-      <p class="mini">※ 図に描けるスリットは 10 本までです。それより多いときは、図は 10 本ぶん・数の計算は N′ 本ぶんになります。</p>
-    </div>
-
-    <div class="ctlcard dirbox" id="scalebox" hidden>
-      <div class="dh">実験の概要（「回折」格子と呼ばれる理由）</div>
-      <div class="dnote">回折格子の実験を、<b>本当の大きさ</b>で 4 つの場面に分けて見ます。▶ で進み、下のボタンで場面を選べます。波長 λ・格子定数 d・スクリーンまでの距離 L は、ほかのモードと同じ値を使っています。</div>
-    </div>
-
-    <div class="ctlcard dirbox" id="dirbox">
+<div class="ctlcard dirbox" id="dirbox">
       <div class="dh dh-row">
         <span>見る方向（何次の明線を見ているか）　－　ボタンか、図のスクリーン上をクリック・ドラッグして選べます</span>
         <span class="ordnote" id="ord-note"></span>
       </div>
       <div class="orderbtns" id="order-btns"></div>
-      <label id="lb-only" class="onlylabel pushme on"><input type="checkbox" id="ck-only" checked> 明線の位置のみ選ぶ<span class="tap" id="only-tap">← ここをクリックして、明線以外の点はどうなっているのか見てみよう！</span></label>
+      <label id="lb-only" class="onlylabel pushme"><input type="checkbox" id="ck-only"> 明線の位置のみ選ぶ<span class="tap" id="only-tap">現在、明線もそれ以外も選べます</span></label>
       <div class="dnote" id="dir-note">—</div>
     </div>
-    <div class="ctlcard stepnow" id="stepnow" hidden>
-      <div class="dh" id="sn-title">—</div>
-      <div class="sb" id="sn-body">—</div>
-      <div class="fig" id="sn-fig" hidden></div>
-      <div class="sv" id="sn-val">—</div>
+<div class="bubble" id="nbox" hidden>
+      <div class="bh">この <b>N′</b> って何？</div>
+      <p>この <b>N′</b> は、<b>波の重なりあいを実際に計算する本数</b>です。</p>
+      <p>本数を <b>2 → 10 → 100 → 1000</b> と増やしていくと、<b>強め合いの位置以外が急激に弱めあっていく（＝暗くなっていく）</b>ことが分かります。ぜひ変えてみてください。</p>
+      <p class="mini">※ 図に描けるスリットは 10 本までです。それより多いときは、図は 10 本ぶん・数の計算は N′ 本ぶんになります。</p>
     </div>
-
-   </div>
   </div>
-
-  <div class="canvas-box">
-    <canvas id="view" width="1300" height="700" aria-label="回折格子による光の干渉の図"></canvas>
-  </div>
-  <p class="canvas-hint">← 図は横にスクロールできます →</p>
-  <p class="screen-note" id="screen-note" hidden>—</p>
-  <button class="ctl figfull-btn" id="btn-figfull" aria-pressed="false">⛶ 図だけを大きく表示</button>
-  <p class="figfull-note">画面を横向きにすると、さらに大きく見えます</p>
 
   <!-- ステップの説明（3 つとも読めるように、重ねずに並べる） -->
   <div class="steps" id="steps">
@@ -646,7 +669,7 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
       <b>ステップ 1　経路差を求める</b>
       <span class="sb">L は d にくらべてきわめて長いので、点 P に向かう光は<strong>たがいに平行</strong>とみなせます。下の図のように、S<sub>1</sub> から S<sub>2</sub>P へ垂線 S<sub>1</sub>H をおろすと、経路差は <strong>S<sub>2</sub>H ＝ d sinθ</strong> になります（直角三角形 S<sub>1</sub>HS<sub>2</sub> で ∠S<sub>1</sub> ＝ θ）。どの隣りあう 2 本をとっても同じ値です。</span>
       <span class="sv" id="sv1">—</span>
-      <div class="fig"><svg viewBox="0 0 480 232" role="img" aria-label="スリット S1・S2 を通って点 P へ向かう光の経路差 d sinθ を、垂線 S1H の作図で示す図"><rect x="66" y="16" width="8" height="32" fill="#9aa3ac"/><rect x="66" y="60" width="8" height="92" fill="#9aa3ac"/><rect x="66" y="164" width="8" height="50" fill="#9aa3ac"/><text x="58" y="46" text-anchor="end" font-size="14" font-style="italic" font-weight="700" fill="#28405c">S<tspan font-size="10" dy="3">1</tspan></text><text x="58" y="178" text-anchor="end" font-size="14" font-style="italic" font-weight="700" fill="#28405c">S<tspan font-size="10" dy="3">2</tspan></text><line x1="34" y1="62" x2="34" y2="150" stroke="#5b6672" stroke-width="1"/><line x1="31" y1="62" x2="37" y2="62" stroke="#5b6672" stroke-width="1"/><line x1="31" y1="150" x2="37" y2="150" stroke="#5b6672" stroke-width="1"/><text x="26" y="110" text-anchor="end" font-size="12.5" font-style="italic" font-weight="700" fill="#5b6672">d</text><rect x="426" y="16" width="8" height="198" fill="#b9c0c8" stroke="#8a94a0" stroke-width="0.8"/><text x="430" y="11" text-anchor="middle" font-size="10.5" fill="#6f6754">スクリーン</text><line x1="74" y1="106" x2="448" y2="106" stroke="#3a4550" stroke-width="1" stroke-dasharray="5 4"/><line x1="74.0" y1="105.3" x2="430.0" y2="44.0" stroke="#0d7a3f" stroke-width="1.6" stroke-dasharray="6 4"/><line x1="70.0" y1="54.0" x2="430.0" y2="44.0" stroke="#1663b5" stroke-width="1.8"/><line x1="70.0" y1="158.0" x2="430.0" y2="44.0" stroke="#1663b5" stroke-width="1.8"/><line x1="70.0" y1="54.0" x2="99.9" y2="148.5" stroke="#3a4550" stroke-width="1.3"/><path d="M 107.6,146.1 L 105.1,138.5 L 97.5,140.9" fill="none" stroke="#3a4550" stroke-width="1.1"/><line x1="70.0" y1="158.0" x2="99.9" y2="148.5" stroke="#0d7a3f" stroke-width="3.4" stroke-linecap="round"/><path d="M 100.0,106.0 L 100.0,105.6 L 100.0,105.3 L 100.0,104.9 L 100.0,104.5 L 99.9,104.2 L 99.9,103.8 L 99.9,103.4 L 99.9,103.1 L 99.8,102.7 L 99.8,102.4 L 99.7,102.0 L 99.7,101.6 L 99.6,101.3 L 99.6,100.9" fill="none" stroke="#e07b18" stroke-width="1.5"/><path d="M 198.0,106.0 L 198.0,104.4 L 198.0,102.9 L 197.9,101.3 L 197.8,99.8 L 197.8,98.2 L 197.7,96.7 L 197.5,95.1 L 197.4,93.5 L 197.2,92.0 L 197.1,90.4 L 196.9,88.9 L 196.6,87.4 L 196.4,85.8 L 196.1,84.3" fill="none" stroke="#e07b18" stroke-width="1.3"/><text x="86" y="93" font-size="14" font-style="italic" font-weight="700" fill="#e07b18">&#952;</text><text x="205" y="86" font-size="15" font-style="italic" font-weight="700" fill="#e07b18">&#952;</text><circle cx="430.0" cy="44.0" r="4" fill="#1663b5"/><text x="414.0" y="38.0" font-size="14" font-style="italic" font-weight="700" fill="#28405c">P</text><circle cx="430.0" cy="106.0" r="2.6" fill="#3a4550"/><text x="439.0" y="124.0" font-size="13.5" font-style="italic" font-weight="700" fill="#3a4550">O</text><circle cx="99.9" cy="148.5" r="2.4" fill="#3a4550"/><text x="103.9" y="166.5" font-size="13" font-style="italic" font-weight="700" fill="#3a4550">H</text><text x="121.9" y="151.5" font-size="11" font-weight="700" fill="#0d7a3f">d sin&#952;</text><line x1="452" y1="46.0" x2="452" y2="104.0" stroke="#28405c" stroke-width="1.2"/><polygon points="452,44.0 449.0,50.0 455.0,50.0" fill="#28405c"/><polygon points="452,106.0 449.0,100.0 455.0,100.0" fill="#28405c"/><text x="460" y="80.0" font-size="13.5" font-style="italic" font-weight="700" fill="#28405c">x</text><line x1="76" y1="200" x2="424" y2="200" stroke="#0d7a3f" stroke-width="1.4"/><polygon points="74,200 81,196 81,203" fill="#0d7a3f"/><polygon points="426,200 419,196 419,203" fill="#0d7a3f"/><text x="250" y="192" text-anchor="middle" font-size="14.5" font-style="italic" font-weight="700" fill="#0d7a3f">L</text></svg></div>
+      <div class="fig"><svg viewBox="0 0 480 232" role="img" aria-label="スリット S1・S2 を通って点 P へ向かう光の経路差 d sinθ を、垂線 S1H の作図で示す図"><rect x="66" y="16" width="8" height="32" fill="#9aa3ac"/><rect x="66" y="60" width="8" height="92" fill="#9aa3ac"/><rect x="66" y="164" width="8" height="50" fill="#9aa3ac"/><text x="58" y="46" text-anchor="end" font-size="14" font-style="italic" font-weight="700" fill="#28405c">S<tspan font-size="10" dy="3">1</tspan></text><text x="58" y="178" text-anchor="end" font-size="14" font-style="italic" font-weight="700" fill="#28405c">S<tspan font-size="10" dy="3">2</tspan></text><line x1="34" y1="62" x2="34" y2="150" stroke="#5b6672" stroke-width="1"/><line x1="31" y1="62" x2="37" y2="62" stroke="#5b6672" stroke-width="1"/><line x1="31" y1="150" x2="37" y2="150" stroke="#5b6672" stroke-width="1"/><text x="26" y="110" text-anchor="end" font-size="12.5" font-style="italic" font-weight="700" fill="#5b6672">d</text><rect x="426" y="16" width="8" height="198" fill="#b9c0c8" stroke="#8a94a0" stroke-width="0.8"/><text x="430" y="11" text-anchor="middle" font-size="10.5" fill="#6f6754">スクリーン</text><line x1="74" y1="106" x2="448" y2="106" stroke="#3a4550" stroke-width="1" stroke-dasharray="5 4"/><line x1="74.0" y1="105.3" x2="430.0" y2="44.0" stroke="#0d7a3f" stroke-width="1.6" stroke-dasharray="6 4"/><line x1="70.0" y1="54.0" x2="430.0" y2="44.0" stroke="#1663b5" stroke-width="1.8"/><line x1="70.0" y1="158.0" x2="430.0" y2="44.0" stroke="#1663b5" stroke-width="1.8"/><line x1="70.0" y1="54.0" x2="99.9" y2="148.5" stroke="#3a4550" stroke-width="1.3"/><path d="M 107.6,146.1 L 105.1,138.5 L 97.5,140.9" fill="none" stroke="#3a4550" stroke-width="1.1"/><line x1="70.0" y1="158.0" x2="99.9" y2="148.5" stroke="#0d7a3f" stroke-width="3.4" stroke-linecap="round"/><path d="M 100.0,106.0 L 100.0,105.6 L 100.0,105.3 L 100.0,104.9 L 100.0,104.5 L 99.9,104.2 L 99.9,103.8 L 99.9,103.4 L 99.9,103.1 L 99.8,102.7 L 99.8,102.4 L 99.7,102.0 L 99.7,101.6 L 99.6,101.3 L 99.6,100.9" fill="none" stroke="#e07b18" stroke-width="1.5"/><path d="M 198.0,106.0 L 198.0,104.4 L 198.0,102.9 L 197.9,101.3 L 197.8,99.8 L 197.8,98.2 L 197.7,96.7 L 197.5,95.1 L 197.4,93.5 L 197.2,92.0 L 197.1,90.4 L 196.9,88.9 L 196.6,87.4 L 196.4,85.8 L 196.1,84.3" fill="none" stroke="#e07b18" stroke-width="1.3"/><text x="86" y="93" font-size="14" font-style="italic" font-weight="700" fill="#e07b18">&#952;</text><text x="205" y="86" font-size="15" font-style="italic" font-weight="700" fill="#e07b18">&#952;</text><circle cx="430.0" cy="44.0" r="4" fill="#1663b5"/><text x="414.0" y="38.0" font-size="14" font-style="italic" font-weight="700" fill="#28405c">P</text><circle cx="430.0" cy="106.0" r="2.6" fill="#3a4550"/><text x="439.0" y="124.0" font-size="13.5" font-style="italic" font-weight="700" fill="#3a4550">O</text><circle cx="99.9" cy="148.5" r="2.4" fill="#3a4550"/><text x="103.9" y="166.5" font-size="13" font-style="italic" font-weight="700" fill="#3a4550">H</text><text x="121.9" y="151.5" font-size="11" font-weight="700" fill="#0d7a3f">d sin&#952;</text><line x1="140" y1="171" x2="88" y2="152" stroke="#0d7a3f" stroke-width="1"/><rect x="140" y="162" width="52" height="19" rx="6" fill="#f0faf4" stroke="#0d7a3f" stroke-width="1.1"/><text x="166" y="175.5" text-anchor="middle" font-size="11" font-weight="700" fill="#0d5c30">経路差</text><line x1="452" y1="46.0" x2="452" y2="104.0" stroke="#28405c" stroke-width="1.2"/><polygon points="452,44.0 449.0,50.0 455.0,50.0" fill="#28405c"/><polygon points="452,106.0 449.0,100.0 455.0,100.0" fill="#28405c"/><text x="460" y="80.0" font-size="13.5" font-style="italic" font-weight="700" fill="#28405c">x</text><line x1="76" y1="200" x2="424" y2="200" stroke="#0d7a3f" stroke-width="1.4"/><polygon points="74,200 81,196 81,203" fill="#0d7a3f"/><polygon points="426,200 419,196 419,203" fill="#0d7a3f"/><text x="250" y="192" text-anchor="middle" font-size="14.5" font-style="italic" font-weight="700" fill="#0d7a3f">L</text></svg></div>
     </button>
     <button type="button" class="stepbox" data-step="2">
       <b>ステップ 2　明線の条件 d sinθ ＝ mλ</b>
@@ -827,10 +850,10 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
 
 <details class="more" open>
   <summary>① 身のまわりの回折格子 － CD・DVD・ブルーレイ</summary>
-  <p>CD の記録面には、らせん状のトラックが並んでいます。その間かく（トラックピッチ）は規格で決まっていて、<b>CD 1.6 μm・DVD 0.74 μm・ブルーレイ 0.32 μm</b>。これがそのまま<b>反射型の回折格子</b>としてはたらくので、白色光をあてると虹色に見えます。</p>
+  <p>CD の記録面には、らせん状のトラックが並んでいます。その間隔（トラックピッチ）は規格で決まっていて、<b>CD 1.6 μm・DVD 0.74 μm・ブルーレイ 0.32 μm</b>。これがそのまま<b>反射型の回折格子</b>としてはたらくので、白色光をあてると虹色に見えます。</p>
   <p class="note">d が小さいほど sinθ ＝ mλ/d が大きくなるので、同じ光をあてたときの虹の広がりは <b>ブルーレイ ＞ DVD ＞ CD</b> の順。逆に、レーザーをあてて 1 次の回折角 θ を測れば <b>d ＝ λ/sinθ</b> でトラックピッチがナノメートルの精度で求まります。手もとの 1 枚が、そのまま精密測定器になるわけです。</p>
   <p class="note">使わなくなった CD を切って厚紙の箱にはめれば、簡易分光器がつくれます。研究用の分光器でも、反射型の回折格子が広く使われています。</p>
-  <div class="fig"><svg viewBox="0 0 720 246" role="img" aria-label="白熱電球・蛍光灯・LED の発光スペクトル（強さのグラフと色の対応）"><defs><linearGradient id="rb2" x1="0" x2="1"><stop offset="0.0%" stop-color="#610061"/><stop offset="2.0%" stop-color="#760084"/><stop offset="4.0%" stop-color="#8100a5"/><stop offset="6.0%" stop-color="#8200c4"/><stop offset="8.0%" stop-color="#7b00e2"/><stop offset="10.0%" stop-color="#6a00ff"/><stop offset="12.0%" stop-color="#4600ff"/><stop offset="14.0%" stop-color="#1d00ff"/><stop offset="16.0%" stop-color="#0022ff"/><stop offset="18.0%" stop-color="#0051ff"/><stop offset="20.0%" stop-color="#007bff"/><stop offset="22.0%" stop-color="#00a0ff"/><stop offset="24.0%" stop-color="#00c4ff"/><stop offset="26.0%" stop-color="#00e6ff"/><stop offset="28.0%" stop-color="#00ffea"/><stop offset="30.0%" stop-color="#00ff92"/><stop offset="32.0%" stop-color="#00ff28"/><stop offset="34.0%" stop-color="#24ff00"/><stop offset="36.0%" stop-color="#46ff00"/><stop offset="38.0%" stop-color="#65ff00"/><stop offset="40.0%" stop-color="#81ff00"/><stop offset="42.0%" stop-color="#9cff00"/><stop offset="44.0%" stop-color="#b6ff00"/><stop offset="46.0%" stop-color="#cfff00"/><stop offset="48.0%" stop-color="#e7ff00"/><stop offset="50.0%" stop-color="#ffff00"/><stop offset="52.0%" stop-color="#ffe600"/><stop offset="54.0%" stop-color="#ffcb00"/><stop offset="56.0%" stop-color="#ffb000"/><stop offset="58.0%" stop-color="#ff9400"/><stop offset="60.0%" stop-color="#ff7700"/><stop offset="62.0%" stop-color="#ff5700"/><stop offset="64.0%" stop-color="#ff3400"/><stop offset="66.0%" stop-color="#ff0900"/><stop offset="68.0%" stop-color="#ff0000"/><stop offset="70.0%" stop-color="#ff0000"/><stop offset="72.0%" stop-color="#ff0000"/><stop offset="74.0%" stop-color="#ff0000"/><stop offset="76.0%" stop-color="#ff0000"/><stop offset="78.0%" stop-color="#ff0000"/><stop offset="80.0%" stop-color="#ff0000"/><stop offset="82.0%" stop-color="#f10000"/><stop offset="84.0%" stop-color="#e20000"/><stop offset="86.0%" stop-color="#d30000"/><stop offset="88.0%" stop-color="#c40000"/><stop offset="90.0%" stop-color="#b50000"/><stop offset="92.0%" stop-color="#a50000"/><stop offset="94.0%" stop-color="#950000"/><stop offset="96.0%" stop-color="#840000"/><stop offset="98.0%" stop-color="#730000"/><stop offset="100.0%" stop-color="#610000"/></linearGradient></defs><line x1="0" y1="8" x2="18" y2="8" stroke="#1b1f24" stroke-width="3"/><text x="24" y="12" font-size="10.5" fill="#5b6672">＝輝線（その波長だけ強く光る）</text><line x1="272" y1="8" x2="290" y2="8" stroke="#28405c" stroke-width="2.4" stroke-dasharray="1 3" stroke-linecap="round"/><text x="296" y="12" font-size="10.5" fill="#5b6672">＝光の強さのグラフ（高いほど強い）</text><line x1="0" y1="22" x2="720" y2="22" stroke="#e5e9ee" stroke-width="1"/><text x="0" y="42" font-size="11" font-weight="700" fill="#28405c">白熱電球（熱輻射）</text><line x1="0" y1="98" x2="220" y2="98" stroke="#c9d2da" stroke-width="1"/><polyline points="0.0,93.2 5.0,92.9 10.0,92.5 15.0,92.0 20.0,91.4 25.0,90.8 30.0,90.1 35.0,89.5 40.0,88.8 45.0,88.0 50.0,87.3 55.0,86.5 60.0,85.7 65.0,84.8 70.0,84.0 75.0,83.1 80.0,82.2 85.0,81.3 90.0,80.4 95.0,79.5 100.0,78.6 105.0,77.6 110.0,76.6 115.0,75.6 120.0,74.6 125.0,73.6 130.0,72.6 135.0,71.6 140.0,70.5 145.0,69.5 150.0,68.4 155.0,67.3 160.0,66.2 165.0,65.1 170.0,64.0 175.0,62.9 180.0,61.8 185.0,60.6 190.0,59.5 195.0,58.3 200.0,57.2 205.0,56.0 210.0,54.8 215.0,53.6 220.0,52.4" fill="none" stroke="#28405c" stroke-width="2.2" stroke-dasharray="1 3.4" stroke-linecap="round" opacity="0.9"/><rect x="0" y="104" width="220" height="28" fill="url(#rb2)"/><rect x="0" y="104" width="220" height="28" fill="none" stroke="#9aa3ac"/><text x="110" y="152" text-anchor="middle" font-size="10" fill="#5b6672">（輝線なし・全体になめらか）</text><text x="250" y="42" font-size="11" font-weight="700" fill="#28405c">蛍光灯（水銀の輝線＋蛍光体）</text><line x1="250" y1="98" x2="470" y2="98" stroke="#c9d2da" stroke-width="1"/><polyline points="250.0,92.2 255.0,91.9 260.0,91.6 265.0,91.2 270.0,90.9 275.0,90.6 280.0,90.2 285.0,89.9 290.0,89.6 295.0,89.4 300.0,89.1 305.0,88.8 310.0,88.6 315.0,88.4 320.0,88.2 325.0,88.0 330.0,87.9 335.0,87.7 340.0,87.6 345.0,87.5 350.0,87.5 355.0,87.5 360.0,87.4 365.0,87.5 370.0,87.5 375.0,87.5 380.0,87.6 385.0,87.7 390.0,87.9 395.0,88.0 400.0,88.2 405.0,88.4 410.0,88.6 415.0,88.8 420.0,89.1 425.0,89.4 430.0,89.6 435.0,89.9 440.0,90.2 445.0,90.6 450.0,90.9 455.0,91.2 460.0,91.6 465.0,91.9 470.0,92.2" fill="none" stroke="#28405c" stroke-width="2.2" stroke-dasharray="1 3.4" stroke-linecap="round" opacity="0.9"/><line x1="283.2" y1="50.0" x2="283.2" y2="98" stroke="#1b1f24" stroke-width="2.4"/><line x1="348.8" y1="52.4" x2="348.8" y2="98" stroke="#1b1f24" stroke-width="2.4"/><rect x="250" y="104" width="220" height="28" fill="url(#rb2)"/><rect x="250" y="104" width="220" height="28" fill="none" stroke="#9aa3ac"/><rect x="281.9" y="104" width="2.6" height="28" fill="#1b1f24" opacity="0.85"/><line x1="283.2" y1="132" x2="283.2" y2="140" stroke="#9aa3ac" stroke-width="0.9"/><text x="283.2" y="152" text-anchor="middle" font-size="10" font-weight="700" fill="#28405c">青</text><text x="283.2" y="164" text-anchor="middle" font-size="9.5" fill="#5b6672">435.8 nm</text><rect x="347.5" y="104" width="2.6" height="28" fill="#1b1f24" opacity="0.85"/><line x1="348.8" y1="132" x2="348.8" y2="140" stroke="#9aa3ac" stroke-width="0.9"/><text x="348.8" y="152" text-anchor="middle" font-size="10" font-weight="700" fill="#28405c">緑</text><text x="348.8" y="164" text-anchor="middle" font-size="9.5" fill="#5b6672">546.1 nm</text><text x="500" y="42" font-size="11" font-weight="700" fill="#28405c">白色 LED（青＋蛍光体）</text><line x1="500" y1="98" x2="720" y2="98" stroke="#c9d2da" stroke-width="1"/><polyline points="500.0,94.7 505.0,94.6 510.0,94.4 515.0,94.1 520.0,93.7 525.0,93.2 530.0,92.5 535.0,91.8 540.0,90.8 545.0,89.6 550.0,88.3 555.0,86.7 560.0,84.9 565.0,82.8 570.0,80.6 575.0,78.3 580.0,75.8 585.0,73.3 590.0,70.8 595.0,68.4 600.0,66.2 605.0,64.3 610.0,62.7 615.0,61.5 620.0,60.8 625.0,60.6 630.0,60.8 635.0,61.6 640.0,62.8 645.0,64.4 650.0,66.3 655.0,68.5 660.0,70.9 665.0,73.4 670.0,75.9 675.0,78.4 680.0,80.7 685.0,83.0 690.0,85.0 695.0,86.8 700.0,88.3 705.0,89.7 710.0,90.9 715.0,91.8 720.0,92.6" fill="none" stroke="#28405c" stroke-width="2.2" stroke-dasharray="1 3.4" stroke-linecap="round" opacity="0.9"/><line x1="541.6" y1="50.0" x2="541.6" y2="98" stroke="#1b1f24" stroke-width="2.4"/><rect x="500" y="104" width="220" height="28" fill="url(#rb2)"/><rect x="500" y="104" width="220" height="28" fill="none" stroke="#9aa3ac"/><rect x="540.3" y="104" width="2.6" height="28" fill="#1b1f24" opacity="0.85"/><line x1="541.6" y1="132" x2="541.6" y2="140" stroke="#9aa3ac" stroke-width="0.9"/><text x="541.6" y="152" text-anchor="middle" font-size="10" font-weight="700" fill="#28405c">青</text><text x="541.6" y="164" text-anchor="middle" font-size="9.5" fill="#5b6672">≈450 nm</text><text x="0" y="224" font-size="10" fill="#8d8163">上のグラフ：波長ごとの光の強さ（点線・高いほど強い）。とがった<tspan font-weight="700" fill="#1b1f24">縦の太い線</tspan>が「輝線」＝その波長だけ強く光っていること。</text><text x="0" y="238" font-size="10" fill="#8d8163">下の帯：同じ波長がどんな色に見えるかの色見本（実際の明るさとは対応しません）。</text></svg></div>
+  <div class="fig"><svg viewBox="0 0 720 246" role="img" aria-label="白熱電球・蛍光灯・LED の発光スペクトル（強さのグラフと色の対応）"><defs><linearGradient id="rb2" x1="0" x2="1"><stop offset="0.0%" stop-color="#610061"/><stop offset="2.0%" stop-color="#760084"/><stop offset="4.0%" stop-color="#8100a5"/><stop offset="6.0%" stop-color="#8200c4"/><stop offset="8.0%" stop-color="#7b00e2"/><stop offset="10.0%" stop-color="#6a00ff"/><stop offset="12.0%" stop-color="#4600ff"/><stop offset="14.0%" stop-color="#1d00ff"/><stop offset="16.0%" stop-color="#0022ff"/><stop offset="18.0%" stop-color="#0051ff"/><stop offset="20.0%" stop-color="#007bff"/><stop offset="22.0%" stop-color="#00a0ff"/><stop offset="24.0%" stop-color="#00c4ff"/><stop offset="26.0%" stop-color="#00e6ff"/><stop offset="28.0%" stop-color="#00ffea"/><stop offset="30.0%" stop-color="#00ff92"/><stop offset="32.0%" stop-color="#00ff28"/><stop offset="34.0%" stop-color="#24ff00"/><stop offset="36.0%" stop-color="#46ff00"/><stop offset="38.0%" stop-color="#65ff00"/><stop offset="40.0%" stop-color="#81ff00"/><stop offset="42.0%" stop-color="#9cff00"/><stop offset="44.0%" stop-color="#b6ff00"/><stop offset="46.0%" stop-color="#cfff00"/><stop offset="48.0%" stop-color="#e7ff00"/><stop offset="50.0%" stop-color="#ffff00"/><stop offset="52.0%" stop-color="#ffe600"/><stop offset="54.0%" stop-color="#ffcb00"/><stop offset="56.0%" stop-color="#ffb000"/><stop offset="58.0%" stop-color="#ff9400"/><stop offset="60.0%" stop-color="#ff7700"/><stop offset="62.0%" stop-color="#ff5700"/><stop offset="64.0%" stop-color="#ff3400"/><stop offset="66.0%" stop-color="#ff0900"/><stop offset="68.0%" stop-color="#ff0000"/><stop offset="70.0%" stop-color="#ff0000"/><stop offset="72.0%" stop-color="#ff0000"/><stop offset="74.0%" stop-color="#ff0000"/><stop offset="76.0%" stop-color="#ff0000"/><stop offset="78.0%" stop-color="#ff0000"/><stop offset="80.0%" stop-color="#ff0000"/><stop offset="82.0%" stop-color="#f10000"/><stop offset="84.0%" stop-color="#e20000"/><stop offset="86.0%" stop-color="#d30000"/><stop offset="88.0%" stop-color="#c40000"/><stop offset="90.0%" stop-color="#b50000"/><stop offset="92.0%" stop-color="#a50000"/><stop offset="94.0%" stop-color="#950000"/><stop offset="96.0%" stop-color="#840000"/><stop offset="98.0%" stop-color="#730000"/><stop offset="100.0%" stop-color="#610000"/></linearGradient></defs><line x1="0" y1="8" x2="18" y2="8" stroke="#1b1f24" stroke-width="3"/><text x="24" y="12" font-size="10.5" fill="#5b6672">＝輝線（その波長だけ強く光る）</text><line x1="272" y1="8" x2="290" y2="8" stroke="#28405c" stroke-width="1.8" stroke-linecap="round"/><text x="296" y="12" font-size="10.5" fill="#5b6672">＝スペクトル（波長ごとの光の強さ。高いほど強い）</text><line x1="0" y1="22" x2="720" y2="22" stroke="#e5e9ee" stroke-width="1"/><text x="0" y="42" font-size="11" font-weight="700" fill="#28405c">白熱電球（熱輻射）</text><line x1="0" y1="98" x2="220" y2="98" stroke="#c9d2da" stroke-width="1"/><polyline points="0.0,94.1 1.0,94.0 2.0,93.9 3.0,93.9 4.0,93.8 5.0,93.8 6.0,93.7 7.0,93.7 8.0,93.6 9.0,93.5 10.0,93.5 11.0,93.4 12.0,93.3 13.0,93.2 14.0,93.2 15.0,93.1 16.0,93.0 17.0,92.9 18.0,92.9 19.0,92.8 20.0,92.7 21.0,92.6 22.0,92.5 23.0,92.4 24.0,92.3 25.0,92.2 26.0,92.1 27.0,92.0 28.0,91.9 29.0,91.8 30.0,91.7 31.0,91.6 32.0,91.5 33.0,91.4 34.0,91.3 35.0,91.2 36.0,91.0 37.0,90.9 38.0,90.8 39.0,90.7 40.0,90.5 41.0,90.4 42.0,90.3 43.0,90.2 44.0,90.0 45.0,89.9 46.0,89.7 47.0,89.6 48.0,89.5 49.0,89.3 50.0,89.2 51.0,89.0 52.0,88.9 53.0,88.7 54.0,88.6 55.0,88.4 56.0,88.2 57.0,88.1 58.0,87.9 59.0,87.7 60.0,87.6 61.0,87.4 62.0,87.2 63.0,87.1 64.0,86.9 65.0,86.7 66.0,86.5 67.0,86.4 68.0,86.2 69.0,86.0 70.0,85.8 71.0,85.6 72.0,85.4 73.0,85.2 74.0,85.1 75.0,84.9 76.0,84.7 77.0,84.5 78.0,84.3 79.0,84.1 80.0,83.9 81.0,83.7 82.0,83.5 83.0,83.3 84.0,83.0 85.0,82.8 86.0,82.6 87.0,82.4 88.0,82.2 89.0,82.0 90.0,81.8 91.0,81.6 92.0,81.3 93.0,81.1 94.0,80.9 95.0,80.7 96.0,80.5 97.0,80.2 98.0,80.0 99.0,79.8 100.0,79.5 101.0,79.3 102.0,79.1 103.0,78.9 104.0,78.6 105.0,78.4 106.0,78.2 107.0,77.9 108.0,77.7 109.0,77.5 110.0,77.2 111.0,77.0 112.0,76.7 113.0,76.5 114.0,76.3 115.0,76.0 116.0,75.8 117.0,75.6 118.0,75.3 119.0,75.1 120.0,74.8 121.0,74.6 122.0,74.3 123.0,74.1 124.0,73.9 125.0,73.6 126.0,73.4 127.0,73.1 128.0,72.9 129.0,72.6 130.0,72.4 131.0,72.1 132.0,71.9 133.0,71.6 134.0,71.4 135.0,71.1 136.0,70.9 137.0,70.7 138.0,70.4 139.0,70.2 140.0,69.9 141.0,69.7 142.0,69.4 143.0,69.2 144.0,68.9 145.0,68.7 146.0,68.4 147.0,68.2 148.0,67.9 149.0,67.7 150.0,67.5 151.0,67.2 152.0,67.0 153.0,66.7 154.0,66.5 155.0,66.2 156.0,66.0 157.0,65.7 158.0,65.5 159.0,65.3 160.0,65.0 161.0,64.8 162.0,64.5 163.0,64.3 164.0,64.1 165.0,63.8 166.0,63.6 167.0,63.3 168.0,63.1 169.0,62.9 170.0,62.6 171.0,62.4 172.0,62.2 173.0,61.9 174.0,61.7 175.0,61.5 176.0,61.2 177.0,61.0 178.0,60.8 179.0,60.5 180.0,60.3 181.0,60.1 182.0,59.9 183.0,59.6 184.0,59.4 185.0,59.2 186.0,59.0 187.0,58.7 188.0,58.5 189.0,58.3 190.0,58.1 191.0,57.9 192.0,57.6 193.0,57.4 194.0,57.2 195.0,57.0 196.0,56.8 197.0,56.6 198.0,56.4 199.0,56.2 200.0,55.9 201.0,55.7 202.0,55.5 203.0,55.3 204.0,55.1 205.0,54.9 206.0,54.7 207.0,54.5 208.0,54.3 209.0,54.1 210.0,53.9 211.0,53.7 212.0,53.5 213.0,53.3 214.0,53.1 215.0,52.9 216.0,52.8 217.0,52.6 218.0,52.4 219.0,52.2 220.0,52.0" fill="none" stroke="#28405c" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/><rect x="0" y="104" width="220" height="28" fill="url(#rb2)"/><rect x="0" y="104" width="220" height="28" fill="none" stroke="#9aa3ac"/><text x="110" y="152" text-anchor="middle" font-size="10" fill="#5b6672">（輝線なし・全体になめらか）</text><text x="250" y="42" font-size="11" font-weight="700" fill="#28405c">蛍光灯（水銀の輝線＋蛍光体）</text><line x1="250" y1="98" x2="470" y2="98" stroke="#c9d2da" stroke-width="1"/><polyline points="250.0,90.6 250.5,90.6 251.0,90.6 251.5,90.6 252.0,90.6 252.5,90.6 253.0,90.6 253.5,90.6 254.0,90.6 254.5,90.6 255.0,90.6 255.5,90.6 256.0,90.6 256.5,90.6 257.0,90.6 257.5,90.6 258.0,90.6 258.5,90.6 259.0,90.6 259.5,90.6 260.0,90.6 260.5,90.6 261.0,90.6 261.5,90.6 262.0,90.6 262.5,90.6 263.0,90.6 263.5,90.6 264.0,90.6 264.5,90.6 265.0,90.6 265.5,90.6 266.0,90.6 266.5,90.5 267.0,90.5 267.5,90.5 268.0,90.5 268.5,90.5 269.0,90.5 269.5,90.5 270.0,90.5 270.5,90.4 271.0,90.4 271.5,90.4 272.0,90.4 272.5,90.4 273.0,90.3 273.5,90.3 274.0,90.2 274.5,90.1 275.0,90.0 275.5,89.6 276.0,88.9 276.5,87.5 277.0,85.2 277.5,81.5 278.0,76.3 278.5,69.7 279.0,62.2 279.5,55.0 280.0,52.0 280.5,52.0 281.0,52.0 281.5,52.0 282.0,56.2 282.5,63.5 283.0,70.7 283.5,76.8 284.0,81.5 284.5,84.6 285.0,86.5 285.5,87.6 286.0,88.0 286.5,88.2 287.0,88.1 287.5,88.0 288.0,87.9 288.5,87.8 289.0,87.6 289.5,87.5 290.0,87.3 290.5,87.1 291.0,86.9 291.5,86.8 292.0,86.6 292.5,86.4 293.0,86.2 293.5,86.0 294.0,85.8 294.5,85.6 295.0,85.4 295.5,85.2 296.0,85.0 296.5,84.8 297.0,84.5 297.5,84.3 298.0,84.1 298.5,83.9 299.0,83.7 299.5,83.5 300.0,83.3 300.5,83.1 301.0,82.9 301.5,82.7 302.0,82.5 302.5,82.3 303.0,82.1 303.5,81.9 304.0,81.7 304.5,81.5 305.0,81.4 305.5,81.2 306.0,81.0 306.5,80.9 307.0,80.7 307.5,80.6 308.0,80.5 308.5,80.4 309.0,80.2 309.5,80.1 310.0,80.0 310.5,79.9 311.0,79.9 311.5,79.8 312.0,79.7 312.5,79.6 313.0,79.6 313.5,79.5 314.0,79.5 314.5,79.5 315.0,79.4 315.5,79.4 316.0,79.4 316.5,79.4 317.0,79.4 317.5,79.4 318.0,79.4 318.5,79.4 319.0,79.4 319.5,79.4 320.0,79.4 320.5,79.5 321.0,79.5 321.5,79.5 322.0,79.5 322.5,79.5 323.0,79.6 323.5,79.6 324.0,79.6 324.5,79.6 325.0,79.6 325.5,79.6 326.0,79.6 326.5,79.6 327.0,79.6 327.5,79.6 328.0,79.6 328.5,79.6 329.0,79.6 329.5,79.5 330.0,79.5 330.5,79.5 331.0,79.4 331.5,79.4 332.0,79.3 332.5,79.2 333.0,79.2 333.5,79.1 334.0,79.0 334.5,78.9 335.0,78.7 335.5,78.5 336.0,78.1 336.5,77.5 337.0,76.2 337.5,74.1 338.0,70.6 338.5,65.6 339.0,59.0 339.5,52.0 340.0,52.0 340.5,52.0 341.0,52.0 341.5,52.0 342.0,52.0 342.5,52.0 343.0,52.0 343.5,54.6 344.0,61.4 344.5,66.8 345.0,70.6 345.5,72.9 346.0,74.2 346.5,74.9 347.0,75.1 347.5,75.1 348.0,75.0 348.5,74.9 349.0,74.7 349.5,74.6 350.0,74.5 350.5,74.3 351.0,74.2 351.5,74.1 352.0,74.0 352.5,73.9 353.0,73.8 353.5,73.7 354.0,73.6 354.5,73.5 355.0,73.4 355.5,73.4 356.0,73.3 356.5,73.3 357.0,73.2 357.5,73.2 358.0,73.2 358.5,73.2 359.0,73.2 359.5,73.2 360.0,73.2 360.5,73.2 361.0,73.3 361.5,73.3 362.0,73.4 362.5,73.4 363.0,73.5 363.5,73.6 364.0,73.7 364.5,73.8 365.0,73.9 365.5,74.1 366.0,74.2 366.5,74.3 367.0,74.5 367.5,74.6 368.0,74.8 368.5,75.0 369.0,75.2 369.5,75.4 370.0,75.6 370.5,75.8 371.0,76.0 371.5,76.2 372.0,76.4 372.5,76.6 373.0,76.9 373.5,77.1 374.0,77.4 374.5,77.6 375.0,77.9 375.5,78.1 376.0,78.4 376.5,78.6 377.0,78.9 377.5,79.2 378.0,79.4 378.5,79.7 379.0,80.0 379.5,80.2 380.0,80.5 380.5,80.8 381.0,81.0 381.5,81.3 382.0,81.6 382.5,81.8 383.0,82.1 383.5,82.3 384.0,82.6 384.5,82.9 385.0,83.1 385.5,83.4 386.0,83.6 386.5,83.8 387.0,84.1 387.5,84.3 388.0,84.5 388.5,84.8 389.0,85.0 389.5,85.2 390.0,85.4 390.5,85.6 391.0,85.8 391.5,86.0 392.0,86.2 392.5,86.4 393.0,86.6 393.5,86.8 394.0,86.9 394.5,87.1 395.0,87.3 395.5,87.4 396.0,87.6 396.5,87.7 397.0,87.9 397.5,88.0 398.0,88.1 398.5,88.2 399.0,88.4 399.5,88.5 400.0,88.6 400.5,88.7 401.0,88.8 401.5,88.9 402.0,89.0 402.5,89.1 403.0,89.2 403.5,89.3 404.0,89.3 404.5,89.4 405.0,89.5 405.5,89.6 406.0,89.6 406.5,89.7 407.0,89.7 407.5,89.8 408.0,89.8 408.5,89.9 409.0,89.9 409.5,90.0 410.0,90.0 410.5,90.1 411.0,90.1 411.5,90.1 412.0,90.2 412.5,90.2 413.0,90.2 413.5,90.3 414.0,90.3 414.5,90.3 415.0,90.3 415.5,90.4 416.0,90.4 416.5,90.4 417.0,90.4 417.5,90.4 418.0,90.5 418.5,90.5 419.0,90.5 419.5,90.5 420.0,90.5 420.5,90.5 421.0,90.5 421.5,90.5 422.0,90.5 422.5,90.6 423.0,90.6 423.5,90.6 424.0,90.6 424.5,90.6 425.0,90.6 425.5,90.6 426.0,90.6 426.5,90.6 427.0,90.6 427.5,90.6 428.0,90.6 428.5,90.6 429.0,90.6 429.5,90.6 430.0,90.6 430.5,90.6 431.0,90.6 431.5,90.6 432.0,90.6 432.5,90.6 433.0,90.6 433.5,90.6 434.0,90.6 434.5,90.6 435.0,90.6 435.5,90.6 436.0,90.6 436.5,90.6 437.0,90.6 437.5,90.6 438.0,90.6 438.5,90.6 439.0,90.6 439.5,90.6 440.0,90.6 440.5,90.6 441.0,90.6 441.5,90.6 442.0,90.6 442.5,90.6 443.0,90.6 443.5,90.6 444.0,90.6 444.5,90.6 445.0,90.6 445.5,90.6 446.0,90.6 446.5,90.6 447.0,90.6 447.5,90.6 448.0,90.6 448.5,90.6 449.0,90.6 449.5,90.6 450.0,90.6 450.5,90.6 451.0,90.6 451.5,90.6 452.0,90.6 452.5,90.6 453.0,90.6 453.5,90.6 454.0,90.6 454.5,90.6 455.0,90.6 455.5,90.6 456.0,90.6 456.5,90.6 457.0,90.6 457.5,90.6 458.0,90.6 458.5,90.6 459.0,90.6 459.5,90.6 460.0,90.6 460.5,90.6 461.0,90.6 461.5,90.6 462.0,90.6 462.5,90.6 463.0,90.6 463.5,90.6 464.0,90.6 464.5,90.6 465.0,90.6 465.5,90.6 466.0,90.6 466.5,90.6 467.0,90.6 467.5,90.6 468.0,90.6 468.5,90.6 469.0,90.6 469.5,90.6 470.0,90.6" fill="none" stroke="#28405c" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/><line x1="283.2" y1="50.0" x2="283.2" y2="98" stroke="#1b1f24" stroke-width="2.4"/><line x1="348.8" y1="52.4" x2="348.8" y2="98" stroke="#1b1f24" stroke-width="2.4"/><rect x="250" y="104" width="220" height="28" fill="url(#rb2)"/><rect x="250" y="104" width="220" height="28" fill="none" stroke="#9aa3ac"/><rect x="281.9" y="104" width="2.6" height="28" fill="#1b1f24" opacity="0.85"/><line x1="283.2" y1="132" x2="283.2" y2="140" stroke="#9aa3ac" stroke-width="0.9"/><text x="283.2" y="152" text-anchor="middle" font-size="10" font-weight="700" fill="#28405c">青</text><text x="283.2" y="164" text-anchor="middle" font-size="9.5" fill="#5b6672">435.8 nm</text><rect x="347.5" y="104" width="2.6" height="28" fill="#1b1f24" opacity="0.85"/><line x1="348.8" y1="132" x2="348.8" y2="140" stroke="#9aa3ac" stroke-width="0.9"/><text x="348.8" y="152" text-anchor="middle" font-size="10" font-weight="700" fill="#28405c">緑</text><text x="348.8" y="164" text-anchor="middle" font-size="9.5" fill="#5b6672">546.1 nm</text><text x="500" y="42" font-size="11" font-weight="700" fill="#28405c">白色 LED（青＋蛍光体）</text><line x1="500" y1="98" x2="720" y2="98" stroke="#c9d2da" stroke-width="1"/><polyline points="500.0,97.9 500.5,97.9 501.0,97.9 501.5,97.9 502.0,97.9 502.5,97.9 503.0,97.9 503.5,97.9 504.0,97.9 504.5,97.9 505.0,97.9 505.5,97.9 506.0,97.9 506.5,97.9 507.0,97.9 507.5,97.8 508.0,97.8 508.5,97.8 509.0,97.8 509.5,97.8 510.0,97.8 510.5,97.8 511.0,97.8 511.5,97.8 512.0,97.8 512.5,97.7 513.0,97.7 513.5,97.7 514.0,97.7 514.5,97.7 515.0,97.7 515.5,97.6 516.0,97.6 516.5,97.6 517.0,97.6 517.5,97.6 518.0,97.5 518.5,97.5 519.0,97.5 519.5,97.4 520.0,97.4 520.5,97.3 521.0,97.3 521.5,97.2 522.0,97.1 522.5,97.0 523.0,96.9 523.5,96.7 524.0,96.5 524.5,96.3 525.0,96.0 525.5,95.6 526.0,95.1 526.5,94.5 527.0,93.8 527.5,93.0 528.0,92.0 528.5,90.8 529.0,89.4 529.5,87.8 530.0,86.1 530.5,84.1 531.0,81.9 531.5,79.5 532.0,76.9 532.5,74.2 533.0,71.4 533.5,68.5 534.0,65.6 534.5,62.8 535.0,60.0 535.5,57.5 536.0,55.2 536.5,53.2 537.0,52.0 537.5,52.0 538.0,52.0 538.5,52.0 539.0,52.0 539.5,52.0 540.0,52.0 540.5,52.4 541.0,54.1 541.5,56.2 542.0,58.6 542.5,61.1 543.0,63.7 543.5,66.4 544.0,69.0 544.5,71.6 545.0,74.1 545.5,76.5 546.0,78.6 546.5,80.6 547.0,82.4 547.5,83.9 548.0,85.3 548.5,86.4 549.0,87.4 549.5,88.1 550.0,88.8 550.5,89.2 551.0,89.6 551.5,89.8 552.0,90.0 552.5,90.0 553.0,90.0 553.5,90.0 554.0,89.9 554.5,89.8 555.0,89.6 555.5,89.4 556.0,89.2 556.5,89.0 557.0,88.8 557.5,88.6 558.0,88.3 558.5,88.1 559.0,87.8 559.5,87.6 560.0,87.3 560.5,87.1 561.0,86.8 561.5,86.5 562.0,86.3 562.5,86.0 563.0,85.7 563.5,85.4 564.0,85.1 564.5,84.9 565.0,84.6 565.5,84.3 566.0,84.0 566.5,83.7 567.0,83.4 567.5,83.1 568.0,82.8 568.5,82.5 569.0,82.2 569.5,81.9 570.0,81.6 570.5,81.3 571.0,81.0 571.5,80.7 572.0,80.4 572.5,80.1 573.0,79.8 573.5,79.5 574.0,79.2 574.5,78.9 575.0,78.6 575.5,78.3 576.0,78.0 576.5,77.7 577.0,77.4 577.5,77.1 578.0,76.8 578.5,76.6 579.0,76.3 579.5,76.0 580.0,75.7 580.5,75.4 581.0,75.2 581.5,74.9 582.0,74.7 582.5,74.4 583.0,74.1 583.5,73.9 584.0,73.7 584.5,73.4 585.0,73.2 585.5,73.0 586.0,72.7 586.5,72.5 587.0,72.3 587.5,72.1 588.0,71.9 588.5,71.7 589.0,71.5 589.5,71.4 590.0,71.2 590.5,71.0 591.0,70.9 591.5,70.7 592.0,70.6 592.5,70.5 593.0,70.3 593.5,70.2 594.0,70.1 594.5,70.0 595.0,69.9 595.5,69.8 596.0,69.8 596.5,69.7 597.0,69.6 597.5,69.6 598.0,69.6 598.5,69.5 599.0,69.5 599.5,69.5 600.0,69.5 600.5,69.5 601.0,69.5 601.5,69.5 602.0,69.5 602.5,69.6 603.0,69.6 603.5,69.7 604.0,69.7 604.5,69.8 605.0,69.9 605.5,70.0 606.0,70.1 606.5,70.2 607.0,70.3 607.5,70.4 608.0,70.5 608.5,70.7 609.0,70.8 609.5,71.0 610.0,71.1 610.5,71.3 611.0,71.5 611.5,71.7 612.0,71.8 612.5,72.0 613.0,72.2 613.5,72.4 614.0,72.7 614.5,72.9 615.0,73.1 615.5,73.3 616.0,73.6 616.5,73.8 617.0,74.0 617.5,74.3 618.0,74.6 618.5,74.8 619.0,75.1 619.5,75.3 620.0,75.6 620.5,75.9 621.0,76.2 621.5,76.4 622.0,76.7 622.5,77.0 623.0,77.3 623.5,77.6 624.0,77.9 624.5,78.2 625.0,78.5 625.5,78.8 626.0,79.1 626.5,79.4 627.0,79.7 627.5,80.0 628.0,80.3 628.5,80.6 629.0,80.9 629.5,81.2 630.0,81.5 630.5,81.8 631.0,82.1 631.5,82.4 632.0,82.7 632.5,83.0 633.0,83.3 633.5,83.6 634.0,83.9 634.5,84.2 635.0,84.5 635.5,84.7 636.0,85.0 636.5,85.3 637.0,85.6 637.5,85.9 638.0,86.1 638.5,86.4 639.0,86.7 639.5,87.0 640.0,87.2 640.5,87.5 641.0,87.7 641.5,88.0 642.0,88.2 642.5,88.5 643.0,88.7 643.5,89.0 644.0,89.2 644.5,89.5 645.0,89.7 645.5,89.9 646.0,90.1 646.5,90.4 647.0,90.6 647.5,90.8 648.0,91.0 648.5,91.2 649.0,91.4 649.5,91.6 650.0,91.8 650.5,92.0 651.0,92.1 651.5,92.3 652.0,92.5 652.5,92.7 653.0,92.8 653.5,93.0 654.0,93.2 654.5,93.3 655.0,93.5 655.5,93.6 656.0,93.8 656.5,93.9 657.0,94.1 657.5,94.2 658.0,94.3 658.5,94.5 659.0,94.6 659.5,94.7 660.0,94.8 660.5,94.9 661.0,95.0 661.5,95.2 662.0,95.3 662.5,95.4 663.0,95.5 663.5,95.6 664.0,95.6 664.5,95.7 665.0,95.8 665.5,95.9 666.0,96.0 666.5,96.1 667.0,96.2 667.5,96.2 668.0,96.3 668.5,96.4 669.0,96.4 669.5,96.5 670.0,96.6 670.5,96.6 671.0,96.7 671.5,96.7 672.0,96.8 672.5,96.8 673.0,96.9 673.5,96.9 674.0,97.0 674.5,97.0 675.0,97.1 675.5,97.1 676.0,97.2 676.5,97.2 677.0,97.2 677.5,97.3 678.0,97.3 678.5,97.3 679.0,97.4 679.5,97.4 680.0,97.4 680.5,97.5 681.0,97.5 681.5,97.5 682.0,97.5 682.5,97.6 683.0,97.6 683.5,97.6 684.0,97.6 684.5,97.6 685.0,97.7 685.5,97.7 686.0,97.7 686.5,97.7 687.0,97.7 687.5,97.7 688.0,97.7 688.5,97.8 689.0,97.8 689.5,97.8 690.0,97.8 690.5,97.8 691.0,97.8 691.5,97.8 692.0,97.8 692.5,97.8 693.0,97.9 693.5,97.9 694.0,97.9 694.5,97.9 695.0,97.9 695.5,97.9 696.0,97.9 696.5,97.9 697.0,97.9 697.5,97.9 698.0,97.9 698.5,97.9 699.0,97.9 699.5,97.9 700.0,97.9 700.5,97.9 701.0,97.9 701.5,97.9 702.0,98.0 702.5,98.0 703.0,98.0 703.5,98.0 704.0,98.0 704.5,98.0 705.0,98.0 705.5,98.0 706.0,98.0 706.5,98.0 707.0,98.0 707.5,98.0 708.0,98.0 708.5,98.0 709.0,98.0 709.5,98.0 710.0,98.0 710.5,98.0 711.0,98.0 711.5,98.0 712.0,98.0 712.5,98.0 713.0,98.0 713.5,98.0 714.0,98.0 714.5,98.0 715.0,98.0 715.5,98.0 716.0,98.0 716.5,98.0 717.0,98.0 717.5,98.0 718.0,98.0 718.5,98.0 719.0,98.0 719.5,98.0 720.0,98.0" fill="none" stroke="#28405c" stroke-width="1.6" stroke-linejoin="round" opacity="0.9"/><line x1="541.6" y1="50.0" x2="541.6" y2="98" stroke="#1b1f24" stroke-width="2.4"/><rect x="500" y="104" width="220" height="28" fill="url(#rb2)"/><rect x="500" y="104" width="220" height="28" fill="none" stroke="#9aa3ac"/><rect x="540.3" y="104" width="2.6" height="28" fill="#1b1f24" opacity="0.85"/><line x1="541.6" y1="132" x2="541.6" y2="140" stroke="#9aa3ac" stroke-width="0.9"/><text x="541.6" y="152" text-anchor="middle" font-size="10" font-weight="700" fill="#28405c">青</text><text x="541.6" y="164" text-anchor="middle" font-size="9.5" fill="#5b6672">≈450 nm</text><text x="0" y="224" font-size="10" fill="#8d8163">上のグラフ：スペクトル（波長ごとの光の強さ。高いほど強い）。とがった<tspan font-weight="700" fill="#1b1f24">縦の太い線</tspan>が「輝線」＝その波長だけ強く光っていること。</text><text x="0" y="238" font-size="10" fill="#8d8163">下の帯：同じ波長がどんな色に見えるかの色見本（実際の明るさとは対応しません）。</text></svg></div>
   <p class="note">つくった分光器で、白熱電球・蛍光灯・LED を見くらべてみてください。<b>白熱電球</b>はフィラメントを 2200〜2700 ℃ に熱した熱輻射なので、なめらかな連続スペクトル。<b>蛍光灯</b>は水銀が出す紫外線（254 nm）を蛍光体が可視光に変えたもので、水銀の輝線（435.8 nm 青・546.1 nm 緑）が乗って見えます。<b>白色 LED</b> は青色 LED で蛍光体を光らせているので、青の鋭いピークと、緑〜赤の広い山になります。</p>
   <p class="ng" style="font-weight:700">※ 太陽やレーザーを直接のぞいてはいけません。</p>
 
@@ -842,7 +865,7 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
   <p>一般の回折格子の式は <b>mλ ＝ d (sinα ＋ sinβ)</b> と書けます（α は入射角、β は回折角）。このシミュレーションで使ってきた d sinθ ＝ mλ は、光を格子にまっすぐ入れた場合（α ＝ 0）にあたります。</p>
   <p class="note" style="font-size:13px"><b>◆ なぜ「＋」になるのか（かんたんに）</b></p>
   <p>光が格子にまっすぐ入らず、法線から角度 α だけ傾いて入ってくると、隣りあうスリットに光が届く時点で、すでに <b>d sinα</b> だけの経路差がついています（下の図の左側）。格子を出たあとも同じように、法線から角度 β の方向（m 次の明線の方向）へ進む光を遠くの 1 点に集めると、隣りあうスリットからそこまでの道のりに <b>d sinβ</b> の経路差がつきます（図の右側）。α と β を図のように法線の同じ側にとると、この 2 つの経路差は同じ向きに足し合わさるので、全体の経路差は d sinα ＋ d sinβ。これが波長の整数倍（mλ）になったところに明線ができる、というのが mλ ＝ d (sinα ＋ sinβ) の意味です。<br>光をまっすぐ入れる（α ＝ 0）と d sinβ ＝ mλ となり、これがこのシミュレーションで使ってきた <b>d sinθ ＝ mλ</b>（β ＝ θ）そのものです。</p>
-  <div class="fig"><svg viewBox="0 0 560 262" role="img" aria-label="回折格子に斜めに光が入射するときの経路差の作図（入射角アルファ・回折角ベータ）">
+  <div class="fig"><svg viewBox="0 0 560 262" style="max-width:380px;min-width:0;margin:0 auto" role="img" aria-label="回折格子に斜めに光が入射するときの経路差の作図（入射角アルファ・回折角ベータ）">
   <!-- 格子面 -->
   <line x1="300" y1="55" x2="300" y2="245" stroke="#28405c" stroke-width="2.6"/>
 <line x1="293" y1="69" x2="307" y2="60" stroke="#7f92a8" stroke-width="1.2"/>
@@ -960,7 +983,7 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
 <details class="more">
   <summary>④ なぜ元素ごとに波長が決まるのか － 原子のスペクトル</summary>
   <p>原子の中の電子は、決まったエネルギーの「殻」（内側から K殻・L殻・M殻…）にしか居られません。電子が外側の殻から内側の殻へ移るとき、その<b>落差ぶんのエネルギーをもった光</b>が 1 個出ていきます。落差が決まっているので、出てくる光の波長も決まります。</p>
-  <div class="fig"><svg viewBox="0 0 800 206" role="img" aria-label="水素のバルマー系列とエネルギー準位"><defs><marker id="ar" markerWidth="7" markerHeight="7" refX="3.4" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#28405c"/></marker></defs><text x="4" y="14" font-size="11.5" fill="#5b6672">水素が出す光（輝線）</text><rect x="44" y="22" width="476" height="52" fill="#0b0d10"/><rect x="73.9" y="22" width="4.4" height="52" fill="#7d00db"/><line x1="76.1" y1="74" x2="76.1" y2="82" stroke="#9aa3ac" stroke-width="0.9"/><text x="76.1" y="94" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hδ</text><text x="76.1" y="107" text-anchor="middle" font-size="10" fill="#5b6672">410.2 nm</text><text x="76.1" y="120" text-anchor="middle" font-size="10" fill="#8d8163">n=6→2</text><rect x="111.6" y="22" width="4.4" height="52" fill="#2800ff"/><line x1="113.8" y1="74" x2="113.8" y2="120" stroke="#9aa3ac" stroke-width="0.9"/><text x="113.8" y="132" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hγ</text><text x="113.8" y="145" text-anchor="middle" font-size="10" fill="#5b6672">434.0 nm</text><text x="113.8" y="158" text-anchor="middle" font-size="10" fill="#8d8163">n=5→2</text><rect x="194.3" y="22" width="4.4" height="52" fill="#00efff"/><line x1="196.5" y1="74" x2="196.5" y2="82" stroke="#9aa3ac" stroke-width="0.9"/><text x="196.5" y="94" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hβ</text><text x="196.5" y="107" text-anchor="middle" font-size="10" fill="#5b6672">486.1 nm</text><text x="196.5" y="120" text-anchor="middle" font-size="10" fill="#8d8163">n=4→2</text><rect x="464.3" y="22" width="4.4" height="52" fill="#ff0000"/><line x1="466.5" y1="74" x2="466.5" y2="120" stroke="#9aa3ac" stroke-width="0.9"/><text x="466.5" y="132" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hα</text><text x="466.5" y="145" text-anchor="middle" font-size="10" fill="#5b6672">656.3 nm</text><text x="466.5" y="158" text-anchor="middle" font-size="10" fill="#8d8163">n=3→2</text><text x="596" y="14" font-size="11.5" fill="#5b6672">エネルギー準位と落ちかた</text><line x1="596" y1="40.0" x2="742" y2="40.0" stroke="#9aa3ac" stroke-width="1" stroke-dasharray="4 3"/><text x="746" y="44.0" font-size="9.5" fill="#8d8163">n=∞</text><line x1="596" y1="196.0" x2="742" y2="196.0" stroke="#28405c" stroke-width="1.8"/><text x="746" y="199.5" font-size="10" fill="#5b6672">n=1</text><line x1="596" y1="79.0" x2="742" y2="79.0" stroke="#28405c" stroke-width="1.8"/><text x="746" y="82.5" font-size="10" fill="#5b6672">n=2</text><line x1="596" y1="57.3" x2="742" y2="57.3" stroke="#28405c" stroke-width="1.8"/><text x="746" y="60.8" font-size="10" fill="#5b6672">n=3</text><line x1="596" y1="49.8" x2="742" y2="49.8" stroke="#28405c" stroke-width="1.8"/><line x1="596" y1="44.3" x2="742" y2="44.3" stroke="#28405c" stroke-width="1.8"/><text x="746" y="43.8" font-size="10" fill="#5b6672">n=4,5,6…</text><line x1="612" y1="44.3" x2="612" y2="72.0" stroke="#7d00db" stroke-width="2.6" marker-end="url(#ar)"/><line x1="642" y1="46.2" x2="642" y2="72.0" stroke="#2800ff" stroke-width="2.6" marker-end="url(#ar)"/><line x1="672" y1="49.8" x2="672" y2="72.0" stroke="#00efff" stroke-width="2.6" marker-end="url(#ar)"/><line x1="702" y1="57.3" x2="702" y2="72.0" stroke="#ff0000" stroke-width="2.6" marker-end="url(#ar)"/><text x="596" y="182" font-size="10" fill="#8d8163">電子が落ちた「落差」が、そのまま光の色になる</text></svg></div>
+  <div class="fig"><svg viewBox="0 0 800 206" role="img" aria-label="水素のバルマー系列とエネルギー準位"><defs><marker id="ar" markerWidth="7" markerHeight="7" refX="3.4" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#28405c"/></marker></defs><text x="4" y="14" font-size="11.5" fill="#5b6672">水素が出す光（輝線）</text><rect x="44" y="22" width="476" height="52" fill="#0b0d10"/><rect x="73.9" y="22" width="4.4" height="52" fill="#7d00db"/><line x1="76.1" y1="74" x2="76.1" y2="82" stroke="#9aa3ac" stroke-width="0.9"/><text x="76.1" y="94" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hδ</text><text x="76.1" y="107" text-anchor="middle" font-size="10" fill="#5b6672">410.2 nm</text><text x="76.1" y="120" text-anchor="middle" font-size="10" fill="#8d8163">n=6→2</text><rect x="111.6" y="22" width="4.4" height="52" fill="#2800ff"/><line x1="113.8" y1="74" x2="113.8" y2="120" stroke="#9aa3ac" stroke-width="0.9"/><text x="113.8" y="132" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hγ</text><text x="113.8" y="145" text-anchor="middle" font-size="10" fill="#5b6672">434.0 nm</text><text x="113.8" y="158" text-anchor="middle" font-size="10" fill="#8d8163">n=5→2</text><rect x="194.3" y="22" width="4.4" height="52" fill="#00efff"/><line x1="196.5" y1="74" x2="196.5" y2="82" stroke="#9aa3ac" stroke-width="0.9"/><text x="196.5" y="94" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hβ</text><text x="196.5" y="107" text-anchor="middle" font-size="10" fill="#5b6672">486.1 nm</text><text x="196.5" y="120" text-anchor="middle" font-size="10" fill="#8d8163">n=4→2</text><rect x="464.3" y="22" width="4.4" height="52" fill="#ff0000"/><line x1="466.5" y1="74" x2="466.5" y2="120" stroke="#9aa3ac" stroke-width="0.9"/><text x="466.5" y="132" text-anchor="middle" font-size="11.5" font-weight="700" fill="#28405c">Hα</text><text x="466.5" y="145" text-anchor="middle" font-size="10" fill="#5b6672">656.3 nm</text><text x="466.5" y="158" text-anchor="middle" font-size="10" fill="#8d8163">n=3→2</text><text x="596" y="14" font-size="11.5" fill="#5b6672">エネルギー準位と落ちかた</text><line x1="596" y1="40.0" x2="742" y2="40.0" stroke="#9aa3ac" stroke-width="1" stroke-dasharray="4 3"/><text x="746" y="37.5" font-size="9" fill="#8d8163">n=∞</text><line x1="596" y1="196.0" x2="742" y2="196.0" stroke="#28405c" stroke-width="1.8"/><text x="746" y="199.5" font-size="10" fill="#5b6672">n=1</text><line x1="596" y1="79.0" x2="742" y2="79.0" stroke="#28405c" stroke-width="1.8"/><text x="746" y="82.5" font-size="10" fill="#5b6672">n=2</text><line x1="596" y1="57.3" x2="742" y2="57.3" stroke="#28405c" stroke-width="1.8"/><text x="746" y="60.8" font-size="10" fill="#5b6672">n=3</text><line x1="596" y1="49.8" x2="742" y2="49.8" stroke="#28405c" stroke-width="1.8"/><line x1="596" y1="44.3" x2="742" y2="44.3" stroke="#28405c" stroke-width="1.8"/><text x="746" y="50.5" font-size="9.5" fill="#5b6672">n=4,5,6…</text><line x1="612" y1="44.3" x2="612" y2="72.0" stroke="#7d00db" stroke-width="2.6" marker-end="url(#ar)"/><line x1="642" y1="46.2" x2="642" y2="72.0" stroke="#2800ff" stroke-width="2.6" marker-end="url(#ar)"/><line x1="672" y1="49.8" x2="672" y2="72.0" stroke="#00efff" stroke-width="2.6" marker-end="url(#ar)"/><line x1="702" y1="57.3" x2="702" y2="72.0" stroke="#ff0000" stroke-width="2.6" marker-end="url(#ar)"/><text x="596" y="172" font-size="10" fill="#8d8163">電子が落ちた「落差」が、</text><text x="596" y="186" font-size="10" fill="#8d8163">そのまま光の色になる</text></svg></div>
   <p class="note">水素で、n ＝ 2 の殻（L殻）へ落ちてくる一群を<b>バルマー系列</b>といいます。<br>Hα 656.3 nm（赤）、Hβ 486.1 nm（青緑）、Hγ 434.0 nm（青紫）、Hδ 410.2 nm（紫）。<br>波長は <b>1/λ ＝ R (1/2² − 1/n²)</b>（n ＝ 3, 4, 5, …。リュードベリ定数 R ＝ 1.09737×10⁷ m⁻¹）で計算できます。</p>
   <p class="note">この Hα 656.3 nm は、太陽のスペクトルでは<b>暗線 C 線</b>として抜けています。ガスが自分で光れば輝線、後ろからの光を吸えば暗線 － どちらも同じ「殻の落差」です。</p>
   <div class="callout">
@@ -1043,8 +1066,6 @@ DG.phys = (function () {
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
   /* ---------- 格子定数 ---------- */
-  /** 1 mm あたりの本数 → 格子定数 d [nm]（1 mm = 10⁶ nm） */
-  function dFromLinesPerMm(n) { return 1e6 / n; }
   /** 格子定数 d [nm] → 1 cm あたりの本数（教科書の表記「〇本/cm」に合わせる。1 cm = 10⁷ nm） */
   function linesPerCmFromD(d) { return 1e7 / d; }
 
@@ -1252,7 +1273,7 @@ DG.phys = (function () {
 
   return {
     DEG: DEG, clamp: clamp,
-    dFromLinesPerMm: dFromLinesPerMm, linesPerCmFromD: linesPerCmFromD,
+    linesPerCmFromD: linesPerCmFromD,
     sinThetaOf: sinThetaOf, maxOrder: maxOrder, thetaOf: thetaOf,
     pathDiff: pathDiff, xOnScreen: xOnScreen, thetaFromX: thetaFromX,
     intensityN: intensityN,
@@ -2562,15 +2583,16 @@ DG.scaleOut = (function () {
     ctx.globalAlpha = 1;
     ctx.restore();
 
-    /* 「これが回折」の吹き出しを、スリットのそばに 3 つ出す。
+    /* 「これが回折」の吹き出し。
+       説明は 1 つの箱にまとめる（3 つに分けると図がごちゃごちゃするため）。
        スリットの幅より波長のほうが大きいくらいなので、光は
        まっすぐ進まずに、スリットを中心に円形に広がっていく。 */
     var TIPS = [
-      { i: 0, dx: 210, dy: -66, t: ['スリットを通った光が、まっすぐ進まずに'] },
-      { i: 1, dx: 150, dy: 34, t: [[
-        { s: '筋がない平面部分から' }, { s: '回折', bold: true }, { s: 'して広がっている' }
-      ]] },
-      { i: 3, dx: 130, dy: 52, t: ['どのスリットからも同じように広がる'] }
+      { i: 2, dx: 168, dy: 66, t: [
+        'スリットを通った光は、まっすぐ進まずに',
+        [{ s: '回折', bold: true }, { s: 'して円形に広がっていく' }],
+        '（どのスリットからも同じように広がる）'
+      ] }
     ];
     // 1 行ぶんの幅を測る（ふつうの文字列でも、部分ごとに強調する行（配列）でもよい）
     function lineWidth(line) {
@@ -2655,8 +2677,9 @@ DG.scaleOut = (function () {
       ctx.beginPath(); ctx.moveTo(px + 22, y); ctx.lineTo(px + 4, y); ctx.stroke();
     }
     ctx.save();
+    // 上から順に「筋の説明」→「筋と筋の間（スリット）の説明」→（下の赤い箱）「回折した光の説明」
     tag('筋（けずってある）＝ 光は通らない', slits[0] - sp / 2, '#8a6d00');
-    tag('筋と筋の間がスリット ＝ ここから波が広がる', slits[2], '#2b5a78');
+    tag('筋と筋の間がスリット ＝ ここから波が広がる', slits[1], '#2b5a78');
     ctx.font = D.font(12);
     ctx.fillStyle = '#5b6672';
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
@@ -3816,12 +3839,13 @@ DG.modePath = (function () {
     ctx.closePath(); ctx.fill();
     ctx.restore();
 
-    // ラベル（矢印の上、まんなかあたり）
+    // ラベル（赤い矢印のすぐ下・まんなかあたり。矢印から離すと対応が分かりにくい）
     ctx.save();
     ctx.font = D.font(11.5, true);
     var t = '← 左の図は、この 2 本を拡大したもの';
     var w = ctx.measureText(t).width;
-    var tx = (rx + lx) / 2, ty = 20;
+    // 左パネル（x < DIV）の見出しと重ならないよう、少し右に寄せて矢印のすぐ下に置く
+    var tx = (rx + lx) / 2 + 100, ty = 132;
     D.roundRect(ctx, tx - w / 2 - 8, ty - 11, w + 16, 22, 6);
     ctx.fillStyle = '#fdeeec'; ctx.fill();
     ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.3; ctx.stroke();
@@ -4161,6 +4185,81 @@ DG.modeWave = (function () {
     return cv;
   }
 
+  /* ================= 光の強度分布のグラフ（スクリーンの右わき） =================
+   * 横軸＝明るさ（右ほど明るい）、縦軸＝スクリーン上の位置（図と同じものさし）。
+   * gamma（見やすさの強調）はかけず、計算した強度そのものを描く。 */
+  var GB = { x0: 1216, w: 76 };
+  var gCache = { key: '', arr: null };
+
+  function buildIntensityArr(st) {
+    var h = L.SH * 2 + 1;
+    var arr = [];
+    var SS2 = 4;                                 // 1 px の中を 4 点しらべて最大をとる
+    for (var i = 0; i < h; i++) {
+      var v = 0;
+      for (var q = 0; q < SS2; q++) {
+        var xm = -(i - L.SH + q / SS2) / L.PPM;
+        var th = P.thetaFromX(xm, st.L);
+        if (st.light === 'white') {
+          var s = 0, n = 0;
+          for (var lam = 380; lam <= 780; lam += 8) { s += P.intensityN(th, st.d, lam, st.N); n++; }
+          v = Math.max(v, s / n);
+        } else {
+          v = Math.max(v, P.intensityN(th, st.d, st.lambda, st.N));
+        }
+      }
+      arr.push(v);
+    }
+    return arr;
+  }
+
+  function intensityGraph(ctx, st, sol, sc) {
+    var key = [st.d, st.L, st.lambda, st.light, st.N].join('|');
+    if (key !== gCache.key) { gCache.key = key; gCache.arr = buildIntensityArr(st); }
+    var arr = gCache.arr;
+    var x0 = GB.x0, w = GB.w, yTop = L.CY - L.SH;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillRect(x0 - 4, yTop - 4, L.W - (x0 - 4) - 2, L.SH * 2 + 8);
+    ctx.strokeStyle = '#b9c0c8'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0 + 0.5, yTop); ctx.lineTo(x0 + 0.5, yTop + L.SH * 2); ctx.stroke();
+    // うすい塗り＋赤い曲線
+    var i;
+    ctx.beginPath();
+    ctx.moveTo(x0, yTop);
+    for (i = 0; i < arr.length; i++) ctx.lineTo(x0 + arr[i] * w, yTop + i);
+    ctx.lineTo(x0, yTop + arr.length - 1);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(208,52,44,0.10)'; ctx.fill();
+    ctx.beginPath();
+    for (i = 0; i < arr.length; i++) {
+      var xx = x0 + arr[i] * w;
+      if (i === 0) ctx.moveTo(xx, yTop); else ctx.lineTo(xx, yTop + i);
+    }
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+    ctx.stroke();
+    // 主極大の針。N′ が大きいと山が 1 px より細くなり、サンプリングでは
+    // 拾いきれないことがあるので、明線の位置には式から出した針を必ず立てる
+    if (st.light !== 'white') {
+      ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.4;
+      for (i = 0; i < sol.orders.length; i++) {
+        var yb = L.CY - sol.orders[i].x * sc.ppm;
+        if (Math.abs(yb - L.CY) > L.SH) continue;
+        ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x0 + w, yb); ctx.stroke();
+      }
+    }
+    // 見出し
+    ctx.font = D.font(11, true);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    var t = '光の強度分布';
+    var tw2 = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillRect(x0 + w / 2 - tw2 / 2 - 3, yTop - 25, tw2 + 6, 16);
+    ctx.fillStyle = '#a12a1c';
+    ctx.fillText(t, x0 + w / 2, yTop - 10);
+    ctx.restore();
+  }
+
   /** スクリーンの面に干渉パターンを描き、次数のラベルを添える */
   function screenPattern(ctx, st, sol, sc, avoidY) {
     var key = patternKey(st);
@@ -4172,6 +4271,9 @@ DG.modeWave = (function () {
       L.SX, L.CY - L.SH, L.SCR_W, L.SH * 2 + 1);
     ctx.imageSmoothingEnabled = true;
     ctx.restore();
+
+    // スクリーンの右わきに、光の強度分布のグラフを添える
+    intensityGraph(ctx, st, sol, sc);
 
     // 次数のラベル（①とまったく同じ関数で位置を出す。
     // モードを切りかえてもラベルの位置がずれないようにするため）
@@ -4328,15 +4430,17 @@ DG.modeField = (function () {
   var L = D.L, COL = D.COL;
 
   var FL = {
-    x0: 264, y0: 26, x1: 856, y1: 626,    // 場を描く範囲（右はしはスクリーンの動ける限界）
+    x0: 264, y0: 26, x1: 776, y1: 626,    // 場を描く範囲（右はしはスクリーンの動ける限界。
+                                          //   その右に「光の強度分布」グラフの余白をとってある）
     gx: 356,                              // 回折格子の x
     nMax: 10, sp: 40,                     // 図に描くスリット（N′ が多いときは 10 本まで）
     step: 2                               // 場の計算の刻み [px]
   };
   FL.cy = (FL.y0 + FL.y1) / 2;
 
-  /** スクリーン（板）。面の x はドラッグで動かせる（格子に近づきすぎないように下限あり） */
-  var SCR = { w: 16, min: 200, max: 500 };   // min/max は「格子からの距離 [px]」
+  /** スクリーン（板）。面の x はドラッグで動かせる（格子に近づきすぎないように下限あり）。
+   *  max はスクリーンの右わきに「光の強度分布」のグラフを置く余白ぶんだけ、少し手前にしてある */
+  var SCR = { w: 16, min: 200, max: 420 };   // min/max は「格子からの距離 [px]」
   function screenX(st) {
     var v = (st.scrX === undefined || st.scrX === null) ? SCR.max : st.scrX;
     return FL.gx + P.clamp(v, SCR.min, SCR.max);
@@ -4555,6 +4659,58 @@ DG.modeField = (function () {
     return cv;
   }
 
+  /**
+   * スクリーンのすぐ右に、光の強度分布のグラフを描く。
+   * 横軸＝明るさ（振幅の 2 乗）、縦軸＝スクリーン上の位置（図と同じものさし）。
+   * N′ を変えると、このグラフの形がその場で変わる（明線が細くなっていく）。
+   */
+  function intensityGraph(ctx, st, sx) {
+    var x0 = sx + SCR.w + 12, w = 62;
+    var y0 = FL.y0, y1 = FL.y1;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.fillRect(x0 - 4, y0, w + 14, y1 - y0);
+    ctx.strokeStyle = '#b9c0c8'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0 + 0.5, y0); ctx.lineTo(x0 + 0.5, y1); ctx.stroke();
+    // 曲線（うすい塗りつき）
+    var pts = [];
+    for (var y = y0; y <= y1; y += 1) {
+      var f = ampFrac(st.N, deltaAt(st, y), st.lambda);
+      pts.push([x0 + f * f * w, y]);          // 明るさ ＝ 振幅の 2 乗
+    }
+    var i;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    for (i = 0; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.lineTo(x0, y1);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(208,52,44,0.10)'; ctx.fill();
+    ctx.beginPath();
+    for (i = 0; i < pts.length; i++) {
+      if (i === 0) ctx.moveTo(pts[i][0], pts[i][1]); else ctx.lineTo(pts[i][0], pts[i][1]);
+    }
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+    ctx.stroke();
+    // 主極大の針（N′ が大きいと山が 1 px より細くなるので、式から出した位置に必ず立てる）
+    var mMax2 = P.maxOrder(st.lambda, st.d);
+    ctx.strokeStyle = '#d0342c'; ctx.lineWidth = 1.4;
+    for (var m = -mMax2; m <= mMax2; m++) {
+      var yb = yOfRatio(st, m);
+      if (yb === null || yb < y0 + 2 || yb > y1 - 2) continue;
+      ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x0 + w, yb); ctx.stroke();
+    }
+    // 見出し（グラフの上のすみに入れる）
+    ctx.font = D.font(10.5, true);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    var t = '光の強度分布';
+    var tw = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillRect(x0 + 3, y0 + 4, tw + 6, 15);
+    ctx.fillStyle = '#a12a1c';
+    ctx.fillText(t, x0 + 6, y0 + 6);
+    ctx.restore();
+  }
+
   function screen(ctx, st) {
     var sx = screenX(st);
     ctx.save();
@@ -4578,6 +4734,8 @@ DG.modeField = (function () {
       '格子からスクリーンまで ' + dtxt, '#6f6754', 12);
     ctx.restore();
     // スクリーンの大きさの概算は図の中には描かない（欄外の #screen-note に出す）
+    // スクリーンのすぐ右に、光の強度分布のグラフを添える
+    intensityGraph(ctx, st, sx);
     // ---- 左右に動かすつまみ ----
     var hx = sx + SCR.w / 2, hy = FL.y0 - 13;
     var txt = '◀ スクリーンの位置 ▶';
@@ -4972,7 +5130,7 @@ DG.modeField = (function () {
     ctx.textAlign = 'right'; ctx.textBaseline = 'top';
     ctx.fillText('左の図は、図に描いた ' + NS + ' 本ぶんを縮尺どおりに足したもの（1 px ＝ '
       + npx.toFixed(0) + ' nm）。数の計算は平行光線として N′ ＝ ' + st.N + ' 本で。',
-      FL.x1 + SCR.w, FL.y1 + 22);
+      PN.x0 - 28, FL.y1 + 22);
     ctx.restore();
   }
 
@@ -5219,6 +5377,30 @@ DG.modeDeltax = (function () {
     upArrow(xA, ym, '#1663b5');
     upArrow(xB, ym1, '#a15200');
 
+    // Δx：2 本の破線（Pₘ₊₁ の高さと Pₘ の高さ）のあいだに、緑の両矢印で明示する。
+    // 青の矢印（O→Pₘ）の延長線上に置くと「xₘ の続きの区間」だと読み取りやすい。
+    ctx.save();
+    ctx.strokeStyle = '#0d7a3f'; ctx.fillStyle = '#0d7a3f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xA, ym - 9); ctx.lineTo(xA, ym1 + 9); ctx.stroke();
+    function dHead(y, dir) {
+      ctx.beginPath();
+      ctx.moveTo(xA, y);
+      ctx.lineTo(xA - 4.5, y + dir * 10);
+      ctx.lineTo(xA + 4.5, y + dir * 10);
+      ctx.closePath(); ctx.fill();
+    }
+    dHead(ym1 + 1, 1);                // 上向きの矢じり（Pₘ₊₁ の破線へ）
+    dHead(ym - 1, -1);                // 下向きの矢じり（Pₘ の破線へ）
+    ctx.font = D.font(13, true);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    var dxw = ctx.measureText('Δx').width;
+    var dlx = xA - 8, dly = (ym + ym1) / 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillRect(dlx - dxw - 4, dly - 9, dxw + 8, 18);
+    ctx.fillStyle = '#0d7a3f';
+    ctx.fillText('Δx', dlx, dly + 1);
+    ctx.restore();
+
     // 式：橙は上の破線のさらに上、青は O と Pₘ のあいだの高さ（矢印の右どなり）
     texLabel(ctx, 'x_{m+1} \\fallingdotseq \\dfrac{(m+1)\\lambda L}{d}', '#a15200',
       xB + 16, ym1 - 28);
@@ -5278,9 +5460,15 @@ DG.modeDeltax = (function () {
     triFill(ctx, G, O, Pm, 'rgba(22,99,181,0.16)');
     D.rightAngle(ctx, O, D.vec(-1, 0), D.vec(0, -1), 12, '#5b6672');
 
+    // スクリーンに写る範囲のすべての明線を描く（m ＝ 0, ±1, ±2, …。
+    // 注目している m・m＋1 以外にも明線はある、ということが分かるように）
+    for (var oi = 0; oi < sol.orders.length; oi++) {
+      var ord = sol.orders[oi];
+      if (Math.abs(ord.x) > HALF_M) continue;
+      brightTick(ctx, scz, L.CY - ord.x * scz.ppm, '#d0342c');
+    }
     brightTick(ctx, scz, ym, '#d0342c');
     brightTick(ctx, scz, ym1, '#d0342c');
-    D.dimLine(ctx, Pm, Pm1, 'Δx', '#0d7a3f', 20);
 
     D.pointLabel(ctx, Pm, 'P' + SUB_M, -24, 0, '#1663b5');
     D.pointLabel(ctx, Pm1, 'P' + SUB_M1, -26, 0, '#a15200');
@@ -5345,7 +5533,9 @@ DG.ui = (function () {
     light: 'mono',                 // 'mono' | 'white'
     lambda: 600, d: 2000, L: 1.00,
     N: 10,                         // 重なりあいを計算するスリットの本数 N′
-    m: 1, sinT: 0.3, onlyBright: true,
+    NField: 10,                    // 補足モード専用の N′（ほかのモードには影響させない）
+    savedNBeforeField: null,       // 補足モードに入る前の N′ の退避場所
+    m: 1, sinT: 0.3, onlyBright: false,   // 既定はチェックなし（明線以外も選べる）
     step: 1,
     playing: false, slow: false, t: 0,
     showLabels: true, showSum: true, showWave: true, gammaOn: true,
@@ -5591,12 +5781,15 @@ DG.ui = (function () {
       $('sn-val').innerHTML = cur.querySelector('.sv').innerHTML;
       // ステップに図（.fig）があれば、この右上のカードにも同じ図を出す。
       // 下の一覧までスクロールしないと図が見えない、ということがないように。
+      // 図のあるステップでは hasfig クラスで「図は左に小さく・文章は右」の
+      // 2 カラム配置に切りかわる（CSS 側。数値の行もそのとき隠れる）。
       var fig = cur.querySelector('.fig');
       var snFig = $('sn-fig');
       if (snFig) {
         snFig.innerHTML = fig ? fig.innerHTML : '';
         snFig.hidden = !fig;
       }
+      $('stepnow').classList.toggle('hasfig', !!fig);
     }
   }
 
@@ -5769,7 +5962,23 @@ DG.ui = (function () {
   function setMode(m) {
     if (m === st.mode) return;
     var leavingDeltax = (st.mode === 'deltax');
+    var leavingField = (st.mode === 'field');
     st.mode = m;
+    /* N′ は「補足：多数の格子からの波がどう重なり合うか」専用の設定として扱う。
+     * このモードで N′ を変えても、ほかのモード（①②のスクリーンの明るさ・
+     * 強度分布・強めあい判定）に影響しないよう、出入りで退避・復元する。
+     * このモード自身の選択（st.NField）は次に入ったときのために覚えておく。 */
+    if (leavingField) {
+      st.NField = st.N;                        // 補足モードでの選択を保存
+      if (st.savedNBeforeField != null) {
+        st.N = st.savedNBeforeField;           // ほかのモードの N′ に戻す
+        st.savedNBeforeField = null;
+      }
+    }
+    if (m === 'field') {
+      st.savedNBeforeField = st.N;             // 入る前の N′ を退避
+      if (st.NField != null) st.N = st.NField; // 前回の補足モードでの選択を復元
+    }
     if (m === 'deltax' && DG.modeDeltax) {
       // このモードは装置の設定を固定する（③ ステップ④の説明に合わせた値）。
       // 入る前の設定を覚えておき、このモードを出るときにそのまま元へ戻す。
