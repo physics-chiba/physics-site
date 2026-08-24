@@ -103,11 +103,9 @@ table.read td.v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-a
   </ol>
 </div>
 
-<!-- ================= 矢印の定義 ================= -->
-<h2 id="q0">矢印の定義（まずここを見る！）</h2>
-<div class="card">
-  <canvas id="c0" width="860" height="210"></canvas>
-  <p class="mini" style="margin:8px 0 0"><b style="color:#d62d2d">重力は物体の中心（重心）から。垂直抗力・摩擦力・弾性力・張力（手やひもからの力）は、物体と物体が触れるところから。</b>　以下の5つのシミュレーションはすべてこのルールでかいてある。</p>
+<!-- ================= 矢印の凡例（小） ================= -->
+<div class="card" style="padding:6px 14px">
+  <canvas id="c0" width="860" height="40"></canvas>
 </div>
 
 <!-- ================= 問1 ================= -->
@@ -200,7 +198,7 @@ table.read td.v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-a
 <h2 id="q4"><span class="qtag">問4</span>糸でつながれた2物体　〜「1物体ずつ」式を立てる〜</h2>
 <div class="card">
   <div class="simgrid">
-    <div class="cv"><canvas id="c4" width="860" height="430"></canvas></div>
+    <div class="cv"><canvas id="c4" width="860" height="700"></canvas></div>
     <div class="side">
       <div class="ctrl">
         <div class="row"><label>Aの質量 M</label>
@@ -423,60 +421,49 @@ function drawBall(ctx, x, y, r, faint) {
   ctx.restore();
 }
 
+/* 高解像度化：内部ピクセルを論理サイズ×CANVAS_SCALE にして、
+   既存の描画コードは論理座標（属性に書いた width/height）のまま使えるようにする。 */
+var CANVAS_SCALE = 2;
 function clearCanvas(cv) {
+  if (!cv.dataset.lw) {
+    cv.dataset.lw = cv.width;
+    cv.dataset.lh = cv.height;
+    cv.width = cv.width * CANVAS_SCALE;
+    cv.height = cv.height * CANVAS_SCALE;
+  }
   var ctx = cv.getContext('2d');
-  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(CANVAS_SCALE, 0, 0, CANVAS_SCALE, 0, 0);
+  ctx.clearRect(0, 0, +cv.dataset.lw, +cv.dataset.lh);
   return ctx;
 }
 
 function fmt(x, d) { return x.toFixed(d === undefined ? 1 : d); }
 
 /* ===== 45_arrowdef.js ===== */
-/* 矢印の定義（ページ冒頭）。静的な図なので一度だけ描く。 */
+/* 矢印の凡例（小さな1行）。静的な図なので一度だけ描く。 */
 'use strict';
 function renderArrowDef() {
   var cv = document.getElementById('c0');
   var ctx = clearCanvas(cv);
+  var y = 20;
+  drawLabel(ctx, '矢印：', 14, y, { align: 'left', size: 12, bold: true, color: '#5b6672' });
 
-  /* ---- 左：例（床の上に置いた物体：つり合い） ---- */
-  var gx = 40, gw = 270, gy = 158;   // 地面
-  drawHatch(ctx, gx, gy, gw, true);
-  var bw = 84, bh = 56;
-  var bx = 152, by = gy - bh;        // ブロック左上
-  ctx.save();
-  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
-  ctx.fillRect(bx, by, bw, bh); ctx.strokeRect(bx, by, bw, bh);
-  ctx.restore();
-  var cx = bx + bw / 2, cy = by + bh / 2;
-  drawLabel(ctx, '例：床の上に置いた物体（つり合い）', 44, 26, { align: 'left', size: 11.5, color: '#5b6672' });
-  // 重力：中心（重心）から
-  drawArrow(ctx, cx - 7, cy, cx - 7, gy + 44, 'force');
-  drawLabel(ctx, '重力 mg', cx + 16, gy + 26, { align: 'left', size: 12.5, bold: true, color: C_FORCE });
-  drawLabel(ctx, '＝ 中心（重心）から', cx + 16, gy + 44, { align: 'left', size: 11, color: C_FORCE });
-  // 垂直抗力：触れている面（下面）から
-  drawArrow(ctx, cx + 9, gy, cx + 9, by - 48, 'force');
-  drawLabel(ctx, '垂直抗力 N', cx + 26, by - 44, { align: 'left', size: 12.5, bold: true, color: C_FORCE });
-  drawLabel(ctx, '＝ 触れている面から', cx + 26, by - 26, { align: 'left', size: 11, color: C_FORCE });
-
-  /* ---- 右：4種類の矢印 ---- */
-  var x0 = 390, x1 = 465, tx = 482;
-  var rows = [
-    { kind: 'force', y: 42, label: '力（赤・太い実線）', sub: '重力・垂直抗力・張力・摩擦力…', c: C_FORCE },
-    { kind: 'vel', y: 88, label: '速度（青・白抜き）', sub: '動く向きと速さ', c: C_VEL },
-    { kind: 'acc', y: 134, label: '加速度（オレンジ）', sub: '速度の変わり方（力と同じ向き）', c: '#b35c00' },
-    { kind: 'meas', y: 180, label: '寸法・変位（破線）', sub: '高さ h などの長さの印', c: '#333333' }
+  var items = [
+    { kind: 'force', label: '力', c: C_FORCE, note: '（重力＝中心から・触れる力＝触れた点から）' },
+    { kind: 'vel', label: '速度', c: C_VEL, note: '' },
+    { kind: 'acc', label: '加速度', c: '#b35c00', note: '' },
+    { kind: 'meas', label: '寸法・変位', c: '#333333', note: '' }
   ];
-  rows.forEach(function (r) {
-    drawArrow(ctx, x0, r.y, x1, r.y, r.kind);
-    drawLabel(ctx, r.label, tx, r.y, { align: 'left', size: 13.5, bold: true, color: r.c });
-    drawLabel(ctx, r.sub, tx + 172, r.y, { align: 'left', size: 11.5, color: '#5b6672' });
+  var x = 68;
+  items.forEach(function (r) {
+    drawArrow(ctx, x, y, x + 44, y, r.kind);
+    drawLabel(ctx, r.label, x + 52, y, { align: 'left', size: 12, bold: true, color: r.c });
+    x += 52 + r.label.length * 12.5 + 14;
+    if (r.note) {
+      drawLabel(ctx, r.note, x - 8, y, { align: 'left', size: 10.5, color: '#5b6672' });
+      x += r.note.length * 10.6 - 6;
+    }
   });
-
-  // 区切り線
-  ctx.save();
-  ctx.strokeStyle = '#d9dee4';
-  ctx.beginPath(); ctx.moveTo(350, 20); ctx.lineTo(350, 195); ctx.stroke();
-  ctx.restore();
 }
 
 /* ===== 51_sim1.js ===== */
@@ -811,6 +798,8 @@ function renderQ3() {
 /* ===== 54_sim4.js ===== */
 /* 問4 糸でつながれた2物体（A：台の上、B：つり下げ） */
 'use strict';
+/* アニメの縮尺と移動距離の上限（px）。小さめの縮尺＋長い落下距離で、長い時間見せる */
+var Q4_PXPM = 18, Q4_DMAX = 280;
 function renderQ4() {
   var cv = document.getElementById('c4');
   var ctx = clearCanvas(cv);
@@ -819,16 +808,15 @@ function renderQ4() {
   var T = phys.q4.T(q.M, q.m, q.mu);
   var moving = phys.q4.moving(q.M, q.m, q.mu);
 
-  var pxPerM = 46;
-  var d = Math.min(0.5 * a * q.t * q.t * pxPerM, 300);   // 進んだ距離 [px]
+  var d = Math.min(0.5 * a * q.t * q.t * Q4_PXPM, Q4_DMAX);   // 進んだ距離 [px]
 
   var tableY = 210, wallX = 610;
-  // 台（上面）と縦の壁
+  // 台（上面）と縦の壁（下に長く：Bの落下をゆっくり長く見せる）
   drawHatch(ctx, 40, tableY, wallX - 40, true);
   ctx.save(); ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(wallX, tableY); ctx.lineTo(wallX, 420); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(wallX, tableY); ctx.lineTo(wallX, 690); ctx.stroke();
   ctx.lineWidth = 1;
-  for (var yy = tableY + 4; yy < 416; yy += 10) {
+  for (var yy = tableY + 4; yy < 686; yy += 10) {
     ctx.beginPath(); ctx.moveTo(wallX, yy); ctx.lineTo(wallX - 8, yy + 8); ctx.stroke();
   }
   ctx.restore();
@@ -892,7 +880,7 @@ function renderQ4() {
 
   // 加速度（オレンジ）：大きさに比例、AとBで同じ長さ
   if (moving) {
-    var al = 14 + 11 * a;
+    var al = Math.min(14 + 11 * a, 70);
     drawArrow(ctx, acx, ay - 96, acx + al, ay - 96, 'acc');
     drawLabel(ctx, 'a', acx + al + 12, ay - 96, { align: 'left', size: 13.5, color: '#b35c00' });
     drawArrow(ctx, bx + bw / 2 + 40, byTop + bh + 8, bx + bw / 2 + 40, byTop + bh + 8 + al, 'acc');
@@ -1106,7 +1094,7 @@ function atEnd(i) {
   if (i === 1) return st.q1.t >= phys.q1.tEnd(st.q1.h) - 1e-9;
   if (i === 2) return st.q2.t >= phys.q2.tLand(st.q2.v0, phys.q2.H) - 1e-9;
   if (i === 3) return st.q3.t >= phys.q3.tBack(st.q3.v0, st.q3.th) - 1e-9;
-  if (i === 4) return 0.5 * phys.q4.a(st.q4.M, st.q4.m, st.q4.mu) * st.q4.t * st.q4.t * 46 >= 300 - 1e-6;
+  if (i === 4) return 0.5 * phys.q4.a(st.q4.M, st.q4.m, st.q4.mu) * st.q4.t * st.q4.t * Q4_PXPM >= Q4_DMAX - 1e-6;
   return false;
 }
 function resetSim(i) {
