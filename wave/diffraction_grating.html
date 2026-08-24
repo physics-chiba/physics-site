@@ -439,6 +439,21 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
 #stepnow.hasfig .sb{grid-column:2;grid-row:2}
 #stepnow.hasfig .sv{display:none}
 @media(max-width:700px){#stepnow.hasfig{display:block}}
+/* 小さくした図は、マウスを乗せると拡大して見られる（ホバーのある環境だけ）。
+ * 入れものの .fig は overflow-x:auto が既定だが、拡大した図がスクロールバーの
+ * 中に閉じ込められてしまうので、ホバー拡大する図の入れものは overflow:visible にして
+ * はみ出しをそのまま手前に重ねて見せる。 */
+#stepnow.hasfig .fig,.figpop{overflow:visible}
+/* 幅の狭い画面では、拡大した図が画面の右へはみ出して横スクロールを生むので、
+ * ホバー拡大は「ホバーがあり、かつ横幅に余裕がある画面」だけで効かせる */
+@media(hover:hover) and (min-width:701px){
+  #stepnow.hasfig .fig svg,svg.zoomable{cursor:zoom-in;transition:transform .15s ease}
+  #stepnow.hasfig .fig svg{transform-origin:left top}
+  svg.zoomable{transform-origin:center top}
+  #stepnow.hasfig .fig svg:hover,svg.zoomable:hover{
+    transform:scale(2.3);position:relative;z-index:60;background:#fff;
+    box-shadow:0 8px 28px rgba(20,40,60,.28);border:1px solid #cfd6dd;border-radius:8px}
+}
 .callout{margin:12px 0;padding:11px 14px;border-left:5px solid var(--orange);
   background:#fff8ef;border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.75}
 .callout b{color:#8a5300}
@@ -865,7 +880,7 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
   <p>一般の回折格子の式は <b>mλ ＝ d (sinα ＋ sinβ)</b> と書けます（α は入射角、β は回折角）。このシミュレーションで使ってきた d sinθ ＝ mλ は、光を格子にまっすぐ入れた場合（α ＝ 0）にあたります。</p>
   <p class="note" style="font-size:13px"><b>◆ なぜ「＋」になるのか（かんたんに）</b></p>
   <p>光が格子にまっすぐ入らず、法線から角度 α だけ傾いて入ってくると、隣りあうスリットに光が届く時点で、すでに <b>d sinα</b> だけの経路差がついています（下の図の左側）。格子を出たあとも同じように、法線から角度 β の方向（m 次の明線の方向）へ進む光を遠くの 1 点に集めると、隣りあうスリットからそこまでの道のりに <b>d sinβ</b> の経路差がつきます（図の右側）。α と β を図のように法線の同じ側にとると、この 2 つの経路差は同じ向きに足し合わさるので、全体の経路差は d sinα ＋ d sinβ。これが波長の整数倍（mλ）になったところに明線ができる、というのが mλ ＝ d (sinα ＋ sinβ) の意味です。<br>光をまっすぐ入れる（α ＝ 0）と d sinβ ＝ mλ となり、これがこのシミュレーションで使ってきた <b>d sinθ ＝ mλ</b>（β ＝ θ）そのものです。</p>
-  <div class="fig"><svg viewBox="0 0 560 262" style="max-width:380px;min-width:0;margin:0 auto" role="img" aria-label="回折格子に斜めに光が入射するときの経路差の作図（入射角アルファ・回折角ベータ）">
+  <div class="fig figpop"><svg viewBox="0 0 560 262" class="zoomable" style="max-width:380px;min-width:0;margin:0 auto" role="img" aria-label="回折格子に斜めに光が入射するときの経路差の作図（入射角アルファ・回折角ベータ）">
   <!-- 格子面 -->
   <line x1="300" y1="55" x2="300" y2="245" stroke="#28405c" stroke-width="2.6"/>
 <line x1="293" y1="69" x2="307" y2="60" stroke="#7f92a8" stroke-width="1.2"/>
@@ -3964,6 +3979,13 @@ DG.modePath = (function () {
     3: { x: 706, y: 26 },     // 図の右上。x ＝ L tanθ の話なので、スクリーンの近くに置く
     4: { x: 700, y: 118 }     // ③の吹き出しの下・光線の束の上（点 P の拡大図とはぶつからない）
   };
+  /* m が負（P が下側）のときは、点 P の拡大円が図の右上（c=(952,152)）へ移るので、
+   * ③④の吹き出しは軸の下側の空いたところへ退避させる（そのままだと円と重なる）。
+   * x は「L ＝ …」のラベル（〜731px）とぶつからない位置。 */
+  var BOX_LOW = {
+    3: { x: 736, y: 272 },
+    4: { x: 736, y: 366 }
+  };
   var BOX_PAR = { x: 578, y: 150 };   // 「平行とみなせる」の吹き出し（ステップ①だけ）
 
   /** ①〜③の吹き出しを、いまのステップまでぜんぶ描く（進んでも前のは消さない） */
@@ -3980,6 +4002,8 @@ DG.modePath = (function () {
 
   function oneCallout(ctx, st, sol, sc, step) {
     var b = BOX[step];
+    // P が下側（拡大円が上へ移る）ときは ③④ を下側の空きへ
+    if ((step === 3 || step === 4) && sc.pOn && sc.P1.y > L.CY) b = BOX_LOW[step];
     if (step === 1) {
       // ①では、経路差の直角三角形のところに吹き出しを出す。
       // 「d ≪ L だから平行とみなせる」の注は、ステップ①を見ているあいだだけ添える。
@@ -5767,29 +5791,32 @@ DG.ui = (function () {
         + D.fmtLenM(Math.abs(sol.x));
       if (!sc.pOn) s3 += '（スクリーン ±' + D.fmtCm(sc.halfM) + ' の外）';
       $('sv3').textContent = s3;
-    }
-    var boxes = document.querySelectorAll('.stepbox');
-    for (var i = 0; i < boxes.length; i++) {
-      boxes[i].classList.toggle('on', parseInt(boxes[i].getAttribute('data-step'), 10) === st.step);
-    }
-    // 図の上にも、いま見ているステップの説明を出す。
-    // 下までスクロールしないと読めない、ということがないように、同じ文をここにも置く。
-    var cur = document.querySelector('.stepbox[data-step="' + st.step + '"]');
-    if (cur) {
-      $('sn-title').innerHTML = cur.querySelector('b').innerHTML;
-      $('sn-body').innerHTML = cur.querySelector('.sb').innerHTML;
-      $('sn-val').innerHTML = cur.querySelector('.sv').innerHTML;
-      // ステップに図（.fig）があれば、この右上のカードにも同じ図を出す。
-      // 下の一覧までスクロールしないと図が見えない、ということがないように。
-      // 図のあるステップでは hasfig クラスで「図は左に小さく・文章は右」の
-      // 2 カラム配置に切りかわる（CSS 側。数値の行もそのとき隠れる）。
-      var fig = cur.querySelector('.fig');
-      var snFig = $('sn-fig');
-      if (snFig) {
-        snFig.innerHTML = fig ? fig.innerHTML : '';
-        snFig.hidden = !fig;
+
+      // ここから下（.on の付け替えと #stepnow への複製）も key が変わったときだけ行う。
+      // 毎フレームやると innerHTML の作り直しで図の DOM が入れかわり続け、
+      // ホバー拡大が効かない・むだな再構築が走る、という不具合になる。
+      var boxes = document.querySelectorAll('.stepbox');
+      for (var i = 0; i < boxes.length; i++) {
+        boxes[i].classList.toggle('on', parseInt(boxes[i].getAttribute('data-step'), 10) === st.step);
       }
-      $('stepnow').classList.toggle('hasfig', !!fig);
+      // 図の上にも、いま見ているステップの説明を出す。
+      // 下までスクロールしないと読めない、ということがないように、同じ文をここにも置く。
+      var cur = document.querySelector('.stepbox[data-step="' + st.step + '"]');
+      if (cur) {
+        $('sn-title').innerHTML = cur.querySelector('b').innerHTML;
+        $('sn-body').innerHTML = cur.querySelector('.sb').innerHTML;
+        $('sn-val').innerHTML = cur.querySelector('.sv').innerHTML;
+        // ステップに図（.fig）があれば、この右上のカードにも同じ図を出す。
+        // 図のあるステップでは hasfig クラスで「図は左に小さく・文章は右」の
+        // 2 カラム配置に切りかわる（CSS 側。数値の行もそのとき隠れる）。
+        var fig = cur.querySelector('.fig');
+        var snFig = $('sn-fig');
+        if (snFig) {
+          snFig.innerHTML = fig ? fig.innerHTML : '';
+          snFig.hidden = !fig;
+        }
+        $('stepnow').classList.toggle('hasfig', !!fig);
+      }
     }
   }
 
