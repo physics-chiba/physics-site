@@ -1810,6 +1810,22 @@ function hintOn(s, t) {
   return true;
 }
 
+/* 質量 m に応じて物体の「見た目の大きさ」を変える倍率。
+   ・標準の質量（vars の def、なければ consts）でちょうど 1.0 ＝ これまでの見た目。
+   ・体積のイメージに合わせて m の 3 乗根で変える。
+   ・矢印やラベルの読みとりのじゃまにならないよう 0.78〜1.45 におさえる
+     （どのシムも最小質量→最大質量で、さしわたしが約 1.9 倍）。
+   ・質量が変えられないシムでは 1.0 のまま。 */
+function mSize(d, v) {
+  if (!d || !v || typeof v.m !== 'number' || !(v.m > 0)) return 1;
+  var vs = d.vars || [], md = null, i;
+  for (i = 0; i < vs.length; i++) if (vs[i].k === 'm') md = vs[i];
+  if (!md) return 1;                       /* 定数の質量＝変わらないので拡大しない */
+  var ref = md.def;
+  if (!(ref > 0)) return 1;
+  return clamp(Math.pow(v.m / ref, 1 / 3), 0.78, 1.45);
+}
+
 /* 汎用の描画部品（複数モードで使う） */
 
 /* 直方体のブロック（斜面の上など）。ang＝面の傾き(rad, 反時計まわりが正の見た目) */
@@ -2189,7 +2205,8 @@ DEFS['m1-1'] = {
     drawSlopeBase(ctx, sn, W, H, -v.th, s.sign, v.th);
 
     var sm = P.m11.sample(v, t);
-    var bw = 30, bh = 22;
+    var kz = mSize(DEFS['m1-1'], v);
+    var bw = 30 * kz, bh = 22 * kz;
     var c = sn.pos(sm.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
 
@@ -2362,11 +2379,12 @@ DEFS['m1-2'] = {
     arrow(ctx, bx + 92, topY, bx + 92, gndY, 'dim');
     label(ctx, 'h = ' + fmt(v.h, 1) + ' m', bx + 98, (topY + gndY) / 2, { align: 'left', size: 11.5 });
 
-    for (var i = 1; i * 0.2 < t - 1e-9; i++) ball(ctx, bx, Y(P.m12.sample(v, i * 0.2).x), 7, 'faint');
+    var kz = mSize(DEFS['m1-2'], v);
+    for (var i = 1; i * 0.2 < t - 1e-9; i++) ball(ctx, bx, Y(P.m12.sample(v, i * 0.2).x), 7 * kz, 'faint');
 
     var m = P.m12.sample(v, t);
     var y = Y(m.x);
-    ball(ctx, bx, y, 9);
+    ball(ctx, bx, y, 9 * kz);
 
     var mg = v.m * G, fs = 48 / mg;
     if (s.o.showF) {
@@ -2476,11 +2494,12 @@ DEFS['m1-3'] = {
     var T = P.m13.tEnd(v), i;
     ctx.save(); ctx.strokeStyle = '#c6ccd4'; ctx.setLineDash([3, 4]);
     ctx.beginPath(); ctx.moveTo(bx, Y(v.y0)); ctx.lineTo(bx, Y(yT)); ctx.stroke(); ctx.restore();
-    for (i = 1; i * 0.2 < t - 1e-9; i++) ball(ctx, bx, Y(P.m13.sample(v, i * 0.2).x), 6.5, 'faint');
+    var kz = mSize(DEFS['m1-3'], v);
+    for (i = 1; i * 0.2 < t - 1e-9; i++) ball(ctx, bx, Y(P.m13.sample(v, i * 0.2).x), 6.5 * kz, 'faint');
 
     var m = P.m13.sample(v, t);
     var yy = Y(m.x);
-    ball(ctx, bx, yy, 9);
+    ball(ctx, bx, yy, 9 * kz);
     var mg = v.m * G, fs = 48 / mg;
     if (s.o.showF) {
       arrow(ctx, bx, yy, bx, yy + mg * fs, 'force');
@@ -2585,7 +2604,8 @@ DEFS['m1-4'] = {
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
-    var bw = 34, bh = 25;
+    var kz = mSize(DEFS['m1-4'], v);
+    var bw = 34 * kz, bh = 25 * kz;
     var c = sn.pos(m.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
     blockShape(ctx, cx, cy, sn.th, bw, bh, '#e8eef5');
@@ -2734,7 +2754,8 @@ DEFS['m1-5'] = {
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
-    var bw = 34, bh = 25;
+    var kz = mSize(DEFS['m1-5'], v);
+    var bw = 34 * kz, bh = 25 * kz;
     var c = sn.pos(m.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
     for (i = 0; i * 0.25 < t - 1e-9; i++) {
@@ -2888,7 +2909,8 @@ DEFS['m1-6'] = {
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
-    var bw = 34, bh = 25;
+    var kz = mSize(DEFS['m1-6'], v);
+    var bw = 34 * kz, bh = 25 * kz;
     var c = sn.pos(m.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
     blockShape(ctx, cx, cy, sn.th, bw, bh, '#e8eef5');
@@ -3493,7 +3515,7 @@ DEFS['m2-2'] = {
 
     var m = P.m22.sample(v, t);
     var px = vw.X(m.x), py = vw.Y(m.y);
-    ball(ctx, px, py, 8);
+    ball(ctx, px, py, 8 * mSize(DEFS['m2-2'], v));
     if (s.o.showF) {
       arrow(ctx, px, py, px, py + 46, 'force');
       label(ctx, '重力 mg', px - 9, py + 42, { align: 'right', size: 11.5, color: COL.force });
@@ -3595,7 +3617,7 @@ DEFS['m2-3'] = {
 
     var m = P.m23.sample(v, t);
     var px = vw.X(m.x), py = vw.Y(m.y);
-    ball(ctx, px, py, 8);
+    ball(ctx, px, py, 8 * mSize(DEFS['m2-3'], v));
     if (s.o.showF) {
       arrow(ctx, px, py, px, py + 44, 'force');
       label(ctx, 'mg', px - 8, py + 40, { align: 'right', size: 11.5, color: COL.force });
@@ -4772,6 +4794,7 @@ DEFS['m4-3'] = {
     var ca = Math.cos(az), sa = Math.sin(az), ce = Math.cos(el), se = Math.sin(el);
     /* 斜面の観測者のときは、絵全体を θ だけ回して板を水平に見せる（4-2 と同じ考え方） */
     var sl3 = (v.obs === 'slope');
+    var kz3 = mSize(DEFS['m4-3'], v);
     var roll = sl3 ? th : 0, cr = Math.cos(roll), sr = Math.sin(roll);
     function PJ(p) {
       var X = p[0] - cx0, Y = p[1] - cy0, Z = p[2] - cz0;
@@ -4931,7 +4954,7 @@ DEFS['m4-3'] = {
     for (i = 1; i * 0.15 < t - 1e-9; i++) {
       var g3 = P.m26.sample(v, i * 0.15), b3 = P3(g3.x, g3.y);
       var r3 = PJ([b3[0] + uN[0] * 0.13, b3[1] + uN[1] * 0.13, b3[2] + uN[2] * 0.13]);
-      ball(ctx, r3.x, r3.y, 4, 'faint');
+      ball(ctx, r3.x, r3.y, 4 * kz3, 'faint');
     }
 
     /* --- 小球と矢印 --- */
@@ -4941,7 +4964,7 @@ DEFS['m4-3'] = {
     var Pb = P3(m.x, m.y);
     Pb = [Pb[0] + uN[0] * RB, Pb[1] + uN[1] * RB, Pb[2] + uN[2] * RB];
     var pb = PJ(Pb);
-    ball(ctx, pb.x, pb.y, 8);
+    ball(ctx, pb.x, pb.y, 8 * kz3);
 
     var mg = v.m * G, FL = 1.25;             /* mg を 1.25 m の長さでかく */
     if (s.o.showF) {
