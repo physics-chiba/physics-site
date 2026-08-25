@@ -157,7 +157,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .cvbar .acts{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-start}
 .cvbar .acts button{font-size:.75rem;padding:3px 9px;border-radius:999px;white-space:nowrap;
   flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-/* ボタンが多いとき（1-1・1-5・1-6）は、さらに小さくして1行におさめる */
+/* ボタンが多いとき（1-1・1-4・1-6・1-7）は、さらに小さくして1行におさめる */
 .cvbar .acts.n3 button{font-size:.72rem;padding:3px 8px}
 .cvbar .acts.n4 button{font-size:.685rem;padding:2px 7px;letter-spacing:-.01em}
 /* いまの状態がその条件になっているボタンは、少し濃く（塗って）見せる */
@@ -556,7 +556,8 @@ P.m14 = {
   TMAX: 5.0,
   _key: null, _tab: null,
   table: function (v) {
-    var LEN = v.LEN || P.m14.SLOPE_LEN, TMAX = v.TMAX || P.m14.TMAX, F = v.F || 0;
+    var LEN = v.LEN || P.m14.SLOPE_LEN, TMAX = v.TMAX || P.m14.TMAX;
+    var F = (v.F || 0) - (v.F2 || 0);   /* F2 は逆向き（斜面下向き・左向き）に引く力（1-4） */
     var key = [F, v.m, v.th, v.mu, v.mud, v.v0, LEN, TMAX].join('|');
     if (P.m14._key === key) return P.m14._tab;
     var dt = P.m14.DT, N = Math.round(TMAX / dt);
@@ -600,7 +601,7 @@ P.m14 = {
   staticAtStart: function (v) {
     var th = v.th * DEG;
     var Nn = v.m * G * Math.cos(th), gs = v.m * G * Math.sin(th);
-    return Math.abs(v.v0) < 1e-9 && Math.abs((v.F || 0) - gs) <= v.mu * Nn + 1e-12;
+    return Math.abs(v.v0) < 1e-9 && Math.abs((v.F || 0) - (v.F2 || 0) - gs) <= v.mu * Nn + 1e-12;
   },
   a0: function (v) { return P.m14.sample(v, 0).a; },
   /* 止まる時刻（動き出したあと、静止してそのまま止まる時刻） */
@@ -1468,6 +1469,14 @@ function flickHand(ctx, x, y, ang, k, dir, sc, alpha) {
   ctx.restore();
 }
 
+/* 糸（ひも）：物体と手をつなぐ細い線 */
+function string(ctx, x1, y1, x2, y2) {
+  ctx.save();
+  ctx.strokeStyle = '#6b5442'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.restore();
+}
+
 function hand(ctx, hx, hy, ang) {
   ctx.save();
   ctx.translate(hx, hy);
@@ -1744,7 +1753,7 @@ function plot(cv, spec) {
 var DEFS = {};
 var MODES = [
   { n: 1, label: '1　一次元の等加速度直線運動　※物理基礎', tip: '直線上の運動は単純に見えて、奥が深いです。<b>※物理基礎の内容はここまで</b>',
-    ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6'] },
+    ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6', 'm1-7'] },
   { n: 2, label: '2　平面上の運動', tip: '基本的にベクトル的に考える。必要なら分解して成分を見る。',
     ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4'] },
   { n: 3, label: '3　2物体の運動', tip: '2物体それぞれの運動を考えよう。ぶつかるのは座標が一致したときです。',
@@ -2513,11 +2522,165 @@ DEFS['m1-3'] = {
   note: '上向きに動いていても、はたらく力は<b>下向きの重力だけ</b>。だから加速度は<b>ずっと −g のまま</b>で、v–t 図は傾き −9.8 の直線。最高点で v＝0 になっても傾きは変わらない。'
 };
 
-/* ============ 1-4 摩擦のある水平面・斜面をすべる物体 ============ */
+/* ============ 1-4 水平面で引く（なめらか・糸で引く） ============ */
 DEFS['m1-4'] = {
-  id: 'm1-4', mode: 1, tab: '1-4 摩擦のある水平面・斜面',
+  id: 'm1-4', mode: 1, tab: '1-4 水平面で引く',
   quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
-  title: '1-4　摩擦のある水平面・斜面をすべる物体',
+  title: '1-4　水平面で引く（なめらかな面）',
+  sub: '糸をつけて右へ引く。面はなめらかで摩擦は 0。オレンジのボタンで、左へ引く力 $F_2$ も出せる。',
+  cw: 520, ch: function (v) { return 196 + 210 * Math.abs(Math.sin(v.th * DEG)); },
+  vis: ['F', 'Fc', 'V'],
+  signLabels: ['面にそって右向き（斜面上向き）を正', '面にそって左向き（斜面下向き）を正'],
+  mainVars: ['F', 'F2', 'th', 'v0'],
+  consts: { mu: 0, mud: 0, LEN: 9, TMAX: 6 },
+  vars: [
+    { k: 'F', label: '右へ引く $F_1$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 10 },
+    { k: 'F2', label: '左へ引く $F_2$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 0 },
+    { k: 'th', label: '面の傾き $\\theta$', unit: '°', min: 0, max: 40, step: 5, dec: 0, def: 0 },
+    { k: 'v0', label: '初速度 $v_0$', unit: ' m/s', min: -4, max: 6, step: 0.5, dec: 1, def: 0.0 },
+    { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 6, step: 0.5, dec: 1, def: 2.0 }
+  ],
+  toggles: [],
+  actions: [
+    { label: '左に 5 N、右に 8 N にする', fn: function (s) { s.v.F = 8; s.v.F2 = 5; },
+      is: function (v) { return v.F === 8 && v.F2 === 5; } },
+    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
+    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.F = 10; s.v.F2 = 0; s.v.th = 0; s.v.m = 2; s.v.v0 = 0; },
+      is: function (v) { return v.F === 10 && v.F2 === 0 && v.th === 0 && v.m === 2 && v.v0 === 0; } }
+  ],
+  tEnd: function (v) { return P.m14.tEnd(v); },
+  sample: function (v, t) { return P.m14.sample(v, t); },
+  graphs: [
+    { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（位置）', ylabel: 'x [m]', open: false, signed: true,
+      series: [{ color: COL.ink, f: function (m) { return m.x; } }],
+      fml: function (v, sg) {
+        var a = P.m14.a0(v) * sg;
+        return ['x = v_0 t + \\tfrac{1}{2}a t^2',
+          'x = v_0 t + \\tfrac{1}{2}\\dfrac{F_1 - F_2 - mg\\sin\\theta}{m} t^2',
+          'x = ' + fmt(v.v0 * sg, 1) + 't + \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2'];
+      } },
+    { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速度）', ylabel: 'v [m/s]', open: true, signed: true,
+      series: [{ color: COL.vel, f: function (m) { return m.v; } }],
+      fml: function (v, sg) {
+        var a = P.m14.a0(v) * sg;
+        return ['v = v_0 + at', 'v = v_0 + \\dfrac{F_1 - F_2 - mg\\sin\\theta}{m} t',
+          'v = ' + fmt(v.v0 * sg, 1) + ' + (' + fmt(a, 2) + ')t'];
+      } },
+    { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true,
+      series: [{ color: COL.acc, f: function (m) { return m.a; } }],
+      fml: function (v, sg) {
+        var a = P.m14.a0(v) * sg, th = v.th * DEG;
+        return [EQM + 'ma = F_{\\text{合力}}', EQM + 'ma = F_1 - F_2 - mg\\sin\\theta',
+          '(' + fmt(v.m, 1) + ')a = ' + fmt(v.F, 0) + ' - ' + fmt(v.F2, 0) +
+          (v.th > 0.5 ? ' - ' + fmt(v.m * G * Math.sin(th), 1) : '') +
+          ' \\;\\Rightarrow\\; a = ' + fmt(a, 2)];
+      } }
+  ],
+  draw: function (ctx, s, t, W, H) {
+    var v = V(s), tb = P.m14.table(v);
+    var sMin = 0, sMax = 0, i;
+    for (i = 0; i < tb.length; i += 5) { sMin = Math.min(sMin, tb[i].x); sMax = Math.max(sMax, tb[i].x); }
+    var sn = slopeScene(W, H, v.th, sMin - 2.6, sMax + 2.2);
+    drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
+
+    var m = P.m14.sample(v, t);
+    var bw = 34, bh = 25;
+    var c = sn.pos(m.x);
+    var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
+    blockShape(ctx, cx, cy, sn.th, bw, bh, '#e8eef5');
+
+    var mg = v.m * G, fs = 46 / mg;
+    /* 右の糸と手（物体 → 糸 → 手 の並び） */
+    var rx = cx + sn.u.x * (bw / 2 + 3), ry = cy + sn.u.y * (bw / 2 + 3);
+    var rfx = rx + sn.u.x * 30, rfy = ry + sn.u.y * 30;
+    string(ctx, rx, ry, rfx, rfy);
+    hand(ctx, rfx, rfy, -sn.th);
+    /* 左の糸と手（F2 を出したときだけ） */
+    var lx = cx - sn.u.x * (bw / 2 + 3), ly = cy - sn.u.y * (bw / 2 + 3);
+    var lfx = lx - sn.u.x * 30, lfy = ly - sn.u.y * 30;
+    if (v.F2 > 0.5) {
+      string(ctx, lx, ly, lfx, lfy);
+      hand(ctx, lfx, lfy, -sn.th + Math.PI);
+    }
+    if (s.o.showF) {
+      if (v.F > 0.5) {
+        var f1x = rx + sn.u.x * v.F * fs, f1y = ry + sn.u.y * v.F * fs;
+        arrow(ctx, rx, ry, f1x, f1y, 'force', 1, COL.hand);
+        label(ctx, '糸が引く力 F₁ = ' + fmt(v.F, 0) + ' N',
+          f1x + sn.u.x * 6 + sn.n.x * 20, f1y + sn.u.y * 6 + sn.n.y * 20,
+          { size: 11.5, color: COL.hand, align: 'left' });
+      }
+      if (v.F2 > 0.5) {
+        var f2x = lx - sn.u.x * v.F2 * fs, f2y = ly - sn.u.y * v.F2 * fs;
+        arrow(ctx, lx, ly, f2x, f2y, 'force', 1, COL.hand);
+        label(ctx, '糸が引く力 F₂ = ' + fmt(v.F2, 0) + ' N',
+          f2x - sn.u.x * 24 - sn.n.x * 26, f2y - sn.u.y * 24 - sn.n.y * 26,
+          { size: 11.5, color: COL.hand, align: 'right' });
+      }
+      arrow(ctx, cx, cy, cx, cy + mg * fs, 'force');
+      label(ctx, '重力 mg = ' + fmt(mg, 1) + ' N', cx + 10, cy + mg * fs - 6, { align: 'left', size: 11.5, color: COL.force });
+      var Nn = mg * Math.cos(sn.th);
+      var ntx = c.x + sn.n.x * Nn * fs, nty = c.y + sn.n.y * Nn * fs;
+      arrow(ctx, c.x, c.y, ntx, nty, 'force', 1, COL.norm);
+      label(ctx, '垂直抗力 N', ntx, nty - 11, { align: 'center', size: 11.5, color: COL.norm });
+      label(ctx, 'なめらかな面：摩擦力は 0', 12, H - 12, { align: 'left', size: 11, color: COL.fric });
+    }
+    if (s.o.showFc && v.th > 0.5) {
+      var gsn = mg * Math.sin(sn.th), gcs = mg * Math.cos(sn.th);
+      arrow(ctx, cx, cy, cx - sn.u.x * gsn * fs, cy - sn.u.y * gsn * fs, 'comp');
+      label(ctx, 'mg sinθ', cx - sn.u.x * gsn * fs - 4, cy - sn.u.y * gsn * fs + 15, { align: 'right', size: 11, color: COL.force });
+      arrow(ctx, cx, cy, cx - sn.n.x * gcs * fs, cy - sn.n.y * gcs * fs, 'comp');
+    } else if (s.o.showFc) {
+      label(ctx, '水平面では重力はもともと鉛直だけ（分ける必要なし）', 12, H - 28, { align: 'left', size: 11, color: COL.sub });
+    }
+    var vAbs = Math.abs(m.v);
+    if (s.o.showV && vAbs > 0.05) {
+      var vl = 14 + 40 * Math.min(1, vAbs / 6), sg2 = m.v > 0 ? 1 : -1;
+      var vx0 = cx + sn.u.x * 26 + sn.n.x * 52, vy0 = cy + sn.u.y * 26 + sn.n.y * 52;
+      arrow(ctx, vx0, vy0, vx0 + sn.u.x * vl * sg2, vy0 + sn.u.y * vl * sg2, 'vel');
+      label(ctx, 'v = ' + fmt(m.v * s.sign, 2) + ' m/s',
+        vx0 + sn.u.x * vl * sg2 * 0.5 + sn.n.x * 16, vy0 + sn.u.y * vl * sg2 * 0.5 + sn.n.y * 16,
+        { size: 11.5, color: COL.vel });
+    }
+    var ax0 = W * 0.5, ay0 = 64;
+    if (hintOn(s, t)) {
+      if (Math.abs(m.a) > 0.02) {
+        var asg = m.a > 0 ? 1 : -1;
+        arrow(ctx, ax0, ay0, ax0 + sn.u.x * 46 * asg, ay0 + sn.u.y * 46 * asg, 'acc');
+        label(ctx, '加速度 a = ' + fmt(m.a * s.sign, 2) + ' m/s²', ax0 - 12, ay0 - 18, { size: 12, color: COL.acc, align: 'right' });
+      } else {
+        label(ctx, 'F₁ と F₂ がつり合っている　a = 0', W * 0.26, 56, { size: 12.5, bold: true, color: COL.acc, align: 'left' });
+      }
+    }
+    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
+    drawPosNote(ctx, DEFS['m1-4'], s, W, 36, dirWord(v.th, s.sign));
+  },
+  info: function (s, t) {
+    var v = V(s), m = P.m14.sample(v, t), th = v.th * DEG;
+    return [
+      ['垂直抗力 $N = mg\\cos\\theta$', fmt(v.m * G * Math.cos(th), 1) + ' N'],
+      ['重力の面にそった成分 $mg\\sin\\theta$', fmt(v.m * G * Math.sin(th), 1) + ' N'],
+      ['面にそった合力 $F_1 - F_2 - mg\\sin\\theta$', fmt((v.F - v.F2 - v.m * G * Math.sin(th)) * s.sign, 1) + ' N'],
+      ['加速度 $a$', fmt(m.a * s.sign, 2) + ' m/s²'],
+      ['速度 $v$', fmt(m.v * s.sign, 2) + ' m/s'],
+      ['位置 $x$', fmt(m.x * s.sign, 2) + ' m']
+    ];
+  },
+  eq: function (s) {
+    var v = V(s), m = P.m14.sample(v, s.t), th = v.th * DEG;
+    return EQM + 'ma = F_1 - F_2 - mg\\sin\\theta \\;\\Rightarrow\\; a = \\dfrac{' + fmt(v.F, 0) + ' - ' +
+      fmt(v.F2, 0) + ' - ' + fmt(v.m * G * Math.sin(th), 1) + '}{' + fmt(v.m, 1) + '} = ' +
+      fmt(m.a, 2) + '\\ \\mathrm{m/s^2}';
+  },
+  note: '糸が引く力（<b>張力</b>）は、<b>糸にそった向き</b>に物体を引く。面はなめらかなので摩擦力は 0。水平面（θ＝0）なら面にそった力は <span class="tex">F_1 - F_2</span> だけで、<span class="tex">a = \\dfrac{F_1-F_2}{m}</span>。左に 5 N・右に 8 N なら合力は右向きに 3 N。<b>左右を同じ大きさ</b>にすると合力が 0 になり、<b>止まったまま</b>（または<b>同じ速さで動きつづける</b>）。'
+};
+
+/* ============ 1-5 摩擦のある水平面・斜面をすべる物体 ============ */
+DEFS['m1-5'] = {
+  id: 'm1-5', mode: 1, tab: '1-5 摩擦のある水平面・斜面',
+  quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
+  title: '1-5　摩擦のある水平面・斜面をすべる物体',
   desc: '力は加えず、初速度だけをあたえてすべらせる。動摩擦力 μ′N が運動と逆向きにはたらき、一定の割合で減速する。',
   sub: '止まったあとに動き出すかどうかは、静止摩擦（最大 μN）と重力の斜面成分 mg sinθ の大小で決まる。',
   cw: 520, ch: function (v) { return 182 + 210 * Math.abs(Math.sin(v.th * DEG)); },
@@ -2643,7 +2806,7 @@ DEFS['m1-4'] = {
       }
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    drawPosNote(ctx, DEFS['m1-4'], s, W, 36, dirWord(v.th, s.sign));
+    drawPosNote(ctx, DEFS['m1-5'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t), th = v.th * DEG;
@@ -2664,11 +2827,11 @@ DEFS['m1-4'] = {
   note: '動いているあいだ、動摩擦力は<b>いつも運動と逆向き</b>で大きさ μ′N の一定値。だから <b>a は一定</b>（v–t 図は直線）。水平面（θ＝0）なら a＝−μ′g。すべった距離は <span class="tex">x = \\dfrac{v_0^2}{2|a|}</span> で出せる。'
 };
 
-/* ============ 1-5 力を加えながらの斜面上の運動 ============ */
-DEFS['m1-5'] = {
-  id: 'm1-5', mode: 1, tab: '1-5 斜面で押す',
+/* ============ 1-6 力を加えながらの斜面上の運動 ============ */
+DEFS['m1-6'] = {
+  id: 'm1-6', mode: 1, tab: '1-6 斜面で押す',
   quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（斜面にそった向き）',
-  title: '1-5　斜面で押す（摩擦あり）',
+  title: '1-6　斜面で押す（摩擦あり）',
   desc: '手で斜面の下側から、斜面上向きに力 F で押す。運動方程式から加速度が決まる。',
   sub: 'F が小さいと静止摩擦とつり合って動かない（|F − mg sinθ| ≦ μN）。動き出すと動摩擦 μ′N がはたらく。',
   cw: 520, ch: function (v) { return 196 + 210 * Math.abs(Math.sin(v.th * DEG)); },
@@ -2782,7 +2945,7 @@ DEFS['m1-5'] = {
       if (m.still) label(ctx, '|F − mg sinθ| ≦ μN なので動かない', W * 0.28, 74, { size: 11, color: COL.sub, align: 'left' });
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    drawPosNote(ctx, DEFS['m1-5'], s, W, 36, dirWord(v.th, s.sign));
+    drawPosNote(ctx, DEFS['m1-6'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t), th = v.th * DEG;
@@ -2807,10 +2970,10 @@ DEFS['m1-5'] = {
   note: '<b>作用点</b>に注目：重力は<b>物体の中心</b>から、垂直抗力と摩擦力は<b>斜面と触れている面</b>から、押す力は<b>手が触れているところ</b>から。F を小さくすると <span class="tex">|F-mg\\sin\\theta| \\le \\mu N</span> になり、静止摩擦がつり合って<b>動かない</b>。'
 };
 
-/* ============ 1-6 カーリングゲーム ============ */
-DEFS['m1-6'] = {
-  id: 'm1-6', mode: 1, tab: '1-6 氷の上のカーリングゲーム', game: true,
-  title: '1-6　氷の上のカーリングゲーム 〜的にピタリと止めよう！〜',
+/* ============ 1-7 カーリングゲーム ============ */
+DEFS['m1-7'] = {
+  id: 'm1-7', mode: 1, tab: '1-7 氷の上のカーリングゲーム', game: true,
+  title: '1-7　氷の上のカーリングゲーム 〜的にピタリと止めよう！〜',
   desc: 'ストーンを初速度 v₀ ですべらせて、的にちょうど止められるかな？',
   sub: '動摩擦力だけで減速するので、止まるまでの距離は v₀²/(2|a|)。<b>ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まり、そのまま動き出す。</b>「スライダーで v₀ を決める」に切りかえると、v₀ をスライダーで決めてからドラッグで放つこともできる。的もドラッグで動かせる。',
   cw: 520, ch: 186,
@@ -2849,9 +3012,9 @@ DEFS['m1-6'] = {
   },
   drag: function (s, wx, wy, lx) {
     if (s._m === 'aim') {
-      var px = clamp(lx - (s._px0 || 0), 0, DEFS['m1-6'].PULL_PX);   /* 右へすべらせた長さ（画面） */
+      var px = clamp(lx - (s._px0 || 0), 0, DEFS['m1-7'].PULL_PX);   /* 右へすべらせた長さ（画面） */
       if (px < 3) return;                                            /* 押しただけでは値を変えない */
-      s._pull = px / DEFS['m1-6'].PULL_PX;                           /* 0〜1 */
+      s._pull = px / DEFS['m1-7'].PULL_PX;                           /* 0〜1 */
       if (!s.o.useSlider) s.v.v0 = +clamp(1 + s._pull * 11, 1, 12).toFixed(1);
     } else {
       s.v.tx = clamp(Math.round(wx), 5, 45);
@@ -2864,7 +3027,7 @@ DEFS['m1-6'] = {
   },
   win: function (s, t) {
     var v = V(s);
-    return Math.abs(P.m14.xStopIdeal(v) - v.tx) <= DEFS['m1-6'].HOUSE;
+    return Math.abs(P.m14.xStopIdeal(v) - v.tx) <= DEFS['m1-7'].HOUSE;
   },
   graphs: [
     { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（位置）', ylabel: 'x [m]', open: true, signed: true,
@@ -2893,7 +3056,7 @@ DEFS['m1-6'] = {
   draw: function (ctx, s, t, W, H) {
     var v = V(s);
     var xs = P.m14.xStop(v);
-    var hi = DEFS['m1-6'].RINK;              /* いつも同じ目盛り（リンクの長さ） */
+    var hi = DEFS['m1-7'].RINK;              /* いつも同じ目盛り（リンクの長さ） */
     var sn = slopeScene(W, H, v.th, -2.0, hi);
     /* 氷の面 */
     var e = sn.pos(sn.sLo + sn.span), b = sn.pos(sn.sLo);
@@ -2911,7 +3074,7 @@ DEFS['m1-6'] = {
 
     /* 的 */
     var hp = sn.pos(v.tx);
-    var hr = DEFS['m1-6'].HOUSE * sn.sc;
+    var hr = DEFS['m1-7'].HOUSE * sn.sc;
     var bw2 = Math.max(22, hr * 1.7), bh2 = Math.max(16, hr * 1.25);
     ctx.save();                                            /* かごを入れる「穴」を白くぬく */
     ctx.fillStyle = '#ffffff';
@@ -2952,7 +3115,7 @@ DEFS['m1-6'] = {
     }
     if (s._m === 'aim') {                                   /* 右へすべらせているようす */
       var st0 = sn.pos(0);
-      var swp = (s._pull || 0) * DEFS['m1-6'].PULL_PX;
+      var swp = (s._pull || 0) * DEFS['m1-7'].PULL_PX;
       ctx.save(); ctx.strokeStyle = '#8a949e'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.moveTo(st0.x + sn.n.x * 10, st0.y + sn.n.y * 10);
@@ -2970,19 +3133,19 @@ DEFS['m1-6'] = {
         : 'ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まってスタート',
         14, 34, { size: 10.5, color: COL.sub, align: 'left' });
     }
-    var done = t >= DEFS['m1-6'].tEnd(v) - 1e-9;
+    var done = t >= DEFS['m1-7'].tEnd(v) - 1e-9;
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 16, { align: 'right', size: 13, bold: true });
-    drawPosNote(ctx, DEFS['m1-6'], s, W, 34);
+    drawPosNote(ctx, DEFS['m1-7'], s, W, 34);
 
 
     if (done) {
       /* 「行き過ぎ」の距離は、氷の外まで行った場合もふくめて式で正しく出す */
       var xIdeal = P.m14.xStopIdeal(v);
       var dd = xIdeal - v.tx, ad = Math.abs(dd);
-      var over = !isFinite(xIdeal) || xIdeal > DEFS['m1-6'].RINK;   /* 氷の外まで行った */
+      var over = !isFinite(xIdeal) || xIdeal > DEFS['m1-7'].RINK;   /* 氷の外まで行った */
       var msg, col;
       if (ad <= 0.4) { msg = 'ど真ん中！ ピタリ賞'; col = { bg: '#e6f7ea', border: '#1c8f4a', color: '#14713a' }; }
-      else if (ad <= DEFS['m1-6'].HOUSE) { msg = '的に入った！（ずれ ' + fmt(ad, 1) + ' m）'; col = { bg: '#e6f7ea', border: '#1c8f4a', color: '#14713a' }; }
+      else if (ad <= DEFS['m1-7'].HOUSE) { msg = '的に入った！（ずれ ' + fmt(ad, 1) + ' m）'; col = { bg: '#e6f7ea', border: '#1c8f4a', color: '#14713a' }; }
       else if (over) {
         msg = '氷の外まで行き過ぎた（' + (isFinite(xIdeal) ? fmt(ad, 1) + ' m' : 'ほぼ止まらない') + '）';
         col = { bg: '#fff5d6', border: '#d9a545', color: '#8a5000' };
@@ -2995,7 +3158,7 @@ DEFS['m1-6'] = {
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t);
     var xs = P.m14.xStopIdeal(v);
-    var done = t >= DEFS['m1-6'].tEnd(v) - 1e-9;
+    var done = t >= DEFS['m1-7'].tEnd(v) - 1e-9;
     return [
       ['加速度 $a$', fmt(P.m14.a0(v) * s.sign, 2) + ' m/s²'],
       ['的の位置', fmt(v.tx, 0) + ' m'],
@@ -3007,7 +3170,7 @@ DEFS['m1-6'] = {
   },
   eq: function (s) {
     var v = V(s);
-    var done = s.t >= DEFS['m1-6'].tEnd(v) - 1e-9;
+    var done = s.t >= DEFS['m1-7'].tEnd(v) - 1e-9;
     return EQM + 'ma = -\\mu\' N - mg\\sin\\theta \\;\\Rightarrow\\; a = ' + fmt(P.m14.a0(v), 2) +
       ',\\quad x_{\\text{止}} = \\dfrac{v_0^{\\,2}}{2|a|} = ' +
       (done ? (isFinite(P.m14.xStopIdeal(v)) ? fmt(P.m14.xStopIdeal(v), 2) + '\\ \\mathrm{m}' : '\\infty') : '?');
@@ -5404,6 +5567,8 @@ function buildPanel() {
       '</div><canvas id="gc__free"></canvas></div></div></div>');
   }
 
+  h.push('<div class="note" id="notebox"><b>見るポイント</b>：' + d.note + '</div>');
+
   h.push('<div class="signsw"><span>グラフで正とする向き：</span>' +
     '<button id="sgnP" class="' + (s.sign > 0 ? '' : 'sub') + '">' + d.signLabels[0] + '</button>' +
     '<button id="sgnM" class="' + (s.sign < 0 ? '' : 'sub') + '">' + d.signLabels[1] + '</button></div>');
@@ -5428,7 +5593,6 @@ function buildPanel() {
     h[h.length - 1] = '';   /* 変えるものが残っていなければ、下のブロックは出さない */
     h[h.length - 2] = '';
   }
-  h.push('<div class="note" id="notebox"><b>見るポイント</b>：' + d.note + '</div>');
   h.push('<table class="read" id="readout"></table>');
   h.push('</div></div>');
   $('simhost').innerHTML = h.join('');
@@ -6503,7 +6667,18 @@ function tick(ts) {
       r.monkey_offaim_hits = miss.join('');
       r.monkey_aim_deg = +P.m33.aimDeg({ v0: 20, th: 25, mx: 20, my: 12 }).toFixed(6);
       r.monkey_mindist = +P.m33.closest({ v0: 20, th: P.m33.aimDeg({ mx: 20, my: 12 }), mx: 20, my: 12 }).d.toFixed(6);
-      /* 1-6 カーリング：止まる位置は v0²/(2|a|)。氷の長さで打ち切られないこと */
+      /* 1-4 水平面で引く（なめらか）：a = (F1 - F2 - mg sinθ)/m。左右同じ力なら a = 0 */
+      var pl = { F: 10, F2: 0, th: 0, m: 2, v0: 0, mu: 0, mud: 0, LEN: 9, TMAX: 6 };
+      r.pull_a = +P.m14.a0(pl).toFixed(6);
+      r.pull_a_formula = +((pl.F - pl.F2) / pl.m).toFixed(6);
+      var pl2 = { F: 5, F2: 5, th: 0, m: 2, v0: 3, mu: 0, mud: 0, LEN: 9, TMAX: 6 };
+      r.pull_balance_a = +P.m14.a0(pl2).toFixed(9);                   /* つり合い＝0 */
+      r.pull_balance_v = +P.m14.sample(pl2, 1).v.toFixed(6);          /* 等速のまま */
+      var pl3 = { F: 20, F2: 5, th: 30, m: 2, v0: 0, mu: 0, mud: 0, LEN: 9, TMAX: 6 };
+      r.pull_slope_a = +P.m14.a0(pl3).toFixed(6);
+      r.pull_slope_formula =
+        +((pl3.F - pl3.F2 - pl3.m * G * Math.sin(30 * DEG)) / pl3.m).toFixed(6);
+      /* 1-7 カーリング：止まる位置は v0²/(2|a|)。氷の長さで打ち切られないこと */
       var cu = { v0: 12, mud: 0.005, th: 0, m: 18, mu: 0.6, F: 0, LEN: 50, TMAX: 20 };
       r.curl_xstop = +P.m14.xStopIdeal(cu).toFixed(3);
       r.curl_xstop_formula = +(cu.v0 * cu.v0 / (2 * G * cu.mud)).toFixed(3);
