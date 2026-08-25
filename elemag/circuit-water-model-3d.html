@@ -45,6 +45,16 @@ p{margin:.4em 0}
 .sim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
 @media(max-width:900px){.sim{grid-template-columns:1fr}}
 .sim .card{margin:0}
+/* 立体図表示中：編集用の部品を隠して2D回路図を上に引き上げ、右の3D図と上端をそろえる（並べて見比べる） */
+body.solidview .panelbox,
+body.solidview .histbtns,
+body.solidview .topbtns,
+body.solidview .gridtools,
+body.solidview #trash,
+body.solidview .buildhint{display:none}
+/* 立体図表示中：「アニメーションを終える」ボタンを回路図の左上（＝もと戻す/やり直しの位置）へ重ねる。
+   JSで .buildbar を .gridwrap 内へ移動し、ここで左上に絶対配置する（ボタンの移動距離を小さくする）。 */
+body.solidview .gridwrap>.buildbar{position:absolute;left:8px;top:8px;z-index:6;margin:0}
 
 /* ---- パレット／プリセットの枠 ---- */
 .panelbox{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 12px;background:var(--panel)}
@@ -3345,6 +3355,18 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   function updateConvertButtons() {
     var on = !!(ST.solved && ST.solved.ok);
     var can = on || canConvert();
+    // 立体図表示中は、編集用の部品（パレット・履歴・全消し・エリア操作・プリセット等）を隠して
+    // 2D回路図を上に引き上げ、右の3D図と上端をそろえる（並べて見比べやすくする）。
+    document.body.classList.toggle('solidview', on);
+    // 「立体図を表示」⇄「アニメーションを終える」ボタンは、表示中だけ回路図の左上（もと戻す/やり直しの位置）へ
+    // 移動させる。ボタン自体を動かすのでハンドラは保持される。移動距離を小さくして違和感を減らす。
+    var bb = el['buildbar'] || (el['buildbar'] = document.querySelector('.buildbar'));
+    var gw = el['gridwrap'] || (el['gridwrap'] = document.querySelector('.gridwrap'));
+    if (bb && gw) {
+      var card = gw.parentNode;
+      if (on) { if (bb.parentNode !== gw) gw.appendChild(bb); }
+      else if (card && bb.parentNode !== card) { card.insertBefore(bb, card.firstChild); }
+    }
     [el['btn-convert'], el['btn-convert2']].forEach(function (btn) {
       if (!btn) return;
       btn.classList.toggle('done', on);
