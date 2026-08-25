@@ -1312,6 +1312,10 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     // ⑧内部抵抗プリセットの注記（電池＋内部抵抗を点線で囲みふきだし）
     if (st.activePreset === 'internal_r') drawInternalRNote(ctx, st, view.g);
 
+    // 立体図表示中は、スイッチを押せることに気づきやすいよう、全スイッチに常時オレンジの丸印を出す
+    if (st.solved && st.solved.ok) {
+      parts.forEach(function (pp) { if (pp.type === 'SW' && pp.id !== st.hoverSwitch) drawSwitchMarker(ctx, pp, g); });
+    }
     // ホバー案内：スイッチ＝丸で「クリックで開閉」、それ以外の素子＝長方形で「クリックで値を変更」
     if (st.hoverSwitch) {
       var hp = parts.filter(function (pp) { return pp.id === st.hoverSwitch; })[0];
@@ -1462,6 +1466,16 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     ctx.restore();
   }
 
+  // 立体図表示中の常時マーカー：スイッチ位置にオレンジの丸を出し、「押せる」ことを一目で示す
+  function drawSwitchMarker(ctx, p, g) {
+    var e = endpoints(p);
+    var a = g.px(e[0], e[1]), b = g.px(e[2], e[3]);
+    var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, r = g.cell * 0.33;
+    ctx.save();
+    ctx.fillStyle = 'rgba(224,123,24,.12)'; ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(mx, my, r, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
   function drawSwitchHover(ctx, p, g) {
     var e = endpoints(p);
     var a = g.px(e[0], e[1]), b = g.px(e[2], e[3]);
@@ -1528,8 +1542,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   function drawProbeCallout(ctx, gx, gy, g) {
     var q = g.px(gx, gy), x = q[0], y = q[1], cell = g.cell;
     ctx.save();
-    // ノードを橙の丸で強調
-    ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 2.5;
+    // ノードを紫の丸で強調（スイッチのオレンジや電位色（青〜赤）とかぶらない色）
+    ctx.strokeStyle = '#6a3fb5'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(x, y, cell * 0.19, 0, 7); ctx.stroke();
     var lines = ['この点の電位の', '値を立体図中に', '表示'];
     ctx.font = '11px ' + CFG.FONT;
@@ -1541,10 +1555,10 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     // しっぽ（吹き出し下辺の左寄り → ノードへ）
     var tailX = Math.max(bx + 10, Math.min(bx + 26, x));
     ctx.beginPath(); ctx.moveTo(tailX - 6, by + bh); ctx.lineTo(tailX + 6, by + bh); ctx.lineTo(x, y - cell * 0.19); ctx.closePath();
-    ctx.fillStyle = '#fff4e6'; ctx.fill(); ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = '#fff4e6'; ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 1.5;
+    ctx.fillStyle = '#f0ebfb'; ctx.fill(); ctx.strokeStyle = '#6a3fb5'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#f0ebfb'; ctx.strokeStyle = '#6a3fb5'; ctx.lineWidth = 1.5;
     roundRect(ctx, bx, by, bw, bh, 6); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#8a4b00'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#4a2b8c'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     lines.forEach(function (ln, i) { ctx.fillText(ln, bx + 7, by + 4 + lh * (i + 0.5)); });
     ctx.restore();
   }
@@ -4581,7 +4595,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     });
     el['chk-slow'].addEventListener('change', function () { ST.anim.speed = el['chk-slow'].checked ? 0.25 : 1; });
     // タブをクリックしたらそのモードへ。そのモードがまだ空なら先頭プリセットを表示する（作った回路は各モードに保持）
-    var firstPreset = { dc: 'basic', cl: 'rc', ac: 'ac_r' };
+    var firstPreset = { dc: 'basic', cl: 'rc_series', ac: 'ac_r' };
     function gotoMode(m) { switchMode(m); if (!cur().parts.length && global.Presets) applyPreset(m, firstPreset[m]); }
     el['tab-dc'].addEventListener('click', function () { gotoMode('dc'); });
     if (el['tab-cl']) el['tab-cl'].addEventListener('click', function () { gotoMode('cl'); });
@@ -5487,7 +5501,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       ['basic', '① 電池と抵抗'], ['series2', '② 直列'], ['parallel2', '③ 並列'],
       ['combo', '④ 直列＋並列'], ['res3_1', '⑤ ３抵抗の回路①'], ['res3_2', '⑥ ３抵抗の回路②'],
       ['wheatstone', '⑦ ホイートストンブリッジ'],
-      ['internal_r', '⑧ 内部抵抗'], ['bulb_series', '⑨ 豆電球直列'], ['bulb_parallel', '⑩ 豆電球並列'],
+      ['internal_r', '⑧ 電池（内部抵抗あり）'], ['bulb_series', '⑨ 豆電球直列'], ['bulb_parallel', '⑩ 豆電球並列'],
       ['diode', '⑪ ダイオード'], ['idealdiode', '⑫ 整流ダイオード']
     ],
     cl: [ // ② コンデンサー・コイルの直流回路（①から連番）
