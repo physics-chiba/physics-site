@@ -2939,7 +2939,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   // ---- 配置・移動（ポインタ） ----
   function startPaletteDrag(ev, type) {
     ev.preventDefault();
-    if (blockIfReviewing()) return; // 巻き戻し中は素子追加を禁止
+    if (blockIfConverted()) return; // 立体図表示中は素子を追加できない
     ST.tool = type; highlightTool();
     ST.drag = { kind: 'new', type: type, moved: false };
     window.addEventListener('pointermove', onMove);
@@ -3027,6 +3027,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       ST.drag.previewEdge = overGrid ? Draw2D.edgeAtPixel(ST, pt.x, pt.y) : null;
       draw2d();
     } else if (ST.drag.kind === 'move' && ST.drag.moved && overGrid) {
+      if (isConverted()) { if (!ST.drag.blocked) { blockIfConverted(); ST.drag.blocked = true; } return; } // 立体図表示中は移動できない
       var mp = find(ST.drag.partId);
       var edge = Draw2D.edgeAtPixel(ST, pt.x, pt.y, mp ? mp.dir : null); // 移動中は向きを変えない
       if (edge) {
@@ -3060,6 +3061,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   }
 
   function placePart(type, edge) {
+    if (blockIfConverted()) return; // 立体図表示中は素子を追加できない
     if (parts().length >= ST.maxParts) { showMsg('部品が多すぎます（導線を減らしてください）。', true); return; }
     // 素子（導線・スイッチ以外）は数を制限。導線・スイッチは数えない。
     if (!isPassiveWire(type)) {
@@ -3093,7 +3095,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     clearActivePreset(); invalidateSolve(); draw2d();
   }
   function removePart(partId) {
-    if (blockIfReviewing()) return;
+    if (blockIfConverted()) return; // 立体図表示中は削除できない
     pushUndo();
     cur().parts = parts().filter(function (p) { return p.id !== partId; });
     if (ST.sel === partId) select(null);
@@ -3112,7 +3114,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   // 回転の実体。まずクリック側端点(near)を軸に回し、そこが塞がっていれば
   // 反対端＝隣の素子との「接点」(far)を軸に、回転可能な方向へ回す。
   function tryRotate(id, near, far) {
-    if (blockIfReviewing()) return false; // 巻き戻し中は回転を禁止
+    if (blockIfConverted()) return false; // 立体図表示中は回転できない
     var p = find(id); if (!p) return false;
     function valid(c) {
       if (!c || c.x < 0 || c.y < 0) return false;
@@ -3151,10 +3153,10 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     tryRotate(id, [p.x, p.y], [x2, y2]);
   }
   function rotateSel() { if (ST.sel) rotatePart(ST.sel); }
-  function clearAll() { if (blockIfReviewing()) return; pushUndo(); cur().parts = []; ST.probeOverride = null; ST.groundOverride = null; select(null); clearActivePreset(); invalidateSolve(); draw2d(); Draw3D.render(el['view3d'], ST); }
+  function clearAll() { if (blockIfConverted()) return; pushUndo(); cur().parts = []; ST.probeOverride = null; ST.groundOverride = null; select(null); clearActivePreset(); invalidateSolve(); draw2d(); Draw3D.render(el['view3d'], ST); }
   // 電源と導線・スイッチは残し、素子（抵抗・豆電球・ダイオード・コンデンサ・コイル）だけ消す
   function clearNonSource() {
-    if (blockIfReviewing()) return;
+    if (blockIfConverted()) return;
     pushUndo();
     cur().parts = parts().filter(function (p) { return p.type === 'V' || p.type === 'VAC' || p.type === 'WIRE' || p.type === 'SW'; });
     select(null); clearActivePreset(); invalidateSolve(); draw2d(); Draw3D.render(el['view3d'], ST);
@@ -3202,8 +3204,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (el['btn-undo']) el['btn-undo'].disabled = !ST.hist.u.length;
     if (el['btn-redo']) el['btn-redo'].disabled = !ST.hist.r.length;
   }
-  function undo() { if (!ST.hist.u.length) return; ST.hist.r.push(snap()); cur().parts = ST.hist.u.pop(); afterHistory(); }
-  function redo() { if (!ST.hist.r.length) return; ST.hist.u.push(snap()); cur().parts = ST.hist.r.pop(); afterHistory(); }
+  function undo() { if (blockIfConverted()) return; if (!ST.hist.u.length) return; ST.hist.r.push(snap()); cur().parts = ST.hist.u.pop(); afterHistory(); }
+  function redo() { if (blockIfConverted()) return; if (!ST.hist.r.length) return; ST.hist.u.push(snap()); cur().parts = ST.hist.r.pop(); afterHistory(); }
   function afterHistory() {
     ST.sel = null; renderEditor(); clearActivePreset();
     // 取り消し／やり直しで回路の形が変わり得るので、アニメ再生中なら止めて最初の状態へ戻す。
@@ -3220,14 +3222,17 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (!p) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
     var m = CFG.PARTS[p.type];
+    // 立体図表示中は「形を変える」操作（回転・向き反転・削除・種類変更）を隠す。スイッチ開閉と値変更のみ可。
+    var locked = isConverted();
     // 見出し＋1行目：名前・回転・（＋−入れかえ／開閉／向き反転）… 右端に削除
-    var html = '<div class="editor-cap">現在選んでいる素子</div>';
+    var html = '<div class="editor-cap">現在選んでいる素子' + (locked ? '（立体図表示中は値とスイッチのみ変更できます）' : '') + '</div>';
     html += '<div class="row editor-top"><span class="name" style="color:' + m.color + '">' + m.label + '</span>';
-    html += '<button class="ctl" data-act="rot">90°回転</button>';
-    if (m.source) html += '<button class="ctl flipbtn" data-act="flip">向きを反転</button>';
+    if (!locked) html += '<button class="ctl" data-act="rot">90°回転</button>';
+    if (m.source && !locked) html += '<button class="ctl flipbtn" data-act="flip">向きを反転</button>';
     if (p.type === 'SW') html += '<button class="ctl" data-act="sw">' + (p.closed ? '閉（つながる）' : '開（切れる）') + '</button>';
-    if (p.type === 'DIODE' || p.type === 'IDEALDIODE') html += '<button class="ctl flipbtn" data-act="drev">向きを反転</button>';
-    html += '<button class="ctl del" data-act="del">削除</button></div>';
+    if ((p.type === 'DIODE' || p.type === 'IDEALDIODE') && !locked) html += '<button class="ctl flipbtn" data-act="drev">向きを反転</button>';
+    if (!locked) html += '<button class="ctl del" data-act="del">削除</button>';
+    html += '</div>';
     if (m.unit && p.value !== undefined) {
       html += '<div class="row"><label>' + valueLabel(p.type) + '</label>' +
         '<input type="number" id="ed-val" value="' + p.value + '" min="' + m.min + '" max="' + m.max + '" step="' + m.step + '">' +
@@ -3238,8 +3243,8 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
         '<input type="number" id="ed-freq" value="' + p.freq + '" min="0.1" max="5" step="0.1">' +
         '<input type="range" id="ed-freqr" value="' + p.freq + '" min="0.1" max="5" step="0.1"></div>';
     }
-    // 豆電球・ダイオードの特性（I-Vカーブ）を3種から選ぶ
-    if (p.type === 'BULB' || p.type === 'DIODE') {
+    // 豆電球・ダイオードの特性（I-Vカーブ）を3種から選ぶ（立体図表示中は形の変更扱いで隠す）
+    if ((p.type === 'BULB' || p.type === 'DIODE') && !locked) {
       var variants = p.type === 'BULB' ? CFG.BULB_VARIANTS : CFG.DIODE_VARIANTS;
       html += '<div class="row"><label>特性の種類</label><div class="vbtns">';
       variants.forEach(function (v, i) {
@@ -3281,7 +3286,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     return ps.some(function (p) { return p.type === 'L'; }) && ps.some(function (p) { return p.type === 'C'; });
   }
   function setVariant(p, idx) {
-    if (blockIfReviewing()) return; // 巻き戻し中は特性変更を禁止
+    if (blockIfConverted()) return; // 立体図表示中は種類（特性）を変えられない
     pushUndo();
     var v = (p.type === 'BULB' ? CFG.BULB_VARIANTS : CFG.DIODE_VARIANTS)[idx];
     p.variant = idx;
@@ -3342,13 +3347,13 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     if (rng) rng.addEventListener('input', function () { upd(rng.value); });
   }
   function editorAction(act) {
-    if (blockIfReviewing()) return; // 巻き戻し中は回路変更を禁止
     var p = find(ST.sel); if (!p) return;
+    if (act === 'sw') { if (blockIfReviewing()) return; pushUndo(); p.closed = !p.closed; onSwitchToggled(); renderEditor(); reflow(); return; } // スイッチ開閉→立体図表示中も可
+    if (blockIfConverted()) return; // 形を変える操作は立体図表示中は禁止
     if (act === 'rot') rotateSel();
     else if (act === 'del') removePart(p.id);
-    else if (act === 'flip') { pushUndo(); p.plus = p.plus === 'p2' ? 'p1' : 'p2'; reflowStructural(); } // 電池の向き反転→止める
-    else if (act === 'sw') { pushUndo(); p.closed = !p.closed; onSwitchToggled(); renderEditor(); reflow(); } // スイッチ開閉→続ける
-    else if (act === 'drev') { pushUndo(); p.rev = !p.rev; reflowStructural(); } // ダイオードの向き→止める
+    else if (act === 'flip') { pushUndo(); p.plus = p.plus === 'p2' ? 'p1' : 'p2'; reflowStructural(); } // 電池の向き反転
+    else if (act === 'drev') { pushUndo(); p.rev = !p.rev; reflowStructural(); } // ダイオードの向き
   }
 
   // ---- 変換・求解 ----
@@ -3406,7 +3411,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
     Draw3D.fit(el['view3d'], ST); Draw3D.render(el['view3d'], ST);
   }
   // 変換前の状態に戻す（立体図を伏せる）
-  function unconvert() { invalidateSolve(); hideMsg(); draw2d(); Draw3D.render(el['view3d'], ST); }
+  function unconvert() { invalidateSolve(); hideMsg(); if (ST.sel) renderEditor(); draw2d(); Draw3D.render(el['view3d'], ST); } // 編集モードに戻ったら編集パネルの施錠を解除
   function onConvertClick() { if (ST.solved && ST.solved.ok) unconvert(); else convert(); }
   // メインの回路（連結成分）の格子点だけを集める。孤立して置かれた素子は無視する。
   // → アースが、離れた場所に置いた素子に付いていってしまうのを防ぐ。
@@ -3566,6 +3571,7 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
       // アニメ開始時のスイッチ状態を記録（「最初から」で戻すため）＋開閉の記録をまっさらに
       ST.initSwitches = {}; parts().forEach(function (p) { if (p.type === 'SW') ST.initSwitches[p.id] = p.closed; });
       ST.swLog = []; ST.swReplayIdx = 0;
+      if (ST.sel) renderEditor(); // 立体図表示に入ったら、選択中の編集パネルを施錠状態（値・スイッチのみ）に更新
     }
     renderTable(); draw2d(); Draw3D.render(el['view3d'], ST);
     drawEditorIV(); // 選択中の R/豆電球/ダイオードの動作点グラフを更新
@@ -4407,6 +4413,13 @@ table.result .empty{color:var(--sub);text-align:center;padding:14px}
   function isReviewing() { return !!(ST.solved && ST.solved.ok && ST.trans.dynamic && ST.anim.t < histMaxT() - 1e-6); }
   function blockIfReviewing() {
     if (isReviewing()) { showMsg('再生中は禁止されています。回路の変更をしたい場合はアニメーションを終えてください。', true); return true; }
+    return false;
+  }
+  // 立体図表示中（変換済み）か。表示中は「回路の形を変える操作」を受け付けない。
+  //  許可されるのは：スイッチ開閉／物理量（値スライダー）／電位を表示する場所○／アース点の移動。
+  function isConverted() { return !!(ST.solved && ST.solved.ok); }
+  function blockIfConverted() {
+    if (isConverted()) { showMsg('立体図表示中は回路の形は変えられません。変えるには「アニメーションを終える（最初に戻る）」を押してください。', true); return true; }
     return false;
   }
   // スライダー操作：その時刻へ移動して一時停止（未来の記録は保持する）
