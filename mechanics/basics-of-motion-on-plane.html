@@ -225,6 +225,25 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .cvvars .vsl{width:100%;accent-color:var(--accent);height:16px;margin:0}
 .cvvars:empty{display:none}
 
+/* いちばん先に試してほしい変数を目立たせる（まだ既定値のあいだだけ）。
+   2-2 の投射角 θ のように、「ここを変えるんだ」と気づかせたいときに使う。 */
+.vrow.focus > .vlab{color:var(--orange-d);font-weight:700;max-width:none;overflow:visible}
+.vrow.focus > .vval{color:var(--orange-d);font-weight:700}
+.vrow.focus > .stp{background:var(--orange);border-color:var(--orange);color:#fff;
+  animation:varpulse 1.6s ease-in-out infinite}
+.vrow.focus > .stp:hover{background:var(--orange-d);border-color:var(--orange-d);color:#fff}
+.vrow.focus > .vsl{box-shadow:0 0 0 3px rgba(224,123,24,.20);border-radius:999px}
+.tryme{display:inline-block;margin-left:5px;padding:0 7px;border-radius:999px;
+  background:var(--orange);color:#fff;font-size:.66rem;font-weight:700;line-height:1.55;
+  vertical-align:middle;animation:trypulse 1.6s ease-in-out infinite}
+@keyframes varpulse{0%,100%{box-shadow:0 0 0 0 rgba(224,123,24,.55)}
+  50%{box-shadow:0 0 0 5px rgba(224,123,24,0)}}
+@keyframes trypulse{0%,100%{opacity:1;transform:translateY(0)}
+  50%{opacity:.72;transform:translateY(-1px)}}
+@media (prefers-reduced-motion:reduce){
+  .vrow.focus > .stp,.tryme{animation:none}
+}
+
 /* 左図の下の補足（小さく、控えめに） */
 .cvsub{font-size:.79rem;color:var(--sub);line-height:1.7;margin:8px 2px 0}
 
@@ -3473,11 +3492,11 @@ DEFS['m2-2'] = {
   quizKey: 'vy', quizName: 'このボールの $v_y$–$t$ 図（鉛直方向）',
   title: '2-2　原点からの水平投射・斜方投射',
   desc: 'はじめは θ＝0°、つまり水平投射。角度を変えると斜方投射になる。',
-  sub: '「分解した速度を表示」にすると、いつも一定の vx と、まっすぐ減っていく vy が見える。<b>ボールの初速度の矢印をドラッグすると投射角 θ を変えられる。</b>',
+  sub: '「分解した速度を表示」にすると、いつも一定の vx と、まっすぐ減っていく vy が見える。<b>投射角 θ を変えると、同じ v₀ でも飛び方がまったく変わる。</b>いろいろな θ で試してみよう。',
   cw: 520, ch: 360,
   vis: ['F', 'V', 'Vc'],
   signLabels: ['上向きを正', '下向きを正'],
-  mainVars: ['v0', 'th'],
+  mainVars: ['th', 'v0'], mainVarFocus: 'th',
   vars: [
     { k: 'v0', label: '初速度 $v_0$', unit: ' m/s', min: 5, max: 30, step: 1, dec: 0, def: 15 },
     { k: 'th', label: '投射角 $\\theta$', unit: '°', min: 0, max: 80, step: 5, dec: 0, def: 0 },
@@ -3486,10 +3505,6 @@ DEFS['m2-2'] = {
   toggles: [],
   actions: [{ label: '斜方投射にする（θ＝45°）', fn: function (s) { s.v.th = 45; }, is: function (v) { return v.th === 45; } },
     { label: '水平投射にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }],
-  drag: function (s, wx, wy) {
-    var a = Math.atan2(wy, Math.max(0.001, wx)) / DEG;
-    s.v.th = clamp(Math.round(a / 5) * 5, 0, 80);
-  },
   tEnd: function (v) { return P.m22.tEnd(v); },
   sample: function (v, t) { return P.m22.sample(v, t); },
   graphs: [
@@ -3523,7 +3538,6 @@ DEFS['m2-2'] = {
     drawVel(ctx, px, py, m, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
     label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m2-2'], s, W, 34);
-    if (t < 1e-9) label(ctx, 'ドラッグ→投射角 θ が変わる', 10, 34, { align: 'left', size: 10.5, color: COL.sub });
     if (hintOn(s, t)) label(ctx, '水平は等速、鉛直だけが等加速度', W - 10, 16, { align: 'right', size: 11, color: COL.sub });
   },
   info: function (s, t) {
@@ -3548,7 +3562,7 @@ DEFS['m2-3'] = {
   quizKey: 'vy', quizName: 'このボールの $v_y$–$t$ 図（鉛直方向）',
   title: '2-3　ビルの上からの斜方投射（原点の取り方）',
   desc: '同じ運動でも、原点をどこに取るかで式の形は変わる。けれど $v$–$t$ 図・$a$–$t$ 図は変わらない。',
-  sub: '「原点の取り方」を切りかえて、y の式と y–t 図がどう変わるかを確かめよう。<b>ボールの初速度の矢印をドラッグすると投射角 θ を変えられる。</b>',
+  sub: '「原点の取り方」を切りかえて、y の式と y–t 図がどう変わるかを確かめよう。',
   cw: 520, ch: 360,
   vis: ['F', 'V', 'Vc'],
   signLabels: ['上向きを正', '下向きを正'],
@@ -3564,11 +3578,6 @@ DEFS['m2-3'] = {
     k: 'org', label: '原点の取り方', def: 'launch',
     options: [{ v: 'launch', label: '投げた点を原点にする' }, { v: 'base', label: 'ビルの足元を原点にする' }, { v: 'landing', label: '着地点を原点にする' }]
   }],
-  drag: function (s, wx, wy) {
-    var o = P.m23.origin(V(s));          /* 図の原点は取り方で動くので、投げた点にそろえる */
-    var a = Math.atan2(wy + o.oy, Math.max(0.001, wx + o.ox)) / DEG;
-    s.v.th = clamp(Math.round(a / 5) * 5, -30, 80);
-  },
   tEnd: function (v) { return P.m23.tEnd(v); },
   sample: function (v, t) { return P.m23.sample(v, t); },
   graphs: [
@@ -3625,7 +3634,6 @@ DEFS['m2-3'] = {
     drawVel(ctx, px, py, m, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
     label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m2-3'], s, W, 34);
-    if (t < 1e-9) label(ctx, 'ドラッグ→投射角 θ が変わる', 10, 34, { align: 'left', size: 10.5, color: COL.sub });
     var on = { launch: '投げた点', base: 'ビルの足元', landing: '着地点' }[v.org];
     label(ctx, '原点：' + on, W - 10, 16, { align: 'right', size: 12, bold: true, color: COL.sub });
   },
@@ -4174,7 +4182,7 @@ DEFS['m3-3'] = {
   id: 'm3-3', mode: 3, tab: '3-3 モンキーハンティングゲーム', game: true, startSfx: 'bang',
   title: '3-3　モンキーハンティングゲーム　〜猿に当てるにはどうしたらいいか？〜',
   desc: '発射と同時に、猿は枝から手をはなして自由落下する。猿をまっすぐねらった向きで撃つと、必ず当たる。',
-  sub: '銃をドラッグすると発射角を変えられる。弾も猿も、同じ時間だけ ½gt² だけ落ちることがポイント。',
+  sub: '発射角 θ はスライダーで変えられる。弾も猿も、同じ時間だけ ½gt² だけ落ちることがポイント。',
   cw: 520, ch: 360,
   vis: ['F', 'V', 'Vc'],
   signLabels: ['上向きを正', '下向きを正'],
@@ -4186,10 +4194,6 @@ DEFS['m3-3'] = {
     { k: 'my', label: '猿の位置 $y$', unit: ' m', min: 5, max: 30, step: 1, dec: 0, def: 12 }
   ],
   toggles: [{ k: 'aim', label: 'ねらいの線を表示', def: true }],
-  drag: function (s, wx, wy) {
-    var a = Math.atan2(Math.max(0.01, wy), Math.max(0.01, wx)) / DEG;
-    s.v.th = clamp(Math.round(a), 5, 80);
-  },
   tEnd: function (v) { return P.m33.tEnd(v); },
   tGraph: function (v) { return P.m33.tGraph(v); },
   sample: function (v, t) { return P.m33.sample(v, Math.min(t, P.m33.tGraph(v))); },
@@ -4284,7 +4288,6 @@ DEFS['m3-3'] = {
         gx0 + Math.cos(v.th * DEG) * vL + 10, gy0 - Math.sin(v.th * DEG) * vL - 14,
         { align: 'left', size: 12.5, bold: true, color: COL.vel });
     }
-    if (t < 1e-9) label(ctx, '銃をドラッグ→角度が変わる', X(0) - 4, Y(0) + 48, { align: 'left', size: 10.5, color: COL.sub });
     var m = P.m33.sample(v, tb);
     var bx = m.xA, by = m.yA, bvx = m.vxA, bvy = m.vyA;
     if (ricT > 0) { var rr = P.m33.ric(v, t); bx = rr.x; by = rr.y; bvx = rr.vx; bvy = rr.vy; }
@@ -5093,7 +5096,7 @@ DEFS['m4-2'] = {
   title: '4-2　斜面上の斜方投射（出典：横浜市大2018）',
   desc: '斜面の傾きを $\\theta$（のぼりが正）、斜面から測った投射角を $\\Phi$ とする。<b>座標は斜面にそって $X$、斜面に垂直に $Y$</b> をとる。<b>水平面の観測者</b>と<b>斜面の上の観測者</b>を切りかえて見くらべよう。'
     ,
-  sub: '斜面にそった軸 X・斜面に垂直な軸 Y で考えると、<b>Y 方向はただの投げ上げ（加速度 −g cosθ）、X 方向は等加速度（加速度 −g sinθ）</b>になる。斜面に落ちるのは Y＝0 にもどったとき。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂。<b>ボールの初速度の矢印をドラッグすると Φ を変えられる。</b><br><b>「斜面の上の観測者から見る」に切りかえると、絵全体が −θ だけ回って斜面が水平になる</b>。斜面が「地面」に見えるかわりに、重力の矢印が θ だけ傾く。うすい x・y 軸がもとの水平・鉛直の向きを示している。',
+  sub: '斜面にそった軸 X・斜面に垂直な軸 Y で考えると、<b>Y 方向はただの投げ上げ（加速度 −g cosθ）、X 方向は等加速度（加速度 −g sinθ）</b>になる。斜面に落ちるのは Y＝0 にもどったとき。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂。<br><b>「斜面の上の観測者から見る」に切りかえると、絵全体が −θ だけ回って斜面が水平になる</b>。斜面が「地面」に見えるかわりに、重力の矢印が θ だけ傾く。うすい x・y 軸がもとの水平・鉛直の向きを示している。',
   cw: 520, ch: 360,
   vis: ['F', 'Fc', 'V', 'Vc'],
   signLabels: ['図の右向き・上向きを正', '図の左向き・下向きを正'],
@@ -5108,12 +5111,6 @@ DEFS['m4-2'] = {
     k: 'obs', label: '観測者', def: 'ground',
     options: [{ v: 'ground', label: '水平面の観測者から見る（x・y）' }, { v: 'slope', label: '斜面の上の観測者から見る（X・Y）' }]
   }],
-  drag: function (s, wx, wy) {
-    var a = Math.atan2(wy, Math.max(0.001, wx)) / DEG;
-    /* 斜面の観測者の絵では、そのまま斜面から測った角になっている */
-    var ph = (s.o.obs === 'slope') ? a : (a - s.v.th);
-    s.v.phi = clamp(Math.round(ph / 5) * 5, 5, 85);
-  },
   tEnd: function (v) { return P.m25.tEnd(v); },
   sample: function (v, t) { return P.m25.sample(v, t); },
   graphs: [
@@ -5339,7 +5336,6 @@ DEFS['m4-2'] = {
     drawPosNote(ctx, DEFS['m4-2'], s, W, 34);
     label(ctx, sl ? '斜面の上の観測者（X・Y）' : '水平面の観測者（x・y）', W - 10, 16,
       { align: 'right', size: 12, bold: true, color: COL.sub });
-    if (t < 1e-9) label(ctx, 'ドラッグ→投射角 Φ が変わる', 10, 34, { align: 'left', size: 10.5, color: COL.sub });
     if (t >= T - 1e-9) bubble(ctx, '斜面に落下', px, py - 16, { size: 12.5 });
   },
   info: function (s, t) {
@@ -5505,14 +5501,20 @@ function buildPanel() {
   /* 図（キャンバス）と、その左上にのせる操作エリア
      ＝ 左：よく変える値のカード／右：選択メニュー（上）＋表示チェック（下） */
   var mainKeys = mainVarKeys(d);
-  var mainList = d.vars.filter(function (vd) { return mainKeys.indexOf(vd.k) >= 0; });
+  /* カードの並びは mainVars に書いた順（vars の宣言順ではない） */
+  var mainList = [];
+  mainKeys.forEach(function (k) {
+    d.vars.forEach(function (vd) { if (vd.k === k) mainList.push(vd); });
+  });
   var topSel = d.mainOpts ? (d.selects || []) : [];
   var topTog = d.mainOpts ? (d.toggles || []) : [];
   h.push('<div class="cvstage' + ((d.actions && d.actions.length) ? '' : ' nobar') + '">');
   h.push('<canvas id="mainCv"' + (d.drag || d.drag3d ? ' class="dragcv"' : '') + '></canvas>');
   h.push('<div class="cvtop" id="cvtop">');
   h.push('<div class="cvvars' + (mainList.length > 3 ? ' two' : '') + '" id="cvvars">');
-  mainList.forEach(function (vd) { h.push(varRowHtml(vd, 'a')); });
+  mainList.forEach(function (vd) {
+    h.push(varRowHtml(vd, 'a', focusOn(d, s, vd), d.mainVarFocus === vd.k));
+  });
   h.push('</div>');
   h.push('<div class="cvside">');
   if (topSel.length || topTog.length) {
@@ -5738,10 +5740,18 @@ function mainVarKeys(d) {
   return d.vars.slice(0, 2).map(function (x) { return x.k; });
 }
 
-function varRowHtml(vd, tag) {
+/* いちばん先に試してほしい変数（d.mainVarFocus）を目立たせるか。
+   まだ既定値のままのあいだだけ光らせ、動かしたら静かになる。 */
+function focusOn(d, s, vd) {
+  return !!(d.mainVarFocus && d.mainVarFocus === vd.k && Math.abs(s.v[vd.k] - vd.def) < 1e-9);
+}
+
+function varRowHtml(vd, tag, focus, focusable) {
   /* 図の上のカードでは（かっこ書き）を落として短く見せる */
   var lab = (tag === 'a') ? vd.label.replace(/（[^）]*）/g, '') : vd.label;
-  var h = '<div class="vrow"><span class="vlab">' + mathHtml(lab) + '</span>' +
+  if (focusable) lab += ' <span class="tryme"' + (focus ? '' : ' style="display:none"') + '>変えてみよう</span>';
+  var h = '<div class="vrow' + (focus ? ' focus' : '') + '" data-vrow="' + vd.k + '">' +
+    '<span class="vlab">' + mathHtml(lab) + '</span>' +
     '<button class="stp" data-var="' + vd.k + '" data-dir="-1">−</button>' +
     '<span class="vval" data-vval="' + vd.k + '"></span>' +
     '<button class="stp" data-var="' + vd.k + '" data-dir="1">＋</button>';
@@ -6156,6 +6166,15 @@ function syncVarVals() {
     Array.prototype.forEach.call(host.querySelectorAll('[data-vsl="' + vd.k + '"]'), function (r) {
       if (+r.value !== s.v[vd.k]) r.value = s.v[vd.k];
     });
+    /* 「変えてみよう」の強調は、その変数を動かしたら消す（もどせばまた出る） */
+    if (d.mainVarFocus === vd.k) {
+      var on = focusOn(d, s, vd);
+      Array.prototype.forEach.call(host.querySelectorAll('[data-vrow="' + vd.k + '"]'), function (row) {
+        row.className = 'vrow' + (on ? ' focus' : '');
+        var tip = row.querySelector('.tryme');
+        if (tip) tip.style.display = on ? '' : 'none';
+      });
+    }
   });
 }
 
