@@ -311,6 +311,11 @@ table.read#readout td.v{flex:1 1 auto;text-align:right}
 .gform .fl{display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:nowrap}
 .gform .fl:first-child{margin-top:0}
 .gform .fl:last-child{margin-bottom:0}
+/* 式の3行の下に足す解説（2-2 の vy–t 図の「面積」の話など） */
+.gform .fnote{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line2);
+  font-size:.78rem;line-height:1.75;color:var(--ink2)}
+.gform .fnote b{color:var(--ink)}
+.gbody.bigf .gform .fnote{font-size:.95rem}
 .gform .fk{flex:none;font-size:.68rem;color:#fff;background:#8794a1;border-radius:999px;
   padding:1px 8px;line-height:1.6;font-weight:700;letter-spacing:.04em}
 .gform .fl.f2 .fk{background:var(--accent)}
@@ -451,20 +456,6 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 <p class="mini">物理の基本中の基本「等加速度直線運動・運動方程式・平面内の運動」を、自分で数値を変えながら動かして確かめるページ。<br>
 それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、グラフがなぜそうなるかを納得いくまで考えよう。</p>
 
-<div class="card purpose">
-  <p class="lead">【目的】</p>
-  <ol>
-    <li>いろいろな等加速度運動について、<b>v–t 図</b>などのグラフがどんな形になるかをつかむ。</li>
-    <li><b>位置・速度・加速度</b>のちがいを区別できるようになる。</li>
-    <li><b>等加速度運動の公式</b>
-      <span class="tex">① v = v_0 + at</span>、
-      <span class="tex">② x = v_0 t + \tfrac{1}{2}at^2</span>、
-      <span class="tex">③ v^2 - v_0^{\,2} = 2ax</span>
-      をもとにグラフを理解する。</li>
-    <li>加速度が生じる原因が<b>力</b>であることを、運動方程式 <span class="tex">ma=F</span> とつなげて理解する。</li>
-  </ol>
-</div>
-
 <div class="tabs" id="modetabs"></div>
 <div class="tabs sub" id="simtabs"></div>
 
@@ -504,6 +495,20 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   ・変数は＋／−ボタンで変えられます。変えると自動的にはじめに戻ります。<br>
   <span id="hint3d" style="display:none">・いま見ている<b>3次元の図</b>は、キャンバスを<b>ドラッグすると視点が回り</b>、ホイールで拡大縮小できます。<br></span>
   ・このページは1つのファイルで動きます（インターネット不要）。</p>
+</div>
+
+<div class="card purpose">
+  <p class="lead">【このシミュレーションの目的】</p>
+  <ol>
+    <li>いろいろな等加速度運動について、<b>v–t 図</b>などのグラフがどんな形になるかをつかむ。</li>
+    <li><b>位置・速度・加速度</b>のちがいを区別できるようになる。</li>
+    <li><b>等加速度運動の公式</b>
+      <span class="tex">① v = v_0 + at</span>、
+      <span class="tex">② x = v_0 t + \tfrac{1}{2}at^2</span>、
+      <span class="tex">③ v^2 - v_0^{\,2} = 2ax</span>
+      をもとにグラフを理解する。</li>
+    <li>加速度が生じる原因が<b>力</b>であることを、運動方程式 <span class="tex">ma=F</span> とつなげて理解する。</li>
+  </ol>
 </div>
 
 </div>
@@ -674,12 +679,23 @@ P.m21 = {
 
 /* 2-2 原点からの斜方投射（上向き正・地面なし） */
 P.m22 = {
-  /* もとの高さにもどるまで＋わずか。水平投射（θが小さい）ときだけ落ちる時間を足す
-     （放物線が図の中で大きく見えるようにするため） */
+  /* アニメーションは「原点と同じ高さ（y=0）にもどったとき」で止める。
+     θ=0（水平投射）は y=0 にもどらないので、落ちていく様子を 1.8 s ぶん見せる。 */
   tEnd: function (v) {
     var up = 2 * v.v0 * Math.sin(v.th * DEG) / G;
-    return up + 0.35 + 1.7 * Math.max(0, (15 - v.th) / 15);
+    return (up > 1e-9) ? up : 1.8;
   },
+  /* 左の図の放物線だけは y=0 のあとも描く（そのあとどう落ちるかを見せるため）。
+     上がったのと同じ高さぶんだけ下まで描くと、上下が対称に見えて図がつぶれない。
+     y = -H になる時刻は t_top(1+√2) ＝ tEnd(1+√2)/2。 */
+  tDraw: function (v) {
+    var up = 2 * v.v0 * Math.sin(v.th * DEG) / G;
+    var sym = up * (1 + Math.SQRT2) / 2;
+    return Math.max(P.m22.tEnd(v), sym, Math.min(1.8, up + 1.0));
+  },
+  /* 最高点までの時間と、最高点の高さ */
+  tTop: function (v) { return v.v0 * Math.sin(v.th * DEG) / G; },
+  yTop: function (v) { var u = v.v0 * Math.sin(v.th * DEG); return u * u / (2 * G); },
   sample: function (v, t) {
     var vx = v.v0 * Math.cos(v.th * DEG), vy0 = v.v0 * Math.sin(v.th * DEG);
     var vy = vy0 - G * t;
@@ -1006,7 +1022,8 @@ var COL = {
   velx: '#1f7fd4',    /* 速度の水平成分＝明るい青の破線 */
   vely: '#0d8f7a',    /* 速度の鉛直成分＝緑がかった青の破線 */
   acc: '#e07b18',     /* 加速度＝オレンジ */
-  comp: '#d1352b',    /* 分力＝赤の破線・白抜き */
+  comp: '#d1352b',
+  areaNeg: '#7a8794',   /* グラフの「負の面積」の塗り＝グレー（正は線と同じ色） */    /* 分力＝赤の破線・白抜き */
   dim: '#1b1f24',     /* 寸法・変位＝黒の細い破線 */
   A: '#1663b5',
   B: '#c0392b',
@@ -1017,11 +1034,11 @@ var COL = {
 };
 
 /* いま描いている canvas の論理サイズ（ラベルのはみ出しを防ぐのに使う） */
-var CVW = 0, CVH = 0;
+var CVW = 0, CVH = 0, CVID = '';
 
 /* canvas を 2 倍解像度で用意して ctx を返す（論理サイズ w×h で描ける） */
 function prep(cv, w, h) {
-  CVW = w; CVH = h;
+  CVW = w; CVH = h; CVID = cv.id || '';
   resetArrowOverlap();
   var need = cv.width !== w * 2 || cv.height !== h * 2;
   if (need) { cv.width = w * 2; cv.height = h * 2; cv.style.aspectRatio = w + ' / ' + h; }
@@ -1223,6 +1240,10 @@ function label(ctx, text, x, y, opt) {
       ctx.strokeText(sg.s, cx, sy);
       cx += sg.w;
     }
+  }
+  /* テスト用：文字の置き場所を記録して、重なりを自動で見つけられるようにする */
+  if (typeof window !== 'undefined' && window.__labelLog) {
+    window.__labelLog.push({ cv: CVID, text: String(text), x: left, y: y, w: tw, h: size });
   }
   ctx.fillStyle = opt.color || COL.ink;
   cx = left;
@@ -1617,7 +1638,9 @@ function axisLine(ctx, P, lo, hi, nrm, name, sign, opt) {
   var tip = sg > 0 ? pHi : pLo;
   var tx = ux * sg, ty = uy * sg;
   arrowHead(ctx, tip.x + tx * AX.head, tip.y + ty * AX.head, tx, ty, AX.col);
-  var dec = opt.numDec !== undefined ? opt.numDec : (s < 1 ? 1 : 0);
+  /* 目盛り幅にあわせた小数けた数（0.05 きざみを 1 けたで書くと「0.1・0.1・0.2」と重なる） */
+  var dec = opt.numDec !== undefined ? opt.numDec
+    : (s >= 1 ? 0 : (s >= 0.1 ? 1 : (s >= 0.01 ? 2 : 3)));
   for (i = Math.ceil(lo / s) * s; i <= hi + 1e-9; i += s) {
     if (Math.abs(i) < 1e-9) continue;
     var p = P(i);
@@ -1690,7 +1713,7 @@ function plot(cv, spec) {
   if (spec.view) { xmin = spec.view.xmin; xmax = spec.view.xmax; ymin = spec.view.ymin; ymax = spec.view.ymax; }
   if (ymax - ymin < 1e-6) { ymax += 0.5; ymin -= 0.5; }
   /* ドラッグ操作のために、いまの対応づけを canvas に覚えさせる */
-  cv._map = { W: W, H: H, pad: pad, gw: gw, gh: gh, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+  cv._map = { W: W, H: H, pad: pad, gw: gw, gh: gh, xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax, xstep: 0 };
   function X(x) { return pad.l + gw * (x - xmin) / (xmax - xmin || 1); }
   function Y(y) { return pad.t + gh * (ymax - y) / (ymax - ymin || 1); }
 
@@ -1698,7 +1721,11 @@ function plot(cv, spec) {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
   /* 目盛りグリッド */
-  var sx = niceStep(xmax - xmin, 5), sy = niceStep(ymax - ymin, 4), i;
+  /* spec.xstep があればそれを使う（運動の長さから決めた目盛り幅。右端を切り上げても
+     目盛りが粗くならないようにするため）。ドラッグで範囲を変えたときは計算し直す。 */
+  var sx = (!spec.view && spec.xstep) ? spec.xstep : niceStep(xmax - xmin, 5);
+  var sy = niceStep(ymax - ymin, 4), i;
+  cv._map.xstep = sx;      /* 実際に描いた目盛り幅（テストで確認するため） */
   ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
   for (i = Math.ceil(xmin / sx) * sx; i <= xmax + 1e-9; i += sx) {
     ctx.beginPath(); ctx.moveTo(X(i), pad.t); ctx.lineTo(X(i), pad.t + gh); ctx.stroke();
@@ -1714,7 +1741,9 @@ function plot(cv, spec) {
   var hasY0 = (ymin <= 0 && ymax >= 0), hasX0 = (xmin <= 0 && xmax >= 0);
   var yz = hasY0 ? Y(0) : pad.t + gh;
   var xz = hasX0 ? X(0) : pad.l;
-  axisX(ctx, X, yz, xmin, xmax - sx * 0.3, spec.xlabel || '', 1);
+  /* 横軸はグラフの右端までいっぱいに引く（手前で切ると、運動の終わりの時刻に
+     目盛りが届かず「どこまで動いたのか」が読めなくなる）。目盛りの間隔はグリッドとそろえる。 */
+  axisX(ctx, X, yz, xmin, xmax, spec.xlabel || '', 1, { step: sx });
   axisY(ctx, Y, xz, ymin, ymax - sy * 0.3, spec.ylabel || '', 1);
   if (hasY0 && hasX0) originMark(ctx, xz, yz, -10, 11);
   AX.tick = axSave.tick; AX.num = axSave.num; AX.name = axSave.name; AX.head = axSave.head;
@@ -1724,6 +1753,31 @@ function plot(cv, spec) {
   ctx.beginPath(); ctx.rect(pad.l - 1, pad.t - 1, gw + 2, gh + 2); ctx.clip();
   (spec.hide ? [] : (spec.series || [])).forEach(function (se) {
     if (!se.pts || se.pts.length < 2) return;
+    /* se.area: 曲線と t 軸ではさまれた部分を塗る（面積＝変化量、を目で見せるため）。
+       t 軸より上と下を別々にクリップして塗り、正と負を見分けられるようにする。 */
+    if (se.area) {
+      var yz = Y(0), k;
+      var poly = function () {
+        ctx.beginPath();
+        ctx.moveTo(X(se.pts[0][0]), yz);
+        for (k = 0; k < se.pts.length; k++) {
+          if (isFinite(se.pts[k][0]) && isFinite(se.pts[k][1])) ctx.lineTo(X(se.pts[k][0]), Y(se.pts[k][1]));
+        }
+        ctx.lineTo(X(se.pts[se.pts.length - 1][0]), yz);
+        ctx.closePath();
+      };
+      ctx.save();
+      ctx.beginPath(); ctx.rect(pad.l - 1, pad.t - 1, gw + 2, Math.max(0, yz - pad.t + 1)); ctx.clip();
+      ctx.fillStyle = fade(se.color, 0.20); poly(); ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath(); ctx.rect(pad.l - 1, yz, gw + 2, Math.max(0, pad.t + gh - yz + 1)); ctx.clip();
+      /* 負の面積は色を変える（正＝グラフの色／負＝ニュートラルなグレー） */
+      ctx.fillStyle = fade(COL.areaNeg, 0.30); poly(); ctx.fill();
+      ctx.strokeStyle = fade(COL.areaNeg, 0.60); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      poly(); ctx.stroke();
+      ctx.restore();
+    }
     ctx.save();
     ctx.strokeStyle = se.color; ctx.lineWidth = se.width || 2.2;
     if (se.dash) ctx.setLineDash(se.dash);
@@ -1844,6 +1898,10 @@ function mSize(d, v) {
   if (!(ref > 0)) return 1;
   return clamp(Math.pow(v.m / ref, 1 / 3), 0.78, 1.45);
 }
+
+/* v–t 図の「面積」の解説で使う。上りの区間が「正の面積」になるかは、
+   いま選んでいる「グラフで正とする向き」で入れかわる。 */
+function areaSignWord(sign, rising) { return ((sign > 0) === !!rising) ? '正' : '負'; }
 
 /* 汎用の描画部品（複数モードで使う） */
 
@@ -2436,6 +2494,33 @@ DEFS['m1-2'] = {
   note: '下向きを正にとると、加速度も速度も位置もぜんぶ正。v–t 図は<b>原点（v₀＝0のとき）を通る右上がりの直線</b>、傾きは 9.8。h＝19.6 m なら t＝2.0 s、v＝19.6 m/s。'
 };
 
+/* 1-3 の v–t 図の下に出す解説。
+   「グラフの面積 ＝ そのあいだの y の変化」を、上りと下りでくらべさせる。
+   ビルの上から投げると下りのほうが大きくなり、その差が地面までの変位になる。 */
+function m13AreaNote(v, s2) {
+  var sg = s2 ? s2.sign : 1;
+  var t1 = P.m13.tTop(v), T = P.m13.tEnd(v);
+  var up = v.v0 * v.v0 / (2 * G);          /* 上がった高さ */
+  var dn = up + v.H;                       /* 最高点から地面まで下りた距離 */
+  var out = '<b>この図の面積 ＝ そのあいだの y の変化（動いた高さ）。</b>（正＝青／負＝グレー）<br>' +
+    '上り（0 〜 ' + fmt(t1, 2) + ' s）の<b>' + areaSignWord(sg, true) + 'の面積</b>　' +
+    '<span class="tex">\\tfrac{1}{2}t_1 v_0 = \\dfrac{v_0^{\\,2}}{2g} = ' + fmt(up, 2) +
+    '\\,\\mathrm{m}</span>　← 最高点までの高さ<br>' +
+    '下り（' + fmt(t1, 2) + ' 〜 ' + fmt(T, 2) + ' s）の<b>' + areaSignWord(sg, false) + 'の面積</b>　' +
+    '<span class="tex">' + fmt(dn, 2) + '\\,\\mathrm{m}</span>　← 最高点から地面まで下りた距離<br>';
+  if (v.H < 0.05) {
+    out += '底辺（時間）も高さ（速さ）も同じ三角形なので、<b>2つの面積は必ず等しい</b>。' +
+      '符号がちがうのでたすと 0 になり、<b>投げた高さにもどってくる</b>。' +
+      '上りにかかる時間と下りにかかる時間も等しい。';
+  } else {
+    out += '<b>2つの面積の差が、投げた点から見た変位</b>。いまは下りのほうが ' + fmt(v.H, 1) +
+      ' m ぶん大きく、たし合わせると <span class="tex">-' + fmt(v.H, 1) +
+      '\\,\\mathrm{m}</span>（＝ビルの高さぶん下）になる。<br>' +
+      '「地面から（H＝0）」にすると2つの面積がぴたりと等しくなり、和が 0 になる。';
+  }
+  return out;
+}
+
 /* ============ 1-3 鉛直投げ上げ ============ */
 DEFS['m1-3'] = {
   id: 'm1-3', mode: 1, tab: '1-3 鉛直投げ上げ',
@@ -2468,11 +2553,12 @@ DEFS['m1-3'] = {
           'y = ' + fmt(v.y0 * sg, 0) + ' + ' + fmt(v.v0 * sg, 1) + 't + \\tfrac{1}{2}(' + fmt(-G * sg, 2) + ')t^2'];
       } },
     { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速度）', ylabel: 'v [m/s]', open: true, signed: true,
-      series: [{ color: COL.vel, f: function (m) { return m.v; } }],
+      series: [{ color: COL.vel, area: true, f: function (m) { return m.v; } }],
       fml: function (v, sg) {
         return ['v = v_0 + at', 'v = v_0 - gt',
           'v = ' + fmt(v.v0 * sg, 1) + ' + (' + fmt(-G * sg, 2) + ')t'];
-      } },
+      },
+      fnote: function (v, s2) { return m13AreaNote(v, s2); } },
     { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true,
       series: [{ color: COL.acc, f: function (m) { return m.a; } }],
       fml: function (v, sg) {
@@ -2536,7 +2622,8 @@ DEFS['m1-3'] = {
     if (hintOn(s, t)) {                   /* 答えにつながる言葉は、スタートしてから */
       arrow(ctx, W - 34, 76, W - 34, 118, 'acc');
       label(ctx, '加速度 −g', W - 34, 134, { size: 11.5, color: COL.acc });
-      label(ctx, '負の加速度の原因＝下向きの力（重力）', W - 10, 38, { align: 'right', size: 11, color: COL.force });
+      /* 「正の向き：…」（y=36）とぶつからないよう、1行下げる */
+      label(ctx, '負の加速度の原因＝下向きの力（重力）', W - 10, 54, { align: 'right', size: 11, color: COL.force });
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     if (t >= T - 1e-9) label(ctx, '着地！', bx, Y(yG) - 22, { size: 14, bold: true, color: COL.ng });
@@ -2682,7 +2769,8 @@ DEFS['m1-4'] = {
         vx0 + sn.u.x * vl * sg2 * 0.5 + sn.n.x * 16, vy0 + sn.u.y * vl * sg2 * 0.5 + sn.n.y * 16,
         { size: 11.5, color: COL.vel });
     }
-    var ax0 = W * 0.5, ay0 = 64;
+    /* 加速度の矢印は、速度の矢印とぶつからないよう図の左上に固定して置く */
+    var ax0 = W * 0.30, ay0 = 64;
     if (hintOn(s, t)) {
       if (Math.abs(m.a) > 0.02) {
         var asg = m.a > 0 ? 1 : -1;
@@ -2835,7 +2923,8 @@ DEFS['m1-5'] = {
         vx0 + sn.u.x * vl * sg2 * 0.5 + sn.n.x * 14, vy0 + sn.u.y * vl * sg2 * 0.5 + sn.n.y * 14,
         { size: 11.5, color: COL.vel });
     }
-    var ax0 = W * 0.5, ay0 = 64;
+    /* 加速度の矢印は、速度の矢印とぶつからないよう図の左上に固定して置く */
+    var ax0 = W * 0.30, ay0 = 64;
     if (hintOn(s, t)) {
       if (Math.abs(m.a) > 0.02) {
         var asg = m.a > 0 ? 1 : -1;
@@ -2924,7 +3013,8 @@ DEFS['m1-6'] = {
     var v = V(s), tb = P.m14.table(v);
     var sMin = 0, sMax = 0, i;
     for (i = 0; i < tb.length; i += 5) { sMin = Math.min(sMin, tb[i].x); sMax = Math.max(sMax, tb[i].x); }
-    var sn = slopeScene(W, H, v.th, sMin - 2.4, sMax + 1.2);
+    /* 左を広めに空ける（せまいと θ の文字が原点マーク O と重なる） */
+    var sn = slopeScene(W, H, v.th, sMin - 3.8, sMax + 1.2);
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
@@ -2968,13 +3058,14 @@ DEFS['m1-6'] = {
     var vAbs = Math.abs(m.v);
     if (s.o.showV && vAbs > 0.05) {
       var vl = 14 + 40 * Math.min(1, vAbs / 6), sg2 = m.v > 0 ? 1 : -1;
-      var vx0 = cx + sn.u.x * 26 + sn.n.x * 74, vy0 = cy + sn.u.y * 26 + sn.n.y * 74;
+      var vx0 = cx + sn.u.x * 26 + sn.n.x * 50, vy0 = cy + sn.u.y * 26 + sn.n.y * 50;
       arrow(ctx, vx0, vy0, vx0 + sn.u.x * vl * sg2, vy0 + sn.u.y * vl * sg2, 'vel');
       label(ctx, 'v = ' + fmt(m.v * s.sign, 2) + ' m/s',
         vx0 + sn.u.x * vl * sg2 * 0.5 + sn.n.x * 16, vy0 + sn.u.y * vl * sg2 * 0.5 + sn.n.y * 16,
         { size: 11.5, color: COL.vel });
     }
-    var ax0 = W * 0.5, ay0 = 64;
+    /* 加速度の矢印は、速度の矢印とぶつからないよう図の左上に固定して置く */
+    var ax0 = W * 0.30, ay0 = 64;
     if (hintOn(s, t)) {
       if (Math.abs(m.a) > 0.02) {
         var asg = m.a > 0 ? 1 : -1;
@@ -3170,9 +3261,10 @@ DEFS['m1-7'] = {
       label(ctx, (s.o.useSlider ? '放すとスタート！　v₀ = ' : '右へスワイプして放つ！　v₀ = ') + fmt(v0shown, 1) + ' m/s',
         st0.x + sn.n.x * 52 + 4, st0.y + sn.n.y * 52, { size: 12.5, bold: true, color: COL.vel, align: 'left' });
     } else if (t < 1e-9) {
-      label(ctx, s.o.useSlider ? 'v₀ はスライダーで決める。ストーンをドラッグして放すとスタート'
-        : 'ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まってスタート',
-        14, 34, { size: 10.5, color: COL.sub, align: 'left' });
+      /* 右上の「正の向き：…」（y=34）とぶつからないよう、1行下げて左に置く */
+      label(ctx, s.o.useSlider ? 'v₀ はスライダーで決める。ストーンを放すとスタート'
+        : 'ストーンを右へスワイプして放すと、その勢いで v₀ が決まってスタート',
+        14, 52, { size: 10.5, color: COL.sub, align: 'left' });
     }
     var done = t >= DEFS['m1-7'].tEnd(v) - 1e-9;
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 16, { align: 'right', size: 13, bold: true });
@@ -3486,13 +3578,33 @@ function strobeDot(ctx, x, y, r, fill, edge) {
   ctx.restore();
 }
 
+/* 2-2 の vy–t 図の下に出す解説。
+   「グラフの面積 ＝ そのあいだの y の変化」を、上りと下りで見くらべさせる。 */
+function m22AreaNote(v, st2) {
+  var sg = st2 ? st2.sign : 1;
+  if (v.th < 0.5) {
+    return '<b>この図とヨコ軸ではさまれた面積は、そのあいだの y の変化（動いた高さ）を表す。</b>' +
+      'いまは θ＝0° なので vy の符号は変わらず、面積も片側だけ。' +
+      '<b>θ を大きくすると</b>上がる区間と下りる区間の2つができて、面積の大きさをくらべられる。';
+  }
+  var tt = P.m22.tTop(v), T = P.m22.tEnd(v), yt = P.m22.yTop(v);
+  return '<b>この図の面積 ＝ そのあいだの y の変化（動いた高さ）。</b>（正＝みどり／負＝グレー）<br>' +
+    '上り（0 〜 ' + fmt(tt, 2) + ' s）の<b>' + areaSignWord(sg, true) + 'の面積</b>　' +
+    '<span class="tex">\\tfrac{1}{2}t_1 v_0\\sin\\theta = \\dfrac{v_0^2\\sin^2\\theta}{2g} = ' +
+    fmt(yt, 2) + '\\,\\mathrm{m}</span>　← 最高点の高さ<br>' +
+    '下り（' + fmt(tt, 2) + ' 〜 ' + fmt(T, 2) + ' s）の<b>' + areaSignWord(sg, false) + 'の面積</b>　' +
+    '<span class="tex">' + fmt(yt, 2) + '\\,\\mathrm{m}</span>　← 最高点から下りた距離<br>' +
+    '底辺（時間）も高さ（速さ）も同じ三角形なので、<b>2つの面積は必ず等しい</b>。' +
+    '符号がちがうのでたすと 0 になり、<b>y はもとの高さ（y＝0）にもどる</b>——アニメーションはここで止まる。';
+}
+
 /* ============ 2-2 原点からの斜方投射 ============ */
 DEFS['m2-2'] = {
   id: 'm2-2', mode: 2, tab: '2-2 水平・斜方投射',
   quizKey: 'vy', quizName: 'このボールの $v_y$–$t$ 図（鉛直方向）',
   title: '2-2　原点からの水平投射・斜方投射',
   desc: 'はじめは θ＝0°、つまり水平投射。角度を変えると斜方投射になる。',
-  sub: '「分解した速度を表示」にすると、いつも一定の vx と、まっすぐ減っていく vy が見える。<b>投射角 θ を変えると、同じ v₀ でも飛び方がまったく変わる。</b>いろいろな θ で試してみよう。',
+  sub: '「分解した速度を表示」にすると、いつも一定の vx と、まっすぐ減っていく vy が見える。<b>投射角 θ を変えると、同じ v₀ でも飛び方がまったく変わる。</b>いろいろな θ で試してみよう。<br>アニメーションは<b>原点と同じ高さ（y＝0）にもどったところで止まる</b>（うすい放物線はその先も描いてある）。なぜそこで止まるのかは、vy–t 図の下の解説を見よう。',
   cw: 520, ch: 360,
   vis: ['F', 'V', 'Vc'],
   signLabels: ['上向きを正', '下向きを正'],
@@ -3515,18 +3627,21 @@ DEFS['m2-2'] = {
     { key: 'vx', short: '$v_x$–$t$ 図', title: '$v_x$–$t$ 図（水平方向の速度）', ylabel: 'vx [m/s]', open: true, signed: false,
       series: [{ color: COL.velx, f: function (m) { return m.vx; } }], fml: function (v, sg) { return projFml(v, sg, 'vx'); } },
     { key: 'vy', short: '$v_y$–$t$ 図', title: '$v_y$–$t$ 図（鉛直方向の速度）', ylabel: 'vy [m/s]', open: true, signed: true,
-      series: [{ color: COL.vely, f: function (m) { return m.vy; } }], fml: function (v, sg) { return projFml(v, sg, 'vy'); } },
+      series: [{ color: COL.vely, area: true, f: function (m) { return m.vy; } }],
+      fml: function (v, sg) { return projFml(v, sg, 'vy'); },
+      fnote: function (v) { return m22AreaNote(v); } },
     { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（鉛直方向の加速度）　※ a の運動方程式による導出', ylabel: 'ay [m/s²]', open: false, signed: true,
       series: [{ color: COL.acc, f: function (m) { return m.ay; } }], fml: function (v, sg) { return projFml(v, sg, 'a'); } }
   ],
   freeGraph: { defX: 'x', defY: 'y' },
   draw: function (ctx, s, t, W, H) {
-    var v = V(s), T = P.m22.tEnd(v);
-    var box = trajBox(v, T, P.m22.sample);
+    var v = V(s), T = P.m22.tEnd(v), TD = P.m22.tDraw(v);
+    var box = trajBox(v, TD, P.m22.sample);
     var vw = mkView(W, H, { l: 44, r: 22, t: 30, b: 34 }, box);
     s.view = vw;
     worldAxes(ctx, vw, box, 'x [m]', 'y [m]', s.sign);
-    drawTraj(ctx, vw, v, P.m22.sample, T, t, 0.2);
+    /* うすい放物線は y=0 のあとも描く。オレンジの実線（通った跡）は t までなので変わらない */
+    drawTraj(ctx, vw, v, P.m22.sample, TD, t, 0.2);
 
     var m = P.m22.sample(v, t);
     var px = vw.X(m.x), py = vw.Y(m.y);
@@ -3553,7 +3668,7 @@ DEFS['m2-2'] = {
   eq: function (s) {
     return '\\begin{aligned} v_x &= v_0\\cos\\theta \\;(\\text{一定}) & x &= v_0\\cos\\theta\\, t \\\\ v_y &= v_0\\sin\\theta - gt & y &= v_0\\sin\\theta\\, t - \\tfrac{1}{2}gt^2 \\end{aligned}';
   },
-  note: '<b>vx–t 図は横一直線</b>（水平方向に力がはたらかない＝加速度0）。<b>vy–t 図は傾き −9.8 の直線</b>（重力だけがはたらく）。この2つを合わせると放物線になる。'
+  note: '<b>vx–t 図は横一直線</b>（水平方向に力がはたらかない＝加速度0）。<b>vy–t 図は傾き −9.8 の直線</b>（重力だけがはたらく）。この2つを合わせると放物線になる。<br><b>vy–t 図の色をつけた2つの三角形は面積が等しい</b>：上がった高さと下りた高さが同じ、ということ。だから y＝0 にもどる。'
 };
 
 /* ============ 2-3 ビルの上からの斜方投射 ============ */
@@ -4045,7 +4160,7 @@ DEFS['m3-2'] = {
     var pad = { l: 46, r: 20, t: 30, b: 44 };
     var MUZZLE = 26;
     /* 見せる横の範囲。台車の観測者では台車を中心にした固定の窓にする */
-    var xLo = crt ? -3.4 : -2.0;         /* 水平面の観測者が立つぶん、左を少し空ける */
+    var xLo = -3.4;                      /* 水平面の観測者と、その名前を書くぶん、左を空ける */
     var xHi = crt ? 3.4 : Math.max(6, v.V * T * 1.15, (v.V > 0.05 ? P.m32.LAUNCH_X + 2 : 0));
     var sc = Math.min((W - pad.l - pad.r) / (xHi - xLo), (H - pad.t - pad.b - MUZZLE) / yMax);
     /* X() は「その観測者の座標」→画面。XX() は「地面に固定した座標」→画面 */
@@ -4112,10 +4227,15 @@ DEFS['m3-2'] = {
          台車の観測者から見ると、地面といっしょに後ろへ流れて画面から出ていく。 */
       var gox = crt ? XX(P.m32.LAUNCH_X + 1.8) : X(-1.1);
       if (gox > 54 && gox < W - 54) {
-        observer(ctx, gox, gy1, 0, -1, '水平面の観測者', !crt, 26, { dy: 4 });
+        /* 名前は台車から遠いほうへ書く（発射口の「ドコッ！」に隠れないように） */
+        /* 水平面の観測者を選んでいるときは、名前を地面の下に書く。
+           発射口の真下あたりに立つので、着地の「ドコッ！」に隠れてしまうため。 */
+        observer(ctx, gox, gy1, 0, -1, '水平面の観測者', !crt, 26,
+          crt ? { dy: 4, dx: 12, align: 'left' } : { dy: 64, dx: -10, align: 'right' });
       }
       /* 台車の上の観測者：台車のうしろに乗っている */
-      observer(ctx, XX(m.xA) - 44, gy1 - 13, 0, -1, '台車の上の観測者', crt, 20, { dx: -4, dy: 2, align: 'right' });
+      /* 名前は1段高く書く（水平面の観測者と近づいたときに文字が重ならないように） */
+      observer(ctx, XX(m.xA) - 44, gy1 - 13, 0, -1, '台車の上の観測者', crt, 20, { dx: -4, dy: -12, align: 'right' });
     })();
 
     var vxSee = crt ? 0 : v.V;                    /* その観測者から見たBの水平速度 */
@@ -6192,6 +6312,15 @@ function seriesPts(d, s, g, T) {
   return out;
 }
 
+/* 横軸の右端。目盛りの間隔のちょうど整数倍まで伸ばして、
+   「運動が終わる時刻」に必ず目盛りが届くようにする（届かないと t が読めない）。 */
+function niceXMax(T) {
+  var Tx = Math.max(0.2, T);
+  var st2 = niceStep(Tx, 6);
+  var xm = Math.ceil(Tx / st2 - 1e-9) * st2;
+  return (xm < Tx * (1 + 1e-9)) ? xm + st2 : xm;
+}
+
 function graphsHidden(s) { return quizOn() && s.qphase < 3; }
 
 function renderGraphs(d, s, T, t) {
@@ -6209,9 +6338,9 @@ function renderGraphs(d, s, T, t) {
     plot(cv, {
       xlabel: 't [s]', ylabel: g.ylabel,
       note: g.signed ? DEFS[st.cur].signLabels[s.sign > 0 ? 0 : 1] : '',
-      xmin: 0, xmax: Math.max(0.2, T) * 1.04, ymin: r.lo, ymax: r.hi,
+      xmin: 0, xmax: niceXMax(T), xstep: niceStep(Math.max(0.2, T), 6), ymin: r.lo, ymax: r.hi,
       view: s.gview[g.key], hide: hide,
-      series: g.series.map(function (se, j) { return { color: se.color, dash: se.dash, width: se.width, pts: pts[j] }; }),
+      series: g.series.map(function (se, j) { return { color: se.color, dash: se.dash, width: se.width, area: se.area, pts: pts[j] }; }),
       cursors: g.series.map(function (se) { return { color: se.color, x: t, y: se.f(m) * (g.signed ? s.sign : 1) }; }),
       legend: g.legend ? g.series.map(function (se) { return { name: se.name, color: se.color }; }) : null
     });
@@ -6289,14 +6418,16 @@ function renderFormulas(d, s) {
     var box = $('gf_' + g.key);
     if (!box) return;
     var arr = g.fml(V(s), s.sign);
-    var key = arr.join('|');
+    /* 式の3行の下に出す解説（あれば）。2-2 の vy–t 図の「面積」の話などに使う */
+    var fn = g.fnote ? (typeof g.fnote === 'function' ? g.fnote(V(s), s) : g.fnote) : '';
+    var key = arr.join('|') + '||' + fn;
     var bw = box.clientWidth;
     if (box._key === key && box._bw === bw) return;
     box._key = key; box._bw = bw;
     var names = ['公式', '代入', '数値'];
     box.innerHTML = arr.map(function (x, i) {
       return '<div class="fl f' + (i + 1) + '"><span class="fk">' + names[i] + '</span><span class="fv"><span class="tex">' + x + '</span></span></div>';
-    }).join('');
+    }).join('') + (fn ? '<div class="fnote">' + fn + '</div>' : '');
     renderMath(box);
     fitFormula(box);
     /* KaTeX のフォントが読み込まれたあとに幅が変わることがあるので、次のフレームでもう一度そろえる */
@@ -6558,6 +6689,22 @@ function tick(ts) {
       var m = cv._map;
       return { xmin: +m.xmin.toFixed(4), xmax: +m.xmax.toFixed(4), ymin: +m.ymin.toFixed(4), ymax: +m.ymax.toFixed(4) };
     },
+    /* 横軸（時間）の目盛りが、運動の終わりまで届いているか */
+    xTicks: function () {
+      var d = DEFS[st.cur], s = st.sims[st.cur], out = {};
+      var T = d.tGraph ? d.tGraph(V(s)) : d.tEnd(V(s));
+      graphsOf(d, s).forEach(function (g) {
+        var cv = document.getElementById('gc_' + g.key);
+        if (!s.open[g.key] || !cv || !cv._map) return;
+        var m = cv._map, last = null, i;
+        for (i = Math.ceil(m.xmin / m.xstep) * m.xstep; i <= m.xmax + 1e-9; i += m.xstep) {
+          if (Math.abs(i) > 1e-9) last = i;
+        }
+        out[g.key] = { T: +T.toFixed(4), xmax: +m.xmax.toFixed(4), step: +m.xstep.toFixed(4),
+          last: last === null ? null : +last.toFixed(4), ok: last !== null && last >= T - 1e-6 };
+      });
+      return out;
+    },
     openAll: function () { toggleAllGraphs(); return window.TEST.graphsOpen(); },
     /* 問題モード */
     qmode: function (on) {
@@ -6645,6 +6792,23 @@ function tick(ts) {
       /* 斜方投射 */
       var p = { v0: 15, th: 45, m: 1 };
       r.proj45_range = +(p.v0 * p.v0 * Math.sin(2 * 45 * DEG) / G).toFixed(6);
+      /* 2-2：アニメーションは y=0 でぴたりと止まる／vy–t 図の正負の面積が等しい */
+      var pj = { v0: 15, th: 45, m: 1 };
+      var Tp = P.m22.tEnd(pj), ttop = P.m22.tTop(pj);
+      r.proj_tEnd_y0 = +P.m22.sample(pj, Tp).y.toFixed(9);          /* 0 ちょうど */
+      r.proj_tEnd_formula = +(2 * pj.v0 * Math.sin(45 * DEG) / G).toFixed(9);
+      r.proj_tEnd_value = +Tp.toFixed(9);
+      var areaUp = 0, areaDn = 0, NN = 4000, kk;
+      for (kk = 0; kk < NN; kk++) {                                  /* vy を台形則で積分＝面積 */
+        var t1 = ttop * kk / NN, t2 = ttop * (kk + 1) / NN;
+        areaUp += (P.m22.sample(pj, t1).vy + P.m22.sample(pj, t2).vy) / 2 * (t2 - t1);
+        var t3 = ttop + (Tp - ttop) * kk / NN, t4 = ttop + (Tp - ttop) * (kk + 1) / NN;
+        areaDn += (P.m22.sample(pj, t3).vy + P.m22.sample(pj, t4).vy) / 2 * (t4 - t3);
+      }
+      r.proj_area_up = +areaUp.toFixed(4);                           /* ＝最高点の高さ */
+      r.proj_area_dn = +areaDn.toFixed(4);                           /* ＝−（最高点の高さ） */
+      r.proj_area_sum = +(areaUp + areaDn).toFixed(4);               /* ＝0 */
+      r.proj_yTop = +P.m22.yTop(pj).toFixed(4);
       r.proj_horiz_vx = +P.m22.sample({ v0: 15, th: 0, m: 1 }, 1.0).vx.toFixed(6);
       r.proj_horiz_y1s = +P.m22.sample({ v0: 15, th: 0, m: 1 }, 1.0).y.toFixed(6);
       /* ストロボ：2つの運動の高さの差はいつも 0 */
