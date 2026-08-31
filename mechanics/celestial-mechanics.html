@@ -3726,11 +3726,20 @@ function orbScene(W, H, o, pad) {
 
 /* 軌道の楕円を描く（焦点が原点） */
 function drawOrbitEllipse(ctx, vw, o, col, dash, lw) {
-  var i, pts = [];
+  var i, pts = [], lo = 1e9, hi = -1e9;
   for (i = 0; i <= 240; i++) {
     var E = TAU * i / 240;
-    pts.push([vw.X(o.a * (Math.cos(E) - o.e)), vw.Y(o.b * Math.sin(E))]);
+    var px = vw.X(o.a * (Math.cos(E) - o.e)), py = vw.Y(o.b * Math.sin(E));
+    if (!isFinite(px) || !isFinite(py)) return;
+    lo = Math.min(lo, px, py); hi = Math.max(hi, px, py);
+    pts.push([px, py]);
   }
+  /* ★安全弁★ 画面から桁ちがいにはみ出すだ円は描かない。
+     単位を取りちがえる（AU の図に km の値を渡すなど）と、
+     何十万 px のだ円を破線で描こうとして 1フレーム 200 ms かかり、
+     アニメーションが「ものすごくおそい」状態になる（実際にそうなった）。
+     ここで止めておけば、まちがえても画面が固まることはない。 */
+  if (hi - lo > 40000) return;
   ctx.save();
   ctx.strokeStyle = col || COL.orbit; ctx.lineWidth = lw || 1.6;
   if (dash && dash.length) ctx.setLineDash(dash);
@@ -5072,7 +5081,11 @@ DEFS['m1-5'] = {
 
     /* いちばん大きい軌道（めやす） */
     drawOrbitEllipse(ctx, vw, oMax, COL.grid, [4, 4], 1.2);
-    drawOrbitEllipse(ctx, vw, P.m15.boost(v.r0, 1.0, sys), COL.orbit, [3, 3], 1.2);
+    /* ★近点の距離は r0Of(v) で取ること★（v.r0 は「地球と人工衛星」用の km の変数）。
+       ここだけ v.r0 のままだったので、「太陽と惑星」を選ぶと
+       a = 7000 AU（本当は 0.8 AU）の巨大なだ円を破線で描こうとして、
+       1フレーム 200 ms かかっていた（＝アニメーションが6倍おそく見えた）。 */
+    drawOrbitEllipse(ctx, vw, P.m15.boost(r0Of(v), 1.0, sys), COL.orbit, [3, 3], 1.2);
     drawOrbitEllipse(ctx, vw, o, orbColor(K.kind(o.Em, o.e)), orbDash(K.kind(o.Em, o.e)), 2.2);
 
     /* 面積速度：これまでに掃いた扇形を、同じ Δt ごとに色をかえて塗る */
@@ -11170,10 +11183,7 @@ function m45Panel3(ctx, s, v, t, W, y0, y1, HALO) {
 
 /* sysKind … 1-1〜1-4 で共通の「描画対象」（'sun' ＝ 太陽と惑星／'earth' ＝ 地球と人工衛星）。
    ★ここ1か所だけが正★ 各シムの v.sys / v.sys14 は applySysKind() が書きうつす。 */
-var st = { cur: 'm1-1', sims: {}, bigFml: false, probKind: 'prob', sysKind: 'sun',
-  /* layoutGen … 「ページの形が変わった」しるし。1つ進めると、
-     renderFormulas が幅を測り直す（ふだんは測らない＝毎フレームの強制レイアウトを防ぐ）。 */
-  layoutGen: 0 };
+var st = { cur: 'm1-1', sims: {}, bigFml: false, probKind: 'prob', sysKind: 'sun' };
 
 /* 表示チェックボックスの名前と既定（力は最初オフ） */
 var VIS_LABEL = {
@@ -11244,7 +11254,32 @@ function drawLegend() {
 }
 
 /* ===== タブ ===== */
+/* ★同じモードの中でシムを移るだけなら、タブは作り直さない★
+   ボタンは全部で20個ほどあり、作り直すと DOM の作成＋レイアウトで
+   1回 25 ms ほどかかっていた。タブを押すたびにこれが走るので、
+   実機では「押すと固まる」と感じる（先生の指摘）。
+   移っただけのときは、濃く塗るボタンを付けかえるだけで済む。 */
 function buildTabs() {
+  var cur0 = DEFS[st.cur];
+  if (st._tabMode === cur0.mode) {
+    var stb0 = $('simtabs'), ids0 = null, i0;
+    MODES.forEach(function (M) { if (M.n === cur0.mode) ids0 = M.ids; });
+    if (ids0) {
+      var bs = stb0.children;
+      for (i0 = 0; i0 < bs.length && i0 < ids0.length; i0++) {
+        var id0 = ids0[i0], d0 = DEFS[id0];
+        if (!d0) continue;
+        setCls(bs[i0], (d0.read ? 'game' : (d0.intro ? 'intro' : '')) +
+          (id0 === st.cur ? ' on' : ''));
+      }
+      return;
+    }
+  }
+  st._tabMode = cur0.mode;
+  buildTabsFull();
+}
+
+function buildTabsFull() {
   var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[st.cur];
   mt.innerHTML = '';
   var curBtn = null, curMode = null;
@@ -11407,6 +11442,30 @@ function initProbOverlay() {
   });
 }
 
+/* ===== ★canvas は作り直さず、使いまわす★ =====
+   buildPanel() は #simhost をまるごと innerHTML で書きかえるので、
+   前は <canvas> も毎回すてて作り直していた。
+   ★あたらしい canvas に1回目を描くのは、使いまわしの 13 倍おそい★
+   （実測：新規 18.9 ms / 使いまわし 1.2 ms。1120×816 の裏バッファの確保と、
+   文字の下ごしらえが毎回やり直しになるため）。
+   1-4 は canvas が4枚（図＋グラフ3枚）あるので、タブを押すたびに 75 ms 以上——
+   実機では「押すと固まる」と感じる（先生の指摘）。
+   → HTML には入れものだけ書いておき（cvSlot）、innerHTML のあとで
+     覚えておいた canvas をそこへ差しこむ（fillCvSlots）。
+   ★差しこむだけなので、2次元コンテキストも裏バッファもそのまま生き残る★ */
+var CVPOOL = {};
+function cvSlot(id, cls) {
+  return '<div class="cvslot" data-cv="' + id + '" data-cvcls="' + (cls || '') + '"></div>';
+}
+function fillCvSlots() {
+  Array.prototype.forEach.call($('simhost').querySelectorAll('.cvslot'), function (slot) {
+    var id = slot.getAttribute('data-cv'), cv = CVPOOL[id];
+    if (!cv) { cv = document.createElement('canvas'); cv.id = id; CVPOOL[id] = cv; }
+    setCls(cv, slot.getAttribute('data-cvcls') || '');
+    slot.parentNode.replaceChild(cv, slot);
+  });
+}
+
 /* ===== パネルの組み立て ===== */
 function buildPanel() {
   var d = DEFS[st.cur], s = st.sims[st.cur];
@@ -11532,7 +11591,7 @@ function buildPanel() {
   var hasAct = !!(d.actions && d.actions.length);
   var hasRes = !!d.result;
   h.push('<div class="cvstage' + (hasRes ? ' hasres' : (hasAct ? '' : ' nobar')) + '">');
-  h.push('<canvas id="mainCv"' + (d.drag || d.drag3d ? ' class="dragcv"' : '') + '></canvas>');
+  h.push(cvSlot('mainCv', (d.drag || d.drag3d) ? 'dragcv' : ''));
   h.push('</div>');
   /* ④ オレンジの状況ボタン（1行におさめる） */
   if (hasAct) {
@@ -11606,7 +11665,7 @@ function buildPanel() {
       (s.open[g.key] ? '▼' : '▶') + '</span>' +
       mathHtml(typeof g.title === 'function' ? g.title(V(s), s) : g.title) + '</button>' +
       '<div class="gbody' + (s.open[g.key] ? '' : ' hide') + (st.bigFml ? ' bigf' : '') + '" id="gb_' + g.key + '">' +
-      '<div class="gleft">' + sw + '<canvas id="gc_' + g.key + '"></canvas></div>' +
+      '<div class="gleft">' + sw + cvSlot('gc_' + g.key) + '</div>' +
       /* 公式の欄がないグラフには、同じ幅の「見えない場所とり」を置く。
          こうしないと、公式のないグラフだけ横に広がって縦も高くなり、
          並んだグラフの大きさがそろわないため。 */
@@ -11619,7 +11678,7 @@ function buildPanel() {
      グラフより下・見るポイントより上に出したい図はここに書く。 */
   if (d.sideTop) {
     h.push('<div class="sidefig">' + (d.sideTop.title ? '<p class="sftitle">' + mathHtml(d.sideTop.title) + '</p>' : '') +
-      '<canvas id="sideTopCv"></canvas>' +
+      cvSlot('sideTopCv') +
       (d.sideTop.note ? '<p class="sfnote">' + mathHtml(d.sideTop.note) + '</p>' : '') + '</div>');
   }
 
@@ -11631,7 +11690,7 @@ function buildPanel() {
   /* 右列 ③c 2つ目の図（1-2 の楕円の定義・1-6 の地動説と天動説） */
   if (d.side) {
     h.push('<div class="sidefig">' + (d.side.title ? '<p class="sftitle">' + mathHtml(d.side.title) + '</p>' : '') +
-      '<canvas id="sideCv"></canvas>' +
+      cvSlot('sideCv') +
       (d.side.note ? '<p class="sfnote">' + mathHtml(d.side.note) + '</p>' : '') + '</div>');
   }
   if (d.sideNote) h.push('<p class="mini sidemini">' + mathHtml(d.sideNote) + '</p>');
@@ -11649,10 +11708,10 @@ function buildPanel() {
   if (d.info) h.push('<table class="read" id="readout"></table>');
   h.push('</div></div>');
   $('simhost').innerHTML = h.join('');
+  fillCvSlots();                      /* ★覚えておいた canvas を差しこむ（作り直さない）★ */
   /* 詳しい解説は、パネルを差しかえた「あと」に出す
      （中で renderActive() が走るので、先に呼ぶと運動方程式の欄が空になる） */
   renderLong(d);
-  st.layoutGen++;                     /* パネルを作り直したので、式の欄は幅を測り直す */
   if (d.legendBodies) renderBodyLegend(d, s);
 
   /* --- イベント --- */
@@ -11699,7 +11758,6 @@ function buildPanel() {
       s.open[k] = !s.open[k];
       $('gb_' + k).className = 'gbody' + (s.open[k] ? '' : ' hide') + (st.bigFml ? ' bigf' : '');
       b.querySelector('.tri').textContent = s.open[k] ? '▼' : '▶';
-      st.layoutGen++;
       if ($('bOpenAll')) { $('bOpenAll').innerHTML = openAllLabel(); renderMath($('bOpenAll')); }
       renderActive();
     });
@@ -11820,9 +11878,15 @@ function buildPanel() {
       flashEl(el && el.parentNode);
     });
   });
-  graphsOf(d, s).forEach(function (g) { attachGraphDrag($('gc_' + g.key), g.key); });
-  if (d.drag) attachSimDrag(d, s);
-  if (d.drag3d) attach3dDrag(d, s);
+  /* ★canvas を使いまわすので、ドラッグの登録は1枚につき1回だけ★
+     毎回つけると、タブを移るたびに聞き手が増えていってしまう。
+     中では DEFS[st.cur] / st.sims[st.cur] を見るので、シムが変わっても正しく動く。 */
+  graphsOf(d, s).forEach(function (g) {
+    var gcv = $('gc_' + g.key);
+    if (gcv && !gcv._dragOn) { gcv._dragOn = true; attachGraphDrag(gcv, g.key); }
+  });
+  var mcv = $('mainCv');
+  if (mcv && !mcv._dragOn) { mcv._dragOn = true; attachSimDrag(); attach3dDrag(); }
 
   setPlayLabel();
   $('bSlow').className = s.slow ? '' : 'sub';
@@ -11980,7 +12044,6 @@ function toggleBigFml() {
   });
   var bt = $('bBigFml');
   if (bt) { bt.textContent = bigFmlLabel(); bt.className = st.bigFml ? '' : 'sub'; }
-  st.layoutGen++;
   refitFormulas();
 }
 
@@ -11995,7 +12058,6 @@ function toggleAllGraphs() {
     if (head) head.querySelector('.tri').textContent = s.open[g.key] ? '▼' : '▶';
   });
   if ($('bOpenAll')) { $('bOpenAll').innerHTML = openAllLabel(); renderMath($('bOpenAll')); }
-  st.layoutGen++;
   renderActive();
 }
 
@@ -12067,63 +12129,81 @@ function attachGraphDrag(cv, key) {
 /* ===== 3次元の図をドラッグで見回す（2-1 のすりばち）=====
    姉妹ページ（basics-of-motion-on-plane）の 4-3 と同じ操作にそろえてある。
    ドラッグで向きを変え、ホイールで拡大縮小。仰角 el は 0〜88°（0 が真横）。 */
-function attach3dDrag(d, s) {
+/* ★canvas は使いまわすので、登録は1回だけ★
+   そのかわり、中では「いまのシム」を毎回引きなおすこと（引数で受けとらない）。
+   いまのシムにその機能（drag3d / drag）がなければ、何もしないで返る。 */
+function attach3dDrag() {
   var cv = $('mainCv'), last = null;
-  if (!cv || !s.cam) return;
+  if (!cv) return;
   /* 1枚の canvas を上下2つの絵に分けて使っているシム（2-1）では、
      ★下（3次元の図）だけをドラッグで回す★。上（軌道の絵）は d.drag にゆずる。
      d.drag3dFrom に「この y より下だけ」を書く（canvas の論理座標）。 */
-  function inZone(ev) {
-    if (d.drag3dFrom === undefined) return true;
+  function on3d() {
+    var d = DEFS[st.cur], s = st.sims[st.cur];
+    return (d && d.drag3d && s && s.cam) ? { d: d, s: s } : null;
+  }
+  function inZone(ev, c) {
+    if (c.d.drag3dFrom === undefined) return true;
     var r = cv.getBoundingClientRect();
-    var ly = (ev.clientY - r.top) / r.height * (cv._ch || chOf(d, s));
-    return ly >= d.drag3dFrom;
+    var ly = (ev.clientY - r.top) / r.height * (cv._ch || chOf(c.d, c.s));
+    return ly >= c.d.drag3dFrom;
   }
   cv.addEventListener('pointerdown', function (ev) {
-    if (!inZone(ev)) return;
+    var c = on3d();
+    if (!c || !inZone(ev, c)) return;
     last = { x: ev.clientX, y: ev.clientY };
     cv.setPointerCapture(ev.pointerId); ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
-    if (!last) return;
+    var c = on3d();
+    if (!c || !last) return;
     var dx = ev.clientX - last.x, dy = ev.clientY - last.y;
     last = { x: ev.clientX, y: ev.clientY };
-    s.cam.az = (s.cam.az - dx * 0.32 + 540) % 360 - 180;
-    s.cam.el = clamp(s.cam.el - dy * 0.26, 0, 90);   /* 90° ＝ 完全に真上 */
+    c.s.cam.az = (c.s.cam.az - dx * 0.32 + 540) % 360 - 180;
+    c.s.cam.el = clamp(c.s.cam.el - dy * 0.26, 0, 90);   /* 90° ＝ 完全に真上 */
     renderActive(); ev.preventDefault();
   });
   function end() { last = null; }
   cv.addEventListener('pointerup', end);
   cv.addEventListener('pointercancel', end);
   cv.addEventListener('wheel', function (ev) {
-    if (!inZone(ev)) return;
-    s.cam.zoom = clamp(s.cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.5, 3.0);
+    var c = on3d();
+    if (!c || !inZone(ev, c)) return;
+    c.s.cam.zoom = clamp(c.s.cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.5, 3.0);
     renderActive(); ev.preventDefault();
   }, { passive: false });
 }
 
-function attachSimDrag(d, s) {
+function attachSimDrag() {
   var cv = $('mainCv'), dragging = false;
-  function toWorld(ev) {
+  if (!cv) return;
+  function onDrag() {
+    var d = DEFS[st.cur], s = st.sims[st.cur];
+    return (d && d.drag && s) ? { d: d, s: s } : null;
+  }
+  function toWorld(ev, c) {
     var r = cv.getBoundingClientRect();
-    var lx = (ev.clientX - r.left) / r.width * d.cw;
-    var ly = (ev.clientY - r.top) / r.height * (cv._ch || chOf(d, s));
-    if (!s.view) return { x: 0, y: 0, lx: lx, ly: ly };
-    return { x: s.view.invX(lx), y: s.view.invY(ly), lx: lx, ly: ly };
+    var lx = (ev.clientX - r.left) / r.width * c.d.cw;
+    var ly = (ev.clientY - r.top) / r.height * (cv._ch || chOf(c.d, c.s));
+    if (!c.s.view) return { x: 0, y: 0, lx: lx, ly: ly };
+    return { x: c.s.view.invX(lx), y: c.s.view.invY(ly), lx: lx, ly: ly };
   }
   cv.addEventListener('pointerdown', function (ev) {
-    var w = toWorld(ev);
-    if (d.dragDown && !d.dragDown(s, w.x, w.y, w.lx, w.ly)) return;
+    var c = onDrag();
+    if (!c) return;
+    var w = toWorld(ev, c);
+    if (c.d.dragDown && !c.d.dragDown(c.s, w.x, w.y, w.lx, w.ly)) return;
     dragging = true; cv.setPointerCapture(ev.pointerId);
-    d.drag(s, w.x, w.y, w.lx, w.ly);
-    if (!d.dragKeepT) resetSim();
+    c.d.drag(c.s, w.x, w.y, w.lx, w.ly);
+    if (!c.d.dragKeepT) resetSim();
     syncVarVals(); renderActive(); ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
-    if (!dragging) return;
-    var w = toWorld(ev);
-    d.drag(s, w.x, w.y, w.lx, w.ly);
-    if (!d.dragKeepT) resetSim();
+    var c = onDrag();
+    if (!c || !dragging) return;
+    var w = toWorld(ev, c);
+    c.d.drag(c.s, w.x, w.y, w.lx, w.ly);
+    if (!c.d.dragKeepT) resetSim();
     syncVarVals(); renderActive(); ev.preventDefault();
   });
   function end() { dragging = false; }
@@ -12258,6 +12338,9 @@ function renderGraphs(d, s, T, t) {
   });
 }
 
+/* 式の欄（3段）の組みあがりを、式の並びごとに覚えておく入れもの */
+var FMLC = {}, FMLC_N = 0;
+
 /* 各グラフの右に出す3段の式 */
 function renderFormulas(d, s) {
   graphsOf(d, s).forEach(function (g) {
@@ -12266,41 +12349,65 @@ function renderFormulas(d, s) {
     if (!box) return;
     var arr = g.fml(V(s), s);
     var key = arr.join('|');
-    /* ★★毎フレーム clientWidth を読んではいけない★★
-       renderActive() は「文字を書きかえる → 幅を読む」を1秒に60回くり返す。
-       書いたあとに幅を読むと、そのたびにブラウザが<b>ページ全体のレイアウトを計算し直す</b>
-       （強制同期レイアウト）。グラフを何枚も開いた 1-4 では、これだけで
-       1フレーム 2〜3 ms かかり、カクカクの原因になっていた（先生の指摘）。
-       → 幅は「作り直したとき・窓の大きさが変わったとき」だけ読む（st.layoutGen）。 */
-    if (box._gen !== st.layoutGen) { box._bw = box.clientWidth; box._gen = st.layoutGen; }
-    var bw = box._bw;
+    /* ★★ここで幅（clientWidth）を読んではいけない★★
+       すぐ前で buildPanel() が #simhost をまるごと書きかえているので、
+       いま幅を読むと<b>ページ全体のレイアウトを計算し直す</b>ことになる
+       （強制同期レイアウト）。グラフ3枚で 30 ms——タブを押すと固まって見える原因。
+       幅が要るのは「はみ出した式を縮める」ときだけなので、
+       それは fitFormula() が つぎのフレームに（レイアウトが済んでから）読む。 */
     if (box._key === key) return;
     box._key = key;
-    var names = ['公式', '代入', '数値'];
-    box.innerHTML = arr.map(function (x, i) {
-      return '<div class="fl f' + (i + 1) + '"><span class="fk">' + (names[i] || '') + '</span><span class="fv"><span class="tex">' + escTex(x) + '</span></span></div>';
-    }).join('');
-    renderMath(box);
-    fitFormula(box);
-    requestAnimationFrame(function () { fitFormula(box); });
+    /* ★箱まるごとの HTML を覚えておく★
+       タブを移ると <div id="gf_…"> は作り直されるので、前は毎回
+       「3行ぶんの KaTeX を組む → innerHTML を9回書く」をやっていた（1枚 10 ms 以上）。
+       式の並びが同じなら組みあがりも同じなので、文字列ごと覚えて1回で入れる。 */
+    var html = FMLC[key];
+    if (html === undefined) {
+      if (FMLC_N > 400) { FMLC = {}; FMLC_N = 0; }
+      var names = ['公式', '代入', '数値'];
+      html = arr.map(function (x, i) {
+        return '<div class="fl f' + (i + 1) + '"><span class="fk">' + (names[i] || '') +
+          '</span><span class="fv"><span class="tex" data-done="1">' + texHtml(x) +
+          '</span></span></div>';
+      }).join('');
+      FMLC[key] = html; FMLC_N++;
+    }
+    box.innerHTML = html;
+    /* ★ここで fitFormula を呼ばない★ 直前に innerHTML を書きかえたばかりなので、
+       いま幅を読むと必ず強制レイアウトになる。つぎのフレーム（ブラウザが自然に
+       レイアウトし終わったあと）に1回だけ縮める。 */
+    if (!box._fitQ) {
+      box._fitQ = true;
+      requestAnimationFrame(function () { box._fitQ = false; fitFormula(box); });
+    }
   });
 }
 
 /* 式がはみ出すときは、切らずに縮めて全部見せる */
+/* 式がはみ出すときは、切らずに縮めて全部見せる。
+   ★★「幅を読む」と「縮める」を、はっきり2つに分けること★★
+   前は1行ごとに 読む→書く→読む→書く…としていたので、
+   式の行の数だけブラウザがレイアウトを計算し直していた（強制同期レイアウト）。
+   グラフ3枚＝9行なら9回。タブを移るたびにこれが走るので、実機では固まって見える。
+   → ①ぜんぶ読む ②ぜんぶ書く、の2段にすると、レイアウトは1回で済む。 */
 function fitFormula(box) {
-  Array.prototype.forEach.call(box.querySelectorAll('.fv'), function (fv) {
-    var inner = fv.firstElementChild;
-    if (!inner) return;
+  var list = box.querySelectorAll('.fv'), i, jobs = [];
+  /* ── ① 読むだけ（ここでは1文字も書かない） ── */
+  for (i = 0; i < list.length; i++) {
+    var fv = list[i], inner = fv.firstElementChild;
+    if (!inner) continue;
     var k = inner._k || 1;
     var w = inner.getBoundingClientRect().width / k;
     var avail = fv.clientWidth;
-    if (avail < 20 || w < 1) return;
+    if (avail < 20 || w < 1) continue;
     var nk = (w > avail) ? Math.max(0.5, (avail - 3) / w) : 1;
-    if (Math.abs(nk - k) > 0.004) {
-      inner._k = nk;
-      inner.style.transform = nk < 1 ? 'scale(' + nk.toFixed(3) + ')' : '';
-    }
-  });
+    if (Math.abs(nk - k) > 0.004) jobs.push({ el: inner, k: nk });
+  }
+  /* ── ② 書くだけ ── */
+  for (i = 0; i < jobs.length; i++) {
+    jobs[i].el._k = jobs[i].k;
+    jobs[i].el.style.transform = jobs[i].k < 1 ? 'scale(' + jobs[i].k.toFixed(3) + ')' : '';
+  }
 }
 function refitFormulas() {
   Array.prototype.forEach.call(document.querySelectorAll('.gform'), function (b) { b._key = null; });
@@ -12529,16 +12636,35 @@ function renderActive() {
   }
 }
 
-/* .tex の中身を KaTeX で組む（1度だけ） */
+/* ===== .tex の中身を KaTeX で組む =====
+   ★★組みあがった HTML を式ごとに覚えておいて、2回目からは使い回す★★
+   タブを移るたびに `buildPanel()` が #simhost を作り直すので、
+   1-4 のように式が 67 個ある画面では、切りかえのたびに 67 個組み直していた。
+   KaTeX は1個 0.5〜1 ms かかるので、これだけで切りかえに数十〜数百 ms。
+   実機では「タブを押すと固まる」と感じる（先生の指摘）。
+   同じ文字列なら組みあがりも同じなので、覚えておけば安全に使い回せる。 */
+var KTX = {}, KTX_N = 0;
+/* 1つの式を組んだ HTML を返す（2回目からは覚えたものを返すだけ） */
+function texHtml(src) {
+  var got = KTX[src];
+  if (got === undefined) {
+    if (!window.katex) return escTex(src);
+    /* 数値の入った式（グラフの「数値」の行など）は種類がふえつづけるので、
+       ふえすぎたら覚えたものを捨てる。上限は多めにとってある。 */
+    if (KTX_N > 900) { KTX = {}; KTX_N = 0; }
+    var tmp = document.createElement('span');
+    try { window.katex.render(src, tmp, { throwOnError: false }); got = tmp.innerHTML; }
+    catch (e) { got = null; }
+    KTX[src] = got; KTX_N++;
+  }
+  return (got === null) ? escTex(src) : got;
+}
 function renderMath(root) {
   if (!root || !window.katex) return;
   Array.prototype.forEach.call(root.querySelectorAll('.tex'), function (el) {
     if (el.getAttribute('data-done')) return;
     el.setAttribute('data-done', '1');
-    var src = el.textContent;
-    el.textContent = '';
-    try { window.katex.render(src, el, { throwOnError: false }); }
-    catch (e) { el.textContent = src; }
+    el.innerHTML = texHtml(el.textContent);
   });
 }
 
@@ -12586,7 +12712,14 @@ var lastTs = null;
 function tick(ts) {
   var s = st.sims[st.cur], d = DEFS[st.cur];
   if (lastTs === null) lastTs = ts;
-  var dt = Math.min(0.033, (ts - lastTs) / 1000);
+  /* ★時間の進みは「実時間そのもの」を使う★
+     前は 0.033 秒（＝30 fps ぶん）で頭を打たせていたので、
+     絵が重くて 15 fps しか出ない画面ではアニメーションが半分の速さになり、
+     5 fps なら6倍おそくなってしまう（実際にそう見えていた）。
+     ★このページは軌道を「閉じた式」で出しているので、1歩が大きくても計算はくるわない★
+     （コマが飛んで見えるだけ）。だから頭打ちは「タブを裏にしていた」ときだけに効く
+     0.25 秒にしておく。こうすると、おそい機械でも<b>速さは正しいまま</b>になる。 */
+  var dt = clamp((ts - lastTs) / 1000, 0, 0.25);
   lastTs = ts;
   if (s && s.playing) {
     var v = V(s);
@@ -12640,10 +12773,7 @@ function tick(ts) {
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(function () { refitFormulas(); placeModeTip(); });
   }
-  window.addEventListener('resize', function () {
-    st.layoutGen++;            /* 窓の大きさが変わったら、式の欄は幅を測り直す */
-    refitFormulas(); placeModeTip();
-  });
+  window.addEventListener('resize', function () { refitFormulas(); placeModeTip(); });
   requestAnimationFrame(tick);
 
   /* ===== 自動テスト用のフック ===== */
