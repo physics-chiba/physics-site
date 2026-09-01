@@ -306,7 +306,16 @@ table.read#readout td.v{flex:1 1 auto;text-align:right}
 .gbody{padding:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;
   border-top:1px solid var(--line)}
 .gbody.hide{display:none}
-.gbody .gleft{flex:1 1 265px;min-width:225px;max-width:390px}
+.gbody .gleft{flex:1 1 265px;min-width:225px;max-width:390px;position:relative}
+/* ★グラフの拡大・縮小ボタン★（第9回）グラフのすぐ上・右よせに置く
+   （グラフの中に重ねると、右上のはんれいがかくれてしまう） */
+.gzoom{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin:0 0 3px}
+.gzoom .gzl{flex:1 1 auto;font-size:.67rem;color:var(--sub);text-align:left}
+.gzoom button{font-family:inherit;font-size:.86rem;font-weight:700;line-height:1;
+  min-width:27px;height:25px;padding:0 7px;cursor:pointer;
+  background:#fff;border:1.5px solid var(--line);border-radius:7px;color:var(--sub)}
+.gzoom button:hover{background:#eef4fa;border-color:var(--accent);color:var(--accent-d)}
+.gzoom .gzr{font-size:.72rem}
 .gbody canvas{border:0;touch-action:none;cursor:crosshair;max-width:390px}
 .gform{flex:1 1 215px;min-width:185px;background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r-m);padding:9px 11px;font-size:.84rem;overflow:hidden}
@@ -533,18 +542,14 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 .eqzone .fv,.wkpanel .fv{flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;font-size:1.02rem}
 .eqzone .fv > span,.wkpanel .fv > span{display:inline-block;transform-origin:left center}
 
-/* ★成り立たない式には、記号の行に赤いバツ印を重ねる★（先生の指示・第8回）
-   「○ 成り立つ／✕ 成り立たない」のバッジだけだと見落とすので、式そのものを消す。 */
-.eqsec.ng .enqline.symline{position:relative;overflow:hidden}   /* はみ出す斜め線を行の中に切る */
-.eqsec.ng .enqline.symline::before,
-.eqsec.ng .enqline.symline::after{content:'';position:absolute;left:38px;right:4px;top:50%;
-  border-top:2.6px solid rgba(192,57,43,.8);pointer-events:none}
-.eqsec.ng .enqline.symline::before{transform:rotate(7deg)}
-.eqsec.ng .enqline.symline::after{transform:rotate(-7deg)}
-@media (max-width:520px){
-  .eqsec.ng .enqline.symline::before{transform:rotate(10deg)}
-  .eqsec.ng .enqline.symline::after{transform:rotate(-10deg)}
-}
+/* ★成り立たない式には、赤いバツ印を重ねる★（先生の指示・第8回／第9回に直した）
+   「○ 成り立つ／✕ 成り立たない」のバッジだけだと見落とすので、式そのものを消す。
+   ★第9回★ 行の上に斜めの線を2本ひくやり方だと、行からはみ出した所が切れてしまい、
+   $(E = 一定)$ のあたりにバツがかからなかった。式の箱そのものの背景に
+   バツの SVG を敷いて、$K_A+U_A=K_B+U_B\ (E=一定)$ の全体にかかるようにした。 */
+.eqsec.ng .enqline.symline .fv > span{
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40' preserveAspectRatio='none'%3E%3Cpath d='M0 0L100 40M0 40L100 0' stroke='%23c0392b' stroke-opacity='0.78' stroke-width='3'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:100% 100%;background-position:center}
 
 /* くらべる2点を選ぶボタン（点が3つ以上のシム） */
 .eqpairs{display:inline-flex;gap:5px;margin-right:4px;flex-wrap:wrap;vertical-align:middle}
@@ -1326,6 +1331,16 @@ P.m110 = {
   vB: function (v) { return Math.sqrt(v.v0 * v.v0 + 2 * G * v.h); },
   hC: function (v) { return P.m110.R * (1 - Math.cos(P.m110.PHI)); },
   vC: function (v) { return Math.sqrt(v.v0 * v.v0 + 2 * G * (v.h - P.m110.hC(v))); },
+  /* 円のくぼみを通っているときの垂直抗力 [N]（面から外向き＝円の中心向きを正）。
+     まん中向きの運動方程式：N − mg cos θ = m v² / R  →  N = m(g cos θ + v²/R)。
+     ★くぼみ（凹の面）だから、|θ| < 90° では cos θ > 0 で、いつでも N > 0★
+     ＝「面から離れる（N ≤ 0）」ことは起こらない。だから飛び出す所は
+     「面がそこで切れている」C（θ = 60°）で決まる。90_boot.js の check() で見張る。
+     壁（鉛直）の上は、まっすぐ落ちるだけなので N = 0。 */
+  Nof: function (v, q) {
+    if (!q || q.wall || q.th === null || q.th === undefined || !q.on) return 0;
+    return v.m * (G * Math.cos(q.th) + q.v * q.v / P.m110.R);
+  },
   hD: function (v) {
     var vc = P.m110.vC(v), s = Math.sin(P.m110.PHI);
     return P.m110.hC(v) + vc * vc * s * s / (2 * G);
@@ -2318,6 +2333,55 @@ function handUnder(ctx, x, y, sc, flip) {
 
 /* 吹き出し。opt.up＝true でしっぽを上向きにする（指したいものが吹き出しより上にあるとき）。
    (x, y) は「しっぽの先」＝指したい場所。 */
+/* ★見どころの数値を1つだけ大きく出す小さなパネル★（先生の指示・第11回）
+   1-12（手をはなす）と 2-3（手でゆっくり下ろす）で
+   「つりあいの位置での速さ」を、生徒が一目で見くらべられるようにするために作った。
+   (x, y) は箱の左上。title＝小さい見出し、value＝大きい数値、sub＝そのあとの短い言葉。
+   吹きだしと同じように、場所を _txtBox に記録して他の文字が避けられるようにする。 */
+function factPanel(ctx, x, y, title, value, sub, opt) {
+  opt = opt || {};
+  var pad = 11, tSz = 11.5, vSz = 17, sSz = 12;
+  ctx.save();
+  ctx.font = tSz + 'px ' + FONT;
+  var wT = ctx.measureText(title).width;
+  ctx.font = 'bold ' + vSz + 'px ' + FONT;
+  var wV = ctx.measureText(value).width;
+  ctx.font = sSz + 'px ' + FONT;
+  var wS = sub ? ctx.measureText(sub).width : 0;
+  var w = Math.max(wT, wV + (sub ? wS + 9 : 0)) + pad * 2 + 6;
+  var h = 54;
+  if (CVW > 0) x = clamp(x, 3, Math.max(3, CVW - w - 3));
+  /* 箱 */
+  ctx.fillStyle = opt.bg || '#fff8e9';
+  ctx.strokeStyle = opt.border || COL.acc;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, 8);
+  else ctx.rect(x, y, w, h);
+  ctx.fill(); ctx.stroke();
+  /* 左のたての帯（見どころの色） */
+  ctx.fillStyle = opt.border || COL.acc;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x + 4, y + 6, 4, h - 12, 2);
+  else ctx.rect(x + 4, y + 6, 4, h - 12);
+  ctx.fill();
+  ctx.restore();
+  label(ctx, title, x + pad + 6, y + 15,
+    { size: tSz, color: opt.tcolor || '#8a5000', align: 'left', halo: false });
+  label(ctx, value, x + pad + 6, y + 37,
+    { size: vSz, bold: true, color: opt.vcolor || '#28323d', align: 'left', halo: false });
+  if (sub) {
+    label(ctx, sub, x + pad + 6 + wV + 9, y + 39,
+      { size: sSz, color: opt.scolor || '#6b7683', align: 'left', halo: false });
+  }
+  noteBox(_txtBox, x, y, w, h);
+  noteObj(x, y, w, h);
+  /* ★__labelLog には箱を入れない★ 中の3つの文字は label() が自分で記録するので、
+     箱まで入れると「箱と、その中の文字が重なっている」と毎回さわがれてしまう
+     （sweep.py が 8 件出した。第11回）。 */
+  return { w: w, h: h };
+}
+
 function bubble(ctx, text, x, y, opt) {
   opt = opt || {};
   var up = !!opt.up;
@@ -3488,11 +3552,23 @@ var _ebRange = { key: null, lo: 0, hi: 1 };
 function energyRange(d, s) {
   var v = V(s), key = st.cur + '|' + JSON.stringify(v);
   if (_ebRange.key === key) return _ebRange;
-  var T = d.tEnd(v), lo = 0, hi = 1e-6, i;
+  /* ★目もりは「棒がのびる長さ」に合わせる★（第10回に直したバグ）
+     energyBar は【正のものを 0 から上へ、負のものを 0 から下へ】積む（第6回）。
+     だから棒が上へのびる長さは「正のものの合計」、下へのびる長さは
+     「負のものの合計」であって、K + U_g + U_k のような“途中までの和”ではない。
+     前は途中までの和で目もりを決めていたので、U_g が負になるシム
+     （1-12 鉛直ばね・2-3 手でゆっくり下ろす）で U_k の帯が枠の上にはみ出し、
+     「K は変わっていないのに棒が伸びていく」ように見えていた（先生の指摘）。 */
+  var T = d.tEnd(v), lo = 0, hi = 1e-6, i, j, e3;
   for (i = 0; i <= 40; i++) {
-    var q = d.sample(v, T * i / 40);
-    lo = Math.min(lo, q.E, q.K + q.Ug, q.K + q.Ug + q.Us);
-    hi = Math.max(hi, q.E, q.K, q.K + q.Ug, q.K + q.Ug + q.Us);
+    var q = d.sample(v, T * i / 40), pos = 0, neg = 0;
+    e3 = [q.K, q.Ug, q.Us];
+    for (j = 0; j < 3; j++) {
+      if (e3[j] > 0) pos += e3[j];
+      else if (e3[j] < 0) neg += e3[j];
+    }
+    lo = Math.min(lo, q.E, neg);
+    hi = Math.max(hi, q.E, pos);
   }
   var E0 = d.sample(v, 0).E;
   lo = Math.min(lo, E0); hi = Math.max(hi, E0);
@@ -3770,7 +3846,7 @@ function wrapLabel(ctx, text, x, y, w, size, lh, color) {
 
 /* ★1-3（直線の滑台）・1-4（昇る）・1-5（曲線の滑台）は、同じ h なら同じ高さに見せる★
    （縮尺の上限をそろえる。ばらばらだと「同じ 3 m なのに曲線のほうが高い」と見える） */
-var SC_SLIDE = 34;
+var SC_SLIDE = 70;   /* 第9回：図が小さすぎたので上限を上げた（実際は横はばで決まる） */
 
 /* ★地面の下にあける「吹きだしの帯」の高さ [px]★（先生の指示・第6回）
    吹きだしを A → B → C の順にならべるために、地面より下も使ってよいことにした。
@@ -3783,7 +3859,7 @@ var PTBAND = 66;
 var SC_COAST = 15.5;   /* 第6回：図が左に寄って右があいていたので大きくした */
 
 /* 1-10 水平ばねにぶつかる／1-11 水平ばねと滑台 の縮尺 [px/m]。どちらも固定。 */
-var SC_HIT = 140;
+var SC_HIT = 215;   /* 第9回：右があいていたので大きくした（壁の右はしが 578 px で、地面の右はし 624 px に入る） */
 var SC_SPSL = 84;
 
 /* ============ 1-1 摩擦のない水平面 ============ */
@@ -4047,7 +4123,10 @@ DEFS['m1-3'] = {
     var d = DEFS['m1-3'], v = V(s), m = d.sample(v, t);
     var th = v.th * DEG, gy = H - 52;
     var run = v.h / Math.tan(th);
-    var sc = Math.min(SC_SLIDE, (W - 285) / Math.max(run, 0.4), (H - 118) / v.h);
+    /* ★縮尺は θ を変えても動かさない★（見どころは「下端の速さは θ によらない」）
+       いちばん寝かせた坂（θ = 15°）でも収まる大きさにしておく。 */
+    var runMax = v.h / Math.tan(15 * DEG);
+    var sc = Math.min(SC_SLIDE, (W - 210) / Math.max(runMax, 0.4), (H - 118) / v.h);
     /* ★急な斜面（run が小さい）だと左すみに固まるので、横の中央に置く★ */
     var x0 = Math.max(92, 40 + ((W - 150) - run * sc) / 2);
     var TX = x0, TY = gy - v.h * sc, BX = x0 + run * sc, BY = gy;
@@ -4167,7 +4246,7 @@ DEFS['m1-4'] = {
     '仕事をするのは重力だけ（垂直抗力は運動の向きに垂直）なので力学的エネルギーは保存され、' +
     '$\\tfrac12mv_0^{\\,2}=mgh$ から <b>上がる高さは $h=\\dfrac{v_0^{\\,2}}{2g}$</b>。' +
     '<b>斜面の角 $\\theta$ を変えても、上がる高さは変わりません</b>（斜面にそった距離は変わります）。',
-  cw: 520, ch: 290,
+  cw: 620, ch: 290,        /* 第9回：横をもっと使う */
   vis: ['F', 'Fc', 'V', 'A'],
   mainVars: ['v0', 'th'],
   mainVarFocus: 'th',
@@ -4202,10 +4281,14 @@ DEFS['m1-4'] = {
   draw: function (ctx, s, t, W, H) {
     var d = DEFS['m1-4'], v = V(s), m = d.sample(v, t);
     var th = v.th * DEG, gy = H - 62;
-    /* ★縮尺は「上がれる高さ（θ によらない）」と「斜面にそった距離」の両方が入るように決める★ */
+    /* ★縮尺は θ を変えても動かさない★（この図の見どころは「上がる高さは θ によらない」）
+       いちばん寝かせた坂（θ = 15°）でも横に収まる大きさにしておけば、
+       θ をどう変えても縮尺は同じままで、高さをそのまま見くらべられる。
+       ★第9回：右があきすぎていたので、余白を 250 → 176 px にして図を大きくした★ */
     var hTop = P.slopeUp.hTop(v), L = P.slopeUp.len(v);
     var run = L * Math.cos(th);
-    var sc = Math.min(SC_SLIDE, (W - 250) / Math.max(run, 0.4), (gy - 58) / Math.max(hTop, 0.3));
+    var runMax = v.v0 * v.v0 / (2 * G * Math.tan(15 * DEG));   /* θ が最小のときの横はば */
+    var sc = Math.min(SC_SLIDE, (W - 176) / Math.max(runMax, 0.4), (gy - 58) / Math.max(hTop, 0.3));
     var x0 = 96;
     var BX = x0, BY = gy, TX = x0 + run * sc, TY = gy - hTop * sc;
     var ux = Math.cos(th), uy = -Math.sin(th);       /* 斜面を昇る向き（画面） */
@@ -4650,17 +4733,18 @@ DEFS['m1-7'] = {
   mainVarFocus: 'th',
   vars: [
     { k: 'v0', label: 'はじめの速さ $v_0$', unit: ' m/s', min: 14, max: 16, step: 0.5, dec: 1, def: 14.0 },
-    { k: 'th', label: '斜面の角 $\\theta$', unit: '°', min: 35, max: 60, step: 5, dec: 0, def: 40 },
+    { k: 'th', label: '斜面の角 $\\theta$', unit: '°', min: 35, max: 60, step: 5, dec: 0, def: 35 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 100, max: 500, step: 100, dec: 0, def: 200 }
   ],
+  /* 第9回：はじめの斜面の角を 35° にした（ゆるい斜面のほうが図が広く使える） */
   actions: [
-    { label: '斜面をゆるくする（θ＝35°）', fn: function (s) { s.v.th = 35; },
-      is: function (v) { return v.th === 35; },
-      next: function (s) { return s._played && s.v.th !== 35; } },
     { label: '斜面を急にする（θ＝60°）', fn: function (s) { s.v.th = 60; },
-      is: function (v) { return v.th === 60; } },
+      is: function (v) { return v.th === 60; },
+      next: function (s) { return s._played && s.v.th !== 60; } },
     { label: '速くする（v₀＝16 m/s）', fn: function (s) { s.v.v0 = 16; },
-      is: function (v) { return Math.abs(v.v0 - 16) < 1e-9; } }
+      is: function (v) { return Math.abs(v.v0 - 16) < 1e-9; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.th = 35; s.v.v0 = 14; },
+      is: function (v) { return v.th === 35 && Math.abs(v.v0 - 14) < 1e-9; } }
   ],
   cons: true,
   forces: ['g', 'N'],
@@ -4732,6 +4816,8 @@ DEFS['m1-7'] = {
     var nx = -Math.sin(carAng), ny = -Math.cos(carAng);
     var cx = X(m.x) + nx * chh / 2, cy = Y(m.y) + ny * chh / 2;
     coasterCar(ctx, cx, cy, carAng, kz);
+    /* ★スタートはデコピン★（第9回・先生の指示）走ってきたのではなく、はじいて動き出す */
+    flickStart(ctx, t, v.v0, X(0) - cw2 / 2 - 44, Y(0) - chh / 2, 0, X(0) - 26, gy - 150);
     if (!endOn(d, s, t)) heightDim(ctx, 20, Y(m.y), gy, 'h = ' + fmt(m.h, 2) + ' m', cx, true);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
@@ -4861,15 +4947,18 @@ DEFS['m1-8'] = {
   draw: function (ctx, s, t, W, H) {
     var d = DEFS['m1-8'], v = V(s), m = d.sample(v, t);
     var T = P.m17.tEnd(v), xEnd = P.m17.vx(v) * T, yTop = P.m17.yTop(v);
-    var sc = Math.min(30, (W - 190) / Math.max(xEnd, 1), (H - 116) / Math.max(yTop, 1));
+    /* 第9回：右の余白が大きかったので上限を上げた。横は「台の左はし x0 = 118」から
+       「地面の右はし W - 96」までに着地点が入るように、W - 232 で見る。 */
+    var sc = Math.min(46, (W - 232) / Math.max(xEnd, 1), (H - 116) / Math.max(yTop, 1));
     var gy = H - 46 - PTBAND, x0 = 118;   /* 第6回：左に高さの寸法線を2本置くので、台を右へ */
     function X(x) { return x0 + x * sc; }
     function Y(y) { return gy - y * sc; }
     var i;
 
     ground(ctx, 20, W - 96, gy);
-    /* ★吹きだしの帯（地面の下）に文字を置かない★ 基準面の文字は線の上に出す（第6回） */
-    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, false);
+    /* 第9回：図を大きくして着地点が右はしに来たので、基準面の文字は左の下に置く
+       （右上のままだと、着地の玉・v の矢印とぶつかる） */
+    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', false, true);
     /* 投げ出す台 */
     if (v.h > 0.05) {
       ctx.save();
@@ -4912,8 +5001,10 @@ DEFS['m1-8'] = {
     angArc(ctx, X(0), Y(v.h), 30, av, 0, 'θ = ' + fmt(v.th, 0) + '°', av / 2, 60);
 
     /* ★スタートはデコピン★（手をはなすのではなく、はじいて投げ出す） */
+    /* 第9回：図を大きくしたので、θ が大きいと吹きだしが「最高点 B」の印とぶつかる。
+       吹きだしだけ右へ寄せる（手の位置はそのまま）。 */
     flickStart(ctx, t, v.v0, X(0) - Math.cos(av) * 24, Y(v.h) - Math.sin(av) * 24, av,
-      X(0) + 66, Y(v.h) - 70);
+      X(0) + 120, Y(v.h) - 70);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 34 / mg;
@@ -5036,7 +5127,10 @@ DEFS['m1-9'] = {
     var cx = X(m.x), cy = gy - bh / 2;
     spring(ctx, wallX, cy, cx - bw / 2, cy, { coils: 10, r: 11, color: COL.hand, lw: 2 });
     ptMark(ctx, 'A', X(v.x0) + bw / 2 + 13, gy - bh / 2);
-    ptMark(ctx, 'B', natX - bw / 2 - 13, gy - bh / 2);
+    /* ★B は「自然長」の点線の上★（第9回・先生の指示）
+       物体とは重ならない高さ（物体の上 30 px ほど）に置く。 */
+    var bMarkY = gy - bh - 16;
+    ptMark(ctx, 'B', natX, bMarkY);
     blockShape(ctx, cx, cy, 0, bw, bh, '#e8eef5');
     /* 伸びの寸法 */
     if (Math.abs(m.x) > 0.005) {
@@ -5073,7 +5167,7 @@ DEFS['m1-9'] = {
       var A = (p.name === 'A');
       var q = d.sample(v, p.t);
       /* 吹きだしは、物体の横に置いた印から引き出す */
-      return { x: (A ? X(v.x0) + bw / 2 + 13 : natX - bw / 2 - 13), y: gy - bh / 2,
+      return { x: (A ? X(v.x0) + bw / 2 + 13 : natX), y: (A ? gy - bh / 2 : bMarkY),
         ox: A ? X(v.x0) : natX, oy: gy - bh / 2, bw: bw, bh: bh,
         fdraw: function () { fAt(q, A ? X(v.x0) : natX); },
         /* 終わりに物体がその点と同じ場所にいるときは、ゴーストを描かない */
@@ -5122,18 +5216,20 @@ DEFS['m1-10'] = {
   mainVars: ['v0', 'k'],
   mainVarFocus: 'k',
   vars: [
-    { k: 'v0', label: 'はじめの速さ $v_0$', unit: ' m/s', min: 2, max: 5, step: 0.5, dec: 1, def: 4.0 },
-    { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 150, max: 400, step: 50, dec: 0, def: 200 },
+    /* ★第11回：既定でもっとばねが縮むように★（先生の指示）
+       縮み x = v0√(m/k)。v0 = 4 → 5、k = 200 → 100 にして 0.28 m → 0.50 m（約1.8倍）。 */
+    { k: 'v0', label: 'はじめの速さ $v_0$', unit: ' m/s', min: 2, max: 5, step: 0.5, dec: 1, def: 5.0 },
+    { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 100, max: 400, step: 50, dec: 0, def: 100 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 2, step: 0.5, dec: 1, def: 1.0 }
   ],
   actions: [
     { label: 'かたいばね（k＝400）', fn: function (s) { s.v.k = 400; },
       is: function (v) { return v.k === 400; },
       next: function (s) { return s._played && s.v.k !== 400; } },
-    { label: '速くぶつける（v₀＝5 m/s）', fn: function (s) { s.v.v0 = 5; },
-      is: function (v) { return Math.abs(v.v0 - 5) < 1e-9; } },
-    { label: 'はじめの設定にもどす', fn: function (s) { s.v.v0 = 4; s.v.k = 200; },
-      is: function (v) { return Math.abs(v.v0 - 4) < 1e-9 && v.k === 200; } }
+    { label: 'ゆっくりぶつける（v₀＝2.5 m/s）', fn: function (s) { s.v.v0 = 2.5; },
+      is: function (v) { return Math.abs(v.v0 - 2.5) < 1e-9; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.v0 = 5; s.v.k = 100; },
+      is: function (v) { return Math.abs(v.v0 - 5) < 1e-9 && v.k === 100; } }
   ],
   cons: true,
   forces: ['g', 'N', 'sp'],
@@ -5164,7 +5260,8 @@ DEFS['m1-10'] = {
     var xMax = P.hitSpring.xMax(v);
 
     ground(ctx, 20, W - 96, gy);
-    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, false);
+    /* 第9回：図を大きくして壁が右へ寄ったので、基準面の文字は線の下に置く（壁と重ならない） */
+    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
     /* 壁 */
     ctx.save();
     ctx.fillStyle = '#d7dde4'; ctx.fillRect(wallX, gy - 104, 16, 104);
@@ -5479,7 +5576,7 @@ DEFS['m1-12'] = {
   mainVarFocus: 'k',
   vars: [
     { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 40, max: 100, step: 5, dec: 0, def: 50 },
-    { k: 'd', label: 'はじめの伸び（自然長からの距離）', unit: ' m', min: 0, max: 0.08, step: 0.01, dec: 2, def: 0.00 }
+    { k: 'd', label: 'はじめの伸び $d$（自然長から下へ）', unit: ' m', min: 0, max: 0.08, step: 0.01, dec: 2, def: 0.00 }
   ],
   consts: { m: 1.0 },
   actions: [
@@ -5535,15 +5632,24 @@ DEFS['m1-12'] = {
     label(ctx, '自然長', cx + 64, natY - 11, { size: 11, color: COL.sub, align: 'left' });
     label(ctx, 'つりあい', cx + 64, Y(xe) - 11, { size: 11, color: COL.sub, align: 'left' });
     datumLine(ctx, cx - 110, W - 96, Y(v.d), '基準面 h = 0（スタート）', true, false);
-    /* ★表の $d$（はじめの伸び）が図のどこかを、必ず見せる★（先生の指示・第6回）
+    /* ★2-3（手でゆっくり下ろす）との見くらべ★（先生の指示・第11回）
+       同じばね・同じおもりでも、手が仕事をするかどうかで
+       「つりあいの位置での速さ」がまるでちがう。2-3 にも同じパネルを出す。 */
+    if (hintOn(s, t)) {
+      factPanel(ctx, W * 0.53, 36, 'つりあいの位置（B点）での速さ',
+        fmt(P.m19.vEq(v), 2) + ' m/s', '止まらずに通りすぎる');
+    }
+    /* ★表の $d$（はじめの伸び）が図のどこかを見せる★（第6回）
        自然長の線から、スタート（＝基準面）の線までの長さが d。
-       d は 0〜0.08 m と短いので、矢印は入るときだけ引き、数値はいつも上に書く。 */
+       ★第11回★ d = 0 のときは、矢印も数値も出さない。
+       「d = 0.00 m（自然長から）」だけが動かずに残っていると、
+       「いまの伸び」を表しているように読めてしまう（先生の指摘）。 */
     if (Y(v.d) - natY > 7) {
       arrow(ctx, cx - 90, natY, cx - 90, Y(v.d), 'dim');
       arrow(ctx, cx - 90, Y(v.d), cx - 90, natY, 'dim');
+      label(ctx, 'はじめの伸び d = ' + fmt(v.d, 2) + ' m', cx - 90, natY - 12,
+        { size: 11, color: COL.dim });
     }
-    label(ctx, 'd = ' + fmt(v.d, 2) + ' m（自然長から）', cx - 90, natY - 12,
-      { size: 11, color: COL.dim });
 
     var by = Y(m.x);
     spring(ctx, cx, topY, cx, by - bh / 2, { coils: 11, r: 13, color: COL.hand, lw: 2 });
@@ -5684,7 +5790,9 @@ DEFS['m1-13'] = {
       if (tab[i].x > xmax) xmax = tab[i].x;
       if (tab[i].y > ymax) ymax = tab[i].y;
     }
-    var sc = Math.min(56, (W - 190) / Math.max(0.5, xmax - xmin), (H - 116) / Math.max(0.5, ymax));
+    /* 第9回：右の余白が大きかったので 56 → 62（どの設定でも横 63.3・縦 96 まで入るので、
+       62 なら「いつも同じ縮尺」のまま、いちばん大きく見せられる） */
+    var sc = Math.min(62, (W - 190) / Math.max(0.5, xmax - xmin), (H - 116) / Math.max(0.5, ymax));
     var gy = H - 52 - PTBAND, x0 = 50 - xmin * sc;
     function X(x) { return x0 + x * sc; }
     function Y(y) { return gy - y * sc; }
@@ -6004,8 +6112,10 @@ DEFS['m2-1'] = {
     var fl = m.f * fs;
     arrow(ctx, cx, gy - 3, cx - fl, gy - 3, 'force', 1, COL.fric);
     label(ctx, "μ'N", cx - fl - 8, gy - 16, { align: 'right', size: 11, color: COL.fric });
-    /* 吹きだしは N の矢じりより上（A・B の印と重なるため。第7回） */
-    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', cx + 64, gy - v.m * G * fs - 30,
+    /* 吹きだしは N の矢じりより上（A・B の印と重なるため。第7回）。
+       ★第9回★ しっぽ（▼）の先は「動摩擦力の矢印の まん中の真上」にそろえる。
+       説明している力が動摩擦力なので、そこを指していないと何の話か分からない。 */
+    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', cx - fl / 2, gy - v.m * G * fs - 30,
       { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
   },
   resItems: function (v) {
@@ -6092,7 +6202,8 @@ DEFS['m2-2'] = {
     var nx = -Math.sin(th), ny = -Math.cos(th);
     var sRef = Math.min(9.0, v.v0 * v.v0 /
       (2 * G * (Math.sin(th) + 0.10 * Math.cos(th))) * 1.2);
-    var SC = Math.min(70, (W - 96 - x0 - 16) / Math.max(0.5, sRef * Math.cos(th)),
+    /* 第9回：右の余白が大きかったので上限 70 → 100 */
+    var SC = Math.min(88, (W - 96 - x0 - 16) / Math.max(0.5, sRef * Math.cos(th)),
       (gy - 46) / Math.max(0.3, sRef * Math.sin(th)));
     function P2(sv) { return { x: x0 + ux * sv * SC, y: gy + uy * sv * SC }; }
     var L = P.m22.sStop(v), sMax = sRef;
@@ -6195,7 +6306,7 @@ DEFS['m2-2'] = {
     /* ★ここの定数は draw とそろえる★ */
     var th = v.th * DEG, gy = CVH - 98, x0 = 96;
     var sRef = Math.min(9.0, v.v0 * v.v0 / (2 * G * (Math.sin(th) + 0.10 * Math.cos(th))) * 1.2);
-    var sc = Math.min(70, (CVW - 96 - x0 - 16) / Math.max(0.5, sRef * Math.cos(th)),
+    var sc = Math.min(88, (CVW - 96 - x0 - 16) / Math.max(0.5, sRef * Math.cos(th)),
       (gy - 46) / Math.max(0.3, sRef * Math.sin(th)));
     var ux = Math.cos(th), uy = -Math.sin(th), nx = -Math.sin(th), ny = -Math.cos(th);
     var kz = mSize(d, v), bw = 30 * kz, bh = 22 * kz;
@@ -6211,8 +6322,9 @@ DEFS['m2-2'] = {
     arrow(ctx, px, py, px - ux * fl, py - uy * fl, 'force', 1, COL.fric);
     label(ctx, "μ'N", px - ux * (fl + 14), py - uy * (fl + 14), { size: 11, color: COL.fric });
     /* ★吹きだしは物体の斜め上（坂の外がわ）に出す★（第8回）
-       坂の右下（山の中）に置いていたので、引き出しの▼が何もささずに浮いて見えた。 */
-    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', cx + nx * 104, cy + ny * 104,
+       坂の右下（山の中）に置いていたので、引き出しの▼が何もささずに浮いて見えた。
+       ★第9回★ しっぽ（▼）の先は「動摩擦力の矢印の まん中の真上」にそろえる。 */
+    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', px - ux * fl / 2, cy + ny * 104,
       { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
   },
   resItems: function (v) {
@@ -6246,7 +6358,7 @@ DEFS['m2-2'] = {
 DEFS['m2-3'] = {
   id: 'm2-3', mode: 2, tab: '2-3 鉛直のばね（手の仕事あり）',
   title: '2-3　鉛直のばね（手でゆっくり下ろす）',
-  sub: '1-10 と<b>同じばね・同じおもり</b>ですが、今度は<b>手で支えながらゆっくり下ろします</b>。' +
+  sub: '1-12 と<b>同じばね・同じおもり</b>ですが、今度は<b>手で支えながらゆっくり下ろします</b>。' +
     '重力と弾性力（保存力）のほかに<b>手の力（非保存力）が仕事をする</b>ので、力学的エネルギーは保存されません。' +
     'つりあいの位置で手をはなすと、おもりはそこで静止したままになります。',
   cw: 760, ch: 350,        /* 吹きだしの式が長いので、横も縦も広めにとる（第6回で 620 → 760） */
@@ -6257,7 +6369,7 @@ DEFS['m2-3'] = {
   mainVarFocus: 'k',
   vars: [
     { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 40, max: 100, step: 5, dec: 0, def: 50 },
-    { k: 'd', label: 'はじめの伸び（自然長からの距離）', unit: ' m', min: 0, max: 0.08, step: 0.01, dec: 2, def: 0.00 }
+    { k: 'd', label: 'はじめの伸び $d$（自然長から下へ）', unit: ' m', min: 0, max: 0.08, step: 0.01, dec: 2, def: 0.00 }
   ],
   consts: { m: 1.0 },
   actions: [
@@ -6271,7 +6383,7 @@ DEFS['m2-3'] = {
   cons: false,
   forces: ['g', 'sp', 'hand'],
   hintFig: '<b>手がした仕事の分だけ $E$ が減る</b>。だから<b>つりあいの位置で止まれる</b>' +
-    '（手をはなした 1-10 では、その2倍の深さまで行ってしまう）',
+    '（手をはなした 1-12 では、その2倍の深さまで行ってしまう）',
   wName: '手の力',
   wSym: 'W_{\\text{手}}',
   step1: '重力と弾性力のほかに、手の力（非保存力）が仕事をしている',
@@ -6293,7 +6405,7 @@ DEFS['m2-3'] = {
     var natY = topY + 86;
     function Y(x) { return natY + x * sc; }
     var xe = P.m19.xEq(v), xl = P.m19.xLow(v);
-    /* 縮尺は「1-10 の最下点まで図に収まる」ように決める（見くらべるため） */
+    /* 縮尺は「1-12 の最下点まで図に収まる」ように決める（見くらべるため） */
     var sc = Math.min(300, (H - 86 - natY) / Math.max(0.05, xl));
     var bw = 40, bh = 26;
 
@@ -6307,13 +6419,21 @@ DEFS['m2-3'] = {
     label(ctx, '自然長', cx + 64, natY - 11, { size: 11, color: COL.sub, align: 'left' });
     label(ctx, 'つりあい', cx + 64, Y(xe) - 11, { size: 11, color: COL.sub, align: 'left' });
     datumLine(ctx, cx - 110, W - 96, Y(v.d), '基準面 h = 0（スタート）', true, false);
-    /* ★表の d（はじめの伸び）が図のどこかを見せる★（第6回・1-12 と同じ） */
+    /* ★1-12（手をはなす）との見くらべ★（先生の指示・第11回）
+       同じばね・同じおもりでも、手が仕事をするかどうかで
+       「つりあいの位置での速さ」がまるでちがう。1-12 にも同じパネルを出す。 */
+    if (hintOn(s, t)) {
+      factPanel(ctx, W * 0.53, 36, 'つりあいの位置（B点）での速さ',
+        fmt(d.sample(v, P.m23.T).v, 2) + ' m/s', 'ここで止まる');
+    }
+    /* ★表の d（はじめの伸び）が図のどこかを見せる★（第6回・1-12 と同じ）
+       ★第11回★ d = 0 のときは何も書かない（1-12 と同じ理由） */
     if (Y(v.d) - natY > 7) {
       arrow(ctx, cx - 90, natY, cx - 90, Y(v.d), 'dim');
       arrow(ctx, cx - 90, Y(v.d), cx - 90, natY, 'dim');
+      label(ctx, 'はじめの伸び d = ' + fmt(v.d, 2) + ' m', cx - 90, natY - 12,
+        { size: 11, color: COL.dim });
     }
-    label(ctx, 'd = ' + fmt(v.d, 2) + ' m（自然長から）', cx - 90, natY - 12,
-      { size: 11, color: COL.dim });
 
     var by = Y(m.x);
     spring(ctx, cx, topY, cx, by - bh / 2, { coils: 11, r: 13, color: COL.hand, lw: 2 });
@@ -6390,10 +6510,11 @@ DEFS['m2-3'] = {
       { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
   },
   resItems: function (v) {
+    /* ★第11回★「手をはなした場合（1-12）の最下点」はここから消した。
+       1-12 とのちがいは、図の中の「つりあいの位置での速さ」のパネルで見せる。 */
     return [
       { k: 'つりあいの位置 $x_{eq}=mg/k$', v: fmt(P.m19.xEq(v), 3) + ' m' },
-      { k: '手がした仕事 $W_{手}$', v: fmt(P.m23.W(v, P.m23.T), 2) + ' J' },
-      { k: '1-10（手をはなす）の最下点', v: fmt(P.m19.xLow(v), 3) + ' m' }
+      { k: '手がした仕事 $W_{手}$', v: fmt(P.m23.W(v, P.m23.T), 2) + ' J' }
     ];
   },
   info: function (s, t) {
@@ -6413,7 +6534,7 @@ DEFS['m2-3'] = {
   note: '<b>ここがこの単元の山場です。</b>手はおもりを<b>上向きに支え</b>ながら、おもりは<b>下向きに動く</b>ので、' +
     '手のする仕事は<b>負</b>になります。その分だけ力学的エネルギーが減るので、' +
     '<b>つりあいの位置（$x=mg/k$）でぴたりと止まれます</b>。' +
-    '手をはなした 1-10 では手が仕事をしないので $E$ が減らず、<b>その2倍の深さ（$2mg/k$）まで</b>行ってしまいます。' +
+    '手をはなした 1-12 では手が仕事をしないので $E$ が減らず、<b>その2倍の深さ（$2mg/k$）まで</b>行ってしまいます。' +
     '同じばね・同じおもりでも、<b>非保存力が仕事をするかどうかで結果が変わる</b>のです。'
 };
 
@@ -6576,7 +6697,8 @@ DEFS['m2-4'] = {
     var ffl = m.f * fs;
     arrow(ctx, cx, gy - 3, cx + ffl, gy - 3, 'force', 1, COL.fric);
     label(ctx, 'μ\'N', cx + ffl + 10, gy - 17, { align: 'left', size: 11, color: COL.fric });
-    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', CVW * 0.62, gy - 100,
+    /* ★第9回★ しっぽ（▼）の先は「動摩擦力の矢印の まん中の真上」にそろえる */
+    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', cx + ffl / 2, gy - 100,
       { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
   },
   resItems: function (v) {
@@ -6790,11 +6912,30 @@ DEFS['m2-5'] = {
       cx + ux * (bw / 2 + Fl), cy + uy * (bw / 2 + Fl), 'force', 1, COL.hand);
     label(ctx, 'F', cx + ux * (bw / 2 + Fl + 12) + nx * 10,
       cy + uy * (bw / 2 + Fl + 12) + ny * 10, { size: 11, color: COL.hand });
-    /* 2つの非保存力は向きが逆。吹きだしは坂の右下のあきに、たてにはなして置く */
-    bubble(ctx, 'F は運動と同じ向き → 正の仕事！', CVW * 0.68, gy - 50,
+    /* 2つの非保存力は向きが逆。★第9回★ しっぽ（▼）の先は、
+       それぞれ「その力の矢印の まん中」にそろえる（何の力の話か分かるように）。
+       F は坂の外がわ（上）から、μ'N は坂の内がわ（下）から出す。
+       fmx/fmy＝動摩擦力の矢印のまん中、Fmx/Fmy＝F の矢印のまん中。 */
+    var fmx = px - ux * fl / 2, fmy = py - uy * fl / 2;
+    var Fmx = cx + ux * (bw / 2 + Fl / 2), Fmy = cy + uy * (bw / 2 + Fl / 2);
+    /* しっぽ（▼）はまっすぐ下を向くので、ずらすのは たて だけ（横は矢印のまん中のまま） */
+    /* 2つとも坂の外がわ（上）に、たてにはなして置く。
+       上が F（坂の上がわの矢印）、下が μ'N（坂の下がわの矢印）。 */
+    /* F（坂を上る向き）の吹きだしは、坂の外がわ（上）から矢印のまん中へ。 */
+    bubble(ctx, 'F は運動と同じ向き → 正の仕事！', Fmx, Fmy + ny * 96,
       { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
-    bubble(ctx, 'μ\'N は運動と逆向き → 負の仕事！', CVW * 0.68, gy - 14,
-      { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
+    /* μ'N の吹きだしは、坂の下のあきから上向きに出す。
+       箱をそのまま置くと「θ = ○°」の文字とぶつかるので、しっぽの先（＝動摩擦力の
+       矢印のまん中）はそのままにして、箱だけ右へずらす（bubble の dx）。
+       ずらす量は、箱の左はしが θ の文字より右に来るように、そのつど計算する。 */
+    var txF = 'μ\'N は運動と逆向き → 負の仕事！';
+    ctx.save(); ctx.font = 'bold 11.5px ' + FONT;
+    var wF = ctx.measureText(txF).width + 18;
+    ctx.restore();
+    var dxF = clamp(x0 + 116 + wF / 2 - fmx, 0, wF / 2 + 80);
+    /* 地面より下は「A の吹きだし」の帯なので、そこまで下げない */
+    bubble(ctx, txF, fmx, Math.min(fmy - ny * 30, gy - 18),
+      { size: 11.5, up: true, dx: dxF, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
   },
   resItems: function (v) {
     return [
@@ -7138,13 +7279,22 @@ function buildPanel() {
   h.push('<div id="gwrap"' + (st.workMode ? ' hidden' : '') + '>');
   h.push('<div class="btnrow openrow"><button class="warm" id="bOpenAll">' + openAllLabel() + '</button>' +
     '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button>' +
-    '<span class="ghint1">グラフは ドラッグ＝移動／目盛りの上でドラッグ＝軸の拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動</span></div>');
+    '<span class="ghint1">グラフの右上の <b>＋</b>／<b>－</b>／<b>もどす</b> で大きさを変えられます' +
+    '（ドラッグ＝移動／目盛りの上でドラッグ＝その軸だけ拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動）</span></div>');
 
   graphsOf(d, s).forEach(function (g) {
     h.push('<div class="gsec"><button class="ghead" data-g="' + g.key + '"><span class="tri">' +
       (s.open[g.key] ? '▼' : '▶') + '</span>' + mathHtml(g.title) + '</button>' +
       '<div class="gbody' + (s.open[g.key] ? '' : ' hide') + (st.bigFml ? ' bigf' : '') + '" id="gb_' + g.key + '">' +
-      '<div class="gleft"><canvas id="gc_' + g.key + '"></canvas></div>' +
+      /* ★グラフの拡大・縮小ボタン★（第9回）
+         ドラッグだけだと、はじめて見る生徒やスマホ・タブレットでは分かりにくいので、
+         右上に ＋ / － / もどす を出す。 */
+      '<div class="gleft"><div class="gzoom"><span class="gzl">グラフの大きさ</span>' +
+      '<button type="button" data-gz="in" data-gk="' + g.key + '" title="拡大">＋</button>' +
+      '<button type="button" data-gz="out" data-gk="' + g.key + '" title="縮小">－</button>' +
+      '<button type="button" class="gzr" data-gz="reset" data-gk="' + g.key +
+      '" title="はじめの大きさにもどす">もどす</button></div>' +
+      '<canvas id="gc_' + g.key + '"></canvas></div>' +
       (g.fml ? '<div class="gform" id="gf_' + g.key + '"></div>' : '<div class="gspacer"></div>') +
       '</div></div>');
   });
@@ -7295,6 +7445,12 @@ function buildPanel() {
     b.addEventListener('click', function () { stepVar(b.getAttribute('data-var'), +b.getAttribute('data-dir')); });
   });
   graphsOf(d, s).forEach(function (g) { attachGraphDrag($('gc_' + g.key), g.key); });
+  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-gz]'), function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      graphZoom(b.getAttribute('data-gk'), b.getAttribute('data-gz'));
+    });
+  });
 
   setPlayLabel();
   $('bSlow').className = s.slow ? '' : 'sub';
@@ -7454,13 +7610,32 @@ function attachGraphDrag(cv, key) {
   });
 }
 
+/* ★グラフの ＋ / － / もどす ★（第9回）
+   まん中をそのままにして、たてよこ同じ割合で広げたり縮めたりする。
+   「もどす」は自分で決めた見え方を捨てて、自動の目もりにもどす。 */
+function graphZoom(key, kind) {
+  var s = st.sims[st.cur], cv = $('gc_' + key);
+  if (kind === 'reset') { delete s.gview[key]; renderActive(); return; }
+  if (!cv || !cv._map) return;
+  var mp = cv._map;
+  var v0 = s.gview[key] || { xmin: mp.xmin, xmax: mp.xmax, ymin: mp.ymin, ymax: mp.ymax };
+  var f = (kind === 'in') ? 1 / 1.4 : 1.4;
+  var cxx = (v0.xmin + v0.xmax) / 2, cyy = (v0.ymin + v0.ymax) / 2;
+  var hx = (v0.xmax - v0.xmin) / 2 * f, hy = (v0.ymax - v0.ymin) / 2 * f;
+  s.gview[key] = { xmin: cxx - hx, xmax: cxx + hx, ymin: cyy - hy, ymax: cyy + hy };
+  renderActive();
+}
+
 function setPlayLabel() {
   var s = st.sims[st.cur], b = $('bPlay');
   if (!b) return;
   if (s.playing) { setText(b, '❚❚ 一時停止'); setCls(b, ''); return; }
   setText(b, '▶ スタート');
-  /* まだ一度も動かしていないうちは、スタートを光らせる（次に押すところを示す） */
-  setCls(b, s._played ? '' : 'pulse');
+  /* ★止まっているあいだは、いつでもスタートを光らせる★（先生の指示・第11回）
+     前は「まだ一度も動かしていないシムだけ」光らせていたので、
+     一度でも見たシムにもどるとボタンが光らず、シムによって見え方がちがった。
+     押せば（終わっていても）はじめから動きだすので、止まっている＝次に押すところ。 */
+  setCls(b, 'pulse');
   var hint = $('qhint');
   if (hint) {
     var d = DEFS[st.cur];
@@ -8609,6 +8784,31 @@ function tick(ts) {
       r.bowl_hD_formula = +P.m110.hD(s10).toFixed(3);
       /* 最高点 D は「飛び出したあと」にある */
       r.bowl_tD_after_tC = P.m110.tD(s10) > P.m110.tC(s10) ? 1 : 0;
+      /* ★飛び出す条件の見張り★（第9回）
+         「N ≤ 0 になった所で面から離れるべきでは？」という指摘への答え。
+         くぼみ（凹の面）では N = m(g cosθ + v²/R) がいつでも正なので、
+         円の上で面から離れることは起こらない。どの設定でも N > 0 かを確かめる。 */
+      var nmin = Infinity, nmov = Infinity, nAtC = Infinity, nneg = 0, iv0, ih, iq;
+      for (iv0 = 0; iv0 <= 4; iv0 += 0.5) {
+        for (ih = 1.5; ih <= 3.5001; ih += 0.1) {
+          var vN = { h: +ih.toFixed(1), v0: iv0, m: 1 }, tbN = P.m110.table(vN).tab;
+          for (iq = 0; iq < tbN.length; iq++) {
+            if (!tbN[iq].on || tbN[iq].wall) continue;
+            var nn = P.m110.Nof(vN, tbN[iq]);
+            if (nn < 0) nneg++;
+            nmin = Math.min(nmin, nn);
+            if (tbN[iq].v > 0.05) nmov = Math.min(nmov, nn);
+          }
+          nAtC = Math.min(nAtC, vN.m * (G * Math.cos(P.m110.PHI) +
+            P.m110.vC(vN) * P.m110.vC(vN) / P.m110.R));
+        }
+      }
+      /* しらべた設定の数：v0 = 0〜4（0.5 きざみ）× h = 1.5〜3.5（0.1 きざみ）＝ 189 通り */
+      r.bowl_N_min = +nmin.toPrecision(3);      /* 円の上でいちばん小さい N（＝はなす瞬間） */
+      r.bowl_N_min_moving = +nmov.toFixed(3);   /* 動いているあいだのいちばん小さい N */
+      r.bowl_N_at_C = +nAtC.toFixed(3);         /* 飛び出す点 C での N */
+      r.bowl_N_negative_count = nneg;           /* N < 0 になった回数（0 でなければならない） */
+      r.bowl_N_always_pos = nneg === 0 ? 1 : 0; /* 1 なら「面から離れることはない」 */
 
       /* ===== 2-2 あらい斜面を上る ===== */
       var s22 = { v0: 6, th: 30, mu: 0.25, m: 2 }, mx22 = 0, E22 = P.m22.sample(s22, 0).E;
@@ -8708,6 +8908,31 @@ function tick(ts) {
       });
       r.work_sum_err_pct = +wErr.toExponential(2);
       r.work_sum_bad = wMiss.join(',');
+
+      /* ★エネルギーの棒が枠からはみ出していないか★（全シム・第10回に追加）
+         energyBar は【正のものを 0 から上へ、負のものを 0 から下へ】積むので、
+         上へのびる長さ＝正のものの合計、下へのびる長さ＝負のものの合計。
+         energyRange の lo〜hi がこれを含んでいないと、帯が枠の外へ出てしまう。
+         2-3 と 1-12（U_g が負になるシム）で実際に出ていた（先生の指摘・第10回）。 */
+      var ebOver = 0, ebBad = [];
+      Object.keys(DEFS).forEach(function (id) {
+        var d = DEFS[id], sS = st.sims[id], v = V(sS);
+        var rg = energyRange(d, sS), T2 = d.tEnd(v), i2, j2, worst = 0;
+        var span = Math.max(1e-9, rg.hi - rg.lo);
+        for (i2 = 0; i2 <= 200; i2++) {
+          var q3 = d.sample(v, T2 * i2 / 200), pos3 = 0, neg3 = 0, e4 = [q3.K, q3.Ug, q3.Us];
+          for (j2 = 0; j2 < 3; j2++) {
+            if (e4[j2] > 0) pos3 += e4[j2];
+            else if (e4[j2] < 0) neg3 += e4[j2];
+          }
+          worst = Math.max(worst, pos3 - rg.hi, rg.lo - neg3, q3.E - rg.hi, rg.lo - q3.E);
+        }
+        var pct = worst / span * 100;
+        if (pct > 0.01) ebBad.push(id + ':' + pct.toFixed(2) + '%');
+        ebOver = Math.max(ebOver, pct);
+      });
+      r.ebar_overflow_pct = +ebOver.toFixed(4);   /* 0 でなければならない */
+      r.ebar_overflow_bad = ebBad.join(',');
 
       r.drift_max_all = Math.max(r.drift_max, r.drift_up, r.drift_cyl, r.drift_cylb,
         r.drift_m17, r.drift_m18, r.drift_m19, r.drift_m19b, r.drift_m110, r.drift_m110b,
