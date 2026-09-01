@@ -3735,6 +3735,18 @@ function twoMassVars(mDef, MDef) {
   ];
 }
 
+/* 「支えている手を放す」の吹き出し（手の右がわ）。動かす前（t=0）だけ出す。
+   (hx, hy) ＝ 手のひらのてっぺん（＝物体の下のはし）。 */
+function releaseHint(ctx, hx, hy, W, dy) {
+  var txt = '支えている手を放す', SZ = 12.5;
+  ctx.save(); ctx.font = 'bold ' + SZ + 'px ' + FONT;
+  var bw = ctx.measureText(txt).width + 18;
+  ctx.restore();
+  var cx = clamp(hx + 40 + bw / 2, bw / 2 + 6, W - bw / 2 - 6);
+  bubble(ctx, txt, cx, hy + (dy === undefined ? 27 : dy),
+    { size: SZ, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
+}
+
 /* 2物体で共通のグラフ（x・v・a）。fml は各シミュレーションから渡す */
 function twoBodyGraphs(xLabel, fmlX, fmlV, fmlA) {
   return [
@@ -3884,7 +3896,7 @@ DEFS['m1-10'] = {
   sub: 'なめらかな面（傾き $\\theta$）の上の A（質量 $m$）に軽い糸をつけ、なめらかに回る軽い滑車を通して、他端に B（質量 $M$）をつるす。' +
     '静かにはなすと B が下り、A は面にそって上る。<b>糸は伸びないので、A が上る速さと B が下りる速さは同じ</b>。' +
     '正の向きは「A が上る向き＝B が下りる向き」にそろえてとる。' + OBJCOL,
-  cw: 520, ch: function (v) { return 340 + 90 * Math.abs(Math.sin(v.th * DEG)); },
+  cw: 560, ch: function (v) { return 340 + 90 * Math.abs(Math.sin(v.th * DEG)); },
   vis: ['F', 'Fm', 'Fc', 'V'], visDef: { F: true },
   signLabels: ['A が上る向き（B が下りる向き）を正', 'A が下る向き（B が上る向き）を正'],
   mainVars: ['th', 'm', 'M'], mainVarFocus: 'th',
@@ -3918,8 +3930,8 @@ DEFS['m1-10'] = {
   draw: function (ctx, s, t, W, H) {
     var v = V(s), m = P.m19.sample(v, t);
     var th = v.th * DEG, ct = Math.cos(th), st2 = Math.sin(th);
-    var pr = 13;
-    var PX = W - 104, PY = 112;                         /* 滑車の中心 */
+    var pr = 11;
+    var PX = W - 176, PY = 112;                         /* 滑車の中心（右に吹き出しの場所をあける） */
     var kA = mSize({ vars: [{ k: 'm', def: 1 }] }, { m: v.m });
     var bw = 32 * kA, bh = 23 * kA;
     /* 糸は「面と平行に進んで滑車の上がわに接し、上を通って向こう側へ回りこむ」。
@@ -3928,8 +3940,9 @@ DEFS['m1-10'] = {
        ・台のはしは滑車より (pr+4) だけ手前（＝滑車は台のはしからはみ出す） */
     var nx0 = -Math.sin(th), ny0 = -Math.cos(th);       /* 面から外（上）向き */
     var ux0 = -Math.cos(th), uy0 = Math.sin(th);        /* 面を下る向き */
-    var cnX = PX + nx0 * (pr - bh / 2) + ux0 * (pr + 4);
-    var cnY = PY + ny0 * (pr - bh / 2) + uy0 * (pr + 4);   /* 台のはし（面のいちばん高いところ） */
+    var arm = pr * 1.9;                                 /* 台のはしから滑車の中心までの長さ（支柱） */
+    var cnX = PX + nx0 * (pr - bh / 2) + ux0 * arm;
+    var cnY = PY + ny0 * (pr - bh / 2) + uy0 * arm;     /* 台のはし（面のいちばん高いところ） */
     /* B が下りるぶんの縦の余白から、1 m あたりの px を決める */
     var sc = clamp((H - cnY - 96) / (P.m19.LEN + 0.6), 24, 46);
     /* 面の横の広がり（下がりすぎないように制限する） */
@@ -3941,8 +3954,10 @@ DEFS['m1-10'] = {
     var ux = -ct, uy = st2;                             /* 滑車から下る向き（画面） */
     var nx = nx0, ny = ny0;                             /* 面から外（上）向き */
     var Lx = cnX + ux * Dspan * sc, Ly = cnY + uy * Dspan * sc;
-    /* 面（ハッチは面の下側に出す） */
-    hatchLine(ctx, cnX, cnY, Lx, Ly, 1);
+    /* 面（ハッチは「台の内側」＝面のすぐ下に出す。
+       hatchLine は「進む向きの右がわ」に引くので、下り坂の向きに引くと上に出てしまう。
+       かならず「下 → 上（左から右）」の向きにわたすこと。 */
+    hatchLine(ctx, Lx, Ly, cnX, cnY, 1);
     ctx.save(); ctx.strokeStyle = '#98a0a8'; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(cnX, cnY); ctx.lineTo(cnX, H - 22); ctx.lineTo(Lx, H - 22);
     ctx.lineTo(Lx, Ly); ctx.stroke(); ctx.restore();
@@ -3960,6 +3975,13 @@ DEFS['m1-10'] = {
     string(ctx, atx, aty, tgx, tgy);
     /* 滑車と、つるした B。糸は滑車の上を通って、右がわ（PX+pr）へ回りこむ */
     stringArc(ctx, PX, PY, pr, Math.atan2(ny, nx), 0);         /* 滑車に巻きついた部分 */
+    /* ★滑車は台のはしに「支柱」で取りつける★（教科書の図と同じ。宙に浮かせない） */
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.strokeStyle = '#5b6672'; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(cnX, cnY); ctx.lineTo(PX, PY); ctx.stroke();
+    ctx.strokeStyle = '#e3e9ef'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(cnX, cnY); ctx.lineTo(PX, PY); ctx.stroke();
+    ctx.restore();
     pulley(ctx, PX, PY, pr);
     var yB0 = PY + 62, yB = yB0 + m.x * sc;
     var kB = mSize({ vars: [{ k: 'm', def: 2 }] }, { m: v.M });
@@ -3975,6 +3997,8 @@ DEFS['m1-10'] = {
         ctx.restore();
       }
     }
+    /* 動かす前だけ「支えている手を放す」と出す（スタートを押すと消える） */
+    if (t <= 1e-9) releaseHint(ctx, PX + pr, yB + rB + 2, W);
 
     if (s.o.showF || s.o.showFm) {
       var only = !!s.o.showFm;                    /* 運動の向きの力だけを描くか */
@@ -4019,7 +4043,7 @@ DEFS['m1-10'] = {
         { size: 11, color: COL.vel, align: 'left' });
     }
     if (hintOn(s, t)) {
-      label(ctx, '糸でつながっているので、A が上る速さ＝B が下りる速さ', 12, H - 20,
+      label(ctx, '糸でつながっているので、A が上る速さ＝B が下りる速さ', 12, H - 36,
         { size: 11.5, bold: true, color: COL.acc, align: 'left' });
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
@@ -4095,9 +4119,11 @@ DEFS['m1-11'] = {
     var v = V(s), m = P.m110.sample(v, t);
     var PX = W * 0.5, PY = 108, pr = 22, sc = 44;
     /* 天井 */
-    ctx.save(); ctx.fillStyle = '#c9d2da';
-    ctx.fillRect(W * 0.5 - 110, 56, 220, 10); ctx.restore();
-    hatchLine(ctx, W * 0.5 - 110, 66, W * 0.5 + 110, 66, 1);
+    ctx.save();
+    ctx.fillStyle = '#c9d2da'; ctx.fillRect(W * 0.5 - 110, 56, 220, 10);
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.4;
+    ctx.strokeRect(W * 0.5 - 110, 56, 220, 10);      /* 天井は板だけ（ハッチは出さない） */
+    ctx.restore();
     ctx.save(); ctx.strokeStyle = '#5b6672'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(PX, 66); ctx.lineTo(PX, PY - pr); ctx.stroke(); ctx.restore();
     pulley(ctx, PX, PY, pr);
@@ -4112,7 +4138,7 @@ DEFS['m1-11'] = {
     ball(ctx, PX - pr, yA, rA, 'A');
     label(ctx, 'A（' + fmt(v.m, 1) + ' kg）', PX - pr - rA - 44, yA + 18, { size: 11, bold: true, align: 'right' });
     ball(ctx, PX + pr, yB, rB, 'B');
-    label(ctx, 'B（' + fmt(v.M, 1) + ' kg）', PX + pr + rB + 8, yB, { size: 11, bold: true, align: 'left' });
+    label(ctx, 'B（' + fmt(v.M, 1) + ' kg）', PX + pr + rB + 30, yB, { size: 11, bold: true, align: 'left' });
     if (t < 0.34) {              /* 下から支えていた手が、下へ抜けて消える */
       var hp = clamp((t - 0.08) / 0.22, 0, 1), fa = 1 - hp;
       if (fa > 0.02) {
@@ -4121,6 +4147,8 @@ DEFS['m1-11'] = {
         ctx.restore();
       }
     }
+    /* 動かす前だけ「支えている手を放す」と出す（スタートを押すと消える） */
+    if (t <= 1e-9) releaseHint(ctx, PX + pr, yB + rB + 2, W, 60);
     if (s.o.showF || s.o.showFm) {     /* この図の力はすべて運動の向き（鉛直）にそっている */
       var fs = 42 / Math.max(1, v.M * G), Tn = m.T;
       arrow(ctx, PX - pr, yA - rA, PX - pr, yA - rA - Tn * fs, 'force', 1, fcol('A', COL.hand));
