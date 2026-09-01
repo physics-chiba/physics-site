@@ -1435,13 +1435,16 @@ P.m24 = {
   f: function (v) { return v.mu * v.m * G; },
   xc: function (v) { return P.m24.f(v) / v.k; },              /* 振動の中心のずれ */
   period: function (v) { return 2 * Math.PI / P.m24.om(v); },
-  /* ★終わりは「3回目に自然長を通るところ」★（1-9 の 1.25 周期とほぼ同じ時刻）。
-     こうすると最後の画面で、物体がちょうど点 B（自然長）に重なって見やすい。
-     早く止まってしまうときは、止まったすこし後で終わる。 */
-  tEnd: function (v) {
-    var T = P.m24.tab(v), pd = P.m24.period(v);
-    return (T.cross.length >= 3) ? T.cross[2] : (T.tStop + 0.25 * pd);
-  },
+  /* ★第14回・先生の指示★ 何往復も見せると、動摩擦力の仕事（＝力×動いた道のり）を
+     求めるのが難しくなって、生徒には分かりにくい。そこで再生を2段に分けた。
+       ① 0 〜 tStop            … 止まるまで、ふつうに動かす
+       ② tStop 〜 +HOLD        … 止まった所でひと呼吸おく
+       ③ そのあと tNat のぶん  … もう一度はじめから再生して、点 B（はじめて自然長を
+                                  通る瞬間）でぴたりと止める（そこで吹きだしが出る）
+     グラフの横軸は ① だけ（d.tGraph）。 */
+  HOLD: 0.6,
+  tGraph: function (v) { return P.m24.tStop(v); },
+  tEnd: function (v) { return P.m24.tStop(v) + P.m24.HOLD + P.m24.tNat(v); },
   tNat: function (v) {                                        /* はじめて自然長を通る時刻 */
     var xc = P.m24.xc(v), A = v.x0 - xc;
     return Math.acos(clamp(-xc / A, -1, 1)) / P.m24.om(v);
@@ -1476,6 +1479,13 @@ P.m24 = {
   pathAll: function (v) { return P.m24.tab(v).path; },
   sample: function (v, t) {
     var T = P.m24.tab(v), om = P.m24.om(v), x, sp, path;
+    /* ★2回目の再生★（第14回）止まって HOLD だけおいたら、はじめにもどして
+       点 B（tNat）まで もう一度動かす。時刻を先頭にまきもどすだけ。 */
+    var rep = false;
+    if (t > T.tStop + P.m24.HOLD) {
+      t = Math.min(t - T.tStop - P.m24.HOLD, P.m24.tNat(v));
+      rep = true;
+    }
     if (t >= T.tStop || !T.segs.length) { x = T.xStop; sp = 0; path = T.path; }
     else {
       var sg = T.segs[clamp(Math.floor(t / T.half), 0, T.segs.length - 1)];
@@ -1486,7 +1496,7 @@ P.m24 = {
     }
     /* v は「速さ」（0以上）。向きつきは vs。摩擦の仕事は −f×（動いた道のり） */
     return EN.mix(v, { x: x, y: 0, v: Math.abs(sp), vs: sp, h: 0, sp: x,
-      w: -P.m24.f(v) * path, path: path,
+      w: -P.m24.f(v) * path, path: path, replay: rep,
       moving: t < T.tStop - 1e-9, f: P.m24.f(v), N: v.m * G });
   }
 };
@@ -3126,13 +3136,95 @@ function flickStart(ctx, t, v0, cx, cy, ang, up, dx) {
   ctx.restore();
 }
 
-/* ★「最高点」の吹きだし★（先生の指示・第13回）
-   1-4・1-8・1-11・1-13・2-2 は「いちばん高い所」がそのシムの見どころなので、
-   運動が終わって各点のエネルギーを出すときに、その点の上に小さく出す。
-   (x, y) は しっぽ（▼）の先＝さす場所。箱はその上に出る。 */
-function topNote(ctx, x, y, text) {
-  bubble(ctx, text || '最高点', x, y,
-    { size: 12, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
+/* ★「最高点（点B）」のような、点の名前の吹きだし★（先生の指示・第13回／第14回に2行へ）
+   1-4・1-6・1-7・1-8・1-11・1-12・1-13・2-2 は「いちばん高い（低い）所」が見どころなので、
+   運動が終わって各点のエネルギーを出すときに、その点のそばに小さく出す。
+   ★2行で書く★ 1行目＝「最高点」「最下点」、2行目＝「（点B）」
+   （どの点の話かを、式や表の記号とすぐ結びつけられるように。先生の指示・第14回）
+   (x, y) は しっぽの先＝さす場所。
+     up を渡さない … しっぽは下向き（▼）。箱はその上（＝最高点で使う）
+     up = true     … しっぽは上向き（▲）。箱はその下（＝最下点で使う） */
+function ptNote(ctx, px, py, title, sub, opt) {
+  opt = opt || {};
+  var s1 = 12, s2 = 11, padx = 11, pady = 7, gap = 2;
+  ctx.save();
+  ctx.font = 'bold ' + s1 + 'px ' + FONT;
+  var w1 = ctx.measureText(title).width;
+  ctx.font = s2 + 'px ' + FONT;
+  var w2 = sub ? ctx.measureText(sub).width : 0;
+  ctx.restore();
+  var w = Math.max(w1, w2) + padx * 2;
+  var h = pady * 2 + s1 + (sub ? gap + s2 : 0);
+  var off = (opt.gap === undefined) ? 46 : opt.gap;
+  /* ★上に入らなければ、下がわに出す★（第14回）
+     入らないまま描くと、箱が画面の外へ出て、2行が同じ高さにつぶれてしまう
+     （label が y < 9 でクランプするため。1-7 の v0 = 16 で実際に起きた）。 */
+  var up = !!opt.below || (py - off - h < 4);
+  var y = up ? py + off : py - off;
+  var bx = px - w / 2 + (opt.dx || 0);      /* dx＝しっぽはそのまま、箱だけ横へ */
+  var by = up ? y + 8 : y - h;
+  if (CVW > 0) bx = clamp(bx, 3, Math.max(3, CVW - w - 3));
+  if (CVH > 0) by = clamp(by, 3, Math.max(3, CVH - h - 3));
+  var tipX = clamp(px, bx + 10, bx + w - 10);
+  var edge = up ? by : by + h;
+  var tipY = up ? by - 8 : by + h + 8;
+  ctx.save();
+  ctx.fillStyle = '#eef2f7';
+  ctx.strokeStyle = COL.eE;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, w, h, 7); else ctx.rect(bx, by, w, h);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(tipX - 6, edge); ctx.lineTo(tipX, tipY); ctx.lineTo(tipX + 6, edge);
+  ctx.closePath(); ctx.fillStyle = '#eef2f7'; ctx.fill();
+  ctx.strokeStyle = COL.eE;
+  ctx.beginPath();
+  ctx.moveTo(tipX - 6, edge); ctx.lineTo(tipX, tipY); ctx.lineTo(tipX + 6, edge); ctx.stroke();
+  ctx.restore();
+  label(ctx, title, bx + w / 2, by + pady + s1 / 2,
+    { size: s1, bold: true, color: '#28323d', halo: false });
+  if (sub) {
+    label(ctx, sub, bx + w / 2, by + pady + s1 + gap + s2 / 2,
+      { size: s2, color: '#5b6672', halo: false });
+  }
+  noteBox(_txtBox, bx, by, w, h);
+  noteObj(bx, by, w, h);
+}
+
+/* ★図の上に出す「このシムで何をくらべるか」の帯★（先生の指示・第14回）
+   2-4 は「止まるまで動かす → もう一度はじめから → 点 B で止まる」という
+   ふつうと違う再生をするので、何と何をくらべているのかを図の中にことばで出す。
+   横は「エネルギーの棒をのぞいた絵の幅」のまん中にそろえる。 */
+function bannerNote(ctx, lines, y, opt) {
+  opt = opt || {};
+  /* ★第15回：小さくて読めないと言われたので、字を大きく（12 → 14 px）した。
+     そのぶん1行に入らないので、行を配列で渡せるようにした。 */
+  var sz = opt.size || 14, padx = 14, pady = 9, lead = 5;
+  if (typeof lines === 'string') lines = [lines];
+  ctx.save();
+  ctx.font = sz + 'px ' + FONT;
+  var wmax = 0, i;
+  for (i = 0; i < lines.length; i++) wmax = Math.max(wmax, ctx.measureText(lines[i]).width);
+  ctx.restore();
+  var w = wmax + padx * 2;
+  var h = pady * 2 + lines.length * sz + (lines.length - 1) * lead;
+  var cxm = ((CVW > 0 ? CVW : 640) - 72) / 2;
+  var x = clamp(cxm - w / 2, 3, Math.max(3, (CVW > 0 ? CVW : 640) - w - 3));
+  ctx.save();
+  ctx.fillStyle = opt.bg || '#eaf1f8';
+  ctx.strokeStyle = opt.border || '#7f9fbb';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, 9); else ctx.rect(x, y, w, h);
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+  for (i = 0; i < lines.length; i++) {
+    label(ctx, lines[i], x + w / 2, y + pady + sz / 2 + i * (sz + lead),
+      { size: sz, color: opt.color || '#1f4a70', halo: false });
+  }
+  noteBox(_txtBox, x, y, w, h);
+  noteObj(x, y, w, h);
 }
 
 /* ===== 図の中の「エネルギーの棒」 =====
@@ -4354,7 +4446,7 @@ DEFS['m1-4'] = {
       118, 30);   /* 左は高さの寸法線、右上は坂。箱だけ右へ寄せる（しっぽは手の真上のまま） */
     /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）
        しっぽは下（＝その点をさす）。運動が終わってから出す。 */
-    if (endOn(d, s, t)) topNote(ctx, pB.x, pB.y - 54);
+    if (endOn(d, s, t)) ptNote(ctx, pB.x, pB.y, '最高点', '（点B）', { gap: 54 });
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 34 / mg;
@@ -4572,7 +4664,8 @@ DEFS['m1-6'] = {
     'だから<b>最下点で $K$ が最大・最高点で $U$ が最大</b>になり、和の $E$ はずっと一定です。',
   /* 縮尺は 115 px ＝ 1 m に固定（ch = 108 + 115l なので、最下点の下の余白はいつも 54 px） */
   cw: 580,                 /* 第8回：各点に力の矢印も出すので、吹きだしの逃げ場を広げた */
-  ch: function (v) { return Math.round(132 + 105 * v.l); },
+  /* 第14回：最下点の下に「最下点（点C…B）」の吹きだしを置くぶん、54 px 高くした */
+  ch: function (v) { return Math.round(186 + 105 * v.l); },
   vis: ['F', 'Fc', 'V', 'A'],
   mainVars: ['th', 'v0'],
   mainVarFocus: 'th',
@@ -4633,6 +4726,9 @@ DEFS['m1-6'] = {
     var mA = outer(pA), mB = outer(pB);
     ptMark(ctx, 'A', mA.x, mA.y);
     ptMark(ctx, 'B', mB.x, mB.y);
+    /* ★いちばん低い所に「最下点（点B）」の吹きだし★（先生の指示・第14回）
+       しっぽは上向き（箱は下）。運動が終わってから出す。 */
+    if (endOn(d, s, t)) ptNote(ctx, pB.x, pB.y, '最下点', '（点B）', { below: true, gap: 62 });
 
     /* 角 θ */
     ctx.save();
@@ -4841,6 +4937,8 @@ DEFS['m1-7'] = {
     ptMark(ctx, 'A', pA.x - cw2 / 2 - 13, pA.y - chh / 2);
     ptMark(ctx, 'B', pB.x - 34, pB.y - 4);
     ptMark(ctx, 'C', pC.x + Math.sin(th) * 18, pC.y + Math.cos(th) * 18);
+    /* ★いちばん高い所に「最高点（点C）」の吹きだし★（先生の指示・第14回） */
+    if (endOn(d, s, t)) ptNote(ctx, pC.x, pC.y, '最高点', '（点C）', { gap: 46 });
 
     /* 車（軌道の内がわに乗る） */
     var carAng = (m.seg === 1 || m.seg === 3) ? m.ang : (m.seg === 4 ? th : 0);
@@ -5014,7 +5112,7 @@ DEFS['m1-8'] = {
 
     var mB = d.sample(v, P.m17.tTop(v)), mC = d.sample(v, T);
     /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
-    if (endOn(d, s, t)) topNote(ctx, X(mB.x), Y(mB.y) - 52);
+    if (endOn(d, s, t)) ptNote(ctx, X(mB.x), Y(mB.y), '最高点', '（点B）', { gap: 52 });
     /* ★印は球と矢印からずらす★（第6回）A は台の上・球の右下、C は着地点の右下 */
     ptMark(ctx, 'A', X(0) + 20, Y(v.h) + 18);
     ptMark(ctx, 'B', X(mB.x), Y(mB.y) - 13);
@@ -5452,7 +5550,8 @@ DEFS['m1-11'] = {
   hint2: '<b>次は</b>：$x_0$ を変えて、<b>昇る高さ</b> $h_C = kx_0^{\\,2}/(2mg)$ が' +
     'どう変わるか見てみよう（$x_0$ を <b>0.45 m → 0.90 m</b> と2倍にすると、$h_C$ は何倍？）。',
   ptSide: 'row',
-  slow: true,                /* ★はじめからスロー再生★（先生の指示・第8回。ばねのシムは速すぎる） */
+  /* ★第14回：1-11 は「はじめからスロー」をやめた（先生の指示）★
+     第8回にばねが押す距離を3倍にしたので、ふつうの速さでも十分に追える。 */
   tEnd: function (v) { return P.sprSlide.tEnd(v); },
   sample: function (v, t) { return P.sprSlide.sample(v, t); },
   pts: [
@@ -5540,7 +5639,7 @@ DEFS['m1-11'] = {
     var xC = P.sprSlide.xOfH(hC);
     var pC = { x: X(LF + xC), y: Y(hC) };
     /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
-    if (endOn(d, s, t)) topNote(ctx, pC.x, pC.y - 46);
+    if (endOn(d, s, t)) ptNote(ctx, pC.x, pC.y, '最高点', '（点C）', { gap: 46 });
     /* ★A と B は近いので、A は地面の下・B は物体の上に分ける★（物体と重ねない） */
     /* ★印は地面の下（A・B）と坂の中（C）★（第6回）
        球・力の矢印・左の高さの数値とぶつからない場所にそろえる。 */
@@ -5641,7 +5740,8 @@ DEFS['m1-12'] = {
     '$K + U_g + U_k$ は一定。最下点は<b>つりあいの位置の2倍</b>の深さです。' +
     '<b>基準面ははじめの位置</b>にとってあるので、下がったところの高さは<b>負</b>になります。',
   cw: 760,                 /* 吹きだしの式が長いので、横を広めにとる（第6回で 620 → 760） */
-  ch: function (v) { return 350; },
+  /* 第14回：最下点の下に「最下点（点C）」の吹きだしを置くぶん、60 px 高くした */
+  ch: function (v) { return 410; },
   vis: ['F', 'V', 'A'],
   hasUs: true,
   ptSide: 'stack',
@@ -5689,8 +5789,9 @@ DEFS['m1-12'] = {
     var cx = W * 0.34, topY = 46;
     var natY = topY + 86;                       /* 自然長のときのおもりの位置 */
     var xe = P.m19.xEq(v), xl = P.m19.xLow(v);
-    /* 縮尺は「最下点が図に収まる」ように決める（やわらかいばねだと下にはみ出すため） */
-    var sc = Math.min(300, (H - 76 - natY) / Math.max(0.05, xl));
+    /* 縮尺は「最下点が図に収まる」ように決める（やわらかいばねだと下にはみ出すため）。
+       第14回：最下点の下に吹きだしを置くので、下の余白を 76 → 136 px にした。 */
+    var sc = Math.min(300, (H - 136 - natY) / Math.max(0.05, xl));
     function Y(x) { return natY + x * sc; }     /* x＝自然長からの伸び */
     var kz = 1, bw = 40, bh = 26;
 
@@ -5740,6 +5841,9 @@ DEFS['m1-12'] = {
     ptMark(ctx, 'A', cx + 40, Y(v.d));
     ptMark(ctx, 'B', cx + 40 + mDx, Y(xe));
     ptMark(ctx, 'C', cx + 40 + 2 * mDx, Y(xl));
+    /* ★いちばん低い所に「最下点（点C）」の吹きだし★（先生の指示・第14回）
+       しっぽは上向き（箱は下）。まん中は mg の矢印が通るので、箱は左へ寄せる。 */
+    if (endOn(d, s, t)) ptNote(ctx, cx, Y(xl), '最下点', '（点C）', { below: true, gap: 78 });
     blockShape(ctx, cx, by, 0, bw, bh, '#e8eef5');
     /* 運動が終わったら、点ごとの高さ（drawPts）に任せてこの1本は消す */
     if (!endOn(d, s, t)) heightDim(ctx, cx - 116, by, Y(v.d), 'h = ' + fmt(m.h, 3) + ' m');   /* 下は負 */
@@ -5917,7 +6021,7 @@ DEFS['m1-13'] = {
     var mA = d.sample(v, 0), mB = d.sample(v, P.m110.tB(v));
     var mC = d.sample(v, P.m110.tC(v)), mD = d.sample(v, P.m110.tD(v));
     /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
-    if (endOn(d, s, t)) topNote(ctx, X(mD.x), Y(mD.y) - 50);
+    if (endOn(d, s, t)) ptNote(ctx, X(mD.x), Y(mD.y), '最高点', '（点D）', { gap: 50 });
     /* ★飛び出す点 C が「まん中から 60°」であることを図に出す★（先生の指示・第8回）
        円の中心から、最下点 B の向きと C の向きへ細い線を引き、その間の角を 60° と書く。 */
     ctx.save();
@@ -6315,7 +6419,7 @@ DEFS['m2-2'] = {
     var kz = mSize(d, v), bw = 30 * kz, bh = 22 * kz;
     var pA = P2(0), pB = P2(L);
     /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
-    if (endOn(d, s, t)) topNote(ctx, pB.x, pB.y - 56);
+    if (endOn(d, s, t)) ptNote(ctx, pB.x, pB.y, '最高点', '（点B）', { gap: 56 });
     /* ★印は物体の「坂にそって外がわ」★（第6回）真上は N の矢印が通るのでずらす */
     var mkA = markAway(pA, pB, nx, ny, bh / 2 + 4, bw / 2 + 14);
     var mkB = markAway(pB, pA, nx, ny, bh / 2 + 4, bw / 2 + 14);
@@ -6677,11 +6781,19 @@ DEFS['m2-4'] = {
     'どう変わるか見てみよう。摩擦なしは <span data-goto="m1-9">1-9</span>。',
   slow: true,                /* ★はじめからスロー再生★（第8回・ばねのシム） */
   tEnd: function (v) { return P.m24.tEnd(v); },
+  /* ★グラフの横軸は「止まるまで」だけ★（第14回）
+     アニメは「止まる → もう一度はじめから → 点 B で止まる」の2段になっている。 */
+  tGraph: function (v) { return P.m24.tGraph(v); },
+  /* 2回目の再生のあいだは、グラフのカーソルもはじめにもどす（同じ状態を指す） */
+  tCursor: function (v, t) {
+    var ts = P.m24.tStop(v);
+    return (t > ts + P.m24.HOLD) ? Math.min(t - ts - P.m24.HOLD, P.m24.tNat(v)) : Math.min(t, ts);
+  },
   sample: function (v, t) { return P.m24.sample(v, t); },
   pts: [
     { name: 'A', jp: 'スタート（いちばん伸びた所）', t: function () { return 0; },
       sym: { K: '0', Ug: '0', Us: '\\tfrac{1}{2}kx_0^{\\,2}' } },
-    { name: 'B', jp: '自然長の位置', t: function (v) { return P.m24.tNat(v); },
+    { name: 'B', jp: 'はじめて自然長を通る所', t: function (v) { return P.m24.tNat(v); },
       sym: { K: '\\tfrac{1}{2}mv^2', Ug: '0', Us: '0' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -6701,6 +6813,11 @@ DEFS['m2-4'] = {
     }
     ctx.restore();
     datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
+    /* ★何と何をくらべているのかを、図の上に出す★（先生の指示・第14回）
+       何往復も見せると動摩擦力の仕事が求めにくいので、このシムは
+       「止まるまで → もう一度はじめから → 点 B で止まる」という再生にしてある。 */
+    bannerNote(ctx, ['先ほど見せたように、本来まだ振動が続きますが、ここでは',
+      'スタート（点A）と、はじめて自然長の位置（点B）を通過する瞬間をくらべます'], 32);
     /* 壁 */
     ctx.save();
     ctx.fillStyle = '#d7dde4'; ctx.fillRect(wallX - 14, gy - 96, 14, 96);
@@ -8353,7 +8470,16 @@ function renderActive() {
   drawForceHints(ctx, d, s, s.t);
   placePtBubbles(d, ch);
   drawStep($('stepCv'));
-  renderGraphs(d, s, T, s.t);
+  /* ★グラフは「ほんとうの運動のあいだ」だけ描く★（第14回）
+     2-4 は「止まったあと、もう一度はじめから再生して点 B で止める」ので、
+     アニメの長さ（tEnd）はくり返しのぶんだけ長い。そのまま横軸にすると
+     グラフが途中でもどってしまうので、d.tGraph があればそちらを使う。 */
+  var TG = (d.tGraph ? d.tGraph(V(s)) : T);
+  /* グラフのカーソル（いまの時刻の点）も、グラフの横軸に合わせた時刻で打つ。
+     2-4 の「2回目の再生」では、カーソルがグラフを右から左へもどる＝
+     「いま見ているのは、はじめの所をもう一度」が目で分かる。 */
+  var TC = (d.tCursor ? d.tCursor(V(s), s.t) : Math.min(s.t, TG));
+  renderGraphs(d, s, TG, TC);
   renderFormulas(d, s);
   renderFigHint(d, s, s.t);
   renderResult(d, s, s.t);
@@ -8552,7 +8678,10 @@ function tick(ts) {
     /* 横軸（時間）の目盛りが、運動の終わりまで届いているか */
     xTicks: function () {
       var d = DEFS[st.cur], s = st.sims[st.cur], out = {};
-      var T = d.tEnd(V(s));
+      /* ★グラフの横軸は d.tGraph があればそちら★（第14回）
+         2-4 は「止まったあと、もう一度はじめから再生して点 B で止める」ので、
+         アニメの長さ（tEnd）とグラフの長さ（tGraph）がちがう。 */
+      var T = (d.tGraph ? d.tGraph(V(s)) : d.tEnd(V(s)));
       graphsOf(d, s).forEach(function (g) {
         var cv = document.getElementById('gc_' + g.key);
         if (!s.open[g.key] || !cv || !cv._map) return;
