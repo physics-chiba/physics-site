@@ -2894,7 +2894,8 @@ function consOf(d, v) { return (typeof d.cons === 'function') ? !!d.cons(v) : (d
 function ptsOf(d, v) {
   return (d.pts || []).map(function (p) {
     var t = (typeof p.t === 'function') ? p.t(v) : p.t;
-    return { name: p.name, jp: p.jp, t: t, sym: p.sym || {}, m: d.sample(v, t) };
+    return { name: p.name, jp: p.jp, t: t, sym: p.sym || {}, hsym: p.hsym,
+      m: d.sample(v, t) };
   });
 }
 
@@ -3106,8 +3107,13 @@ function heightDim(ctx, x, yTop, yBase, text, lead, top) {
   else label(ctx, text, x + 6, (yTop + yBase) / 2 - 10, { size: 11.5, align: 'left', color: COL.dim });
 }
 
-/* デコピン（はじく手）。1-1 と同じ出し方：はじいた直後だけ出して、すっと消す。 */
-function flickStart(ctx, t, v0, cx, cy, ang, bx, by) {
+/* デコピン（はじく手）。1-1 と同じ出し方：はじいた直後だけ出して、すっと消す。
+   ★吹きだしの しっぽは、かならず「手の真上」★（先生の指摘・第13回）
+   前は呼び出しごとに好きな場所を渡していたので、1-4・1-7・1-8 では
+   吹きだしが手から遠くはなれた所に浮いて、何を指しているのか分からなかった。
+   いまは 手の場所 (cx, cy) から up [px] だけ上に しっぽの先を置く。
+   箱が画面の外に出そうなときは bubble が箱だけ内側へ寄せる（しっぽの先は動かない）。 */
+function flickStart(ctx, t, v0, cx, cy, ang, up, dx) {
   if (!(Math.abs(v0) > 0.05) || t >= 0.34) return;
   var dir = v0 > 0 ? 1 : -1;
   var k = clamp(t / 0.10, 0, 1);
@@ -3115,8 +3121,18 @@ function flickStart(ctx, t, v0, cx, cy, ang, bx, by) {
   if (a <= 0.02) return;
   flickHand(ctx, cx, cy, ang, k, dir, 0.42, a);
   ctx.save(); ctx.globalAlpha = a;
-  bubble(ctx, 'デコピン！', bx, by, { size: 12.5, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
+  bubble(ctx, 'デコピン！', cx, cy - (up || 48),
+    { size: 12.5, dx: dx || 0, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
   ctx.restore();
+}
+
+/* ★「最高点」の吹きだし★（先生の指示・第13回）
+   1-4・1-8・1-11・1-13・2-2 は「いちばん高い所」がそのシムの見どころなので、
+   運動が終わって各点のエネルギーを出すときに、その点の上に小さく出す。
+   (x, y) は しっぽ（▼）の先＝さす場所。箱はその上に出る。 */
+function topNote(ctx, x, y, text) {
+  bubble(ctx, text || '最高点', x, y,
+    { size: 12, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
 }
 
 /* ===== 図の中の「エネルギーの棒」 =====
@@ -3472,11 +3488,14 @@ function ptGhost(ctx, d, s, p, q, here) {
     else if (q.r) ball(ctx, ox, oy, q.r, 'faint');
     ctx.restore();
   }
-  /* 高さ（両矢印）。0 に近いときは heightDim が自分で何も描かない */
+  /* 高さ（両矢印）。0 に近いときは heightDim が自分で何も描かない。
+     ★記号は「その点の式で使っている名前」にする★（先生の指示・第12回）
+     どの点も 'h = …' だと、式の $mgh_B$ が図のどの寸法なのか分からない。
+     pts に hsym（例 'h_B'・'D'・'L sinθ'）を書いておくと、それを使う。 */
   if (q.base !== undefined && Math.abs(p.m.h) > 0.005) {
     /* 高さは「面に接している点」ではかりたいので、map が hy を返せばそれを使う */
     heightDim(ctx, (q.hx === undefined) ? ox : q.hx, (q.hy === undefined) ? oy : q.hy, q.base,
-      'h = ' + fmt(p.m.h, 2) + ' m', undefined, q.hside);
+      (p.hsym || 'h') + ' = ' + fmt(p.m.h, 2) + ' m', undefined, q.hside);
   }
   /* ★「力を表示」が ON なら、その点ではたらく力も描く★（先生の指示・第8回）
      どの点でどの力がはたらいているかを、吹きだしの式と見くらべられるようにするため。
@@ -3922,7 +3941,7 @@ DEFS['m1-1'] = {
     blockShape(ctx, cx, cy, 0, bw, bh, '#e8eef5');
 
     /* デコピンではじいて動き出す */
-    flickStart(ctx, t, v.v0, X(0) - bw / 2 - 20, cy, 0, X(0) + 40, gy - 96);
+    flickStart(ctx, t, v.v0, X(0) - bw / 2 - 20, cy, 0, 74);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 40 / mg;
@@ -4332,7 +4351,10 @@ DEFS['m1-4'] = {
     if (!endOn(d, s, t)) heightDim(ctx, 26, p.y, gy, 'h = ' + fmt(m.h, 2) + ' m', p.x, true);
     /* デコピンで打ち上げる（斜面の下から） */
     flickStart(ctx, t, v.v0, pA.x - ux * 22 + nx * bh / 2, pA.y - uy * 22 + ny * bh / 2, -th,
-      pA.x + 40, gy - 118);
+      118, 30);   /* 左は高さの寸法線、右上は坂。箱だけ右へ寄せる（しっぽは手の真上のまま） */
+    /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）
+       しっぽは下（＝その点をさす）。運動が終わってから出す。 */
+    if (endOn(d, s, t)) topNote(ctx, pB.x, pB.y - 54);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 34 / mg;
@@ -4628,6 +4650,13 @@ DEFS['m1-6'] = {
     /* 糸とおもり */
     var p = pos(thNow);
     string(ctx, ox, oy, p.x, p.y);
+    /* ★式の $l$（糸の長さ）が図のどこかを見せる★（先生の指示・第12回）
+       $U_g = mgl(1-\cos\theta)$ の $l$。糸のわきに、ふれている側へ少しずらして書く。 */
+    var lsg = (thNow >= 0) ? 1 : -1;
+    label(ctx, 'l = ' + fmt(v.l, 1) + ' m',
+      ox + Math.sin(thNow) * Lp * 0.80 + Math.cos(thNow) * lsg * 24,
+      oy + Math.cos(thNow) * Lp * 0.80 - Math.sin(thNow) * lsg * 24,
+      { size: 11.5, color: COL.dim });
     ctx.save(); ctx.fillStyle = '#5b6672';
     ctx.beginPath(); ctx.arc(ox, oy, 3.4, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
@@ -4760,8 +4789,10 @@ DEFS['m1-7'] = {
     { name: 'A', jp: 'スタート（水平面）', t: function () { return 0; },
       sym: { K: '\\tfrac{1}{2}mv_0^{\\,2}', Ug: '0' } },
     { name: 'B', jp: 'ループの頂上', t: function (v) { return P.coaster.tB(v); },
+      hsym: 'D',                       /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: 'mgD' } },
     { name: 'C', jp: '止まる所（最高点）', t: function (v) { return P.coaster.tEnd(v); },
+      hsym: 'h_C',
       sym: { K: '0', Ug: 'mgh_C' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -4797,7 +4828,8 @@ DEFS['m1-7'] = {
     datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, false);
 
     /* ループの直径は、円の「まん中」に書く（左に置くと高さの寸法線とぶつかる） */
-    label(ctx, 'D = ' + fmt(P.coaster.D, 1) + ' m', X(L1), Y(R), { size: 11.5, color: COL.sub });
+    /* 第12回：点 B の高さの寸法も「D = …」と出るので、こちらは「直径」と書き分ける */
+    label(ctx, '直径 D = ' + fmt(P.coaster.D, 1) + ' m', X(L1), Y(R), { size: 11.5, color: COL.sub });
 
     var kz = mSize(d, v), cw2 = 26 * kz, chh = 18 * kz;
     var qC = P.coaster.at(P.coaster.sEnd(v), v.th);
@@ -4817,7 +4849,7 @@ DEFS['m1-7'] = {
     var cx = X(m.x) + nx * chh / 2, cy = Y(m.y) + ny * chh / 2;
     coasterCar(ctx, cx, cy, carAng, kz);
     /* ★スタートはデコピン★（第9回・先生の指示）走ってきたのではなく、はじいて動き出す */
-    flickStart(ctx, t, v.v0, X(0) - cw2 / 2 - 44, Y(0) - chh / 2, 0, X(0) - 26, gy - 150);
+    flickStart(ctx, t, v.v0, X(0) - cw2 / 2 - 44, Y(0) - chh / 2, 0, 74);
     if (!endOn(d, s, t)) heightDim(ctx, 20, Y(m.y), gy, 'h = ' + fmt(m.h, 2) + ' m', cx, true);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
@@ -4938,8 +4970,10 @@ DEFS['m1-8'] = {
   sample: function (v, t) { return P.m17.sample(v, t); },
   pts: [
     { name: 'A', jp: '投げ出す点', t: function () { return 0; },
+      hsym: 'h',                       /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '\\tfrac{1}{2}mv_0^{\\,2}', Ug: 'mgh' } },
     { name: 'B', jp: '最高点', t: function (v) { return P.m17.tTop(v); },
+      hsym: 'h_B',
       sym: { K: '\\tfrac{1}{2}m(v_0\\cos\\theta)^2', Ug: 'mgh_B' } },
     { name: 'C', jp: '着地', t: function (v) { return P.m17.tEnd(v); },
       sym: { K: '\\tfrac{1}{2}mv^2', Ug: '0' } }
@@ -4979,6 +5013,8 @@ DEFS['m1-8'] = {
     ctx.stroke(); ctx.restore();
 
     var mB = d.sample(v, P.m17.tTop(v)), mC = d.sample(v, T);
+    /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
+    if (endOn(d, s, t)) topNote(ctx, X(mB.x), Y(mB.y) - 52);
     /* ★印は球と矢印からずらす★（第6回）A は台の上・球の右下、C は着地点の右下 */
     ptMark(ctx, 'A', X(0) + 20, Y(v.h) + 18);
     ptMark(ctx, 'B', X(mB.x), Y(mB.y) - 13);
@@ -5003,8 +5039,7 @@ DEFS['m1-8'] = {
     /* ★スタートはデコピン★（手をはなすのではなく、はじいて投げ出す） */
     /* 第9回：図を大きくしたので、θ が大きいと吹きだしが「最高点 B」の印とぶつかる。
        吹きだしだけ右へ寄せる（手の位置はそのまま）。 */
-    flickStart(ctx, t, v.v0, X(0) - Math.cos(av) * 24, Y(v.h) - Math.sin(av) * 24, av,
-      X(0) + 120, Y(v.h) - 70);
+    flickStart(ctx, t, v.v0, X(0) - Math.cos(av) * 24, Y(v.h) - Math.sin(av) * 24, av, 74);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 34 / mg;
@@ -5120,12 +5155,21 @@ DEFS['m1-9'] = {
     /* 自然長の位置 */
     ctx.save();
     ctx.strokeStyle = '#9aa3ac'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
-    ctx.beginPath(); ctx.moveTo(natX, gy - 74); ctx.lineTo(natX, gy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(natX, gy - 100); ctx.lineTo(natX, gy + 4); ctx.stroke();
     ctx.restore();
-    label(ctx, '自然長', natX, gy - 82, { size: 11, color: COL.sub });
+    label(ctx, '自然長', natX, gy - 108, { size: 11, color: COL.sub });
 
     var cx = X(m.x), cy = gy - bh / 2;
     spring(ctx, wallX, cy, cx - bw / 2, cy, { coils: 10, r: 11, color: COL.hand, lw: 2 });
+    /* ★式の $x_0$（はじめの伸び）が図のどこかを見せる★（先生の指示・第12回）
+       $U_k = \tfrac12kx_0^2$ の $x_0$。自然長の線から A（スタート）までの長さ。 */
+    if (X(v.x0) - natX > 8) {
+      var y0d = gy - bh - 40;
+      arrow(ctx, natX, y0d, X(v.x0), y0d, 'dim');
+      arrow(ctx, X(v.x0), y0d, natX, y0d, 'dim');
+      label(ctx, 'x_0 = ' + fmt(v.x0, 2) + ' m', (natX + X(v.x0)) / 2, y0d - 11,
+        { size: 11, color: COL.dim });
+    }
     ptMark(ctx, 'A', X(v.x0) + bw / 2 + 13, gy - bh / 2);
     /* ★B は「自然長」の点線の上★（第9回・先生の指示）
        物体とは重ならない高さ（物体の上 30 px ほど）に置く。 */
@@ -5283,13 +5327,28 @@ DEFS['m1-10'] = {
     ptMark(ctx, 'B', natX, gy + 17);
     ptMark(ctx, 'C', X(xMax), gy + 17);
     blockShape(ctx, cx, cy, 0, bw, bh, '#e8eef5');
-    /* 縮みの寸法 */
+    /* 縮みの寸法。動いているあいだは「いまの縮み」、
+       ★運動が終わったら「いちばん縮んだ長さ x」（＝式 $\tfrac12kx^2$ の x）を残す★
+       （先生の指示・第12回。式に出てくる記号は図にも出す） */
     if (m.x > 0.004) {
       arrow(ctx, natX, gy + 18, X(m.x), gy + 18, 'dim');
       label(ctx, 'x = ' + fmt(m.x, 3) + ' m', (natX + X(m.x)) / 2, gy + 32,
         { size: 11, color: COL.dim });
+    } else if (endOn(d, s, t) && xMax > 0.004) {
+      /* 運動が終わったら「いちばん縮んだ長さ x」を図の上のほうに残す。
+         地面の下は 印・mg・吹きだしでうまっているので、上に寸法線をひく。 */
+      var ytop = gy - 130;
+      ctx.save();
+      ctx.strokeStyle = fade(COL.dim, 0.35); ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(X(xMax), ytop); ctx.lineTo(X(xMax), gy - 30); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(natX, ytop); ctx.lineTo(natX, gy - 104); ctx.stroke();
+      ctx.restore();
+      arrow(ctx, natX, ytop, X(xMax), ytop, 'dim');
+      arrow(ctx, X(xMax), ytop, natX, ytop, 'dim');
+      label(ctx, 'x = ' + fmt(xMax, 3) + ' m', (natX + X(xMax)) / 2, ytop - 11,
+        { size: 11, color: COL.dim });
     }
-    flickStart(ctx, t, v.v0, X(-D0) - bw / 2 - 20, cy, 0, X(-D0) + 30, gy - 118);
+    flickStart(ctx, t, v.v0, X(-D0) - bw / 2 - 20, cy, 0, 74);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 30 / mg;
@@ -5374,12 +5433,14 @@ DEFS['m1-11'] = {
     { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 20, max: 40, step: 5, dec: 0, def: 35 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 1.0, max: 2.0, step: 0.25, dec: 2, def: 1.0 }
   ],
+  /* ★第13回：ヒントの「x₀ を2倍」がそのまま押せるようにボタンを入れかえた★
+     x₀ は 0.45〜0.90 m なので、0.45 → 0.90 がちょうど2倍。 */
   actions: [
-    { label: '大きく縮める（x₀＝0.90 m）', fn: function (s) { s.v.x0 = 0.90; },
-      is: function (v) { return Math.abs(v.x0 - 0.90) < 1e-9; },
-      next: function (s) { return s._played && Math.abs(s.v.x0 - 0.90) > 1e-9; } },
-    { label: 'かたいばね（k＝40 N/m）', fn: function (s) { s.v.k = 40; },
-      is: function (v) { return v.k === 40; } },
+    { label: '小さく縮める（x₀＝0.45 m）', fn: function (s) { s.v.x0 = 0.45; },
+      is: function (v) { return Math.abs(v.x0 - 0.45) < 1e-9; },
+      next: function (s) { return s._played && Math.abs(s.v.x0 - 0.45) > 1e-9; } },
+    { label: 'その2倍に（x₀＝0.90 m）', fn: function (s) { s.v.x0 = 0.90; },
+      is: function (v) { return Math.abs(v.x0 - 0.90) < 1e-9; } },
     { label: 'はじめの設定にもどす', fn: function (s) { s.v.x0 = 0.75; s.v.k = 35; s.v.m = 1.0; },
       is: function (v) { return Math.abs(v.x0 - 0.75) < 1e-9 && v.k === 35 && Math.abs(v.m - 1) < 1e-9; } }
   ],
@@ -5389,7 +5450,7 @@ DEFS['m1-11'] = {
   step1: '弾性力と重力（どちらも保存力）だけが仕事をする。垂直抗力は運動の向きに垂直',
   datum: '水平面（ばねと平らな床の高さ）',
   hint2: '<b>次は</b>：$x_0$ を変えて、<b>昇る高さ</b> $h_C = kx_0^{\\,2}/(2mg)$ が' +
-    'どう変わるか見てみよう（$x_0$ を2倍にすると？）。',
+    'どう変わるか見てみよう（$x_0$ を <b>0.45 m → 0.90 m</b> と2倍にすると、$h_C$ は何倍？）。',
   ptSide: 'row',
   slow: true,                /* ★はじめからスロー再生★（先生の指示・第8回。ばねのシムは速すぎる） */
   tEnd: function (v) { return P.sprSlide.tEnd(v); },
@@ -5400,6 +5461,7 @@ DEFS['m1-11'] = {
     { name: 'B', jp: 'ばねから離れる所', t: function (v) { return P.sprSlide.t1(v); },
       sym: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: '0', Us: '0' } },
     { name: 'C', jp: '最高点', t: function (v) { return P.sprSlide.tC(v); },
+      hsym: 'h_C',                     /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '0', Ug: 'mgh_C', Us: '0' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -5448,9 +5510,18 @@ DEFS['m1-11'] = {
     /* 自然の長さの位置 */
     ctx.save();
     ctx.strokeStyle = '#9aa3ac'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
-    ctx.beginPath(); ctx.moveTo(natX, gy - 76); ctx.lineTo(natX, gy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(natX, gy - 102); ctx.lineTo(natX, gy + 4); ctx.stroke();
     ctx.restore();
-    label(ctx, '自然の長さ', natX, gy - 84, { size: 11, color: COL.sub });
+    label(ctx, '自然の長さ', natX, gy - 110, { size: 11, color: COL.sub });
+    /* ★式の $x_0$（はじめの縮み）が図のどこかを見せる★（先生の指示・第12回）
+       $U_k = \tfrac12kx_0^2$ の $x_0$。自然の長さの位置から A（スタート）まで。 */
+    if (natX - X(-v.x0) > 8) {
+      var y0d = gy - 66;
+      arrow(ctx, X(-v.x0), y0d, natX, y0d, 'dim');
+      arrow(ctx, natX, y0d, X(-v.x0), y0d, 'dim');
+      label(ctx, 'x_0 = ' + fmt(v.x0, 2) + ' m', (natX + X(-v.x0)) / 2, y0d - 11,
+        { size: 11, color: COL.dim });
+    }
 
     /* 物体（球）の位置 */
     var bx, by, ang = 0;
@@ -5468,6 +5539,8 @@ DEFS['m1-11'] = {
     var pA = { x: X(-v.x0), y: gy }, pB = { x: natX, y: gy };
     var xC = P.sprSlide.xOfH(hC);
     var pC = { x: X(LF + xC), y: Y(hC) };
+    /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
+    if (endOn(d, s, t)) topNote(ctx, pC.x, pC.y - 46);
     /* ★A と B は近いので、A は地面の下・B は物体の上に分ける★（物体と重ねない） */
     /* ★印は地面の下（A・B）と坂の中（C）★（第6回）
        球・力の矢印・左の高さの数値とぶつからない場所にそろえる。 */
@@ -5602,8 +5675,10 @@ DEFS['m1-12'] = {
     { name: 'A', jp: 'はじめの状態', t: function () { return 0; },
       sym: { K: '0', Ug: '0', Us: '\\tfrac{1}{2}kd^2' } },
     { name: 'B', jp: 'つりあいの位置', t: function (v) { return P.m19.tEq(v); },
+      hsym: 'd-x_{eq}',                /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '\\tfrac{1}{2}mv^2', Ug: 'mg(d-x_{\\text{eq}})', Us: '\\tfrac{1}{2}kx_{\\text{eq}}^{\\,2}' } },
     { name: 'C', jp: '最下点', t: function (v) { return P.m19.tLow(v); },
+      hsym: 'd-x_{最下}',
       sym: { K: '0', Ug: 'mg(d-x_{\\text{最下}})', Us: '\\tfrac{1}{2}kx_{\\text{最下}}^{\\,2}' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -5630,7 +5705,9 @@ DEFS['m1-12'] = {
     /* 文字は線の「右のはし」の少し上に置く。線の上に置くと、破線が文字を横切って読めない
        （第6回の直し）。左に置くと、左の高さの寸法線とぶつかる。 */
     label(ctx, '自然長', cx + 64, natY - 11, { size: 11, color: COL.sub, align: 'left' });
-    label(ctx, 'つりあい', cx + 64, Y(xe) - 11, { size: 11, color: COL.sub, align: 'left' });
+    /* ★式の $x_{eq}$ が図のどこかを見せる★（先生の指示・第12回） */
+    label(ctx, 'つりあい x_{eq} = ' + fmt(xe, 3) + ' m', cx + 64, Y(xe) - 11,
+      { size: 11, color: COL.sub, align: 'left' });
     datumLine(ctx, cx - 110, W - 96, Y(v.d), '基準面 h = 0（スタート）', true, false);
     /* ★2-3（手でゆっくり下ろす）との見くらべ★（先生の指示・第11回）
        同じばね・同じおもりでも、手が仕事をするかどうかで
@@ -5768,12 +5845,15 @@ DEFS['m1-13'] = {
   sample: function (v, t) { return P.m110.sample(v, t); },
   pts: [
     { name: 'A', jp: 'スタート', t: function () { return 0; },
+      hsym: 'h',                       /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '\\tfrac{1}{2}mv_0^{\\,2}', Ug: 'mgh' } },
     { name: 'B', jp: '最下点', t: function (v) { return P.m110.tB(v); },
       sym: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: '0' } },
     { name: 'C', jp: '飛び出す点', t: function (v) { return P.m110.tC(v); },
+      hsym: 'h_C',
       sym: { K: '\\tfrac{1}{2}mv_C^{\\,2}', Ug: 'mgh_C' } },
     { name: 'D', jp: '最高点', t: function (v) { return P.m110.tD(v); },
+      hsym: 'h_D',
       sym: { K: '\\tfrac{1}{2}m(v_C\\cos 60^\\circ)^2', Ug: 'mgh_D' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -5836,6 +5916,8 @@ DEFS['m1-13'] = {
 
     var mA = d.sample(v, 0), mB = d.sample(v, P.m110.tB(v));
     var mC = d.sample(v, P.m110.tC(v)), mD = d.sample(v, P.m110.tD(v));
+    /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
+    if (endOn(d, s, t)) topNote(ctx, X(mD.x), Y(mD.y) - 50);
     /* ★飛び出す点 C が「まん中から 60°」であることを図に出す★（先生の指示・第8回）
        円の中心から、最下点 B の向きと C の向きへ細い線を引き、その間の角を 60° と書く。 */
     ctx.save();
@@ -5882,7 +5964,7 @@ DEFS['m1-13'] = {
       var hA = (t <= 0.18) ? 1 : Math.max(0, 1 - (t - 0.18) / 0.22);
       if (hA > 0.02) dropHand(ctx, aBx, aBy, 0.5, clamp(t / 0.18, 0, 1), hA);
     } else {
-      flickStart(ctx, t, v.v0, aBx - 20, aBy, 0, aBx + 34, aBy - 62);
+      flickStart(ctx, t, v.v0, aBx - 20, aBy, 0, 62);
     }
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
@@ -6045,7 +6127,7 @@ DEFS['m2-1'] = {
     }
     var cx = X(m.x), cy = gy - bh / 2;
     blockShape(ctx, cx, cy, 0, bw, bh, '#e8eef5');
-    flickStart(ctx, t, v.v0, X(0) - bw / 2 - 20, cy, 0, X(0) + 40, gy - 136);
+    flickStart(ctx, t, v.v0, X(0) - bw / 2 - 20, cy, 0, 152);   /* L の寸法線より上に出す */
 
     /* ★力の縮尺は大きめにとる★（先生の指摘・第7回）
        もとは「mg が 30 px」だったが、動摩擦力 μ'N は mg の 1/5〜1/3 しかないので
@@ -6187,6 +6269,7 @@ DEFS['m2-2'] = {
     { name: 'A', jp: 'スタート（下端）', t: function () { return 0; },
       sym: { K: '\\tfrac{1}{2}mv_0^{\\,2}', Ug: '0' } },
     { name: 'B', jp: '止まる位置', t: function (v) { return P.m22.tStop(v); },
+      hsym: 'L sinθ',                  /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '0', Ug: 'mgL\\sin\\theta' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -6231,11 +6314,26 @@ DEFS['m2-2'] = {
 
     var kz = mSize(d, v), bw = 30 * kz, bh = 22 * kz;
     var pA = P2(0), pB = P2(L);
+    /* ★いちばん高い所に「最高点」の吹きだし★（先生の指示・第13回）しっぽは下 */
+    if (endOn(d, s, t)) topNote(ctx, pB.x, pB.y - 56);
     /* ★印は物体の「坂にそって外がわ」★（第6回）真上は N の矢印が通るのでずらす */
     var mkA = markAway(pA, pB, nx, ny, bh / 2 + 4, bw / 2 + 14);
     var mkB = markAway(pB, pA, nx, ny, bh / 2 + 4, bw / 2 + 14);
     ptMark(ctx, 'A', mkA.x, mkA.y);
     ptMark(ctx, 'B', mkB.x, mkB.y);
+
+    /* ★式の $L$ が図のどこかを見せる★（先生の指示・第12回）
+       $U_g = mgL\sin\theta$ の $L$（すべり上がった斜面にそった長さ）を、
+       坂の内がわ（下）に両矢印でひく。答えなのでスタートを押してから出す。 */
+    if (hintOn(s, t)) {
+      var lo1 = { x: pA.x - nx * 30, y: pA.y - ny * 30 };
+      var lo2 = { x: pB.x - nx * 30, y: pB.y - ny * 30 };
+      arrow(ctx, lo1.x, lo1.y, lo2.x, lo2.y, 'dim');
+      arrow(ctx, lo2.x, lo2.y, lo1.x, lo1.y, 'dim');
+      /* 文字は「θ = ○°」の弧を避けて、坂の 0.62 くらいの所に置く */
+      label(ctx, 'L = ' + fmt(L, 2) + ' m', lo1.x + (lo2.x - lo1.x) * 0.62 - nx * 14,
+        lo1.y + (lo2.y - lo1.y) * 0.62 - ny * 14, { size: 11.5, color: COL.dim });
+    }
 
     var i;
     for (i = 1; i * 0.15 < t - 1e-9; i++) {
@@ -6246,8 +6344,7 @@ DEFS['m2-2'] = {
     }
     var p0 = P2(m.s), cx = p0.x + nx * bh / 2, cy = p0.y + ny * bh / 2;
     blockShape(ctx, cx, cy, th, bw, bh, '#e8eef5');
-    flickStart(ctx, t, v.v0, pA.x - ux * 22 + nx * bh / 2, pA.y - uy * 22 + ny * bh / 2, -th,
-      pA.x + 46, gy - 120);
+    flickStart(ctx, t, v.v0, pA.x - ux * 22 + nx * bh / 2, pA.y - uy * 22 + ny * bh / 2, -th, 112);
     /* 高さは「斜面に接している点」ではかる（物体の厚みぶんを高さに数えない） */
     /* 運動が終わったら、点ごとの高さ（drawPts）に任せてこの1本は消す */
     if (!endOn(d, s, t)) heightDim(ctx, 24, p0.y, gy, 'h = ' + fmt(m.h, 2) + ' m', cx, true);
@@ -6324,7 +6421,7 @@ DEFS['m2-2'] = {
     /* ★吹きだしは物体の斜め上（坂の外がわ）に出す★（第8回）
        坂の右下（山の中）に置いていたので、引き出しの▼が何もささずに浮いて見えた。
        ★第9回★ しっぽ（▼）の先は「動摩擦力の矢印の まん中の真上」にそろえる。 */
-    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', px - ux * fl / 2, cy + ny * 104,
+    bubble(ctx, '力の向きが運動と逆 → 負の仕事！', px - ux * fl / 2, cy + ny * 158,
       { size: 11.5, bg: '#eef2f7', border: COL.eE, color: '#28323d' });
   },
   resItems: function (v) {
@@ -6395,6 +6492,7 @@ DEFS['m2-3'] = {
     { name: 'A', jp: 'はじめの状態', t: function () { return 0; },
       sym: { K: '0', Ug: '0', Us: '\\tfrac{1}{2}kd^2' } },
     { name: 'B', jp: 'つりあいの位置', t: function () { return P.m23.T; },
+      hsym: 'd-x_{eq}',                /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '0', Ug: 'mg(d-x_{\\text{eq}})', Us: '\\tfrac{1}{2}kx_{\\text{eq}}^{\\,2}' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -6417,7 +6515,9 @@ DEFS['m2-3'] = {
     ctx.restore();
     /* 文字は線の右のはしの少し上（線が字を横切らないように・第6回） */
     label(ctx, '自然長', cx + 64, natY - 11, { size: 11, color: COL.sub, align: 'left' });
-    label(ctx, 'つりあい', cx + 64, Y(xe) - 11, { size: 11, color: COL.sub, align: 'left' });
+    /* ★式の $x_{eq}$ が図のどこかを見せる★（先生の指示・第12回） */
+    label(ctx, 'つりあい x_{eq} = ' + fmt(xe, 3) + ' m', cx + 64, Y(xe) - 11,
+      { size: 11, color: COL.sub, align: 'left' });
     datumLine(ctx, cx - 110, W - 96, Y(v.d), '基準面 h = 0（スタート）', true, false);
     /* ★1-12（手をはなす）との見くらべ★（先生の指示・第11回）
        同じばね・同じおもりでも、手が仕事をするかどうかで
@@ -6546,7 +6646,7 @@ DEFS['m2-4'] = {
     '<b>弾性力（保存力）</b>のほかに<b>動摩擦力（非保存力）</b>が運動と逆向きにはたらくので、' +
     '力学的エネルギーは保存されません。自然長を通るときの速さは ' +
     '$\\tfrac12kx_0^{\\,2} = \\tfrac12mv^2 + \\mu\' mgx_0$ から求めます。',
-  cw: 640, ch: 310,
+  cw: 640, ch: 366,        /* 第12回：上に x_0 の寸法線を入れるぶん高くした */
   vis: ['F', 'V', 'A'],
   hasUs: true,
   mainVars: ['x0', 'mu'],
@@ -6609,9 +6709,19 @@ DEFS['m2-4'] = {
     /* 自然長の位置 */
     ctx.save();
     ctx.strokeStyle = '#9aa3ac'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
-    ctx.beginPath(); ctx.moveTo(natX, gy - 74); ctx.lineTo(natX, gy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(natX, gy - 160); ctx.lineTo(natX, gy + 4); ctx.stroke();
     ctx.restore();
-    label(ctx, '自然長', natX, gy - 82, { size: 11, color: COL.sub });
+    label(ctx, '自然長', natX, gy - 168, { size: 11, color: COL.sub });
+    /* ★式の $x_0$（はじめの伸び）が図のどこかを見せる★（先生の指示・第12回）
+       $U_k = \tfrac12kx_0^2$ の $x_0$。自然長の線から A（スタート）まで。1-9 と同じ作法。 */
+    if (X(v.x0) - natX > 8) {
+      /* とちゅうの姿の吹きだしが gy − 100 に出るので、その上に置く */
+      var y0d = gy - 140;
+      arrow(ctx, natX, y0d, X(v.x0), y0d, 'dim');
+      arrow(ctx, X(v.x0), y0d, natX, y0d, 'dim');
+      label(ctx, 'x_0 = ' + fmt(v.x0, 2) + ' m', (natX + X(v.x0)) / 2, y0d - 11,
+        { size: 11, color: COL.dim });
+    }
 
     var cx = X(m.x), cy = gy - bh / 2;
     spring(ctx, wallX, cy, cx - bw / 2, cy, { coils: 10, r: 11, color: COL.hand, lw: 2 });
@@ -6769,14 +6879,19 @@ DEFS['m2-5'] = {
   wSym: '(F - \\mu\' mg\\cos\\theta)L',
   step1: '重力のほかに、糸の力（正の仕事）と動摩擦力（負の仕事）＝非保存力が仕事をしている',
   datum: '出発点（斜面の下端）',
-  hint2: '<b>次は</b>：$F$ を小さくしていって、<b>$E$ の増え方</b>がどう変わるか見てみよう。' +
-    '$F = mg\\sin\\theta + \\mu\' mg\\cos\\theta$ になると、もう動きだせない。',
+  /* ★第13回：F は 32〜44 N しか選べないので、「動きだせなくなるまで小さくする」は
+     このシムではできない（動きだすのに必要な力は既定の設定で 16.6 N）。
+     押せば必ずできることだけを「次は」に書く。 */
+  hint2: '<b>次は</b>：$F$ を <b>44 N → 32 N</b> と小さくして、<b>$E$ の増え方</b>（＝糸がした仕事）が' +
+    'どう変わるか見てみよう。動きだすのに必要な力は $mg\\sin\\theta + \\mu\' mg\\cos\\theta$ で、' +
+    'いまの設定では <b>16.6 N</b>。このシムの $F$ はいつもそれより大きくしてあります。',
   tEnd: function (v) { return P.m25.tEnd(v); },
   sample: function (v, t) { return P.m25.sample(v, t); },
   pts: [
     { name: 'A', jp: 'スタート（下端・静止）', t: function () { return 0; },
       sym: { K: '0', Ug: '0' } },
     { name: 'B', jp: '$L$ だけ引き上げた所', t: function (v) { return P.m25.tEnd(v); },
+      hsym: 'L sinθ',                  /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '\\tfrac{1}{2}mv^2', Ug: 'mgL\\sin\\theta' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -6818,6 +6933,15 @@ DEFS['m2-5'] = {
     var mkB = { x: pB.x - nx * 20, y: pB.y - ny * 20 };
     ptMark(ctx, 'A', mkA.x, mkA.y);
     ptMark(ctx, 'B', mkB.x, mkB.y);
+    /* ★式の $L$（引く長さ）が図のどこかを見せる★（先生の指示・第12回）
+       $U_g = mgL\sin\theta$ の $L$。A の印と B の印の間に、坂と平行な両矢印をひく。
+       ここは決めた値なので、はじめから出しておく。 */
+    var lu1 = { x: pA.x + nx * 44, y: pA.y + ny * 44 };
+    var lu2 = { x: pB.x + nx * 44, y: pB.y + ny * 44 };
+    arrow(ctx, lu1.x, lu1.y, lu2.x, lu2.y, 'dim');
+    arrow(ctx, lu2.x, lu2.y, lu1.x, lu1.y, 'dim');
+    label(ctx, 'L = ' + fmt(L, 1) + ' m', (lu1.x + lu2.x) / 2 + nx * 15,
+      (lu1.y + lu2.y) / 2 + ny * 15, { size: 11.5, color: COL.dim });
 
     /* ★通った跡（うすい長方形）は描かない★（先生の指示・第6回）
        まっすぐ上がるだけなので、たくさん並ぶと図がうるさいだけだった。

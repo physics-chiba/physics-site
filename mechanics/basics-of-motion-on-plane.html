@@ -345,7 +345,10 @@ table.read#readout td.v{flex:1 1 auto;text-align:right}
   border-radius:var(--r-m);padding:9px 12px;font-size:.85rem;margin-top:10px;line-height:1.75}
 .note b{color:var(--orange-d)}
 .eq{background:var(--panel2);border:1px solid #dde5ee;border-radius:var(--r-m);
-  padding:8px 12px;margin:10px 0 0;font-size:.9rem;line-height:1.9;overflow-x:auto}
+  padding:8px 12px;margin:10px 0 0;font-size:.9rem;line-height:1.9;overflow-x:auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.eqwrap{margin-top:10px}
+.eqwrap .eq{margin-top:4px}
+.eqttl{font-size:.84rem;font-weight:700;color:var(--ink2)}
 
 /* ===== クイズ ===== */
 .quiz{background:var(--ok-l);border:1px solid #b9e0c6;border-radius:var(--r-l);
@@ -1084,6 +1087,164 @@ P.m41 = {
   range: function (v) { return v.v0 * P.m41.tEnd(v); }
 };
 
+/* ============ 1-8〜1-11 2物体の運動 ============
+   1-8〜1-10 は軽い糸でつながっているので、A と B の加速度の大きさ・速さ・進んだ距離は共通。
+   1-11 だけは A と B が別々に動くので、それぞれを別に返す。 */
+
+/* 1-8 なめらかな水平面。A(m) ── 糸 ── B(M) を、B に力 f をかけて右へ引く。
+   全体：(m+M)a = f ／ A について：ma = T  */
+P.m18 = {
+  a: function (v) { return v.f / (v.m + v.M); },
+  T: function (v) { return v.m * P.m18.a(v); },
+  LEN: 9,                                   /* これだけ進んだら終わり [m] */
+  tEnd: function (v) {
+    var a = P.m18.a(v);
+    return (a < 1e-9) ? 3 : Math.min(6, Math.sqrt(2 * P.m18.LEN / a));
+  },
+  sample: function (v, t) {
+    var a = P.m18.a(v);
+    return { x: 0.5 * a * t * t, v: a * t, a: a, T: P.m18.T(v) };
+  }
+};
+
+/* 1-9 なめらかな斜面（角 θ）の上の A(m) を、頂上の滑車を通して B(M) が引く。
+   x は「A が斜面を上る向き＝B が下りる向き」を正にとる。
+   A：ma = T − mg sinθ ／ B：Ma = Mg − T ／ たすと (m+M)a = Mg − mg sinθ */
+P.m19 = {
+  a: function (v) { return (v.M - v.m * Math.sin(v.th * DEG)) * G / (v.m + v.M); },
+  T: function (v) { return v.M * (G - P.m19.a(v)); },
+  LEN: 2.4,
+  tEnd: function (v) {
+    var a = Math.abs(P.m19.a(v));
+    return (a < 1e-9) ? 3 : Math.min(6, Math.sqrt(2 * P.m19.LEN / a));
+  },
+  sample: function (v, t) {
+    var a = P.m19.a(v);
+    return { x: 0.5 * a * t * t, v: a * t, a: a, T: P.m19.T(v) };
+  }
+};
+
+/* 1-10 アトウッドの装置。滑車の両側に A(m) と B(M)、m < M。
+   x は「B が下りる向き＝A が上る向き」を正にとる。
+   A：ma = T − mg ／ B：Ma = Mg − T ／ たすと (m+M)a = (M−m)g */
+P.m110 = {
+  a: function (v) { return (v.M - v.m) * G / (v.m + v.M); },
+  T: function (v) { return 2 * v.m * v.M * G / (v.m + v.M); },
+  LEN: 2.2,
+  tEnd: function (v) {
+    var a = Math.abs(P.m110.a(v));
+    return (a < 1e-9) ? 3 : Math.min(6, Math.sqrt(2 * P.m110.LEN / a));
+  },
+  sample: function (v, t) {
+    var a = P.m110.a(v);
+    return { x: 0.5 * a * t * t, v: a * t, a: a, T: P.m110.T(v) };
+  }
+};
+
+/* 1-11 なめらかな床の上の板 A(mA)、その上にのった物体 B(mB)。
+   A と B のあいだだけに動摩擦（係数 μ′）がある。右向きを正。
+   すべっているあいだ：B にはたらく摩擦は「A が B に対して動く向き」、A にはその反対。
+   速さがそろったあとは、（必要な摩擦が最大静止摩擦をこえなければ）いっしょに動く。 */
+P.m111 = {
+  LB: 2.0,          /* 板の長さ [m]。B ははじめ、まん中にのっている */
+  HB: 0.22,         /* 板の上面の高さ [m]。すべり落ちたらこの高さから水平投射になる */
+  /* いまの速度から、A と B の加速度を出す。
+     すべっているとき：動摩擦 μ′mg。止まって（同じ速さで）いるとき：静止摩擦は最大 μmg まで。 */
+  acc: function (v, vA, vB) {
+    var fk = v.mud * v.mB * G;                          /* 動摩擦力の大きさ */
+    var fs = (v.mus === undefined ? v.mud : v.mus) * v.mB * G;  /* 最大静止摩擦力 */
+    var vr = vA - vB;
+    if (Math.abs(vr) > 1e-9) {
+      var s = vr > 0 ? 1 : -1;                 /* A が B に対して進む向き */
+      return { aA: (v.FA - s * fk) / v.mA, aB: (v.FB + s * fk) / v.mB, slip: true, f: s * fk };
+    }
+    var ac = (v.FA + v.FB) / (v.mA + v.mB);    /* いっしょに動くと仮定した加速度 */
+    var need = v.mB * ac - v.FB;               /* そのとき B に必要な摩擦力 */
+    if (Math.abs(need) <= fs + 1e-9) return { aA: ac, aB: ac, slip: false, f: need };
+    var s2 = need > 0 ? 1 : -1;
+    return { aA: (v.FA - s2 * fk) / v.mA, aB: (v.FB + s2 * fk) / v.mB, slip: true, f: s2 * fk };
+  },
+  /* すべりが終わる（速さがそろう）時刻。そろわないなら Infinity */
+  tStick: function (v) {
+    var p = P.m111.acc(v, v.vA0, v.vB0);
+    if (!p.slip) return 0;
+    var dv = v.vA0 - v.vB0, da = p.aA - p.aB;
+    if (Math.abs(da) < 1e-12) return Infinity;
+    var t = -dv / da;
+    if (!(t > 1e-9)) return Infinity;
+    /* 速さがそろったあと、静止摩擦でいっしょに動けるかどうかを確かめる */
+    var q = P.m111.acc(v, 0, 0);
+    return q.slip ? Infinity : t;
+  },
+  /* B が板からすべり落ちる時刻（落ちないなら Infinity）。
+     A から見た B のずれが板の半分（LB/2）をこえたら落ちる。 */
+  tFall: function (v) {
+    var p = P.m111.acc(v, v.vA0, v.vB0);
+    if (!p.slip) return Infinity;
+    var d0 = P.m111.LB / 2;
+    var dv = v.vA0 - v.vB0, da = p.aA - p.aB;
+    var tf = Infinity, i, sg, A2, B2, C2, D2, r;
+    for (i = 0; i < 2; i++) {
+      sg = i ? -1 : 1;
+      A2 = 0.5 * da; B2 = dv; C2 = -sg * d0;
+      if (Math.abs(A2) < 1e-12) {
+        if (Math.abs(B2) > 1e-12) { r = -C2 / B2; if (r > 1e-9 && r < tf) tf = r; }
+      } else {
+        D2 = B2 * B2 - 4 * A2 * C2;
+        if (D2 >= 0) {
+          r = (-B2 + Math.sqrt(D2)) / (2 * A2); if (r > 1e-9 && r < tf) tf = r;
+          r = (-B2 - Math.sqrt(D2)) / (2 * A2); if (r > 1e-9 && r < tf) tf = r;
+        }
+      }
+    }
+    var ts = P.m111.tStick(v);
+    if (isFinite(ts) && ts <= tf) return Infinity;      /* 落ちる前に速さがそろう */
+    return tf;
+  },
+  tFly: function () { return Math.sqrt(2 * P.m111.HB / G); },
+  tEnd: function (v) {
+    var ts = P.m111.tStick(v), tf = P.m111.tFall(v);
+    if (isFinite(tf)) return Math.max(1.0, Math.min(6, tf + P.m111.tFly() + 0.20));
+    return Math.max(1.2, Math.min(5, isFinite(ts) ? ts * 1.7 + 0.4 : 2.4));
+  },
+  /* B が板の上にいるあいだの運動（すべる→速さがそろう、の2段階） */
+  onBoard: function (v, t) {
+    var p1 = P.m111.acc(v, v.vA0, v.vB0);
+    var ts = P.m111.tStick(v);
+    var t1 = Math.min(t, isFinite(ts) ? ts : t);
+    var xA = v.vA0 * t1 + 0.5 * p1.aA * t1 * t1, vA = v.vA0 + p1.aA * t1;
+    var xB = v.vB0 * t1 + 0.5 * p1.aB * t1 * t1, vB = v.vB0 + p1.aB * t1;
+    var aA = p1.aA, aB = p1.aB, slip = p1.slip, f = p1.f;
+    if (t > t1 + 1e-12) {
+      var p2 = P.m111.acc(v, vA, vB);                  /* 速さがそろったあと */
+      var t2 = t - t1;
+      xA += vA * t2 + 0.5 * p2.aA * t2 * t2; xB += vB * t2 + 0.5 * p2.aB * t2 * t2;
+      vA += p2.aA * t2; vB += p2.aB * t2;
+      aA = p2.aA; aB = p2.aB; slip = p2.slip; f = p2.f;
+    }
+    return { xA: xA, vA: vA, aA: aA, xB: xB, vB: vB, aB: aB, slip: slip, f: f, slid: xA - xB };
+  },
+  sample: function (v, t) {
+    var tf = P.m111.tFall(v), r;
+    if (t <= tf + 1e-12) {
+      r = P.m111.onBoard(v, t);
+      r.yB = P.m111.HB; r.fell = false; r.air = false;
+      return r;
+    }
+    var rf = P.m111.onBoard(v, tf), t2 = t - tf;
+    var aA2 = v.FA / v.mA;                     /* B が乗っていないので摩擦はない */
+    var aB2 = v.FB / v.mB;                     /* 空中でも、なめらかな床の上でも水平の摩擦は 0 */
+    var tfly = P.m111.tFly();
+    var xA = rf.xA + rf.vA * t2 + 0.5 * aA2 * t2 * t2, vA = rf.vA + aA2 * t2;
+    var xB = rf.xB + rf.vB * t2 + 0.5 * aB2 * t2 * t2, vB = rf.vB + aB2 * t2;
+    var yB = (t2 < tfly) ? Math.max(0, P.m111.HB - 0.5 * G * t2 * t2) : 0;
+    return {
+      xA: xA, vA: vA, aA: aA2, xB: xB, vB: vB, aB: aB2,
+      slip: false, f: 0, slid: xA - xB, yB: yB, fell: true, air: t2 < tfly
+    };
+  }
+};
+
 /* ===== 40_draw.js ===== */
 /* 共通の描画部品。canvas の中は 1 書体（FONT）にそろえる。内部解像度は 2 倍。 */
 'use strict';
@@ -1165,7 +1326,7 @@ function drawEqualTicks(ctx) {
       if (a.len < 19) continue;                           /* 短すぎる矢印には付けない */
       var g = null;
       for (j = 0; j < groups.length; j++) {
-        if (Math.abs(groups[j].len - a.len) <= 0.8) { g = groups[j]; break; }
+        if (Math.abs(groups[j].len - a.len) <= (a.cat === 'V' ? 0.35 : 0.8)) { g = groups[j]; break; }
       }
       if (!g) { g = { len: a.len, cat: a.cat, items: [] }; groups.push(g); }
       g.items.push(a);
@@ -1592,6 +1753,14 @@ function string(ctx, x1, y1, x2, y2) {
   ctx.restore();
 }
 
+/* 滑車に巻きついた糸（円弧）。a1→a2 はキャンバス座標の角度 */
+function stringArc(ctx, cx, cy, r, a1, a2) {
+  ctx.save();
+  ctx.strokeStyle = '#6b5442'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx, cy, r, a1, a2); ctx.stroke();
+  ctx.restore();
+}
+
 function hand(ctx, hx, hy, ang) {
   ctx.save();
   ctx.translate(hx, hy);
@@ -1826,6 +1995,21 @@ function plot(cv, spec) {
 
   ctx.save();
   ctx.beginPath(); ctx.rect(pad.l - 1, pad.t - 1, gw + 2, gh + 2); ctx.clip();
+  /* spec.band: 2本の線ではさまれた部分を塗る（面積＝2つの差の積み重ね）。
+     1-11 で「B が A に対してすべった距離」を見せるために使う。 */
+  if (!spec.hide && spec.band && spec.series && spec.series[spec.band.i] && spec.series[spec.band.j]) {
+    var pa = spec.series[spec.band.i].pts, pb = spec.series[spec.band.j].pts, bi;
+    if (pa.length > 1 && pa.length === pb.length) {
+      ctx.save();
+      ctx.beginPath();
+      for (bi = 0; bi < pa.length; bi++) ctx.lineTo(X(pa[bi][0]), Y(pa[bi][1]));
+      for (bi = pb.length - 1; bi >= 0; bi--) ctx.lineTo(X(pb[bi][0]), Y(pb[bi][1]));
+      ctx.closePath();
+      ctx.fillStyle = spec.band.color || fade(COL.acc, 0.2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
   (spec.hide ? [] : (spec.series || [])).forEach(function (se) {
     if (!se.pts || se.pts.length < 2) return;
     /* se.area: 曲線と t 軸ではさまれた部分を塗る（面積＝変化量、を目で見せるため）。
@@ -1901,7 +2085,8 @@ function plot(cv, spec) {
 var DEFS = {};
 var MODES = [
   { n: 1, label: '1　一次元の等加速度直線運動　※物理基礎', tip: '直線上の運動は単純に見えて、奥が深いです。<b>※物理基礎の内容はここまで</b>',
-    ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6', 'm1-7'] },
+    ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6', 'm1-7',
+      'm1-8', 'm1-9', 'm1-10', 'm1-11', 'm1-12'] },
   { n: 2, label: '2　平面上の運動', tip: '基本的にベクトル的に考える。必要なら分解して成分を見る。',
     ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4'] },
   { n: 3, label: '3　2物体の運動', tip: '2物体それぞれの運動を考えよう。ぶつかるのは座標が一致したときです。',
@@ -1909,7 +2094,6 @@ var MODES = [
   { n: 4, label: '4　入試物理', tip: '基本的だからこそ、奥深い問題が出題されます。', ids: ['m4-1', 'm4-2', 'm4-3'] }
 ];
 
-/* 運動方程式を書くときの前置き（式の頭に必ず「運動方程式」と書く） */
 /* 「正の向き」の言い方（水平面か斜面かで変える） */
 function dirWord(th, sign) {
   if (Math.abs(th) < 0.5) return sign > 0 ? '右向き（水平面）' : '左向き（水平面）';
@@ -1917,7 +2101,11 @@ function dirWord(th, sign) {
   return sign > 0 ? '斜面下向き（右）' : '斜面上向き（左）';
 }
 
+/* 式のあたまにつける「見出しの印」。左下の式のエリアでは、この印を消して
+   かわりに「運動方程式をたてると」「力のつり合いを考えると」という見出しを
+   式の上に出す（80_ui.js の renderEq）。グラフの中の式では印がそのまま出る。 */
 var EQM = '\\text{運動方程式}\\;\\; ';
+var EQBAL = '\\text{つり合い：}\\; ';
 
 /* 図の中に出す「正の向き」の表示。全シミュレーションで言い方をそろえる。
    ・かならず「正の向き：○○」の形にする（「下向きが正」などと書かない）
@@ -2053,6 +2241,28 @@ function observer(ctx, x, y, ux, uy, name, active, s, lab) {
   if (uy > -0.2) ly = y + 14 + (lab.dy || 0);       /* 上向きでないときは下に書く */
   label(ctx, txt, clamp(lx, 4, CVW - 4), clamp(ly, 12, CVH - 4),
     { size: active ? 11 : 10.5, bold: !!active, color: col, align: lab.align || 'center' });
+}
+
+/* 滑車（軸つきの円）。(cx,cy)＝中心、r＝半径 */
+function pulley(ctx, cx, cy, r) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#e3e9ef'; ctx.fill();
+  ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.62, 0, Math.PI * 2);
+  ctx.strokeStyle = '#9aa4ae'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = '#5b6672'; ctx.fill();
+  ctx.restore();
+}
+
+/* 板（1-12 の A）。(cx,yTop)＝上面の中心、w＝幅、h＝厚み */
+function plank(ctx, cx, yTop, w, h) {
+  ctx.save();
+  ctx.beginPath(); ctx.rect(cx - w / 2, yTop, w, h);
+  ctx.fillStyle = '#e9d9bd'; ctx.fill();
+  ctx.strokeStyle = '#a5854f'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
 }
 
 /* 人（棒人間） */
@@ -2295,165 +2505,180 @@ function drawSlopeBase(ctx, sn, W, H, thDeg, sign, labelDeg, labelUp) {
   originMark(ctx, o.x, o.y, -sn.n.x * 17 - 6, -sn.n.y * 17 + 4);
 }
 
-/* ============ 1-1 なめらかな水平面・斜面をすべる物体 ============ */
-DEFS['m1-1'] = {
-  id: 'm1-1', mode: 1, tab: '1-1 なめらかな水平面・斜面',
-  quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
-  title: '1-1　なめらかな水平面・斜面をすべる物体',
-  desc: '斜面に変更可能。斜面なら重力の斜面方向成分が加速度をつくる。',
-  sub: 'このシミュレーションでは <b>θ＞0 が下り坂、θ＜0 がのぼりの斜面</b>で、x は斜面にそって右向きが正。<br>' +
-    '<b>【水平面（θ＝0）】</b>重力と垂直抗力がつり合い、斜面方向の力が残らない。だから a＝0 で、<b>速度は変わらない（等速直線運動）</b>。<br>' +
-    '<b>【下り坂（θ＞0）】</b>重力の斜面方向成分 mg sinθ が<b>進む向き（右）</b>にはたらく。a＝＋g sinθ で、物体は<b>だんだん速くなる</b>。<br>' +
-    '<b>【のぼりの斜面（θ＜0）】</b>mg sinθ が<b>進む向きと逆（左）</b>にはたらく。a＝−g sin|θ| で<b>だんだんおそくなり</b>、いったん止まってから引き返す。',
-  cw: 520, ch: function (v) { return 176 + 210 * Math.abs(Math.sin(v.th * DEG)); },
-  vis: ['F', 'Fc', 'V'],
-  signLabels: ['斜面にそって右向きを正', '斜面にそって左向きを正'],
-  mainVars: ['v0', 'th'],
-  vars: [
-    { k: 'th', label: '斜面の角 $\\theta$（下り坂が正）', unit: '°', min: -45, max: 45, step: 5, dec: 0, def: 0 },
-    { k: 'v0', label: '初速度 $v_0$（右向きが正）', unit: ' m/s', min: -12, max: 12, step: 0.5, dec: 1, def: 6.0 },
-    { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 5, step: 0.5, dec: 1, def: 1.0 }
-  ],
-  toggles: [],
-  actions: [
-    { label: '速度0にする（v₀＝0）', fn: function (s) { s.v.v0 = 0; }, is: function (v) { return v.v0 === 0; } },
-    { label: '下り坂にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
-    { label: '斜面にする（θ＝−30°）', fn: function (s) { s.v.th = -30; }, is: function (v) { return v.th === -30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
-  ],
-  tEnd: function (v) { return P.m11.tEnd(v); },
-  sample: function (v, t) { return P.m11.sample(v, t); },
-  graphs: [
-    { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（位置）', ylabel: 'x [m]', open: false, signed: true,
-      series: [{ color: COL.ink, f: function (m) { return m.x; } }],
-      fml: function (v, sg) {
-        var a = P.m11.a(v) * sg, v0 = v.v0 * sg;
-        return ['x = v_0 t + \\tfrac{1}{2}a t^2',
-          Math.abs(v.th) < 0.5 ? 'x = v_0 t' : 'x = v_0 t + \\tfrac{1}{2}(g\\sin\\theta) t^2',
-          'x = ' + fmt(v0, 1) + 't' + (Math.abs(a) < 1e-9 ? '' : ' + \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2')];
-      } },
-    { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速度）', ylabel: 'v [m/s]', open: true, signed: true,
-      series: [{ color: COL.vel, f: function (m) { return m.v; } }],
-      fml: function (v, sg) {
-        var a = P.m11.a(v) * sg, v0 = v.v0 * sg;
-        return ['v = v_0 + at',
-          Math.abs(v.th) < 0.5 ? 'v = v_0' : 'v = v_0 + (g\\sin\\theta) t',
-          'v = ' + fmt(v0, 1) + (Math.abs(a) < 1e-9 ? '' : ' + (' + fmt(a, 2) + ')t')];
-      } },
-    { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true,
-      series: [{ color: COL.acc, f: function (m) { return m.a; } }],
-      fml: function (v, sg) {
-        var a = P.m11.a(v) * sg;
-        return [EQM + 'ma = F \\;\\Rightarrow\\; a = \\dfrac{F}{m}\\;(\\text{一定})',
-          EQM + (Math.abs(v.th) < 0.5 ? 'ma = 0 \\;\\Rightarrow\\; a = 0' : 'ma = mg\\sin\\theta \\;\\Rightarrow\\; a = g\\sin\\theta'),
-          'a = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}'];
-      } }
-  ],
-  draw: function (ctx, s, t, W, H) {
-    var v = V(s), T = P.m11.tEnd(v);
-    var sMin = 0, sMax = 0, i;
-    for (i = 0; i <= 60; i++) { var q = P.m11.s(v, T * i / 60); sMin = Math.min(sMin, q); sMax = Math.max(sMax, q); }
-    var sn = slopeScene(W, H, -v.th, sMin - 0.7, sMax + 1.0);
-    drawSlopeBase(ctx, sn, W, H, -v.th, s.sign, v.th);
+/* ============ 1-1／1-2 なめらかな面をすべる物体 ============
+   中身はまったく同じで、最初に出る値（初速度と斜面の角）だけを変えた2つを作る。
+   1-1 は水平面から、1-2 は斜面（θ＝30°・静かにはなす）から始まる。 */
+function smoothSlideDef(o) {
+  return {
+    id: o.id, mode: 1, tab: o.tab,
+    quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
+    title: o.title,
+    desc: '斜面に変更可能。斜面なら重力の斜面方向成分が加速度をつくる。',
+    sub: 'このシミュレーションでは <b>θ＞0 が下り坂、θ＜0 がのぼりの斜面</b>で、x は斜面にそって右向きが正。<br>' +
+      '<b>【水平面（θ＝0）】</b>重力と垂直抗力がつり合い、斜面方向の力が残らない。だから a＝0 で、<b>速度は変わらない（等速直線運動）</b>。<br>' +
+      '<b>【下り坂（θ＞0）】</b>重力の斜面方向成分 mg sinθ が<b>進む向き（右）</b>にはたらく。a＝＋g sinθ で、物体は<b>だんだん速くなる</b>。<br>' +
+      '<b>【のぼりの斜面（θ＜0）】</b>mg sinθ が<b>進む向きと逆（左）</b>にはたらく。a＝−g sin|θ| で<b>だんだんおそくなり</b>、いったん止まってから引き返す。',
+    cw: 520, ch: function (v) { return 176 + 210 * Math.abs(Math.sin(v.th * DEG)); },
+    vis: ['F', 'Fc', 'V'],
+    signLabels: ['斜面にそって右向きを正', '斜面にそって左向きを正'],
+    mainVars: ['v0', 'th'],
+    vars: [
+      { k: 'th', label: '斜面の角 $\\theta$（下り坂が正）', unit: '°', min: -45, max: 45, step: 5, dec: 0, def: o.th },
+      { k: 'v0', label: '初速度 $v_0$（右向きが正）', unit: ' m/s', min: -12, max: 12, step: 0.5, dec: 1, def: o.v0 },
+      { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 5, step: 0.5, dec: 1, def: 1.0 }
+    ],
+    toggles: [],
+    actions: [
+      { label: '速度0にする（v₀＝0）', fn: function (s) { s.v.v0 = 0; }, is: function (v) { return v.v0 === 0; } },
+      { label: '下り坂にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
+      { label: '斜面にする（θ＝−30°）', fn: function (s) { s.v.th = -30; }, is: function (v) { return v.th === -30; } },
+      { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
+    ],
+    tEnd: function (v) { return P.m11.tEnd(v); },
+    sample: function (v, t) { return P.m11.sample(v, t); },
+    graphs: [
+      { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（位置）', ylabel: 'x [m]', open: false, signed: true,
+        series: [{ color: COL.ink, f: function (m) { return m.x; } }],
+        fml: function (v, sg) {
+          var a = P.m11.a(v) * sg, v0 = v.v0 * sg;
+          return ['x = v_0 t + \\tfrac{1}{2}a t^2',
+            Math.abs(v.th) < 0.5 ? 'x = v_0 t' : 'x = v_0 t + \\tfrac{1}{2}(g\\sin\\theta) t^2',
+            'x = ' + fmt(v0, 1) + 't' + (Math.abs(a) < 1e-9 ? '' : ' + \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2')];
+        } },
+      { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速度）', ylabel: 'v [m/s]', open: true, signed: true,
+        series: [{ color: COL.vel, f: function (m) { return m.v; } }],
+        fml: function (v, sg) {
+          var a = P.m11.a(v) * sg, v0 = v.v0 * sg;
+          return ['v = v_0 + at',
+            Math.abs(v.th) < 0.5 ? 'v = v_0' : 'v = v_0 + (g\\sin\\theta) t',
+            'v = ' + fmt(v0, 1) + (Math.abs(a) < 1e-9 ? '' : ' + (' + fmt(a, 2) + ')t')];
+        } },
+      { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true,
+        series: [{ color: COL.acc, f: function (m) { return m.a; } }],
+        fml: function (v, sg) {
+          var a = P.m11.a(v) * sg;
+          return [EQM + 'ma = F \\;\\Rightarrow\\; a = \\dfrac{F}{m}\\;(\\text{一定})',
+            EQM + (Math.abs(v.th) < 0.5 ? 'ma = 0 \\;\\Rightarrow\\; a = 0' : 'ma = mg\\sin\\theta \\;\\Rightarrow\\; a = g\\sin\\theta'),
+            'a = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}'];
+        } }
+    ],
+    draw: function (ctx, s, t, W, H) {
+      var v = V(s), T = P.m11.tEnd(v);
+      var sMin = 0, sMax = 0, i;
+      for (i = 0; i <= 60; i++) { var q = P.m11.s(v, T * i / 60); sMin = Math.min(sMin, q); sMax = Math.max(sMax, q); }
+      var sn = slopeScene(W, H, -v.th, sMin - 0.7, sMax + 1.0);
+      drawSlopeBase(ctx, sn, W, H, -v.th, s.sign, v.th);
 
-    var sm = P.m11.sample(v, t);
-    var kz = mSize(DEFS['m1-1'], v);
-    var bw = 30 * kz, bh = 22 * kz;
-    var c = sn.pos(sm.x);
-    var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
+      var sm = P.m11.sample(v, t);
+      var kz = mSize(DEFS[o.id], v);
+      var bw = 30 * kz, bh = 22 * kz;
+      var c = sn.pos(sm.x);
+      var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
 
-    for (i = 0; i * 0.25 < t - 1e-9; i++) {
-      var pp = sn.pos(P.m11.s(v, i * 0.25));
-      ctx.save(); ctx.globalAlpha = 0.32;
-      blockShape(ctx, pp.x + sn.n.x * bh / 2, pp.y + sn.n.y * bh / 2, sn.th, bw, bh, '#f2f4f7');
-      ctx.restore();
-    }
-    blockShape(ctx, cx, cy, sn.th, bw, bh, '#e8eef5');
-
-    /* 初速度は「デコピンではじいた」ものとして見せる（すべり出したら手は消える） */
-    if (Math.abs(v.v0) > 0.05 && t < 0.34) {
-      var fdir = v.v0 > 0 ? 1 : -1;
-      var fk = clamp(t / 0.10, 0, 1);
-      var fa = (t <= 0.13) ? 1 : Math.max(0, 1 - (t - 0.13) / 0.18);
-      var o0 = sn.pos(0);
-      var fcx = o0.x - sn.u.x * fdir * (bw / 2 + 20) + sn.n.x * (bh * 0.5);
-      var fcy = o0.y - sn.u.y * fdir * (bw / 2 + 20) + sn.n.y * (bh * 0.5);
-      if (fa > 0.02) {
-        flickHand(ctx, fcx, fcy, -sn.th, fk, fdir, 0.42, fa);
-        ctx.save(); ctx.globalAlpha = fa;
-        bubble(ctx, 'デコピン！',
-          clamp(fcx - sn.u.x * fdir * 6 + sn.n.x * 46, 60, W - 60),
-          Math.max(26, fcy - sn.u.y * fdir * 6 + sn.n.y * 46),
-          { size: 12.5, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
+      for (i = 0; i * 0.25 < t - 1e-9; i++) {
+        var pp = sn.pos(P.m11.s(v, i * 0.25));
+        ctx.save(); ctx.globalAlpha = 0.32;
+        blockShape(ctx, pp.x + sn.n.x * bh / 2, pp.y + sn.n.y * bh / 2, sn.th, bw, bh, '#f2f4f7');
         ctx.restore();
       }
-    }
+      blockShape(ctx, cx, cy, sn.th, bw, bh, '#e8eef5');
 
-    var mg = v.m * G, fs = 52 / mg;
-    if (s.o.showF) {
-      arrow(ctx, cx, cy, cx, cy + mg * fs, 'force');
-      label(ctx, '重力 mg', cx - 11, cy + mg * fs + 4, { align: 'right', size: 12, color: COL.force });
-      var Nn = mg * Math.cos(sn.th);
-      var ntx = c.x + sn.n.x * Nn * fs, nty = c.y + sn.n.y * Nn * fs;
-      arrow(ctx, c.x, c.y, ntx, nty, 'force', 1, COL.norm);
-      label(ctx, '垂直抗力 N', ntx - sn.u.x * 18 + sn.n.x * 8, nty - sn.u.y * 18 + sn.n.y * 8,
-        { align: 'right', size: 12, color: COL.norm });
-    }
-    if (s.o.showFc && Math.abs(v.th) > 0.5) {
-      var gsn = mg * Math.sin(sn.th), gcs = mg * Math.cos(sn.th);
-      arrow(ctx, cx, cy, cx - sn.u.x * gsn * fs, cy - sn.u.y * gsn * fs, 'comp');
-      label(ctx, 'mg sinθ', cx - sn.u.x * gsn * fs - 6, cy - sn.u.y * gsn * fs + 14, { align: 'right', size: 11.5, color: COL.force });
-      arrow(ctx, cx, cy, cx - sn.n.x * gcs * fs, cy - sn.n.y * gcs * fs, 'comp');
-      label(ctx, 'mg cosθ', cx - sn.n.x * gcs * fs + 26, cy - sn.n.y * gcs * fs + 10, { align: 'left', size: 11.5, color: COL.force });
-    }
-    var vmax = Math.max(1, Math.abs(v.v0), Math.abs(P.m11.vel(v, T)));
-    if (s.o.showV) {
-      if (Math.abs(sm.v) > 0.05) {
-        var vl = 14 + 44 * Math.abs(sm.v) / vmax, sg = sm.v > 0 ? 1 : -1;
-        var vx0 = cx + sn.n.x * 36, vy0 = cy + sn.n.y * 36;
-        arrow(ctx, vx0, vy0, vx0 + sn.u.x * vl * sg, vy0 + sn.u.y * vl * sg, 'vel');
-        label(ctx, 'v = ' + fmt(sm.v * s.sign, 1) + ' m/s',
-          vx0 + sn.u.x * (vl * sg + 28 * sg), vy0 + sn.u.y * (vl * sg + 28 * sg) - 2,
-          { size: 12, color: COL.vel });
-      } else {
-        label(ctx, 'v = 0', cx + sn.n.x * 38, cy + sn.n.y * 38, { size: 12, bold: true, color: COL.vel });
+      /* 初速度は「デコピンではじいた」ものとして見せる（すべり出したら手は消える） */
+      if (Math.abs(v.v0) > 0.05 && t < 0.34) {
+        var fdir = v.v0 > 0 ? 1 : -1;
+        var fk = clamp(t / 0.10, 0, 1);
+        var fa = (t <= 0.13) ? 1 : Math.max(0, 1 - (t - 0.13) / 0.18);
+        var o0 = sn.pos(0);
+        var fcx = o0.x - sn.u.x * fdir * (bw / 2 + 20) + sn.n.x * (bh * 0.5);
+        var fcy = o0.y - sn.u.y * fdir * (bw / 2 + 20) + sn.n.y * (bh * 0.5);
+        if (fa > 0.02) {
+          flickHand(ctx, fcx, fcy, -sn.th, fk, fdir, 0.42, fa);
+          ctx.save(); ctx.globalAlpha = fa;
+          bubble(ctx, 'デコピン！',
+            clamp(fcx - sn.u.x * fdir * 6 + sn.n.x * 46, 60, W - 60),
+            Math.max(26, fcy - sn.u.y * fdir * 6 + sn.n.y * 46),
+            { size: 12.5, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
+          ctx.restore();
+        }
       }
-    }
-    if (hintOn(s, t)) {                   /* どんな運動になるかは、スタートしてから見せる */
-      if (Math.abs(sm.a) > 0.02) {
-        var ax0 = W * 0.70, ay0 = H - 46, asg1 = sm.a >= 0 ? 1 : -1;
-        arrow(ctx, ax0, ay0, ax0 + sn.u.x * 44 * asg1, ay0 + sn.u.y * 44 * asg1, 'acc');
-        label(ctx, '加速度 a = ' + fmt(sm.a * s.sign, 2) + ' m/s²', ax0 + 8, ay0 + 14, { size: 12, color: COL.acc, align: 'right' });
-      } else {
-        label(ctx, 'a = 0（力がつり合っている）→ 等速直線運動', W - 10, H - 12,
-          { size: 12, color: COL.acc, align: 'right' });
+
+      var mg = v.m * G, fs = 52 / mg;
+      if (s.o.showF) {
+        arrow(ctx, cx, cy, cx, cy + mg * fs, 'force');
+        label(ctx, '重力 mg', cx - 11, cy + mg * fs + 4, { align: 'right', size: 12, color: COL.force });
+        var Nn = mg * Math.cos(sn.th);
+        var ntx = c.x + sn.n.x * Nn * fs, nty = c.y + sn.n.y * Nn * fs;
+        arrow(ctx, c.x, c.y, ntx, nty, 'force', 1, COL.norm);
+        label(ctx, '垂直抗力 N', ntx - sn.u.x * 18 + sn.n.x * 8, nty - sn.u.y * 18 + sn.n.y * 8,
+          { align: 'right', size: 12, color: COL.norm });
       }
-    }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    drawPosNote(ctx, DEFS['m1-1'], s, W, 36, dirWord(-v.th, s.sign));
-  },
-  info: function (s, t) {
-    var v = V(s), m = P.m11.sample(v, t);
-    return [
-      ['加速度 $a$', fmt(m.a * s.sign, 2) + ' m/s²'],
-      ['速度 $v$', fmt(m.v * s.sign, 2) + ' m/s'],
-      ['位置 $x$', fmt(m.x * s.sign, 2) + ' m'],
-      ['運動の続く時間', fmt(P.m11.tEnd(v), 2) + ' s']
-    ];
-  },
-  eq: function (s) {
-    var v = V(s);
-    if (Math.abs(v.th) < 0.5) return EQM + 'ma = 0 \\quad\\Rightarrow\\quad a = 0 \\;(\\text{等速直線運動})';
-    return EQM + 'ma = mg\\sin\\theta \\quad\\Rightarrow\\quad a = g\\sin\\theta = ' + fmt(P.m11.a(v), 2) + '\\ \\mathrm{m/s^2}';
-  },
-  note: '力は<b>重力と垂直抗力の2本だけ</b>（「動く向きの力」はない）。θ＝0° では2本がつり合って a＝0。θ を大きくすると、重力の<b>斜面方向の分力 mg sinθ</b> だけが残り、これが加速度の原因になる。のぼりでもくだりでも加速度はずっと<b>斜面下向きに g sinθ</b>。'
-};
+      if (s.o.showFc && Math.abs(v.th) > 0.5) {
+        var gsn = mg * Math.sin(sn.th), gcs = mg * Math.cos(sn.th);
+        arrow(ctx, cx, cy, cx - sn.u.x * gsn * fs, cy - sn.u.y * gsn * fs, 'comp');
+        label(ctx, 'mg sinθ', cx - sn.u.x * gsn * fs - 6, cy - sn.u.y * gsn * fs + 14, { align: 'right', size: 11.5, color: COL.force });
+        arrow(ctx, cx, cy, cx - sn.n.x * gcs * fs, cy - sn.n.y * gcs * fs, 'comp');
+        label(ctx, 'mg cosθ', cx - sn.n.x * gcs * fs + 26, cy - sn.n.y * gcs * fs + 10, { align: 'left', size: 11.5, color: COL.force });
+      }
+      var vmax = Math.max(1, Math.abs(v.v0), Math.abs(P.m11.vel(v, T)));
+      if (s.o.showV) {
+        if (Math.abs(sm.v) > 0.05) {
+          var vl = 14 + 44 * Math.abs(sm.v) / vmax, sg = sm.v > 0 ? 1 : -1;
+          var vx0 = cx + sn.n.x * 36, vy0 = cy + sn.n.y * 36;
+          arrow(ctx, vx0, vy0, vx0 + sn.u.x * vl * sg, vy0 + sn.u.y * vl * sg, 'vel');
+          label(ctx, 'v = ' + fmt(sm.v * s.sign, 1) + ' m/s',
+            vx0 + sn.u.x * (vl * sg + 28 * sg), vy0 + sn.u.y * (vl * sg + 28 * sg) - 2,
+            { size: 12, color: COL.vel });
+        } else {
+          label(ctx, 'v = 0', cx + sn.n.x * 38, cy + sn.n.y * 38, { size: 12, bold: true, color: COL.vel });
+        }
+      }
+      if (hintOn(s, t)) {                   /* どんな運動になるかは、スタートしてから見せる */
+        if (Math.abs(sm.a) > 0.02) {
+          var ax0 = W * 0.70, ay0 = H - 46, asg1 = sm.a >= 0 ? 1 : -1;
+          arrow(ctx, ax0, ay0, ax0 + sn.u.x * 44 * asg1, ay0 + sn.u.y * 44 * asg1, 'acc');
+          label(ctx, '加速度 a = ' + fmt(sm.a * s.sign, 2) + ' m/s²', ax0 + 8, ay0 + 14, { size: 12, color: COL.acc, align: 'right' });
+        } else {
+          label(ctx, 'a = 0（力がつり合っている）→ 等速直線運動', W - 10, H - 12,
+            { size: 12, color: COL.acc, align: 'right' });
+        }
+      }
+      label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
+      drawPosNote(ctx, DEFS[o.id], s, W, 36, dirWord(-v.th, s.sign));
+    },
+    info: function (s, t) {
+      var v = V(s), m = P.m11.sample(v, t);
+      return [
+        ['加速度 $a$', fmt(m.a * s.sign, 2) + ' m/s²'],
+        ['速度 $v$', fmt(m.v * s.sign, 2) + ' m/s'],
+        ['位置 $x$', fmt(m.x * s.sign, 2) + ' m'],
+        ['運動の続く時間', fmt(P.m11.tEnd(v), 2) + ' s']
+      ];
+    },
+    eq: function (s) {
+      var v = V(s);
+      if (Math.abs(v.th) < 0.5) return EQM + 'ma = 0 \\quad\\Rightarrow\\quad a = 0 \\;(\\text{等速直線運動})';
+      return EQM + 'ma = mg\\sin\\theta \\quad\\Rightarrow\\quad a = g\\sin\\theta = ' + fmt(P.m11.a(v), 2) + '\\ \\mathrm{m/s^2}';
+    },
+    note: '力は<b>重力と垂直抗力の2本だけ</b>（「動く向きの力」はない）。θ＝0° では2本がつり合って a＝0。θ を大きくすると、重力の<b>斜面方向の分力 mg sinθ</b> だけが残り、これが加速度の原因になる。のぼりでもくだりでも加速度はずっと<b>斜面下向きに g sinθ</b>。'
+  };
+}
+
+DEFS['m1-1'] = smoothSlideDef({
+  id: 'm1-1', tab: '1-1 なめらかな水平面',
+  title: '1-1　なめらかな水平面をすべる物体', th: 0, v0: 6.0
+});
+
+DEFS['m1-2'] = smoothSlideDef({
+  id: 'm1-2', tab: '1-2 なめらかな斜面',
+  title: '1-2　なめらかな斜面をすべる物体', th: 30, v0: 0.0
+});
+
 
 /* ============ 1-2 鉛直落下 ============ */
-DEFS['m1-2'] = {
-  id: 'm1-2', mode: 1, tab: '1-2 鉛直落下',
+DEFS['m1-3'] = {
+  id: 'm1-3', mode: 1, tab: '1-3 鉛直落下',
   quizKey: 'v', quizName: '落下する物体の $v$–$t$ 図（鉛直方向）',
-  title: '1-2　鉛直落下（自由落下）',
+  title: '1-3　鉛直落下（自由落下）',
   desc: '下向きを正にとる。v₀＝0 が自由落下、v₀ を大きくすると「投げ下ろし」。',
   sub: '0.2 s ごとの残像の間隔が広がるのが、速くなっている証拠。h＝19.6 m なら t＝2.0 s、v＝19.6 m/s。',
   cw: 420,
@@ -2526,12 +2751,12 @@ DEFS['m1-2'] = {
     axisY(ctx, Y, axX, 0, v.h * 0.97, 'y [m]', s.sign,
       { target: clamp(Math.round(v.h * sc / 40), 2, 5) });
     originMark(ctx, axX, Y(0), -13, 13);
-    drawPosNote(ctx, DEFS['m1-2'], s, W, 36);
+    drawPosNote(ctx, DEFS['m1-3'], s, W, 36);
 
     arrow(ctx, bx + 92, topY, bx + 92, gndY, 'dim');
     label(ctx, 'h = ' + fmt(v.h, 1) + ' m', bx + 98, (topY + gndY) / 2, { align: 'left', size: 11.5 });
 
-    var kz = mSize(DEFS['m1-2'], v);
+    var kz = mSize(DEFS['m1-3'], v);
     for (var i = 1; i * 0.2 < t - 1e-9; i++) ball(ctx, bx, Y(P.m12.sample(v, i * 0.2).x), 7 * kz, 'faint');
 
     var m = P.m12.sample(v, t);
@@ -2597,10 +2822,10 @@ function m13AreaNote(v, s2) {
 }
 
 /* ============ 1-3 鉛直投げ上げ ============ */
-DEFS['m1-3'] = {
-  id: 'm1-3', mode: 1, tab: '1-3 鉛直投げ上げ',
+DEFS['m1-4'] = {
+  id: 'm1-4', mode: 1, tab: '1-4 鉛直投げ上げ',
   quizKey: 'v', quizName: '投げ上げた物体の $v$–$t$ 図（鉛直方向）',
-  title: '1-3　鉛直投げ上げ',
+  title: '1-4　鉛直投げ上げ',
   desc: '上向きを正。原点の取り方（$y_0$）を変えると $y$–$t$ 図は上下にずれるが、$v$–$t$ 図・$a$–$t$ 図は変わらない。',
   sub: '「投げ始める点の座標 y₀」を動かすと原点の取り方が変わる。「ビルの上から」に切りかえると、地面まで落ちる運動になる。',
   cw: 470, ch: 390,
@@ -2669,12 +2894,12 @@ DEFS['m1-3'] = {
     var axX = W * 0.20;
     axisY(ctx, Y, axX, lo + 0.4, hi - 0.4, 'y [m]', s.sign, { target: 5 });
     originMark(ctx, axX, Y(0), -14, 13);
-    drawPosNote(ctx, DEFS['m1-3'], s, W, 36);
+    drawPosNote(ctx, DEFS['m1-4'], s, W, 36);
 
     var T = P.m13.tEnd(v), i;
     ctx.save(); ctx.strokeStyle = '#c6ccd4'; ctx.setLineDash([3, 4]);
     ctx.beginPath(); ctx.moveTo(bx, Y(v.y0)); ctx.lineTo(bx, Y(yT)); ctx.stroke(); ctx.restore();
-    var kz = mSize(DEFS['m1-3'], v);
+    var kz = mSize(DEFS['m1-4'], v);
     for (i = 1; i * 0.2 < t - 1e-9; i++) ball(ctx, bx, Y(P.m13.sample(v, i * 0.2).x), 6.5 * kz, 'faint');
 
     var m = P.m13.sample(v, t);
@@ -2723,10 +2948,10 @@ DEFS['m1-3'] = {
 };
 
 /* ============ 1-4 水平面で引く（なめらか・糸で引く） ============ */
-DEFS['m1-4'] = {
-  id: 'm1-4', mode: 1, tab: '1-4 水平面で引く',
+DEFS['m1-5'] = {
+  id: 'm1-5', mode: 1, tab: '1-5 水平面で引く',
   quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
-  title: '1-4　水平面で引く（なめらかな面）',
+  title: '1-5　水平面で引く（なめらかな面）',
   sub: '糸をつけて右へ引く。面はなめらかで摩擦は 0。オレンジのボタンで、左へ引く力 $F_2$ も出せる。',
   cw: 520, ch: function (v) { return 196 + 210 * Math.abs(Math.sin(v.th * DEG)); },
   vis: ['F', 'Fc', 'V'],
@@ -2785,7 +3010,7 @@ DEFS['m1-4'] = {
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
-    var kz = mSize(DEFS['m1-4'], v);
+    var kz = mSize(DEFS['m1-5'], v);
     var bw = 34 * kz, bh = 25 * kz;
     var c = sn.pos(m.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
@@ -2856,7 +3081,7 @@ DEFS['m1-4'] = {
       }
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    drawPosNote(ctx, DEFS['m1-4'], s, W, 36, dirWord(v.th, s.sign));
+    drawPosNote(ctx, DEFS['m1-5'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t), th = v.th * DEG;
@@ -2879,10 +3104,10 @@ DEFS['m1-4'] = {
 };
 
 /* ============ 1-5 摩擦のある水平面・斜面をすべる物体 ============ */
-DEFS['m1-5'] = {
-  id: 'm1-5', mode: 1, tab: '1-5 摩擦のある水平面・斜面',
+DEFS['m1-6'] = {
+  id: 'm1-6', mode: 1, tab: '1-6 摩擦のある水平面・斜面',
   quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（面にそった向き）',
-  title: '1-5　摩擦のある水平面・斜面をすべる物体',
+  title: '1-6　摩擦のある水平面・斜面をすべる物体',
   desc: '力は加えず、初速度だけをあたえてすべらせる。動摩擦力 μ′N が運動と逆向きにはたらき、一定の割合で減速する。',
   sub: '止まったあとに動き出すかどうかは、静止摩擦（最大 μN）と重力の斜面成分 mg sinθ の大小で決まる。',
   cw: 520, ch: function (v) { return 182 + 210 * Math.abs(Math.sin(v.th * DEG)); },
@@ -2936,7 +3161,7 @@ DEFS['m1-5'] = {
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
-    var kz = mSize(DEFS['m1-5'], v);
+    var kz = mSize(DEFS['m1-6'], v);
     var bw = 34 * kz, bh = 25 * kz;
     var c = sn.pos(m.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
@@ -3010,7 +3235,7 @@ DEFS['m1-5'] = {
       }
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    drawPosNote(ctx, DEFS['m1-5'], s, W, 36, dirWord(v.th, s.sign));
+    drawPosNote(ctx, DEFS['m1-6'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t), th = v.th * DEG;
@@ -3032,10 +3257,10 @@ DEFS['m1-5'] = {
 };
 
 /* ============ 1-6 力を加えながらの斜面上の運動 ============ */
-DEFS['m1-6'] = {
-  id: 'm1-6', mode: 1, tab: '1-6 斜面で押す',
+DEFS['m1-7'] = {
+  id: 'm1-7', mode: 1, tab: '1-7 斜面で押す',
   quizKey: 'v', quizName: 'この物体の $v$–$t$ 図（斜面にそった向き）',
-  title: '1-6　斜面で押す（摩擦あり）',
+  title: '1-7　斜面で押す（摩擦あり）',
   desc: '手で斜面の下側から、斜面上向きに力 F で押す。運動方程式から加速度が決まる。',
   sub: 'F が小さいと静止摩擦とつり合って動かない（|F − mg sinθ| ≦ μN）。動き出すと動摩擦 μ′N がはたらく。',
   cw: 520, ch: function (v) { return 196 + 210 * Math.abs(Math.sin(v.th * DEG)); },
@@ -3093,7 +3318,7 @@ DEFS['m1-6'] = {
     drawSlopeBase(ctx, sn, W, H, v.th, s.sign);
 
     var m = P.m14.sample(v, t);
-    var kz = mSize(DEFS['m1-6'], v);
+    var kz = mSize(DEFS['m1-7'], v);
     var bw = 34 * kz, bh = 25 * kz;
     var c = sn.pos(m.x);
     var cx = c.x + sn.n.x * bh / 2, cy = c.y + sn.n.y * bh / 2;
@@ -3152,7 +3377,7 @@ DEFS['m1-6'] = {
       if (m.still) label(ctx, '|F − mg sinθ| ≦ μN なので動かない', W * 0.28, 74, { size: 11, color: COL.sub, align: 'left' });
     }
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
-    drawPosNote(ctx, DEFS['m1-6'], s, W, 36, dirWord(v.th, s.sign));
+    drawPosNote(ctx, DEFS['m1-7'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t), th = v.th * DEG;
@@ -3168,7 +3393,7 @@ DEFS['m1-6'] = {
   eq: function (s) {
     var v = V(s), m = P.m14.sample(v, s.t), th = v.th * DEG;
     if (m.still) {
-      return '\\text{つり合い：}\\; F - mg\\sin\\theta + f = 0,\\quad |f| \\le \\mu N \\;\\Rightarrow\\; a = 0';
+      return EQBAL + 'F - mg\\sin\\theta + f = 0,\\quad |f| \\le \\mu N \\;\\Rightarrow\\; a = 0';
     }
     return EQM + 'ma = F - mg\\sin\\theta - \\mu\' N \\;\\Rightarrow\\; a = \\dfrac{' + fmt(v.F, 0) + ' - ' +
       fmt(v.m * G * Math.sin(th), 1) + ' - ' + fmt(v.mud * v.m * G * Math.cos(th), 1) + '}{' + fmt(v.m, 1) + '} = ' +
@@ -3178,9 +3403,9 @@ DEFS['m1-6'] = {
 };
 
 /* ============ 1-7 カーリングゲーム ============ */
-DEFS['m1-7'] = {
-  id: 'm1-7', mode: 1, tab: '1-7 氷の上のカーリングゲーム', game: true,
-  title: '1-7　氷の上のカーリングゲーム 〜的にピタリと止めよう！〜',
+DEFS['m1-8'] = {
+  id: 'm1-8', mode: 1, tab: '1-8 氷の上のカーリングゲーム', game: true,
+  title: '1-8　氷の上のカーリングゲーム 〜的にピタリと止めよう！〜',
   desc: 'ストーンを初速度 v₀ ですべらせて、的にちょうど止められるかな？',
   sub: '動摩擦力だけで減速するので、止まるまでの距離は v₀²/(2|a|)。<b>ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まり、そのまま動き出す。</b>「スライダーで v₀ を決める」に切りかえると、v₀ をスライダーで決めてからドラッグで放つこともできる。的もドラッグで動かせる。',
   cw: 520, ch: 186,
@@ -3219,9 +3444,9 @@ DEFS['m1-7'] = {
   },
   drag: function (s, wx, wy, lx) {
     if (s._m === 'aim') {
-      var px = clamp(lx - (s._px0 || 0), 0, DEFS['m1-7'].PULL_PX);   /* 右へすべらせた長さ（画面） */
+      var px = clamp(lx - (s._px0 || 0), 0, DEFS['m1-8'].PULL_PX);   /* 右へすべらせた長さ（画面） */
       if (px < 3) return;                                            /* 押しただけでは値を変えない */
-      s._pull = px / DEFS['m1-7'].PULL_PX;                           /* 0〜1 */
+      s._pull = px / DEFS['m1-8'].PULL_PX;                           /* 0〜1 */
       if (!s.o.useSlider) s.v.v0 = +clamp(1 + s._pull * 11, 1, 12).toFixed(1);
     } else {
       s.v.tx = clamp(Math.round(wx), 5, 45);
@@ -3234,7 +3459,7 @@ DEFS['m1-7'] = {
   },
   win: function (s, t) {
     var v = V(s);
-    return Math.abs(P.m14.xStopIdeal(v) - v.tx) <= DEFS['m1-7'].HOUSE;
+    return Math.abs(P.m14.xStopIdeal(v) - v.tx) <= DEFS['m1-8'].HOUSE;
   },
   graphs: [
     { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（位置）', ylabel: 'x [m]', open: true, signed: true,
@@ -3263,7 +3488,7 @@ DEFS['m1-7'] = {
   draw: function (ctx, s, t, W, H) {
     var v = V(s);
     var xs = P.m14.xStop(v);
-    var hi = DEFS['m1-7'].RINK;              /* いつも同じ目盛り（リンクの長さ） */
+    var hi = DEFS['m1-8'].RINK;              /* いつも同じ目盛り（リンクの長さ） */
     var sn = slopeScene(W, H, v.th, -2.0, hi);
     /* 氷の面 */
     var e = sn.pos(sn.sLo + sn.span), b = sn.pos(sn.sLo);
@@ -3281,7 +3506,7 @@ DEFS['m1-7'] = {
 
     /* 的 */
     var hp = sn.pos(v.tx);
-    var hr = DEFS['m1-7'].HOUSE * sn.sc;
+    var hr = DEFS['m1-8'].HOUSE * sn.sc;
     var bw2 = Math.max(22, hr * 1.7), bh2 = Math.max(16, hr * 1.25);
     ctx.save();                                            /* かごを入れる「穴」を白くぬく */
     ctx.fillStyle = '#ffffff';
@@ -3322,7 +3547,7 @@ DEFS['m1-7'] = {
     }
     if (s._m === 'aim') {                                   /* 右へすべらせているようす */
       var st0 = sn.pos(0);
-      var swp = (s._pull || 0) * DEFS['m1-7'].PULL_PX;
+      var swp = (s._pull || 0) * DEFS['m1-8'].PULL_PX;
       ctx.save(); ctx.strokeStyle = '#8a949e'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.moveTo(st0.x + sn.n.x * 10, st0.y + sn.n.y * 10);
@@ -3341,19 +3566,19 @@ DEFS['m1-7'] = {
         : 'ストーンを右へスワイプして放すと、その勢いで v₀ が決まってスタート',
         14, 52, { size: 10.5, color: COL.sub, align: 'left' });
     }
-    var done = t >= DEFS['m1-7'].tEnd(v) - 1e-9;
+    var done = t >= DEFS['m1-8'].tEnd(v) - 1e-9;
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 16, { align: 'right', size: 13, bold: true });
-    drawPosNote(ctx, DEFS['m1-7'], s, W, 34);
+    drawPosNote(ctx, DEFS['m1-8'], s, W, 34);
 
 
     if (done) {
       /* 「行き過ぎ」の距離は、氷の外まで行った場合もふくめて式で正しく出す */
       var xIdeal = P.m14.xStopIdeal(v);
       var dd = xIdeal - v.tx, ad = Math.abs(dd);
-      var over = !isFinite(xIdeal) || xIdeal > DEFS['m1-7'].RINK;   /* 氷の外まで行った */
+      var over = !isFinite(xIdeal) || xIdeal > DEFS['m1-8'].RINK;   /* 氷の外まで行った */
       var msg, col;
       if (ad <= 0.4) { msg = 'ど真ん中！ ピタリ賞'; col = { bg: '#e6f7ea', border: '#1c8f4a', color: '#14713a' }; }
-      else if (ad <= DEFS['m1-7'].HOUSE) { msg = '的に入った！（ずれ ' + fmt(ad, 1) + ' m）'; col = { bg: '#e6f7ea', border: '#1c8f4a', color: '#14713a' }; }
+      else if (ad <= DEFS['m1-8'].HOUSE) { msg = '的に入った！（ずれ ' + fmt(ad, 1) + ' m）'; col = { bg: '#e6f7ea', border: '#1c8f4a', color: '#14713a' }; }
       else if (over) {
         msg = '氷の外まで行き過ぎた（' + (isFinite(xIdeal) ? fmt(ad, 1) + ' m' : 'ほぼ止まらない') + '）';
         col = { bg: '#fff5d6', border: '#d9a545', color: '#8a5000' };
@@ -3366,7 +3591,7 @@ DEFS['m1-7'] = {
   info: function (s, t) {
     var v = V(s), m = P.m14.sample(v, t);
     var xs = P.m14.xStopIdeal(v);
-    var done = t >= DEFS['m1-7'].tEnd(v) - 1e-9;
+    var done = t >= DEFS['m1-8'].tEnd(v) - 1e-9;
     return [
       ['加速度 $a$', fmt(P.m14.a0(v) * s.sign, 2) + ' m/s²'],
       ['的の位置', fmt(v.tx, 0) + ' m'],
@@ -3378,12 +3603,689 @@ DEFS['m1-7'] = {
   },
   eq: function (s) {
     var v = V(s);
-    var done = s.t >= DEFS['m1-7'].tEnd(v) - 1e-9;
+    var done = s.t >= DEFS['m1-8'].tEnd(v) - 1e-9;
     return EQM + 'ma = -\\mu\' N - mg\\sin\\theta \\;\\Rightarrow\\; a = ' + fmt(P.m14.a0(v), 2) +
       ',\\quad x_{\\text{止}} = \\dfrac{v_0^{\\,2}}{2|a|} = ' +
       (done ? (isFinite(P.m14.xStopIdeal(v)) ? fmt(P.m14.xStopIdeal(v), 2) + '\\ \\mathrm{m}' : '\\infty') : '?');
   },
   note: '止まる位置は <span class="tex">x=\\dfrac{v_0^2}{2|a|}</span>。<b>v₀ を2倍にすると距離は4倍</b>になるので、少しの速さのちがいが大きく効く。μ′ を変えると氷のすべりやすさが変わり、θ を上げると「のぼり」になってすぐ止まる。'
+};
+
+/* ===== 55_mode1b.js ===== */
+/* 1　一次元の等加速度直線運動（2物体の運動） */
+'use strict';
+
+/* 2物体のシミュレーションで共通に使う、左下の「運動方程式を解く」欄の組み方。
+   ・1行目：A についての運動方程式
+   ・2行目：B についての運動方程式
+   ・3行目：辺々たして a を出す
+   ・4行目：a を代入して張力 T を出す
+   記号の式と数値の式を、そのまま順に並べる。 */
+function twoBodyEq(rows) {
+  return '\\begin{aligned}' + rows.join(' \\\\[2pt] ') + '\\end{aligned}';
+}
+
+/* 2物体のシミュレーションで共通の変数（質量）。m < M の並びで見せる */
+function twoMassVars(mDef, MDef) {
+  return [
+    { k: 'm', label: 'A の質量 $m$', unit: ' kg', min: 0.5, max: 6, step: 0.5, dec: 1, def: mDef },
+    { k: 'M', label: 'B の質量 $M$', unit: ' kg', min: 0.5, max: 8, step: 0.5, dec: 1, def: MDef }
+  ];
+}
+
+/* 2物体で共通のグラフ（x・v・a）。fml は各シミュレーションから渡す */
+function twoBodyGraphs(xLabel, fmlX, fmlV, fmlA) {
+  return [
+    { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（' + xLabel + '）', ylabel: 'x [m]', open: false, signed: true,
+      series: [{ color: COL.ink, f: function (mm) { return mm.x; } }], fml: fmlX },
+    { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速さ）', ylabel: 'v [m/s]', open: true, signed: true,
+      series: [{ color: COL.vel, f: function (mm) { return mm.v; } }], fml: fmlV },
+    { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true,
+      series: [{ color: COL.acc, f: function (mm) { return mm.a; } }], fml: fmlA }
+  ];
+}
+
+/* ============ 1-9 2物体（糸でつなぐ） ============ */
+DEFS['m1-9'] = {
+  id: 'm1-9', mode: 1, tab: '1-9 2物体（糸）',
+  quizKey: 'v', quizName: 'A と B の $v$–$t$ 図（右向きが正）',
+  title: '1-9　2物体を糸でつないで引く（なめらかな水平面）',
+  sub: 'なめらかな水平面の上に、質量 $m$ の A と質量 $M$ の B を軽い糸でつなぎ、B を大きさ $f$ の力で右へ引き続ける。' +
+    '<b>糸は伸び縮みしないので、A と B の加速度・速さ・進んだ距離は同じ</b>。' +
+    'まず<b>2つをひとまとまり</b>と見て $a$ を出し、つぎに<b>A だけ</b>を見て糸の張力 $T$ を出す、というのが定石。',
+  cw: 520, ch: 200,
+  vis: ['F', 'Fm', 'V'], visDef: { F: true },
+  signLabels: ['右向きを正', '左向きを正'],
+  mainVars: ['f', 'm', 'M'], mainVarFocus: 'f',
+  vars: [{ k: 'f', label: '引く力 $f$', unit: ' N', min: 2, max: 40, step: 1, dec: 0, def: 12 }].concat(twoMassVars(1.0, 3.0)),
+  toggles: [],
+  actions: [
+    { label: 'A を軽くする（m＝0.5 kg）', fn: function (s) { s.v.m = 0.5; }, is: function (v) { return v.m === 0.5; } },
+    { label: 'A と B を同じ質量にする', fn: function (s) { s.v.m = 2; s.v.M = 2; }, is: function (v) { return v.m === v.M; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.f = 12; s.v.m = 1; s.v.M = 3; },
+      is: function (v) { return v.f === 12 && v.m === 1 && v.M === 3; } }
+  ],
+  tEnd: function (v) { return P.m18.tEnd(v); },
+  sample: function (v, t) { return P.m18.sample(v, t); },
+  graphs: twoBodyGraphs('進んだ距離（A・B 共通）',
+    function (v, sg) {
+      var a = P.m18.a(v) * sg;
+      return ['x = v_0 t + \\tfrac{1}{2}a t^2', 'x = \\tfrac{1}{2}\\dfrac{f}{m+M} t^2',
+        'x = \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2'];
+    },
+    function (v, sg) {
+      var a = P.m18.a(v) * sg;
+      return ['v = v_0 + at', 'v = \\dfrac{f}{m+M} t', 'v = (' + fmt(a, 2) + ')t'];
+    },
+    function (v, sg) {
+      var a = P.m18.a(v) * sg;
+      return [EQM + '(m+M)a = f', 'a = \\dfrac{f}{m+M}',
+        'a = \\dfrac{' + fmt(v.f, 0) + '}{' + fmt(v.m, 1) + '+' + fmt(v.M, 1) + '} = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}'];
+    }),
+  draw: function (ctx, s, t, W, H) {
+    var v = V(s), m = P.m18.sample(v, t), T = P.m18.tEnd(v);
+    /* 右はしに「手・引く力の矢印・その文字」の場所を空けておく */
+    var gy = H - 60, sc = (W - 330) / Math.max(1, P.m18.LEN);
+    var kA = mSize({ vars: [{ k: 'm', def: 1 }] }, { m: v.m });
+    var kB = mSize({ vars: [{ k: 'm', def: 3 }] }, { m: v.M });
+    var bwA = 30 * kA, bhA = 22 * kA, bwB = 34 * kB, bhB = 26 * kB;
+    ground(ctx, 10, W - 10, gy);
+    /* 目盛り（進んだ距離） */
+    axisX(ctx, function (x) { return 56 + x * sc; }, gy + 30, 0, P.m18.LEN, 'x [m]', s.sign, { step: 2 });
+    originMark(ctx, 56, gy + 30, -12, 13);
+
+    var xA = 56 + m.x * sc, xB = xA + 110;
+    blockShape(ctx, xA, gy - bhA / 2, 0, bwA, bhA, '#e8eef5');
+    label(ctx, 'A（' + fmt(v.m, 1) + ' kg）', xA, gy - bhA - 10, { size: 11, bold: true });
+    blockShape(ctx, xB, gy - bhB / 2, 0, bwB, bhB, '#e3ecf6');
+    label(ctx, 'B（' + fmt(v.M, 1) + ' kg）', xB, gy - bhB - 10, { size: 11, bold: true });
+    /* 糸をつなぐ高さは A・B で共通（水平な糸）。小さいほうの物体の中心の高さに合わせる */
+    var ty = gy - Math.min(bhA, bhB) / 2;
+    string(ctx, xA + bwA / 2, ty, xB - bwB / 2, ty);
+    /* 手で B を引く（1-5 と同じ「物体 → 糸 → 手」の並び） */
+    var hx = xB + bwB / 2 + 3, hy = ty;
+    string(ctx, hx, hy, hx + 30, hy);
+    hand(ctx, hx + 30, hy, 0);
+
+    if (s.o.showF || s.o.showFm) {     /* この図の力はすべて運動の向きにそっている */
+      var fs = 44 / Math.max(v.f, 1);
+      arrow(ctx, hx, hy, hx + v.f * fs, hy, 'force', 1, COL.hand);
+      label(ctx, '引く力 f = ' + fmt(v.f, 0) + ' N', hx + v.f * fs + 8, hy, { size: 11.5, color: COL.hand, align: 'left' });
+      var Tn = m.T;
+      arrow(ctx, xA + bwA / 2, ty, xA + bwA / 2 + Tn * fs, ty, 'force', 1, COL.hand);
+      label(ctx, '糸が A を引く T = ' + fmt(Tn, 2) + ' N', W - 10, gy + 16, { size: 11, color: COL.hand, align: 'right' });
+      arrow(ctx, xB - bwB / 2, ty, xB - bwB / 2 - Tn * fs, ty, 'force', 1, COL.hand);
+      label(ctx, 'T', xB - bwB / 2 - Tn * fs - 6, ty - 13, { size: 11, color: COL.hand, align: 'right' });
+    }
+    if (s.o.showV && m.v > 0.05) {
+      var vl = 16 + 40 * Math.min(1, m.v / 8);
+      arrow(ctx, xA, gy - bhA - 40, xA + vl, gy - bhA - 40, 'vel');
+      label(ctx, 'v = ' + fmt(m.v * s.sign, 2) + ' m/s', xA + vl + 6, gy - bhA - 40, { size: 11.5, color: COL.vel, align: 'left' });
+    }
+    if (hintOn(s, t)) {
+      label(ctx, '糸でつながっているので、A も B も同じ加速度・同じ速さ', 12, 54,
+        { size: 11.5, bold: true, color: COL.acc, align: 'left' });
+    }
+    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
+    drawPosNote(ctx, DEFS['m1-9'], s, W, 36);
+  },
+  info: function (s, t) {
+    var v = V(s), m = P.m18.sample(v, t);
+    return [
+      ['加速度 $a$（A・B 共通）', fmt(m.a * s.sign, 2) + ' m/s²'],
+      ['糸の張力 $T$', fmt(m.T, 2) + ' N'],
+      ['速さ $v$', fmt(m.v * s.sign, 2) + ' m/s'],
+      ['進んだ距離 $x$', fmt(m.x * s.sign, 2) + ' m'],
+      ['$f - T$（B にはたらく合力）', fmt(v.f - m.T, 2) + ' N'],
+      ['$Ma$（確かめ）', fmt(v.M * m.a, 2) + ' N']
+    ];
+  },
+  eqHead: '運動方程式をたてると',
+  eq: function (s) {
+    var v = V(s), a = P.m18.a(v), T = P.m18.T(v);
+    return twoBodyEq([
+      '&\\text{A について}&& ma = T',
+      '&\\text{B について}&& Ma = f - T',
+      '&\\text{辺々たすと}&& (m+M)a = f \\;\\Rightarrow\\; a = \\dfrac{f}{m+M} = \\dfrac{' +
+        fmt(v.f, 0) + '}{' + fmt(v.m, 1) + '+' + fmt(v.M, 1) + '} = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}',
+      '&\\text{A の式にもどして}&& T = ma = ' + fmt(v.m, 1) + '\\times' + fmt(a, 2) + ' = ' + fmt(T, 2) + '\\ \\mathrm{N}'
+    ]);
+  },
+  note: '<b>2つまとめて見ると、糸の張力は内側で打ち消し合って消える</b>ので、いきなり $a$ が出せる。' +
+    '$T$ を知りたいときは、<b>片方だけ</b>（ここでは A）を取り出して運動方程式を書けばよい。' +
+    'A が軽いほど $T$ は小さくなる（$T = \\dfrac{m}{m+M}f$）。'
+};
+
+/* ============ 1-10 2物体（糸と滑車） ============ */
+DEFS['m1-10'] = {
+  id: 'm1-10', mode: 1, tab: '1-10 2物体（糸と滑車）',
+  quizKey: 'v', quizName: 'A と B の $v$–$t$ 図（A が上る向きを正）',
+  title: '1-10　なめらかな面の上の A を、つるした B が引く（滑車）',
+  sub: 'なめらかな面（傾き $\\theta$）の上の A（質量 $m$）に軽い糸をつけ、なめらかに回る軽い滑車を通して、他端に B（質量 $M$）をつるす。' +
+    '静かにはなすと B が下り、A は面にそって上る。<b>糸は伸びないので、A が上る速さと B が下りる速さは同じ</b>。' +
+    '正の向きは「A が上る向き＝B が下りる向き」にそろえてとる。',
+  cw: 520, ch: function (v) { return 340 + 90 * Math.abs(Math.sin(v.th * DEG)); },
+  vis: ['F', 'Fm', 'Fc', 'V'], visDef: { F: true },
+  signLabels: ['A が上る向き（B が下りる向き）を正', 'A が下る向き（B が上る向き）を正'],
+  mainVars: ['th', 'm', 'M'], mainVarFocus: 'th',
+  vars: [{ k: 'th', label: '面の傾き $\\theta$', unit: '°', min: 0, max: 45, step: 5, dec: 0, def: 0 }].concat(twoMassVars(1.0, 2.0)),
+  toggles: [],
+  actions: [
+    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
+    { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
+    { label: 'つり合う直前にする', fn: function (s) { s.v.th = 30; s.v.m = 4; s.v.M = 2; },
+      is: function (v) { return v.th === 30 && v.m === 4 && v.M === 2; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.th = 0; s.v.m = 1; s.v.M = 2; },
+      is: function (v) { return v.th === 0 && v.m === 1 && v.M === 2; } }
+  ],
+  tEnd: function (v) { return P.m19.tEnd(v); },
+  sample: function (v, t) { return P.m19.sample(v, t); },
+  graphs: twoBodyGraphs('A が上った距離＝B が下りた距離',
+    function (v, sg) {
+      var a = P.m19.a(v) * sg;
+      return ['x = v_0 t + \\tfrac{1}{2}a t^2', 'x = \\tfrac{1}{2}\\dfrac{(M - m\\sin\\theta)g}{m+M} t^2',
+        'x = \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2'];
+    },
+    function (v, sg) {
+      var a = P.m19.a(v) * sg;
+      return ['v = v_0 + at', 'v = \\dfrac{(M - m\\sin\\theta)g}{m+M} t', 'v = (' + fmt(a, 2) + ')t'];
+    },
+    function (v, sg) {
+      var a = P.m19.a(v) * sg;
+      return [EQM + '(m+M)a = Mg - mg\\sin\\theta', 'a = \\dfrac{(M - m\\sin\\theta)g}{m+M}',
+        'a = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}'];
+    }),
+  draw: function (ctx, s, t, W, H) {
+    var v = V(s), m = P.m19.sample(v, t);
+    var th = v.th * DEG, ct = Math.cos(th), st2 = Math.sin(th);
+    var pr = 13;
+    var PX = W - 104, PY = 84;                          /* 滑車の中心 */
+    var kA = mSize({ vars: [{ k: 'm', def: 1 }] }, { m: v.m });
+    var bw = 32 * kA, bh = 23 * kA;
+    /* 滑車にかかる糸が、A の中心の高さ（面から bh/2）を通るように面の位置を決める。
+       こうすると「面と平行な糸」がそのまま滑車の接線になる。 */
+    var nx0 = -Math.sin(th), ny0 = -Math.cos(th);       /* 面から外（上）向き */
+    var off = pr + bh / 2;
+    var cnX = PX - nx0 * off, cnY = PY - ny0 * off;     /* 面のいちばん高いところ */
+    /* B が下りるぶんの縦の余白から、1 m あたりの px を決める */
+    var sc = clamp((H - cnY - 96) / (P.m19.LEN + 0.6), 24, 46);
+    /* 面の横の広がり（下がりすぎないように制限する） */
+    var HS = PX - 52;
+    if (st2 > 1e-6) HS = Math.min(HS, (H - 48 - cnY) / Math.tan(th));
+    var Dspan = Math.max(2.4, (HS / ct) / sc);          /* 面にそって見せる長さ [m] */
+    var d0 = Math.max(1.0, Dspan - 1.8);               /* A のはじめの位置（滑車からの距離） */
+
+    var ux = -ct, uy = st2;                             /* 滑車から下る向き（画面） */
+    var nx = nx0, ny = ny0;                             /* 面から外（上）向き */
+    var Lx = cnX + ux * Dspan * sc, Ly = cnY + uy * Dspan * sc;
+    /* 面（ハッチは面の下側に出す） */
+    hatchLine(ctx, cnX, cnY, Lx, Ly, 1);
+    ctx.save(); ctx.strokeStyle = '#98a0a8'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(cnX, cnY); ctx.lineTo(cnX, H - 22); ctx.lineTo(Lx, H - 22);
+    ctx.lineTo(Lx, Ly); ctx.stroke(); ctx.restore();
+    if (v.th > 0.5) angArc(ctx, Lx, Ly, 30, -th, 0, 'θ = ' + fmt(v.th, 0) + '°', -th * 0.45, 66);
+
+    /* A：面の上を、滑車に向かって上っていく */
+    var dA = Math.max(0.3, d0 - m.x);
+    var cx = cnX + ux * dA * sc, cy = cnY + uy * dA * sc;      /* 面と接している点 */
+    var ax = cx + nx * bh / 2, ay = cy + ny * bh / 2;          /* 物体の中心 */
+    blockShape(ctx, ax, ay, th, bw, bh, '#e8eef5');
+    label(ctx, 'A（' + fmt(v.m, 1) + ' kg）', ax + nx * 24 + ux * 50, ay + ny * 24 + uy * 50,
+      { size: 11, bold: true });
+    /* 糸（A の上側の面 → 滑車の接点）。面と平行で、滑車にちょうど接する */
+    var atx = ax - ux * bw / 2, aty = ay - uy * bw / 2;        /* 糸と A が接する点 */
+    var tgx = PX - nx * pr, tgy = PY - ny * pr;                /* 滑車の接点（A 側） */
+    string(ctx, atx, aty, tgx, tgy);
+    /* 滑車と、つるした B */
+    stringArc(ctx, PX, PY, pr, 0, Math.atan2(ct, st2));        /* 滑車に巻きついた部分 */
+    pulley(ctx, PX, PY, pr);
+    var yB0 = PY + 62, yB = yB0 + m.x * sc;
+    var kB = mSize({ vars: [{ k: 'm', def: 2 }] }, { m: v.M });
+    var rB = 14 * kB;
+    string(ctx, PX + pr, PY, PX + pr, yB - rB);
+    ball(ctx, PX + pr, yB, rB, 'B');
+    label(ctx, 'B（' + fmt(v.M, 1) + ' kg）', PX + pr - rB - 10, yB - 6, { size: 11, bold: true, align: 'right' });
+    if (t < 0.30) {                                            /* 静かにはなす手 */
+      var fa = (t <= 0.12) ? 1 : Math.max(0, 1 - (t - 0.12) / 0.18);
+      ctx.save(); ctx.globalAlpha = fa;
+      dropHand(ctx, PX + pr, yB + rB + 4, 0.78, clamp((t - 0.05) / 0.12, 0, 1), fa);
+      ctx.restore();
+    }
+
+    if (s.o.showF || s.o.showFm) {
+      var only = !!s.o.showFm;                    /* 運動の向きの力だけを描くか */
+      var fs = 46 / Math.max(1, G * Math.max(v.m, v.M)), Tn = m.T;
+      /* B：張力と重力 */
+      arrow(ctx, PX + pr, yB - rB, PX + pr, yB - rB - Tn * fs, 'force', 1, COL.hand);
+      label(ctx, 'T = ' + fmt(Tn, 2) + ' N', PX + pr + 10, yB - rB - Tn * fs - 8, { size: 11, color: COL.hand, align: 'left' });
+      arrow(ctx, PX + pr, yB, PX + pr, yB + v.M * G * fs, 'force');
+      label(ctx, 'Mg', PX + pr + 10, yB + v.M * G * fs - 6, { size: 11, color: COL.force, align: 'left' });
+      /* A：張力（面にそって上向き）・重力・垂直抗力 */
+      arrow(ctx, atx, aty, atx - ux * Tn * fs, aty - uy * Tn * fs, 'force', 1, COL.hand);
+      if (!only) {
+        arrow(ctx, ax, ay, ax, ay + v.m * G * fs, 'force');
+        label(ctx, 'mg', ax + 11, ay + v.m * G * fs + 6, { size: 11, color: COL.force, align: 'left' });
+        var Nn = v.m * G * ct;
+        arrow(ctx, cx, cy, cx + nx * Nn * fs, cy + ny * Nn * fs, 'force', 1, COL.norm);
+        label(ctx, 'N', cx + nx * Nn * fs - 6, cy + ny * Nn * fs - 10, { size: 11, color: COL.norm, align: 'right' });
+      } else if (v.th > 0.5) {
+        /* 運動の向き（面にそう向き）の成分だけを描く */
+        var gsn0 = v.m * G * st2;
+        arrow(ctx, ax, ay, ax + ux * gsn0 * fs, ay + uy * gsn0 * fs, 'force');
+        label(ctx, 'mg sinθ = ' + fmt(gsn0, 2) + ' N', ax + ux * gsn0 * fs - 10, ay + uy * gsn0 * fs + 16,
+          { size: 10.5, color: COL.force, align: 'right' });
+      }
+    }
+    if (s.o.showFc && v.th > 0.5) {
+      var fs2 = 46 / Math.max(1, G * Math.max(v.m, v.M)), gsn = v.m * G * st2;
+      arrow(ctx, ax, ay, ax + ux * gsn * fs2, ay + uy * gsn * fs2, 'comp');
+      label(ctx, 'mg sinθ', ax + ux * gsn * fs2 - 10, ay + uy * gsn * fs2 + 16, { size: 10.5, color: COL.force, align: 'right' });
+    }
+    if (s.o.showV && Math.abs(m.v) > 0.05) {
+      var vl = 14 + 34 * Math.min(1, Math.abs(m.v) / 6), sg2 = m.v > 0 ? 1 : -1;
+      var vax = ax + nx * 44, vay = ay + ny * 44;
+      arrow(ctx, vax, vay, vax - ux * vl * sg2, vay - uy * vl * sg2, 'vel');
+      arrow(ctx, PX + pr + 34, yB, PX + pr + 34, yB + vl * sg2, 'vel');
+      label(ctx, 'v = ' + fmt(m.v * s.sign, 2) + ' m/s', PX + pr + 40, yB + vl * sg2 * 0.5 + 14,
+        { size: 11, color: COL.vel, align: 'left' });
+    }
+    if (hintOn(s, t)) {
+      label(ctx, '糸でつながっているので、A が上る速さ＝B が下りる速さ', 12, 56,
+        { size: 11.5, bold: true, color: COL.acc, align: 'left' });
+    }
+    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
+    drawPosNote(ctx, DEFS['m1-10'], s, W, 36);
+  },
+  info: function (s, t) {
+    var v = V(s), m = P.m19.sample(v, t), th = v.th * DEG;
+    return [
+      ['加速度 $a$（A・B 共通）', fmt(m.a * s.sign, 2) + ' m/s²'],
+      ['糸の張力 $T$', fmt(m.T, 2) + ' N'],
+      ['B にはたらく重力 $Mg$', fmt(v.M * G, 2) + ' N'],
+      ['重力の面にそった成分 $mg\\sin\\theta$', fmt(v.m * G * Math.sin(th), 2) + ' N'],
+      ['速さ $v$', fmt(m.v * s.sign, 2) + ' m/s'],
+      ['進んだ距離 $x$', fmt(m.x * s.sign, 2) + ' m']
+    ];
+  },
+  eqHead: '運動方程式をたてると',
+  eq: function (s) {
+    var v = V(s), a = P.m19.a(v), T = P.m19.T(v), th = v.th * DEG;
+    var sinTxt = (v.th < 0.5) ? '' : ' - mg\\sin\\theta';
+    return twoBodyEq([
+      '&\\text{A について}&& ma = T' + sinTxt,
+      '&\\text{B について}&& Ma = Mg - T',
+      '&\\text{辺々たすと}&& (m+M)a = Mg' + (v.th < 0.5 ? '' : ' - mg\\sin\\theta') +
+        ' \\;\\Rightarrow\\; a = \\dfrac{' + fmt(v.M * G, 2) + (v.th < 0.5 ? '' : ' - ' + fmt(v.m * G * Math.sin(th), 2)) +
+        '}{' + fmt(v.m + v.M, 1) + '} = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}',
+      '&\\text{B の式にもどして}&& T = M(g-a) = ' + fmt(v.M, 1) + '(9.80-' + fmt(a, 2) + ') = ' + fmt(T, 2) + '\\ \\mathrm{N}'
+    ]);
+  },
+  note: '<b>張力 T は「B にはたらく重力 Mg」より必ず小さい</b>。もし $T = Mg$ なら B はつり合って動かないはずだから。' +
+    '面を傾けていくと $mg\\sin\\theta$ が大きくなり、$M = m\\sin\\theta$ になったところで $a = 0$（動かない）。' +
+    'それより傾けると A のほうが下りる（$a$ が負になる）。'
+};
+
+/* ============ 1-11 2物体（アトウッドの装置） ============ */
+DEFS['m1-11'] = {
+  id: 'm1-11', mode: 1, tab: '1-11 2物体（アトウッド）',
+  quizKey: 'v', quizName: 'A と B の $v$–$t$ 図（B が下りる向きを正）',
+  title: '1-11　アトウッドの装置（滑車の両側におもり）',
+  sub: 'なめらかに回る軽い滑車に軽い糸をかけ、両端に A（質量 $m$）と B（質量 $M$）をつるす。$m < M$ なので、' +
+    '静かにはなすと <b>B が下り、A が上る</b>。糸は伸びないので<b>2つの速さは同じ</b>。' +
+    '正の向きは「B が下りる向き＝A が上る向き」にそろえてとる。',
+  cw: 500, ch: 344,
+  vis: ['F', 'Fm', 'V'], visDef: { F: true },
+  signLabels: ['B が下りる向き（A が上る向き）を正', 'B が上る向き（A が下りる向き）を正'],
+  mainVars: ['m', 'M'], mainVarFocus: 'M',
+  vars: twoMassVars(1.0, 3.0),
+  toggles: [],
+  actions: [
+    { label: '質量差を小さくする（m＝2.5, M＝3）', fn: function (s) { s.v.m = 2.5; s.v.M = 3; },
+      is: function (v) { return v.m === 2.5 && v.M === 3; } },
+    { label: '同じ質量にする（動かない）', fn: function (s) { s.v.m = 3; s.v.M = 3; }, is: function (v) { return v.m === v.M; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.m = 1; s.v.M = 3; },
+      is: function (v) { return v.m === 1 && v.M === 3; } }
+  ],
+  tEnd: function (v) { return P.m110.tEnd(v); },
+  sample: function (v, t) { return P.m110.sample(v, t); },
+  graphs: twoBodyGraphs('B が下りた距離＝A が上った距離',
+    function (v, sg) {
+      var a = P.m110.a(v) * sg;
+      return ['x = v_0 t + \\tfrac{1}{2}a t^2', 'x = \\tfrac{1}{2}\\dfrac{(M-m)g}{M+m} t^2', 'x = \\tfrac{1}{2}(' + fmt(a, 2) + ')t^2'];
+    },
+    function (v, sg) {
+      var a = P.m110.a(v) * sg;
+      return ['v = v_0 + at', 'v = \\dfrac{(M-m)g}{M+m} t', 'v = (' + fmt(a, 2) + ')t'];
+    },
+    function (v, sg) {
+      var a = P.m110.a(v) * sg;
+      return [EQM + '(m+M)a = (M-m)g', 'a = \\dfrac{M-m}{M+m}\\,g',
+        'a = \\dfrac{' + fmt(v.M - v.m, 1) + '}{' + fmt(v.M + v.m, 1) + '}\\times 9.80 = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}'];
+    }),
+  draw: function (ctx, s, t, W, H) {
+    var v = V(s), m = P.m110.sample(v, t);
+    var PX = W * 0.5, PY = 108, pr = 22, sc = 44;
+    /* 天井 */
+    ctx.save(); ctx.fillStyle = '#c9d2da';
+    ctx.fillRect(W * 0.5 - 110, 56, 220, 10); ctx.restore();
+    hatchLine(ctx, W * 0.5 - 110, 66, W * 0.5 + 110, 66, 1);
+    ctx.save(); ctx.strokeStyle = '#5b6672'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(PX, 66); ctx.lineTo(PX, PY - pr); ctx.stroke(); ctx.restore();
+    pulley(ctx, PX, PY, pr);
+
+    var kA = mSize({ vars: [{ k: 'm', def: 1 }] }, { m: v.m });
+    var kB = mSize({ vars: [{ k: 'm', def: 3 }] }, { m: v.M });
+    var rA = 15 * kA, rB = 15 * kB;
+    var yA0 = PY + 152, yB0 = PY + 96;
+    var yA = yA0 - m.x * sc, yB = yB0 + m.x * sc;
+    string(ctx, PX - pr, PY, PX - pr, yA - rA);
+    string(ctx, PX + pr, PY, PX + pr, yB - rB);
+    ball(ctx, PX - pr, yA, rA, 'A');
+    label(ctx, 'A（' + fmt(v.m, 1) + ' kg）', PX - pr - rA - 44, yA + 18, { size: 11, bold: true, align: 'right' });
+    ball(ctx, PX + pr, yB, rB, 'B');
+    label(ctx, 'B（' + fmt(v.M, 1) + ' kg）', PX + pr + rB + 8, yB, { size: 11, bold: true, align: 'left' });
+    if (t < 0.30) {
+      var fa = (t <= 0.12) ? 1 : Math.max(0, 1 - (t - 0.12) / 0.18);
+      ctx.save(); ctx.globalAlpha = fa;
+      dropHand(ctx, PX + pr, yB + rB + 6, 0.8, clamp((t - 0.05) / 0.12, 0, 1), fa);
+      ctx.restore();
+    }
+    if (s.o.showF || s.o.showFm) {     /* この図の力はすべて運動の向き（鉛直）にそっている */
+      var fs = 42 / Math.max(1, v.M * G), Tn = m.T;
+      arrow(ctx, PX - pr, yA - rA, PX - pr, yA - rA - Tn * fs, 'force', 1, COL.hand);
+      label(ctx, 'T', PX - pr - 10, yA - rA - Tn * fs + 8, { size: 11, color: COL.hand, align: 'right' });
+      arrow(ctx, PX - pr, yA, PX - pr, yA + v.m * G * fs, 'force');
+      label(ctx, 'mg', PX - pr - 10, yA + v.m * G * fs - 6, { size: 11, color: COL.force, align: 'right' });
+      arrow(ctx, PX + pr, yB - rB, PX + pr, yB - rB - Tn * fs, 'force', 1, COL.hand);
+      label(ctx, 'T = ' + fmt(Tn, 2) + ' N', PX + pr + 10, yB - rB - Tn * fs + 8, { size: 11, color: COL.hand, align: 'left' });
+      arrow(ctx, PX + pr, yB, PX + pr, yB + v.M * G * fs, 'force');
+      label(ctx, 'Mg = ' + fmt(v.M * G, 1) + ' N', PX + pr + 10, yB + v.M * G * fs - 6, { size: 11, color: COL.force, align: 'left' });
+    }
+    if (s.o.showV && Math.abs(m.v) > 0.05) {
+      var vl = 14 + 34 * Math.min(1, Math.abs(m.v) / 6), sg2 = m.v > 0 ? 1 : -1;
+      arrow(ctx, PX - pr - 34, yA, PX - pr - 34, yA - vl * sg2, 'vel');
+      arrow(ctx, PX + pr + 34, yB, PX + pr + 34, yB + vl * sg2, 'vel');
+      label(ctx, 'v = ' + fmt(m.v * s.sign, 2) + ' m/s', PX + pr + 40, yB + vl * sg2 * 0.5, { size: 11, color: COL.vel, align: 'left' });
+    }
+    if (hintOn(s, t)) {
+      if (Math.abs(v.M - v.m) < 1e-9) {
+        label(ctx, '質量が同じなので合力 0 → 動かない', 12, H - 12, { size: 12, bold: true, color: COL.acc, align: 'left' });
+      } else {
+        label(ctx, '重いほうが下り、軽いほうが上る', 12, H - 12,
+          { size: 11.5, bold: true, color: COL.acc, align: 'left' });
+      }
+    }
+    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
+    drawPosNote(ctx, DEFS['m1-11'], s, W, 36);
+  },
+  info: function (s, t) {
+    var v = V(s), m = P.m110.sample(v, t);
+    return [
+      ['加速度 $a$（A・B 共通）', fmt(m.a * s.sign, 2) + ' m/s²'],
+      ['$a$ と $g$ の比', fmt(m.a / G, 3) + ' 倍'],
+      ['糸の張力 $T$', fmt(m.T, 2) + ' N'],
+      ['$mg$（A）／$Mg$（B）', fmt(v.m * G, 1) + ' ／ ' + fmt(v.M * G, 1) + ' N'],
+      ['速さ $v$', fmt(m.v * s.sign, 2) + ' m/s'],
+      ['進んだ距離 $x$', fmt(m.x * s.sign, 2) + ' m']
+    ];
+  },
+  eqHead: '運動方程式をたてると',
+  eq: function (s) {
+    var v = V(s), a = P.m110.a(v), T = P.m110.T(v);
+    return twoBodyEq([
+      '&\\text{A（上る）について}&& ma = T - mg',
+      '&\\text{B（下りる）について}&& Ma = Mg - T',
+      '&\\text{辺々たすと}&& (m+M)a = (M-m)g \\;\\Rightarrow\\; a = \\dfrac{M-m}{M+m}g = \\dfrac{' +
+        fmt(v.M - v.m, 1) + '}{' + fmt(v.M + v.m, 1) + '}\\times 9.80 = ' + fmt(a, 2) + '\\ \\mathrm{m/s^2}',
+      '&\\text{A の式にもどして}&& T = m(g+a) = ' + fmt(v.m, 1) + '(9.80+' + fmt(a, 2) + ') = ' + fmt(T, 2) + '\\ \\mathrm{N}'
+    ]);
+  },
+  note: '<b>加速度は必ず $g$ より小さい</b>（$a = \\dfrac{M-m}{M+m}g$ で、分数は 1 より小さい）。' +
+    '質量差を小さくするほど $a$ は小さくなり、運動がゆっくりになる。' +
+    '$T$ は $mg$ より大きく $Mg$ より小さい——そうでないと A が上り B が下りることにならない。',
+  long: '<h3>ミニコラム：アトウッドの装置</h3>' +
+    '<p>この装置は、1784 年にイギリスのケンブリッジ大学の数学者 <b>ジョージ・アトウッド</b>（George Atwood, 1745–1807）が、' +
+    '力学の講義で使うために考えたものです。目的はただひとつ、<b>「重力による運動を、ゆっくりにして見せる」</b>ことでした。</p>' +
+    '<p>自由落下は加速度が 9.8 m/s² もあります。1 秒で 4.9 m も落ちてしまうので、' +
+    '振り子時計しかなかった 18 世紀には、落ちる時間や距離を手で測るのはほとんど不可能でした。' +
+    'ところが滑車の両側に近い質量のおもりをつるすと、加速度は</p>' +
+    '<p class="tex">a = \\dfrac{M-m}{M+m}\\,g</p>' +
+    '<p>となり、たとえば $M=1.02$ kg・$m=1.00$ kg なら $a$ は $g$ の約 1/100、つまり 0.1 m/s² ほどまで下がります。' +
+    'これなら目と耳で追える速さです。アトウッドはこの装置に振り子時計と目盛り板を組み合わせ、' +
+    '<b>「速度は時間に比例する」「距離は時間の2乗に比例する」</b>というガリレオ以来の等加速度運動の法則を、' +
+    '教室で目の前で確かめてみせました。ニュートンの『プリンキピア』が出てからちょうど100年後のことです。</p>' +
+    '<p>物理としての要点は<b>「動かす力は $(M-m)g$ なのに、動かされる質量は $M+m$ だ」</b>というところにあります。' +
+    '重力がはたらいているのは差の分だけなのに、加速されるのは2つ合わせた全部。' +
+    'だから $a$ は必ず $g$ より小さくなります。これは運動方程式 $ma=F$ の意味そのものを見せてくれる、よくできた仕掛けです。</p>' +
+    '<p>いまでも高校・大学の実験室でよく使われていて、$g$ の測定や、糸の張力の確認、' +
+    '「軽い糸・軽い滑車」という理想化がどれくらい成り立つかを調べる題材になっています。</p>' +
+    '<p class="src">※ おもりや糸の質量、滑車の慣性や摩擦は 0 として単純化しています。実際の実験では、これらのずれが測定値に効いてきます。</p>'
+};
+
+/* ============ 1-12 2物体（板と、その上にのる物体） ============ */
+DEFS['m1-12'] = {
+  id: 'm1-12', mode: 1, tab: '1-12 2物体（板の上）',
+  quizKey: 'vA', quizName: '板 A と物体 B の $v$–$t$ 図（右向きが正）',
+  title: '1-12　なめらかな床の上の板 A と、その上の物体 B',
+  sub: '水平でなめらかな床の上に板 A（質量 $M$）を置き、その上に物体 B（質量 $m$）をのせる。' +
+    '<b>摩擦があるのは A と B のあいだだけ</b>（床はなめらか）。B が A の上をすべるとき、' +
+    'B にはたらく動摩擦力は「A が B に対して動く向き」、A にはその<b>反対向き</b>にはたらく（作用・反作用）。' +
+    '<b>A と B は加速度がちがう</b>ので、x・v・a のグラフは2本ずつ重ねて描いてある。' +
+    '板の長さは ' + fmt(P.m111.LB, 1) + ' m で、B ははじめ板のまん中にのっている。' +
+    '<b>板の半分（' + fmt(P.m111.LB / 2, 2) + ' m）だけすべると B は板から落ちて、水平投射になる。</b>',
+  cw: 520, ch: 246,
+  vis: ['F', 'Fm', 'V'], visDef: { F: true },
+  signLabels: ['右向きを正', '左向きを正'],
+  mainVars: ['FA', 'vB0', 'mud'], mainVarFocus: 'FA',
+  vars: [
+    { k: 'FA', label: 'A を引く力 $F_A$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 18 },
+    { k: 'FB', label: 'B を引く力 $F_B$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 0 },
+    { k: 'vA0', label: 'A の初速度', unit: ' m/s', min: 0, max: 8, step: 0.5, dec: 1, def: 0 },
+    { k: 'vB0', label: 'B の初速度', unit: ' m/s', min: 0, max: 8, step: 0.5, dec: 1, def: 0 },
+    { k: 'mud', label: 'A と B の動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.8, step: 0.05, dec: 2, def: 0.25 },
+    { k: 'mus', label: 'A と B の静止摩擦係数 $\\mu$', unit: '', min: 0, max: 0.8, step: 0.05, dec: 2, def: 0 },
+    { k: 'mA', label: '板 A の質量 $M$', unit: ' kg', min: 1, max: 8, step: 0.5, dec: 1, def: 3.0 },
+    { k: 'mB', label: '物体 B の質量 $m$', unit: ' kg', min: 0.5, max: 6, step: 0.5, dec: 1, def: 2.0 }
+  ],
+  toggles: [],
+  actions: [
+    { label: '板 A を引く', fn: function (s) { s.v.FA = 18; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; },
+      is: function (v) { return v.FA > 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0; } },
+    { label: '物体 B に初速度を与える', fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 2.5; },
+      is: function (v) { return v.FA === 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 > 0; } },
+    { label: '板 A に初速度を与える', fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vB0 = 0; s.v.vA0 = 2.5; },
+      is: function (v) { return v.FA === 0 && v.FB === 0 && v.vB0 === 0 && v.vA0 > 0; } },
+    { label: 'はじめの設定にもどす',
+      fn: function (s) { s.v.FA = 18; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; s.v.mud = 0.25; s.v.mus = 0; s.v.mA = 3; s.v.mB = 2; },
+      is: function (v) { return v.FA === 18 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0 && v.mud === 0.25 && v.mus === 0 && v.mA === 3 && v.mB === 2; } }
+  ],
+  tEnd: function (v) { return P.m111.tEnd(v); },
+  sample: function (v, t) { return P.m111.sample(v, t); },
+  graphs: [
+    { key: 'x', short: '$x$–$t$ 図', title: '$x$–$t$ 図（位置）', ylabel: 'x [m]', open: false, signed: true, legend: true,
+      series: [{ color: COL.A, name: '板 A', f: function (mm) { return mm.xA; } },
+        { color: COL.B, name: '物体 B', f: function (mm) { return mm.xB; } }],
+      fml: function (v, sg) {
+        var q = P.m111.acc(v, v.vA0, v.vB0);
+        return ['x = v_0 t + \\tfrac{1}{2}a t^2',
+          '\\text{A: } x_A = v_{A0}t + \\tfrac{1}{2}a_A t^2 \\quad \\text{B: } x_B = v_{B0}t + \\tfrac{1}{2}a_B t^2',
+          '\\text{A: } ' + fmt(v.vA0 * sg, 1) + 't + \\tfrac{1}{2}(' + fmt(q.aA * sg, 2) + ')t^2 \\quad \\text{B: } ' +
+            fmt(v.vB0 * sg, 1) + 't + \\tfrac{1}{2}(' + fmt(q.aB * sg, 2) + ')t^2'];
+      } },
+    { key: 'v', short: '$v$–$t$ 図', title: '$v$–$t$ 図（速度）　※色をつけた部分の面積＝B が A に対してすべった距離', ylabel: 'v [m/s]', open: true, signed: true, legend: true,
+      band: { i: 0, j: 1, color: 'rgba(224,123,24,.20)' },
+      series: [{ color: COL.A, name: '板 A', f: function (mm) { return mm.vA; } },
+        { color: COL.B, name: '物体 B', f: function (mm) { return mm.vB; } }],
+      fml: function (v, sg) {
+        var q = P.m111.acc(v, v.vA0, v.vB0);
+        return ['v = v_0 + at',
+          '\\text{A: } v_A = v_{A0} + a_A t \\quad \\text{B: } v_B = v_{B0} + a_B t',
+          '\\text{A: } ' + fmt(v.vA0 * sg, 1) + ' + (' + fmt(q.aA * sg, 2) + ')t \\quad \\text{B: } ' +
+            fmt(v.vB0 * sg, 1) + ' + (' + fmt(q.aB * sg, 2) + ')t'];
+      },
+      fnote: function (v, s2) {
+        var ts = P.m111.tStick(v), tfl = P.m111.tFall(v);
+        var m2 = P.m111.sample(v, isFinite(ts) ? ts : P.m111.tEnd(v));
+        if (isFinite(tfl)) {
+          return '<b>2本の線ではさまれた面積 ＝ B が A に対してすべった距離。</b>' +
+            '（速度の差を時間でたし合わせたものが、位置の差になる）<br>' +
+            'すべった距離が板の半分（<b>' + fmt(P.m111.LB / 2, 2) + ' m</b>）になる <b>' + fmt(tfl, 2) +
+            ' s</b> で、B は板からすべり落ちる。そのあとは B は水平投射になり、' +
+            'なめらかな床の上を<b>そのままの速さ</b>で進む（水平の線）。板 A は B の摩擦がなくなるぶん、急に速くなる。';
+        }
+        return '<b>2本の線ではさまれた面積 ＝ B が A に対してすべった距離。</b>' +
+          '（速度の差を時間でたし合わせたものが、位置の差になる）<br>' +
+          (isFinite(ts)
+            ? '速さがそろうのは <b>' + fmt(ts, 2) + ' s</b>。そこまでにすべる距離は <b>' + fmt(Math.abs(m2.slid), 2) +
+              ' m</b> で、そのあとは2つがいっしょに動くので面積は増えない。'
+            : '力をかけ続けているあいだ、速さの差は開いていく（面積はふえ続ける）。');
+      } },
+    { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true, legend: true,
+      series: [{ color: COL.A, name: '板 A', f: function (mm) { return mm.aA; } },
+        { color: COL.B, name: '物体 B', f: function (mm) { return mm.aB; } }],
+      fml: function (v, sg) {
+        var q = P.m111.acc(v, v.vA0, v.vB0);
+        return [EQM + 'ma = F_{\\text{合力}}',
+          '\\text{A: } Ma_A = F_A - \\mu\' mg \\quad \\text{B: } ma_B = F_B + \\mu\' mg',
+          '\\text{A: } a_A = ' + fmt(q.aA * sg, 2) + ' \\quad \\text{B: } a_B = ' + fmt(q.aB * sg, 2) + '\\ \\mathrm{m/s^2}'];
+      } }
+  ],
+  draw: function (ctx, s, t, W, H) {
+    var v = V(s), m = P.m111.sample(v, t), T = P.m111.tEnd(v);
+    var gy = H - 76, i;
+    var xmax = 0.6;
+    for (i = 0; i <= 40; i++) {
+      var q = P.m111.sample(v, T * i / 40);
+      xmax = Math.max(xmax, q.xA + P.m111.LB / 2, q.xB);
+    }
+    var sc = Math.min(52, (W - 250) / Math.max(1, xmax));
+    var X = function (x) { return 78 + x * sc; };
+    ground(ctx, 10, W - 10, gy);
+    axisX(ctx, X, gy + 44, 0, xmax + 0.5, 'x [m]', s.sign, { target: 5 });
+    originMark(ctx, X(0), gy + 44, -12, 13);
+
+    /* 板の長さは決まっている（P.m111.LB）。B ははじめ、板のまん中にのっている */
+    var ph = 22, pw = P.m111.LB * sc;
+    var kB = mSize({ vars: [{ k: 'm', def: 1 }] }, { m: v.mB });
+    var bw = 34 * kB, bh = 26 * kB;
+    var pxA = X(m.xA), pxB = X(m.xB);
+    /* B の高さ。板の上にいるあいだは板の上面、落ちたら床に向かって落ちていく */
+    var byTop = gy - ph * clamp((m.yB === undefined ? P.m111.HB : m.yB) / P.m111.HB, 0, 1);
+    plank(ctx, pxA, gy - ph, pw, ph);
+    label(ctx, 'A（板 ' + fmt(v.mA, 1) + ' kg）', pxA - pw / 2, gy + 20, { size: 11, bold: true, align: 'left' });
+    blockShape(ctx, pxB, byTop - bh / 2, 0, bw, bh, '#e3ecf6');
+    label(ctx, 'B（' + fmt(v.mB, 1) + ' kg）', pxB, byTop - bh - 12, { size: 11, bold: true });
+
+    /* 引く手／デコピン */
+    if (v.FA > 0.5) {
+      var hax = pxA + pw / 2 + 3, hay = gy - ph / 2;
+      string(ctx, hax, hay, hax + 26, hay);
+      hand(ctx, hax + 26, hay, 0);
+    }
+    if (v.FB > 0.5) {
+      var hbx = pxB + bw / 2 + 3, hby = byTop - bh / 2;
+      string(ctx, hbx, hby, hbx + 26, hby);
+      hand(ctx, hbx + 26, hby, 0);
+    }
+    if (t < 0.34 && v.FA < 0.5 && v.FB < 0.5) {          /* 初速度はデコピンで与えたことにする */
+      var fk = clamp(t / 0.10, 0, 1);
+      var fa = (t <= 0.13) ? 1 : Math.max(0, 1 - (t - 0.13) / 0.18);
+      var who = (v.vB0 > 0.01) ? 'B' : ((v.vA0 > 0.01) ? 'A' : null);
+      if (who && fa > 0.02) {
+        var fx = (who === 'B') ? X(0) - bw / 2 - 20 : X(0) - pw / 2 - 20;
+        var fy = (who === 'B') ? gy - ph - bh / 2 : gy - ph / 2;
+        flickHand(ctx, fx, fy, 0, fk, 1, 0.40, fa);
+        ctx.save(); ctx.globalAlpha = fa;
+        bubble(ctx, who + ' をデコピン！', clamp(fx + 10, 66, W - 66), Math.max(26, fy - 40),
+          { size: 12, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
+        ctx.restore();
+      }
+    }
+
+    if (s.o.showF || s.o.showFm) {     /* この図の力はすべて運動の向き（水平）にそっている */
+      var fmax = v.mud * v.mB * G, fs = 64 / Math.max(6, fmax, v.FA, v.FB);
+      var fB = m.f;                                       /* B にはたらく摩擦（右が正） */
+      if (Math.abs(fB) > 0.05 && !m.fell) {
+        arrow(ctx, pxB, gy - ph - 3, pxB + fB * fs, gy - ph - 3, 'force', 1, COL.fric);
+        label(ctx, (m.slip ? '動摩擦 ' : '静止摩擦 ') + fmt(Math.abs(fB), 2) + ' N',
+          pxB + fB * fs + (fB > 0 ? 8 : -8), gy - ph - 20,
+          { size: 10.5, color: COL.fric, align: fB > 0 ? 'left' : 'right' });
+        /* A にはたらく反対向きの摩擦（B の真下だと見えないので、少し右にずらして描く） */
+        var fax = pxA - pw / 2 + 16;
+        arrow(ctx, fax, gy - ph + 8, fax - fB * fs, gy - ph + 8, 'force', 1, COL.fric);
+        label(ctx, '反作用', pxA - pw / 2 - 6, gy - ph / 2, { size: 10, color: COL.fric, align: 'right' });
+      }
+      if (v.FA > 0.5) {
+        arrow(ctx, pxA + pw / 2, gy - ph / 2, pxA + pw / 2 + v.FA * fs, gy - ph / 2, 'force', 1, COL.hand);
+        label(ctx, 'F_A = ' + fmt(v.FA, 0) + ' N', pxA + pw / 2 + v.FA * fs + 8, gy - ph / 2 - 16,
+          { size: 11, color: COL.hand, align: 'left' });
+      }
+      if (v.FB > 0.5) {
+        arrow(ctx, pxB + bw / 2, byTop - bh / 2, pxB + bw / 2 + v.FB * fs, byTop - bh / 2, 'force', 1, COL.hand);
+        label(ctx, 'F_B = ' + fmt(v.FB, 0) + ' N', pxB + bw / 2 + v.FB * fs + 8, byTop - bh / 2 - 16,
+          { size: 11, color: COL.hand, align: 'left' });
+      }
+    }
+    if (s.o.showV) {
+      var vlen = function (x) { return 12 + 32 * Math.min(1, Math.abs(x) / 6); };
+      if (Math.abs(m.vA) > 0.05) {
+        arrow(ctx, pxA - pw / 2 + 12, gy - 8, pxA - pw / 2 + 12 + vlen(m.vA) * (m.vA > 0 ? 1 : -1), gy - 8, 'vel');
+      }
+      if (Math.abs(m.vB) > 0.05) {
+        arrow(ctx, pxB, byTop - bh - 34, pxB + vlen(m.vB) * (m.vB > 0 ? 1 : -1), byTop - bh - 34, 'vel');
+      }
+      label(ctx, 'v_A = ' + fmt(m.vA * s.sign, 2) + '　v_B = ' + fmt(m.vB * s.sign, 2) + ' m/s',
+        12, 74, { size: 11.5, color: COL.vel, align: 'left' });
+    }
+    if (hintOn(s, t)) {
+      var msg2 = m.fell
+        ? (m.air ? 'B は板からすべり落ちた → 水平投射（水平の速さはそのまま）' : 'B は床に着いた。床はなめらかなので等速で進む')
+        : ((m.slip ? 'B は A の上をすべっている（動摩擦がはたらく）' : '速さがそろった → 2つはいっしょに動く') +
+          (Math.abs(m.slid) > 0.01 ? '　すべった距離 ' + fmt(Math.abs(m.slid), 2) + ' m' : ''));
+      label(ctx, msg2, 12, 56, { size: 11.5, bold: true, color: COL.acc, align: 'left' });
+    }
+    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
+    drawPosNote(ctx, DEFS['m1-12'], s, W, 36);
+  },
+  info: function (s, t) {
+    var v = V(s), m = P.m111.sample(v, t);
+    return [
+      ['板 A の加速度 $a_A$', fmt(m.aA * s.sign, 2) + ' m/s²'],
+      ['物体 B の加速度 $a_B$', fmt(m.aB * s.sign, 2) + ' m/s²'],
+      ['A と B のあいだの摩擦力', fmt(Math.abs(m.f), 2) + ' N' + (m.slip ? '（動摩擦）' : '（静止摩擦）')],
+      ['動摩擦力 $\\mu\' mg$ ／ 最大静止摩擦 $\\mu mg$',
+        fmt(v.mud * v.mB * G, 2) + ' ／ ' + fmt((v.mus || 0) * v.mB * G, 2) + ' N'],
+      ['速度 $v_A$ ／ $v_B$', fmt(m.vA * s.sign, 2) + ' ／ ' + fmt(m.vB * s.sign, 2) + ' m/s'],
+      ['B が A に対してすべった距離', fmt(Math.abs(m.slid), 2) + ' m' +
+        (m.fell ? '（板からすべり落ちた）' : '')]
+    ];
+  },
+  eqHead: '運動方程式をたてると',
+  eq: function (s) {
+    var v = V(s), q = P.m111.acc(v, v.vA0, v.vB0), fmax = v.mud * v.mB * G;
+    if (!q.slip) {
+      return twoBodyEq([
+        '&\\text{すべらないとき}&& \\text{A と B をひとまとめにして } (M+m)a = F_A + F_B',
+        '&&& a = \\dfrac{' + fmt(v.FA + v.FB, 1) + '}{' + fmt(v.mA + v.mB, 1) + '} = ' + fmt(q.aA, 2) + '\\ \\mathrm{m/s^2}',
+        '&\\text{B に必要な摩擦}&& f = ma - F_B = ' + fmt(Math.abs(q.f), 2) +
+          '\\ \\mathrm{N} \\le \\mu mg = ' + fmt((v.mus || 0) * v.mB * G, 2) + '\\ \\mathrm{N}\\;(\\text{だからすべらない})'
+      ]);
+    }
+    var sg = (q.f >= 0) ? '+' : '-';
+    return twoBodyEq([
+      '&\\text{B について}&& ma_B = F_B ' + sg + ' \\mu\' mg = ' + fmt(v.FB, 0) + ' ' + sg + ' ' + fmt(fmax, 2) +
+        ' \\;\\Rightarrow\\; a_B = ' + fmt(q.aB, 2) + '\\ \\mathrm{m/s^2}',
+      '&\\text{A について}&& Ma_A = F_A ' + (sg === '+' ? '-' : '+') + ' \\mu\' mg = ' + fmt(v.FA, 0) + ' ' +
+        (sg === '+' ? '-' : '+') + ' ' + fmt(fmax, 2) + ' \\;\\Rightarrow\\; a_A = ' + fmt(q.aA, 2) + '\\ \\mathrm{m/s^2}',
+      '&\\text{垂直抗力}&& N = mg = ' + fmt(v.mB * G, 2) + '\\ \\mathrm{N} \\;\\Rightarrow\\; \\mu\' N = ' +
+        fmt(fmax, 2) + '\\ \\mathrm{N}',
+      '&\\text{摩擦力は}&& \\text{B には A が動く向き、A にはその反対向き（作用・反作用）}'
+    ]);
+  },
+  note: '<b>摩擦力の向きは「相手に対してどちらへ動いているか」で決まる。</b>' +
+    'A を引くと A のほうが速くなるので、A から見て B は後ろへ下がる → B には<b>前向き</b>の摩擦、A には<b>後ろ向き</b>の摩擦。' +
+    'B に初速度を与えたときは逆になる。<b>力をかけずに初速度だけ与えた場合</b>は、外から力がはたらかないので' +
+    '<b>運動量 $Mv_A + mv_B$ が保存</b>し、やがて2つは同じ速さになってそのまま進む。'
 };
 
 /* ===== 60_mode2.js ===== */
@@ -5556,8 +6458,8 @@ DEFS['m4-2'] = {
 var st = { cur: 'm1-1', sims: {}, qmode: false, bigFml: false };
 
 /* 表示チェックボックスの既定（力は最初オフ） */
-var VIS_LABEL = { F: '力を表示', Fc: '分解した力を表示', V: '速度を表示', Vc: '分解した速度を表示' };
-var VIS_DEF = { F: false, Fc: false, V: true, Vc: false };
+var VIS_LABEL = { F: '力を表示', Fm: '運動方向の力のみ表示', Fc: '分解した力を表示', V: '速度を表示', Vc: '分解した速度を表示' };
+var VIS_DEF = { F: false, Fm: false, Fc: false, V: true, Vc: false };
 var QLETTER = ['ア', 'イ', 'ウ'];
 
 /* 変数（v）と表示オプション（o）をまとめて物理へ渡す */
@@ -5597,7 +6499,9 @@ function initState() {
     d.vars.forEach(function (vd) { s.v[vd.k] = vd.def; });
     (d.toggles || []).forEach(function (td) { s.o[td.k] = td.def; });
     (d.selects || []).forEach(function (sd) { s.o[sd.k] = sd.def; });
-    (d.vis || []).forEach(function (k) { s.o['show' + k] = VIS_DEF[k]; });
+    (d.vis || []).forEach(function (k) {
+      s.o['show' + k] = (d.visDef && d.visDef[k] !== undefined) ? d.visDef[k] : VIS_DEF[k];
+    });
     if (d.consts) Object.keys(d.consts).forEach(function (k) { s.o[k] = d.consts[k]; });
     (d.graphs || []).forEach(function (g) { s.open[g.key] = !!g.open; });
     if (d.freeGraph) { s.fx = d.freeGraph.defX; s.fy = d.freeGraph.defY; s.open._free = true; }
@@ -5649,6 +6553,7 @@ function buildTabs() {
   MODES.forEach(function (M) {
     if (M.n !== cur.mode) return;
     M.ids.forEach(function (id) {
+      if (!DEFS[id]) return;          /* まだ作っていない番号は飛ばす */
       var b = document.createElement('button');
       b.textContent = DEFS[id].tab;
       b.className = (DEFS[id].game ? 'game' : '') + (id === st.cur ? ' on' : '');
@@ -5775,7 +6680,8 @@ function buildPanel() {
     h.push('</div></div>');
   }
   if (d.sub) h.push('<p class="cvsub">' + mathHtml(d.sub) + '</p>');
-  h.push('<div class="eq" id="eqbox"></div>');
+  h.push('<div class="eqwrap"><div class="eqttl" id="eqttl" style="display:none"></div>' +
+    '<div class="eq" id="eqbox"></div></div>');
   h.push('</div><div class="side">');
 
   if (d.quiz) {
@@ -5912,7 +6818,20 @@ function buildPanel() {
     });
   });
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-vis]'), function (el) {
-    el.addEventListener('change', function () { s.o[el.getAttribute('data-vis')] = el.checked; renderActive(); });
+    el.addEventListener('change', function () {
+      var key = el.getAttribute('data-vis');
+      s.o[key] = el.checked;
+      /* 「力を表示」と「運動方向の力のみ表示」は同時にはチェックできない */
+      if (el.checked && (key === 'showF' || key === 'showFm')) {
+        var other = (key === 'showF') ? 'showFm' : 'showF';
+        if (s.o[other]) {
+          s.o[other] = false;
+          var ob = $('simhost').querySelector('[data-vis="' + other + '"]');
+          if (ob) ob.checked = false;
+        }
+      }
+      renderActive();
+    });
   });
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-vsl]'), function (r) {
     r.addEventListener('input', function () { setVar(r.getAttribute('data-vsl'), +r.value); });
@@ -6461,6 +7380,7 @@ function renderGraphs(d, s, T, t) {
       xmin: 0, xmax: niceXMax(T), xstep: niceStep(Math.max(0.2, T), 6), ymin: r.lo, ymax: r.hi,
       view: s.gview[g.key], hide: hide,
       series: g.series.map(function (se, j) { return { color: se.color, dash: se.dash, width: se.width, area: se.area, pts: pts[j] }; }),
+      band: g.band ? { i: g.band.i, j: g.band.j, color: g.band.color } : null,
       cursors: g.series.map(function (se) { return { color: se.color, x: t, y: se.f(m) * (g.signed ? s.sign : 1) }; }),
       legend: g.legend ? g.series.map(function (se) { return { name: se.name, color: se.color }; }) : null
     });
@@ -6600,6 +7520,15 @@ function renderEq(d, s) {
   var src = d.eq(s);
   if (src === s._eq) return;
   s._eq = src;
+  /* 「運動方程式をたてると」の見出し。運動方程式を書いている式だけに出す */
+  var ttl = $('eqttl'), head = '';
+  if (src.indexOf(EQM) === 0) { head = '運動方程式をたてると'; src = src.slice(EQM.length); }
+  else if (src.indexOf(EQBAL) === 0) { head = '力のつり合いを考えると'; src = src.slice(EQBAL.length); }
+  else if (d.eqHead) head = d.eqHead;
+  if (ttl) {
+    ttl.textContent = head;
+    ttl.style.display = head ? '' : 'none';
+  }
   el.textContent = '';
   if (window.katex) {
     try { window.katex.render(src, el, { throwOnError: false, displayMode: false }); }
@@ -6978,6 +7907,50 @@ function tick(ts) {
       r.monkey_offaim_hits = miss.join('');
       r.monkey_aim_deg = +P.m33.aimDeg({ v0: 20, th: 25, mx: 20, my: 12 }).toFixed(6);
       r.monkey_mindist = +P.m33.closest({ v0: 20, th: P.m33.aimDeg({ mx: 20, my: 12 }), mx: 20, my: 12 }).d.toFixed(6);
+      /* 1-9〜1-12 2物体の運動 */
+      var tb = { f: 12, m: 1, M: 3 };
+      r.two_string_a = +P.m18.a(tb).toFixed(6);                      /* f/(m+M) */
+      r.two_string_T = +P.m18.T(tb).toFixed(6);                      /* m f/(m+M) */
+      r.two_string_check = +(tb.f - P.m18.T(tb) - tb.M * P.m18.a(tb)).toFixed(9);   /* B の式 = 0 */
+      var pl9 = { m: 1, M: 2, th: 0 };
+      r.pulley_a0 = +P.m19.a(pl9).toFixed(6);
+      r.pulley_a0_formula = +(pl9.M * G / (pl9.m + pl9.M)).toFixed(6);
+      r.pulley_T_lt_Mg = P.m19.T(pl9) < pl9.M * G;                   /* T < Mg */
+      var pl9b = { m: 4, M: 2, th: 30 };
+      r.pulley_balance_a = +P.m19.a(pl9b).toFixed(9);                /* M = m sinθ → a = 0 */
+      var at = { m: 1, M: 3 };
+      r.atwood_a = +P.m110.a(at).toFixed(6);
+      r.atwood_a_formula = +((at.M - at.m) * G / (at.M + at.m)).toFixed(6);
+      r.atwood_a_lt_g = P.m110.a(at) < G;
+      r.atwood_T = +P.m110.T(at).toFixed(6);
+      r.atwood_T_between = (P.m110.T(at) > at.m * G) && (P.m110.T(at) < at.M * G);
+      r.atwood_same_mass_a = +P.m110.a({ m: 3, M: 3 }).toFixed(9);   /* 同じ質量なら 0 */
+      /* 1-12 板の上の物体 */
+      var bd = { mA: 3, mB: 1, mud: 0.3, FA: 12, FB: 0, vA0: 0, vB0: 0 };
+      var q1 = P.m111.acc(bd, 0, 0);
+      r.board_aB = +q1.aB.toFixed(6);                                /* μ'g */
+      r.board_aB_formula = +(bd.mud * G).toFixed(6);
+      r.board_aA = +q1.aA.toFixed(6);
+      r.board_aA_formula = +((bd.FA - bd.mud * bd.mB * G) / bd.mA).toFixed(6);
+      var bd2 = { mA: 3, mB: 1, mud: 0.3, FA: 6, FB: 0, vA0: 0, vB0: 0 };
+      r.board_weakF_together = !P.m111.acc(bd2, 0, 0).slip;          /* 弱い力ならすべらない */
+      r.board_weakF_a = +P.m111.acc(bd2, 0, 0).aA.toFixed(6);        /* F/(M+m) */
+      var bd3 = { mA: 3, mB: 1, mud: 0.3, mus: 0.3, FA: 0, FB: 0, vA0: 0, vB0: 2.5 };
+      var ts3 = P.m111.tStick(bd3), sm3 = P.m111.sample(bd3, ts3 + 1.0);
+      r.board_p_before = +(bd3.mA * bd3.vA0 + bd3.mB * bd3.vB0).toFixed(6);
+      r.board_p_after = +(bd3.mA * sm3.vA + bd3.mB * sm3.vB).toFixed(6);   /* 運動量保存 */
+      r.board_same_v = +(sm3.vA - sm3.vB).toFixed(9);
+      r.board_slid = +Math.abs(sm3.slid).toFixed(6);
+      r.board_no_fall = !isFinite(P.m111.tFall(bd3));                     /* 板から落ちない設定 */
+      /* B が板からすべり落ちる → 水平投射。水平の速さは落ちたあと変わらない */
+      var bd4 = { mA: 3, mB: 2, mud: 0.25, mus: 0, FA: 18, FB: 0, vA0: 0, vB0: 0 };
+      var tf4 = P.m111.tFall(bd4);
+      r.board_fall_t = +tf4.toFixed(6);
+      r.board_fall_slid = +Math.abs(P.m111.sample(bd4, tf4).slid).toFixed(6);   /* = LB/2 */
+      r.board_fall_half = +(P.m111.LB / 2).toFixed(6);
+      r.board_air_vB = +(P.m111.sample(bd4, tf4 + 0.1).vB - P.m111.sample(bd4, tf4).vB).toFixed(9);
+      r.board_land_y = +P.m111.sample(bd4, tf4 + P.m111.tFly() + 0.01).yB.toFixed(9);
+      r.board_after_aA = +(P.m111.sample(bd4, tf4 + 0.3).aA - bd4.FA / bd4.mA).toFixed(9);
       /* 1-4 水平面で引く（なめらか）：a = (F1 - F2 - mg sinθ)/m。左右同じ力なら a = 0 */
       var pl = { F: 10, F2: 0, th: 0, m: 2, v0: 0, mu: 0, mud: 0, LEN: 9, TMAX: 6 };
       r.pull_a = +P.m14.a0(pl).toFixed(6);
