@@ -307,7 +307,11 @@ table.read#readout td.v{flex:1 1 auto;text-align:right}
   border-top:1px solid var(--line)}
 .gbody.hide{display:none}
 .gbody .gleft{flex:1 1 265px;min-width:225px;max-width:390px}
-.gbody canvas{border:0;touch-action:none;cursor:crosshair;max-width:390px}
+/* ★グラフの canvas は touch-action:pan-y★（none にしてはいけない）
+   none にすると、スマホでグラフの上に指を置いたときにページが縦にスクロールできなくなる。
+   pan-y なら「たてになぞる＝ページのスクロール／よこになぞる＝グラフを動かす」になり、
+   どちらもできる。パソコンではホイールとドラッグがこれまでどおり使える。 */
+.gbody canvas{border:0;touch-action:pan-y;cursor:crosshair;max-width:390px}
 .gform{flex:1 1 215px;min-width:185px;background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r-m);padding:9px 11px;font-size:.84rem;overflow:hidden}
 .gform .fl{display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:nowrap}
@@ -2898,7 +2902,14 @@ function axisLine(ctx, P, lo, hi, nrm, name, sign, opt) {
   if (name) {
     var nx = tip.x + tx * (AX.head + 8) - nrm.x * 12;
     var ny = tip.y + ty * (AX.head + 8) - nrm.y * 12;
-    label(ctx, name, nx, ny, { size: AX.name, color: AX.col });
+    /* ★たての軸の名前は「矢じりの右がわ」から書き始める★
+       まん中ぞろえだと、長い名前（例：エネルギー [MJ]）が矢じりに重なって読めない
+       （スマホの細いグラフでとくに目立つ）。よこの軸はこれまでどおり。 */
+    if (Math.abs(nrm.x) > 0.5) {
+      label(ctx, name, tip.x + 8, ny, { size: AX.name, color: AX.col, align: 'left' });
+    } else {
+      label(ctx, name, nx, ny, { size: AX.name, color: AX.col });
+    }
   }
 }
 
@@ -2999,6 +3010,7 @@ function plot(cv, spec) {
   /* 軸（本体の図と同じ書き方にそろえる。グラフは小さいので字だけ少し小さく） */
   var axSave = { tick: AX.tick, num: AX.num, name: AX.name, head: AX.head };
   AX.tick = 3.5; AX.num = 9.5; AX.name = 11; AX.head = 10;
+  var yName = null;   /* たての軸の名前を、あとで書くばしょ */
   if (lgx || lgy) {
     /* 両対数（第3法則）：軸は枠の左と下に引き、目盛りは 10ⁿ で書く */
     var yz2 = pad.t + gh, xz2 = pad.l;
@@ -3027,16 +3039,62 @@ function plot(cv, spec) {
   } else {
     var hasY0 = (ymin <= 0 && ymax >= 0), hasX0 = (xmin <= 0 && xmax >= 0);
     var yz = hasY0 ? Y(0) : pad.t + gh;
+    /* yName＝たての軸の名前をあとで書くばしょ（すぐ下で入れる） */
     var xz = hasX0 ? X(0) : pad.l;
     axisX(ctx, X, yz, xmin, xmax - sx * 0.3, spec.xlabel || '', 1);
-    axisY(ctx, Y, xz, ymin, ymax - sy * 0.3, spec.ylabel || '', 1);
+    /* ★たての軸の名前は「線をひいたあと」に書く★
+       ここで書いてしまうと、あとから引く曲線（K や U）が名前の上にかぶさって読めない。
+       ばしょだけ覚えておいて、実際に書くのはこのかんすうの終わりのほう。 */
+    axisY(ctx, Y, xz, ymin, ymax - sy * 0.3, '', 1);
+    yName = { x: xz + 8, y: Y(ymax - sy * 0.3) - (AX.head + 8) };
     if (hasY0 && hasX0) originMark(ctx, xz, yz, -10, 11);
   }
   AX.tick = axSave.tick; AX.num = axSave.num; AX.name = axSave.name; AX.head = axSave.head;
   if (spec.note) label(ctx, spec.note, W - 6, 9, { size: 9.5, color: COL.sub, align: 'right' });
 
+  /* ★凡例のばしょは「先に」決めておく★
+     帯（spec.bands）の文字を右上に置くと凡例と重なるので、
+     どこに凡例が来るかを、帯をぬる前に知っておく必要がある。
+     実際に凡例をかくのは、線をひいたあと（このかんすうの終わり）。 */
+  var lgBox = null;
+  if (spec.legend && !spec.hide) {
+    var lw0 = 0;
+    ctx.save(); ctx.font = '10px ' + FONT;
+    spec.legend.forEach(function (lg) { lw0 = Math.max(lw0, ctx.measureText(lg.name).width); });
+    ctx.restore();
+    lgBox = {
+      x: pad.l + gw - lw0 - 26, y: pad.t + 8, w: lw0,
+      bot: pad.t + 8 + spec.legend.length * 13 - 4
+    };
+  }
+
   ctx.save();
   ctx.beginPath(); ctx.rect(pad.l - 1, pad.t - 1, gw + 2, gh + 2); ctx.clip();
+  /* ===== よこ一面の帯（spec.bands）=====
+     「この高さから上／下」がどんな意味かを、うすい色で示すのに使う。
+     いまは 2-1 の U–r 図で「E < 0 ＝ 閉じこめられる／E ≥ 0 ＝ ぬけ出せる」を塗り分けている。
+     ★色はページの決まりに従うこと★——青は速度・赤は力の色なので、ここには使わない。
+     軌道の色（緑＝円と楕円／金＝放物線）をうすくして使う。
+     bands: [{ y0, y1, color, label }] */
+  (spec.hide ? [] : (spec.bands || [])).forEach(function (bd) {
+    var ya = Y(Math.max(bd.y0, ymin)), yb = Y(Math.min(bd.y1, ymax));
+    if (!isFinite(ya) || !isFinite(yb)) return;
+    var top = Math.min(ya, yb), hgt = Math.abs(ya - yb);
+    if (hgt < 1) return;
+    ctx.save();
+    ctx.fillStyle = bd.color;
+    ctx.fillRect(pad.l, top, gw, hgt);
+    ctx.restore();
+    /* ★文字は帯のまん中★（上端だと、目もりの数字とぶつかる）。
+       ただし、まん中が右上の凡例にかぶるときは、凡例の下までずらす。 */
+    if (bd.label && hgt > 26) {
+      var lby = top + hgt / 2;
+      if (lgBox && lby < lgBox.bot + 10) lby = Math.min(lgBox.bot + 12, top + hgt - 8);
+      label(ctx, bd.label, pad.l + gw - 6, lby,
+        { align: 'right', size: 9.5, bold: true, color: bd.lcolor || AX.col,
+          haloColor: '#fff' });
+    }
+  });
   /* 曲線の下の面積（仕事＝力×距離の積み重ね）をぬる */
   (spec.hide ? [] : (spec.fills || [])).forEach(function (fl) {
     if (!fl.pts || fl.pts.length < 2) return;
@@ -3115,15 +3173,17 @@ function plot(cv, spec) {
   });
   ctx.restore();   /* clip 解除 */
 
-  if (spec.legend && !spec.hide) {
+  /* たての軸の名前（曲線の上に書く。白いふちどりを付けて必ず読めるようにする） */
+  if (yName && spec.ylabel) {
+    label(ctx, spec.ylabel, yName.x, yName.y,
+      { size: 11, color: AX.col, align: 'left', haloColor: '#fff' });
+  }
+
+  if (lgBox) {
     /* ★凡例は右上に置く★ 左上に置くと、K = E − U のように
        「左（r が小さいほう）で大きくなる曲線」が凡例にかくれて見えなくなる。 */
-    var lw0 = 0;
-    ctx.save(); ctx.font = '10px ' + FONT;
-    spec.legend.forEach(function (lg) { lw0 = Math.max(lw0, ctx.measureText(lg.name).width); });
-    ctx.restore();
-    var lx = pad.l + gw - lw0 - 26, ly = pad.t + 8;
-    var lw = lw0;
+    var lx = lgBox.x, ly = lgBox.y;
+    var lw = lgBox.w;
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,.86)';
     ctx.fillRect(lx - 4, ly - 8, lw + 28, spec.legend.length * 13 + 4);
@@ -3820,9 +3880,10 @@ DEFS['m1-1'] = {
     '</ul>' +
     '<p class="lawnote"><b>注</b>：現代では、惑星（＝太陽の周りをまわる天体）だけでなく' +
     '<b>人工衛星（＝地球の周りをまわる天体）にも成り立つ法則</b>であることが分かっています。' +
-    'つまり、<b>天体がある大きな質量を持つ天体の周りをまわるときに成り立つ法則</b>です。' +
-    'シミュレーション 1-1 から 1-4 では、' +
-    '<b>「太陽と惑星の話」・「地球と人工衛星の話」を選べる</b>ようになっています。</p>' +
+    'つまり、<b>「ある天体」が「かなり大きな質量を持つ天体」の周りをまわるときに' +
+    '成り立つ法則</b>です。' +
+    'シミュレーション 1-1 から 1-4 では、<b>右上の描画対象を選ぶスイッチ</b>で' +
+    '<b>「太陽と惑星について」・「地球と人工衛星について」を選べる</b>ようになっています。</p>' +
     '</div>' +
     '現在は当たり前になっている地動説も、観測した結果を科学的に検討していく中で唱えられていったものです。' +
     '詳しくは、<b><a href="#m1-6" data-goto="m1-6">「補足：地動説とケプラーの法則の歴史」</a></b>を見てみてください。<br>' +
@@ -5967,11 +6028,27 @@ DEFS['m2-2'] = {
           Kk.push([rr, kk >= 0 ? kk : NaN]);      /* K < 0 のところへは行けない */
         }
         var q = P.grav.at(o, t), qU = P.grav.U(v.Ms, q.r);
+        /* ★たての範囲は「地表（R = 6371 km）での U」を目安にしめる★
+           前は M がいちばん大きいときに合わせて −120 まで取っていたので、
+           いちばん見せたい「r = 1万 km あたり」がグラフの上のほうに寄って、
+           下半分が間のびしていた（スマホだと特に読みにくい）。 */
+        var yLo = 1.18 * P.grav.U(v.Ms, P.grav.RE);
+        var yHi = Math.max(40, (o.Em + P.grav.gm(v.Ms) / 5000) * 0.4);
         return {
           xmin: 0, xmax: rmax,
-          ymin: -P.grav.gm(P.grav.MMAX) / 5000,
-          ymax: Math.max(40, (o.Em + P.grav.gm(v.Ms) / 5000) * 0.4),
-          xlabel: 'r [km]', ylabel: 'エネルギー [MJ]（m = 1 kg）',
+          ymin: yLo,
+          ymax: yHi,
+          /* 軸の名前は短く。長いとスマホでたて軸の矢印と重なる */
+          xlabel: 'r [km]', ylabel: 'エネルギー [MJ]',
+          /* ★E の正負で「閉じこめられる／ぬけ出せる」を塗り分ける★
+             ★色はページの決まりどおり、軌道の色を薄くして使う★
+             （青＝速度・赤＝力なので、ここには絶対に使わない） */
+          bands: [
+            { y0: yLo, y1: 0, color: fade(COL.bound, 0.07),
+              label: 'E < 0 ＝ 閉じこめられる', lcolor: COL.bound },
+            { y0: 0, y1: yHi, color: fade(COL.para, 0.10),
+              label: 'E ≥ 0 ＝ ぬけ出せる', lcolor: '#a07a12' }
+          ],
           legend: true,
           series: [
             { color: COL.upot, width: 2.4, pts: U, name: 'U' },
