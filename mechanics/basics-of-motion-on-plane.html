@@ -419,12 +419,6 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 #legend .lg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 #legend canvas{width:44px;height:13px;border:0;background:transparent;border-radius:0;flex:none;opacity:.9}
 
-#urlbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;font-size:.78rem;
-  color:var(--sub);margin:8px 0 2px}
-#urlbar code{font-family:var(--mono);background:#e9eef3;border-radius:var(--r-s);padding:2px 8px;
-  word-break:break-all;font-size:.76rem}
-#urlbar button{font-size:.76rem;padding:2px 10px}
-#urlmsg{color:var(--ok);font-weight:600}
 
 /* ===== 画面が狭いとき ===== */
 @media (max-width:900px){
@@ -445,6 +439,93 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   .cvstage canvas{border-radius:var(--r-l)}
   .cvbar{border-top:1px solid var(--line);border-radius:var(--r-l);margin-top:8px}
   .gbody{padding:8px}
+}
+
+/* ===== 画面の「高さ」が低いとき（スマホを横向きにしたとき） =====
+   図は幅で大きさが決まるので、そのままだと縦にはみ出して全体が見えない。
+   高さでも上限をかけて、図がまるごと1画面に入るようにする。 */
+@media (max-height:620px) and (min-width:600px){
+  /* 図の上のじゃま（見出し・前書き）を詰めて、図を早く出す */
+  .wrap{padding:10px 12px 48px}
+  h1{font-size:1.16rem;margin-bottom:0}
+  h1 + .mini{display:none}
+  .tabs{margin:8px 0 4px}
+  .card{padding:12px;margin:8px 0}
+  #simhost{padding:12px}
+  .simtitle{font-size:.98rem}
+  #modetip{display:none}
+  .tabs.sub{margin-bottom:2px}
+  /* 図を細くしたぶん、グラフを右どなりに並べる（横向きの画面を横に使う） */
+  .simgrid{gap:12px;flex-wrap:nowrap}
+  .simgrid .cv{flex:0 1 auto;min-width:0}
+  .simgrid .side{flex:1 1 240px;min-width:0}
+  /* 図が小さくなるので、変数カードは図に重ねず、図の下にそのまま置く
+     （重ねたままだと、カードの文字の大きさは変わらないので図を隠してしまう） */
+  .cvtop{position:static;margin:8px 0 0;gap:8px;flex-wrap:wrap}
+  .cvvars{max-width:100%;box-shadow:none}
+  .cvside{width:100%}
+  .cvstage canvas{border-radius:var(--r-l)}
+  .cvbar{border-top:1px solid var(--line);border-radius:var(--r-l);margin-top:8px}
+  .ctrl{padding:8px 10px;margin-bottom:8px}
+  .ctrl .btnrow{margin:4px 0}
+  /* 右の列が細くなるので、グラフと式は縦に積む（横に並べると枠からはみ出す） */
+  .gbody{gap:8px;padding:8px}
+  .gbody .gleft{flex:1 1 100%;min-width:0;max-width:100%}
+  .gbody .gleft canvas{max-width:100%}
+  .gbody .gform{flex:1 1 100%;min-width:0}
+  /* 図そのものの幅の上限は fitStageHeight()（80_ui.js）が実際の高さから決める。
+     図・オレンジの帯・上にのせるカードが全部そろって縮むように、列ごと細くする。 */
+}
+
+/* ===== 指でさわる端末では、押せる範囲を広げる（見た目はほぼそのまま） =====
+   マウスの端末（pointer:fine）には効かないので、パソコンの見た目は変わらない。 */
+@media (pointer:coarse){
+  /* 小さなボタンは、透明な「あたり判定」を上下左右に広げて 44px 以上にする */
+  /* 図の上のカードの小さな ± は、見た目はそのままで「透明なふち」を広げる
+     （このボタンは overflow を切っていないので、はみ出した疑似要素でも指で押せる） */
+  .cvvars .stp{position:relative}
+  .cvvars .stp::after{content:'';position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%);width:44px;height:44px}
+  /* 帯のボタンやタブは文字を省略するため overflow を切ってあるので、実寸で 44px にする */
+  .cvbar .acts button{min-height:44px}
+  /* タブは横に長いので高さは今のままで十分押せる（大きくすると2行に折り返して図が下がる） */
+  /* 主要なボタンは見た目も大きく */
+  .ctrl .btnrow button{min-height:44px;padding:8px 16px}
+  .cvbar{padding:10px}
+  .cvbar .acts{gap:8px}
+  .cvbar .acts button{padding:8px 12px;font-size:.78rem}
+  .cvbar .acts.n3 button,.cvbar .acts.n4 button{padding:8px 10px;font-size:.74rem}
+  .cvside .cvopts{padding:9px 12px;gap:8px 14px;font-size:.82rem}
+  .cvside .cvopts input[type=checkbox]{width:22px;height:22px}
+  /* スライダー：バーもつまみも太くする */
+  input[type=range]{height:30px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:24px;height:24px;border-radius:50%;background:var(--accent);
+    border:2px solid #fff;box-shadow:0 1px 3px rgba(22,32,43,.35);margin-top:-9px}
+  input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:999px;background:var(--line2)}
+  input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;
+    background:var(--accent);border:2px solid #fff}
+  input[type=range]::-moz-range-track{height:6px;border-radius:999px;background:var(--line2)}
+  .cvvars .vsl{height:30px}
+  .cvvars .stp{height:30px;font-size:1.05rem}
+  #tBar{height:30px}
+}
+
+/* 「グラフで正とする向き」を切りかえたときに、図の上へ一瞬だけ出す知らせ */
+.signflash{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:4;
+  background:var(--orange);color:#fff;font-weight:700;font-size:.92rem;
+  padding:7px 18px;border-radius:999px;box-shadow:0 3px 12px rgba(224,123,24,.4);
+  pointer-events:none;white-space:nowrap;
+  animation:signflash 1.8s ease-out forwards}
+@keyframes signflash{
+  0%{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.92)}
+  12%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  70%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(1)}
+}
+@media (prefers-reduced-motion:reduce){
+  .signflash{animation:signflash-still 1.8s linear forwards}
+  @keyframes signflash-still{0%,90%{opacity:1}100%{opacity:0}}
 }
 
 </style>
@@ -474,12 +555,6 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   <span class="lg"><canvas data-kind="acc"></canvas>加速度</span>
   <span class="lg"><canvas data-kind="comp"></canvas>分力</span>
   <span class="lg"><canvas data-kind="dim"></canvas>寸法・変位</span>
-</div>
-
-<div id="urlbar">
-  <span>このシミュレーションのURL：</span><code id="urltext"></code>
-  <button class="sub" id="urlcopy" style="font-size:.76rem;padding:2px 9px">コピー</button>
-  <span id="urlmsg"></span>
 </div>
 
 <div class="card">
@@ -5583,13 +5658,40 @@ function buildTabs() {
   });
 }
 
+/* ページ下の「このシミュレーションのURL」欄は外した（ハッシュ自体は今までどおり働く）。
+   欄が無くても落ちないように、あるときだけ書きかえる。 */
 function updateUrlBar() {
+  var box = $('urltext');
+  if (!box) return;
   var h = '#' + hashOf();
-  $('urltext').textContent = (location.protocol === 'file:' || location.origin === 'null')
+  box.textContent = (location.protocol === 'file:' || location.origin === 'null')
     ? (location.pathname.split('/').pop() + h)
     : (location.origin + location.pathname + h);
   var msg = $('urlmsg');
   if (msg) msg.textContent = '';
+}
+
+/* 画面の高さが低いとき（スマホを横向きにしたときなど）に、図がまるごと1画面に入るよう
+   図の列の幅に上限をかける。縦横比は保たれるので高さもいっしょに縮み、
+   オレンジの帯や図の上にのせるカードも列といっしょに縮むので、ずれない。 */
+function fitStageHeight() {
+  var col = document.querySelector('#simhost .cv'), cv = $('mainCv');
+  if (!col || !cv) return;
+  var vh = window.innerHeight, vw = window.innerWidth;
+  var key = vh + 'x' + vw + '|' + (cv.style.aspectRatio || '');
+  if (col._fitKey === key) return;
+  col._fitKey = key;
+  col.style.maxWidth = '';
+  if (vh > 620 || vw < 600) return;          /* 縦長の画面・狭い画面はそのまま */
+  var r = cv.getBoundingClientRect();
+  if (r.width < 1 || r.height < 1) return;
+  var avail = vh - 196;                      /* 再生ボタン・帯・見出しのぶんを空ける */
+  /* 高さから決まる幅。ただし小さくしすぎると図が読めなくなるので 420px は確保し、
+     右のグラフ列を残すための横の上限（画面幅 − 268px）を超えないようにする。 */
+  var byH = avail * (r.width / r.height);
+  var maxW = Math.min(vw - 268, Math.max(420, byH));
+  if (maxW < 340) maxW = 340;
+  if (r.width > maxW) col.style.maxWidth = Math.round(maxW) + 'px';
 }
 
 /* ひとことの ▲ が、選んでいるモードのボタンの真下に来るようにする */
@@ -5780,8 +5882,8 @@ function buildPanel() {
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-ga]'), function (b) {
     b.addEventListener('click', function () { delete s.gview[b.getAttribute('data-ga')]; renderActive(); });
   });
-  $('sgnP').addEventListener('click', function () { s.sign = 1; s.gview = {}; refreshSignBtns(); renderActive(); });
-  $('sgnM').addEventListener('click', function () { s.sign = -1; s.gview = {}; refreshSignBtns(); renderActive(); });
+  $('sgnP').addEventListener('click', function () { setSign(s, 1); });
+  $('sgnM').addEventListener('click', function () { setSign(s, -1); });
 
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-act]'), function (b) {
     b.addEventListener('click', function () {
@@ -6208,6 +6310,24 @@ function attach3dDrag(d, s) {
   }, { passive: false });
 }
 
+/* 「グラフで正とする向き」を切りかえたとき。
+   どちらが＋になったのかが空間のイメージと結びつくよう、図の上に一瞬だけ知らせを出す。 */
+function setSign(s, sg) {
+  var d = DEFS[st.cur];
+  if (s.sign === sg) return;
+  s.sign = sg; s.gview = {};
+  refreshSignBtns(); renderActive();
+  var stage = document.querySelector('#simhost .cvstage');
+  if (!stage) return;
+  var old = stage.querySelector('.signflash');
+  if (old) old.parentNode.removeChild(old);
+  var el = document.createElement('div');
+  el.className = 'signflash';
+  el.textContent = posWord(d, s) + ' が ＋ になりました';
+  stage.appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1900);
+}
+
 function refreshSignBtns() {
   var s = st.sims[st.cur];
   $('sgnP').className = s.sign > 0 ? '' : 'sub';
@@ -6542,6 +6662,7 @@ function renderActive() {
     $('tVal').textContent = fmt(s.t, 2) + ' s';
   }
   renderMath($('notebox'));
+  fitStageHeight();
 }
 
 /* .tex の中身を KaTeX で組む（1度だけ） */
@@ -6631,28 +6752,12 @@ function tick(ts) {
     if (q.id !== st.cur) gotoSim(q.id);
   });
 
-  $('urlcopy').addEventListener('click', function () {
-    var txt = location.href.indexOf('#') >= 0 ? location.href : location.href + '#' + st.cur;
-    var done = function () { $('urlmsg').textContent = 'コピーしました'; };
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(done, fallback);
-      } else fallback();
-    } catch (e) { fallback(); }
-    function fallback() {
-      var ta = document.createElement('textarea');
-      ta.value = txt; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); done(); }
-      catch (e2) { $('urlmsg').textContent = '手動でコピーしてください'; }
-      document.body.removeChild(ta);
-    }
-  });
 
   /* KaTeX のフォントが読み込まれたら、式の幅をそろえ直す */
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
     document.fonts.ready.then(function () { refitFormulas(); placeModeTip(); });
   }
-  window.addEventListener('resize', function () { refitFormulas(); placeModeTip(); });
+  window.addEventListener('resize', function () { refitFormulas(); placeModeTip(); fitStageHeight(); renderActive(); });
   requestAnimationFrame(tick);
 
   /* ===== 自動テスト用のフック ===== */
