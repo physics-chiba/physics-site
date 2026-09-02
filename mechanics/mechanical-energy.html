@@ -3650,10 +3650,29 @@ function drawAcc(ctx, x, y, ax, ay, opt) {
   if (!(mag > 0.05)) return;
   var k = 34 / G, L = Math.min(mag * k, opt.max || 76);
   var ux = ax / mag, uy = ay / mag;
-  var off = (opt.off === undefined) ? 0 : opt.off;
-  var sx = x + ux * off, sy = y + uy * off;
-  arrow(ctx, sx, sy, sx + ux * L, sy + uy * L, 'acc');
-  label(ctx, 'a', sx + ux * (L + 11), sy + uy * (L + 11), { size: 11.5, color: COL.acc });
+  /* ★加速度の矢印は「速度の矢印よりさらに外がわ」に、まん中をそろえて描く★
+     （先生の指示・第17回）前は物体のすぐ近くから描き出していたので、
+     物体や斜面に重なって読めなかった。
+     (x,y)＝物体の中心／(nx,ny)＝ずらす向き（ふつうは面の外向き＝画面の上）／
+     off＝ずらす距離［px］。矢印はその点を「まん中」にして描くので、
+     a がどちらを向いても帯の中におさまり、物体に重ならない。 */
+  var nx = (opt.nx === undefined) ? 0 : opt.nx;
+  var ny = (opt.ny === undefined) ? -1 : opt.ny;
+  var nl = Math.hypot(nx, ny) || 1;
+  var off = (opt.off === undefined) ? 44 : opt.off;
+  /* ★a が「ずらした向き」と逆を向くときは、矢じりが物体まで戻ってきてしまう★
+     （1-8 の最高点など）。そのぶん余分に離しておく。 */
+  if (ux * (nx / nl) + uy * (ny / nl) < -0.05) off = Math.max(off, L / 2 + 38);
+  var cx = x + (nx / nl) * off + (opt.dx || 0), cy = y + (ny / nl) * off + (opt.dy || 0);
+  /* 図の外へはみ出さないように、矢印ぜんたいを枠の中へおさめる */
+  if (CVW > 0) {
+    var mx = Math.abs(ux) * L / 2 + 15, my = Math.abs(uy) * L / 2 + 15;
+    cx = clamp(cx, mx, Math.max(mx, CVW - mx));
+    cy = clamp(cy, my, Math.max(my, CVH - my));
+  }
+  var hx = ux * L / 2, hy = uy * L / 2;
+  arrow(ctx, cx - hx, cy - hy, cx + hx, cy + hy, 'acc');
+  label(ctx, 'a', cx + hx + ux * 11, cy + hy + uy * 11, { size: 11.5, color: COL.acc });
 }
 
 /* 図の右はしに「エネルギーの棒」を出す（全シム共通の置き場所） */
@@ -4161,7 +4180,7 @@ DEFS['m1-2'] = {
       var va = velArrow(ctx, bx, y, 1, 0, 22, 0, 1, vl);
       label(ctx, 'v', va.x + 10, va.ty + 8, { align: 'left', size: 11.5, color: COL.vel });
     }
-    if (s.o.showA) drawAcc(ctx, bx - 24, y, 0, G, { off: 0 });
+    if (s.o.showA) drawAcc(ctx, bx, y, 0, G, { nx: -1, ny: 0, off: 30 });
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
     drawPts(ctx, d, s, t, function (p) {
@@ -4312,7 +4331,7 @@ DEFS['m1-3'] = {
     }
     if (s.o.showA) {
       var aa = P.m13.a(v);          /* 斜面を下る向きに g sinθ */
-      drawAcc(ctx, cx - nx * 16, cy - ny * 16, ux * aa, uy * aa, { off: 0 });
+      drawAcc(ctx, cx, cy, ux * aa, uy * aa, { nx: nx, ny: ny, off: 64 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -4474,7 +4493,7 @@ DEFS['m1-4'] = {
     if (s.o.showA) {
       /* 加速度は斜面を下る向き（＝運動と逆）に g sinθ。だから減速する */
       var aa = P.slopeUp.a(v);
-      drawAcc(ctx, cx - nx * 16, cy - ny * 16, -ux * aa, -uy * aa, { off: 0 });
+      drawAcc(ctx, cx, cy, -ux * aa, -uy * aa, { nx: nx, ny: ny, off: 64 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -4619,7 +4638,7 @@ DEFS['m1-5'] = {
     if (s.o.showA) {
       /* 加速度＝重力＋垂直抗力（合力）／m。曲面では接線方向と向心方向の和になる */
       var Na = mg * tx, ax = nx * Na / v.m, ay = G + ny * Na / v.m;
-      drawAcc(ctx, px - 18, py, ax, ay, { off: 0 });
+      drawAcc(ctx, px, py, ax, ay, { nx: nx, ny: ny, off: 56 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -4803,7 +4822,10 @@ DEFS['m1-6'] = {
       /* 加速度＝接線方向 −g sinθ ＋ 向心方向 v²/l */
       var at = -G * Math.sin(thNow), an = m.v * m.v / v.l;
       var ax = (-ry) * at + rx * an, ay = rx * at + ry * an;
-      drawAcc(ctx, p.x, p.y, ax, ay, { off: r + 6 });
+      /* 真下は mg の矢印と字が通るので、進む向きと反対がわへ横にずらす */
+      /* 下は mg と点の印、上はひもと S が通る。外がわの斜め上があいている */
+      drawAcc(ctx, p.x, p.y, ax, ay,
+        { nx: (rx >= 0 ? 1 : -1), ny: -0.55, off: 58, max: 56 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -4974,8 +4996,8 @@ DEFS['m1-7'] = {
       /* 軌道にそった加速度（重力の接線成分）。ループの上は向心加速度も大きいが、
          ここでは「速さの変わり方」を見せたいので接線成分だけを描く */
       var at = -G * m.dyds;
-      drawAcc(ctx, cx - nx * 16, cy - ny * 16, Math.cos(carAng) * at, -Math.sin(carAng) * at,
-        { off: 0 });
+      drawAcc(ctx, cx, cy, Math.cos(carAng) * at, -Math.sin(carAng) * at,
+        { nx: -nx, ny: -ny, off: 46, max: 58 });
     }
     if (hintOn(s, t)) {
       ctx.save();
@@ -5153,7 +5175,11 @@ DEFS['m1-8'] = {
       var va = velArrow(ctx, px, py, -uy, ux, 22, ux, uy, vl);
       label(ctx, 'v', va.tx + ux * 10, va.ty + uy * 10, { size: 11.5, color: COL.vel });
     }
-    if (s.o.showA) drawAcc(ctx, px - 20, py, 0, G, { off: 0 });
+    if (s.o.showA) {
+      /* 速度は進む向きの片がわに出しているので、加速度は反対がわへ出す */
+      var uax = (m.v > 0.02) ? m.vx / m.v : 1, uay = (m.v > 0.02) ? -m.vy / m.v : 0;
+      drawAcc(ctx, px, py, 0, G, { nx: uay, ny: -uax, off: 36 });
+    }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
     ptRow(gy + 50);                   /* 吹きだしは地面の下に1列。着地点の mg の字より下に置く */
@@ -5302,7 +5328,7 @@ DEFS['m1-9'] = {
       var va = velArrow(ctx, cx, cy, 0, -1, bh / 2 + 40, sgv, 0, vl);
       label(ctx, 'v', va.tx + sgv * 10, va.ty, { size: 11.5, color: COL.vel });
     }
-    if (s.o.showA) drawAcc(ctx, cx, cy - bh / 2 - 18, -v.k * m.x / v.m, 0, { off: 0 });
+    if (s.o.showA) drawAcc(ctx, cx, cy, -v.k * m.x / v.m, 0, { nx: 0, ny: -1, off: bh / 2 + 76 });
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
     drawPts(ctx, d, s, t, function (p) {
@@ -5470,8 +5496,8 @@ DEFS['m1-10'] = {
       label(ctx, 'v', va.tx + sgv * 10, va.ty, { size: 11.5, color: COL.vel });
     }
     if (s.o.showA) {
-      if (m.x > 0.004) drawAcc(ctx, cx, cy - bh / 2 - 18, -v.k * m.x / v.m, 0, { off: 0 });
-      else label(ctx, 'a = 0', cx, cy - bh / 2 - 22, { size: 11.5, color: COL.acc, avoid: true });
+      if (m.x > 0.004) drawAcc(ctx, cx, cy, -v.k * m.x / v.m, 0, { nx: 0, ny: -1, off: bh / 2 + 76 });
+      else label(ctx, 'a = 0', cx, cy - bh / 2 - 76, { size: 11.5, color: COL.acc, avoid: true });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -5690,8 +5716,8 @@ DEFS['m1-11'] = {
       var ax = 0, ay = 0;
       if (m.seg === 0) ax = v.k * m.sp / v.m;
       else if (m.seg === 2) { var at = -G * m.dyds; ax = Math.cos(ang) * at; ay = -Math.sin(ang) * at; }
-      if (Math.hypot(ax, ay) > 0.05) drawAcc(ctx, ox - nx * 16, oy - ny * 16, ax, ay, { off: 0 });
-      else label(ctx, 'a = 0', ox, oy - 26, { size: 11.5, color: COL.acc, avoid: true });
+      if (Math.hypot(ax, ay) > 0.05) drawAcc(ctx, ox, oy, ax, ay, { nx: nx, ny: ny, off: 60 });
+      else label(ctx, 'a = 0', ox + nx * 60, oy + ny * 60, { size: 11.5, color: COL.acc, avoid: true });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -5871,7 +5897,7 @@ DEFS['m1-12'] = {
       var va = velArrow(ctx, cx, by, -1, 0, 76, 0, sgv, vl);
       label(ctx, 'v', va.x - 12, va.y, { size: 11.5, color: COL.vel, align: 'right' });
     }
-    if (s.o.showA) drawAcc(ctx, cx - 34, by, 0, G - v.k * m.x / v.m, { off: 0 });
+    if (s.o.showA) drawAcc(ctx, cx, by, 0, G - v.k * m.x / v.m, { nx: -1, ny: 0, off: bw / 2 + 24 });
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
     drawPts(ctx, d, s, t, function (p, mm, i2) {
@@ -6104,7 +6130,10 @@ DEFS['m1-13'] = {
         var Nm = mg * Math.cos(m.th) + v.m * m.v * m.v / R;
         ax2 = (nx3 / nl3) * Nm / v.m; ay2 = G + (ny3 / nl3) * Nm / v.m;
       }
-      drawAcc(ctx, bx, by, ax2, ay2, { off: r + 6 });
+      var ubx = (m.v > 0.05) ? m.vx / m.v : 0, uby = (m.v > 0.05) ? -m.vy / m.v : -1;
+      var sgb = (ubx >= 0) ? 1 : -1;
+      drawAcc(ctx, bx, by, ax2, ay2,
+        { nx: (m.v > 0.05) ? ubx : 0, ny: (m.v > 0.05) ? uby : -1, off: 48, max: 54 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -6258,8 +6287,9 @@ DEFS['m2-1'] = {
       var va = velArrow(ctx, cx, cy, 0, -1, mg * fs - bh / 2 + 22, 1, 0, vl);
       label(ctx, 'v', va.tx + 10, va.ty, { align: 'left', size: 11.5, color: COL.vel });
     }
-    if (s.o.showA && m.moving) drawAcc(ctx, cx, cy - bh / 2 - 52, -v.mu * G, 0, { off: 0 });
-    else if (s.o.showA) label(ctx, 'a = 0', cx + 44, cy - bh / 2 - 6,
+    var aOff21 = mg * fs - bh / 2 + 46;      /* 速度の矢印よりさらに外がわ */
+    if (s.o.showA && m.moving) drawAcc(ctx, cx, cy, -v.mu * G, 0, { nx: 0, ny: -1, off: aOff21 });
+    else if (s.o.showA) label(ctx, 'a = 0', cx, cy - aOff21,
       { size: 11.5, color: COL.acc, avoid: true });
     if (hintOn(s, t)) {
       /* 止まる位置は「答え」なので、スタートを押してから出す */
@@ -6489,7 +6519,8 @@ DEFS['m2-2'] = {
     }
     if (s.o.showA) {
       var aa = P.m22.aMag(v);        /* 斜面を下る向き（＝運動と逆）に大きさ g(sinθ+μ'cosθ) */
-      drawAcc(ctx, cx - nx * 16, cy - ny * 16, -ux * aa, -uy * aa, { off: 0 });
+      drawAcc(ctx, cx, cy, -ux * aa, -uy * aa,
+        { nx: nx, ny: ny, off: m.N * fs - bh / 2 + 58 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -6680,8 +6711,8 @@ DEFS['m2-3'] = {
     if (s.o.showA) {
       /* ゆっくり下ろすので加速度はごく小さい。そのことが分かるように書いておく */
       var aA = P.m23.accel(v, t);
-      if (Math.abs(aA) > 0.05) drawAcc(ctx, cx - 34, by, 0, aA, { off: 0 });
-      else label(ctx, 'a ≒ 0', cx - 40, by, { size: 11, color: COL.acc, align: 'right' });
+      if (Math.abs(aA) > 0.05) drawAcc(ctx, cx, by, 0, aA, { nx: -1, ny: 0, off: bw / 2 + 24 });
+      else label(ctx, 'a ≒ 0', cx - bw / 2 - 30, by, { size: 11, color: COL.acc, align: 'right' });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -6890,7 +6921,7 @@ DEFS['m2-4'] = {
     }
     if (s.o.showA) {
       var ax = (-v.k * m.x - (m.moving && Math.abs(m.vs) > 1e-6 ? (m.vs > 0 ? 1 : -1) * m.f : 0)) / v.m;
-      drawAcc(ctx, cx, cy - bh / 2 - 18, ax, 0, { off: 0 });
+      drawAcc(ctx, cx, cy, ax, 0, { nx: 0, ny: -1, off: mg * fs - bh / 2 + 58 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -7118,7 +7149,8 @@ DEFS['m2-5'] = {
     }
     if (s.o.showA) {
       var aa = P.m25.a(v);           /* 斜面を上る向き（＝運動と同じ向き）に一定 */
-      drawAcc(ctx, cx - nx * 16, cy - ny * 16, ux * aa, uy * aa, { off: 0 });
+      drawAcc(ctx, cx, cy, ux * aa, uy * aa,
+        { nx: nx, ny: ny, off: m.N * fs - bh / 2 + 58 });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
