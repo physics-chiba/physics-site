@@ -43,7 +43,12 @@ p{margin:.4em 0}
 
 /* ---- シミュレーション全体 ---- */
 .sim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
-@media(max-width:900px){.sim{grid-template-columns:1fr}}
+@media(max-width:900px){.sim{grid-template-columns:minmax(0,1fr)}}
+/* スマホのたて置きでも、再生バーが画面からはみ出さないように折り返す */
+@media (max-width:460px){
+  .playbar,.playbar .pb-row,.playbar label{flex-wrap:wrap}
+  #sc-t{min-width:0}
+}
 .sim .card{margin:0}
 /* 立体図表示中：編集用の部品を隠して2D回路図を上に引き上げ、右の3D図と上端をそろえる（並べて見比べる） */
 body.solidview .panelbox:not(.presets),
@@ -5932,5 +5937,93 @@ window.MIZU_IMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQDAwMD
 <!-- アクセス数のカウント（GoatCounter・Cookieなし） -->
 <script data-goatcounter="https://physics-chiba.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
+<!-- ▶スタートを光らせて「ここを押す」と知らせる（共通パーツ・2026-09-02 追加） -->
+<style>
+@keyframes sgPulse{
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
+  60%{box-shadow:0 0 0 17px rgba(224,123,24,0)}
+  100%{box-shadow:0 0 0 0 rgba(224,123,24,0)}
+}
+@keyframes sgBlink{
+  0%,100%{background:#e07b18;border-color:#e07b18}
+  50%{background:#f7a13f;border-color:#f7a13f}
+}
+.sg-glow{color:#fff !important;font-weight:700 !important;
+  animation:sgPulse 1.35s ease-out infinite, sgBlink 1.35s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .sg-glow{animation:none !important;background:#e07b18 !important;border-color:#e07b18 !important;
+    box-shadow:0 0 0 4px rgba(224,123,24,.55) !important}
+}
+</style>
+<script>
+/* スタートボタンの光らせ方
+   ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+   ・光り終わり … そのボタンを押したとき／動きはじめたとき
+   ページ本体のしくみには一切さわらず、外から見て付け外しするだけ。 */
+(function () {
+  'use strict';
+  var IDS = ['bPlay', 'playBtn', 'btn-play', 'btn-convert', 'btn-convert2'];
+  var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
+  var RUN = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+
+  function btns() {
+    var a = [];
+    for (var i = 0; i < IDS.length; i++) {
+      var e = document.getElementById(IDS[i]);
+      if (e) a.push(e);
+    }
+    return a;
+  }
+  function shown(e) { return e.offsetParent !== null && !e.disabled; }
+  function running(e) { return RUN.test(e.textContent || ''); }
+
+  function arm() {                              /* 光らせるのは、いつも1つだけ */
+    var all = btns(), first = null;
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (!first && shown(e) && !running(e) && !e.__sgDone) first = e;
+      else e.classList.remove('sg-glow');
+    }
+    if (first) first.classList.add('sg-glow');
+  }
+  function disarm(e) {
+    if (e) e.classList.remove('sg-glow');
+    else btns().forEach(function (x) { x.classList.remove('sg-glow'); });
+  }
+
+  /* 押されたら消す／タブ・プリセットが押されたら光らせ直す */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    var b = t.closest('button');
+    if (b && IDS.indexOf(b.id) >= 0) {                       /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });      /* 同じ働きの予備ボタンもまとめて */
+      disarm(); return;
+    }
+    if (t.closest(TABS)) {                       /* タブ・プリセットを開いたら光らせ直す */
+      btns().forEach(function (x) { x.__sgDone = 0; });
+      setTimeout(arm, 90);
+    }
+  }, true);
+
+  /* 見張り役：ボタンが作り直された／隠れていたのが出てきたら光らせる。
+     動きはじめたら消す。（タブを切り替えるとボタンが作り直されるページがあるため） */
+  function tick() {
+    var need = false;
+    btns().forEach(function (e) {
+      var v = shown(e);
+      if (v && !e.__sgDone && (!e.__sgKnown || e.__sgVisible === false)) need = true;
+      e.__sgKnown = 1; e.__sgVisible = v;
+      if (running(e)) e.classList.remove('sg-glow');
+    });
+    if (need) arm();
+  }
+  setInterval(tick, 400);
+
+  function boot() { setTimeout(arm, 500); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
 </body>
 </html>
