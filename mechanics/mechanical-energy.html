@@ -951,7 +951,21 @@ P.coaster = {
       function (q, w, i) { return i > 3 && w <= 0; });        /* 速さが 0（斜面の最高点） */
   }),
   table: function (v) { return P.coaster._tab([v.v0, v.th].join('|'), v); },
-  tEnd: function (v) { var tb = P.coaster.table(v); return tb[tb.length - 1].t; },
+  /* 斜面の最高点（速さ 0）に着く時刻 */
+  tTop: function (v) { var tb = P.coaster.table(v); return tb[tb.length - 1].t; },
+  /* ★第18回・先生の指示★ 最高点で終わりにせず、「本来の続き」を見せる。
+     なめらかなので、帰りは行きの巻きもどし（同じ道を逆にたどる）。
+     最高点でいったん止まり、ループをもう一度くぐって、スタート地点 A まで
+     帰ってくる。A にもどったときの速さは、はじめと同じ v0。 */
+  tEnd: function (v) { return 2 * P.coaster.tTop(v); },
+  /* 時刻 t を「行き（0〜tTop）」に折り返す。back = 帰り道 */
+  fold: function (v, t) {
+    var T1 = P.coaster.tTop(v);
+    if (!(T1 > 1e-9)) return { u: 0, back: false };
+    var u = clamp(t, 0, 2 * T1);
+    if (u > T1) return { u: 2 * T1 - u, back: true };
+    return { u: u, back: false };
+  },
   tAt: function (v, sTarget) {
     var tb = P.coaster.table(v), i;
     for (i = 0; i < tb.length; i++) if (tb[i].q >= sTarget) return tb[i].t;
@@ -978,9 +992,12 @@ P.coaster = {
     return v.m * G;
   },
   sample: function (v, t) {
-    var tb = P.coaster.table(v), r = INT.at(tb, t, P.coaster.DT), p = P.coaster.at(r.q, v.th);
-    return EN.mix(v, { s: r.q, x: p.x, y: p.y, v: Math.max(0, r.w), h: p.y, sp: 0, w: 0,
-      seg: p.seg, phi: p.phi, ang: p.ang, dyds: p.dyds });
+    var f = P.coaster.fold(v, t);
+    var tb = P.coaster.table(v), r = INT.at(tb, f.u, P.coaster.DT), p = P.coaster.at(r.q, v.th);
+    var q = EN.mix(v, { s: r.q, x: p.x, y: p.y, v: Math.max(0, r.w), h: p.y, sp: 0, w: 0,
+      seg: p.seg, phi: p.phi, ang: p.ang, dyds: p.dyds, back: f.back });
+    q.vs = f.back ? -q.v : q.v;                 /* 向きつきの速度（矢印の向きに使う） */
+    return q;
   }
 };
 
@@ -1605,8 +1622,30 @@ P.sprSlide = {
   }),
   table: function (v) { return P.sprSlide._tab([v.x0, v.k, v.m].join('|'), v); },
   tC: function (v) { var tb = P.sprSlide.table(v); return P.sprSlide.t2(v) + tb[tb.length - 1].t; },
-  tEnd: function (v) { return P.sprSlide.tC(v); },
+  /* ★第18回・先生の指示★ 最高点で終わりにせず、「本来の続き」を見せる。
+     なめらかなので運動はくり返す。行き（0〜tC）と帰り（tC〜2tC）は同じ道で、
+     2tC でばねがもう一度いちばん縮む（＝A にもどる）。周期は 2tC なので、
+     最高点に着くのは tC, 3tC, 5tC…。ここでは【2回目の最高点】3tC で終わりにする。
+       0  〜 tC  … A →(ばねがのびる)→ B →(平ら)→ C（1回目の最高点）
+       tC 〜 2tC … C →(下る)→ B →(平ら)→ A（もう一度ばねを縮める）
+       2tC〜 3tC … A → B → C（2回目の最高点）でおしまい */
+  tEnd: function (v) { return 3 * P.sprSlide.tC(v); },
+  /* 時刻 t を「行き（0〜tC）」に折り返す。back = もどっている途中 */
+  fold: function (v, t) {
+    var TC = P.sprSlide.tC(v), PER = 2 * TC;
+    if (!(PER > 1e-9)) return { u: 0, back: false };
+    var u = clamp(t, 0, 3 * TC) % PER;
+    if (u > TC) return { u: PER - u, back: true };
+    return { u: u, back: false };
+  },
   sample: function (v, t) {
+    var f = P.sprSlide.fold(v, t);
+    var q = P.sprSlide._fwd(v, f.u);
+    q.back = f.back;
+    q.vs = f.back ? -q.v : q.v;                 /* 向きつきの速度（矢印の向きに使う） */
+    return q;
+  },
+  _fwd: function (v, t) {
     var om = P.sprSlide.om(v), t1 = P.sprSlide.t1(v), t2 = P.sprSlide.t2(v);
     var X, Y, sp2, spd, seg;
     if (t <= t1) {
@@ -4872,7 +4911,9 @@ DEFS['m1-7'] = {
   id: 'm1-7', mode: 1, tab: '1-7 ジェットコースター',
   title: '1-7　ジェットコースター（ループと斜面）',
   sub: 'なめらかな軌道。水平面を速さ $v_0$ で走ってきて、<b>鉛直な円（ループ）</b>を1周し、' +
-    'そのあと斜面を昇って止まります。仕事をするのは<b>重力（保存力）だけ</b>' +
+    'そのあと斜面を昇って止まります（C）。<b>そこで終わりではありません。</b>' +
+    'なめらかなので、そこから<b>もどってきて、ループをもう一度くぐり、' +
+    'スタート地点 A に速さ $v_0$ で帰ってきます</b>。仕事をするのは<b>重力（保存力）だけ</b>' +
     '（垂直抗力はいつも運動の向きと垂直）。だから <b>$E = K + U$ は一定</b>です。',
   cw: 720, ch: 356,
   vis: ['F', 'V', 'A'],
@@ -4909,7 +4950,7 @@ DEFS['m1-7'] = {
     { name: 'B', jp: 'ループの頂上', t: function (v) { return P.coaster.tB(v); },
       hsym: 'D',                       /* ★式と図で同じ記号を使う★（第12回） */
       sym: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: 'mgD' } },
-    { name: 'C', jp: '止まる所（最高点）', t: function (v) { return P.coaster.tEnd(v); },
+    { name: 'C', jp: '止まる所（最高点）', t: function (v) { return P.coaster.tTop(v); },
       hsym: 'h_C',
       sym: { K: '0', Ug: 'mgh_C' } }
   ],
@@ -4988,6 +5029,7 @@ DEFS['m1-7'] = {
     if (s.o.showV && m.v > 0.05) {
       /* ★物体から離して出す★（軌道の内向きに 30 px ずらしてから進む向きへ） */
       var ux = Math.cos(carAng), uy = -Math.sin(carAng);
+      if (m.back) { ux = -ux; uy = -uy; }        /* 帰り道は進む向きが逆（第18回） */
       var vl = vArrowLen(m.v, 16, 46);
       var va = velArrow(ctx, cx, cy, nx, ny, 30, ux, uy, vl);
       label(ctx, 'v', va.tx + ux * 10, va.ty + uy * 10, { size: 11.5, color: COL.vel });
@@ -5038,7 +5080,8 @@ DEFS['m1-7'] = {
       ['進んだ道のり $s$', fmt(m.s, 2) + ' m'],
       ['垂直抗力 $N$', fmt(P.coaster.Nof(v, m), 0) + ' N'],
       ['ループの頂上の時刻', fmt(P.coaster.tB(v), 2) + ' s'],
-      ['止まる時刻', fmt(P.coaster.tEnd(v), 2) + ' s']
+      ['最高点で止まる時刻', fmt(P.coaster.tTop(v), 2) + ' s'],
+      ['スタート地点にもどる時刻', fmt(P.coaster.tEnd(v), 2) + ' s']
     ];
   },
   eq: function (s) {
@@ -5543,7 +5586,9 @@ DEFS['m1-11'] = {
   title: '1-11　水平ばねと滑台',
   sub: 'なめらかな面。ばねを $x_0$ だけ縮めて、静かにはなします。' +
     'ばねが自然の長さにもどったところ（B）で物体はばねから離れ、' +
-    'そのまま滑台を昇って高さ $h_C$ で止まります（C）。仕事をするのは' +
+    'そのまま滑台を昇って高さ $h_C$ で止まります（C）。<b>そこで終わりではありません。</b>' +
+    'なめらかなので、<b>下りてきてもう一度ばねを $x_0$ だけ縮め、' +
+    'また同じ高さ $h_C$ まで昇ります</b>（行ったり来たりをくり返します）。仕事をするのは' +
     '<b>弾性力と重力（どちらも保存力）だけ</b>なので、<b>$E=K+U_g+U_k$ は一定</b>です。',
   cw: 680, ch: 416,
   vis: ['F', 'V', 'A'],
@@ -5708,6 +5753,7 @@ DEFS['m1-11'] = {
     if (s.o.showV && m.v > 0.05) {
       /* ★物体から離して出す★（面から外向きに 30 px ずらしてから進む向きへ） */
       var ux = Math.cos(ang), uy = -Math.sin(ang);
+      if (m.back) { ux = -ux; uy = -uy; }        /* もどっている途中は逆向き（第18回） */
       var vl = vArrowLen(m.v, Math.max(1, P.sprSlide.vB(v)), 46);
       var va = velArrow(ctx, ox, oy, nx, ny, 30, ux, uy, vl);
       label(ctx, 'v', va.tx + ux * 10, va.ty + uy * 10, { size: 11.5, color: COL.vel });
@@ -5744,7 +5790,9 @@ DEFS['m1-11'] = {
     return [
       ['ばねの縮み $x$', fmt(m.sp || 0, 3) + ' m'],
       ['ばねから離れる時刻', fmt(P.sprSlide.t1(v), 2) + ' s'],
-      ['最高点に着く時刻', fmt(P.sprSlide.tC(v), 2) + ' s']
+      ['1回目の最高点', fmt(P.sprSlide.tC(v), 2) + ' s'],
+      ['もう一度ばねがいちばん縮む時刻', fmt(2 * P.sprSlide.tC(v), 2) + ' s'],
+      ['2回目の最高点（おしまい）', fmt(3 * P.sprSlide.tC(v), 2) + ' s']
     ];
   },
   eq: function (s) {
@@ -8975,13 +9023,16 @@ function tick(ts) {
       r.coast_vB_formula = +P.coaster.vB(cw1).toFixed(3);
       r.coast_hB = +P.coaster.sample(cw1, P.coaster.tB(cw1)).h.toFixed(3);
       r.coast_hB_formula = +P.coaster.D.toFixed(3);
-      r.coast_hC = +P.coaster.sample(cw1, P.coaster.tEnd(cw1)).h.toFixed(2);
+      r.coast_hC = +P.coaster.sample(cw1, P.coaster.tTop(cw1)).h.toFixed(2);
       r.coast_hC_formula = +P.coaster.hC(cw1).toFixed(2);
-      r.coast_v_at_top = +P.coaster.sample(cw1, P.coaster.tEnd(cw1)).v.toFixed(6);
+      r.coast_v_at_top = +P.coaster.sample(cw1, P.coaster.tTop(cw1)).v.toFixed(6);
+      /* ★第18回★ 帰りにスタート地点へもどったときの速さは v0 にもどる */
+      r.coast_v_back_at_A = +P.coaster.sample(cw1, P.coaster.tEnd(cw1)).v.toFixed(4);
+      r.coast_x_back_at_A = +P.coaster.sample(cw1, P.coaster.tEnd(cw1)).x.toFixed(4);
       /* ★止まる高さは θ によらない★ */
       r.coast_hC_by_theta = [35, 40, 45, 50, 55, 60].map(function (th2) {
         var q = { v0: 14, th: th2, m: 200 };
-        return +P.coaster.sample(q, P.coaster.tEnd(q)).h.toFixed(2);
+        return +P.coaster.sample(q, P.coaster.tTop(q)).h.toFixed(2);
       }).join(',');
       /* ★どの設定でもループを1周できる（頂上で v² ≥ gR）★ */
       var okLoop = 1;
@@ -9246,7 +9297,9 @@ function tick(ts) {
 
 </script>
 <!-- アクセス数のカウント（GoatCounter・Cookieなし） -->
+<!-- ★先生が第18回に手で足したもの。ビルドで消えないよう、ここに入れてある。
+     このページで唯一の外部通信。test/run_test.py はこのホストだけ通す。 -->
 <script data-goatcounter="https://physics-chiba.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+        async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
