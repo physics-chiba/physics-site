@@ -1610,7 +1610,10 @@ P.grav = {
   RE: 6371,           /* 本当の地球の半径［km］。欄外の説明に使う */
   /* ★質量 M を変えたら、絵の中の地球の大きさも変える★
      同じ密度の球とみなして R ∝ M^{1/3} …では見た目の変化が小さすぎるので、
-     はっきり分かるように M^{1/2} でふくらませている（図の中に「※」で断っている）。 */
+     はっきり分かるように M^{1/2} でふくらませている（図の中に「※」で断っている）。
+     ★ただし、ふくらませすぎると人工衛星や力の矢印が地球の絵に埋もれる★
+       M = 2 で 18.4 px。人工衛星のいちばん内がわ（r₀ = 7000 km ≒ 38 px）とは
+       まだ 20 px 空いているので、ここが上限のめやす（→ 上限 M = 2.0）。 */
   Rpx: function (Ms) { return P.grav.RSUN * Math.sqrt(Ms); },
   RMIN: 1000,         /* ★グラフを描く いちばん内側★［km］。U = −GM/r は r→0 で発散するため */
   RSCALE: 3000,       /* ★たての目もりを決める距離★［km］
@@ -1618,7 +1621,7 @@ P.grav = {
                          つぶれて読めなくなる。3000 km までを箱の高さにして、
                          それより内側は箱の下へはみ出させる（下半分はクリップしてある）。 */
   RMAX: 40000,        /* すりばちのふちの距離［km］ */
-  MMAX: 1.5,          /* 質量 M の上限［地球質量］。すりばちの深さの目盛りを決めるのに使う */
+  MMAX: 2.0,          /* 質量 M の上限［地球質量］。すりばちの深さの目盛りを決めるのに使う */
   gm: function (Ms) { return P.grav.GM1 * Ms; },
   /* 半径 r0 の円軌道になる速さ・脱出速度［km/s］。r0 を省くと既定値 R0 を使う */
   vCirc: function (Ms, r0) { return Math.sqrt(P.grav.gm(Ms) / (r0 || P.grav.R0)); },
@@ -5609,7 +5612,7 @@ DEFS['m1-6'] = {
     title: '左図の観測結果を説明するには、星はどう動かなくてはいけないか',
     note: '左（地動説）は<b>きれいな円</b>が並ぶだけ。右（天動説）は同じ動きなのに、' +
       '<b>ぐるぐる巻いた複雑な軌道</b>になってしまう。' +
-      '※ どちらも「ま違い」ではなく、<b>どこを中心に見るか</b>の違い。' +
+      '※ どちらも「間違い」ではなく、<b>どこを中心に見るか</b>の違い。' +
       'ただし、単純に説明できる方が自然だと考えるのがふつうである。',
     draw: function (ctx, s, t, W, H) { m16DrawModels(ctx, s, t, W, H); }
   },
@@ -5988,8 +5991,16 @@ DEFS['m2-2'] = {
          2×2 に並べると、どちらでも折り返してしまうため。
          単位は「計算結果の帯」の下の単位のことわり（units: ['Mearth']）と、
          図の下の1行に書いてある。 */
+      /* ★上限は 2.0 地球質量★（先生の指示・2026-09-03）
+         3.0 まで広げても表示は壊れないが、絵の中の地球（R ∝ √M）が 22.5 px までふくらみ、
+         人工衛星と万有引力の矢印が地球の絵にくっついてしまう。
+         2.0 なら地球は 18.4 px で、いちばん内がわの人工衛星（r₀ = 7000 km ≒ 38 px）
+         とのあいだが空いたままになる。
+         ★上限を変えたら P.grav.MMAX も同じ値にすること★
+           すりばちの深さの目もりを決めるのに使っているので、
+           ずれると M を上げたときにグラフが箱からはみ出す。 */
       k: 'Ms', label: '地球の質量 $M$', unit: '', focus: true,
-      min: 0.5, max: 1.5, step: 0.1, dec: 1, def: 1.0
+      min: 0.5, max: 2.0, step: 0.1, dec: 1, def: 1.0
     },
     {
       /* ★2-2 とまったく同じ書き方にそろえること★（ラベルも説明も）
@@ -6877,10 +6888,16 @@ DEFS['m2-3'] = {
   topActions: [
     {
       label: '速さを上げる →', prim: true, play: true,
-      /* ★k は 1 ずつ★ 1（円）→ 2（放物線＝脱出）→ 3・4（双曲線）と、
-         軌道の種類が1段ずつ変わるので、話の流れがはっきりする。
+      /* ★きざみは「1〜2 は 0.1／2.1 から先は 0.3」★（先生の指示・2026-09-03）
+         1 ずつだと、1回押しただけで円 → 脱出まで飛んでしまい、
+         「少しずつ速くすると、円 → だ円 → 放物線 → 双曲線 と変わる」ようすが見えない。
+         いちばん見せたい 1〜2 のあいだをこまかく、そこから先は大きく進める。
          上限（k = 4.0）で止める。1.0 に戻ると「脱出したのに円に戻った」と見えるため。 */
-      fn: function (s) { stepUp(DEFS['m2-3'], s, 'k3', 1, true); }
+      dis: function (v) { return v.k3 >= 4.0 - 1e-9; },
+      fn: function (s) {
+        var k = s.v.k3;
+        s.v.k3 = +Math.min(4.0, k + (k <= 2.0 + 1e-9 ? 0.1 : 0.3)).toFixed(1);
+      }
     },
     {
       label: '第一宇宙速度（地表すれすれの円）', prim: true,
@@ -9717,16 +9734,11 @@ DEFS['m4-2'] = {
     ctx.restore();
     /* ★まるい「体」ではなく、回る体の図にする★
        肩は腕にそった細長いだ円、顔は腕と垂直の向き。鼻の三角で向きが分かる。 */
-    /* ★角運動量 L は回転軸の向き＝この図では「紙面の手前向き」★
-       ⊙（丸に点）は「手前向きのベクトル」を表す、物理でおなじみの印。
-       体の下に描いてから体を重ねるので、じゃまにならない。 */
-    ctx.save();
-    ctx.strokeStyle = COL.angm; ctx.lineWidth = 1.8;
-    ctx.beginPath(); ctx.arc(cx, cy, 15, 0, TAU); ctx.stroke();
-    ctx.restore();
+    /* ★「L（手前向き）」と ⊙ の印は出さない★（先生の指示・2026-09-03）
+       ⊙ は「紙面の手前を向いたベクトル」を表す大学の書き方で、
+       高校生には意味が分からず、かえって図がごちゃごちゃする。
+       L が一定であることは、左上の読み出しと解説の文で伝えている。 */
     drawSkaterTop(ctx, cx, cy, th);
-    label(ctx, 'L（手前向き・一定）', cx + 19, cy - 20,
-      { size: 10, bold: true, color: COL.angm, align: 'left' });
     label(ctx, '体（上から見た図）', cx, cy + 26, { size: 9.5, color: COL.sub });
     [h1, h2].forEach(function (h) { planetShape(ctx, h[0], h[1], 7, '#b5543a'); });
     /* ★中心力★ 腕が手を引く力は、いつも回転軸を向いている（＝中心力）。
@@ -9775,10 +9787,6 @@ DEFS['m4-2'] = {
       var sx = sunx + q.x * SCE, sy = suny - q.y * SCE;
       /* ★惑星がわの中心力＝万有引力★ いつも太陽を向いている。
          だから太陽まわりのモーメントは 0 で、L が一定＝面積速度が一定になる。 */
-      ctx.save();
-      ctx.strokeStyle = COL.angm; ctx.lineWidth = 1.8;
-      ctx.beginPath(); ctx.arc(sunx, suny, 15, 0, TAU); ctx.stroke();
-      ctx.restore();
       planetShape(ctx, sx, sy, 5, '#3f7f5f');
       dashLine(ctx, sunx, suny, sx, sy, COL.dim, [3, 3], 1);
       (function () {
@@ -9794,8 +9802,6 @@ DEFS['m4-2'] = {
         var vp = Math.sqrt(SYS.sun.GM * (1 + eE) / (aE * (1 - eE)));
         velArrow(ctx, sx, sy, q.vx, q.vy, 36 / vp, null);
       }
-      label(ctx, 'L（手前向き・一定）', sunx + 19, suny + 24,
-        { size: 10, bold: true, color: COL.angm, align: 'left' });
       label(ctx, '惑星は近いと速く、遠いと遅い', 424, suny - bE * SCE - 30,
         { size: 11, color: COL.bound, bold: true });
     })();
@@ -10886,6 +10892,55 @@ var M45_CY2 = 122, M45_SC2 = 82 / 430000; /* 【2】中心の高さ／1 km あ�
 var M45_CY3 = 134;                        /* 【3】中心の高さ */
 function m45Cols() { return (typeof WINW !== 'undefined' && WINW < 820) ? 1 : 3; }
 
+/* ===== 3つのわくの置きばしょ =====
+   返すのは [{ i, x, y, w, h, k }]。i＝どの図か（0〜2）、k＝引きのばす倍率。
+   ★s.o.zoom（1〜3）が入っているときは、その図だけを2倍で1つだけ返す★
+     右上の拡大スイッチで切りかえる。もう一度押すと 0 に戻って3つ並びにもどる。
+   ★cw / ch もこの決めごとに合わせること★（下の cw: / ch: を見よ） */
+function m45Frames(s, W) {
+  var z = (s && s.o && s.o.zoom) || 0;
+  if (z >= 1 && z <= 3) {
+    return [{ i: z - 1, x: 0, y: M45_HEAD, w: M45_PW * 2, h: M45_PH * 2, k: 2 }];
+  }
+  var COLS = m45Cols(), CW = W / COLS, a = [], i;
+  for (i = 0; i < 3; i++) {
+    a.push({
+      i: i, x: (i % COLS) * CW, y: M45_HEAD + Math.floor(i / COLS) * M45_PH,
+      w: CW, h: M45_PH, k: 1
+    });
+  }
+  return a;
+}
+
+/* ===== 右上の「拡大スイッチ」 =====
+   4本の矢印が外へ広がる印（拡大）／内へ集まる印（もとにもどす）。
+   ★大きさは、拡大していてもいつも 20 px★（指で押せる大きさを保つため、
+     図といっしょに 2 倍にはしない）。当たり判定は m45Hits() が返す。 */
+var M45_BTN = 20;
+function m45BtnPos(f) { return { x: f.x + f.w - M45_BTN - 7, y: f.y + 7 }; }
+function m45ZoomBtn(ctx, x, y, shrink) {
+  var S = M45_BTN, cx = x + S / 2, cy = y + S / 2, a = 2.4, b = 7.4;
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,.12)';
+  ctx.strokeStyle = 'rgba(190,215,240,.7)'; ctx.lineWidth = 1;
+  if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, S, S, 5); ctx.fill(); ctx.stroke(); }
+  else { ctx.fillRect(x, y, S, S); ctx.strokeRect(x, y, S, S); }
+  ctx.strokeStyle = '#dbe8f5'; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) {
+    var p0 = shrink ? [cx + d[0] * b, cy + d[1] * b] : [cx + d[0] * a, cy + d[1] * a];
+    var p1 = shrink ? [cx + d[0] * a, cy + d[1] * a] : [cx + d[0] * b, cy + d[1] * b];
+    var ux = p1[0] - p0[0], uy = p1[1] - p0[1], L = Math.hypot(ux, uy) || 1;
+    ux /= L; uy /= L;
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]);
+    /* 矢じり（先っぽから、来た向きへ戻る2本のかぎ） */
+    ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p1[0] - ux * 4.6, p1[1]);
+    ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p1[0], p1[1] - uy * 4.6);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
 /* ===== 地上の観測者（＝ひまわりの真下）の角 =====
    ★t = 0 で観測者が「夜のまん中」＝夜12時に立つようにそろえてある★（先生の指示）
      地球の真夜中の点は、太陽と反対がわ＝角 thEarth(t)。
@@ -10929,7 +10984,8 @@ DEFS['m4-5'] = {
     '3つの図は<b>同じ時計</b>で動いています（縮尺だけが違います）。' +
     '上のオレンジのボタンで<b>見る時間の長さ</b>を変えて、' +
     '「どれがどれくらいの速さで回っているのか」をつかんでください。<br>' +
-    '<b>いちばんの見どころは、いちばん下の図の「ひまわり（静止衛星）」</b>。' +
+    '<b>それぞれの図の右上のボタン</b>を押すと、その図だけを<b>2倍の大きさ</b>で見られます。<br>' +
+    '<b>いちばんの見どころは、いちばん右の図の「ひまわり（静止衛星）」</b>。' +
     '自転とぴったり同じ 23時間56分で回るので、<b>地上の目印の真上から動きません</b>。',
   sideText:
     '<span class="q">【物理ミニコラム】地球と月の太陽まわりの運動　—　多重回転</span>' +
@@ -10989,8 +11045,24 @@ DEFS['m4-5'] = {
        よこ一列のままだと、キャンバスが 342 px までちぢめられて
        中の文字が 3 px ほどになり、まったく読めなくなるため。
        図そのもの（336 px 幅の設計）は同じものを使い、並べ方だけ変える。 */
-  cw: function () { return M45_PW * m45Cols(); },
-  ch: function () { return M45_HEAD + M45_PH * (3 / m45Cols()) + 18; },
+  cw: function (v, s) {
+    return (s && s.o.zoom) ? M45_PW * 2 : M45_PW * m45Cols();
+  },
+  ch: function (v, s) {
+    return M45_HEAD + 18 + ((s && s.o.zoom) ? M45_PH * 2 : M45_PH * (3 / m45Cols()));
+  },
+  /* ★図の上の「拡大スイッチ」の当たり判定★
+     キャンバスの中のボタンなので、ふつうの <button> のようには押せない。
+     cvHits が返した四角の中を押したら fn が呼ばれる（80_ui.js の attachCvHits）。 */
+  cvHits: function (s, W) {
+    return m45Frames(s, W).map(function (f) {
+      var p = m45BtnPos(f);
+      return {
+        x: p.x - 3, y: p.y - 3, w: M45_BTN + 6, h: M45_BTN + 6,
+        fn: function (st2) { st2.o.zoom = st2.o.zoom ? 0 : (f.i + 1); }
+      };
+    });
+  },
   wide: true,
   noOpenRow: true,
   loop: true,
@@ -11080,14 +11152,13 @@ DEFS['m4-5'] = {
        3つを見くらべることができなかった。よこに並べれば一度に3つとも目に入る。
        そのぶん1つあたりの横はばは 1/3（前の 560 px → 336 px ＝ 60 %）になるので、
        長い注釈は m45Wrap() で2〜3行に折り返して入れている。 */
-    var HEAD = M45_HEAD, COLS = m45Cols(), CW = W / COLS, PH = M45_PH;
-    function frame(i) {
-      return { x: (i % COLS) * CW, y: HEAD + Math.floor(i / COLS) * PH, w: CW, h: PH };
-    }
+    var HEAD = M45_HEAD, PH = M45_PH;
+    var FR = m45Frames(s, W), PFN = [m45Panel1, m45Panel2, m45Panel3];
     /* ★「ここを拡大したのが次の図」の線は、図より先に引く★
-       あとから引くと、軌道や文字の上に線が乗ってしまう。 */
-    (function () {
-      var f0 = frame(0), f1 = frame(1), f2 = frame(2), horiz = (COLS === 3);
+       あとから引くと、軌道や文字の上に線が乗ってしまう。
+       1つだけ大きくしているとき（拡大スイッチ）は、次の図が無いので引かない。 */
+    if (FR.length === 3) (function () {
+      var f0 = FR[0], f1 = FR[1], f2 = FR[2], horiz = (f1.x > f0.x);
       var thE = P.m45.thEarth(t);
       /* 【1】の中の地球（公転しているので、毎コマ位置が変わる）。
          ★【2】が映している範囲（40万 km）は、この縮尺だと 0.2 px しかない★
@@ -11095,38 +11166,36 @@ DEFS['m4-5'] = {
          ★大きさは「この図に描いてある月の軌道（19 px）が入る」ように 23 px★
            【2】は月の軌道まで映している図なので、それがはみ出していると話が合わない。 */
       m45ZoomLines(ctx, f0, f1,
-        f0.x + CW / 2 + M45_R1 * Math.cos(thE),
+        f0.x + f0.w / 2 + M45_R1 * Math.cos(thE),
         f0.y + M45_CY1 - M45_R1 * Math.sin(thE), 23, horiz);
       /* 【2】の中の地球は、いつもわくのまん中。
          ★こちらは本当の縮尺で囲める★（4.6万 km × SC = 8.8 px） */
       m45ZoomLines(ctx, f1, f2,
-        f1.x + CW / 2, f1.y + M45_CY2, 46000 * M45_SC2, horiz);
+        f1.x + f1.w / 2, f1.y + M45_CY2, 46000 * M45_SC2, horiz);
     })();
-    function panel(fn, i) {
-      var ox = (i % COLS) * CW, oy = HEAD + Math.floor(i / COLS) * PH;
+    FR.forEach(function (f) {
       ctx.save();
       /* ★1つ1つの図を、そのわくの中に閉じこめる★
          （【2】の「太陽の方向」の線が となりまで伸びるのを防ぐ） */
-      ctx.beginPath(); ctx.rect(ox, oy, CW, PH); ctx.clip();
-      ctx.translate(ox, 0);
-      fn(ctx, s, v, t, CW, oy, oy + PH, HALO);
+      ctx.beginPath(); ctx.rect(f.x, f.y, f.w, f.h); ctx.clip();
+      /* わくの左上を原点にして、拡大スイッチが入っていれば 2 倍に引きのばす。
+         図を描くかんすうは「336 × 306 のわく」しか知らないので、これだけで大きくなる。 */
+      ctx.translate(f.x, f.y);
+      ctx.scale(f.k, f.k);
+      PFN[f.i](ctx, s, v, t, M45_PW, 0, PH, HALO);
       ctx.restore();
-    }
-    panel(m45Panel1, 0);
-    panel(m45Panel2, 1);
-    panel(m45Panel3, 2);
-    /* わくの区切り線 */
+    });
+    /* 拡大スイッチ（図といっしょに引きのばさないよう、わくの外で描く） */
+    FR.forEach(function (f) {
+      var p = m45BtnPos(f);
+      m45ZoomBtn(ctx, p.x, p.y, !!s.o.zoom);
+    });
+    /* わくの区切り線（わく1つ1つのふちを引く） */
     ctx.save();
     ctx.strokeStyle = 'rgba(150,175,205,.45)'; ctx.lineWidth = 1;
-    var i2;
-    for (i2 = 1; i2 < COLS; i2++) {
-      ctx.beginPath(); ctx.moveTo(i2 * CW + 0.5, HEAD); ctx.lineTo(i2 * CW + 0.5, H - 18); ctx.stroke();
-    }
-    for (i2 = 0; i2 <= 3 / COLS; i2++) {
-      var yy = HEAD + i2 * PH;
-      if (yy > H - 18) break;
-      ctx.beginPath(); ctx.moveTo(0, yy + 0.5); ctx.lineTo(W, yy + 0.5); ctx.stroke();
-    }
+    FR.forEach(function (f) {
+      ctx.strokeRect(f.x + 0.5, f.y + 0.5, f.w - 1, f.h - 1);
+    });
     ctx.restore();
     label(ctx, 't = ' + DEFS['m4-5'].tFmt(t, v) + '（' + P.m45.spanName(v.span) + '）'
       + (v.span === 4 ? '　※ 夜12時に観測' : ''),
@@ -12329,7 +12398,7 @@ function buildPanel() {
     if (gcv && !gcv._dragOn) { gcv._dragOn = true; attachGraphDrag(gcv, g.key); }
   });
   var mcv = $('mainCv');
-  if (mcv && !mcv._dragOn) { mcv._dragOn = true; attachSimDrag(); attach3dDrag(); }
+  if (mcv && !mcv._dragOn) { mcv._dragOn = true; attachSimDrag(); attach3dDrag(); attachCvHits(); }
 
   setPlayLabel();
   $('bSlow').className = s.slow ? '' : 'sub';
@@ -12628,6 +12697,44 @@ function attach3dDrag() {
     c.s.cam.zoom = clamp(c.s.cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.5, 3.0);
     renderActive(); ev.preventDefault();
   }, { passive: false });
+}
+
+/* ===== 図の中に置いたボタン（キャンバスのボタン）=====
+   ★ふつうは HTML の <button> を使うこと★
+   図の右上のように「絵の一部として置きたい」ボタンだけ、ここで受ける。
+   def に cvHits(s, W, H) を書くと、[{x, y, w, h, fn}] の四角を返せる。
+   いまは 4-5 の「拡大スイッチ」だけが使っている。
+   ★ドラッグ（d.drag）とは別のしくみ★ ドラッグするシムでは cvHits を書かないこと。 */
+function attachCvHits() {
+  var cv = $('mainCv');
+  if (!cv) return;
+  function pick(ev) {
+    var d = DEFS[st.cur], s = st.sims[st.cur];
+    if (!d || !d.cvHits || !s) return null;
+    var r = cv.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    var lx = (ev.clientX - r.left) / r.width * cwOf(d, s);
+    var ly = (ev.clientY - r.top) / r.height * (cv._ch || chOf(d, s));
+    var hits = d.cvHits(s, cwOf(d, s), chOf(d, s)) || [], i, h;
+    for (i = 0; i < hits.length; i++) {
+      h = hits[i];
+      if (lx >= h.x && lx <= h.x + h.w && ly >= h.y && ly <= h.y + h.h) return h;
+    }
+    return null;
+  }
+  cv.addEventListener('click', function (ev) {
+    var h = pick(ev);
+    if (!h) return;
+    h.fn(st.sims[st.cur]);
+    renderActive();
+  });
+  /* 押せる場所では指のかたちにする（どこが押せるか分かるように） */
+  cv.addEventListener('pointermove', function (ev) {
+    var d = DEFS[st.cur];
+    if (!d || !d.cvHits) return;
+    var want = pick(ev) ? 'pointer' : '';
+    if (cv.style.cursor !== want) cv.style.cursor = want;
+  });
 }
 
 function attachSimDrag() {

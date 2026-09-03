@@ -182,6 +182,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 /* ボタンが多いとき（1-1・1-4・1-6・1-7）は、さらに小さくして1行におさめる */
 .cvbar .acts.n3 button{font-size:.72rem;padding:3px 8px}
 .cvbar .acts.n4 button{font-size:.685rem;padding:2px 7px;letter-spacing:-.01em}
+.cvbar .acts.n5 button{font-size:.655rem;padding:2px 6px;letter-spacing:-.02em}
 /* いまの状態がその条件になっているボタンは、少し濃く（塗って）見せる */
 .cvbar .acts button.on{background:var(--orange-l);border-color:var(--orange);
   color:var(--orange-d);font-weight:700;box-shadow:0 0 0 3px rgba(224,123,24,.14)}
@@ -211,6 +212,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .cvside .opts label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer;
   color:var(--ink2)}
 .cvside input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;margin:0}
+/* 「まずここを押してみて」と気づかせるチェックボックス（2 平面上の運動の「分解した速度を表示」）。
+   シムを選ぶとパネルを作り直すので、そのたびに 4回だけピコピコ光る。
+   自分でチェックを入れたら、ふつうの見た目にもどす（JS で vflash を外す）。 */
+.cvside .opts label.vflash{background:var(--orange-l);border:1.5px solid var(--orange);
+  border-radius:999px;padding:2px 9px;margin:1px 0;font-weight:700;color:var(--orange-d);
+  animation:vflash 1.05s ease-in-out 4}
+.cvside .opts label.vflash input[type=checkbox]{accent-color:var(--orange);width:17px;height:17px}
+@keyframes vflash{
+  0%,100%{box-shadow:0 0 0 0 rgba(224,123,24,0);background:var(--orange-l)}
+  45%{box-shadow:0 0 0 7px rgba(224,123,24,.32);background:#ffe6c7}
+}
+@media (prefers-reduced-motion:reduce){
+  .cvside .opts label.vflash{animation:none}
+}
 
 /* 図（キャンバス）＋その左上にのせる操作エリア */
 .cvstage{position:relative}
@@ -522,7 +537,7 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   .cvbar{padding:10px}
   .cvbar .acts{gap:8px}
   .cvbar .acts button{padding:8px 12px;font-size:.78rem}
-  .cvbar .acts.n3 button,.cvbar .acts.n4 button{padding:8px 10px;font-size:.74rem}
+  .cvbar .acts.n3 button,.cvbar .acts.n4 button,.cvbar .acts.n5 button{padding:8px 10px;font-size:.74rem}
   .cvside .cvopts{padding:9px 12px;gap:8px 14px;font-size:.82rem}
   .cvside .cvopts input[type=checkbox]{width:22px;height:22px}
   /* スライダー：バーもつまみも太くする */
@@ -1882,12 +1897,58 @@ function hand(ctx, hx, hy, ang) {
 }
 
 /* 吹き出し */
+/* 「ここを操作してね」と気づかせる、光る帯（チップ）。
+   k は 0〜1 のまばたきの強さ（1 でいちばん光る）。(x, y) ＝ 左はし・たての中央。
+   キャンバスの中では CSS が使えないので、影の濃さと枠の太さで「ピコッ」と光らせる。 */
+function hintChip(ctx, text, x, y, k, opt) {
+  opt = opt || {};
+  var SZ = opt.size || 12.5;
+  ctx.save();
+  ctx.font = 'bold ' + SZ + 'px ' + FONT;
+  var w = ctx.measureText(text).width + 22, h = SZ + 16;
+  var bx = x, by = y - h / 2;
+  ctx.shadowColor = 'rgba(224,123,24,' + (0.30 + 0.55 * k).toFixed(3) + ')';
+  ctx.shadowBlur = 8 + 14 * k;
+  ctx.fillStyle = '#fff3e2';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx, by, w, h, h / 2); else ctx.rect(bx, by, w, h);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 1.5 + 1.3 * k;
+  ctx.stroke();
+  ctx.fillStyle = '#a85c0c';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, bx + 11, by + h / 2 + 0.5);
+  ctx.restore();
+}
+
+/* 吹き出し。★しっぽ（三角）は「指し示したいもの」の向きに出すこと★
+   opt.side … 'down'（既定・下向き）／'up'／'left'／'right'
+     down : (x, y) ＝ 箱の下辺の中央。しっぽは (x, y+8) を指す（これまでどおり）
+     up   : (x, y) ＝ しっぽの先。箱はその下に出る
+     left : (x, y) ＝ しっぽの先。箱はその右に出る（左にあるものを指す）
+     right: (x, y) ＝ しっぽの先。箱はその左に出る（右にあるものを指す）
+   吹き出しは「言葉の持ち主」ではなく「指したいもの」を向けるのがふつう。 */
 function bubble(ctx, text, x, y, opt) {
   opt = opt || {};
+  var side = opt.side || 'down', T = 8;
   ctx.save();
   ctx.font = 'bold ' + (opt.size || 14) + 'px ' + FONT;
   var w = ctx.measureText(text).width + 18, h = (opt.size || 14) + 14;
-  var bx = x - w / 2, by = y - h;
+  var bx, by, t1, t2, tp;                       /* 箱の左上と、しっぽの3点 */
+  if (side === 'up') {
+    bx = x - w / 2; by = y + T;
+    t1 = [x - 6, by]; t2 = [x + 6, by]; tp = [x, y];
+  } else if (side === 'left') {
+    bx = x + T; by = y - h / 2;
+    t1 = [bx, y - 6]; t2 = [bx, y + 6]; tp = [x, y];
+  } else if (side === 'right') {
+    bx = x - T - w; by = y - h / 2;
+    t1 = [bx + w, y - 6]; t2 = [bx + w, y + 6]; tp = [x, y];
+  } else {
+    bx = x - w / 2; by = y - h;
+    t1 = [x - 6, by + h]; t2 = [x + 6, by + h]; tp = [x, by + h + T];
+  }
   ctx.fillStyle = opt.bg || '#fff5d6';
   ctx.strokeStyle = opt.border || '#d9a545';
   ctx.lineWidth = 1.6;
@@ -1896,13 +1957,14 @@ function bubble(ctx, text, x, y, opt) {
   else ctx.rect(bx, by, w, h);
   ctx.fill(); ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(x - 6, by + h); ctx.lineTo(x, by + h + 8); ctx.lineTo(x + 6, by + h);
+  ctx.moveTo(t1[0], t1[1]); ctx.lineTo(tp[0], tp[1]); ctx.lineTo(t2[0], t2[1]);
   ctx.closePath(); ctx.fillStyle = opt.bg || '#fff5d6'; ctx.fill();
   ctx.strokeStyle = opt.border || '#d9a545';
-  ctx.beginPath(); ctx.moveTo(x - 6, by + h); ctx.lineTo(x, by + h + 8); ctx.lineTo(x + 6, by + h); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(t1[0], t1[1]); ctx.lineTo(tp[0], tp[1]); ctx.lineTo(t2[0], t2[1]); ctx.stroke();
   ctx.fillStyle = opt.color || '#8a5000';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, x, by + h / 2);
+  ctx.fillText(text, bx + w / 2, by + h / 2);
   ctx.restore();
 }
 
@@ -3502,7 +3564,7 @@ DEFS['m1-7'] = {
 
 /* ============ 1-7 カーリングゲーム ============ */
 DEFS['m1-8'] = {
-  id: 'm1-8', mode: 1, tab: '1-8 氷の上のカーリングゲーム', game: true,
+  id: 'm1-8', mode: 1, tab: '1-8 氷の上のカーリングゲーム', game: true, hintFlash: true,
   title: '1-8　氷の上のカーリングゲーム 〜的にピタリと止めよう！〜',
   desc: 'ストーンを初速度 v₀ ですべらせて、的にちょうど止められるかな？',
   sub: '動摩擦力だけで減速するので、止まるまでの距離は v₀²/(2|a|)。<b>ストーンを右へドラッグ（スワイプ）して放すと、その勢いで v₀ が決まり、そのまま動き出す。</b>「スライダーで v₀ を決める」に切りかえると、v₀ をスライダーで決めてからドラッグで放つこともできる。的もドラッグで動かせる。',
@@ -3659,10 +3721,11 @@ DEFS['m1-8'] = {
       label(ctx, (s.o.useSlider ? '放すとスタート！　v₀ = ' : '右へスワイプして放つ！　v₀ = ') + fmt(v0shown, 1) + ' m/s',
         st0.x + sn.n.x * 52 + 4, st0.y + sn.n.y * 52, { size: 12.5, bold: true, color: COL.vel, align: 'left' });
     } else if (t < 1e-9) {
-      /* 右上の「正の向き：…」（y=34）とぶつからないよう、1行下げて左に置く */
-      label(ctx, s.o.useSlider ? 'v₀ はスライダーで決める。ストーンを放すとスタート'
+      /* ★遊び方はいちばん大事な案内★ 光る帯にして、選んだ直後は数秒ピカピカさせる。
+         右上の「正の向き：…」（y=34）とぶつからないよう、1行下げて左に置く。 */
+      hintChip(ctx, s.o.useSlider ? 'v₀ はスライダーで決める。ストーンを放すとスタート'
         : 'ストーンを右へスワイプして放すと、その勢いで v₀ が決まってスタート',
-        14, 52, { size: 10.5, color: COL.sub, align: 'left' });
+        12, 60, flashK());
     }
     var done = t >= DEFS['m1-8'].tEnd(v) - 1e-9;
     label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 16, { align: 'right', size: 13, bold: true });
@@ -3738,13 +3801,9 @@ function twoMassVars(mDef, MDef) {
 /* 「支えている手を放す」の吹き出し（手の右がわ）。動かす前（t=0）だけ出す。
    (hx, hy) ＝ 手のひらのてっぺん（＝物体の下のはし）。 */
 function releaseHint(ctx, hx, hy, W, dy) {
-  var txt = '支えている手を放す', SZ = 12.5;
-  ctx.save(); ctx.font = 'bold ' + SZ + 'px ' + FONT;
-  var bw = ctx.measureText(txt).width + 18;
-  ctx.restore();
-  var cx = clamp(hx + 40 + bw / 2, bw / 2 + 6, W - bw / 2 - 6);
-  bubble(ctx, txt, cx, hy + (dy === undefined ? 27 : dy),
-    { size: SZ, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
+  /* しっぽは「手」を指すので、吹き出しは手の右・しっぽは左向き（side:'left'） */
+  bubble(ctx, '支えている手を放す', hx + 32, hy + (dy === undefined ? 18 : dy),
+    { size: 12.5, side: 'left', bg: '#fff5e8', border: '#e07b18', color: '#a85c0c' });
 }
 
 /* 2物体で共通のグラフ（x・v・a）。fml は各シミュレーションから渡す */
@@ -3931,7 +3990,7 @@ DEFS['m1-10'] = {
     var v = V(s), m = P.m19.sample(v, t);
     var th = v.th * DEG, ct = Math.cos(th), st2 = Math.sin(th);
     var pr = 11;
-    var PX = W - 176, PY = 112;                         /* 滑車の中心（右に吹き出しの場所をあける） */
+    var PX = W - 192, PY = 112;                         /* 滑車の中心（右に吹き出しの場所をあける） */
     var kA = mSize({ vars: [{ k: 'm', def: 1 }] }, { m: v.m });
     var bw = 32 * kA, bh = 23 * kA;
     /* 糸は「面と平行に進んで滑車の上がわに接し、上を通って向こう側へ回りこむ」。
@@ -4148,7 +4207,7 @@ DEFS['m1-11'] = {
       }
     }
     /* 動かす前だけ「支えている手を放す」と出す（スタートを押すと消える） */
-    if (t <= 1e-9) releaseHint(ctx, PX + pr, yB + rB + 2, W, 60);
+    if (t <= 1e-9) releaseHint(ctx, PX + pr, yB + rB + 2, W, 46);
     if (s.o.showF || s.o.showFm) {     /* この図の力はすべて運動の向き（鉛直）にそっている */
       var fs = 42 / Math.max(1, v.M * G), Tn = m.T;
       arrow(ctx, PX - pr, yA - rA, PX - pr, yA - rA - Tn * fs, 'force', 1, fcol('A', COL.hand));
@@ -4229,7 +4288,7 @@ DEFS['m1-11'] = {
 DEFS['m1-12'] = {
   id: 'm1-12', mode: 1, tab: '1-12 2物体（板の上）',
   quizKey: 'v', quizName: '板 A と物体 B の $v$–$t$ 図（右向きが正）',
-  title: '1-12　なめらかな床の上の板 A と、その上の物体 B',
+  title: '1-12　なめらかな床の上の板とその上で滑る物体',
   sub: '水平でなめらかな床の上に板 A（質量 $M$）を置き、その上に物体 B（質量 $m$）をのせる。' +
     '<b>摩擦があるのは A と B のあいだだけ</b>（床はなめらか）。B が A の上をすべるとき、' +
     'B にはたらく動摩擦力は「A が B に対して動く向き」、A にはその<b>反対向き</b>にはたらく（作用・反作用）。' +
@@ -4252,8 +4311,16 @@ DEFS['m1-12'] = {
   ],
   toggles: [],
   actions: [
-    { label: '板 A を引く', fn: function (s) { s.v.FA = 26; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; },
-      is: function (v) { return v.FA > 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0; } },
+    /* 「すべる」と「一体」は、引く力が最大静止摩擦 μg(M+m) をこえるかどうかのちがい。
+       ボタンが濃くなる条件も「実際にすべるかどうか」で判定する。 */
+    { label: '板 A を引く（すべる）', fn: function (s) { s.v.FA = 26; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; },
+      is: function (v) {
+        return v.FA > 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0 && P.m111.acc(v, 0, 0).slip;
+      } },
+    { label: '板 A を引く（一体）', fn: function (s) { s.v.FA = 18; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; },
+      is: function (v) {
+        return v.FA > 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0 && !P.m111.acc(v, 0, 0).slip;
+      } },
     { label: '物体 B に初速度を与える', fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 2.5; },
       is: function (v) { return v.FA === 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 > 0; } },
     { label: '板 A に初速度を与える', fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vB0 = 0; s.v.vA0 = 2.5; },
@@ -4289,6 +4356,11 @@ DEFS['m1-12'] = {
       fnote: function (v, s2) {
         var ts = P.m111.tStick(v), tfl = P.m111.tFall(v);
         var m2 = P.m111.sample(v, isFinite(ts) ? ts : P.m111.tEnd(v));
+        if (!P.m111.acc(v, v.vA0, v.vB0).slip) {         /* はじめから一体で動く */
+          return '<b>2本の線がぴったり重なっている ＝ すべっていない。</b>' +
+            '引く力が最大静止摩擦 $\\mu g(M+m)$＝<b>' + fmt((v.mus || 0) * G * (v.mA + v.mB), 1) +
+            ' N</b> をこえていないので、<b>静止摩擦力</b>が B をいっしょに運び、A と B は一体で動く。';
+        }
         if (isFinite(tfl)) {
           return '<b>2本の線ではさまれた面積 ＝ B が A に対してすべった距離。</b>' +
             '（速度の差を時間でたし合わせたものが、位置の差になる）<br>' +
@@ -4368,7 +4440,10 @@ DEFS['m1-12'] = {
     if (s.o.showF || s.o.showFm) {     /* この図の力はすべて運動の向き（水平）にそっている */
       var fmax = v.mud * v.mB * G, fs = 76 / Math.max(6, fmax, v.FA, v.FB);
       var fB = m.f;                                       /* B にはたらく摩擦（右が正） */
-      if (Math.abs(fB) > 0.05 && !m.fell) {
+      /* ★摩擦力は「実際に動いて（あるいは動こうとして）から」出す★
+         スタート前（t=0）から動摩擦の矢印が出ていると、
+         「相対的にすべっているから動摩擦がはたらく」という順番が伝わらない。 */
+      if (Math.abs(fB) > 0.05 && !m.fell && t > 1e-9) {
         /* ★作用・反作用なので作用点は同じ（A と B がふれあう面）★
            まったく同じ点だと2本が重なって見えないので、上下に 4 px だけずらして描く。 */
         var fpx = pxB, fpy = gy - ph;
@@ -4405,7 +4480,9 @@ DEFS['m1-12'] = {
     if (hintOn(s, t)) {
       var msg2 = m.fell
         ? (m.air ? 'B は板からすべり落ちた → 水平投射（水平の速さはそのまま）' : 'B は床に着いた。床はなめらかなので等速で進む')
-        : ((m.slip ? 'B は A の上をすべっている（動摩擦がはたらく）' : '速さがそろった → 2つはいっしょに動く') +
+        : ((m.slip ? 'B は A の上をすべっている（動摩擦がはたらく）'
+          : (Math.abs(m.slid) < 0.005 ? '静止摩擦力がはたらいて、A と B は一体で動く'
+            : '速さがそろった → 2つはいっしょに動く')) +
           (Math.abs(m.slid) > 0.01 ? '　すべった距離 ' + fmt(Math.abs(m.slid), 2) + ' m' : ''));
       label(ctx, msg2, 12, 56, { size: 11.5, bold: true, color: COL.acc, align: 'left' });
     }
@@ -4566,7 +4643,7 @@ DEFS['m2-1'] = {
   desc: '左と右で、同じ時刻の球の高さが「いつも同じ」ことを確かめよう。',
   sub: '平面内の運動は、水平方向（等速直線運動）と鉛直方向（等加速度運動）に分けて考えられる。ストロボの間隔を変えて、同じ高さを結ぶ線を見くらべよう。',
   cw: 560, ch: 380,
-  vis: ['F', 'V', 'Vc'],
+  vis: ['F', 'V', 'Vc'], visFlash: 'Vc',
   signLabels: ['上向きを正', '下向きを正'],
   mainVars: ['v0', 'th', 'dt'], mainOpts: true,
   vars: [
@@ -4748,7 +4825,7 @@ DEFS['m2-2'] = {
   desc: 'はじめは θ＝0°、つまり水平投射。角度を変えると斜方投射になる。',
   sub: '「分解した速度を表示」にすると、いつも一定の vx と、まっすぐ減っていく vy が見える。<b>投射角 θ を変えると、同じ v₀ でも飛び方がまったく変わる。</b>いろいろな θ で試してみよう。<br>アニメーションは<b>原点と同じ高さ（y＝0）にもどったところで止まる</b>（うすい放物線はその先も描いてある）。なぜそこで止まるのかは、vy–t 図の下の解説を見よう。',
   cw: 520, ch: 360,
-  vis: ['F', 'V', 'Vc'],
+  vis: ['F', 'V', 'Vc'], visFlash: 'Vc',
   signLabels: ['上向きを正', '下向きを正'],
   mainVars: ['th', 'v0'], mainVarFocus: 'th',
   vars: [
@@ -4821,7 +4898,7 @@ DEFS['m2-3'] = {
   desc: '同じ運動でも、原点をどこに取るかで式の形は変わる。けれど $v$–$t$ 図・$a$–$t$ 図は変わらない。',
   sub: '「原点の取り方」を切りかえて、y の式と y–t 図がどう変わるかを確かめよう。',
   cw: 520, ch: 360,
-  vis: ['F', 'V', 'Vc'],
+  vis: ['F', 'V', 'Vc'], visFlash: 'Vc',
   signLabels: ['上向きを正', '下向きを正'],
   mainVars: ['v0', 'th', 'H'], mainOpts: true,
   vars: [
@@ -4922,7 +4999,7 @@ DEFS['m2-4'] = {
   desc: 'ける速さと角度を変えて、ボールをかごに蹴り入れよう。',
   sub: '<b>成功するのは、ボールが「上から」かごの口に落ちこんだときだけ</b>（横からぶつかっても入らない）。だから、かごの上まで届かせて、そこで<b>下向きに落ちてくる</b>ようにねらおう。かごはドラッグで動かせる。水平到達距離は v₀²sin2θ / g。同じ距離になる角度が2つあることにも注目。',
   cw: 520, ch: 280,
-  vis: ['F', 'V', 'Vc'],
+  vis: ['F', 'V', 'Vc'], visFlash: 'Vc',
   signLabels: ['上向きを正', '下向きを正'],
   mainVars: ['v0', 'th'],
   vars: [
@@ -6778,6 +6855,8 @@ function placeModeTip() {
 
 /* ===== パネルの組み立て ===== */
 function buildPanel() {
+  /* シムを選んだ瞬間を覚えておく（図の中の「ここを操作してね」を数秒ピカピカさせるため） */
+  st._hintT0 = (window.performance && performance.now) ? performance.now() : Date.now();
   var d = DEFS[st.cur], s = st.sims[st.cur];
   s._eq = null;                       /* DOM を作り直すのでキャッシュを捨てる */
   var h = [];
@@ -6836,14 +6915,17 @@ function buildPanel() {
   if (d.vis && d.vis.length) {
     h.push('<div class="opts">');
     d.vis.forEach(function (k) {
-      h.push('<label><input type="checkbox" data-vis="show' + k + '"' + (s.o['show' + k] ? ' checked' : '') + '> ' + VIS_LABEL[k] + '</label>');
+      /* d.visFlash に指定したものは、チェックが入るまで目立たせて光らせる */
+      var fl = (d.visFlash === k && !s.o['show' + k]) ? ' class="vflash"' : '';
+      h.push('<label' + fl + '><input type="checkbox" data-vis="show' + k + '"' +
+        (s.o['show' + k] ? ' checked' : '') + '> ' + VIS_LABEL[k] + '</label>');
     });
     h.push('</div>');
   }
   h.push('</div></div></div>');
   /* 図の下のバー：状況を変えるオレンジのボタン */
   if (d.actions && d.actions.length) {
-    h.push('<div class="cvbar"><div class="acts n' + Math.min(4, d.actions.length) + '">');
+    h.push('<div class="cvbar"><div class="acts n' + Math.min(5, d.actions.length) + '">');
     d.actions.forEach(function (a, i) { h.push('<button class="warm" data-act="' + i + '" id="act_' + i + '">' + a.label + '</button>'); });
     h.push('</div></div>');
   }
@@ -6990,6 +7072,7 @@ function buildPanel() {
     el.addEventListener('change', function () {
       var key = el.getAttribute('data-vis');
       s.o[key] = el.checked;
+      if (el.checked && el.parentNode) el.parentNode.classList.remove('vflash');   /* 押されたら光りをやめる */
       /* 「力を表示」と「運動方向の力のみ表示」は同時にはチェックできない */
       if (el.checked && (key === 'showF' || key === 'showFm')) {
         var other = (key === 'showF') ? 'showFm' : 'showF';
@@ -7091,6 +7174,16 @@ function setQmode(on) {
   syncHash();
   updateUrlBar();
   placeQNotice();                      /* タブ列を作り直すとボタンの位置が変わる */
+}
+
+/* 図の中の「ここを操作してね」のまばたきの強さ（0〜1）。
+   シムを選んでから 2.6 秒だけピカピカして、そのあとは光ったまま落ち着く。 */
+function flashK() {
+  if (!st._hintT0) return 1;
+  var now = (window.performance && performance.now) ? performance.now() : Date.now();
+  var e = now - st._hintT0;
+  if (e > 2600) return 1;
+  return Math.abs(Math.sin(e / 250));
 }
 
 /* ===== 「…!q」で開いたときの大きなお知らせ =====
@@ -7905,6 +7998,13 @@ function tick(ts) {
   if (lastTs === null) lastTs = ts;
   var dt = Math.min(0.033, (ts - lastTs) / 1000);
   lastTs = ts;
+  /* 止まっていても、選んだ直後だけは「ここを操作してね」をまばたきさせる */
+  if (s && !s.playing && d && d.hintFlash && st._hintT0) {
+    var el2 = (window.performance && performance.now) ? performance.now() : Date.now();
+    if (el2 - st._hintT0 < 2700 && (!st._hintLast || ts - st._hintLast > 55)) {
+      st._hintLast = ts; renderActive();
+    }
+  }
   if (s && s.playing) {
     var T = d.tEnd(V(s));
     s.t = Math.min(T, s.t + dt * (s.slow ? 0.25 : 1));
@@ -8373,5 +8473,6 @@ function tick(ts) {
   else boot();
 })();
 </script>
+
 </body>
 </html>
