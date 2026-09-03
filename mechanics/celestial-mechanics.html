@@ -10877,6 +10877,13 @@ var M45_SATS = ['iss', 'gps', 'himawari'];      /* 【3】に出す人工衛星 
 var M45_PW = 336;      /* 1つの図のはば */
 var M45_PH = 306;      /* 1つの図の高さ */
 var M45_HEAD = 26;     /* いちばん上の、時計を書く帯 */
+/* ★3つの図の「中心の高さ」と縮尺は、ここ1か所で決める★
+   図を描くかんすう（m45Panel1〜3）だけでなく、
+   「拡大していることを示す線」（m45ZoomLines）からも使うため。
+   ばらばらに書くと、線が地球からずれてしまう。 */
+var M45_CY1 = 144, M45_R1 = 68;          /* 【1】中心の高さ／1 AU = 68 px */
+var M45_CY2 = 122, M45_SC2 = 82 / 430000; /* 【2】中心の高さ／1 km あたりの px */
+var M45_CY3 = 134;                        /* 【3】中心の高さ */
 function m45Cols() { return (typeof WINW !== 'undefined' && WINW < 820) ? 1 : 3; }
 
 /* ===== 地上の観測者（＝ひまわりの真下）の角 =====
@@ -11074,6 +11081,27 @@ DEFS['m4-5'] = {
        そのぶん1つあたりの横はばは 1/3（前の 560 px → 336 px ＝ 60 %）になるので、
        長い注釈は m45Wrap() で2〜3行に折り返して入れている。 */
     var HEAD = M45_HEAD, COLS = m45Cols(), CW = W / COLS, PH = M45_PH;
+    function frame(i) {
+      return { x: (i % COLS) * CW, y: HEAD + Math.floor(i / COLS) * PH, w: CW, h: PH };
+    }
+    /* ★「ここを拡大したのが次の図」の線は、図より先に引く★
+       あとから引くと、軌道や文字の上に線が乗ってしまう。 */
+    (function () {
+      var f0 = frame(0), f1 = frame(1), f2 = frame(2), horiz = (COLS === 3);
+      var thE = P.m45.thEarth(t);
+      /* 【1】の中の地球（公転しているので、毎コマ位置が変わる）。
+         ★【2】が映している範囲（40万 km）は、この縮尺だと 0.2 px しかない★
+         それでは囲めないので、四角は大げさにしてある。
+         ★大きさは「この図に描いてある月の軌道（19 px）が入る」ように 23 px★
+           【2】は月の軌道まで映している図なので、それがはみ出していると話が合わない。 */
+      m45ZoomLines(ctx, f0, f1,
+        f0.x + CW / 2 + M45_R1 * Math.cos(thE),
+        f0.y + M45_CY1 - M45_R1 * Math.sin(thE), 23, horiz);
+      /* 【2】の中の地球は、いつもわくのまん中。
+         ★こちらは本当の縮尺で囲める★（4.6万 km × SC = 8.8 px） */
+      m45ZoomLines(ctx, f1, f2,
+        f1.x + CW / 2, f1.y + M45_CY2, 46000 * M45_SC2, horiz);
+    })();
     function panel(fn, i) {
       var ox = (i % COLS) * CW, oy = HEAD + Math.floor(i / COLS) * PH;
       ctx.save();
@@ -11242,6 +11270,40 @@ function m45Person(ctx, x, y, th, S) {
   stickman(ctx, x, y, Math.cos(th), -Math.sin(th), S || 15, COL.hand, 2.0);
 }
 
+/* ===== 「ここを拡大したのが次の図」を示す線 =====
+   ★教科書の「銀河系 → 太陽のあたり → 太陽系 → 地球」の図と同じやり方★（先生の指示）
+   小さな四角で「次の図に映っている範囲」を囲み、その2つの角から
+   次の図のわくの2つの角へ線をのばす。こうすると
+   「四角の中身を、この大きさまで引きのばしたのが次の図」だと、言葉なしで分かる。
+
+   ★線は図より「先に」引くこと★
+     あとから引くと、軌道や文字の上に線が乗ってしまう。
+     先に引いておけば、天体や文字（白いふちどり付き）が上から重なって読みやすい。
+
+   f0 … いま囲むほうのわく、f1 … 拡大したほうのわく
+   (bx, by) … 四角の中心（地球の位置）、b … 四角の半分の大きさ
+   横に並べているときは 右の2角 → 次のわくの左の2角、
+   たてに並べているときは 下の2角 → 次のわくの上の2角 へ結ぶ。 */
+function m45ZoomLines(ctx, f0, f1, bx, by, b, horiz) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(150,175,205,.5)'; ctx.lineWidth = 1;
+  /* 「次の図に映っている範囲」の四角 */
+  ctx.strokeRect(bx - b, by - b, b * 2, b * 2);
+  var p1, p2, q1, q2;
+  if (horiz) {
+    p1 = [bx + b, by - b]; p2 = [bx + b, by + b];          /* 四角の右の2角 */
+    q1 = [f1.x, f1.y];     q2 = [f1.x, f1.y + f1.h];       /* 次のわくの左の2角 */
+  } else {
+    p1 = [bx - b, by + b]; p2 = [bx + b, by + b];          /* 四角の下の2角 */
+    q1 = [f1.x, f1.y];     q2 = [f1.x + f1.w, f1.y];       /* 次のわくの上の2角 */
+  }
+  ctx.beginPath();
+  ctx.moveTo(p1[0], p1[1]); ctx.lineTo(q1[0], q1[1]);
+  ctx.moveTo(p2[0], p2[1]); ctx.lineTo(q2[0], q2[1]);
+  ctx.stroke();
+  ctx.restore();
+}
+
 /* ===== 図の下に置く注釈 =====
    ★よこ一列の構成では、1つの図のはばが 336 px しかない★
    前（たて3段）のように1行 60 字の注釈は入らないので、短い行を下から積む。
@@ -11258,8 +11320,8 @@ function m45Foot(ctx, y1, lines, HALO) {
 
 /* ===== 【1】太陽のまわり（地球の公転・1 AU）===== */
 function m45Panel1(ctx, s, v, t, W, y0, y1, HALO) {
-  var cx = W / 2, cy = y0 + 144;
-  var R = 68;                               /* 1 AU = 68 px */
+  var cx = W / 2, cy = y0 + M45_CY1;
+  var R = M45_R1;                           /* 1 AU = 68 px */
   var th = P.m45.thEarth(t);
   var ex = cx + R * Math.cos(th), ey = cy - R * Math.sin(th);
   label(ctx, '【1】太陽のまわり　地球の公転（1年で1周）', 10, y0 + 15,
@@ -11287,7 +11349,14 @@ function m45Panel1(ctx, s, v, t, W, y0, y1, HALO) {
       ctx.restore();
     }
     var mx = ex + RM * Math.cos(thM), my = ey - RM * Math.sin(thM);
-    planetShape(ctx, mx, my, 2.8, moon.col);
+    planetShape(ctx, mx, my, 3.4, moon.col);
+    /* ★月にも昼と夜★（先生の指示）。太陽は図の中心にあるので、
+       月から見た太陽の向きは「月 → 太陽（cx, cy）」。
+       画面の y は下向きなので、数学の向きに直してから渡す。 */
+    (function () {
+      var dx = cx - mx, dy = cy - my, dd = Math.hypot(dx, dy) || 1;
+      m45Night(ctx, mx, my, 3.4, dx / dd, -dy / dd, HALO, false);
+    })();
     label(ctx, '月', mx + Math.cos(thM) * 11, my - Math.sin(thM) * 11,
       { size: 9.5, bold: true, color: '#cbbfae', haloColor: HALO });
   })();
@@ -11306,7 +11375,9 @@ function m45Panel1(ctx, s, v, t, W, y0, y1, HALO) {
     m45Night(ctx, ex, ey, RE1, dsx / dsd, -dsy / dsd, HALO, false);
   })();
   m45Spin(ctx, ex, ey, 11, HALO, true);     /* 自転の向き（月の軌道 19 px の内側） */
-  label(ctx, '地球', ex + 26, ey - 20,
+  /* ★名前は「拡大の四角」（半分 23 px）の外に出す★
+     角にかかると、そこから出ている拡大の線と重なって読みにくい。 */
+  label(ctx, '地球', ex + 27, ey - 32,
     { size: 10.5, bold: true, color: '#9fd0ff', align: 'left', haloColor: HALO });
   if (s.o.showV) {
     /* 円軌道なので、速度は動径に垂直（反時計まわり） */
@@ -11324,9 +11395,9 @@ function m45Panel1(ctx, s, v, t, W, y0, y1, HALO) {
 
 /* ===== 【2】地球のまわり（月まで・40万 km）===== */
 function m45Panel2(ctx, s, v, t, W, y0, y1, HALO) {
-  var cx = W / 2, cy = y0 + 122;
+  var cx = W / 2, cy = y0 + M45_CY2;
   var LIM = 430000;                         /* この図に入れる範囲［km］ */
-  var SC = 82 / LIM;                        /* 1 km あたりの px（月の軌道が 73 px） */
+  var SC = M45_SC2;                        /* 1 km あたりの px（月の軌道が 73 px） */
   var moon = m45Sat('moon'), geo = m45Sat('himawari');
   var thM = P.m45.thSat(moon, t);
   var sun = m45SunDir(t);
@@ -11431,7 +11502,7 @@ function m45Panel2(ctx, s, v, t, W, y0, y1, HALO) {
 
 /* ===== 【3】地球のすぐそば（人工衛星と自転・約4.6万 km）===== */
 function m45Panel3(ctx, s, v, t, W, y0, y1, HALO) {
-  var cx = W / 2, cy = y0 + 134;
+  var cx = W / 2, cy = y0 + M45_CY3;
   var LIM = 46000;
   var SC = 84 / LIM;                        /* 1 km あたりの px */
   var Rp = P.m45.RE * SC;                   /* 地球の半径（この図では実物の縮尺） */
