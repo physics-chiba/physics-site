@@ -10897,19 +10897,87 @@ function m45Cols() { return (typeof WINW !== 'undefined' && WINW < 820) ? 1 : 3;
    ★s.o.zoom（1〜3）が入っているときは、その図だけを2倍で1つだけ返す★
      右上の拡大スイッチで切りかえる。もう一度押すと 0 に戻って3つ並びにもどる。
    ★cw / ch もこの決めごとに合わせること★（下の cw: / ch: を見よ） */
+var M45_PH3 = 262;     /* 下の段（3次元で見る図）の高さ */
+var M45_GAP = 30;      /* 1段目と2段目のあいだの「白い帯」（視点のボタンを置く） */
+/* 6つのわくの高さ。0〜2＝上から見た図、3〜5＝3次元の図 */
+function m45Hs() { return [M45_PH, M45_PH, M45_PH, M45_PH3, M45_PH3, M45_PH3]; }
+/* ★わくの外がわは「白い余白」にする★（先生の指示・2026-09-04）
+   いちばん上（M45_HEAD）＝＜自転軸の方向から見た様子＞と時計
+   1段目と2段目のあいだ（M45_GAP）＝視点をえらぶボタン
+   いちばん下（18 px）＝ことわり書き
+   星と濃い地の色は「わくの中だけ」。こうすると、どこからどこまでが1つの図か分かる。 */
 function m45Frames(s, W) {
-  var z = (s && s.o && s.o.zoom) || 0;
-  if (z >= 1 && z <= 3) {
-    return [{ i: z - 1, x: 0, y: M45_HEAD, w: M45_PW * 2, h: M45_PH * 2, k: 2 }];
+  var z = (s && s.o && s.o.zoom) || 0, hs = m45Hs();
+  if (z >= 1 && z <= 6) {
+    var zi = z - 1;
+    return [{
+      i: zi, x: 0, y: M45_HEAD + (zi >= 3 ? M45_GAP : 0),
+      w: M45_PW * 2, h: hs[zi] * 2, k: 2
+    }];
   }
-  var COLS = m45Cols(), CW = W / COLS, a = [], i;
-  for (i = 0; i < 3; i++) {
-    a.push({
-      i: i, x: (i % COLS) * CW, y: M45_HEAD + Math.floor(i / COLS) * M45_PH,
-      w: CW, h: M45_PH, k: 1
-    });
+  var COLS = m45Cols(), CW = W / COLS, a = [], i, y = M45_HEAD;
+  for (i = 0; i < 6; i++) {
+    if (i === 3 && i % COLS === 0) y += M45_GAP;   /* 2段目の前に白い帯を入れる */
+    a.push({ i: i, x: (i % COLS) * CW, y: y, w: CW, h: hs[i], k: 1 });
+    if (i % COLS === COLS - 1) y += hs[i];
   }
   return a;
+}
+/* キャンバスぜんたいの高さ（上の帯＋わく＋下の注記） */
+function m45CH(s) {
+  var fr = m45Frames(s, M45_PW * m45Cols()), last = fr[fr.length - 1];
+  return last.y + last.h + 18;
+}
+/* 「白い帯」（視点のボタンを置くところ）の上端。3次元のわくが出ていないときは null */
+function m45GapY(s, W) {
+  var fr = m45Frames(s, W), i;
+  for (i = 0; i < fr.length; i++) if (fr[i].i >= 3) return fr[i].y - M45_GAP;
+  return null;
+}
+/* 下の段（3次元）が始まる高さ。ここより下をドラッグすると視点が回る */
+function m45Drag3dFrom(s) {
+  var fr = m45Frames(s, M45_PW * m45Cols()), i;
+  for (i = 0; i < fr.length; i++) if (fr[i].i >= 3) return fr[i].y;
+  return 1e9;                                   /* 上の図だけのときは回さない */
+}
+
+/* ===== 視点をえらぶボタン（白い帯の中）=====
+   ★オレンジのボタンではなく、シンプルな四角にする★（先生の指示・2026-09-04）
+   オレンジは「状況を変えるボタン」の色。ここは「見る向きを変えるだけ」なので、
+   図のわきに静かに置く。いま選んでいるものだけ、うすい青でぬる。 */
+var M45_VIEWS = [
+  { lab: '軌道を横から見る', az: 0, el: 0 },
+  { lab: '斜め上から見る', az: -32, el: 26 },
+  { lab: '真上から見る', az: 0, el: 88 }
+];
+/* ボタンの四角を計算する（描くのにも、当たり判定にも、同じこれを使うこと） */
+function m45ViewBtns(ctx, s, W) {
+  var gy = m45GapY(s, W);
+  if (gy === null) return [];
+  var a = [], x = 10, i, bh = 21, by = gy + (M45_GAP - bh) / 2;
+  ctx.save(); ctx.font = '10.5px ' + FONT;
+  for (i = 0; i < M45_VIEWS.length; i++) {
+    var w = Math.round(ctx.measureText(M45_VIEWS[i].lab).width) + 18;
+    a.push({ v: M45_VIEWS[i], x: x, y: by, w: w, h: bh });
+    x += w + 6;
+  }
+  ctx.restore();
+  return a;
+}
+function m45DrawViewBtns(ctx, s, W) {
+  var bs = m45ViewBtns(ctx, s, W), c = s.cam || { az: 0, el: 0 };
+  bs.forEach(function (b) {
+    var on = Math.abs(c.az - b.v.az) < 0.5 && Math.abs(c.el - b.v.el) < 0.5;
+    ctx.save();
+    ctx.fillStyle = on ? '#e2edfa' : '#ffffff';
+    ctx.strokeStyle = on ? '#1663b5' : '#c9d4e0';
+    ctx.lineWidth = on ? 1.4 : 1;
+    if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 5); ctx.fill(); ctx.stroke(); }
+    else { ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeRect(b.x, b.y, b.w, b.h); }
+    ctx.restore();
+    label(ctx, b.v.lab, b.x + b.w / 2, b.y + b.h / 2,
+      { size: 10.5, bold: on, color: on ? '#12457f' : '#3d566e' });
+  });
 }
 
 /* ===== 右上の「拡大スイッチ」 =====
@@ -10984,6 +11052,9 @@ DEFS['m4-5'] = {
     '3つの図は<b>同じ時計</b>で動いています（縮尺だけが違います）。' +
     '上のオレンジのボタンで<b>見る時間の長さ</b>を変えて、' +
     '「どれがどれくらいの速さで回っているのか」をつかんでください。<br>' +
+    '<b>下の段は同じものを3次元にした図</b>です。はじめは<b>軌道面を真横から</b>見ています。' +
+    '<b>ドラッグするといろいろな向きから見られます</b>（オレンジのボタンでも切りかえられます）。' +
+    '<b>地球の自転軸が、公転の面に対して 23.4° かたむいている</b>ことに注目してください。<br>' +
     '<b>それぞれの図の右上のボタン</b>を押すと、その図だけを<b>2倍の大きさ</b>で見られます。<br>' +
     '<b>いちばんの見どころは、いちばん右の図の「ひまわり（静止衛星）」</b>。' +
     '自転とぴったり同じ 23時間56分で回るので、<b>地上の目印の真上から動きません</b>。',
@@ -11048,20 +11119,37 @@ DEFS['m4-5'] = {
   cw: function (v, s) {
     return (s && s.o.zoom) ? M45_PW * 2 : M45_PW * m45Cols();
   },
-  ch: function (v, s) {
-    return M45_HEAD + 18 + ((s && s.o.zoom) ? M45_PH * 2 : M45_PH * (3 / m45Cols()));
-  },
+  ch: function (v, s) { return m45CH(s); },
+  /* ★下の段（3次元）はドラッグで見回せる★（先生の指示）
+     はじめは真横から（el = 0）＝軌道面を横から見た図。
+     drag3dFrom より下だけがドラッグの対象。上の段（真上から見た図）はさわらない。 */
+  drag3d: true,
+  cam3d: { az: 0, el: 0, zoom: 1 },
+  drag3dFrom: function (s) { return m45Drag3dFrom(s); },
   /* ★図の上の「拡大スイッチ」の当たり判定★
      キャンバスの中のボタンなので、ふつうの <button> のようには押せない。
      cvHits が返した四角の中を押したら fn が呼ばれる（80_ui.js の attachCvHits）。 */
   cvHits: function (s, W) {
-    return m45Frames(s, W).map(function (f) {
+    var a = m45Frames(s, W).map(function (f) {
       var p = m45BtnPos(f);
       return {
         x: p.x - 3, y: p.y - 3, w: M45_BTN + 6, h: M45_BTN + 6,
         fn: function (st2) { st2.o.zoom = st2.o.zoom ? 0 : (f.i + 1); }
       };
     });
+    /* 白い帯の中の「視点をえらぶボタン」。★描くときと同じ計算を使うこと★ */
+    var cv = $('mainCv'), ctx = cv && cv.getContext ? cv.getContext('2d') : null;
+    if (ctx) {
+      m45ViewBtns(ctx, s, W).forEach(function (b) {
+        a.push({
+          x: b.x, y: b.y, w: b.w, h: b.h,
+          fn: function (st2) {
+            st2.cam.az = b.v.az; st2.cam.el = b.v.el; st2.cam.zoom = 1;
+          }
+        });
+      });
+    }
+    return a;
   },
   wide: true,
   noOpenRow: true,
@@ -11115,6 +11203,10 @@ DEFS['m4-5'] = {
       fn: function (s) { s.v.span = 3; },
       is: function (v) { return v.span === 3; }
     }
+    /* ★視点のボタン（横から／斜め上／真上）は、ここには置かない★（先生の指示）
+       オレンジは「状況を変えるボタン」の色なので、
+       「見る向きを変えるだけ」のボタンは、2段目の左上の白い帯にシンプルな形で置く
+       （m45ViewBtns / m45DrawViewBtns）。 */
   ],
   tEnd: function (v) { return P.m45.SPAN[v.span]; },
   /* 「毎日同じ時間に観測」だけは、1秒で1日ぶん進む（＝1日1コマのタイムラプス）。
@@ -11142,22 +11234,33 @@ DEFS['m4-5'] = {
        この1行から下は、3つの図も時計も、丸めたあとの t だけを見る。 */
     t = P.m45.snap(v, t);
     var HALO = 'rgba(13,22,38,.92)';
-    ctx.save(); ctx.fillStyle = '#0d1626'; ctx.fillRect(0, 0, W, H); ctx.restore();
-    /* ★星は「図のわくの中」だけに描く★（先生の指示・2026-09-03）
-       いちばん上（時計）といちばん下（注記）の帯にも星があると、
-       文字の背景がちらついて読みにくい。地の色だけにしておく。 */
-    starField(ctx, 0, M45_HEAD, W, H - 18 - M45_HEAD, 150, 45120);
+    /* ★キャンバスぜんたいは白、濃紺と星は「わくの中だけ」★（先生の指示・2026-09-04）
+       こうすると、上の帯・段のあいだ・下の帯が「白い余白」になって、
+       どこからどこまでが1つの図なのかが、ひと目で分かる。 */
+    ctx.save(); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H); ctx.restore();
     /* ★3つの図は「よこ一列」に並べる★（先生の指示・2026-09-03）
        前はたて3段だったが、それだとタブレットの画面では下の【3】が画面の外に出てしまい、
        3つを見くらべることができなかった。よこに並べれば一度に3つとも目に入る。
        そのぶん1つあたりの横はばは 1/3（前の 560 px → 336 px ＝ 60 %）になるので、
        長い注釈は m45Wrap() で2〜3行に折り返して入れている。 */
-    var HEAD = M45_HEAD, PH = M45_PH;
-    var FR = m45Frames(s, W), PFN = [m45Panel1, m45Panel2, m45Panel3];
+    var HEAD = M45_HEAD, HS = m45Hs();
+    var FR = m45Frames(s, W);
+    FR.forEach(function (f) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(f.x, f.y, f.w, f.h); ctx.clip();
+      ctx.fillStyle = '#0d1626'; ctx.fillRect(f.x, f.y, f.w, f.h);
+      starField(ctx, f.x, f.y, f.w, f.h, 55, 45120 + f.i * 7919);
+      ctx.restore();
+    });
+    /* 0〜2＝上から見た図、3〜5＝3次元（横から見た図）。どちらも 336 px 幅の設計。 */
+    function drawFrame(i, ctx2, y1) {
+      if (i < 3) [m45Panel1, m45Panel2, m45Panel3][i](ctx2, s, v, t, M45_PW, 0, y1, HALO);
+      else m45Panel3D(ctx2, s, v, t, M45_PW, 0, y1, HALO, i - 2);
+    }
     /* ★「ここを拡大したのが次の図」の線は、図より先に引く★
        あとから引くと、軌道や文字の上に線が乗ってしまう。
        1つだけ大きくしているとき（拡大スイッチ）は、次の図が無いので引かない。 */
-    if (FR.length === 3) (function () {
+    if (FR.length === 6) (function () {
       var f0 = FR[0], f1 = FR[1], f2 = FR[2], horiz = (f1.x > f0.x);
       var thE = P.m45.thEarth(t);
       /* 【1】の中の地球（公転しているので、毎コマ位置が変わる）。
@@ -11182,7 +11285,7 @@ DEFS['m4-5'] = {
          図を描くかんすうは「336 × 306 のわく」しか知らないので、これだけで大きくなる。 */
       ctx.translate(f.x, f.y);
       ctx.scale(f.k, f.k);
-      PFN[f.i](ctx, s, v, t, M45_PW, 0, PH, HALO);
+      drawFrame(f.i, ctx, HS[f.i]);
       ctx.restore();
     });
     /* 拡大スイッチ（図といっしょに引きのばさないよう、わくの外で描く） */
@@ -11199,16 +11302,23 @@ DEFS['m4-5'] = {
     ctx.restore();
     label(ctx, 't = ' + DEFS['m4-5'].tFmt(t, v) + '（' + P.m45.spanName(v.span) + '）'
       + (v.span === 4 ? '　※ 夜12時に観測' : ''),
-      W - 10, 14, { align: 'right', size: 12.5, bold: true, color: '#e8eef4', haloColor: HALO });
+      W - 10, 14, { align: 'right', size: 12.5, bold: true, color: COL.ink });
+    /* ★1段目が何なのかを、上の白い帯に書く★（先生の指示・2026-09-04） */
+    if (FR.some(function (f) { return f.i < 3; })) {
+      label(ctx, '＜自転軸の方向から見た様子＞', 10, 14,
+        { align: 'left', size: 12, bold: true, color: '#1b4f8a' });
+    }
+    /* 白い帯の中の「視点をえらぶボタン」 */
+    m45DrawViewBtns(ctx, s, W);
     if (v.span === 4) {
       label(ctx, '※ 1日ずつ飛ばしています。毎日「夜12時」に見ているので、太陽と観測者の向きは同じ。月だけが 1日 13.2° ずつ動きます',
-        W / 2, H - 8, { size: 9.5, color: '#ffd24a', haloColor: HALO });
+        W / 2, H - 8, { size: 9.5, bold: true, color: '#a06a00' });
     } else if (v.span === 3) {
       label(ctx, '※ 1年を選ぶと、自転や人工衛星は速すぎて見えません（1日を選んでください）',
-        W / 2, H - 8, { size: 9.5, color: '#ffb36b', haloColor: HALO });
+        W / 2, H - 8, { size: 9.5, color: '#a06a00' });
     } else {
       label(ctx, '※ 3つの図は縮尺がまったく違います。時間 t だけが共通です',
-        W / 2, H - 8, { size: 9.5, color: '#8ea3b8', haloColor: HALO });
+        W / 2, H - 8, { size: 9.5, color: COL.sub });
     }
   },
   result: function (v, s, t) {
@@ -11337,6 +11447,278 @@ function m45Spin(ctx, x, y, R, HALO, lab) {
 function m45Person(ctx, x, y, th, S) {
   /* 画面での「上」＝動径の外向き。画面の y は下向きなので sin の符号を反転する */
   stickman(ctx, x, y, Math.cos(th), -Math.sin(th), S || 15, COL.hand, 2.0);
+}
+
+/* ============================================================
+   3次元（軌道面を横から見る）の図　——　下の段の【1】【2】【3】
+   ------------------------------------------------------------
+   ★ねらい★（先生の指示・2026-09-03）
+     上の段は「真上から見た図」なので、どうしても平面の話に見えてしまう。
+     下の段で同じものを3次元にし、ドラッグで見回せるようにすることで、
+       ・軌道は「面」の上にあること
+       ・地球の自転軸が、その面に対して 23.4° かたむいていること
+       ・月の軌道の面と、人工衛星が回る赤道面が、たがいにかたむいていること
+     を目で分からせる。★はじめは真横から（el = 0）★
+
+   ★座標のとりかた★
+     黄道面（地球が太陽をまわる面）を z = 0 の面とする。
+     地球の自転軸は n = (sin ε, 0, cos ε)（ε = 23.44°）で、
+     ★公転しても向きは変わらない★——これが季節ができるわけ。
+     長さの単位は図ごとに変える（1 ＝ 地球の軌道半径／月の軌道半径／4.6万 km）。
+   ============================================================ */
+var M45_EPS = 23.44;                    /* 地軸のかたむき［°］ */
+var M45_S3 = 74;                        /* 3次元の図の縮尺（長さ 1 ＝ 74 px） */
+/* 自転軸の向き（黄道座標）。公転しても変わらない */
+function m45Axis() {
+  var e = M45_EPS * DEG;
+  return [Math.sin(e), 0, Math.cos(e)];
+}
+function m45Cross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+function m45Unit(a) {
+  var L = Math.hypot(a[0], a[1], a[2]) || 1;
+  return [a[0] / L, a[1] / L, a[2] / L];
+}
+/* 法線 n の面の中で、たがいに垂直な2本の単位ベクトルを作る */
+function m45Basis(n) {
+  var a = (Math.abs(n[2]) < 0.9) ? [0, 0, 1] : [1, 0, 0];
+  var u = m45Unit(m45Cross(a, n));
+  return [u, m45Unit(m45Cross(n, u))];
+}
+/* 中心 c、法線 n、半径 r の円（＝軌道の面のふち）を描く */
+function m45Ring(ctx, cam, c, n, r, col, dash, lw) {
+  var b = m45Basis(n), u = b[0], w = b[1], i, N = 96;
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = lw || 1.2;
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath();
+  for (i = 0; i <= N; i++) {
+    var a = i / N * TAU, ca = Math.cos(a) * r, sa = Math.sin(a) * r;
+    var q = cam.p(c[0] + u[0] * ca + w[0] * sa,
+      c[1] + u[1] * ca + w[1] * sa,
+      c[2] + u[2] * ca + w[2] * sa);
+    if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+/* 面そのものを、うすい色でぬる（黄道面・赤道面） */
+function m45Disc(ctx, cam, c, n, r, col) {
+  var b = m45Basis(n), u = b[0], w = b[1], i, N = 72;
+  ctx.save();
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  for (i = 0; i <= N; i++) {
+    var a = i / N * TAU, ca = Math.cos(a) * r, sa = Math.sin(a) * r;
+    var q = cam.p(c[0] + u[0] * ca + w[0] * sa,
+      c[1] + u[1] * ca + w[1] * sa,
+      c[2] + u[2] * ca + w[2] * sa);
+    if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+/* 3次元の線分 */
+function m45Seg3(ctx, cam, a, b, col, dash, lw) {
+  var p = cam.p(a[0], a[1], a[2]), q = cam.p(b[0], b[1], b[2]);
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = lw || 1.2;
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+  ctx.restore();
+}
+/* ★自転軸★ 天体の位置 c から、両向きに L だけのばした矢印。
+   北（n の向き）がわだけ矢じりを付ける。色は茶（力・速度の色を使わない決まり）。 */
+function m45AxisArrow(ctx, cam, c, n, L, HALO, lab) {
+  var A = [c[0] - n[0] * L, c[1] - n[1] * L, c[2] - n[2] * L];
+  var B = [c[0] + n[0] * L, c[1] + n[1] * L, c[2] + n[2] * L];
+  var pa = cam.p(A[0], A[1], A[2]), pb = cam.p(B[0], B[1], B[2]);
+  ctx.save();
+  ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+  /* 矢じり（北がわ） */
+  var dx = pb.x - pa.x, dy = pb.y - pa.y, dd = Math.hypot(dx, dy) || 1;
+  var ux = dx / dd, uy = dy / dd, hh = 7, hw = 3.2;
+  ctx.fillStyle = '#c9a227';
+  ctx.beginPath();
+  ctx.moveTo(pb.x, pb.y);
+  ctx.lineTo(pb.x - ux * hh - uy * hw, pb.y - uy * hh + ux * hw);
+  ctx.lineTo(pb.x - ux * hh + uy * hw, pb.y - uy * hh - ux * hw);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  if (lab) {
+    label(ctx, lab, pb.x + 4, pb.y - 8,
+      { size: 9.5, bold: true, color: '#e0c257', align: 'left', haloColor: HALO });
+  }
+}
+
+/* ===== 3次元の中の「太陽の向き」を、画面の向きになおす =====
+   m45Night は「画面での太陽の向き（数学の向き・上が正）」を受けとるので、
+   3次元の点をいったん2つ投影して、その差から向きを出す。
+   at ＝ 昼と夜を描く天体の位置、sunAt ＝ 太陽の位置（遠いときは十分遠い点でよい）。
+   ★真正面（見ている向き）に太陽があるときは向きが決まらない★ので、
+     そのときは「右が昼」としておく（半分が欠けて見えるだけなので害はない）。 */
+function m45SunScr(cam, at, sunAt) {
+  var d = [sunAt[0] - at[0], sunAt[1] - at[1], sunAt[2] - at[2]];
+  var L = Math.hypot(d[0], d[1], d[2]) || 1;
+  var p0 = cam.p(at[0], at[1], at[2]);
+  var p1 = cam.p(at[0] + d[0] / L * 0.4, at[1] + d[1] / L * 0.4, at[2] + d[2] / L * 0.4);
+  var dx = p1.x - p0.x, dy = p1.y - p0.y, LL = Math.hypot(dx, dy);
+  if (LL < 1e-6) return { x: 1, y: 0 };
+  return { x: dx / LL, y: -dy / LL };
+}
+
+/* ===== 3次元の図（下の段）=====
+   which … 1＝太陽のまわり／2＝地球のまわり／3＝地球のすぐそば
+   ★上の段とまったく同じ時刻 t で描くこと★（同じ時計で動いている、が売り） */
+function m45Panel3D(ctx, s, v, t, W, y0, y1, HALO, which) {
+  var c = s.cam || { az: 0, el: 0, zoom: 1 };
+  /* ★el の符号を返して mk3d に渡すこと★（先生の指摘・2026-09-04）
+     mk3d の el は「下から見上げる」向きなので、そのまま渡すと
+     真上（el = 90）にしたとき、1段目（真上から見た図）と回転が逆に見える。
+     −el にすると、画面の上が ＋y になって、1段目とぴったり同じ向きになる。 */
+  var cam = mk3d(c.az * DEG, -c.el * DEG, M45_S3 * c.zoom, W / 2, y0 + 124);
+  var n = m45Axis(), ECL = [0, 0, 1];
+  var thE = P.m45.thEarth(t);
+  var moon = m45Sat('moon'), geo = m45Sat('himawari');
+
+  if (which === 1) {
+    label(ctx, '【1】3次元で見る　地球の公転と自転軸', 10, y0 + 15,
+      { align: 'left', size: 11, bold: true, color: '#cfe0f0', haloColor: HALO });
+    /* 黄道面（地球が太陽をまわる面） */
+    m45Disc(ctx, cam, [0, 0, 0], ECL, 1.0, 'rgba(120,150,190,.14)');
+    m45Ring(ctx, cam, [0, 0, 0], ECL, 1.0, fade(COL.orbit, 0.8), [5, 4], 1.3);
+    var E = [Math.cos(thE), Math.sin(thE), 0];
+    m45Seg3(ctx, cam, [0, 0, 0], E, '#8ea3b8', [4, 4], 1);
+    var ps = cam.p(0, 0, 0), pe = cam.p(E[0], E[1], E[2]);
+    sunShape(ctx, ps.x, ps.y, 10);
+    label(ctx, '太陽', ps.x, ps.y + 21,
+      { size: 10, bold: true, color: COL.sun, haloColor: HALO });
+    /* 赤道面（自転軸に垂直）を、小さな輪で見せる */
+    m45Ring(ctx, cam, E, n, 0.11, 'rgba(120,190,255,.7)', null, 1.1);
+    m45AxisArrow(ctx, cam, E, n, 0.26, HALO, '自転軸');
+    earthShape(ctx, pe.x, pe.y, 6, -P.m45.thSpin(t));
+    /* ★昼と夜★ 太陽はこの図のまん中（原点）にある */
+    (function () {
+      var ss = m45SunScr(cam, E, [0, 0, 0]);
+      m45Night(ctx, pe.x, pe.y, 6, ss.x, ss.y, HALO, false);
+    })();
+    label(ctx, '地球', pe.x + 10, pe.y + 15,
+      { size: 10, bold: true, color: '#9fd0ff', align: 'left', haloColor: HALO });
+    m45Foot(ctx, y1, [
+      { t: '★自転軸は、公転しても向きが変わりません', s: 9.5, c: '#e0c257' },
+      { t: '　黄道面に垂直な向きから 23.4° かたむいたまま', s: 9.5, c: '#e0c257' },
+      { t: '　→ 太陽のほうへ かたむく時期と、反対へ かたむく', s: 9 },
+      { t: '　　時期ができる。これが季節のもと', s: 9 },
+      { t: '※ ドラッグで向きを変えられます（はじめは真横から）', s: 9, c: '#8ea3b8' }
+    ], HALO);
+
+  } else if (which === 2) {
+    label(ctx, '【2】3次元で見る　月の軌道と赤道面', 10, y0 + 15,
+      { align: 'left', size: 11, bold: true, color: '#cfe0f0', haloColor: HALO });
+    /* 月の軌道の面は、黄道面から 5.1° かたむいている */
+    var im = 5.1 * DEG;
+    var nm = m45Unit([0, -Math.sin(im), Math.cos(im)]);
+    m45Disc(ctx, cam, [0, 0, 0], ECL, 1.0, 'rgba(120,150,190,.10)');
+    /* ★くらべる相手として、黄道面のふちも出す★
+       月の軌道（5.1°）と赤道面（23.4°）が、どちらから何度かたむいているかが分かる。 */
+    m45Ring(ctx, cam, [0, 0, 0], ECL, 1.0, 'rgba(140,165,200,.45)', [2, 4], 1);
+    m45Ring(ctx, cam, [0, 0, 0], nm, 1.0, fade(COL.orbit, 0.85), [5, 4], 1.3);
+    /* 赤道面（自転軸に垂直）。★地球より外へ出る大きさにすること★
+       小さくすると、地球の絵にかくれて「かたむき」がまったく見えない。 */
+    m45Ring(ctx, cam, [0, 0, 0], n, 0.34, 'rgba(120,190,255,.8)', [3, 3], 1.3);
+    /* 静止軌道は赤道面（自転軸に垂直）。月の軌道の 0.11 倍 */
+    if (s.o.showS) m45Ring(ctx, cam, [0, 0, 0], n, geo.a / moon.a, geo.col, null, 1.5);
+    m45AxisArrow(ctx, cam, [0, 0, 0], n, 0.50, HALO, '自転軸');
+    var p0 = cam.p(0, 0, 0);
+    /* ★地球は 5 px★ 8 px にすると、静止軌道（8 px）がすっぽりかくれる */
+    earthShape(ctx, p0.x, p0.y, 5, -P.m45.thSpin(t));
+    /* ★昼と夜★ 太陽はこの図の外（1.5 億 km 先）なので、
+       黄道面の中の「太陽の方向」へ十分に遠い点を置いて向きを出す。
+       月にもまったく同じ向きを使ってよい（40万 km ずれても 0.15° しか変わらない）。 */
+    var sd = m45SunDir(t), SUNFAR = [sd.x * 60, sd.y * 60, 0];
+    m45Night(ctx, p0.x, p0.y, 5, m45SunScr(cam, [0, 0, 0], SUNFAR).x,
+      m45SunScr(cam, [0, 0, 0], SUNFAR).y, HALO, false);
+    label(ctx, '地球', p0.x + 12, p0.y + 16,
+      { size: 10, bold: true, color: '#9fd0ff', align: 'left', haloColor: HALO });
+    /* 月 */
+    var thM = P.m45.thSat(moon, t);
+    var bm = m45Basis(nm), mu = bm[0], mw = bm[1];
+    var M = [mu[0] * Math.cos(thM) + mw[0] * Math.sin(thM),
+      mu[1] * Math.cos(thM) + mw[1] * Math.sin(thM),
+      mu[2] * Math.cos(thM) + mw[2] * Math.sin(thM)];
+    var pm = cam.p(M[0], M[1], M[2]);
+    planetShape(ctx, pm.x, pm.y, 5, moon.col);
+    (function () {
+      var ms = m45SunScr(cam, M, [SUNFAR[0], SUNFAR[1], 0]);
+      m45Night(ctx, pm.x, pm.y, 5, ms.x, ms.y, HALO, false);
+    })();
+    label(ctx, '月', pm.x, pm.y - 13,
+      { size: 10, bold: true, color: '#cbbfae', haloColor: HALO });
+    m45Foot(ctx, y1, [
+      { t: '青い輪＝赤道面（自転軸に垂直）', s: 9.5, c: '#8ec6ff' },
+      s.o.showS ? { t: '赤い輪＝静止軌道。赤道面の上にあります', s: 9.5, c: geo.col } : null,
+      { t: '灰色の輪＝黄道面（地球が太陽をまわる面）', s: 9 },
+      { t: '※ 月の軌道の面は、黄道面から 5.1° かたむいています', s: 9 },
+      { t: '※ ドラッグで向きを変えられます', s: 9, c: '#8ea3b8' }
+    ], HALO);
+
+  } else {
+    label(ctx, '【3】3次元で見る　人工衛星は赤道面の上', 10, y0 + 15,
+      { align: 'left', size: 11, bold: true, color: '#cfe0f0', haloColor: HALO });
+    var U3 = 46000;                             /* 長さ 1 ＝ 4.6万 km */
+    m45Disc(ctx, cam, [0, 0, 0], n, geo.a / U3 * 1.02, 'rgba(120,190,255,.10)');
+    /* 太陽の方向（黄道面の中）——赤道面とのかたむきが見える */
+    (function () {
+      var d = m45SunDir(t), L = 0.98;
+      m45Seg3(ctx, cam, [0, 0, 0], [d.x * L, d.y * L, 0], '#e8c96a', [6, 4], 1.4);
+      var q = cam.p(d.x * L, d.y * L, 0);
+      label(ctx, '太陽の方向', q.x, q.y - 9,
+        { size: 9, bold: true, color: '#e8c96a', haloColor: HALO });
+    })();
+    if (s.o.showS) {
+      M45_SATS.forEach(function (id) {
+        var x = m45Sat(id);
+        m45Ring(ctx, cam, [0, 0, 0], n, x.a / U3, fade(x.col, 0.8), [4, 4], 1.2);
+      });
+    }
+    m45AxisArrow(ctx, cam, [0, 0, 0], n, 1.02, HALO, '自転軸');
+    var pc = cam.p(0, 0, 0), Rp3 = P.m45.RE / U3 * M45_S3 * c.zoom;
+    earthShape(ctx, pc.x, pc.y, Rp3, -P.m45.thSpin(t));
+    (function () {
+      var d2 = m45SunDir(t), ss = m45SunScr(cam, [0, 0, 0], [d2.x * 60, d2.y * 60, 0]);
+      m45Night(ctx, pc.x, pc.y, Rp3, ss.x, ss.y, HALO, false);
+    })();
+    /* 人工衛星（赤道面の上を回る） */
+    if (s.o.showS) {
+      var be = m45Basis(n), eu = be[0], ew = be[1];
+      M45_SATS.forEach(function (id) {
+        var x = m45Sat(id), r = x.a / U3;
+        var th = (id === 'himawari') ? m45ThObs(t) : P.m45.thSat(x, t);
+        var Pp = [ (eu[0] * Math.cos(th) + ew[0] * Math.sin(th)) * r,
+          (eu[1] * Math.cos(th) + ew[1] * Math.sin(th)) * r,
+          (eu[2] * Math.cos(th) + ew[2] * Math.sin(th)) * r ];
+        var q = cam.p(Pp[0], Pp[1], Pp[2]);
+        planetShape(ctx, q.x, q.y, x.r * 0.85, x.col);
+        /* ★名前は上と下にふりわける★ 3つとも同じ線の上に乗るので、
+           同じ側に出すと必ず重なる（ISS は地表すれすれなので名前を出さない）。 */
+        if (id === 'himawari') {
+          label(ctx, x.short, q.x, q.y - 13,
+            { size: 9.5, bold: true, color: x.col, haloColor: HALO });
+        } else if (id === 'gps') {
+          label(ctx, x.short, q.x, q.y + 14,
+            { size: 9.5, bold: true, color: x.col, haloColor: HALO });
+        }
+      });
+    }
+    m45Foot(ctx, y1, [
+      { t: '★人工衛星は、どれも赤道面の上を回っています', s: 9.5, c: '#8ec6ff' },
+      { t: '　自転軸は、太陽の方向（黄道面）から 23.4° かたむく', s: 9 },
+      { t: '※ 地球の大きさも軌道と同じ縮尺（実物どおり）', s: 9 },
+      { t: '※ ドラッグで向きを変えられます', s: 9, c: '#8ea3b8' }
+    ], HALO);
+  }
 }
 
 /* ===== 「ここを拡大したのが次の図」を示す線 =====
@@ -12669,9 +13051,11 @@ function attach3dDrag() {
   }
   function inZone(ev, c) {
     if (c.d.drag3dFrom === undefined) return true;
+    /* ★drag3dFrom は関数でもよい★（4-5 は並べ方で 3次元の段の高さが変わる） */
+    var lim = (typeof c.d.drag3dFrom === 'function') ? c.d.drag3dFrom(c.s) : c.d.drag3dFrom;
     var r = cv.getBoundingClientRect();
     var ly = (ev.clientY - r.top) / r.height * (cv._ch || chOf(c.d, c.s));
-    return ly >= c.d.drag3dFrom;
+    return ly >= lim;
   }
   cv.addEventListener('pointerdown', function (ev) {
     var c = on3d();
@@ -12722,7 +13106,15 @@ function attachCvHits() {
     }
     return null;
   }
+  /* ★ドラッグしたあとの click では押さない★
+     3次元の図をぐるぐる回してから指を離した場所が、たまたまボタンの上だと
+     押したつもりがないのに切りかわってしまう。 */
+  var down = null;
+  cv.addEventListener('pointerdown', function (ev) { down = { x: ev.clientX, y: ev.clientY }; });
   cv.addEventListener('click', function (ev) {
+    var moved = down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 6;
+    down = null;
+    if (moved) return;
     var h = pick(ev);
     if (!h) return;
     h.fn(st.sims[st.cur]);
