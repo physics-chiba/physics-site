@@ -959,6 +959,40 @@ table.ktab th.kcol{background:#d9e7f6}
   .ytcell{max-width:100%}
 }
 
+
+/* =========================================================
+   「以下を説明できますか？」の一覧（d.explainList）
+   ---------------------------------------------------------
+   ★左に問い、その右に答え★ 答えははじめ閉じてあり、問いを押すと開く。
+   ★せまい画面では たてに積む★（左 260 px を確保できなくなるので）。
+   ★開け閉めは hidden 属性で行う★（JS は display をさわらない）。
+   ========================================================= */
+.card.explist{padding:12px 14px;margin:12px 0 0}
+.explist .exphead{font-weight:700;color:var(--accent-d);font-size:1.02rem;letter-spacing:.02em}
+.explist .expnote{margin:4px 0 10px;font-size:.8rem;color:var(--sub);line-height:1.7}
+.exprow{display:grid;grid-template-columns:320px minmax(0,1fr);gap:6px 14px;
+  align-items:start;padding:5px 0;border-top:1px dashed var(--line)}
+.exprow:first-of-type{border-top:0}
+/* ★問いの札は2行組み★ 1行目＝▶と問い、2行目＝どの図を見るか。
+   1行に押しこむと、「どの図か」が問いの文の途中に割りこんで、
+   「1日が『24時間』と『23 オレンジの「1日」 時間56分』の…」のように読めなくなる。 */
+.expq{display:grid;grid-template-columns:auto minmax(0,1fr);gap:1px 6px;width:100%;text-align:left;
+  padding:6px 9px;border:1px solid var(--line2);border-radius:var(--r-s);
+  background:var(--panel);color:var(--ink);font:inherit;font-size:.88rem;cursor:pointer;
+  line-height:1.6}
+.expq:hover{border-color:var(--accent);background:var(--accent-l);color:var(--accent-d)}
+.expq.on{border-color:var(--accent);background:var(--accent-l);color:var(--accent-d);font-weight:700}
+.expq .expmark{grid-column:1;grid-row:1;color:var(--accent);font-size:.72rem}
+.expq .expttl{grid-column:2;grid-row:1}
+.expq .expwhere{grid-column:2;grid-row:2;font-size:.72rem;color:var(--sub)}
+.expq.on .expwhere{color:var(--accent-d)}
+.expa{font-size:.86rem;line-height:1.9;color:var(--ink2);padding:6px 2px 2px}
+.expa b{color:var(--ink)}
+@media (max-width:760px){
+  .exprow{grid-template-columns:minmax(0,1fr)}
+  .expa{padding-left:16px;border-left:2px solid var(--accent-l)}
+}
+
 </style>
 </head>
 <body>
@@ -11051,7 +11085,13 @@ function m45NoteList(s, v) {
   a.push({ t: '【1】月の距離だけ大げさに描いています（本当は 1 AU の 0.26 %）。回る速さは本当の値です' });
   a.push({ t: '【2】地球だけ大きく描いています（軌道は本当の縮尺）。月の光っている側は いつも太陽のほう（＝月の満ち欠け）' });
   a.push({ t: '【3】約4.6万 km までを描いています。地球の大きさも軌道と同じ縮尺（実物どおり）' });
-  a.push({ t: '2段目（3次元）はドラッグで向きを変えられます。【2】月の軌道の面は、黄道面から 5.1° かたむいています' });
+  /* ★操作の案内は、この帯だけに書く★（先生の指示・2026-09-05 で、図の下の説明文を消したため）
+     ★左右には回せない★ 左右を自由にすると 1段目と左右が逆の向きにできてしまうので、
+     上下（横から〜真上）だけにしてある。 */
+  a.push({ t: '2段目（3次元）は、上下にドラッグすると「横から」〜「真上から」まで向きを変えられます'
+    + '（左右の向きは、白い帯の3つのボタンで切りかえます）' });
+  a.push({ t: 'それぞれの図の右上のボタンを押すと、その図だけを2倍の大きさで見られます' });
+  a.push({ t: '【2】月の軌道の面は、黄道面から 5.1° かたむいています' });
   a.push({ t: '【3】1段目は自転軸の方向から、2段目の「真上から見る」は公転軸の方向から見ています。'
     + 'この2つは 23.4° ちがうので、2段目では人工衛星の軌道が少しつぶれた形に見えます'
     + '（回る向きと位置は、1段目とぴったり同じです）' });
@@ -11193,17 +11233,80 @@ DEFS['m4-5'] = {
   id: 'm4-5', mode: 2, tab: '補足：地球と月の太陽まわりの運動', read: true,
   legendKeys: ['vel', 'dim', 'sun', 'orbit'],
   title: '補足：地球と月の太陽まわりの運動　—　多重回転',
-  sub: '人工衛星は地球のまわりを回っています。でも、その<b>地球ごと太陽のまわりを回って</b>います。' +
-    'しかも<b>地球自身も回っています（自転）</b>。<br>' +
-    '3つの図は<b>同じ時計</b>で動いています（縮尺だけが違います）。' +
-    '上のオレンジのボタンで<b>見る時間の長さ</b>を変えて、' +
-    '「どれがどれくらいの速さで回っているのか」をつかんでください。<br>' +
-    '<b>下の段は同じものを3次元にした図</b>です。はじめは<b>軌道面を真横から</b>見ています。' +
-    '<b>ドラッグするといろいろな向きから見られます</b>（オレンジのボタンでも切りかえられます）。' +
-    '<b>地球の自転軸が、公転の面に対して 23.4° かたむいている</b>ことに注目してください。<br>' +
-    '<b>それぞれの図の右上のボタン</b>を押すと、その図だけを<b>2倍の大きさ</b>で見られます。<br>' +
-    '<b>いちばんの見どころは、いちばん右の図の「ひまわり（静止衛星）」</b>。' +
-    '自転とぴったり同じ 23時間56分で回るので、<b>地上の目印の真上から動きません</b>。',
+  /* ★図の下は「説明文」ではなく「問いの一覧」にする★（先生の指示・2026-09-05）
+     前はここに長い説明文と運動方程式を置いていたが、
+       ・読んでも「何が分かる図なのか」が伝わらない
+       ・生徒は figures を動かす前に文章を読まない
+     ので、★このシミュレーションで説明できるようになることを、問いの形で並べる★
+     ことにした。答えははじめ閉じてあって、押すと開く（自分で考えてから開かせる）。
+     操作の案内（ドラッグ・拡大ボタン）は、図の下の「※」の帯にうつしてある。 */
+  explainHead: '以下を説明できますか？',
+  explainNote: '項目を押すと説明が出ます。まずは図を動かして、自分の言葉で言ってみましょう。',
+  explainList: [
+    { q: '月の満ち欠け',
+      w: '【2】',
+      a: '月の<b>光っている側は、いつも太陽のほう</b>です。' +
+        'その月を地球から見る角度が、1か月かけて一周します。' +
+        'だから見える「光った部分」の形が、新月→三日月→満月→…と変わります。' +
+        '<b>月そのものが欠けているのではありません</b>。' },
+    { q: '日食・月食が、毎月は起きないわけ',
+      w: '2段目【2】',
+      a: '毎月かならず新月と満月になるのに、食はめったに起きません。' +
+        '2段目を見ると、<b>月の軌道の面が、地球の軌道の面（黄道面）から 5.1° かたむいている</b>' +
+        'のが分かります。だからふつうは太陽・地球・月が一直線にならず、' +
+        '<b>2つの面が交わるところに月が来たときだけ</b>食になります。' },
+    { q: '四季があるわけ',
+      w: '2段目【1】',
+      a: '<b>自転軸は、公転しても向きを変えません</b>（いつも同じ方向を向いたまま）。' +
+        'だから1年のうちに「太陽のほうへかたむく時期」と「反対へかたむく時期」ができます。' +
+        'これが夏と冬。<b>地球と太陽の距離では説明できません</b>' +
+        '——【1】を見ると、軌道はほとんど円だと分かります。' },
+    { q: '昼の長さが季節で変わるわけ・白夜',
+      w: '2段目【1】',
+      a: '自転軸がかたむいていると、地上の1点が自転1回のうち<b>昼の側にいる時間</b>が、' +
+        '季節と緯度で変わります。夏は昼が長く、冬は短い。' +
+        '極に近いところでは、<b>1日じゅう昼（白夜）</b>や 1日じゅう夜にもなります。' },
+    { q: '潮の満ち引き（大潮・小潮）',
+      w: '【2】',
+      a: '海のふくらみは月のほうと、その反対がわにできます。' +
+        '地球が1回まわるあいだに<b>同じ場所が2回そこを通る</b>ので、満潮は1日に約2回。' +
+        'さらに【2】で<b>太陽・地球・月が一直線</b>（新月・満月）のときは差が大きく（大潮）、' +
+        '<b>直角</b>（半月）のときは小さくなります（小潮）。' },
+    { q: '静止衛星が「止まって見える」わけ',
+      w: '【3】',
+      a: 'ひまわりの周期は <b>23時間56分＝地球の自転の周期</b>。' +
+        'だから地上の観測者（ピンクの人）の<b>真上から動きません</b>。' +
+        '2段目を見ると、<b>軌道はかならず赤道面の上</b>にあることも分かります' +
+        '（日本の真上ではなく、赤道の上空にいます）。' },
+    { q: '1日が「24時間」と「23時間56分」の2つあるわけ',
+      w: 'オレンジの「1日」',
+      a: '自転が1回まわるのにかかる時間は <b>23時間56分</b>。' +
+        'でも、そのあいだに<b>地球は公転でも少し進む</b>ので、' +
+        '太陽が同じ方角に戻るには、あと4分ぶん余分に回らなければなりません。' +
+        'これが<b>24時間</b>。星でくらべるか、太陽でくらべるかの違いです。' },
+    { q: 'ケプラーの第3法則が、地球のまわりでも成り立つこと',
+      w: '下の表',
+      a: 'ISS・ハッブル・GPS・ひまわり・月で <b>$T^2/a^3$ がそろいます</b>。' +
+        '1行目の「地球の公転」だけ値が違うのは、まわっている中心が太陽だから。' +
+        '<b>「同じ天体のまわりを回るもの同士」でそろう</b>、というのが第3法則の意味です。' },
+    { q: '遠いものほど、ゆっくり回ること',
+      w: '【3】',
+      a: 'ISS 92分 → GPS 11.97時間 → ひまわり 23時間56分 → 月 27.3日。' +
+        '<b>$v=\\sqrt{GM/r}$</b> なので、遠いほど速さも小さく、まわる道のりも長い。' +
+        'だから周期はぐんと長くなります。' },
+    { q: '「どこから見るか」で、運動の見え方が変わること',
+      w: '3つの図',
+      a: '月は地球のまわりを 1.02 km/s で回りながら、' +
+        '<b>地球ごと 29.8 km/s で太陽のまわりを進んでいます</b>。' +
+        '太陽から見ると、月の道すじは輪をえがかず<b>少しくねくねした円</b>になります。' +
+        '同じ運動が、基準にする物を変えるとまったく違う形に見える' +
+        '——力学でいちばん大事な考え方の1つです。' },
+    { q: '宇宙は、思ったより近いこと',
+      w: '【3】',
+      a: '【3】だけは<b>地球の大きさも軌道も、同じ（本当の）縮尺</b>で描いてあります。' +
+        'ISS は地表すれすれ、静止衛星でも地球の半径の 6.6 倍。' +
+        '「宇宙」と言われて思いうかべる距離より、ずっと近いことが目で分かります。' }
+  ],
   sideText:
     '<span class="q">【物理ミニコラム】地球と月の太陽まわりの運動　—　多重回転</span>' +
     'いま、みなさんは<b>「何重」の回転の中</b>にいますか？' +
@@ -11270,6 +11373,12 @@ DEFS['m4-5'] = {
      はじめは真横から（el = 0）＝軌道面を横から見た図。
      drag3dFrom より下だけがドラッグの対象。上の段（真上から見た図）はさわらない。 */
   drag3d: true,
+  /* ★上下（仰角）だけ★ 左右に回せると、2段目だけ 1段目と左右が逆の向きに
+     できてしまって混乱するので、方位角はボタンで決めうちにする（先生の指示）。
+     ★ホイールの拡大縮小もしない★ 図ごとの「拡大スイッチ」だけにして、
+     3つの図の縮尺がばらばらにならないようにする。 */
+  drag3dElOnly: true,
+  drag3dNoZoom: true,
   cam3d: { az: 0, el: 0, zoom: 1 },
   drag3dFrom: function (s) { return m45Drag3dFrom(s); },
   /* ★図の上の「拡大スイッチ」の当たり判定★
@@ -11544,10 +11653,8 @@ DEFS['m4-5'] = {
       ['月が回った回数', fmt(t / m45Sat('moon').T, 3) + ' 回']
     ];
   },
-  eq: function () {
-    return '\\dfrac{mv^2}{r} = G\\dfrac{Mm}{r^2} \\;\\Rightarrow\\; ' +
-      'v = \\sqrt{\\dfrac{GM}{r}},\\quad T = 2\\pi\\sqrt{\\dfrac{r^3}{GM}}';
-  }
+  /* ★運動方程式のカードは出さない★（先生の指示・2026-09-05）
+     図の下は「説明できますか？」の一覧だけにして、式はミニコラム（sideText）で扱う。 */
 };
 
 /* ===== 昼と夜（太陽と反対がわを暗く塗る）=====
@@ -11861,7 +11968,7 @@ function m45Panel3D(ctx, s, v, t, W, y0, y1, HALO, which) {
       m45SunScr(cam, [0, 0, 0], SUNFAR).y, HALO, false);
     /* 地上の観測者（赤道の上）。1段目の【2】【3】と同じ角で立たせるので、
        上下の段で「同じ人が同じ場所にいる」ように見える。 */
-    if (s.o.showO) m45Person3(ctx, cam, n, m45ThObs(t), 5, M45_S3 * c.zoom, 10);
+    if (s.o.showO) m45Person3(ctx, cam, n, m45ThObs(t), 5, M45_S3 * c.zoom, 8);
     label(ctx, '地球', p0.x + 12, p0.y + 16,
       { size: 10, bold: true, color: '#9fd0ff', align: 'left', haloColor: HALO });
     /* 月 */
@@ -12676,11 +12783,9 @@ function buildPanel() {
   var focList = mainList.filter(function (vd) { return vd.focus; });
   if (focList.length) {
     /* 変数の名前をならべると、下のスライドバーの名前と二重になって読みにくい
-       （先生の指摘・2026-09-05）。「↓」を focus の数だけ出して、
-       すぐ下のスライドバーを指させる。 */
-    h.push('<div class="focbar">まずここ　' +
-      focList.map(function () { return '↓'; }).join(' や ') +
-      ' を動かしてみよう</div>');
+       （先生の指摘・2026-09-05）。「↓」1つだけを出して、
+       すぐ下の（オレンジで目立たせた）スライドバーを指させる。 */
+    h.push('<div class="focbar">まずここ　↓ を動かしてみよう</div>');
   }
   h.push('<div class="cvvars' + (twoCol ? ' two' : '') + '" id="cvvars">');
   if (twoCol) h.push(varsTwoColHtml(mainList));
@@ -12743,6 +12848,27 @@ function buildPanel() {
   if (d.eq) h.push('<div class="eq" id="eqbox"></div>');
   /* 式の下の注釈（高校で習わない記号の説明など）。d.eqNote に書く */
   if (d.eqNote) h.push('<p class="eqnote">' + mathHtml(d.eqNote) + '</p>');
+  /* ★d.explainList＝「以下を説明できますか？」の一覧★（先生の指示・2026-09-05）
+     [{ q:'問い', w:'どの図を見ればよいか', a:'答え（HTML）' }, …]
+     左に問いを たてに並べ、その右に答えを置く。答えははじめ閉じてあり、
+     問いを押すと開く（自分で考えてから答えを見る、という順番にするため）。
+     ★長い説明文のかわり★なので、置く場所も前の説明文と同じ（図のすぐ下）。 */
+  if (d.explainList && d.explainList.length) {
+    h.push('<div class="card explist">');
+    h.push('<div class="exphead">' + mathHtml(d.explainHead || '以下を説明できますか？') + '</div>');
+    if (d.explainNote) h.push('<p class="expnote">' + mathHtml(d.explainNote) + '</p>');
+    d.explainList.forEach(function (e, i) {
+      h.push('<div class="exprow">' +
+        '<button type="button" class="expq" data-exp="' + i + '" id="expq_' + i + '"' +
+        ' aria-expanded="false">' +
+        '<span class="expmark">▶</span><span class="expttl">' + mathHtml(e.q) + '</span>' +
+        (e.w ? '<span class="expwhere">見るところ：' + mathHtml(e.w) + '</span>' : '') +
+        '</button>' +
+        '<div class="expa" id="expa_' + i + '" hidden>' + mathHtml(e.a) + '</div>' +
+        '</div>');
+    });
+    h.push('</div>');
+  }
   h.push('</div><div class="side">');
 
   /* 右列 ⓪ 入試問題の読み解き（モード3）。★グラフより上に置く★
@@ -13019,6 +13145,7 @@ function buildPanel() {
   var mcv = $('mainCv');
   if (mcv && !mcv._dragOn) { mcv._dragOn = true; attachSimDrag(); attach3dDrag(); attachCvHits(); }
   attachYt();
+  attachExp();
 
   setPlayLabel();
   $('bSlow').className = s.slow ? '' : 'sub';
@@ -13306,7 +13433,13 @@ function attach3dDrag() {
     if (!c || !last) return;
     var dx = ev.clientX - last.x, dy = ev.clientY - last.y;
     last = { x: ev.clientX, y: ev.clientY };
-    c.s.cam.az = (c.s.cam.az - dx * 0.32 + 540) % 360 - 180;
+    /* ★d.drag3dElOnly＝上下（仰角）だけ回せる★（先生の指示・2026-09-05）
+       4-5 は 1段目（真上から見た図）と 2段目（3次元）をならべているので、
+       左右（方位角 az）まで自由に回せると、2段目だけ左右が逆さまになった
+       向きにできてしまい、「1段目とぴったり同じ」が崩れて混乱する。
+       だから 4-5 では az をドラッグで変えさせない（＜軌道を横から見る＞
+       などのボタンで決めうちの向きにだけ切りかえる）。 */
+    if (!c.d.drag3dElOnly) c.s.cam.az = (c.s.cam.az - dx * 0.32 + 540) % 360 - 180;
     c.s.cam.el = clamp(c.s.cam.el - dy * 0.26, 0, 90);   /* 90° ＝ 完全に真上 */
     renderActive(); ev.preventDefault();
   });
@@ -13316,6 +13449,10 @@ function attach3dDrag() {
   cv.addEventListener('wheel', function (ev) {
     var c = on3d();
     if (!c || !inZone(ev, c)) return;
+    /* ★d.drag3dNoZoom＝ホイールの拡大縮小をやめる★（先生の指示・2026-09-05）
+       4-5 は図ごとに右上の「拡大スイッチ」があるので、ホイールでも大きさが
+       変わると 3つの図の縮尺がばらばらになり、見くらべができなくなる。 */
+    if (c.d.drag3dNoZoom) return;
     c.s.cam.zoom = clamp(c.s.cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.5, 3.0);
     renderActive(); ev.preventDefault();
   }, { passive: false });
@@ -13341,6 +13478,24 @@ function attachYt() {
       f.setAttribute('allowfullscreen', '');
       f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
       box.replaceChild(f, b);
+    });
+  });
+}
+
+/* ===== 「以下を説明できますか？」の開け閉め =====
+   ★はじめは全部閉じておくこと★（自分で考えてから答えを見る、という順番のため）。
+   開け閉めは hidden 属性でやる（display を直接いじらない）。 */
+function attachExp() {
+  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-exp]'), function (b) {
+    b.addEventListener('click', function () {
+      var i = b.getAttribute('data-exp'), a = $('expa_' + i);
+      if (!a) return;
+      var open = a.hidden;
+      a.hidden = !open;
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      b.className = open ? 'expq on' : 'expq';
+      var m = b.querySelector('.expmark');
+      if (m) m.textContent = open ? '▼' : '▶';
     });
   });
 }
