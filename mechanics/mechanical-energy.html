@@ -1568,6 +1568,36 @@ P.hitSpring = {
   }
 };
 
+/* ============ 1-14 水平ばねから発射（★第19回・新規★）============
+   なめらかな水平面。ばねを x0 だけ縮めた所から静かにはなす。
+   ・A（スタート・縮めた状態）→ B（自然の長さ。ここでばねから離れる）
+     ：単振動の4分の1周期。★½k x0² = ½m v_B²★ → v_B = x0√(k/m)
+   ・B → C（そのまま等速直線運動）
+     ：はたらく力は重力と垂直抗力だけで、どちらも運動の向きに垂直＝仕事は 0。
+       だから K も E も変わらない。★B と C のエネルギーはまったく同じ★
+   1-10「水平ばねにぶつかる」の【逆向き】。1-10 は K → U_k、こちらは U_k → K。
+   高さは変わらないので U_g = 0（基準面＝水平面）。 */
+P.launch = {
+  LC: 2.2,          /* B から C までの距離［m］（等速で走る。絵の都合で固定） */
+  LEND: 2.9,        /* アニメの終わり［m］。C で止めると「C で止まる」と誤解されるため */
+  om: function (v) { return Math.sqrt(v.k / v.m); },
+  vB: function (v) { return v.x0 * P.launch.om(v); },            /* ★式で出す★ = x0√(k/m) */
+  t1: function (v) { return Math.PI / 2 / P.launch.om(v); },     /* ばねから離れる時刻 */
+  tC: function (v) { return P.launch.t1(v) + P.launch.LC / P.launch.vB(v); },
+  tEnd: function (v) { return P.launch.t1(v) + P.launch.LEND / P.launch.vB(v); },
+  sample: function (v, t) {
+    var om = P.launch.om(v), t1 = P.launch.t1(v), u, spd, sg;
+    if (t <= t1) {
+      /* ばねの上：u = −x0 cos(ωt)（自然の長さの位置を 0、右を正とする） */
+      u = -v.x0 * Math.cos(om * t); spd = v.x0 * om * Math.sin(om * t); sg = 0;
+    } else {
+      u = P.launch.vB(v) * (t - t1); spd = P.launch.vB(v); sg = 1;
+    }
+    return EN.mix(v, { x: u, y: 0, v: spd, vs: spd, h: 0,
+      sp: Math.max(0, -u), w: 0, seg: sg });        /* sp＝ばねの縮み（正の値） */
+  }
+};
+
 /* ============ 1-11 水平ばねと滑台（★第5回・新規★）============
    なめらかな面。ばねを x0 だけ縮めて静かにはなす。
    ・A（スタート・縮めた状態）→ B（自然長にもどってばねから離れる瞬間）
@@ -2853,7 +2883,7 @@ var MODES = [
   { n: 1, label: '1　非保存力が仕事をしないケース（力学的エネルギーが保存される）',
     tip: '重力や弾性力（＝<b>保存力</b>）だけが仕事をしています。垂直抗力や糸の張力は運動の向きに垂直なので仕事をしません。だから <b>E = K + U は一定</b>。',
     ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6', 'm1-7', 'm1-8', 'm1-9', 'm1-10',
-      'm1-11', 'm1-12', 'm1-13'] },
+      'm1-11', 'm1-12', 'm1-13', 'm1-14'] },
   { n: 2, label: '2　非保存力が仕事をするケース（力学的エネルギーが保存されない）',
     tip: '摩擦力や手の力（＝<b>非保存力</b>）が仕事をしたら？',
     ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4', 'm2-5'] }
@@ -4030,6 +4060,9 @@ var SC_COAST = 15.5;   /* 第6回：図が左に寄って右があいていた�
 /* 1-10 水平ばねにぶつかる／1-11 水平ばねと滑台 の縮尺 [px/m]。どちらも固定。 */
 var SC_HIT = 215;   /* 第9回：右があいていたので大きくした（壁の右はしが 578 px で、地面の右はし 624 px に入る） */
 var SC_SPSL = 84;
+/* 1-14 水平ばねから発射の縮尺 [px/m]。固定。
+   ばねの自然の長さ 1.1 m ＋ 走る距離 2.9 m ＝ 4.0 m が、地面の中におさまる値。 */
+var SC_LAUNCH = 134;
 
 /* ============ 1-1 摩擦のない水平面 ============ */
 DEFS['m1-1'] = {
@@ -6224,6 +6257,171 @@ DEFS['m1-13'] = {
     'だから A・B・C・D の<b>どこでも $E$ は同じ</b>。高さが低いほど速く、高いほど遅くなります。' +
     '<b>最高点 D でも運動エネルギーは 0 になりません</b>——飛び出す向きが 60° なので、' +
     '水平方向の速さ $v_C\\cos 60°$ が残るからです。'
+};
+
+
+/* ============ 1-14 水平ばねから発射（★第19回・新規★）============ */
+DEFS['m1-14'] = {
+  id: 'm1-14', mode: 1, tab: '1-14 水平ばねから発射',
+  title: '1-14　水平ばねから発射',
+  sub: 'なめらかな水平面。ばねを $x_0$ だけ縮めた所（A）で、静かに手をはなします。' +
+    'ばねが自然の長さにもどったところ（B）で物体は<b>ばねから離れ</b>、' +
+    'そのあとは<b>等速直線運動</b>をします（C）。仕事をするのは<b>弾性力（保存力）だけ</b>' +
+    '（重力と垂直抗力は運動の向きに垂直）。だから <b>$E=K+U_k$ は一定</b>で、' +
+    '<b>$\\tfrac12kx_0^{\\,2}$ がそのまま $\\tfrac12mv_B^{\\,2}$ に変わります</b>。',
+  cw: 700, ch: 380,
+  vis: ['F', 'V', 'A'],
+  hasUs: true,
+  mainVars: ['x0', 'k'],
+  mainVarFocus: 'x0',
+  vars: [
+    { k: 'x0', label: 'はじめの縮み $x_0$', unit: ' m', min: 0.30, max: 0.70, step: 0.05, dec: 2, def: 0.50 },
+    { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 20, max: 60, step: 5, dec: 0, def: 40 },
+    { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 2.0, step: 0.25, dec: 2, def: 1.0 }
+  ],
+  /* ヒントの「2倍」がそのまま押せるようにする（第13回の決めごと）。
+     x0 は 0.30〜0.70 m なので、0.30 → 0.60 がちょうど2倍。 */
+  actions: [
+    { label: '小さく縮める（x₀＝0.30 m）', fn: function (s) { s.v.x0 = 0.30; },
+      is: function (v) { return Math.abs(v.x0 - 0.30) < 1e-9; },
+      next: function (s) { return s._played && Math.abs(s.v.x0 - 0.30) > 1e-9; } },
+    { label: 'その2倍に（x₀＝0.60 m）', fn: function (s) { s.v.x0 = 0.60; },
+      is: function (v) { return Math.abs(v.x0 - 0.60) < 1e-9; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.x0 = 0.50; s.v.k = 40; s.v.m = 1.0; },
+      is: function (v) { return Math.abs(v.x0 - 0.50) < 1e-9 && v.k === 40 && Math.abs(v.m - 1) < 1e-9; } }
+  ],
+  cons: true,
+  forces: ['g', 'N', 'sp'],
+  hintFig: '<b>ばねにためた $\\tfrac12kx_0^{\\,2}$ が、そのまま $\\tfrac12mv_B^{\\,2}$ に変わる</b>' +
+    '（離れたあとは、もう変わらない）',
+  step1: '弾性力（保存力）だけが仕事をする。重力と垂直抗力は運動の向きに垂直。' +
+    'ばねから離れたあとは、仕事をする力がない',
+  datum: '水平面（高さは変わらないので $U_g = 0$）',
+  hint2: '<b>次は</b>：$x_0$ を変えて、<b>飛び出す速さ</b> $v_B = x_0\\sqrt{k/m}$ が' +
+    'どう変わるか見てみよう（$x_0$ を <b>0.30 m → 0.60 m</b> と2倍にすると？）。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.launch.tEnd(v); },
+  sample: function (v, t) { return P.launch.sample(v, t); },
+  pts: [
+    { name: 'A', jp: 'スタート（縮めた所）', t: function () { return 0; },
+      sym: { K: '0', Ug: '0', Us: '\\tfrac{1}{2}kx_0^{\\,2}' } },
+    { name: 'B', jp: 'ばねから離れる所（自然の長さ）', t: function (v) { return P.launch.t1(v); },
+      sym: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: '0', Us: '0' } },
+    { name: 'C', jp: '等速直線運動しているとき', t: function (v) { return P.launch.tC(v); },
+      sym: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: '0', Us: '0' } }
+  ],
+  draw: function (ctx, s, t, W, H) {
+    var d = DEFS['m1-14'], v = V(s), m = d.sample(v, t);
+    /* 地面の下に「吹きだしの帯」（PTBAND）をあけて、A → B → C を左から順にならべる（第6回） */
+    var SC = SC_LAUNCH, gy = H - 78 - PTBAND, wallX = 56, LN = 1.1;
+    var natX = wallX + LN * SC;
+    function X(u) { return natX + u * SC; }         /* u＝自然の長さからのずれ［m］（右が正） */
+    var kz = mSize(d, v), bw = 34 * kz, bh = 26 * kz;
+    var LC = P.launch.LC, vB = P.launch.vB(v);
+
+    ground(ctx, 20, W - 96, gy);
+    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
+    /* 壁（ばねの左はしを止める） */
+    ctx.save();
+    ctx.fillStyle = '#d7dde4'; ctx.fillRect(wallX - 16, gy - 104, 16, 104);
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.4; ctx.strokeRect(wallX - 16, gy - 104, 16, 104);
+    ctx.restore();
+    /* 自然の長さの位置（＝ばねから離れる所） */
+    ctx.save();
+    ctx.strokeStyle = '#9aa3ac'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(natX, gy - 118); ctx.lineTo(natX, gy + 4); ctx.stroke();
+    ctx.restore();
+    label(ctx, '自然の長さの位置', natX, gy - 126, { size: 11, color: COL.sub });
+    /* ★物体の上は「速度（gy−66）→ 加速度（gy−102）」の帯なので、寸法線は地面の下に置く★
+       （第17回で決めた3段の置き方をくずさないため） */
+
+    var cx = X(m.x), cy = gy - bh / 2;
+    /* ばね（自然の長さより縮んでいるときだけ物体につながる） */
+    var sEnd = X(Math.min(0, m.x));
+    spring(ctx, wallX, cy, sEnd, cy, { coils: 10, r: 10, color: COL.hand, lw: 2 });
+
+    /* ★点の印は地面の下に出す★（物体と重なると読めない・第6回） */
+    var mk = { A: X(-v.x0), B: natX, C: X(LC) };
+    ptMark(ctx, 'A', mk.A, gy + 17);
+    ptMark(ctx, 'B', mk.B, gy + 17);
+    ptMark(ctx, 'C', mk.C, gy + 17);
+    blockShape(ctx, cx, cy, 0, bw, bh, '#e8eef5');
+    /* 寸法線は地面の下に1本だけ。ばねの上にいるあいだは【いまの縮み x】、
+       ばねから離れたあとは【式に出てくる x_0】を、空になったばねの所に残す。
+       （第11回：x = 0.00 m が動かずに残ると「いまの縮み」と読めてしまうので出さない） */
+    if (m.sp > 0.004) {
+      arrow(ctx, natX, gy + 18, X(-m.sp), gy + 18, 'dim');
+      label(ctx, 'x = ' + fmt(m.sp, 2) + ' m', (natX + X(-m.sp)) / 2, gy + 32,
+        { size: 11, color: COL.dim });
+    } else {
+      arrow(ctx, X(-v.x0), gy + 18, natX, gy + 18, 'dim');
+      arrow(ctx, natX, gy + 18, X(-v.x0), gy + 18, 'dim');
+      label(ctx, 'x_0 = ' + fmt(v.x0, 2) + ' m', (natX + X(-v.x0)) / 2, gy + 32,
+        { size: 11, color: COL.dim });
+    }
+
+    /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
+    var mg = v.m * G, fs = 30 / mg;
+    function fAt(qq, ax) {
+      arrow(ctx, ax, cy, ax, cy + mg * fs, 'force');
+      label(ctx, 'mg', ax, cy + mg * fs + 11, { size: 11.5, color: COL.force });
+      arrow(ctx, ax, gy, ax, gy - mg * fs, 'force', 1, COL.norm);
+      label(ctx, 'N', ax + bw / 2 + 8, gy - mg * fs + 4,
+        { align: 'left', size: 11.5, color: COL.norm });
+      if (qq.sp > 0.004) {
+        var fl = clamp(v.k * qq.sp * fs * 0.5, 6, 78);
+        arrow(ctx, ax - bw / 2, cy, ax - bw / 2 + fl, cy, 'force', 1, COL.hand);
+        label(ctx, '弾性力 kx', ax - bw / 2 + fl / 2, cy - 15, { size: 11, color: COL.hand });
+      }
+    }
+    if (s.o.showF) fAt(m, cx);
+    if (s.o.showV && m.v > 0.05) {
+      /* ★物体から離して出す★（ブロックの上 bh/2 + 40 px） */
+      var vl = vArrowLen(m.v, Math.max(0.5, vB), 48);
+      var va = velArrow(ctx, cx, cy, 0, -1, bh / 2 + 40, 1, 0, vl);
+      label(ctx, 'v', va.tx + 10, va.ty, { size: 11.5, color: COL.vel });
+    }
+    if (s.o.showA) {
+      /* ばねの上だけ加速する。離れたあとは a = 0（等速直線運動） */
+      if (m.sp > 0.004) drawAcc(ctx, cx, cy, v.k * m.sp / v.m, 0, { nx: 0, ny: -1, off: bh / 2 + 76 });
+      else label(ctx, 'a = 0（等速直線運動）', cx, cy - bh / 2 - 76,
+        { size: 11.5, color: COL.acc, avoid: true });
+    }
+    drawClock(ctx, W, t);
+    drawEnergyBar(ctx, d, s, t, W, H, m);
+    ptRow(gy + 50);                   /* 吹きだしは地面の下に1列。物体の mg の字より下に置く */
+    drawPts(ctx, d, s, t, function (p) {
+      var ux = mk[p.name], q = d.sample(v, p.t);
+      return { x: ux, y: gy - 10, ox: ux, oy: gy - bh / 2, bw: bw, bh: bh,
+        fdraw: function () { fAt(q, ux); },
+        vx: 1, vy: 0, vref: Math.max(0.5, vB), vk: 48, voff: bh / 2 + 40 };
+    });
+  },
+  resItems: function (v) {
+    return [
+      { k: '飛び出す速さ（式 $x_0\\sqrt{k/m}$）', v: fmt(P.launch.vB(v), 2) + ' m/s' },
+      { k: 'ばねにためたエネルギー $\\tfrac12kx_0^{\\,2}$', v: fmtJ(EN.Us(v.k, v.x0)) },
+      { k: 'ばねから離れる時刻', v: fmt(P.launch.t1(v), 2) + ' s' }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m1-14'].sample(v, t);
+    return [
+      ['ばねの縮み $x$', fmt(m.sp || 0, 3) + ' m'],
+      ['弾性力 $kx$', fmt(v.k * (m.sp || 0), 1) + ' N'],
+      ['ばねから離れる時刻', fmt(P.launch.t1(v), 2) + ' s']
+    ];
+  },
+  eq: function (s) {
+    var v = V(s);
+    return '\\tfrac{1}{2}kx_0^{\\,2} = \\tfrac{1}{2}mv_B^{\\,2} \;\\Rightarrow\; ' +
+      'v_B = x_0\\sqrt{\\dfrac{k}{m}} = ' + fmt(P.launch.vB(v), 2) + '\\ \\mathrm{m/s}';
+  },
+  note: '1-10「水平ばねにぶつかる」の<b>逆向き</b>です。1-10 は $K \\to U_k$、こちらは $U_k \\to K$。' +
+    'A では $U_k$ だけ、B では $K$ だけ。<b>B から先は、はたらく力（重力と垂直抗力）が' +
+    'どちらも運動の向きと垂直</b>なので仕事は 0。だから <b>C のエネルギーは B とまったく同じ</b>で、' +
+    '速さも変わりません（等速直線運動）。飛び出す速さは <b>$v_B = x_0\\sqrt{k/m}$</b> なので、' +
+    '$x_0$ を2倍にすると速さも<b>2倍</b>になります。'
 };
 
 /* ===== 60_mode2.js ===== */
@@ -9055,6 +9253,21 @@ function tick(ts) {
       r.hit_Us_at_C = +P.hitSpring.sample(hs1, P.hitSpring.tC(hs1)).Us.toFixed(6);
       r.hit_E0 = +P.hitSpring.sample(hs1, 0).E.toFixed(6);
       r.drift_hit = drift('m1-10', hs1);
+
+      /* ===== 1-14 水平ばねから発射（第19回・新規） ===== */
+      var lc1 = { x0: 0.50, k: 40, m: 1.0 };
+      r.lau_vB = +P.launch.sample(lc1, P.launch.t1(lc1)).v.toFixed(6);
+      r.lau_vB_formula = +P.launch.vB(lc1).toFixed(6);
+      r.lau_Us0 = +P.launch.sample(lc1, 0).Us.toFixed(6);
+      r.lau_K_at_B = +P.launch.sample(lc1, P.launch.t1(lc1)).K.toFixed(6);
+      /* ★B から C までは仕事をする力がない → K も速さもまったく同じ★ */
+      r.lau_K_at_C = +P.launch.sample(lc1, P.launch.tC(lc1)).K.toFixed(6);
+      r.lau_v_at_C = +P.launch.sample(lc1, P.launch.tC(lc1)).v.toFixed(6);
+      /* ★x0 を2倍にすると v_B も2倍★ */
+      r.lau_v_ratio = +(P.launch.vB({ x0: 0.60, k: 40, m: 1 }) /
+        P.launch.vB({ x0: 0.30, k: 40, m: 1 })).toFixed(6);
+      r.drift_lau = drift('m1-14', lc1);
+      r.drift_laub = drift('m1-14', { x0: 0.30, k: 60, m: 2.0 });
 
       /* ===== 1-11 水平ばねと滑台 ===== */
       var ss1 = { x0: 0.75, k: 35, m: 1.0 };
