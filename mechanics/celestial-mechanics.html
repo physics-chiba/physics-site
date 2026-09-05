@@ -926,6 +926,39 @@ table.ktab th.kcol{background:#d9e7f6}
   font-size:.79rem;line-height:1.8;color:var(--ink2)}
 .lawbox .lawnote b{color:var(--accent-d)}
 
+
+/* =========================================================
+   タイトルのすぐ下に置く読み物（d.topCard）と、YouTube の動画
+   ---------------------------------------------------------
+   ★ページを開いただけでは YouTube を読みにいかない★
+     ふだんは .ytbox（自前の板）だけ。押されたら JS が iframe に差しかえる。
+     これで「外部リクエスト 0・完全オフラインで動く」という決まりを守れる。
+   ========================================================= */
+.card.topcard{padding:12px 14px;margin:10px 0 0}
+.ytrow{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
+.ytcell{flex:1 1 260px;min-width:230px;max-width:420px;display:flex;flex-direction:column;gap:5px}
+.ytnote{flex:1 1 300px;min-width:250px;font-size:.9rem;line-height:1.85}
+.ytnote b{color:var(--accent-d)}
+.ytnote .ytwarn{display:block;font-size:.78rem;color:var(--sub);margin-top:8px;line-height:1.6}
+/* 押す前の板（16:9）。押すと同じ大きさの iframe に入れかわる */
+.ytbox,.ytframe{width:100%;aspect-ratio:16/9;border-radius:var(--r-m);border:1px solid var(--line);
+  display:block}
+.ytbox{background:linear-gradient(160deg,#1d2b3c,#0d1626);color:#e8eef4;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  font-size:.9rem;font-weight:700;font-family:inherit;padding:8px}
+.ytbox:hover{background:linear-gradient(160deg,#26374c,#111c30);border-color:var(--accent)}
+.ytbox .ytmark{display:block;width:54px;height:38px;border-radius:9px;background:#e0402f;
+  position:relative}
+.ytbox .ytmark::after{content:"";position:absolute;left:21px;top:11px;
+  border-left:15px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent}
+.ytbox .ytsub{font-size:.74rem;font-weight:400;color:#9fb4cc;line-height:1.5;text-align:center}
+.ytframe{border:0}
+.ytcap{font-size:.8rem;color:var(--sub);margin:0;line-height:1.6}
+.ytcap a{color:var(--accent);text-decoration:underline}
+@media (max-width:640px){
+  .ytcell{max-width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -3606,9 +3639,12 @@ function colImg(key, alt, cap) {
 }
 
 /* 図の右上に時刻を出す（全シミュレーションで位置をそろえる）。
-   法則の帯（drawLawBanner）を出す図では、帯の下になるように y を指定する。 */
-function drawClock(ctx, W, txt, y) {
-  label(ctx, txt, W - 10, (y === undefined ? 18 : y), { align: 'right', size: 13.5, bold: true });
+   法則の帯（drawLawBanner）を出す図では、帯の下になるように y を指定する。
+   背景が暗い図（星空）では opt に {color:'#e8eef4', haloColor:HALO} をわたす。 */
+function drawClock(ctx, W, txt, y, opt) {
+  var o = { align: 'right', size: 13.5, bold: true };
+  if (opt) { if (opt.color) o.color = opt.color; if (opt.haloColor) o.haloColor = opt.haloColor; }
+  label(ctx, txt, W - 10, (y === undefined ? 18 : y), o);
 }
 
 /* ===== 法則の帯 =====
@@ -4075,6 +4111,11 @@ DEFS['m1-1'] = {
 /* 1-1 上から見た太陽系 */
 function m11DrawTop(ctx, s, t, W, H) {
   var v = V(s), view = m11View(v), list = m11Bodies(v), i;
+  /* 背景は宇宙（濃紺＋星）。「補足：地球と月の太陽まわりの運動」と同じ見た目にそろえる。
+     暗い背景なので、文字はすべて明るい色＋濃いハロー（HALO）で書くこと。 */
+  var HALO = 'rgba(13,22,38,.92)';
+  ctx.save(); ctx.fillStyle = '#0d1626'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  starField(ctx, 0, 0, W, H, 90, 20260905);
   var cx = W / 2, cy = H / 2 + 6;
   var Rpx = Math.min(W - 40, H - 46) / 2;
   var rmax = 0;
@@ -4095,7 +4136,7 @@ function m11DrawTop(ctx, s, t, W, H) {
   /* ものさし（うすい円） */
   var rings = lg ? [0.4, 1, 5, 10, 30, 50] : (rmax > 12 ? [1, 5, 10, 20, 30] : [0.5, 1, 1.5]);
   ctx.save();
-  ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(180,198,220,.30)'; ctx.lineWidth = 1;
   rings.forEach(function (r) {
     if (r > rmax * 1.02) return;
     ctx.beginPath(); ctx.arc(cx, cy, rpx(r), 0, TAU); ctx.stroke();
@@ -4105,7 +4146,7 @@ function m11DrawTop(ctx, s, t, W, H) {
     if (r > rmax * 1.02 || rpx(r) < 56) return;   /* 中心に近い目盛りの文字は天体の名前と重なる */
     /* 1.5 を「2」と書いてしまわないよう、整数でないものは小数1けたで出す */
     label(ctx, fmt(r, (r % 1 === 0) ? 0 : 1) + ' AU', cx - rpx(r) * 0.707, cy - rpx(r) * 0.707,
-      { size: 9.5, color: '#b3bcc5' });
+      { size: 9.5, color: '#9fb0c4', haloColor: HALO });
   });
 
   /* 軌道 */
@@ -4115,7 +4156,8 @@ function m11DrawTop(ctx, s, t, W, H) {
          （240 点だとハレー彗星の軌道がカクカクの折れ線になった） */
       var pts = planetOrbitPts(p, 1440);
       ctx.save();
-      ctx.strokeStyle = fade(p.col, 0.55); ctx.lineWidth = 1.2;
+      /* 暗い背景では 0.55 だと軌道が沈んで見えないので、少し濃くする */
+      ctx.strokeStyle = fade(p.col, 0.8); ctx.lineWidth = 1.2;
       if (p.comet) ctx.setLineDash([7, 4]);
       ctx.beginPath();
       pts.forEach(function (q, j) {
@@ -4153,25 +4195,29 @@ function m11DrawTop(ctx, s, t, W, H) {
     if (p.comet) cometShape(ctx, sp[0], sp[1], rr, cx, cy);
     else planetShape(ctx, sp[0], sp[1], rr, p.col, p.id === 'saturn');
     if (p.id === pick) {
+      /* 暗い背景なので、選んだ印は明るい水色にする（青＝速度 の意味では使っていない） */
       ctx.save();
-      ctx.strokeStyle = COL.accentRing || '#1663b5'; ctx.lineWidth = 2;
+      ctx.strokeStyle = '#9fd0ff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(sp[0], sp[1], rr + 5.5, 0, TAU); ctx.stroke();
       ctx.restore();
-      dashLine(ctx, cx, cy, sp[0], sp[1], '#1663b5', [4, 4], 1.2);
+      dashLine(ctx, cx, cy, sp[0], sp[1], '#9fd0ff', [4, 4], 1.2);
     }
     label(ctx, p.name, sp[0], sp[1] - rr - 9,
-      { size: p.id === pick ? 12 : 10.5, bold: p.id === pick, color: p.id === pick ? '#1663b5' : COL.sub });
+      { size: p.id === pick ? 12 : 10.5, bold: p.id === pick,
+        color: p.id === pick ? '#9fd0ff' : '#c9d6e4', haloColor: HALO });
     s.ui.dots.push({ id: p.id, px: sp[0], py: sp[1] });
   });
 
-  drawClock(ctx, W, 't = ' + fmt(t, 2) + ' 年');
+  drawClock(ctx, W, 't = ' + fmt(t, 2) + ' 年', undefined,
+    { color: '#e8eef4', haloColor: HALO });
   label(ctx, '惑星をクリックすると値が下に出ます', 10, H - 12,
-    { align: 'left', size: 10.5, color: COL.sub });
+    { align: 'left', size: 10.5, color: '#9fb0c4', haloColor: HALO });
   if (lg) label(ctx, '※ 距離は対数のものさし', W - 10, H - 12,
-    { align: 'right', size: 10.5, color: COL.sub });
+    { align: 'right', size: 10.5, color: '#9fb0c4', haloColor: HALO });
   if (hintOn(s, t)) {
+    /* COL.bound（濃い緑）は暗い背景では読めないので、同じ緑の明るい方を使う */
     label(ctx, '内側の惑星ほど速く回る＝遠いほど周期が長い（第3法則）', W - 10, 36,
-      { align: 'right', size: 11.5, color: COL.bound, bold: true });
+      { align: 'right', size: 11.5, color: '#7fe0a0', bold: true, haloColor: HALO });
   }
 }
 
@@ -5891,6 +5937,42 @@ DEFS['m2-2'] = {
   units: ['Mearth'],
   legendKeys: ['force', 'vel', 'dim', 'sun', 'orbit', 'bound', 'para', 'hyper', 'upot'],
   title: '2-1　万有引力と位置エネルギー　—　人工衛星は「すりばち」の中を動いている',
+  /* ★タイトルのすぐ下に「重力場とは何か」の動画と説明を置く★（先生の指示・2026-09-04）
+     すりばち（位置エネルギー）の話に入る前に、
+     「そもそも万有引力とは何か」を先に見せておきたいため。
+     ★動画は押されるまで読みこまない★（80_ui.js の attachYt を見よ）。
+     こうしないと、ページを開いただけで YouTube に通信してしまい、
+     「完全オフラインで動く単一 HTML」という このページの いちばん大事な決まりが崩れる。 */
+  topCard:
+    '<div class="ytrow">' +
+    '<div class="ytcell">' +
+    '<button type="button" class="ytbox" data-yt="9s74DzzCSW8"' +
+    ' data-yttitle="重力場のイメージ（動画1）">' +
+    '<span class="ytmark"></span>▶ 動画を見る（YouTube）' +
+    '<span class="ytsub">押すと、ここで再生します</span></button>' +
+    '<p class="ytcap">動画1　' +
+    '<a href="https://www.youtube.com/watch?v=9s74DzzCSW8" target="_blank" rel="noopener">' +
+    'YouTube で開く</a></p>' +
+    '</div>' +
+    '<div class="ytcell">' +
+    '<button type="button" class="ytbox" data-yt="-AiTBqG5MnI"' +
+    ' data-yttitle="重力場のイメージ（動画2）">' +
+    '<span class="ytmark"></span>▶ 動画を見る（YouTube）' +
+    '<span class="ytsub">押すと、ここで再生します</span></button>' +
+    '<p class="ytcap">動画2　' +
+    '<a href="https://www.youtube.com/watch?v=-AiTBqG5MnI" target="_blank" rel="noopener">' +
+    'YouTube で開く</a></p>' +
+    '</div>' +
+    '<div class="ytnote">' +
+    '質量のある物体があると、<b>空間がゆがみます</b>。その空間を<b>「重力場」</b>といいます。' +
+    'その空間に別の物体を置くと、<b>重力場から力を受けることで、物体が動き出します</b>。' +
+    'この力が<b>万有引力の正体</b>です。<br>' +
+    '質量のある物体　＝　<b>太陽</b><br>' +
+    '物体　＝　<b>地球</b>　にあたります。' +
+    '<span class="ytwarn">※ 動画はインターネットにつながっているときだけ見られます。' +
+    'ページを開いただけでは読みこまないので、オフラインでもシミュレーションはふつうに動きます。</span>' +
+    '</div>' +
+    '</div>',
   /* ★スライドバーの説明は、ここ（欄外）に書く★
      カードの中に説明を並べるとスライドバーが埋もれるので、
      「向き」と「はじめの位置」の説明はこの1行に出している。 */
@@ -11540,6 +11622,37 @@ function m45Person(ctx, x, y, th, S) {
   stickman(ctx, x, y, Math.cos(th), -Math.sin(th), S || 15, COL.hand, 2.0);
 }
 
+/* ★3次元の図（2段目）の中の観測者★（先生の指示・2026-09-05）
+   赤道（自転軸 n に垂直な面）の上、角 th のところに立たせる。
+
+   ★立たせる半径の決め方★
+     2段目の【2】では、地球は本当の大きさ（1.2 px）ではなく 5 px に
+     大げさに描いてある。だから「本当の地球半径」で置くと、
+     棒人間が地球の絵の中にうまってしまう。
+     そこで ★画面で見えている地球の半径 Rpx★ から、世界の長さ
+       R = Rpx / scale   （scale ＝ M45_S3 × ズーム倍率）
+     を逆算して、その距離に置く。こうすると、絵の地球のちょうど表面に立つ。
+
+   ★向き★
+     3次元なので、中心と観測者をそれぞれ画面に落として、その差を
+     「画面での上（＝足もとから頭への向き）」にする。こうしておけば
+     横から見たときは左右に すべるように動き、真上から見たときは
+     1段目とまったく同じにぐるりと回る。
+   ★奥がわにいても消さない★——地球の絵が 5〜11 px しかないので、
+     消すと「点滅している」ようにしか見えないため。 */
+function m45Person3(ctx, cam, n, th, Rpx, scale, S) {
+  var b = m45OrbBasis(n), u = b[0], w = b[1];
+  var ct = Math.cos(th), st = Math.sin(th), R = Rpx / scale;
+  var d = [(u[0] * ct + w[0] * st) * R, (u[1] * ct + w[1] * st) * R,
+    (u[2] * ct + w[2] * st) * R];
+  var pc = cam.p(0, 0, 0), q = cam.p(d[0], d[1], d[2]);
+  var dx = q.x - pc.x, dy = q.y - pc.y, L = Math.hypot(dx, dy);
+  /* まっすぐ手前（または真奥）にいるときは画面での向きが決まらないので、上向きにする */
+  if (L < 0.4) { dx = 0; dy = -1; L = 1; }
+  stickman(ctx, q.x, q.y, dx / L, dy / L, S || 10, COL.hand, 2.0);
+  return q;
+}
+
 /* ============================================================
    3次元（軌道面を横から見る）の図　——　下の段の【1】【2】【3】
    ------------------------------------------------------------
@@ -11746,6 +11859,9 @@ function m45Panel3D(ctx, s, v, t, W, y0, y1, HALO, which) {
     var sd = m45SunDir(t), SUNFAR = [sd.x * 60, sd.y * 60, 0];
     m45Night(ctx, p0.x, p0.y, 5, m45SunScr(cam, [0, 0, 0], SUNFAR).x,
       m45SunScr(cam, [0, 0, 0], SUNFAR).y, HALO, false);
+    /* 地上の観測者（赤道の上）。1段目の【2】【3】と同じ角で立たせるので、
+       上下の段で「同じ人が同じ場所にいる」ように見える。 */
+    if (s.o.showO) m45Person3(ctx, cam, n, m45ThObs(t), 5, M45_S3 * c.zoom, 10);
     label(ctx, '地球', p0.x + 12, p0.y + 16,
       { size: 10, bold: true, color: '#9fd0ff', align: 'left', haloColor: HALO });
     /* 月 */
@@ -11794,6 +11910,9 @@ function m45Panel3D(ctx, s, v, t, W, y0, y1, HALO, which) {
       var d2 = m45SunDir(t), ss = m45SunScr(cam, [0, 0, 0], [d2.x * 60, d2.y * 60, 0]);
       m45Night(ctx, pc.x, pc.y, Rp3, ss.x, ss.y, HALO, false);
     })();
+    /* 地上の観測者（赤道の上）。★ひまわりとまったく同じ角★なので、
+       この図でも「ひまわりは いつも観測者の真上」が見える。 */
+    if (s.o.showO) m45Person3(ctx, cam, n, m45ThObs(t), Rp3, M45_S3 * c.zoom, 13 * c.zoom);
     /* 人工衛星（赤道面の上を回る） */
     if (s.o.showS) {
       var be = m45OrbBasis(n), eu = be[0], ew = be[1];
@@ -12487,6 +12606,14 @@ function buildPanel() {
     }
   }
   h.push('<div class="simhead"><div class="simtitle">' + ttlHtml + '</div></div>');
+  /* ★d.topCard＝タイトルのすぐ下に、横いっぱいで置く読み物★
+     いまは 2-1 の「重力場とは何か」の動画つきの説明で使っている。
+     図より先に読ませたいものだけ、ここに置くこと。
+     ★名前を intro にしてはいけない★（2026-09-05 のしくじり）
+       d.intro は「入り口のシム＝タブの色を変える」ための true/false で、
+       1-0 が使っている。同じ名前にしたら 1-0 のタイトルの下に
+       「true」という字が出た。 */
+  if (d.topCard) h.push('<div class="card topcard">' + mathHtml(d.topCard) + '</div>');
   /* ★d.wide＝図を横いっぱいに使い、右の列（コラム・グラフ）は下に回す★
      4-5 のように「よこ一列に3つ並べて見くらべる」図で使う。
      ふだんは 図（左）／読み物（右）の2列。 */
@@ -12548,10 +12675,12 @@ function buildPanel() {
      ラベルの背景を変えるだけでは弱くて気づいてもらえなかった（先生の指摘）。 */
   var focList = mainList.filter(function (vd) { return vd.focus; });
   if (focList.length) {
+    /* 変数の名前をならべると、下のスライドバーの名前と二重になって読みにくい
+       （先生の指摘・2026-09-05）。「↓」を focus の数だけ出して、
+       すぐ下のスライドバーを指させる。 */
     h.push('<div class="focbar">まずここ　' +
-      focList.map(function (vd) {
-        return mathHtml(vd.label.replace(/（[^）]*）/g, ''));
-      }).join(' ／ ') + ' を動かしてみよう</div>');
+      focList.map(function () { return '↓'; }).join(' や ') +
+      ' を動かしてみよう</div>');
   }
   h.push('<div class="cvvars' + (twoCol ? ' two' : '') + '" id="cvvars">');
   if (twoCol) h.push(varsTwoColHtml(mainList));
@@ -12889,6 +13018,7 @@ function buildPanel() {
   });
   var mcv = $('mainCv');
   if (mcv && !mcv._dragOn) { mcv._dragOn = true; attachSimDrag(); attach3dDrag(); attachCvHits(); }
+  attachYt();
 
   setPlayLabel();
   $('bSlow').className = s.slow ? '' : 'sub';
@@ -13189,6 +13319,30 @@ function attach3dDrag() {
     c.s.cam.zoom = clamp(c.s.cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.5, 3.0);
     renderActive(); ev.preventDefault();
   }, { passive: false });
+}
+
+/* ===== YouTube の動画（押してから読みこむ）=====
+   ★このページは「完全オフラインで動く単一 HTML」★（いちばん大事な決まり）
+     なので、ページを開いただけで YouTube を読みにいってはいけない。
+     ふだんは自前の「▶ 動画を見る」の板だけを出しておき、
+     ★押されたときにはじめて iframe を作る★（これで外部リクエストは 0 のまま）。
+   ・youtube-nocookie.com を使う（学校で使うので、追跡クッキーを置かせない）
+   ・学校のネットで iframe がふさがれていることもあるので、
+     「YouTube で開く」のふつうのリンクも必ず添える。 */
+function attachYt() {
+  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-yt]'), function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('data-yt'), box = b.parentNode;
+      var f = document.createElement('iframe');
+      f.className = 'ytframe';
+      f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0&modestbranding=1';
+      f.title = b.getAttribute('data-yttitle') || 'YouTube';
+      f.setAttribute('allow', 'accelerometer; encrypted-media; gyroscope; picture-in-picture');
+      f.setAttribute('allowfullscreen', '');
+      f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      box.replaceChild(f, b);
+    });
+  });
 }
 
 /* ===== 図の中に置いたボタン（キャンバスのボタン）=====
