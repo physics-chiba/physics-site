@@ -2770,13 +2770,36 @@ YG.modePath = (function () {
    * 「そこに届く 2 本の波」を並べて見せる（回折格子ページと同じ見せ方）。
    * 拡大図（左パネル）と同じものさし nmPerPx で描くので、ずれは厳密に経路差ぶん。
    */
-  function pointZoomCenter(sc) {
+  /* ①：円だけ。P と反対側（上なら下、下なら上）の決め打ちの位置。
+   * ②（withCard）：合成波のカードを円のすぐ上に積み、1 組で P といっしょに上下する。
+   *   カードと円は、光線 S₁→P・S₂→P と重ならない側に置く：
+   *     P が上側 … 光線は P より下に来ない → 光線のすぐ下にカード、その下に円
+   *     P が下側 … 光線は P より上に来ない → 光線のすぐ上に円、その上にカード
+   *   （円の下端は L の寸法線 512 より上、カードの上端は 8 より下に収める） */
+  var ZC = { x: 968, r: 90, rSmall: 70, cardW: 214, cardH: 74, gap: 6, cardX0: 846, bottomMax: 511, topMin: 8 };
+  function pointZoomCenter(sc, withCard) {
     var above = (sc.P.y <= L.CY);
-    return { c: vec(968, above ? 372 : 150), r: 90, above: above };
+    if (!withCard) return { c: vec(ZC.x, above ? 372 : 150), r: ZC.r, above: above, compact: false, card: null };
+    var r = ZC.rSmall, k = (ZC.cardX0 - L.GX) / (L.SX - L.GX);
+    var cy, cardY0;
+    if (above) {
+      var rayY = sc.S2.y + (sc.P.y - sc.S2.y) * k;      // カードの左端での S₂→P の高さ（いちばん低い所）
+      cardY0 = rayY + 10;
+      cy = cardY0 + ZC.cardH + ZC.gap + r;
+      if (cy + r > ZC.bottomMax) { cy = ZC.bottomMax - r; cardY0 = cy - r - ZC.gap - ZC.cardH; }
+    } else {
+      var rayY2 = sc.S1.y + (sc.P.y - sc.S1.y) * k;     // カードの左端での S₁→P の高さ（いちばん高い所）
+      cy = rayY2 - 10 - r;
+      var cyMin = ZC.topMin + ZC.cardH + ZC.gap + r;
+      if (cy < cyMin) cy = cyMin;
+      cardY0 = cy - r - ZC.gap - ZC.cardH;
+    }
+    return { c: vec(ZC.x, cy), r: r, above: above, compact: true,
+      card: { x0: ZC.cardX0, x1: ZC.cardX0 + ZC.cardW, y0: cardY0, y1: cardY0 + ZC.cardH } };
   }
-  function pointZoom(ctx, st, sol, sc) {
-    var pz = pointZoomCenter(sc);
-    var c = pz.c, r = pz.r, above = pz.above;
+  function pointZoom(ctx, st, sol, sc, pz) {
+    pz = pz || pointZoomCenter(sc);
+    var c = pz.c, r = pz.r, above = pz.above, compact = pz.compact;
     var Py = sc.P.y, sx = L.SX + L.SCR_W / 2;
     var strong = (sol.kind === 'strong');
 
@@ -2812,17 +2835,17 @@ YG.modePath = (function () {
     ctx.setLineDash([6, 5]); ctx.stroke(); ctx.setLineDash([]);
     ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.clip();
 
-    var nm = strong ? ('強めあう（m ＝ ' + sol.m + '）')
+    var nm = strong ? (compact ? ('強めあう（m=' + sol.m + '）') : ('強めあう（m ＝ ' + sol.m + '）'))
       : (sol.kind === 'weak' ? '弱めあう' : '完全には強めあわない');
-    ctx.font = D.font(10.5, true);
+    ctx.font = D.font(compact ? 9.5 : 10.5, true);
     ctx.fillStyle = strong ? '#1b6b34' : (sol.kind === 'weak' ? '#a12a1c' : '#8a6d00');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(nm, c.x, c.y - r + 30);
+    ctx.fillText(nm, c.x, c.y - r + (compact ? 26 : 30));
 
     // 届く 2 本の波。下の光線（S₂）のほうが経路差 Δ だけ余分に進んでいる
     var u = sc.u, n = D.nrmOf(u);
-    var len = 112;
-    var mid = vec(c.x - 6, c.y - 10);
+    var len = compact ? 88 : 112;
+    var mid = vec(c.x + (compact ? 4 : -6), c.y - 10);
     var cols = [COL.ray, COL.ray2];
     for (var k = 0; k < 2; k++) {
       var base = add(mid, mul(n, k === 0 ? -16 : 14));
@@ -2848,7 +2871,7 @@ YG.modePath = (function () {
     ctx.font = D.font(9);
     ctx.fillStyle = '#5b6672';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('※ 2 本は上下にずらして描いています', c.x, c.y + r - 34);
+    ctx.fillText(compact ? '※ 上下にずらした図' : '※ 2 本は上下にずらして描いています', c.x, c.y + r - (compact ? 26 : 34));
     ctx.restore();
   }
 
@@ -2898,14 +2921,14 @@ YG.modePath = (function () {
     var wave = !!opt.wave;
     var step = wave ? 4 : P.clamp(st.step, 1, 4);
     var zoomOn = (wave || step >= 2);
-    var pz = pointZoomCenter(sc);
+    var pz = pointZoomCenter(sc, wave);       // ②は合成波のカードといっしょに動く
 
     D.panels(ctx);
     if (wave && st.showCirc && YG.modeWave) YG.modeWave.wavelets(ctx, st, sol, sc);
     var ph = incoming(ctx, st, sol, sc, { dNote: !wave });   // ②は合成波カードを置くので d の注記は省く
     // 目盛りの数字を飛ばす範囲：点 P の拡大円と、ステップ④の x の寸法線
     var skip = null;
-    if (zoomOn) skip = [pz.c.y - pz.r, pz.c.y + pz.r];
+    if (zoomOn) skip = [pz.card ? Math.min(pz.card.y0, pz.c.y - pz.r) : pz.c.y - pz.r, pz.c.y + pz.r];
     if (!wave && step >= 4) {
       var lo = Math.min(L.CY, sc.P.y) - 12, hi = Math.max(L.CY, sc.P.y) + 12;
       skip = skip ? [Math.min(skip[0], lo), Math.max(skip[1], hi)] : [lo, hi];
@@ -2918,14 +2941,14 @@ YG.modePath = (function () {
     D.pointLabel(ctx, vec(L.SX, L.CY), 'O', 22, 12, '#41505d');
     if (!wave && step >= 4) xDim(ctx, sol, sc);
     if (!wave) observer(ctx, st, sol, sc);
-    if (zoomOn) pointZoom(ctx, st, sol, sc);
+    if (zoomOn) pointZoom(ctx, st, sol, sc, pz);
 
     drawZoom(ctx, st, sol, sc, wave ? 2 : step);
     if (wave || step <= 2) D.zoomLinkCallout(ctx, sc);
 
     if (wave && YG.modeWave) {
       YG.modeWave.intensityGraph(ctx, st, sol, sc);
-      YG.modeWave.sumCard(ctx, st, sol, sc);
+      YG.modeWave.sumCard(ctx, st, sol, sc, pz);
       YG.modeWave.title(ctx);
     } else {
       var hb = D.stepHeading(ctx, 12, 14, stepTitle(step));
@@ -2975,17 +2998,12 @@ YG.modeWave = (function () {
   var L = D.L, COL = D.COL;
   var vec = D.vec;
 
-  /** 合成波のカードの大きさ。置き場所は「点 P の拡大円のすぐ左」で、円といっしょに上下する
-   *  （P が上側 … 円の左下にそろえる／P が下側 … 円の左上にそろえる）。
-   *  x ＝ 700〜866 は、ダブルスリットの板（646）と d の寸法線より右、拡大円（878〜）より左。
-   *  光線 S₁→P・S₂→P は、P が上側なら y ＜ 300、下側なら y ＞ 224 を通るので、
-   *  円と同じ側（光線から遠い側）に寄せたカードとは重ならない。 */
-  var SUM_W = 166, SUM_H = 136, SUM_GAP = 12;
-  function sumBox(sc) {
-    var pz = YG.modePath.pointZoomCenter(sc);
-    var x1 = pz.c.x - pz.r - SUM_GAP, x0 = x1 - SUM_W;
-    var y0 = pz.above ? (pz.c.y + pz.r - SUM_H) : (pz.c.y - pz.r);
-    return { x0: x0, y0: y0, x1: x1, y1: y0 + SUM_H, pz: pz };
+  /** 合成波のカードの置き場所は 50_mode_path.js の pointZoomCenter(sc, true) が決める
+   *  （点 P の拡大円のすぐ上。円と 1 組で P といっしょに上下する） */
+  function sumBox(sc, pz) {
+    pz = pz || YG.modePath.pointZoomCenter(sc, true);
+    var c = pz.card;
+    return { x0: c.x0, y0: c.y0, x1: c.x1, y1: c.y1, pz: pz };
   }
   /** 光の強度分布のグラフ（スクリーンの右わき） */
   var GB = { x0: 1200, w: 84 };
@@ -3051,28 +3069,29 @@ YG.modeWave = (function () {
   }
 
   /* ================= 合成波のカード ================= */
-  function sumCard(ctx, st, sol, sc) {
+  function sumCard(ctx, st, sol, sc, pz) {
     var nmPerPx = sc.nmPerPx;                 // 拡大図と同じものさし
     var delta = sol.delta;                    // 2 本の波のずれ [nm]
     var t = st.t || 0;
-    var B = sumBox(sc);
-    var x0 = B.x0 + 10, x1 = B.x1 - 10;
-    var cy = B.y0 + 66;
-    var unit = 9;                             // 振幅 1 ぶんの px
+    var B = sumBox(sc, pz);
+    var x0 = B.x0 + 8, x1 = B.x1 - 8;
+    var cy = B.y0 + 38;
+    var unit = 6.5;                           // 振幅 1 ぶんの px
 
     ctx.save();
     // 拡大円との「つながり」を点線で示す（円といっしょに動く 1 組であることが分かるように）
-    D.dashLine(ctx, vec(B.x1, cy), vec(B.pz.c.x - B.pz.r, cy), '#b39ccf', [3, 3], 1.2);
-    D.roundRect(ctx, B.x0, B.y0, B.x1 - B.x0, B.y1 - B.y0, 9);
+    D.dashLine(ctx, vec(B.pz.c.x, B.y1), vec(B.pz.c.x, B.pz.c.y - B.pz.r), '#b39ccf', [3, 3], 1.2);
+    D.roundRect(ctx, B.x0, B.y0, B.x1 - B.x0, B.y1 - B.y0, 8);
     ctx.fillStyle = '#faf7fd'; ctx.fill();
     ctx.strokeStyle = '#b39ccf'; ctx.lineWidth = 1.4; ctx.stroke();
-    ctx.font = D.font(11, true);
+    ctx.font = D.font(10.5, true);
     ctx.fillStyle = '#5a3a7a';
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('点 P での合成波', B.x0 + 10, B.y0 + 13);
-    ctx.font = D.font(9.5);
+    ctx.fillText('点 P での合成波', B.x0 + 8, B.y0 + 11);
+    ctx.font = D.font(9);
     ctx.fillStyle = '#7a6392';
-    ctx.fillText('（S₁ の波 ＋ S₂ の波）', B.x0 + 10, B.y0 + 29);
+    ctx.textAlign = 'right';
+    ctx.fillText('S₁ ＋ S₂', B.x1 - 8, B.y0 + 11);
 
     ctx.strokeStyle = '#cfc4de'; ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
@@ -3108,18 +3127,18 @@ YG.modeWave = (function () {
     }
 
     var amp = 2 * Math.abs(Math.cos(Math.PI * delta / st.lambda));
-    var ty = cy + 2 * unit + 14;
+    var ty = B.y1 - 11;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.font = D.font(10);
+    ctx.font = D.font(9.5);
     ctx.fillStyle = '#5a3a7a';
-    ctx.fillText('振幅', B.x0 + 10, ty);
-    ctx.font = D.font(13, true);
+    ctx.fillText('振幅', B.x0 + 8, ty);
+    ctx.font = D.font(11, true);
     ctx.fillStyle = amp > 1.4 ? '#1b6b34' : (amp < 0.6 ? '#a12a1c' : '#8a6d00');
-    ctx.fillText(amp.toFixed(2) + ' / 2.00', B.x0 + 44, ty);
-    ctx.font = D.font(10);
-    ctx.fillStyle = '#5b6672';
-    ctx.fillText(sol.kind === 'strong' ? '→ そろう（明線）'
-      : (sol.kind === 'weak' ? '→ 打ち消す（暗線）' : '→ 完全にはそろわない'), B.x0 + 10, ty + 17);
+    ctx.fillText(amp.toFixed(2) + '/2.00', B.x0 + 36, ty);
+    ctx.font = D.font(9.5, true);
+    ctx.textAlign = 'right';
+    ctx.fillText(sol.kind === 'strong' ? 'そろう（明線）'
+      : (sol.kind === 'weak' ? '打ち消す（暗線）' : '完全にはそろわない'), B.x1 - 8, ty);
     ctx.restore();
   }
 
@@ -4592,8 +4611,7 @@ YG.ui = (function () {
     var anim = (mode === 'wave' || mode === 'film' || mode === 'liquid');
     show('grp-wave', anim);
     show('btn-circ', mode === 'wave');
-    show('btn-remove', mode === 'film');
-    show('btn-drain', mode === 'liquid');
+    // 「取り除く」「取り出す」のボタンは、入れるアニメーションが終わってから出す（syncFilmCards / syncLiquidCards）
     show('toprow', anim);
     // ステップの説明
     show('steps', mode === 'path');
@@ -4618,6 +4636,7 @@ YG.ui = (function () {
     show('filmstep', on && fm.inserted);
     show('filmbox', on && fm.inserted);
     show('filmnotes', on && fm.inserted);
+    show('btn-remove', on && fm.inserted);
     var b = $('btn-insert');
     if (b) b.disabled = !!fm.anim;
   }
@@ -4629,6 +4648,7 @@ YG.ui = (function () {
     show('liqstep', on && lq.inserted);
     show('liqbox', on && lq.inserted);
     show('liqnotes', on && lq.inserted);
+    show('btn-drain', on && lq.inserted);
     var b = $('btn-dip');
     if (b) b.disabled = !!lq.anim;
   }
@@ -5330,6 +5350,7 @@ YG.probe = (function () {
     }
     if (o.step !== undefined) YG.ui.setStep(o.step);
     st.playing = false;
+    YG.ui.syncAll();                // カードやボタンの表示も、実際の操作のあとと同じ状態にそろえる
     YG.ui.render();
     return true;
   }

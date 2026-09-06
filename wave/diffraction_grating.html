@@ -205,10 +205,10 @@ canvas#view{width:100%;min-width:900px;height:auto;display:block;border:1px soli
 /* ---- モードタブ ---- */
 /* 5 つ全部を横 1 行におさめる。入りきらない画面幅では折り返さず、
    タブの帯だけを横スクロールできるようにする（ページ全体は横スクロールさせない）。 */
-.tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 8px 2px 0}
-/* スクロールする帯の右はしでは、コンテナの padding-right がブラウザによって
- * 無視されることがあるので、最後のタブ自身に余白を持たせて文字切れを防ぐ */
-.tabs .tab:last-child{margin-right:8px}
+/* モード選択は 2 段（.tabrow ×2）。スクロールバーは出さず、
+ * 入りきらないときはタブが次の行へ折り返す */
+.tabs{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;padding:0 0 2px 0}
+.tabrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
 .tab{
   appearance:none;border:1px solid var(--line);background:#fff;color:var(--sub);
   padding:8px 14px;border-radius:999px;font-size:13px;cursor:pointer;font-family:inherit;
@@ -217,9 +217,12 @@ canvas#view{width:100%;min-width:900px;height:auto;display:block;border:1px soli
 .tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .tab.tab-alt{margin-left:34px;border-color:#c98bd8;color:#8b3fa8;background:#faf3fd}
 .tab.tab-alt[aria-selected="true"]{background:#8b3fa8;border-color:#8b3fa8;color:#fff}
-.tab.tab-out{margin-left:34px;border-color:#8fbf9a;color:#0d7a3f;background:#f1faf3}
+/* 実験の概要は 2 段目の先頭に来たので、左の間あけは不要 */
+.tab.tab-out{border-color:#8fbf9a;color:#0d7a3f;background:#f1faf3}
 .tab.tab-out[aria-selected="true"]{background:#0d7a3f;border-color:#0d7a3f;color:#fff}
-@media(max-width:860px){.tab.tab-alt,.tab.tab-out{margin-left:0}}
+@media(max-width:860px){.tab.tab-alt{margin-left:0}}
+/* とても狭い画面では、長い名前のタブを折り返して 1 行に収める（横スクロールを出さない） */
+@media(max-width:420px){.tab{white-space:normal;text-align:left;line-height:1.45;flex-shrink:1;min-width:0}}
 
 /* ===== 入試問題の問題文リンクと、その重ね窓（celestial-mechanics.html と同じ作法） ===== */
 .probbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 2px 4px}
@@ -580,13 +583,19 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
 <h2>1. シミュレーション</h2>
 
 <div class="stage">
+  <!-- モード選択は 2 段（スクロールバーを出さない）。
+       1 段目＝本編（①②③＋補足：多数の格子）、2 段目＝実験の概要＋補足：単スリット -->
   <div class="tabs" role="tablist">
-    <button class="tab" id="tab-path" role="tab" aria-selected="true">①光路差の位置と式の原理</button>
-    <button class="tab" id="tab-wave" role="tab" aria-selected="false">②実際の波の動きを見る</button>
-    <button class="tab" id="tab-deltax" role="tab" aria-selected="false">③明線間隔 Δx を導く</button>
-    <button class="tab tab-alt" id="tab-field" role="tab" aria-selected="false">補足：多数の格子からの波がどう重なり合うか</button>
-    <button class="tab tab-out" id="tab-scale" role="tab" aria-selected="false">実験の概要（「<b>回折</b>」格子と呼ばれる理由）</button>
-    <button class="tab tab-alt" id="tab-slit" role="tab" aria-selected="false">補足：単スリットの問題（難関大頻出）</button>
+    <div class="tabrow">
+      <button class="tab" id="tab-path" role="tab" aria-selected="true">①光路差の位置と式の原理</button>
+      <button class="tab" id="tab-wave" role="tab" aria-selected="false">②実際の波の動きを見る</button>
+      <button class="tab" id="tab-deltax" role="tab" aria-selected="false">③明線間隔 Δx を導く</button>
+      <button class="tab tab-alt" id="tab-field" role="tab" aria-selected="false">補足：多数の格子からの波がどう重なり合うか</button>
+    </div>
+    <div class="tabrow">
+      <button class="tab tab-out" id="tab-scale" role="tab" aria-selected="false">実験の概要（「<b>回折</b>」格子と呼ばれる理由）</button>
+      <button class="tab tab-alt" id="tab-slit" role="tab" aria-selected="false">補足：単スリットの問題（難関大頻出）</button>
+    </div>
   </div>
 
   <!-- 入試問題へのリンク（単スリットモードのときだけ出す）。
@@ -1525,7 +1534,10 @@ DG.draw = (function () {
   }
 
   /* ---------- 書体 ---------- */
-  var FONT = '"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif';
+  /* Windows の canvas では 游ゴシック（Yu Gothic）が細く・うすくにじんで読みづらい。
+     読みやすさ優先で、Windows 10/11 標準の UD フォント（BIZ UDPゴシック）を最優先にし、
+     無ければ Meiryo → Yu Gothic の順で使う（Mac はこれまでどおりヒラギノ）。 */
+  var FONT = '"BIZ UDPGothic","Hiragino Kaku Gothic ProN",Meiryo,"Yu Gothic",sans-serif';
   /* canvas は 1300 px を 1200 px ほどに縮めて表示するので、字は大きめにする。
      教室のプロジェクタでも読めるように、少し強めに（1.10 → 1.24）。 */
   var FONT_K = 1.24;

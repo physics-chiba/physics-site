@@ -3102,6 +3102,19 @@ function worldAxes(ctx, vw, box, xlabel, ylabel, signY) {
   if (hasY0 && hasX0) originMark(ctx, ay, ax);
 }
 
+/* すでに置いた名前の四角と重ならないか（グラフの点の名前で使う）。
+   高さは 13 px（文字の大きさ 10〜11 px）と決めうちでよい。 */
+function _lboxFree(list, x, y, w, h) {
+  for (var i = 0; i < list.length; i++) {
+    var b = list[i];
+    /* たての当たり判定は、それぞれの「高さの半分」を足した分でみる。
+       ★決めうちの 13 px にしてはいけない★——青い輪つきの点（高さ 34 px）の
+       すぐ上に名前を置けてしまい、輪にかくれて読めなくなる（天王星で実際に起きた）。 */
+    if (Math.abs(b.y - y) < (b.h + h) && x < b.x + b.w + 3 && b.x < x + w + 3) return false;
+  }
+  return true;
+}
+
 /* ===== 折れ線グラフ ===== */
 /* spec: {xlabel,ylabel,xmin,xmax,ymin,ymax,series:[{color,dash,pts,name}],cursors:[{color,x,y}],zeroNote} */
 function plot(cv, spec) {
@@ -3277,6 +3290,16 @@ function plot(cv, spec) {
      ★押せる点にするために、画面の座標をおぼえておく★（80_ui.js の attachGraphPick）
        mk.id を書いた点だけが押せる。ここを毎回作りなおすこと（軸を動かすとずれるため）。 */
   cv._marks = [];
+  /* 置いた名前の四角をおぼえておき、あとの名前が重ならないようにする。
+     ★点そのものも先に「よけるもの」として入れておく★（先生の指摘・2026-09-05）
+       ハレー彗星と天王星のように点がほとんど重なるところでは、
+       名前を点の上に置くと、丸と青い輪にかくれて読めなくなる。 */
+  var _lbox = [];
+  (spec.hide ? [] : (spec.marks || [])).forEach(function (mk) {
+    if (!mk.name || !isFinite(mk.x) || !isFinite(mk.y)) return;
+    var rr = (mk.r || 5.2) + (mk.ring ? 10 : 3);
+    _lbox.push({ x: X(mk.x) - rr, y: Y(mk.y), w: rr * 2, h: rr });
+  });
   (spec.hide ? [] : (spec.marks || [])).forEach(function (mk) {
     if (!isFinite(mk.x) || !isFinite(mk.y)) return;
     var px = X(mk.x), py = Y(mk.y);
@@ -3289,8 +3312,42 @@ function plot(cv, spec) {
       ctx.beginPath(); ctx.arc(px, py, (mk.r || 5.2) + 4.5, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
-    if (mk.name) label(ctx, mk.name, px + (mk.lx === undefined ? 8 : mk.lx), py + (mk.ly === undefined ? -9 : mk.ly),
-      { size: mk.ring ? 11 : 10, bold: !!mk.ring, color: mk.color, align: mk.align || 'left' });
+    /* ===== 点の名前の置きかた =====
+       ★わくの外に出そうなときは、反対がわに置きなおす★（先生の指摘・2026-09-05）
+       label は「はみ出したら中へ押しこむ」ので、押しこまれた文字が
+       目盛りの数字や軸の上に乗って読めなくなっていた（1-3 の ISS・ひまわり）。
+       先に「入るかどうか」を測って、入らない側には初めから置かない。 */
+    if (mk.name) {
+      var lsz = mk.ring ? 11 : 10;
+      var mlx = (mk.lx === undefined ? 8 : mk.lx);
+      var mly = (mk.ly === undefined ? -9 : mk.ly);
+      var mal = mk.align || 'left';
+      ctx.save();
+      ctx.font = (mk.ring ? 'bold ' : '') + lsz + 'px ' + FONT;
+      var mtw = ctx.measureText(String(mk.name)).width;
+      ctx.restore();
+      /* よこ：右（左）にはみ出すなら、左（右）へ出す */
+      if (mal === 'left' && px + mlx + mtw > W - 4) { mal = 'right'; mlx = -Math.abs(mlx); }
+      else if (mal === 'right' && px + mlx - mtw < 4) { mal = 'left'; mlx = Math.abs(mlx); }
+      /* たて：①わくの中に入る ②すでに置いた名前と重ならない
+         この2つを満たす置き場所を、近いものから順にさがす。
+         ★これが無いと、点が近い天体（ISS とハッブルは 2 % しか違わない）で
+           名前がぴったり重なって、片方がまったく読めなくなる★ */
+      var ax = px + mlx, aw = mtw, al0 = (mal === 'right') ? ax - aw : ax;
+      var cand = [mly, -mly, mly * 1.7, -mly * 1.7, mly * 2.4, -mly * 2.4,
+        mly * 3.1, -mly * 3.1, mly * 3.8, -mly * 3.8, mly * 4.5, -mly * 4.5];
+      var okY = null, fitY = null, ci;
+      for (ci = 0; ci < cand.length; ci++) {
+        var yy = py + cand[ci];
+        if (yy < pad.t + 9 || yy > pad.t + gh - 6) continue;   /* わくの外 */
+        if (fitY === null) fitY = yy;
+        if (_lboxFree(_lbox, al0, yy, aw, 7)) { okY = yy; break; }
+      }
+      var useY = (okY !== null) ? okY : (fitY !== null ? fitY : py + mly);
+      _lbox.push({ x: al0, y: useY, w: aw, h: 7 });
+      label(ctx, mk.name, ax, useY,
+        { size: lsz, bold: !!mk.ring, color: mk.color, align: mal });
+    }
   });
 
   /* いまの位置を示すたて線（spec.vline）。cursors より先に描いて、点を上にのせる */
@@ -4889,7 +4946,10 @@ var M14_SETS = {
     },
     clock: function (t) { return fmt(t / 86400, 2) + ' 日'; },
     kFmt: function (k) { return fmtE(k, 3); },
-    gx: { lo: 5000, hi: 600000, ylo: 3000, yhi: 5e6, linHi: 400000, linYhi: 2.6e6 },
+    /* ★ものさしの下の端は、いちばん内側の天体より じゅうぶん下にとること★
+       （先生の指摘・2026-09-05）ISS（a=6771 km・T=5544 s）がわくの角に
+       へばりつくと、名前を置く場所がなくなって軸の数字と重なる。 */
+    gx: { lo: 3000, hi: 600000, ylo: 1000, yhi: 5e6, linHi: 400000, linYhi: 2.6e6 },
     gLab: { x: 'a [km]', y: 'T [s]' },
     tPlot: function (t) { return t / 86400; }, tPlotLab: 't [日]',
     note: '半長軸 a は <b>ISS の 6771 km</b> から <b>月の 384400 km</b> まで <b>57 倍</b>も違い、' +
@@ -4992,7 +5052,10 @@ DEFS['m1-4'] = {
             id: hit ? p.id : '',
             x: p.a, y: p.T, color: hit ? p.col : '#c3cbd3',
             r: hit ? ((pk && pk.id === p.id) ? 7 : 6) : 3.4,
-            name: hit ? p.name : '', ring: !!(pk && pk.id === p.id),
+            /* ★グラフの中は短い名前★（先生の指摘・2026-09-05）
+               「ISS（国際宇宙ステーション）」のような長い名前は、320 px のグラフでは
+               どこに置いても軸や となりの点の名前に かぶる。 */
+            name: hit ? (p.short || p.name) : '', ring: !!(pk && pk.id === p.id),
             lx: left ? -11 : 11, align: left ? 'right' : 'left',
             ly: (j % 2 ? 13 : -13)
           };
