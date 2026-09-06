@@ -343,6 +343,11 @@ table.read#readout td.v{flex:1 1 auto;text-align:right}
 /* 公式の欄がないグラフのための「見えない場所とり」。
    グラフの横幅（＝縦の高さ）を、公式つきのグラフとそろえるためだけのもの。 */
 .gspacer{flex:1 1 215px;min-width:185px;height:0}
+/* 左の列（表の下）に置いたグラフは、公式の欄がないぶん横に広く使う。
+   右の列（325 px）に合わせた 390 px のままだと、右半分が空いてさびしい。 */
+.gsec.inmain .gbody .gleft{max-width:100%;flex:1 1 100%}
+.gsec.inmain .gbody canvas{max-width:560px}
+.gsec.inmain .gspacer{display:none}
 
 /* 「式を拡大」：グラフの下に式を回して、幅いっぱいで大きく見せる */
 .gbody.bigf{flex-direction:column}
@@ -510,6 +515,11 @@ table.ktab td.num,table.ktab th.num{font-family:var(--mono);font-variant-numeric
 /* K の列だけ色をつけて、縦に同じ数字がそろうのを見せる */
 table.ktab .kcol{background:var(--accent-l);color:var(--accent-d);font-weight:700}
 table.ktab th.kcol{background:#d9e7f6}
+/* ★いま選んでいる天体の行★（アニメ・表・T–a 図の3つを、同じ天体でつなぐ）
+   K の列にも色がついているので、行の色は ★K の列より濃く★しないと分からない。 */
+table.ktab tr.on td{background:#fdf0dc;color:var(--orange-d);font-weight:700}
+table.ktab tr.on td.nm{box-shadow:inset 3px 0 0 var(--orange)}
+table.ktab tr.on td.kcol{background:#f7e2c4;color:var(--orange-d)}
 .resbar .knote{font-size:.75rem;color:var(--sub);margin:5px 2px 0;line-height:1.6}
 
 /* ③ 図・帯・ボタンで1つの箱に見せる（角丸のつなぎ） */
@@ -953,6 +963,8 @@ table.ktab th.kcol{background:#d9e7f6}
   border-left:15px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent}
 .ytbox .ytsub{font-size:.74rem;font-weight:400;color:#9fb4cc;line-height:1.5;text-align:center}
 .ytframe{border:0}
+/* 動画の上の題（何の動画かを、押す前に分かるようにする） */
+.yttitle{margin:0;font-size:.92rem;font-weight:700;color:var(--accent-d);line-height:1.5}
 .ytcap{font-size:.8rem;color:var(--sub);margin:0;line-height:1.6}
 .ytcap a{color:var(--accent);text-decoration:underline}
 @media (max-width:640px){
@@ -3261,10 +3273,14 @@ function plot(cv, spec) {
     ctx.restore();
   });
 
-  /* 目立たせたい点（第3法則の T–a 図の 3 天体など） */
+  /* 目立たせたい点（第3法則の T–a 図の 3 天体など）
+     ★押せる点にするために、画面の座標をおぼえておく★（80_ui.js の attachGraphPick）
+       mk.id を書いた点だけが押せる。ここを毎回作りなおすこと（軸を動かすとずれるため）。 */
+  cv._marks = [];
   (spec.hide ? [] : (spec.marks || [])).forEach(function (mk) {
     if (!isFinite(mk.x) || !isFinite(mk.y)) return;
     var px = X(mk.x), py = Y(mk.y);
+    if (mk.id) cv._marks.push({ id: mk.id, px: px, py: py });
     ctx.save();
     ctx.fillStyle = mk.color; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8;
     ctx.beginPath(); ctx.arc(px, py, mk.r || 5.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -4001,7 +4017,8 @@ DEFS['m1-1'] = {
   title: '1-0　太陽系の様子',
   sub: function (v) {
     var t = '惑星をクリックすると、その天体の<b>半長軸 a・周期 T・離心率 ε・K = T²/a³</b> が下の帯に出て、' +
-      '右の <b>T–a 図</b>でもその天体が青いリングで目立ちます。' +
+      '<b>下の表の行</b>と <b>T–a 図</b>の点も いっしょに光ります' +
+      '（<b>T–a 図の点をクリック</b>しても選べます）。' +
       'どの惑星でも <b>K がぴったりそろう</b>ことを確かめよう（＝ケプラーの第3法則）。<br>' +
       '地球から空を見上げたときの火星の見かけの動き（逆行）は、<b>「補足：地動説とケプラーの法則の歴史」</b>で見られます。';
     if (v.view === 'all') {
@@ -4070,7 +4087,10 @@ DEFS['m1-1'] = {
   },
   graphs: [
     {
-      key: 'ta', short: '$T$–$a$ 図', title: '$T$–$a$ 図（両対数）　※ケプラーの第3法則', open: false,
+      /* ★はじめから開いておく★（先生の指示・2026-09-05 で表のすぐ下へ移したため）
+         「アニメで選ぶ → 表の行が光る → T–a 図の点が光る」を見せるのがねらいなので、
+         たたんだままだと、いちばん見てほしいつながりが見えない。 */
+      key: 'ta', short: '$T$–$a$ 図', title: '$T$–$a$ 図（両対数）　※ケプラーの第3法則', open: true,
       custom: function (v) {
         var list = m11Bodies(v), i;
         var line = [];
@@ -4084,9 +4104,12 @@ DEFS['m1-1'] = {
           xlabel: 'a [AU]', ylabel: 'T [年]',
           series: [{ color: COL.orbit, dash: [6, 4], width: 1.6, pts: line }],
           /* 点が近いところは、文字を左右・上下に振り分けて重ならないようにする */
+          /* ★id を書くと、その点が押せるようになる★（80_ui.js の attachGraphPick）
+             押されると d.pickMark が呼ばれて、左のアニメでその天体が選ばれる。 */
           marks: list.map(function (p, j) {
             var left = p.a > 12, on = (p.id === (v.pick || 'earth'));
             return {
+              id: p.id,
               x: p.a, y: p.T, color: p.col, name: p.name, r: on ? 7 : 5, ring: on,
               lx: left ? -11 : 11, align: left ? 'right' : 'left',
               ly: (j % 2 ? 13 : -12)
@@ -4096,6 +4119,12 @@ DEFS['m1-1'] = {
       }
     }
   ],
+  /* ★グラフは左の列（表のすぐ下）に置く★（先生の指示・2026-09-05）
+     「アニメで選ぶ → 表の行が光る → T–a 図の点が光る」を、目を動かさずに追えるようにする。 */
+  graphsInMain: true,
+  /* T–a 図の点を押したときに呼ばれる（80_ui.js の attachGraphPick）。
+     アニメの中で天体を選ぶのと、まったく同じことをする。 */
+  pickMark: function (s, id) { s.o.pick = id; },
   drag: function (s, x, y, lx, ly) {
     var dots = (s.ui && s.ui.dots) || [], i, best = null, bd = 20;
     for (i = 0; i < dots.length; i++) {
@@ -4117,9 +4146,15 @@ DEFS['m1-1'] = {
         resItem('離心率 $\\varepsilon$', fmt(p.e, 3)),
         resItem('$K = T^2/a^3$', fmt(Kv, 4) + ' 年²/AU³', true)
       ],
-      table: kTable(list.map(function (q) {
-        return [q.name, fmt(q.a, 3), fmt(q.T, 3), fmt(q.T * q.T / (q.a * q.a * q.a), 4)];
-      }), SYS.sun),
+      /* pick に名前を書くと、その行が光る（80_ui.js の renderResult）。
+         アニメや T–a 図で選んだ天体が、表の中でもすぐ分かるようにするため。 */
+      table: (function () {
+        var tb = kTable(list.map(function (q) {
+          return [q.name, fmt(q.a, 3), fmt(q.T, 3), fmt(q.T * q.T / (q.a * q.a * q.a), 4)];
+        }), SYS.sun);
+        tb.pick = p.name;
+        return tb;
+      })(),
       note: '右端の列が <b>K = T²/a³</b>。どの天体でも <b>ほぼ 1.000</b> でそろう（太陽系では a を AU、T を年で測ると K = 1）。'
     };
   },
@@ -4865,6 +4900,14 @@ var M14_SETS = {
 };
 function m14Set(v) { return M14_SETS[v.sys14] || M14_SETS.sun; }
 function m14Bodies(v) { var S = m14Set(v); return S.ids.map(S.body); }
+/* ★いま選んでいる天体★（1-0 と同じしくみ。T–a 図の点か、図の中の天体を押すと決まる）
+   描画対象を切りかえると、選んでいた天体が画面から消えることがある。
+   そのときは「選んでいない」に戻す（表の行も、図の輪も出さない）。 */
+function m14Pick(v) {
+  var id = v.pick14 || '', S = m14Set(v);
+  if (!id || S.ids.indexOf(id) < 0) return null;
+  return S.body(id);
+}
 
 DEFS['m1-4'] = {
   id: 'm1-4', mode: 1, tab: '1-3 第3法則（T²/a³=一定）', autoplay: true,
@@ -4878,6 +4921,8 @@ DEFS['m1-4'] = {
         : '<b>水星・地球・天王星</b>を同時に回してみると、') +
       '遠いものほどゆっくりで、1周にかかる時間が長いことが分かります。' +
       '下の表の右端の列（K）が<b>全部そろう</b>ことを確かめよう。<br>' +
+      '<b>図の中の天体か、$T$–$a$ 図の点をクリック</b>すると、その天体の $a$・$T$・$K$ が' +
+      '上の帯に出て、<b>下の表の行</b>もいっしょに光ります。<br>' +
       '<b>「描画対象」を切りかえて、太陽系と地球のまわりを見比べよう。</b>' +
       'K の値は<b>系が違えばまったく違う</b>のに、<b>同じ系の中ではそろう</b>——' +
       'これが「※ 同じ天体の周りをまわるもの同士で成り立つ」の意味です。<br>' +
@@ -4891,7 +4936,7 @@ DEFS['m1-4'] = {
     '（太陽系では 1.00 年²/AU³、地球のまわりでは 9.90×10⁻⁵ s²/km³）。' +
     '$T$–$a$ 図を<b>両対数</b>にすると $\\log T = \\tfrac{3}{2}\\log a$ となり、<b>傾き 3/2 の直線</b>にのることが見えます。',
   cw: 560, ch: 400,
-  consts: { logmode: 'log', sys14: 'sun' },
+  consts: { logmode: 'log', sys14: 'sun', pick14: '' },
   vis: ['O', 'T'],
   visLabel: { O: '軌道を表示', T: '通ってきた道すじ' },
   vars: [],
@@ -4930,7 +4975,7 @@ DEFS['m1-4'] = {
           var a = lg ? (amin * Math.pow(amax / amin, i / 80)) : (amax * i / 80);
           line.push([a, Math.sqrt(Kc * a * a * a)]);
         }
-        var on = S.ids;
+        var on = S.ids, pk = m14Pick(v);
         var marks = S.all().map(function (p, j) {
           var hit = on.indexOf(p.id) >= 0;
           /* ★左のはしにある天体は、名前を「右がわ」に出す★
@@ -4938,9 +4983,16 @@ DEFS['m1-4'] = {
              水星の名前がまったく見えなくなっていた（先生の指摘）。 */
           var frac = lg ? (Math.log(p.a / amin) / Math.log(amax / amin)) : (p.a / amax);
           var left = (frac > 0.3) && (j % 2 === 0);
+          /* ★青い輪は「いま選んでいる天体」だけ★（1-0 とそろえた・2026-09-05）
+             前は「いま描いている天体」ぜんぶに輪を付けていたが、
+             それは色（灰色か色つきか）・大きさ・名前の有無でもう分かるので、
+             輪は選んだ1つのためにあけておく。
+             ★id を書いた点だけが押せる★（80_ui.js の attachGraphPick）。 */
           return {
-            x: p.a, y: p.T, color: hit ? p.col : '#c3cbd3', r: hit ? 6 : 3.4,
-            name: hit ? p.name : '', ring: hit,
+            id: hit ? p.id : '',
+            x: p.a, y: p.T, color: hit ? p.col : '#c3cbd3',
+            r: hit ? ((pk && pk.id === p.id) ? 7 : 6) : 3.4,
+            name: hit ? p.name : '', ring: !!(pk && pk.id === p.id),
             lx: left ? -11 : 11, align: left ? 'right' : 'left',
             ly: (j % 2 ? 13 : -13)
           };
@@ -4984,6 +5036,22 @@ DEFS['m1-4'] = {
       }
     }
   ],
+  /* ★T–a 図の点を押すと、その天体が選ばれる★（1-0 と同じ・先生の指示・2026-09-05）
+     選ぶと「計算結果」の帯・下の表の行・図の中の輪が、いっしょにその天体に変わる。 */
+  pickMark: function (s, id) { s.o.pick14 = id; },
+  /* 図の中の天体を押しても選べる（1-0 と同じ）。s.ui.dots は draw が覚えている。 */
+  drag: function (s, x, y, lx, ly) {
+    var dots = (s.ui && s.ui.dots) || [], i, best = null, bd = 20;
+    for (i = 0; i < dots.length; i++) {
+      var dd = Math.hypot(dots[i].px - lx, dots[i].py - ly);
+      if (dd < bd) { bd = dd; best = dots[i].id; }
+    }
+    /* ★「もう一度押したら選択を消す」にしてはいけない★
+       drag はドラッグ中に何度も呼ばれるので、1回のクリックで
+       付いたり消えたりをくり返してしまう（1-0 と同じく「入れるだけ」にする）。 */
+    if (best) s.o.pick14 = best;
+  },
+  dragKeepT: true,
   draw: function (ctx, s, t, W, H) {
     var v = V(s), S = m14Set(v), i;
     var cx = W / 2, cy = LAW_BAND + 10 + (H - LAW_BAND - 10 - 40) / 2;
@@ -5048,10 +5116,20 @@ DEFS['m1-4'] = {
       sunShape(ctx, cx, cy, 9, '太陽');
     }
     /* 天体（先に丸を描いて、そのあとで周期の吹き出しを上にのせる） */
-    var bl = m14Bodies(v);
+    var bl = m14Bodies(v), pk = m14Pick(v);
+    s.ui.dots = [];                       /* クリックで選べるように、画面の位置を覚えておく */
     bl.forEach(function (p) {
       var q = planetXY(p, t), sp = mapP(p, q.x, q.y);
-      planetShape(ctx, sp[0], sp[1], clamp(p.r, 3.4, 7), p.col);
+      var rr = clamp(p.r, 3.4, 7);
+      planetShape(ctx, sp[0], sp[1], rr, p.col);
+      /* いま選んでいる天体には青い輪をつける（T–a 図の点と、下の表の行と同じ天体） */
+      if (pk && pk.id === p.id) {
+        ctx.save();
+        ctx.strokeStyle = COL.accentRing || '#1663b5'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sp[0], sp[1], rr + 5.5, 0, TAU); ctx.stroke();
+        ctx.restore();
+      }
+      s.ui.dots.push({ id: p.id, px: sp[0], py: sp[1] });
     });
     /* ===== 名前と周期の出し方 =====
        ★太陽と惑星のときは、1-0 と同じく「吹き出しなしで星についていく名前」★（先生の指示）
@@ -5109,7 +5187,9 @@ DEFS['m1-4'] = {
       return [p.name, S.aFmt(p.a), S.tFmt(p.T), S.kFmt(p.T * p.T / (p.a * p.a * p.a)),
         fmt(t / p.T, 2) + ' 周'];
     });
-    var e = bl[1];
+    /* ★選んだ天体があれば、その天体の値を帯に出す★（T–a 図か図の中を押して選ぶ）
+       選んでいないときは、これまでどおり2番目の天体（地球／ハッブル）を出す。 */
+    var pk = m14Pick(v), e = pk || bl[1];
     return {
       items: [
         resItem('半長軸 $a$（' + e.name + '）', S.aFmt(e.a) + ' ' + S.uL),
@@ -5120,7 +5200,9 @@ DEFS['m1-4'] = {
       ],
       table: {
         head: ['天体', '半長軸 a [' + S.uL + ']', '周期 T', 'K = T²/a³ [' + S.uK + ']', 'いままでに回った数'],
-        rows: rows, kcol: 3
+        rows: rows, kcol: 3,
+        /* pick に名前を書くと、その行が光る（80_ui.js の renderResult） */
+        pick: pk ? pk.name : null
       },
       note: S.note
     };
@@ -5980,8 +6062,11 @@ DEFS['m2-2'] = {
   topCard:
     '<div class="ytrow">' +
     '<div class="ytcell">' +
+    /* ★動画の上には、かならず何の動画か分かる題を書く★（先生の指示・2026-09-05）
+       「▶ 動画を見る」だけだと、押すまで中身が分からない。 */
+    '<p class="yttitle">宇宙のゆがみ</p>' +
     '<button type="button" class="ytbox" data-yt="9s74DzzCSW8"' +
-    ' data-yttitle="重力場のイメージ（動画1）">' +
+    ' data-yttitle="宇宙のゆがみ（動画1）">' +
     '<span class="ytmark"></span>▶ 動画を見る（YouTube）' +
     '<span class="ytsub">押すと、ここで再生します</span></button>' +
     '<p class="ytcap">動画1　' +
@@ -5989,8 +6074,9 @@ DEFS['m2-2'] = {
     'YouTube で開く</a></p>' +
     '</div>' +
     '<div class="ytcell">' +
+    '<p class="yttitle">物理実験　万有引力モデル</p>' +
     '<button type="button" class="ytbox" data-yt="-AiTBqG5MnI"' +
-    ' data-yttitle="重力場のイメージ（動画2）">' +
+    ' data-yttitle="物理実験 万有引力モデル（動画2）">' +
     '<span class="ytmark"></span>▶ 動画を見る（YouTube）' +
     '<span class="ytsub">押すと、ここで再生します</span></button>' +
     '<p class="ytcap">動画2　' +
@@ -11753,6 +11839,14 @@ function m45Person3(ctx, cam, n, th, Rpx, scale, S) {
   var d = [(u[0] * ct + w[0] * st) * R, (u[1] * ct + w[1] * st) * R,
     (u[2] * ct + w[2] * st) * R];
   var pc = cam.p(0, 0, 0), q = cam.p(d[0], d[1], d[2]);
+  /* ★地球の裏がわにいるときは描かない★（先生の指示・2026-09-05）
+     ★mk3d の d は「奥ゆき」で、★小さいほうが手前★★。
+       screenX, screenY(上向き), d の3つは左手系（行列式が −1）なので、
+       手前を向く軸は −d のほう。
+       たしかめ：真上から見る（el = 88 を −88 で渡す）とき d ≒ −z になり、
+       −d ＝ ＋z ＝「北極の側から見おろす」。1段目の見る向きとぴったり合う。
+     だから 中心より d が大きい ＝ 向こうがわ。地球にかくれるので出さない。 */
+  if (q.d > pc.d) return null;
   var dx = q.x - pc.x, dy = q.y - pc.y, L = Math.hypot(dx, dy);
   /* まっすぐ手前（または真奥）にいるときは画面での向きが決まらないので、上向きにする */
   if (L < 0.4) { dx = 0; dy = -1; L = 1; }
@@ -12427,6 +12521,37 @@ function varsOf(d, s) {
 }
 
 /* いま表示するグラフだけを返す。グラフに when(v) を書くと、その条件のときだけ出る。 */
+/* ===== グラフの欄（<div class="gsec">…）の HTML =====
+   ★ふつうは右の列に出す★が、d.graphsInMain: true のシムでは
+   左の列（計算結果の表のすぐ下）に出す。1-0 がそれ
+   ——アニメで選んだ天体が表と T–a 図で光るので、3つを近くに置きたい（先生の指示）。 */
+function graphsHtml(d, s) {
+  var h = [];
+  graphsOf(d, s).forEach(function (g) {
+    var sw = '';
+    if (g.sw) {                       /* グラフのすぐ上に置く切りかえ（両対数／両方リニア など） */
+      sw = '<div class="gsw">' + (g.sw.label ? '<span>' + g.sw.label + '</span>' : '') +
+        g.sw.options.map(function (o) {
+          return '<button class="' + (s.o[g.sw.k] === o.v ? 'on' : 'sub') + '" data-gsw="' + g.sw.k +
+            '" data-gswv="' + o.v + '">' + o.label + '</button>';
+        }).join('') + '</div>';
+    }
+    h.push('<div class="gsec' + (d.graphsInMain ? ' inmain' : '') +
+      '"><button class="ghead" data-g="' + g.key + '"><span class="tri">' +
+      (s.open[g.key] ? '▼' : '▶') + '</span>' +
+      mathHtml(typeof g.title === 'function' ? g.title(V(s), s) : g.title) + '</button>' +
+      '<div class="gbody' + (s.open[g.key] ? '' : ' hide') + (st.bigFml ? ' bigf' : '') + '" id="gb_' + g.key + '">' +
+      '<div class="gleft">' + sw + cvSlot('gc_' + g.key) + '</div>' +
+      /* 公式の欄がないグラフには、同じ幅の「見えない場所とり」を置く。
+         こうしないと、公式のないグラフだけ横に広がって縦も高くなり、
+         並んだグラフの大きさがそろわないため。 */
+      (g.fml ? '<div class="gform" id="gf_' + g.key + '"></div>'
+        : '<div class="gspacer" aria-hidden="true"></div>') +
+      '</div></div>');
+  });
+  return h.join('');
+}
+
 function graphsOf(d, s) {
   var list = d.graphs || [];
   if (!s) return list;
@@ -12839,6 +12964,10 @@ function buildPanel() {
   }
   /* ⑤ 計算結果の帯 */
   if (hasRes) h.push('<div class="resbar" id="resbar"></div>');
+  /* ★d.graphsInMain＝グラフを「左の列の、計算結果の表のすぐ下」に置く★（先生の指示・2026-09-05）
+     1-0 は「アニメで選ぶ → 表が光る → T–a 図が光る」を目で追わせたいので、
+     3つを近くに並べる。右の列は読み物だけになる。 */
+  if (d.graphsInMain) h.push(graphsHtml(d, s));
   /* ⑤b 単位のことわり（AU・太陽質量など、教科書に出てこない単位の説明） */
   h.push(unitNoteHtml(d, s));
   /* ⑥ 補足の文章 → 運動方程式の式 */
@@ -12908,28 +13037,8 @@ function buildPanel() {
       '<span class="ghint1">グラフは ドラッグ＝移動／目盛りの上でドラッグ＝軸の拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動</span></div>');
   }
 
-  /* 右列 ② 各グラフ */
-  graphsOf(d, s).forEach(function (g) {
-    var sw = '';
-    if (g.sw) {                       /* グラフのすぐ上に置く切りかえ（両対数／両方リニア など） */
-      sw = '<div class="gsw">' + (g.sw.label ? '<span>' + g.sw.label + '</span>' : '') +
-        g.sw.options.map(function (o) {
-          return '<button class="' + (s.o[g.sw.k] === o.v ? 'on' : 'sub') + '" data-gsw="' + g.sw.k +
-            '" data-gswv="' + o.v + '">' + o.label + '</button>';
-        }).join('') + '</div>';
-    }
-    h.push('<div class="gsec"><button class="ghead" data-g="' + g.key + '"><span class="tri">' +
-      (s.open[g.key] ? '▼' : '▶') + '</span>' +
-      mathHtml(typeof g.title === 'function' ? g.title(V(s), s) : g.title) + '</button>' +
-      '<div class="gbody' + (s.open[g.key] ? '' : ' hide') + (st.bigFml ? ' bigf' : '') + '" id="gb_' + g.key + '">' +
-      '<div class="gleft">' + sw + cvSlot('gc_' + g.key) + '</div>' +
-      /* 公式の欄がないグラフには、同じ幅の「見えない場所とり」を置く。
-         こうしないと、公式のないグラフだけ横に広がって縦も高くなり、
-         並んだグラフの大きさがそろわないため。 */
-      (g.fml ? '<div class="gform" id="gf_' + g.key + '"></div>'
-        : '<div class="gspacer" aria-hidden="true"></div>') +
-      '</div></div>');
-  });
+  /* 右列 ② 各グラフ（d.graphsInMain のシムでは、左の列の表の下に出す） */
+  if (!d.graphsInMain) h.push(graphsHtml(d, s));
 
   /* 右列 ②b 「見るポイント」の上に置く図（2-3 の静止軌道の見取り図など）。
      グラフより下・見るポイントより上に出したい図はここに書く。 */
@@ -13140,7 +13249,7 @@ function buildPanel() {
      中では DEFS[st.cur] / st.sims[st.cur] を見るので、シムが変わっても正しく動く。 */
   graphsOf(d, s).forEach(function (g) {
     var gcv = $('gc_' + g.key);
-    if (gcv && !gcv._dragOn) { gcv._dragOn = true; attachGraphDrag(gcv, g.key); }
+    if (gcv && !gcv._dragOn) { gcv._dragOn = true; attachGraphDrag(gcv, g.key); attachGraphPick(gcv); }
   });
   var mcv = $('mainCv');
   if (mcv && !mcv._dragOn) { mcv._dragOn = true; attachSimDrag(); attach3dDrag(); attachCvHits(); }
@@ -13334,6 +13443,39 @@ function toggleAllGraphs() {
 }
 
 /* ===== グラフのドラッグ（移動・軸の拡大縮小） ===== */
+/* ===== グラフの中の点を押して選ぶ =====
+   ★グラフの marks に mk.id を書くと、その点が押せるようになる★
+     押されたら、いまのシムの d.pickMark(s, id) を呼ぶ。
+   1-0 では、T–a 図の惑星を押すと、左のアニメでその惑星が選ばれる。
+   ★ドラッグと取りあいにならないようにする★
+     ドラッグ（移動・拡大）で指が動いたときは選ばない（6 px 以上動いたら見送り）。
+     ※ 両対数のグラフは cv._map が null で、そもそもドラッグしない。 */
+function attachGraphPick(cv) {
+  if (!cv) return;
+  var down = null;
+  cv.addEventListener('pointerdown', function (ev) { down = { x: ev.clientX, y: ev.clientY }; });
+  cv.addEventListener('click', function (ev) {
+    var moved = down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 6;
+    down = null;
+    if (moved) return;
+    var d = DEFS[st.cur], s = st.sims[st.cur];
+    if (!d || !d.pickMark || !s || !cv._marks || !cv._marks.length) return;
+    var r = cv.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    /* canvas の中の座標に直す。prep が cv.width = はば×2 にしているので、半分が論理のはば */
+    var lx = (ev.clientX - r.left) / r.width * (cv.width / 2);
+    var ly = (ev.clientY - r.top) / r.height * (cv.height / 2);
+    var best = null, bd = 16, i;
+    for (i = 0; i < cv._marks.length; i++) {
+      var m = cv._marks[i], dd = Math.hypot(m.px - lx, m.py - ly);
+      if (dd < bd) { bd = dd; best = m.id; }
+    }
+    if (!best) return;
+    d.pickMark(s, best);
+    renderActive();
+  });
+}
+
 function attachGraphDrag(cv, key) {
   if (!cv) return;
   var drag = null;
@@ -13851,7 +13993,8 @@ function renderResult(d, s, t) {
       });
       h.push('</tr>');
       r.table.rows.forEach(function (row) {
-        h.push('<tr>');
+        /* data-rn … 「いま選んでいる天体の行」を光らせるための目じるし（下で class を付けはずし） */
+        h.push('<tr data-rn="' + String(row[0]).replace(/"/g, '') + '">');
         row.forEach(function (x, i2) {
           h.push('<td class="' + (i2 === 0 ? 'nm' : (i2 === r.table.kcol ? 'kcol num' : 'num')) + '">'
             + (i2 === 0 ? x : '') + '</td>');
@@ -13862,8 +14005,19 @@ function renderResult(d, s, t) {
     }
     h.push('<p class="knote"></p>');
     el.innerHTML = h.join('');
-    el._keys = keys; el._flash = null; el._note = null;
+    el._keys = keys; el._flash = null; el._note = null; el._pick = null;
     renderMath(el);
+  }
+
+  /* ★選んでいる天体の行を光らせる★（先生の指示・2026-09-05）
+     r.table.pick に 1列目の名前を書くと、その行に class="on" が付く。
+     ★毎フレーム走るので、作り直さずクラスの付けはずしだけにすること★ */
+  if (r.table && el._pick !== r.table.pick) {
+    el._pick = r.table.pick;
+    Array.prototype.forEach.call(el.querySelectorAll('.ktab tr[data-rn]'), function (tr) {
+      if (tr.getAttribute('data-rn') === r.table.pick) tr.classList.add('on');
+      else tr.classList.remove('on');
+    });
   }
 
   /* 光らせる印（@@r:…@@ の飛び先）は、クラスの付けはずしだけ。作り直さない */

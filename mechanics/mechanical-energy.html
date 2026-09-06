@@ -679,6 +679,37 @@ table.ptab.wide td.ce .num{font-size:.8rem}
   margin-left:auto}
 .cvbar .acts button.jump:hover{background:var(--accent-l);border-color:var(--accent)}
 
+/* ===== モード3　2×3 の式の切りかえ（★第20回★） ===== */
+.eq3grid{display:grid;grid-template-columns:1fr 92px 92px;gap:6px;align-items:stretch;
+  margin:.35rem 0 .7rem}
+.eq3hd{font-size:.78rem;font-weight:700;color:var(--sub);text-align:center;
+  align-self:end;padding-bottom:2px}
+.eq3row{font-size:.82rem;line-height:1.35;display:flex;flex-direction:column;justify-content:center;
+  padding:.3rem .1rem}
+.eq3no{font-weight:700;color:var(--accent);margin-right:.25em}
+.eq3sub{font-size:.72rem;color:var(--sub)}
+.eq3b{border:1.5px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;
+  font-size:1.05rem;font-weight:700;padding:.35rem 0;color:#1c8f4a;transition:.12s}
+.eq3b.ng{color:#c0392b}
+.eq3b:hover{border-color:var(--accent)}
+.eq3b.on{border-color:var(--accent);border-width:2.5px;background:#eef5fb}
+.eq3head{cursor:default}
+.eq3case{border-top:1px dashed var(--line);margin-top:.7rem;padding-top:.55rem;font-size:.82rem}
+.eq3ct{color:var(--sub);margin-bottom:.3rem}
+.eq3c{padding:.28rem .5rem;border-radius:7px;line-height:1.5}
+.eq3c.now{background:#eef5fb;border:1px solid var(--accent)}
+.eq3cn{color:var(--sub)}
+.eq3now{color:var(--accent);font-weight:700;margin-left:.4em}
+@media (max-width:520px){
+  .eq3grid{grid-template-columns:1fr 64px 64px}
+}
+/* モード3：左下の立式の欄を目立たせ、ボタンの上に「↓をクリック」（第21回・千葉さんの指示） */
+#eqzone.eq3pop{border:2.5px solid var(--accent);background:#f3f8fd;box-shadow:0 6px 22px rgba(27,94,140,.18)}
+.eq3click{grid-column:2 / span 2;text-align:center;font-weight:700;color:#c0392b;font-size:.9rem;
+  letter-spacing:.04em;padding-bottom:2px;animation:eq3blink 1.6s ease-in-out infinite}
+@keyframes eq3blink{0%,100%{opacity:1}50%{opacity:.45}}
+@media (prefers-reduced-motion: reduce){.eq3click{animation:none}}
+
 </style>
 </head>
 <body>
@@ -2144,6 +2175,38 @@ function hatchLine(ctx, x1, y1, x2, y2, side) {
   ctx.restore();
 }
 
+/* 滑車（軽くてなめらかに回る車輪）。★第20回・モード3で新規★
+   (x, y) が軸の中心、r が半径［px］。外わく → みぞ → 軸 の順に描く。 */
+function pulleyWheel(ctx, x, y, r) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#e3e9ef'; ctx.fill();
+  ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, r * 0.62, 0, Math.PI * 2);
+  ctx.strokeStyle = '#9aa4ae'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, r * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = '#5b6672'; ctx.fill();
+  ctx.restore();
+}
+
+/* 滑車を台のはしに取りつける「支柱」。宙に浮かせない（教科書の図と同じ）。 */
+function pulleyArm(ctx, x1, y1, x2, y2) {
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = '#5b6672'; ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.strokeStyle = '#e3e9ef'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.restore();
+}
+
+/* 滑車に巻きついた糸（円弧）。a1 → a2 はキャンバスの角度［rad］。 */
+function stringArc(ctx, x, y, r, a1, a2, ccw) {
+  ctx.save();
+  ctx.strokeStyle = COL.hand; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(x, y, r, a1, a2, !!ccw); ctx.stroke();
+  ctx.restore();
+}
+
 function ball(ctx, x, y, r, style) {
   noteObj(x - r, y - r, 2 * r, 2 * r);
   ctx.save();
@@ -2886,7 +2949,11 @@ var MODES = [
       'm1-11', 'm1-12', 'm1-13', 'm1-14'] },
   { n: 2, label: '2　非保存力が仕事をするケース（力学的エネルギーが保存されない）',
     tip: '摩擦力や手の力（＝<b>非保存力</b>）が仕事をしたら？',
-    ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4', 'm2-5'] }
+    ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4', 'm2-5'] },
+  { n: 3, label: '3　2物体の運動とエネルギー',
+    tip: '糸や板でつながれた2物体。<b>1物体ずつ見るか、2物体全体で見るか</b>で、' +
+      '力学的エネルギーが保存するかどうかが変わります。',
+    ids: ['m3-1', 'm3-2', 'm3-3', 'm3-4', 'm3-5', 'm3-6'] }
 ];
 
 /* ===== 文字まわりの共通ルール ===== */
@@ -2973,7 +3040,7 @@ function consOf(d, v) { return (typeof d.cons === 'function') ? !!d.cons(v) : (d
 function ptsOf(d, v) {
   return (d.pts || []).map(function (p) {
     var t = (typeof p.t === 'function') ? p.t(v) : p.t;
-    return { name: p.name, jp: p.jp, t: t, sym: p.sym || {}, hsym: p.hsym,
+    return { name: p.name, jp: p.jp, t: t, sym: p.sym || {}, sym3: p.sym3, hsym: p.hsym,
       m: d.sample(v, t) };
   });
 }
@@ -3067,7 +3134,8 @@ var FORCE_LIB = {
   g: { name: '重力', sym: 'mg', color: COL.force,
     w: function (v, A, B) { return A.m.Ug - B.m.Ug; },
     wsym: 'W_{\\text{重力}} = U_{g1} - U_{g2} = -mg(h_2 - h_1)',
-    why: '重力は<b>保存力</b>。下がれば正、上がれば負の仕事になる。' },
+    /* ★仕事が 0（水平な運動）のときは「下がれば正…」を出さない★（千葉さんの判断・第22回） */
+    why: function (W) { return workSign(W) === 0 ? '重力は<b>保存力</b>。' : '重力は<b>保存力</b>。下がれば正、上がれば負の仕事になる。'; } },
   N: { name: '垂直抗力', sym: 'N', color: COL.norm,
     w: function () { return 0; },
     wsym: 'W_N = N\\,L\\cos 90^\\circ = 0',
@@ -3122,7 +3190,10 @@ function forcesOf(d, v, jj) {
 
 /* その仕事が「正・負・0」のどれか（理由の文をそろえるため） */
 function workSign(W) { return Math.abs(W) < 5e-3 ? 0 : (W > 0 ? 1 : -1); }
-function workWhy(W) {
+function workWhy(W, f) {
+  /* ★力ごとの「理由」があればそれを使う★（第21回）
+     糸の張力の合計が 0 なのは「向きが垂直だから」ではない。決まり文句を当てると間違いになる。 */
+  if (f && f.how) return (typeof f.how === 'function') ? f.how(W) : f.how;
   var s = workSign(W);
   return s === 0 ? '力の向きと動く向きが<b>垂直</b>（または動いていない）なので、仕事は <b>0</b>。'
     : s > 0 ? '力の向きと動く向きが<b>同じ</b>ほうを向いているので、<b>正の仕事</b>。'
@@ -3537,7 +3608,7 @@ function boxEdge(b, px, py) {
    さがし方（placePtBox）だと、図の中の文字をよけて1つだけ列から外れることがあった。
    ここで幅を足し算して、入るなら等間隔でならべる。入らないときだけ、さがし方にもどす。 */
 function rowPlace(qs, sizes) {
-  var n = sizes.length, i, tot = 0, gap = 8, L = 4, R = CVW - 72;  /* 右はエネルギーの棒のぶん */
+  var n = sizes.length, i, tot = 0, gap = 8, L = 4, R = CVW - 84;  /* 右はエネルギーの棒と「エネルギー」の字のぶん */
   for (i = 0; i < n; i++) tot += sizes[i].w;
   if (tot + gap * (n - 1) > R - L) gap = 4;
   if (tot + gap * (n - 1) > R - L) return null;
@@ -3569,13 +3640,33 @@ function rowPlace(qs, sizes) {
   return out;
 }
 
+/* 図の中の吹きだしの元になる「点」。
+   ★モード3（2物体）は、状態1・2ではなく【物体A・物体B】の吹きだしにする★（千葉さんの指示・第21回）
+   「1 E_1 = …」だと、立式の状態 1・2 とまぎらわしく、しかも A を指しているように読めてしまう。 */
+function bubPts(d, v) {
+  if (d.mode !== 3) return ptsOf(d, v);
+  var ps = ptsOf(d, v), pL = ps[ps.length - 1];
+  return ['A', 'B'].map(function (who) {
+    return { name: '物体' + who, who: who, jp: '', t: pL.t, sym: {}, m: pL.m[who],
+      tex: 'E_' + who + ' = ' + s3K(pL, who) + ' + ' + s3U(pL, who) };
+  });
+}
+
 function drawPts(ctx, d, s, t, map) {
   st._ptPos = null;
   st._vGhost = [];        /* 検算用：ゴーストの速度ベクトルの「速さ」と「長さ」 */
   if (!endOn(d, s, t)) return;
-  var ps = ptsOf(d, V(s)), i, taken = [], out = [], qs = [];
+  var ps = bubPts(d, V(s)), i, taken = [], out = [], qs = [];
   var live = d.sample(V(s), t);          /* いまの物体の場所（二重に描かないための照合用） */
   for (i = 0; i < ps.length; i++) qs.push(map(ps[i], ps[i].m, i));
+  /* ★吹きだしは「指す先の x の順」にならべる★（第22回・千葉さんの指摘）
+     左の吹きだしが右の物体を指すと、引き出し線が交差して読めない。 */
+  if (d.ptSide === 'row' && qs.every(function (q) { return q && isFinite(q.x); })) {
+    var ord = ps.map(function (_, k) { return k; });
+    ord.sort(function (a, b) { return qs[a].x - qs[b].x; });
+    ps = ord.map(function (k) { return ps[k]; });
+    qs = ord.map(function (k) { return qs[k]; });
+  }
   /* ★★ 速度ベクトルの長さは「その点の速さ」に比例させる ★★（先生の指摘・第7回）
      いままでは map が返す vlen（決め打ちの px）でどの点も同じ長さに描いていたので、
      1-7 のように v_A = 14 m/s・v_B = 7 m/s とちがう点が、同じ速さに見えてしまった。
@@ -3683,6 +3774,7 @@ function ptGhost(ctx, d, s, p, q, here) {
 
 /* 吹きだしに書く式（KaTeX）。K と U の記号を「+」でつないだもの。 */
 function ptTex(d, p) {
+  if (p.tex) return p.tex;                 /* モード3：物体ごとの式（bubPts が作る） */
   var parts = [p.sym.K || '0', p.sym.Ug || '0'];
   if (d.hasUs) parts.push(p.sym.Us || '0');
   return 'E_' + p.name + ' = ' + parts.join(' + ');
@@ -3897,8 +3989,23 @@ function stepData() {
   var rows = ps.map(function (p) {
     return [p.name, texPlain(p.sym.K || '0'), texPlain(p.sym.Ug || '0'), texPlain(p.sym.Us || '0')];
   });
+  /* ★モード3（2物体）★ 千葉さんの指示：
+     ・Step1 は「2物体全体に注目すると保存力だけ」と書く（どちらに注目したかが要だから）。
+     ・Step2 の表は「物体A／物体B」の2行にして、物体ごとに K と U を書き出す。 */
+  var tt2 = null, okw = null;
+  if (d.mode === 3 && ps.length) {
+    var pL = ps[ps.length - 1];
+    rows = [
+      ['物体A', texPlain(s3K(pL, 'A')), texPlain((pL.sym3 && pL.sym3.A && pL.sym3.A.Ug) || '0'),
+        texPlain((pL.sym3 && pL.sym3.A && pL.sym3.A.Us) || '0')],
+      ['物体B', texPlain(s3K(pL, 'B')), texPlain((pL.sym3 && pL.sym3.B && pL.sym3.B.Ug) || '0'),
+        texPlain((pL.sym3 && pL.sym3.B && pL.sym3.B.Us) || '0')]
+    ];
+    tt2 = '物体ごとにエネルギーを書き出す';
+    okw = ok ? '2物体全体に注目すると保存力だけ' : '2物体全体で見ても非保存力が仕事をする';
+  }
   return {
-    ok: ok, rows: rows, hasUs: hasUs,
+    ok: ok, rows: rows, hasUs: hasUs, title2: tt2, okWord: okw,
     why: ok ? (d.step1 || '保存力（重力・弾性力）だけが仕事をしている')
       : (d.step1 || '非保存力が仕事をしている'),
     /* ★式は2行で書く★ 1行目＝エネルギーどうしの関係、2行目＝K と U に書きひらいた形 */
@@ -3938,13 +4045,13 @@ function drawStepWide(cv, D) {
   label(ctx, '保存力だけが仕事をしているか？', xs[0] + pad + tagW + 7, y0 + 16.5,
     { size: 12, bold: true, align: 'left', clamp: false });
   stepMark(ctx, xs[0] + pad + 12, y0 + 43, D.ok);
-  label(ctx, D.ok ? '保存力だけ' : '非保存力が仕事をする', xs[0] + pad + 28, y0 + 43,
+  label(ctx, D.okWord || (D.ok ? '保存力だけ' : '非保存力が仕事をする'), xs[0] + pad + 28, y0 + 43,
     { size: 12, bold: true, align: 'left', color: D.ok ? '#1c8f4a' : '#c0392b', clamp: false });
   wrapLabel(ctx, D.why, xs[0] + pad, y0 + 62, bw - pad * 2, 10.5, 13.5, '#3d4c5a');
 
   /* --- Step2 --- */
   stepTag(ctx, xs[1] + pad, y0 + 7, 2);
-  label(ctx, '2つの位置でエネルギーを書き出す', xs[1] + pad + tagW + 7, y0 + 16.5,
+  label(ctx, D.title2 || '2つの位置でエネルギーを書き出す', xs[1] + pad + tagW + 7, y0 + 16.5,
     { size: 12, bold: true, align: 'left', clamp: false });
   stepTable(ctx, xs[1] + pad, y0 + 28, bw - pad * 2, D.rows, D.hasUs, STEP_RH);
 
@@ -3977,12 +4084,12 @@ function drawStepNarrow(cv, D) {
   label(ctx, '保存力だけが仕事をしている？', x + pad + tagW + 6, ys[0] + 15.5,
     { size: 11.5, bold: true, align: 'left', clamp: false });
   stepMark(ctx, x + pad + 12, ys[0] + 38, D.ok);
-  label(ctx, D.ok ? '保存力だけ' : '非保存力が仕事をする', x + pad + 28, ys[0] + 38,
+  label(ctx, D.okWord || (D.ok ? '保存力だけ' : '非保存力が仕事をする'), x + pad + 28, ys[0] + 38,
     { size: 11.5, bold: true, align: 'left', color: D.ok ? '#1c8f4a' : '#c0392b', clamp: false });
   wrapLabel(ctx, D.why, x + pad, ys[0] + 55, bw - pad * 2, 9.5, 12, '#3d4c5a');
 
   stepTag(ctx, x + pad, ys[1] + 6, 2);
-  label(ctx, '2つの位置で書き出す', x + pad + tagW + 6, ys[1] + 15.5,
+  label(ctx, D.title2 || '2つの位置で書き出す', x + pad + tagW + 6, ys[1] + 15.5,
     { size: 11.5, bold: true, align: 'left', clamp: false });
   stepTable(ctx, x + pad, ys[1] + 25, bw - pad * 2, D.rows, D.hasUs, STEP_RH);
 
@@ -7485,6 +7592,1234 @@ DEFS['m2-5'] = {
     '「仕事を表示」で1つずつ見ると、正と負がはっきり分かります。'
 };
 
+/* ===== 70_mode3.js ===== */
+/* モード3　2物体の運動とエネルギー（★第20回・新規★）
+   ---------------------------------------------------------------
+   千葉さんの指示：
+     ・右のグラフは、既定で「2物体全体」を開く。「A だけ」「B だけ」はその下にたたんで置く。
+     ・左下の式は 2（対象）× 3（式の種類）＝ 6 パターンを、ボタンで切りかえて見せる。
+     ・その下に「ケース1／ケース2」の説明をいつも出す。
+   ---------------------------------------------------------------
+   2物体のエネルギーの持ち方
+     d.sample(v, t) は【全体】の K/U_g/U_k/U/E と、
+     【A だけ】【B だけ】を q.A / q.B の枝に入れて返す（en2 が作る）。
+     エネルギーの棒（drawEnergyBar）とグラフの「全体」は、そのまま q.K などを見る。 */
+'use strict';
+
+/* 2物体ぶんのエネルギーをまとめる。
+   a, b … { m: 質量, v: 速さ, h: 基準面からの高さ, sp: ばねの変形, w: 非保存力の仕事 }
+   k … ばね定数（ばねがなければ 0 でよい）。ばねは a・b のうち sp を持つほうにつく。 */
+function en2(k, a, b, extra) {
+  function one(o) {
+    var K = EN.K(o.m, o.v || 0), Ug = EN.Ug(o.m, o.h || 0);
+    var Us = (k > 0 && o.sp) ? EN.Us(k, o.sp) : 0;
+    return { m: o.m, v: o.v || 0, h: o.h || 0, sp: o.sp || 0,
+      K: K, Ug: Ug, Us: Us, U: Ug + Us, E: K + Ug + Us, W: o.w || 0 };
+  }
+  var A = one(a), B = one(b), q = extra || {};
+  q.A = A; q.B = B;
+  q.K = A.K + B.K; q.Ug = A.Ug + B.Ug; q.Us = A.Us + B.Us;
+  q.U = q.Ug + q.Us; q.E = q.K + q.U; q.W = A.W + B.W;
+  /* 図の矢印などで使う「代表の速さ」。糸でつながっていれば A と B は同じ。 */
+  if (q.v === undefined) q.v = A.v;
+  return q;
+}
+
+/* ===== グラフ（2物体全体 → A だけ → B だけ）===== */
+function twoBodyGraphs3(d) {
+  function pick(who) {
+    return function (m) { return who ? m[who] : m; };
+  }
+  function mk(who, key, short, title) {
+    var g = pick(who);
+    return {
+      key: key, short: short, title: title, ylabel: 'エネルギー [J]',
+      open: (who === null), H: who === null ? 208 : 176,
+      /* 重なったとき下になる線から先に描く（E → U → K） */
+      series: [
+        { name: 'E = K + U', color: COL.eE, width: 3.2,
+          f: function (m) { return g(m).E; },
+          fillTo: function (v) { return g(d.sample(v, 0)).E; } },
+        { name: 'U 位置エネルギー', color: COL.eU, dash: [7, 4],
+          f: function (m) { return g(m).U; } },
+        { name: 'K 運動エネルギー', color: COL.eK,
+          f: function (m) { return g(m).K; } }
+      ],
+      legend: [{ name: 'K 運動エネルギー', color: COL.eK },
+        { name: 'U 位置エネルギー', color: COL.eU, dash: [7, 4] },
+        { name: 'E = K + U', color: COL.eE, width: 3.2 }],
+      fml: function (v) {
+        var a = g(d.sample(v, 0)), b = g(d.sample(v, d.tEnd(v)));
+        var okc = cons3(d, v, who === null ? 'both' : 'each');
+        var nm = (who === null) ? '2物体全体' : (who + ' だけ');
+        if (okc) {
+          return [nm + ':\\; E = K + U \\;(\\text{一定})',
+            'E = ' + fmtE(a.E) + '\\ \\mathrm{J}\\;\\to\\;' + fmtE(b.E) + '\\ \\mathrm{J}',
+            '\\text{変わらない}'];
+        }
+        return [nm + ':\\; E_2 - E_1 = W_{\\text{非保存}}',
+          'E:\\;' + fmtE(a.E) + '\\ \\mathrm{J}\\;\\to\\;' + fmtE(b.E) + '\\ \\mathrm{J}',
+          '\\Delta E = ' + fmtE(b.E - a.E) + '\\ \\mathrm{J}'];
+      }
+    };
+  }
+  return [
+    mk(null, 'ALL', '2物体全体', '2物体全体の $K$・$U$・$E$　※まずここを見る'),
+    mk('A', 'GA', 'A だけ', 'A だけの $K$・$U$・$E$'),
+    mk('B', 'GB', 'B だけ', 'B だけの $K$・$U$・$E$')
+  ];
+}
+
+/* ===== 保存するか（対象べつ）=====
+   d.cons3 = { both: true/false/関数, each: true/false/関数 } */
+function cons3(d, v, scope) {
+  var c = d.cons3 || {};
+  var q = (scope === 'each') ? c.each : c.both;
+  if (typeof q === 'function') return !!q(v);
+  return !!q;
+}
+
+/* ===== 6パターンの式 ===== */
+var EQ3_SCOPES = [{ k: 'both', label: '2物体全体' }, { k: 'each', label: '1物体ずつ' }];
+var EQ3_KINDS = [
+  { k: 'cons', label: '力学的エネルギー保存則', sub: '非保存力の仕事がなければなりたつ' },
+  { k: 'rel', label: '力学的エネルギー変化量（後－前）と非保存力の仕事の関係', sub: 'いつでもなりたつ' },
+  { k: 'wk', label: '運動エネルギー変化量（後－前）と仕事の関係', sub: 'いつでもなりたつ' }
+];
+
+/* 点 p の、物体 who（'A'/'B'）の記号。pts[].sym3 は { A: {K,Ug,Us}, B: {…} } の形。
+   pts[].sym（2物体全体の記号）は、吹きだしなど既存のしくみがそのまま使う。 */
+function s3K(p, who) { var o = (p.sym3 || {})[who]; return (o && o.K) || '0'; }
+function s3U(p, who) {
+  var o = (p.sym3 || {})[who] || {}, g = o.Ug || '0', s = o.Us;
+  return (s === undefined || s === null) ? g : (g === '0' ? s : (s === '0' ? g : g + ' + ' + s));
+}
+/* 2物体全体は「A の分 ＋ B の分」 */
+function s3Kboth(p) { return s3K(p, 'A') + ' + ' + s3K(p, 'B'); }
+function s3Uboth(p) { return s3U(p, 'A') + ' + ' + s3U(p, 'B'); }
+function q3(m, who) { return (who === 'both') ? m : m[who]; }
+
+/* 1パターンぶんの中身を作る。who は 'both' / 'A' / 'B'。 */
+function eq3One(d, v, A, B, kind, who) {
+  var a = q3(A.m, who), b = q3(B.m, who);
+  var sK = (who === 'both') ? s3Kboth : function (p) { return s3K(p, who); };
+  var sU = (who === 'both') ? s3Uboth : function (p) { return s3U(p, who); };
+  var nm = (who === 'both') ? '2物体全体' : (who + ' だけ');
+  var okc = cons3(d, v, who === 'both' ? 'both' : 'each');
+  var dW = b.W - a.W;
+  if (kind === 'cons') {
+    return { ok: okc, who: nm,
+      sym: 'K_{' + A.name + '} + U_{' + A.name + '} \\;=\\; K_{' + B.name + '} + U_{' + B.name + '}',
+      sym2: '(' + sK(A) + ') + (' + sU(A) + ') \\;=\\; (' + sK(B) + ') + (' + sU(B) + ')',
+      num: okc
+        ? fmtE(a.K) + ' + ' + numTerm(a.U) + ' \\;=\\; ' + fmtE(b.K) + ' + ' + numTerm(b.U) +
+          ' \\;=\\; ' + fmtE(b.E) + '\\ \\mathrm{J}'
+        : fmtE(a.E) + ' \\;\\ne\\; ' + fmtE(b.E) + '\\ \\mathrm{J}',
+      note: okc ? nm + 'では、仕事をするのが保存力だけなので $E$ はどこでも同じ。'
+        : nm + 'では<b>成り立たない</b>。' + (who === 'both'
+          ? '摩擦などの非保存力が仕事をしているため。' :
+          '糸の張力（や摩擦力）がその物体に仕事をするため。') + '②を使う。' };
+  }
+  if (kind === 'rel') {
+    return { ok: true, who: nm,
+      sym: 'E_{' + B.name + '} - E_{' + A.name + '} \\;=\\; W_{\\text{非保存}}',
+      sym2: '(K_{' + B.name + '} + U_{' + B.name + '}) - (K_{' + A.name + '} + U_{' + A.name + '}) ' +
+        '\\;=\\; W_{\\text{非保存}}',
+      num: fmtE(b.E) + ' - ' + numTerm(a.E) + ' \\;=\\; ' + fmtE(b.E - a.E) + '\\ \\mathrm{J}' +
+        (Math.abs(dW) > 1e-9 ? ' \\;(= W_{\\text{非保存}})' : ''),
+      note: 'これは<b>いつでも成り立つ</b>。' + (Math.abs(b.E - a.E) < 1e-9
+        ? nm + 'では非保存力の仕事が 0 なので、右辺も 0（＝①の保存則）。'
+        : nm + 'では非保存力が <b>' + fmtJ(b.E - a.E) + '</b> の仕事をしたので、その分だけ $E$ が変わった。') };
+  }
+  return { ok: true, who: nm,
+    sym: 'K_{' + B.name + '} - K_{' + A.name + '} \\;=\\; W_{\\text{すべての力}}',
+    sym2: '(' + sK(B) + ') - (' + sK(A) + ') \\;=\\; W_{\\text{保存力}} + W_{\\text{非保存力}}',
+    num: fmtE(b.K) + ' - ' + numTerm(a.K) + ' \\;=\\; ' + fmtE(b.K - a.K) + '\\ \\mathrm{J}',
+    note: 'これも<b>いつでも成り立つ</b>。左辺は<b>運動エネルギーの変化だけ</b>、' +
+      '右辺は<b>重力や弾性力（保存力）の仕事も入れた、すべての力の仕事</b>。' };
+}
+
+/* 選んだ1パターン（scope × kind）。'each' は A と B の2つを返す。 */
+function eq3Pick(d, v, jj, scope, kind) {
+  var ps = ptsOf(d, v);
+  if (ps.length < 2) return [];
+  var A = ps[0], B = ps[pairJ(d, v, jj)];
+  if (scope === 'both') return [eq3One(d, v, A, B, kind, 'both')];
+  return [eq3One(d, v, A, B, kind, 'A'), eq3One(d, v, A, B, kind, 'B')];
+}
+
+/* ボタンの ○ / ✕ */
+function eq3Ok(d, v, scope, kind) {
+  return (kind === 'cons') ? cons3(d, v, scope) : true;
+}
+
+/* いまのシムがケース1かケース2か */
+function case3(d, v) {
+  return cons3(d, v, 'both') ? 1 : 2;
+}
+
+/* =========================================================
+   物理（モード3）
+   ・糸でつながれた2物体は「1つの変数 x」で動く（糸は伸び縮みしない）。
+   ・基準面は図に描いた水平線。どちらの物体の高さも、そこからはかる。
+   ========================================================= */
+
+/* 3-1 アトウッドの装置。滑車の両側に A(m) と B(M)、m < M。
+   x は「A が上る向き＝B が下りる向き」を正。a = (M−m)g/(m+M)。
+   ★千葉さんの指示（第21回）★ 基準面＝A のはじめの位置（h_A = 0）。
+   B ははじめ、そこから h（＝LEN）だけ高い所にいて、h だけ下りて基準面に着く。
+   A は h だけ上る。だから記号は h ひとつでよく、終わりの B の U は 0 になる。 */
+P.atw2 = {
+  LEN: 1.6,
+  a: function (v) { return (v.M - v.m) * G / (v.m + v.M); },
+  T: function (v) { return 2 * v.m * v.M * G / (v.m + v.M); },
+  tEnd: function (v) {
+    var a = Math.abs(P.atw2.a(v));
+    return (a < 1e-9) ? 2.4 : Math.min(6, Math.sqrt(2 * P.atw2.LEN / a));
+  },
+  sample: function (v, t) {
+    var a = P.atw2.a(v);
+    t = Math.min(Math.max(0, t), P.atw2.tEnd(v));
+    var x = 0.5 * a * t * t, sp = Math.abs(a * t), h = P.atw2.LEN;
+    return en2(0,
+      { m: v.m, v: sp, h: x },
+      { m: v.M, v: sp, h: h - x },
+      { x: x, acc: a, Tn: P.atw2.T(v), v: sp, hA: x, hB: h - x });
+  }
+};
+
+/* 3-2 なめらかな水平面の上の A(m) を、つるした B(M) が糸と滑車で引く。
+   a = Mg/(m+M)、T = mMg/(m+M)。A の高さは変わらない（台の上）。
+   基準面は「B が下りきる高さ」。A は台の高さ HT のところにいる。 */
+P.pul2 = {
+  LEN: 1.6, HT: 1.9,
+  a: function (v) { return v.M * G / (v.m + v.M); },
+  T: function (v) { return v.m * v.M * G / (v.m + v.M); },
+  tEnd: function (v) { return Math.min(6, Math.sqrt(2 * P.pul2.LEN / P.pul2.a(v))); },
+  sample: function (v, t) {
+    var a = P.pul2.a(v);
+    t = Math.min(Math.max(0, t), P.pul2.tEnd(v));
+    var x = 0.5 * a * t * t, sp = a * t;
+    return en2(0,
+      { m: v.m, v: sp, h: P.pul2.HT },
+      { m: v.M, v: sp, h: P.pul2.LEN - x },
+      { x: x, acc: a, Tn: P.pul2.T(v), v: sp, hB: P.pul2.LEN - x });
+  }
+};
+
+/* 糸の張力は「A には正・B には負」で、大きさも進んだ距離も同じ。
+   だから【2物体全体で見ると仕事の合計は 0】。これがモード3の要。 */
+var F_T2 = { key: 'T', name: '糸の張力（A と B の合計）', sym: 'S', color: COL.hand,
+  w: function () { return 0; },
+  how: '張力は<b>A には動く向きと同じ向き（正の仕事）、B には逆向き（負の仕事）</b>にはたらく。',
+  wsym: 'W_S = S\\,x + (-S\\,x) = 0',
+  why: '張力は<b>A には正、B には負</b>の仕事をする。大きさも進んだ距離も同じなので、' +
+    '<b>2つ合わせると 0</b>。だから2物体全体では力学的エネルギーが保存する。' };
+
+/* B の大きさ（質量 M で決める）。mSize は変数名 'm' しか見ないので、にせの定義でだます。 */
+function mSizeB(MDef, M) { return mSize({ vars: [{ k: 'm', def: MDef }] }, { m: M }); }
+/* 力の矢印の縮尺。★いちばん重い物体の重力が 46 px★ になるようにそろえる
+   （前は 26 px にしていて、既定の設定だと矢印が小さすぎて見えなかった。千葉さんの指摘） */
+function fScale3(v) { return 46 / Math.max(1e-6, G * Math.max(v.m, v.M)); }
+
+/* 2物体の質量スライダー（モード3で共通） */
+function twoMass3(mDef, MDef) {
+  return [
+    { k: 'm', label: 'A の質量 $m$', unit: ' kg', min: 1.0, max: 3.0, step: 0.5, dec: 1, def: mDef },
+    { k: 'M', label: 'B の質量 $M$', unit: ' kg', min: 1.0, max: 4.0, step: 0.5, dec: 1, def: MDef }
+  ];
+}
+
+/* ============ 3-1 アトウッド（★第20回・新規★）============ */
+DEFS['m3-1'] = {
+  id: 'm3-1', mode: 3, tab: '3-1 アトウッド',
+  title: '3-1　アトウッドの装置（滑車の両側におもり）',
+  sub: 'なめらかに回る軽い滑車に軽い糸をかけ、両端に A（質量 $m$）と B（質量 $M$）をつるします。' +
+    '$m < M$ なら B が下り、A が上ります。糸は伸びないので<b>2つの速さはいつも同じ</b>。' +
+    '糸の張力は A には正の仕事、B には負の仕事をするので、<b>1物体ずつ見ると力学的エネルギーは保存しません</b>。' +
+    'でも<b>2つ合わせると、張力のした仕事の合計は 0</b> なので、<b>2物体全体では保存します</b>（ケース1）。',
+  cw: 660, ch: 400,
+  vis: ['F', 'V', 'A'],
+  mainVars: ['m', 'M'], mainVarFocus: 'M',
+  /* ★m < M になる範囲★（B が下りて A が上る図なので） */
+  vars: [
+    { k: 'm', label: 'A の質量 $m$', unit: ' kg', min: 1.0, max: 2.0, step: 0.5, dec: 1, def: 1.5 },
+    { k: 'M', label: 'B の質量 $M$', unit: ' kg', min: 2.5, max: 4.0, step: 0.5, dec: 1, def: 3.0 }
+  ],
+  actions: [
+    { label: '質量差を小さくする（m＝2, M＝2.5）', fn: function (s) { s.v.m = 2; s.v.M = 2.5; },
+      is: function (v) { return v.m === 2 && v.M === 2.5; },
+      next: function (s) { return s._played && !(s.v.m === 2 && s.v.M === 2.5); } },
+    { label: 'B をうんと重くする（M＝4）', fn: function (s) { s.v.M = 4; },
+      is: function (v) { return v.M === 4; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.m = 1.5; s.v.M = 3; },
+      is: function (v) { return v.m === 1.5 && v.M === 3; } }
+  ],
+  cons: true,
+  cons3: { both: true, each: false },
+  forces: [{ key: 'g',
+    how: '重力は<b>B には動く向きと同じ（正の仕事 $+Mgh$）、A には逆（負の仕事 $-mgh$）</b>。合計は $(M-m)gh$ で正。' },
+    F_T2],
+  hintFig: '<b>A の $E$ は増え、B の $E$ は減る。でも合計はずっと同じ</b>',
+  datum: 'A のはじめの位置（図の $h=0$ の線）。B はそこから $h$ だけ高い所から下りる',
+  hint2: '<b>次は</b>：$M$ を変えて、<b>2物体全体の $E$ がいつも水平</b>なこと、' +
+    'そして<b>A だけ・B だけのグラフは水平にならない</b>ことを見くらべよう。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.atw2.tEnd(v); },
+  sample: function (v, t) { return P.atw2.sample(v, t); },
+  pts: [
+    { name: '1', jp: 'はじめ（静かにはなす）', t: function () { return 0; },
+      sym: { K: '0', Ug: '0 + Mgh' },
+      sym3: { A: { K: '0', Ug: '0' }, B: { K: '0', Ug: 'Mgh' } } },
+    { name: '2', jp: 'B が下りきったとき', t: function (v) { return P.atw2.tEnd(v); },
+      sym: { K: '\\tfrac{1}{2}(m+M)v^2', Ug: 'mgh + 0' },
+      sym3: { A: { K: '\\tfrac{1}{2}mv^2', Ug: 'mgh' },
+        B: { K: '\\tfrac{1}{2}Mv^2', Ug: '0' } } }
+  ],
+  draw: function (ctx, s, t, W, H) {
+    var d = DEFS['m3-1'], v = V(s), m = d.sample(v, t);
+    var gy = H - 40 - PTBAND, SC = 62, cx = (W - 96) * 0.5, pr = 30, gap = pr;
+    function Y(h) { return gy - h * SC; }
+    var r = 13 * mSize(d, v), rB = 13 * mSizeB(3.0, v.M);
+    var topH = P.atw2.LEN + 1.4, py = Y(topH);
+
+    ground(ctx, 20, W - 96, gy);
+    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
+    /* 天井と滑車 */
+    ctx.save();
+    ctx.fillStyle = '#d7dde4'; ctx.fillRect(cx - 56, py - 40, 112, 14);
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.4; ctx.strokeRect(cx - 56, py - 40, 112, 14);
+    ctx.beginPath(); ctx.moveTo(cx, py - 26); ctx.lineTo(cx, py - pr); ctx.stroke();
+    ctx.restore();
+    pulleyWheel(ctx, cx, py, pr);
+    /* 糸は滑車のふちを通って、それぞれのおもりの【上のはし】につながる */
+    var xA = cx - gap, xB = cx + gap, yA = Y(m.hA), yB = Y(m.hB);
+    ctx.save();
+    ctx.strokeStyle = COL.hand; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(xA, py); ctx.lineTo(xA, yA - 2 * r); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xB, py); ctx.lineTo(xB, yB - 2 * rB); ctx.stroke();
+    ctx.restore();
+    stringArc(ctx, cx, py, pr, Math.PI, 0, true);
+    /* おもり */
+    blockShape(ctx, xA, yA - r, 0, 2 * r, 2 * r, '#e8eef5');
+    blockShape(ctx, xB, yB - rB, 0, 2 * rB, 2 * rB, '#f3e8ee');
+    label(ctx, 'A', xA - r - 7, yA - r, { size: 13, color: COL.sub, align: 'right' });
+    label(ctx, 'B', xB + rB + 7, yB - rB, { size: 13, color: COL.sub, align: 'left' });
+    /* 高さの寸法（左右の外がわ） */
+    heightDim(ctx, xA - r - 96, yA - r, gy, 'h = ' + fmt(m.hA, 2) + ' m', xA - r, true);
+    heightDim(ctx, xB + rB + 96, yB - rB, gy, 'h = ' + fmt(m.hB, 2) + ' m', xB + rB, true);
+
+    /* 力・速度・加速度 */
+    var fs = fScale3(v), Tn = m.Tn;
+    /* (x, cy)＝おもりの中心、rr＝半分の高さ。
+       ★張力の作用点は「糸がついている所」＝おもりの上のはし★（千葉さんの指摘） */
+    function fAt(x, cy, rr, mass, sym) {
+      arrow(ctx, x, cy, x, cy + mass * G * fs, 'force');
+      label(ctx, sym, x, cy + mass * G * fs + 11, { size: 11.5, color: COL.force });
+      arrow(ctx, x, cy - rr, x, cy - rr - Tn * fs, 'force', 1, COL.hand);
+      label(ctx, 'S', x + 12, cy - rr - Tn * fs + 6,
+        { align: 'left', size: 11.5, color: COL.hand });
+    }
+    if (s.o.showF) { fAt(xA, yA - r, r, v.m, 'mg'); fAt(xB, yB - rB, rB, v.M, 'Mg'); }
+    if (s.o.showV && m.v > 0.02) {
+      var vl = vArrowLen(m.v, Math.max(0.5, d.sample(v, d.tEnd(v)).v), 44);
+      var sgA = (m.acc >= 0) ? -1 : 1;          /* A は上る（acc > 0 のとき） */
+      var vaA = velArrow(ctx, xA - r - 16, yA - r, -1, 0, 12, 0, sgA, vl);
+      label(ctx, 'v', vaA.x - 11, vaA.y, { size: 11.5, color: COL.vel, align: 'right' });
+      var vaB = velArrow(ctx, xB + rB + 16, yB - rB, 1, 0, 12, 0, -sgA, vl);
+      label(ctx, 'v', vaB.x + 11, vaB.y, { size: 11.5, color: COL.vel, align: 'left' });
+    }
+    if (s.o.showA) {
+      if (Math.abs(m.acc) > 0.02) {
+        drawAcc(ctx, xA - r - 16, yA - r, 0, -m.acc, { nx: -1, ny: 0, off: 44, max: 52 });
+        drawAcc(ctx, xB + rB + 16, yB - rB, 0, m.acc, { nx: 1, ny: 0, off: 44, max: 52 });
+      } else {
+        label(ctx, 'a = 0', cx, Y(P.atw2.LEN) - 40, { size: 11.5, color: COL.acc, avoid: true });
+      }
+    }
+    drawClock(ctx, W, t);
+    drawEnergyBar(ctx, d, s, t, W, H, m);
+    ptRow(gy + 30);
+    drawPts(ctx, d, s, t, function (p) {
+      return (p.who === 'A') ? { x: xA, y: yA - r, here: true } : { x: xB, y: yB - rB, here: true };
+    });
+  },
+  resItems: function (v) {
+    return [
+      { k: '加速度（式 $\\dfrac{(M-m)g}{m+M}$）', v: fmt(P.atw2.a(v), 2) + ' m/s²' },
+      { k: '糸の張力（式 $\\dfrac{2mMg}{m+M}$）', v: fmt(P.atw2.T(v), 1) + ' N' },
+      { k: '下りきったときの速さ', v: fmt(P.atw2.sample(v, P.atw2.tEnd(v)).v, 2) + ' m/s' }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m3-1'].sample(v, t);
+    return [
+      ['A が上った高さ', fmt(m.hA, 2) + ' m'],
+      ['B の高さ（基準面から）', fmt(m.hB, 2) + ' m'],
+      ['糸の張力 $S$', fmt(m.Tn, 1) + ' N']
+    ];
+  },
+  eq: function (s) {
+    var v = V(s);
+    return '\\text{2物体全体：}\\;Mgh = \\tfrac{1}{2}(m+M)v^2 + mgh \\;\\Rightarrow\\; v = ' +
+      fmt(P.atw2.sample(v, P.atw2.tEnd(v)).v, 2) + '\\ \\mathrm{m/s}';
+  },
+  note: '<b>糸の張力 $S$ は、A には正の仕事、B には負の仕事をします。</b>' +
+    '大きさは同じで、進んだ距離も同じなので、<b>2つを合わせると仕事の合計は 0</b>。' +
+    'だから 2物体全体では $E$ が保存し、1物体ずつでは保存しません。これが<b>ケース1</b>です。'
+};
+
+
+/* =========================================================
+   3-2 / 3-3 / 3-5 の物理と絵は「台＋滑車＋つるした B」で共通。
+   絵は basics-of-motion-on-plane.html の 1-10 と同じ描き方にそろえる
+   （滑車は小さく、台のはしに支柱でとりつけ、糸は滑車のふちを通す）。
+   ========================================================= */
+/* ★台の高さ HT は「B のはじめの高さ LEN ＋ 糸の余裕 0.9 m」★（第22回）
+   前は 1.9 m で、はじめの B が滑車にくっついて見えた（千葉さんの指摘）。 */
+var RIG = { HT: 2.5, LEN: 1.6, SC: 70, PR: 12, AX0: 176, WALLX: 62 };
+
+/* 3-3 ばね＋糸と滑車。壁 ─ ばね ─ A ─（滑車）─ B。
+   (m+M)x'' = Mg − kx なので、x_eq = Mg/k を中心とする単振動。
+   x(t) = x_eq(1 − cos ωt)、ω = √(k/(m+M))。いちばん下は x = 2x_eq（速さ 0）。 */
+P.pulSpr = {
+  om: function (v) { return Math.sqrt(v.k / (v.m + v.M)); },
+  xeq: function (v) { return v.M * G / v.k; },
+  vMax: function (v) { return P.pulSpr.xeq(v) * P.pulSpr.om(v); },
+  t1: function (v) { return Math.PI / 2 / P.pulSpr.om(v); },      /* つりあいの位置（速さ最大） */
+  tLow: function (v) { return Math.PI / P.pulSpr.om(v); },        /* 1回目のいちばん下（速さ 0） */
+  /* ★2.5 往復してから止める★（千葉さんの指示・第21回）5π/ω ＝ 3回目のいちばん下 */
+  tEnd: function (v) { return 5 * Math.PI / P.pulSpr.om(v); },
+  sample: function (v, t) {
+    var om = P.pulSpr.om(v), xe = P.pulSpr.xeq(v);
+    t = Math.min(Math.max(0, t), P.pulSpr.tEnd(v));
+    var x = xe * (1 - Math.cos(om * t)), sp = xe * om * Math.sin(om * t);
+    return en2(v.k,
+      { m: v.m, v: sp, h: RIG.HT, sp: x },        /* ばねは A についている（伸び x） */
+      { m: v.M, v: sp, h: RIG.LEN - x },
+      { x: x, acc: (v.M * G - v.k * x) / (v.m + v.M), Tn: v.m * (v.M * G - v.k * x) / (v.m + v.M) + v.k * x,
+        v: sp, hB: RIG.LEN - x });
+  }
+};
+
+/* 3-5 摩擦のある水平面。a = (Mg − μ'mg)/(m+M)。動摩擦力は A に左向き。 */
+P.pulFr = {
+  a: function (v) { return (v.M * G - v.mu * v.m * G) / (v.m + v.M); },
+  T: function (v) { return v.m * P.pulFr.a(v) + v.mu * v.m * G; },
+  tEnd: function (v) { return Math.min(8, Math.sqrt(2 * RIG.LEN / Math.max(0.05, P.pulFr.a(v)))); },
+  sample: function (v, t) {
+    var a = P.pulFr.a(v);
+    t = Math.min(Math.max(0, t), P.pulFr.tEnd(v));
+    var x = 0.5 * a * t * t, sp = a * t, wf = -v.mu * v.m * G * x;   /* 摩擦がした仕事（負） */
+    return en2(0,
+      { m: v.m, v: sp, h: RIG.HT, w: wf },
+      { m: v.M, v: sp, h: RIG.LEN - x },
+      { x: x, acc: a, Tn: P.pulFr.T(v), v: sp, hB: RIG.LEN - x, fr: v.mu * v.m * G, Wf: wf });
+  }
+};
+
+/* 台＋滑車＋つるした B の絵。o = { spring: ばねを描くか, mu: 摩擦係数（0 なら描かない） } */
+function rigDraw(ctx, d, s, t, W, H, o) {
+  var v = V(s), m = d.sample(v, t), SC = RIG.SC, gy = H - 40 - PTBAND;
+  function Y(h) { return gy - h * SC; }
+  var kA = mSize(d, v), bw = 40 * kA, bh = 28 * kA;
+  var kB = mSizeB(1.0, v.M), bwB = 36 * kB, bhB = 26 * kB;
+  var pr = RIG.PR, arm = pr * 1.9;
+  var PX = W - 96 - 150, ty = Y(RIG.HT), PY = ty + pr - bh / 2, cnX = PX - arm;
+  var ax = RIG.AX0 + m.x * SC, cyA = ty - bh / 2;
+  var bxB = PX + pr, byB = Y(m.hB);
+  var wallX = RIG.WALLX, tx0 = wallX - 10;
+
+  ground(ctx, 20, W - 96, gy);
+  datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
+  /* 台（天板＋2本の脚） */
+  ctx.save();
+  ctx.fillStyle = '#eef1f4'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.4;
+  ctx.fillRect(tx0, ty, cnX - tx0, 13); ctx.strokeRect(tx0, ty, cnX - tx0, 13);
+  ctx.fillRect(tx0 + 10, ty + 13, 15, gy - ty - 13);
+  ctx.strokeRect(tx0 + 10, ty + 13, 15, gy - ty - 13);
+  ctx.fillRect(cnX - 26, ty + 13, 15, gy - ty - 13);
+  ctx.strokeRect(cnX - 26, ty + 13, 15, gy - ty - 13);
+  ctx.restore();
+  /* あらい面のときは、台の上面にざらざらの印。★左→右に渡して side は 1（印は面の下）★ */
+  if (o.mu) hatchLine(ctx, tx0, ty, cnX, ty, 1);
+  /* 壁とばね（3-3） */
+  if (o.spring) {
+    ctx.save();
+    ctx.fillStyle = '#d7dde4'; ctx.fillRect(wallX - 16, ty - 92, 16, 92);
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.4; ctx.strokeRect(wallX - 16, ty - 92, 16, 92);
+    ctx.restore();
+    spring(ctx, wallX, cyA, ax - bw / 2, cyA, { coils: 10, r: 9, color: COL.hand, lw: 2 });
+  }
+  /* 滑車（台のはしに支柱でとりつける）と糸 */
+  pulleyArm(ctx, cnX, ty, PX, PY);
+  ctx.save();
+  ctx.strokeStyle = COL.hand; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(ax + bw / 2, cyA); ctx.lineTo(PX, PY - pr); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bxB, PY); ctx.lineTo(bxB, byB - bhB); ctx.stroke();
+  ctx.restore();
+  /* ★車輪を先に描き、糸の円弧をその上に重ねる★（逆だと車輪が糸をかくす。第21回の直し） */
+  pulleyWheel(ctx, PX, PY, pr);
+  stringArc(ctx, PX, PY, pr, -Math.PI / 2, 0);
+  /* 物体 */
+  blockShape(ctx, ax, cyA, 0, bw, bh, '#e8eef5');
+  blockShape(ctx, bxB, byB - bhB / 2, 0, bwB, bhB, '#f3e8ee');
+  label(ctx, 'A', ax, ty - bh - 11, { size: 13, color: COL.sub });
+  label(ctx, 'B', bxB - bwB / 2 - 8, byB - bhB / 2, { size: 13, color: COL.sub, align: 'right' });
+  /* 高さ */
+  heightDim(ctx, tx0 - 40, ty, gy, 'h_A = ' + fmt(RIG.HT, 2) + ' m', tx0, true);
+  heightDim(ctx, bxB + bwB / 2 + 92, byB, gy, 'h_B = ' + fmt(m.hB, 2) + ' m', bxB + bwB / 2, true);
+  /* 進んだ距離（速度 −40・加速度 −76 の帯より上に置く） */
+  if (m.x > 0.01) {
+    arrow(ctx, RIG.AX0, ty - bh - 106, ax, ty - bh - 106, 'dim');
+    label(ctx, (o.spring ? 'ばねの伸び x = ' : 'x = ') + fmt(m.x, 2) + ' m',
+      (RIG.AX0 + ax) / 2, ty - bh - 117, { size: 11, color: COL.dim });
+  }
+
+  var fs = fScale3(v), Tn = m.Tn;
+  function fA() {
+    arrow(ctx, ax, cyA, ax, cyA + v.m * G * fs, 'force');
+    label(ctx, 'mg', ax, cyA + v.m * G * fs + 11, { size: 11.5, color: COL.force });
+    arrow(ctx, ax, ty, ax, ty - v.m * G * fs, 'force', 1, COL.norm);
+    label(ctx, 'N', ax - bw / 2 - 8, ty - v.m * G * fs + 4,
+      { align: 'right', size: 11.5, color: COL.norm });
+    arrow(ctx, ax + bw / 2, cyA, ax + bw / 2 + Tn * fs, cyA, 'force', 1, COL.hand);
+    label(ctx, 'S', ax + bw / 2 + Tn * fs + 9, cyA - 8,
+      { align: 'left', size: 11.5, color: COL.hand });
+    if (o.spring && m.x > 0.004) {
+      var fl = clamp(v.k * m.x * fs, 6, 76);
+      arrow(ctx, ax - bw / 2, cyA, ax - bw / 2 - fl, cyA, 'force', 1, COL.hand);
+      label(ctx, '弾性力 kx', ax - bw / 2 - fl / 2, cyA - 15, { size: 11, color: COL.hand });
+    }
+    if (o.mu && m.v > 0.02) {
+      var fr = m.fr * fs;
+      arrow(ctx, ax, ty - 3, ax - fr, ty - 3, 'force', 1, COL.fric);
+      label(ctx, "μ'N", ax - fr - 9, ty - 16, { align: 'right', size: 11.5, color: COL.fric });
+    }
+  }
+  function fB() {
+    arrow(ctx, bxB, byB - bhB / 2, bxB, byB - bhB / 2 + v.M * G * fs, 'force');
+    label(ctx, 'Mg', bxB, byB - bhB / 2 + v.M * G * fs + 11, { size: 11.5, color: COL.force });
+    arrow(ctx, bxB, byB - bhB, bxB, byB - bhB - Tn * fs, 'force', 1, COL.hand);
+    label(ctx, 'S', bxB + 12, byB - bhB - Tn * fs + 6,
+      { align: 'left', size: 11.5, color: COL.hand });
+  }
+  if (s.o.showF) { fA(); fB(); }
+  if (s.o.showV && m.v > 0.02) {
+    var vl = vArrowLen(m.v, Math.max(0.5, d.sample(v, d.tEnd(v) * 0.999).v), 44);
+    var vaA = velArrow(ctx, ax, cyA, 0, -1, bh / 2 + 40, 1, 0, vl);
+    label(ctx, 'v', vaA.tx + 10, vaA.ty, { size: 11.5, color: COL.vel });
+    var vaB = velArrow(ctx, bxB + bwB / 2 + 16, byB - bhB / 2, 1, 0, 12, 0, 1, vl);
+    label(ctx, 'v', vaB.x + 11, vaB.y, { size: 11.5, color: COL.vel, align: 'left' });
+  }
+  if (s.o.showA) {
+    if (Math.abs(m.acc) > 0.02) {
+      drawAcc(ctx, ax, cyA, m.acc, 0, { nx: 0, ny: -1, off: bh / 2 + 76 });
+      drawAcc(ctx, bxB + bwB / 2 + 16, byB - bhB / 2, 0, m.acc, { nx: 1, ny: 0, off: 44, max: 52 });
+    } else {
+      label(ctx, 'a = 0', ax, cyA - bh / 2 - 76, { size: 11.5, color: COL.acc, avoid: true });
+    }
+  }
+  drawClock(ctx, W, t);
+  drawEnergyBar(ctx, d, s, t, W, H, m);
+  ptRow(gy + 30);
+  /* ★吹きだしは「その状態での B の場所」を指す★（千葉さんの指摘。前は何もない所を指していた） */
+  drawPts(ctx, d, s, t, function (p) {
+    return (p.who === 'A') ? { x: ax, y: cyA, here: true } : { x: bxB, y: byB - bhB / 2, here: true };
+  });
+}
+
+/* くらべる点の作り方（モード3で共通）。全体の記号と、物体べつの記号をいっしょに作る。 */
+function pt3(name, jp, tf, Ka, Ua, Kb, Ub, Usa, Ktot) {
+  var sym3 = { A: { K: Ka, Ug: Ua }, B: { K: Kb, Ug: Ub } };
+  if (Usa) sym3.A.Us = Usa;
+  var K = Ktot || ((Ka === '0' && Kb === '0') ? '0' : (Ka + ' + ' + Kb));
+  return { name: name, jp: jp, t: tf,
+    sym: { K: K, Ug: Ua + ' + ' + Ub, Us: Usa || null }, sym3: sym3 };
+}
+
+/* ============ 3-2 なめらかな水平面上の、糸と滑車 ============ */
+DEFS['m3-2'] = {
+  id: 'm3-2', mode: 3, tab: '3-2 糸と滑車',
+  title: '3-2　2物体（なめらかな水平面上の、糸と滑車）',
+  sub: 'なめらかな水平面の上の A（質量 $m$）に軽い糸をつけ、台のはしのなめらかな滑車を通して、' +
+    '他端に B（質量 $M$）をつるします。静かにはなすと B が下り、A が右へ引かれます。' +
+    '糸は伸びないので<b>2つの速さはいつも同じ</b>。<b>A は高さが変わらない</b>ので、' +
+    '位置エネルギーが減るのは B だけ。それでも<b>2物体全体では $E$ が保存します</b>（ケース1）。',
+  cw: 700, ch: 460,
+  vis: ['F', 'V', 'A'],
+  mainVars: ['m', 'M'], mainVarFocus: 'M',
+  vars: twoMass3(2.0, 1.0),
+  actions: [
+    { label: 'B を重くする（M＝3 kg）', fn: function (s) { s.v.M = 3; },
+      is: function (v) { return v.M === 3; },
+      next: function (s) { return s._played && s.v.M !== 3; } },
+    { label: 'A を軽くする（m＝1 kg）', fn: function (s) { s.v.m = 1; },
+      is: function (v) { return v.m === 1; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.m = 2; s.v.M = 1; },
+      is: function (v) { return v.m === 2 && v.M === 1; } }
+  ],
+  cons: true, cons3: { both: true, each: false },
+  forces: ['g', 'N', F_T2],
+  hintFig: '<b>B の $U$ が減った分が、A と B の $K$ になる</b>',
+  datum: 'B が下りきる高さ（図の $h=0$ の線）',
+  hint2: '<b>次は</b>：$M$ を変えて、<b>2物体全体の $E$ は水平のまま</b>、' +
+    'でも<b>A だけの $E$ は増え、B だけの $E$ は減る</b>ことを見くらべよう。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.pul2.tEnd(v); },
+  sample: function (v, t) { return P.pul2.sample(v, t); },
+  pts: [
+    pt3('1', 'はじめ（静かにはなす）', function () { return 0; },
+      '0', 'mgh_A', '0', 'Mgh_{B1}'),
+    pt3('2', 'B が下りきったとき', function (v) { return P.pul2.tEnd(v); },
+      '\\tfrac{1}{2}mv^2', 'mgh_A', '\\tfrac{1}{2}Mv^2', 'Mgh_{B2}',
+      null, '\\tfrac{1}{2}(m+M)v^2')
+  ],
+  draw: function (ctx, s, t, W, H) { rigDraw(ctx, DEFS['m3-2'], s, t, W, H, {}); },
+  resItems: function (v) {
+    return [
+      { k: '加速度（式 $\\dfrac{Mg}{m+M}$）', v: fmt(P.pul2.a(v), 2) + ' m/s²' },
+      { k: '糸の張力（式 $\\dfrac{mMg}{m+M}$）', v: fmt(P.pul2.T(v), 1) + ' N' },
+      { k: 'B が下りきったときの速さ', v: fmt(P.pul2.sample(v, P.pul2.tEnd(v)).v, 2) + ' m/s' }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m3-2'].sample(v, t);
+    return [['進んだ距離 $x$', fmt(m.x, 2) + ' m'],
+      ['B の高さ $h_B$', fmt(m.hB, 2) + ' m'], ['糸の張力 $S$', fmt(m.Tn, 1) + ' N']];
+  },
+  eq: function (s) {
+    return '\\text{2物体全体：}\\;\\tfrac{1}{2}(m+M)v^2 = Mg\\,x \\;\\Rightarrow\\; v = ' +
+      fmt(P.pul2.sample(V(s), P.pul2.tEnd(V(s))).v, 2) + '\\ \\mathrm{m/s}';
+  },
+  note: '<b>A は高さが変わらない</b>ので $U_A$ は一定。減るのは $U_B$ だけです。' +
+    'それでも <b>A だけを見ると $E_A$ は増え、B だけを見ると $E_B$ は減ります</b>' +
+    '（糸の張力が A には正、B には負の仕事をするから）。合計すると張力の仕事は 0 なので、' +
+    '<b>2物体全体では $E$ が保存</b>します。これが<b>ケース1</b>です。'
+};
+
+/* ============ 3-3 なめらかな水平面上の、ばねと糸と滑車 ============ */
+DEFS['m3-3'] = {
+  id: 'm3-3', mode: 3, tab: '3-3 ばねと糸と滑車',
+  title: '3-3　2物体（なめらかな水平面上の、ばねと糸と滑車）',
+  sub: '3-2 の A を、さらに<b>壁につけたばね</b>（ばね定数 $k$）につないだものです。' +
+    'はじめ、ばねは自然の長さ。静かにはなすと B が下り、A は右へ動いて<b>ばねを伸ばします</b>。' +
+    '仕事をするのは<b>重力と弾性力（どちらも保存力）だけ</b>なので、' +
+    '<b>2物体全体では $E = K + U_g + U_k$ が保存します</b>（ケース1）。',
+  vis: ['F', 'V', 'A'],
+  hasUs: true,
+  mainVars: ['k', 'M'], mainVarFocus: 'k',
+  /* ★x_max = 2Mg/k が B の下がれる高さ（1.6 m）をこえないように範囲をとる★
+     いちばんきびしい M = 3.0・k = 40 でも 1.47 m ですむ。 */
+  vars: [{ k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 40, max: 100, step: 10, dec: 0, def: 40 },
+    { k: 'm', label: 'A の質量 $m$', unit: ' kg', min: 1.0, max: 3.0, step: 0.5, dec: 1, def: 2.0 },
+    { k: 'M', label: 'B の質量 $M$', unit: ' kg', min: 1.0, max: 3.0, step: 0.5, dec: 1, def: 1.0 }],
+  cw: 700, ch: 460,
+  actions: [
+    { label: 'かたいばねにする（k＝100）', fn: function (s) { s.v.k = 100; },
+      is: function (v) { return v.k === 100; },
+      next: function (s) { return s._played && s.v.k !== 100; } },
+    { label: 'B を重くする（M＝2 kg）', fn: function (s) { s.v.M = 2; },
+      is: function (v) { return v.M === 2; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.k = 40; s.v.m = 2; s.v.M = 1; },
+      is: function (v) { return v.k === 40 && v.m === 2 && v.M === 1; } }
+  ],
+  cons: true, cons3: { both: true, each: false },
+  forces: ['g', 'N', F_T2, 'sp'],
+  hintFig: '<b>B の $U_g$ が減った分が、$K$ と<b>ばねの $U_k$</b> に分かれる',
+  datum: 'B が下りきる高さ（図の $h=0$ の線）',
+  hint2: '<b>次は</b>：$k$ を変えて、<b>いちばん下がる長さ</b>がどう変わるか見てみよう' +
+    '（$x_{\\text{max}} = 2Mg/k$）。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.pulSpr.tEnd(v); },
+  sample: function (v, t) { return P.pulSpr.sample(v, t); },
+  pts: [
+    pt3('1', 'はじめ（ばねは自然の長さ）', function () { return 0; },
+      '0', 'mgh_A', '0', 'Mgh_{B1}', '0'),
+    pt3('2', 'いちばん下がったとき（速さ 0・2.5 往復ののち）', function (v) { return P.pulSpr.tEnd(v); },
+      '0', 'mgh_A', '0', 'Mgh_{B2}', '\\tfrac{1}{2}kx^2')
+  ],
+  draw: function (ctx, s, t, W, H) { rigDraw(ctx, DEFS['m3-3'], s, t, W, H, { spring: true }); },
+  resItems: function (v) {
+    return [
+      { k: 'つりあいの位置（式 $Mg/k$）', v: fmt(P.pulSpr.xeq(v), 3) + ' m' },
+      { k: 'いちばん下がる長さ（式 $2Mg/k$）', v: fmt(2 * P.pulSpr.xeq(v), 3) + ' m' },
+      { k: 'いちばん速いときの速さ', v: fmt(P.pulSpr.vMax(v), 2) + ' m/s' }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m3-3'].sample(v, t);
+    return [['ばねの伸び $x$', fmt(m.x, 3) + ' m'],
+      ['B の高さ $h_B$', fmt(m.hB, 2) + ' m'], ['糸の張力 $S$', fmt(m.Tn, 1) + ' N']];
+  },
+  eq: function (s) {
+    var v = V(s);
+    return 'Mg\\,x_{\\max} = \\tfrac{1}{2}kx_{\\max}^2 \\;\\Rightarrow\\; x_{\\max} = ' +
+      '\\dfrac{2Mg}{k} = ' + fmt(2 * P.pulSpr.xeq(v), 3) + '\\ \\mathrm{m}';
+  },
+  note: 'いちばん下がったところでは<b>速さが 0</b> なので、B の位置エネルギーの減った分が' +
+    '<b>そっくりばねの $U_k$ になっています</b>。そのあとは、ばねに引きもどされて上下に振動します。' +
+    'いちばん速いのは<b>つりあいの位置</b>（$x = Mg/k$）を通るときです。'
+};
+
+/* ============ 3-5 摩擦のある水平面上の、糸と滑車 ============ */
+DEFS['m3-5'] = {
+  id: 'm3-5', mode: 3, tab: '3-5 摩擦＋糸と滑車',
+  title: '3-5　2物体（摩擦のある水平面上の、糸と滑車）',
+  sub: '3-2 の台を<b>あらい面</b>にしたものです。A には動摩擦力（大きさ $\\mu\' mg$）が' +
+    '<b>進む向きと逆に</b>はたらきます。動摩擦力は<b>非保存力</b>なので、' +
+    '<b>2物体全体で見ても力学的エネルギーは保存しません</b>（ケース2）。' +
+    '減った分が、そのまま摩擦力のした仕事（負）です。',
+  cw: 700, ch: 460,
+  vis: ['F', 'V', 'A'],
+  mainVars: ['mu', 'M'], mainVarFocus: 'mu',
+  vars: [{ k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.40, step: 0.05, dec: 2, def: 0.20 }]
+    .concat(twoMass3(2.0, 2.0)),
+  actions: [
+    { label: 'つるつるにする（μ\'＝0.05）', fn: function (s) { s.v.mu = 0.05; },
+      is: function (v) { return Math.abs(v.mu - 0.05) < 1e-9; },
+      next: function (s) { return s._played && Math.abs(s.v.mu - 0.05) > 1e-9; } },
+    { label: 'ざらざらにする（μ\'＝0.40）', fn: function (s) { s.v.mu = 0.40; },
+      is: function (v) { return Math.abs(v.mu - 0.40) < 1e-9; } },
+    { label: 'はじめの設定にもどす', fn: function (s) { s.v.mu = 0.20; s.v.m = 2; s.v.M = 2; },
+      is: function (v) { return Math.abs(v.mu - 0.2) < 1e-9 && v.m === 2 && v.M === 2; } }
+  ],
+  cons: false, cons3: { both: false, each: false },
+  wName: '動摩擦力', wSym: 'W_{\\text{摩擦}} = -\\mu\' mg\\,x',
+  forces: ['g', 'N', F_T2,
+    { key: 'fr', name: '動摩擦力', sym: "μ'N", color: COL.fric,
+      w: function (v, A, B) { return B.m.Wf - A.m.Wf; },
+      wsym: "W_{\\text{摩擦}} = -\\mu' mg\\,x",
+      why: '動摩擦力は<b>いつも進む向きと逆</b>なので、仕事は<b>必ず負</b>。' }],
+  hintFig: '<b>2物体全体の $E$ も減る。減った分＝摩擦力のした仕事</b>',
+  datum: 'B が下りきる高さ（図の $h=0$ の線）',
+  hint2: '<b>次は</b>：$\\mu\'$ を変えて、<b>2物体全体の $E$ の下がり方</b>がどう変わるか見てみよう。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.pulFr.tEnd(v); },
+  sample: function (v, t) { return P.pulFr.sample(v, t); },
+  pts: [
+    pt3('1', 'はじめ（静かにはなす）', function () { return 0; },
+      '0', 'mgh_A', '0', 'Mgh_{B1}'),
+    pt3('2', 'B が下りきったとき', function (v) { return P.pulFr.tEnd(v); },
+      '\\tfrac{1}{2}mv^2', 'mgh_A', '\\tfrac{1}{2}Mv^2', 'Mgh_{B2}',
+      null, '\\tfrac{1}{2}(m+M)v^2')
+  ],
+  draw: function (ctx, s, t, W, H) {
+    rigDraw(ctx, DEFS['m3-5'], s, t, W, H, { mu: V(s).mu });
+  },
+  resItems: function (v) {
+    var m2 = P.pulFr.sample(v, P.pulFr.tEnd(v));
+    return [
+      { k: '加速度（式 $\\dfrac{Mg-\\mu\' mg}{m+M}$）', v: fmt(P.pulFr.a(v), 2) + ' m/s²' },
+      { k: '動摩擦力 $\\mu\' mg$', v: fmt(v.mu * v.m * G, 1) + ' N' },
+      { k: '摩擦力がした仕事', v: fmtJ(m2.Wf) }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m3-5'].sample(v, t);
+    return [['進んだ距離 $x$', fmt(m.x, 2) + ' m'],
+      ['動摩擦力 $\\mu\'N$', fmt(m.fr, 1) + ' N'], ['摩擦がした仕事', fmtJ(m.Wf)]];
+  },
+  eq: function (s) {
+    var v = V(s), m2 = P.pulFr.sample(v, P.pulFr.tEnd(v));
+    return '\\text{2物体全体：}\\;E_2 - E_1 = W_{\\text{摩擦}} = ' + fmtE(m2.Wf) + '\\ \\mathrm{J}';
+  },
+  note: '<b>2物体全体で見ても $E$ が減ります</b>。これが<b>ケース2</b>です。' +
+    '減った分は、動摩擦力がした仕事（負）にぴったり一致します。' +
+    '摩擦で失われたエネルギーは、面と物体の<b>熱</b>になっています。'
+};
+
+/* ============ 3-4 なめらかな床の上の板 A と、その上ですべる物体 B ============
+   ★basics-of-motion-on-plane.html の 1-12（P.m111）をそのまま移して、エネルギーを足したもの★
+   板 A（質量 M・長さ LB・厚さ HB）と、そのまん中にのった物体 B（質量 m）。
+   A と B のあいだにだけ摩擦（動摩擦 μ'、静止摩擦 μ）。床はなめらか。
+   A を引く力 F_A、B を引く力 F_B、はじめの速度 v_A0・v_B0 をあたえられる。
+     すべっているとき　B にはたらく摩擦は「A が B に対して動く向き」、A にはその反対
+     速さがそろったあと　必要な摩擦が最大静止摩擦 μmg 以下ならいっしょに動く（一体）
+   B は板の後ろ（または前）へずれる。ずれが板の半分 LB/2 に達すると板から落ちて、
+   高さ HB からの水平投射になり、床に着いた瞬間で止める。
+   基準面＝床。板の上面は高さ HB。摩擦・引く力は非保存力なので【ケース2】。 */
+P.plank2 = {
+  LB: 2.0, HB: 0.22,
+  acc: function (v, vA, vB) {
+    var fk = v.mud * v.mB * G, fs = v.mus * v.mB * G, vr = vA - vB;
+    if (Math.abs(vr) > 1e-9) {
+      var sg = vr > 0 ? 1 : -1;
+      return { aA: (v.FA - sg * fk) / v.mA, aB: (v.FB + sg * fk) / v.mB, slip: true, f: sg * fk };
+    }
+    var ac = (v.FA + v.FB) / (v.mA + v.mB), need = v.mB * ac - v.FB;
+    if (Math.abs(need) <= fs + 1e-9) return { aA: ac, aB: ac, slip: false, f: need };
+    var s2 = need > 0 ? 1 : -1;
+    return { aA: (v.FA - s2 * fk) / v.mA, aB: (v.FB + s2 * fk) / v.mB, slip: true, f: s2 * fk };
+  },
+  tStick: function (v) {
+    var p = P.plank2.acc(v, v.vA0, v.vB0);
+    if (!p.slip) return 0;
+    var dv = v.vA0 - v.vB0, da = p.aA - p.aB;
+    if (Math.abs(da) < 1e-12) return Infinity;
+    var t = -dv / da;
+    if (!(t > 1e-9)) return Infinity;
+    return P.plank2.acc(v, 0, 0).slip ? Infinity : t;
+  },
+  tFall: function (v) {
+    var p = P.plank2.acc(v, v.vA0, v.vB0);
+    if (!p.slip) return Infinity;
+    var d0 = P.plank2.LB / 2, dv = v.vA0 - v.vB0, da = p.aA - p.aB;
+    var tf = Infinity, i, sg, A2, B2, C2, D2, r;
+    for (i = 0; i < 2; i++) {
+      sg = i ? -1 : 1;
+      A2 = 0.5 * da; B2 = dv; C2 = -sg * d0;
+      if (Math.abs(A2) < 1e-12) {
+        if (Math.abs(B2) > 1e-12) { r = -C2 / B2; if (r > 1e-9 && r < tf) tf = r; }
+      } else {
+        D2 = B2 * B2 - 4 * A2 * C2;
+        if (D2 >= 0) {
+          r = (-B2 + Math.sqrt(D2)) / (2 * A2); if (r > 1e-9 && r < tf) tf = r;
+          r = (-B2 - Math.sqrt(D2)) / (2 * A2); if (r > 1e-9 && r < tf) tf = r;
+        }
+      }
+    }
+    var ts = P.plank2.tStick(v);
+    if (isFinite(ts) && ts <= tf) return Infinity;
+    return tf;
+  },
+  tFly: function () { return Math.sqrt(2 * P.plank2.HB / G); },
+  falls: function (v) { return isFinite(P.plank2.tFall(v)); },
+  tEnd: function (v) {
+    var ts = P.plank2.tStick(v), tf = P.plank2.tFall(v);
+    if (isFinite(tf)) return Math.max(1.0, Math.min(6, tf + P.plank2.tFly()));
+    return Math.max(1.2, Math.min(5, isFinite(ts) ? ts * 1.7 + 0.4 : 2.4));
+  },
+  /* くらべる点2：落ちるなら「板から落ちる瞬間」、そろうなら「速さがそろったとき」、それ以外は終わり */
+  t2: function (v) {
+    var tf = P.plank2.tFall(v), ts = P.plank2.tStick(v);
+    if (isFinite(tf)) return tf;
+    if (isFinite(ts) && ts > 1e-9) return ts;
+    return P.plank2.tEnd(v);
+  },
+  /* 板の上にいるあいだ。仕事（摩擦・引く力）も区間ごとに足していく */
+  onBoard: function (v, t) {
+    var p1 = P.plank2.acc(v, v.vA0, v.vB0), ts = P.plank2.tStick(v);
+    var t1 = Math.min(t, isFinite(ts) ? ts : t);
+    var xA = v.vA0 * t1 + 0.5 * p1.aA * t1 * t1, vA = v.vA0 + p1.aA * t1;
+    var xB = v.vB0 * t1 + 0.5 * p1.aB * t1 * t1, vB = v.vB0 + p1.aB * t1;
+    /* 摩擦の仕事：A には −f、B には +f（f＝B にはたらく摩擦、右向き正） */
+    var wfA = -p1.f * xA, wfB = p1.f * xB;
+    var aA = p1.aA, aB = p1.aB, slip = p1.slip, f = p1.f;
+    if (t > t1 + 1e-12) {
+      var p2 = P.plank2.acc(v, vA, vB), t2 = t - t1;
+      var dA = vA * t2 + 0.5 * p2.aA * t2 * t2, dB = vB * t2 + 0.5 * p2.aB * t2 * t2;
+      xA += dA; xB += dB; vA += p2.aA * t2; vB += p2.aB * t2;
+      wfA += -p2.f * dA; wfB += p2.f * dB;
+      aA = p2.aA; aB = p2.aB; slip = p2.slip; f = p2.f;
+    }
+    return { xA: xA, vA: vA, aA: aA, xB: xB, vB: vB, aB: aB, slip: slip, f: f,
+      slid: xA - xB, wfA: wfA, wfB: wfB };
+  },
+  sample: function (v, t) {
+    var tf = P.plank2.tFall(v), HB = P.plank2.HB, r, yB = HB, vyB = 0, fell = false;
+    t = Math.min(Math.max(0, t), P.plank2.tEnd(v));
+    if (t <= tf + 1e-12) {
+      r = P.plank2.onBoard(v, t);
+    } else {
+      var rf = P.plank2.onBoard(v, tf), t2 = t - tf;
+      var aA2 = v.FA / v.mA, aB2 = v.FB / v.mB;
+      r = { xA: rf.xA + rf.vA * t2 + 0.5 * aA2 * t2 * t2, vA: rf.vA + aA2 * t2, aA: aA2,
+        xB: rf.xB + rf.vB * t2 + 0.5 * aB2 * t2 * t2, vB: rf.vB + aB2 * t2, aB: aB2,
+        slip: false, f: 0, slid: 0, wfA: rf.wfA, wfB: rf.wfB };
+      r.slid = r.xA - r.xB;
+      yB = Math.max(0, HB - 0.5 * G * t2 * t2); vyB = G * t2; fell = true;
+    }
+    var Wf = r.wfA + r.wfB;                         /* 摩擦の仕事の合計（必ず 0 以下） */
+    return en2(0,
+      { m: v.mA, v: Math.abs(r.vA), h: 0, w: r.wfA + v.FA * r.xA },
+      { m: v.mB, v: Math.sqrt(r.vB * r.vB + vyB * vyB), h: yB, w: r.wfB + v.FB * r.xB },
+      { x: r.xA, xB: r.xB, dRel: r.slid, vA: r.vA, vB: r.vB, vyB: vyB, yB: yB, v: Math.abs(r.vA),
+        acc: r.aA, accB: r.aB, f: r.f, fr: Math.abs(r.f), Wf: Wf, WA: v.FA * r.xA, WB: v.FB * r.xB,
+        slip: r.slip, fell: fell, air: fell && yB > 1e-6 });
+  }
+};
+
+DEFS['m3-4'] = {
+  id: 'm3-4', mode: 3, tab: '3-4 板の上',
+  title: '3-4　2物体（板の上）',
+  sub: 'なめらかな床の上に板 A（質量 $M$・長さ ' + fmt(P.plank2.LB, 1) + ' m）を置き、そのまん中に物体 B' +
+    '（質量 $m$）をのせます。<b>摩擦があるのは A と B のあいだだけ</b>。' +
+    '板を引いたり、どちらかに初速度をあたえたりすると、B は A の上をすべります。' +
+    'B にはたらく動摩擦力は「A が B に対して動く向き」、A にはその<b>反対向き</b>（作用・反作用）。' +
+    'すべりが止まる（速さがそろう）と、静止摩擦でいっしょに動きます。' +
+    '<b>板の半分（' + fmt(P.plank2.LB / 2, 1) + ' m）だけすべると B は板から落ちて、水平投射</b>になります。' +
+    '摩擦力・引く力は<b>非保存力</b>なので、<b>2物体全体で見ても $E$ は保存しません</b>（ケース2）。',
+  cw: 700, ch: 360,
+  vis: ['F', 'V', 'A'],
+  mainVars: ['FA', 'mud', 'mus'], mainVarFocus: 'FA',
+  vars: [
+    { k: 'FA', label: 'A を引く力 $F_A$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 26 },
+    { k: 'FB', label: 'B を引く力 $F_B$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 0 },
+    { k: 'vA0', label: 'A の初速度', unit: ' m/s', min: 0, max: 8, step: 0.5, dec: 1, def: 0 },
+    { k: 'vB0', label: 'B の初速度', unit: ' m/s', min: 0, max: 8, step: 0.5, dec: 1, def: 0 },
+    { k: 'mud', label: 'A と B の動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.8, step: 0.05, dec: 2, def: 0.25 },
+    { k: 'mus', label: 'A と B の静止摩擦係数 $\\mu$', unit: '', min: 0.05, max: 0.8, step: 0.05, dec: 2, def: 0.50 },
+    { k: 'mA', label: '板 A の質量 $M$', unit: ' kg', min: 1, max: 8, step: 0.5, dec: 1, def: 3.0 },
+    { k: 'mB', label: '物体 B の質量 $m$', unit: ' kg', min: 0.5, max: 6, step: 0.5, dec: 1, def: 2.0 }
+  ],
+  /* ★オレンジのボタンは basics-of-motion-on-plane の 1-12 と同じ★（千葉さんの指示・第22回） */
+  actions: [
+    { label: '板 A を引く（すべる）', fn: function (s) { s.v.FA = 26; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; },
+      is: function (v) {
+        return v.FA > 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0 && P.plank2.acc(v, 0, 0).slip;
+      } },
+    { label: '板 A を引く（一体）', fn: function (s) { s.v.FA = 18; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; },
+      is: function (v) {
+        return v.FA > 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0 && !P.plank2.acc(v, 0, 0).slip;
+      } },
+    { label: '物体 B に初速度を与える', fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 2.5; },
+      is: function (v) { return v.FA === 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 > 0; } },
+    { label: '板 A に初速度を与える', fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vB0 = 0; s.v.vA0 = 2.5; },
+      is: function (v) { return v.FA === 0 && v.FB === 0 && v.vB0 === 0 && v.vA0 > 0; } },
+    { label: 'はじめの設定にもどす',
+      fn: function (s) { s.v.FA = 26; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 0; s.v.mud = 0.25; s.v.mus = 0.5; s.v.mA = 3; s.v.mB = 2; },
+      is: function (v) { return v.FA === 26 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 0 && v.mud === 0.25 && v.mus === 0.5 && v.mA === 3 && v.mB === 2; } }
+  ],
+  cons: false, cons3: { both: false, each: false },
+  wName: '摩擦力や引く力', wSym: 'W_{\\text{摩擦}} + W_{F_A} + W_{F_B}',
+  forces: ['g', 'N',
+    { key: 'fr', name: '動摩擦力（A と B の合計）', sym: "μ'N", color: COL.fric,
+      w: function (v, A, B) { return B.m.Wf - A.m.Wf; },
+      how: function (W) {
+        return Math.abs(W) < 5e-3 ? 'すべっていない（一体で動く）ので、摩擦の仕事の合計は 0。'
+          : 'A にはたらく摩擦は<b>A の動く向きと逆</b>（負の仕事）、B にはたらく摩擦は<b>B の動く向きと同じ</b>（正の仕事）。';
+      },
+      wsym: "W_{\\text{摩擦}} = -\\mu' mg\\,\\Delta s\;(\\Delta s = \\text{すべった相対距離})",
+      why: '大きさは同じで向きが逆（作用・反作用）でも、<b>進んだ距離がちがう</b>ので打ち消しあわない。' +
+        '合計は<b>0 以下</b>で、大きさは「摩擦力 × すべった相対距離」。' },
+    { key: 'pullA', name: 'A を引く力', sym: 'F_A', color: COL.hand,
+      w: function (v, A, B) { return B.m.WA - A.m.WA; },
+      wsym: 'W_{F_A} = F_A\\,x_A',
+      why: '引く力は<b>非保存力</b>。動く向きと同じ向きなので正の仕事。' },
+    { key: 'pullB', name: 'B を引く力', sym: 'F_B', color: COL.hand,
+      w: function (v, A, B) { return B.m.WB - A.m.WB; },
+      wsym: 'W_{F_B} = F_B\\,x_B',
+      why: '引く力は<b>非保存力</b>。動く向きと同じ向きなので正の仕事。' }],
+  hintFig: '<b>すべった相対距離 × 摩擦力 の分だけ、2物体全体の $E$ が減る</b>（引く力があれば、その分は増える）',
+  datum: '床（板の上面は高さ $H_B$ = ' + fmt(P.plank2.HB, 2) + ' m）',
+  hint2: '<b>次は</b>：オレンジのボタンで「一体」「初速度」に変えて、<b>摩擦の仕事の合計</b>が' +
+    'どう変わるか見てみよう。落ちたあと（飛んでいるあいだ）は摩擦がないので、$E$ は減らない。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.plank2.tEnd(v); },
+  sample: function (v, t) { return P.plank2.sample(v, t); },
+  pts: [
+    pt3('1', 'はじめ', function () { return 0; },
+      '\\tfrac{1}{2}Mv_{A0}^{\\,2}', '0', '\\tfrac{1}{2}mv_{B0}^{\\,2}', 'mgH_B'),
+    { name: '2', jp: '速さがそろったとき／板から落ちる瞬間', t: function (v) { return P.plank2.t2(v); },
+      sym: { K: '\\tfrac{1}{2}Mv_A^{\\,2} + \\tfrac{1}{2}mv_B^{\\,2}', Ug: '0 + mgH_B' },
+      sym3: { A: { K: '\\tfrac{1}{2}Mv_A^{\\,2}', Ug: '0' }, B: { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: 'mgH_B' } } }
+  ],
+  draw: function (ctx, s, t, W, H) {
+    var d = DEFS['m3-4'], v = V(s), m = d.sample(v, t);
+    var gy = H - 40 - PTBAND, LB = P.plank2.LB, HB = P.plank2.HB;
+    /* 縮尺は「いちばん右まで行った所」が入るように決める（basics と同じ考え） */
+    var T = d.tEnd(v), q2 = d.sample(v, T), xmax = Math.max(q2.x + LB, q2.xB + 0.6, LB + 0.8);
+    var SC = clamp((W - 96 - 60 - 40) / xmax, 40, 72), x0 = 40;
+    function Y(h) { return gy - h * SC; }
+    var kB = mSizeB(2.0, v.mB), bw = 40 * kB, bh = 28 * kB;
+    var pw = LB * SC, ph = Math.max(12, HB * SC);
+    var pxL = x0 + m.x * SC, pxC = pxL + pw / 2;
+    var bxx = x0 + (LB / 2 + m.xB) * SC, byBot = gy - ph * clamp(m.yB / HB, 0, 1), byC = byBot - bh / 2;
+
+    ground(ctx, 20, W - 96, gy);
+    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
+    blockShape(ctx, pxC, gy - ph / 2, 0, pw, ph, '#e9d9bd');
+    hatchLine(ctx, pxL, gy - ph, pxL + pw, gy - ph, 1);      /* あらい上面。左→右で side 1 */
+    blockShape(ctx, bxx, byC, 0, bw, bh, '#f3e8ee');
+    label(ctx, 'A（板）', pxC, gy - ph / 2 + 1, { size: 11, color: COL.sub });
+    label(ctx, 'B', bxx, byC - bh / 2 - 11, { size: 13, color: COL.sub });
+    /* いまの状態のひとこと。矢印の帯とぶつからないよう、図の左上に置く */
+    var stt = m.fell ? (m.air ? 'B は板から落ちた → 水平投射' : 'B が床に着いた')
+      : (m.slip ? 'B が A の上をすべっている' : (t > 1e-9 ? 'いっしょに動く（静止摩擦）' : ''));
+    if (stt) label(ctx, stt, 28, 22, { size: 11.5, color: COL.sub, align: 'left', avoid: true });
+    /* 引く手（糸）：板の右はし・B の右はしから */
+    var fs = fScale3({ m: v.mB, M: v.mA }), fr = Math.abs(m.f);
+    if (s.o.showF) {
+      arrow(ctx, bxx, byC, bxx, byC + v.mB * G * fs, 'force');
+      label(ctx, 'mg', bxx, byC + v.mB * G * fs + 11, { size: 11.5, color: COL.force });
+      if (!m.fell) {
+        arrow(ctx, bxx, byBot, bxx, byBot - v.mB * G * fs, 'force', 1, COL.norm);
+        label(ctx, 'N', bxx - bw / 2 - 8, byBot - v.mB * G * fs + 4, { align: 'right', size: 11.5, color: COL.norm });
+      }
+      if (Math.abs(m.f) > 0.05 && !m.fell) {
+        var sg = m.f > 0 ? 1 : -1;
+        arrow(ctx, bxx, byBot - 3, bxx + sg * fr * fs, byBot - 3, 'force', 1, COL.fric);
+        label(ctx, m.slip ? "μ'N" : '静止摩擦', bxx + sg * (fr * fs + 9), byBot - 16,
+          { align: sg > 0 ? 'left' : 'right', size: 11.5, color: COL.fric });
+        arrow(ctx, bxx, gy - ph + 3, bxx - sg * fr * fs, gy - ph + 3, 'force', 1, COL.fric);
+        label(ctx, m.slip ? "μ'N" : '静止摩擦', bxx - sg * (fr * fs + 9), gy - ph + 17,
+          { align: sg > 0 ? 'right' : 'left', size: 11.5, color: COL.fric });
+      }
+      if (v.FA > 0) {
+        arrow(ctx, pxL + pw, gy - ph / 2, pxL + pw + v.FA * fs, gy - ph / 2, 'force', 1, COL.hand);
+        label(ctx, 'F_A', pxL + pw + v.FA * fs + 12, gy - ph / 2 - 8, { size: 11.5, color: COL.hand, align: 'left' });
+      }
+      if (v.FB > 0) {
+        arrow(ctx, bxx + bw / 2, byC, bxx + bw / 2 + v.FB * fs, byC, 'force', 1, COL.hand);
+        label(ctx, 'F_B', bxx + bw / 2 + v.FB * fs + 12, byC - 8, { size: 11.5, color: COL.hand, align: 'left' });
+      }
+    }
+    if (s.o.showV) {
+      var vref = Math.max(1, Math.abs(q2.vA), Math.abs(q2.vB), v.vA0, v.vB0);
+      if (Math.abs(m.vA) > 0.02) {
+        var sA = m.vA > 0 ? 1 : -1;
+        var vaA = velArrow(ctx, pxC, gy - ph / 2, 0, -1, ph / 2 + bh + 62, sA, 0, vArrowLen(Math.abs(m.vA), vref, 52));
+        label(ctx, 'v_A', vaA.tx + sA * 13, vaA.ty, { size: 11.5, color: COL.vel });
+      }
+      if (Math.abs(m.vB) > 0.02 || m.vyB > 0.02) {
+        var spd = Math.hypot(m.vB, m.vyB), uxB = m.vB / spd, uyB = m.vyB / spd;
+        var vaB = velArrow(ctx, bxx, byC, 0, -1, bh / 2 + 34, uxB, uyB, vArrowLen(spd, vref, 52));
+        label(ctx, 'v_B', vaB.tx + uxB * 13, vaB.ty + uyB * 13, { size: 11.5, color: COL.vel });
+      }
+    }
+    if (s.o.showA) {
+      if (m.air) drawAcc(ctx, bxx, byC, 0, G, { nx: 1, ny: 0, off: bw / 2 + 30, max: 52 });
+      else {
+        if (Math.abs(m.accB) > 0.02) drawAcc(ctx, bxx, byC, m.accB, 0, { nx: 0, ny: -1, off: bh / 2 + 70, max: 52 });
+        if (Math.abs(m.acc) > 0.02) drawAcc(ctx, pxC, gy - ph / 2, m.acc, 0, { nx: 0, ny: -1, off: ph / 2 + bh + 98, max: 52 });
+        if (Math.abs(m.acc) <= 0.02 && Math.abs(m.accB) <= 0.02) {
+          label(ctx, 'a = 0', pxC, gy - ph - bh - 100, { size: 11.5, color: COL.acc, avoid: true });
+        }
+      }
+    }
+    if (Math.abs(m.dRel) > 0.01 && !m.fell) {
+      var y2 = gy + 16;
+      arrow(ctx, pxC, y2, bxx, y2, 'dim');
+      label(ctx, 'すべった相対距離 = ' + fmt(Math.abs(m.dRel), 2) + ' m', (pxC + bxx) / 2, y2 + 13,
+        { size: 11, color: COL.dim });
+    }
+    drawClock(ctx, W, t);
+    drawEnergyBar(ctx, d, s, t, W, H, m);
+    ptRow(gy + 40);
+    drawPts(ctx, d, s, t, function (p) {
+      return (p.who === 'A') ? { x: pxC, y: gy - ph / 2, here: true } : { x: bxx, y: byC, here: true };
+    });
+  },
+  resItems: function (v) {
+    var m2 = P.plank2.sample(v, P.plank2.t2(v)), fl = P.plank2.falls(v), ts = P.plank2.tStick(v);
+    return [
+      { k: fl ? '板から落ちる時刻' : (isFinite(ts) ? '速さがそろう時刻' : 'そろわない'),
+        v: fl ? fmt(P.plank2.tFall(v), 2) + ' s' : (isFinite(ts) ? fmt(ts, 2) + ' s' : '—') },
+      { k: 'すべった相対距離', v: fmt(Math.abs(m2.dRel), 2) + ' m' + (fl ? '（＝板の半分）' : '') },
+      { k: '摩擦力がした仕事（合計）', v: fmtJ(m2.Wf) }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m3-4'].sample(v, t);
+    return [['A の速さ $v_A$', fmt(m.vA, 2) + ' m/s'],
+      ['B の速さ $v_B$', fmt(Math.hypot(m.vB, m.vyB), 2) + ' m/s'],
+      ['A と B のあいだの摩擦力', fmt(Math.abs(m.f), 1) + ' N' + (m.slip ? '（動摩擦）' : (m.fell ? '' : '（静止摩擦）'))]];
+  },
+  eq: function (s) {
+    var v = V(s), m2 = P.plank2.sample(v, P.plank2.t2(v));
+    return '\\text{2物体全体：}\;E_2 - E_1 = W_{\\text{摩擦}} + W_{F_A} + W_{F_B} = ' +
+      fmtE(m2.Wf + m2.WA + m2.WB) + '\\ \\mathrm{J}';
+  },
+  note: 'A と B にはたらく摩擦力は<b>大きさが同じで向きが逆</b>（作用・反作用）。' +
+    'でも<b>進んだ距離がちがう</b>ので、仕事は打ち消しあいません。' +
+    '合計は 0 以下で、その大きさは<b>摩擦力 × すべった相対距離</b>（一体で動くときは 0）。' +
+    '引く力があれば、その仕事の分だけ $E$ は増えます。' +
+    'B が板から落ちたあとは摩擦がないので、飛んでいるあいだ $E$ は変わりません。'
+};
+
+/* ============ 3-6 摩擦のある斜面上の、糸と滑車 ============
+   傾き θ のあらい斜面の上の A（質量 m）を、滑車を通してつるした B（質量 M）が引き上げる。
+     a = (Mg − mg sinθ − μ' mg cosθ)/(m + M)
+   A は高さが上がる（U_A が増える）、B は下がる（U_B が減る）、そのうえ摩擦で E が減る。 */
+P.pulSlope = {
+  a: function (v) {
+    var th = v.th * DEG;
+    return (v.M * G - v.m * G * Math.sin(th) - v.mu * v.m * G * Math.cos(th)) / (v.m + v.M);
+  },
+  T: function (v) { return v.M * (G - P.pulSlope.a(v)); },
+  Nof: function (v) { return v.m * G * Math.cos(v.th * DEG); },
+  LEN: 1.4, SLEN: 1.95, GAP: 0.6,
+  /* A のはじめの高さ（斜面のふもと）。★滑車（斜面のてっぺん）が B のはじめの高さより
+     GAP だけ上になるように θ から決める★（第22回：θ を大きくすると B が滑車にぶつかっていた） */
+  HT: function (v) {
+    return Math.max(0.25, P.pulSlope.LEN + P.pulSlope.GAP - P.pulSlope.SLEN * Math.sin(v.th * DEG));
+  },
+  tEnd: function (v) {
+    return Math.min(8, Math.sqrt(2 * P.pulSlope.LEN / Math.max(0.05, P.pulSlope.a(v))));
+  },
+  sample: function (v, t) {
+    var a = P.pulSlope.a(v), th = v.th * DEG;
+    t = Math.min(Math.max(0, t), P.pulSlope.tEnd(v));
+    var x = 0.5 * a * t * t, sp = a * t;
+    var fr = v.mu * P.pulSlope.Nof(v), wf = -fr * x, HT = P.pulSlope.HT(v);
+    return en2(0,
+      { m: v.m, v: sp, h: HT + x * Math.sin(th), w: wf },
+      { m: v.M, v: sp, h: P.pulSlope.LEN - x },
+      { x: x, acc: a, Tn: P.pulSlope.T(v), v: sp, hA: HT + x * Math.sin(th),
+        hB: P.pulSlope.LEN - x, fr: fr, Wf: wf });
+  }
+};
+
+DEFS['m3-6'] = {
+  id: 'm3-6', mode: 3, tab: '3-6 摩擦＋斜面',
+  title: '3-6　2物体（摩擦のある斜面上の、糸と滑車）',
+  sub: '3-5 の面を<b>傾き $\\theta$ の斜面</b>にしたものです。つるした B が下りると、' +
+    'A は斜面を<b>上って高さが増します</b>。A には重力の斜面方向の成分と、' +
+    '動摩擦力（大きさ $\\mu\' mg\\cos\\theta$）が、どちらも<b>進む向きと逆に</b>はたらきます。' +
+    '動摩擦力は非保存力なので、<b>2物体全体で見ても $E$ は保存しません</b>（ケース2）。',
+  cw: 700, ch: 440,
+  vis: ['F', 'V', 'A'],
+  mainVars: ['th', 'mu'], mainVarFocus: 'th',
+  vars: [
+    { k: 'th', label: '斜面の傾き $\\theta$', unit: '°', min: 10, max: 40, step: 5, dec: 0, def: 25 },
+    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.30, step: 0.05, dec: 2, def: 0.15 }
+  ].concat(twoMass3(1.5, 3.0)),
+  actions: [
+    { label: '斜面を急にする（θ＝40°）', fn: function (s) { s.v.th = 40; },
+      is: function (v) { return v.th === 40; },
+      next: function (s) { return s._played && s.v.th !== 40; } },
+    { label: 'ざらざらにする（μ\'＝0.30）', fn: function (s) { s.v.mu = 0.30; },
+      is: function (v) { return Math.abs(v.mu - 0.30) < 1e-9; } },
+    { label: 'はじめの設定にもどす',
+      fn: function (s) { s.v.th = 25; s.v.mu = 0.15; s.v.m = 1.5; s.v.M = 3; },
+      is: function (v) { return v.th === 25 && Math.abs(v.mu - 0.15) < 1e-9 && v.m === 1.5 && v.M === 3; } }
+  ],
+  cons: false, cons3: { both: false, each: false },
+  wName: '動摩擦力', wSym: 'W_{\\text{摩擦}} = -\\mu\' mg\\cos\\theta\\,x',
+  forces: [{ key: 'g',
+    how: '重力は<b>B には動く向きと同じ（正の仕事 $+Mgx$）、A には斜面を上るので逆（負の仕事 $-mgx\\sin\\theta$）</b>。' },
+    'N', F_T2,
+    { key: 'fr', name: '動摩擦力', sym: "μ'N", color: COL.fric,
+      w: function (v, A, B) { return B.m.Wf - A.m.Wf; },
+      wsym: "W_{\\text{摩擦}} = -\\mu' mg\\cos\\theta\\,x",
+      why: '斜面では垂直抗力が $mg\\cos\\theta$ になるので、動摩擦力もその分だけ小さくなる。' }],
+  hintFig: '<b>B の $U$ が減った分は、A の $U$ と 2つの $K$、そして摩擦で失われる分に分かれる</b>',
+  datum: '床（図の $h=0$ の線）',
+  hint2: '<b>次は</b>：$\\theta$ を変えて、<b>A の $U$ の増え方</b>と<b>$E$ の減り方</b>が' +
+    'どう変わるか見てみよう。',
+  ptSide: 'row',
+  tEnd: function (v) { return P.pulSlope.tEnd(v); },
+  sample: function (v, t) { return P.pulSlope.sample(v, t); },
+  pts: [
+    pt3('1', 'はじめ（静かにはなす）', function () { return 0; },
+      '0', 'mgh_{A1}', '0', 'Mgh_{B1}'),
+    pt3('2', 'B が下りきったとき', function (v) { return P.pulSlope.tEnd(v); },
+      '\\tfrac{1}{2}mv^2', 'mgh_{A2}', '\\tfrac{1}{2}Mv^2', 'Mgh_{B2}',
+      null, '\\tfrac{1}{2}(m+M)v^2')
+  ],
+  draw: function (ctx, s, t, W, H) {
+    var d = DEFS['m3-6'], v = V(s), m = d.sample(v, t);
+    var gy = H - 40 - PTBAND, SC = 118, th = v.th * DEG;   /* 第22回：右があいていたので大きくした */
+    function Y(h) { return gy - h * SC; }
+    var kA = mSize(d, v), bw = 40 * kA, bh = 27 * kA;
+    var kB = mSizeB(3.0, v.M), bwB = 36 * kB, bhB = 26 * kB;
+    var pr = RIG.PR, arm = pr * 1.9;
+    var ux = Math.cos(th), uy = -Math.sin(th);          /* 斜面を上る向き（画面） */
+    var nx = -Math.sin(th), ny = -Math.cos(th);         /* 斜面から外向き */
+    /* 斜面のふもと（A のはじめの接地点）と、斜面のてっぺん（滑車のつけ根） */
+    var x0 = 96, y0 = Y(P.pulSlope.HT(v));
+    var topLen = P.pulSlope.SLEN * SC;
+    var tx = x0 + ux * topLen, tyv = y0 + uy * topLen;  /* 斜面のはし（滑車の支柱のつけ根） */
+    /* ★糸が斜面と平行になる滑車の中心★（basics-of-motion-on-plane の 1-10 と同じ決め方）
+       糸は A の中心の高さ（面から bh/2）を面と平行に進み、滑車の【面の外がわ】に接する。
+       → 滑車の中心 ＝ 斜面のはし ＋ 面と平行に arm ＋ 面の内向きに (pr − bh/2) */
+    var PX = tx + ux * arm - nx * (pr - bh / 2), PY = tyv + uy * arm - ny * (pr - bh / 2);
+
+    ground(ctx, 20, W - 96, gy);
+    datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
+    /* 斜面の台。★面の線は (x0, y0) から u 向き＝A が動く線そのもの★
+       （前は左に 40 px ずらした点から引いていたので、面と糸が平行に見えなかった。第22回） */
+    ctx.save();
+    ctx.fillStyle = '#eef1f4'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x0 - 40, gy); ctx.lineTo(x0 - 40, y0); ctx.lineTo(x0, y0);
+    ctx.lineTo(tx, tyv); ctx.lineTo(tx, gy); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    /* あらい面の印は、ふもと→てっぺん（左→右）に渡して side 1（印は面の下がわ） */
+    hatchLine(ctx, x0, y0, tx, tyv, 1);
+    angArc(ctx, x0, y0, 30, -th, 0, 'θ = ' + fmt(v.th, 0) + '°', -th * 0.5, 54);
+    /* A（斜面の上）と糸 */
+    var sx = x0 + ux * m.x * SC, sy = y0 + uy * m.x * SC;      /* 面に接している点 */
+    var ax = sx + nx * bh / 2, ay = sy + ny * bh / 2;          /* 物体の中心 */
+    pulleyArm(ctx, tx, tyv, PX, PY);
+    ctx.save();
+    ctx.strokeStyle = COL.hand; ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(ax + ux * bw / 2, ay + uy * bw / 2);
+    ctx.lineTo(PX + nx * pr, PY + ny * pr); ctx.stroke();
+    var bxB = PX + pr, byB = Y(m.hB);
+    ctx.beginPath(); ctx.moveTo(bxB, PY); ctx.lineTo(bxB, byB - bhB); ctx.stroke();
+    ctx.restore();
+    pulleyWheel(ctx, PX, PY, pr);
+    stringArc(ctx, PX, PY, pr, Math.atan2(ny, nx), 0);   /* 車輪の上に糸を重ねる */
+    blockShape(ctx, ax, ay, th, bw, bh, '#e8eef5');
+    blockShape(ctx, bxB, byB - bhB / 2, 0, bwB, bhB, '#f3e8ee');
+    label(ctx, 'A', ax + nx * (bh / 2 + 13), ay + ny * (bh / 2 + 13), { size: 13, color: COL.sub });
+    label(ctx, 'B', bxB - bwB / 2 - 8, byB - bhB / 2, { size: 13, color: COL.sub, align: 'right' });
+    heightDim(ctx, 40, sy, gy, 'h_A = ' + fmt(m.hA, 2) + ' m', x0 - 40, true);
+    heightDim(ctx, bxB + bwB / 2 + 96, byB, gy, 'h_B = ' + fmt(m.hB, 2) + ' m', bxB + bwB / 2, true);
+
+    var fs = fScale3(v), Tn = m.Tn, mg = v.m * G, Nn = P.pulSlope.Nof(v);
+    if (s.o.showF) {
+      arrow(ctx, ax, ay, ax, ay + mg * fs, 'force');
+      label(ctx, 'mg', ax, ay + mg * fs + 11, { size: 11.5, color: COL.force });
+      arrow(ctx, sx, sy, sx + nx * Nn * fs, sy + ny * Nn * fs, 'force', 1, COL.norm);
+      label(ctx, 'N', sx + nx * (Nn * fs + 12), sy + ny * (Nn * fs + 12),
+        { size: 11.5, color: COL.norm });
+      arrow(ctx, ax + ux * bw / 2, ay + uy * bw / 2,
+        ax + ux * (bw / 2 + Tn * fs), ay + uy * (bw / 2 + Tn * fs), 'force', 1, COL.hand);
+      label(ctx, 'S', ax + ux * (bw / 2 + Tn * fs + 12), ay + uy * (bw / 2 + Tn * fs + 12),
+        { size: 11.5, color: COL.hand });
+      if (m.v > 0.02) {
+        arrow(ctx, sx, sy, sx - ux * m.fr * fs, sy - uy * m.fr * fs, 'force', 1, COL.fric);
+        label(ctx, "μ'N", sx - ux * (m.fr * fs + 14) + nx * 8, sy - uy * (m.fr * fs + 14) + ny * 8,
+          { size: 11.5, color: COL.fric });
+      }
+      arrow(ctx, bxB, byB - bhB / 2, bxB, byB - bhB / 2 + v.M * G * fs, 'force');
+      label(ctx, 'Mg', bxB, byB - bhB / 2 + v.M * G * fs + 11, { size: 11.5, color: COL.force });
+      arrow(ctx, bxB, byB - bhB, bxB, byB - bhB - Tn * fs, 'force', 1, COL.hand);
+      label(ctx, 'S', bxB + 12, byB - bhB - Tn * fs + 6,
+        { align: 'left', size: 11.5, color: COL.hand });
+    }
+    if (s.o.showV && m.v > 0.02) {
+      var vl = vArrowLen(m.v, Math.max(0.5, d.sample(v, d.tEnd(v)).v), 44);
+      var vaA = velArrow(ctx, ax, ay, nx, ny, bh / 2 + 40, ux, uy, vl);
+      label(ctx, 'v', vaA.tx + ux * 11, vaA.ty + uy * 11, { size: 11.5, color: COL.vel });
+      var vaB = velArrow(ctx, bxB + bwB / 2 + 16, byB - bhB / 2, 1, 0, 12, 0, 1, vl);
+      label(ctx, 'v', vaB.x + 11, vaB.y, { size: 11.5, color: COL.vel, align: 'left' });
+    }
+    if (s.o.showA) {
+      drawAcc(ctx, ax, ay, ux * m.acc, uy * m.acc, { nx: nx, ny: ny, off: bh / 2 + 76 });
+      drawAcc(ctx, bxB + bwB / 2 + 16, byB - bhB / 2, 0, m.acc, { nx: 1, ny: 0, off: 44, max: 52 });
+    }
+    drawClock(ctx, W, t);
+    drawEnergyBar(ctx, d, s, t, W, H, m);
+    ptRow(gy + 30);
+    drawPts(ctx, d, s, t, function (p) {
+      return (p.who === 'A') ? { x: ax, y: ay, here: true } : { x: bxB, y: byB - bhB / 2, here: true };
+    });
+  },
+  resItems: function (v) {
+    var m2 = P.pulSlope.sample(v, P.pulSlope.tEnd(v));
+    return [
+      { k: '加速度', v: fmt(P.pulSlope.a(v), 2) + ' m/s²' },
+      { k: '動摩擦力 $\\mu\' mg\\cos\\theta$', v: fmt(v.mu * P.pulSlope.Nof(v), 1) + ' N' },
+      { k: '摩擦力がした仕事', v: fmtJ(m2.Wf) }
+    ];
+  },
+  info: function (s, t) {
+    var v = V(s), m = DEFS['m3-6'].sample(v, t);
+    return [['進んだ距離 $x$', fmt(m.x, 2) + ' m'],
+      ['A の高さ $h_A$', fmt(m.hA, 2) + ' m'], ['摩擦がした仕事', fmtJ(m.Wf)]];
+  },
+  eq: function (s) {
+    var v = V(s), m2 = P.pulSlope.sample(v, P.pulSlope.tEnd(v));
+    return '\\text{2物体全体：}\\;E_2 - E_1 = W_{\\text{摩擦}} = ' + fmtE(m2.Wf) + '\\ \\mathrm{J}';
+  },
+  note: 'B の位置エネルギーが減った分は、<b>①A の位置エネルギーの増加</b>、' +
+    '<b>②2つの運動エネルギー</b>、<b>③摩擦で失われる分</b>の3つに分かれます。' +
+    '③があるので<b>2物体全体でも $E$ は保存しません</b>（ケース2）。'
+};
+
 /* ===== 80_ui.js ===== */
 /* 状態 st と DOM。render は st だけから描く。
    basics-of-motion-on-plane.html の 80_ui.js を受けついで、
@@ -7607,7 +8942,7 @@ function energyGraphs(d) {
 function initState() {
   Object.keys(DEFS).forEach(function (id) {
     var d = DEFS[id];
-    if (!d.graphs) d.graphs = energyGraphs(d);
+    if (!d.graphs) d.graphs = (d.mode === 3) ? twoBodyGraphs3(d) : energyGraphs(d);
     var s = {
       /* slow … ★ばねのシムは速すぎるので、はじめからスロー再生にする★（先生の指示・第8回）
          DEFS に slow: true と書いたシムだけ、最初からスローで動く。 */
@@ -7616,6 +8951,8 @@ function initState() {
       /* 立式の3つの開閉（null＝まだ決めていない＝保存の成否と st.allEq で決める）と、
          「仕事を表示」でいま選んでいる力 */
       eqOpen: null, wkSel: null,
+      /* モード3：左下の式の 2（対象）× 3（式の種類）の選び方 */
+      eq3: { scope: 'both', kind: 'cons' },
       /* 立式でくらべる2つめの点（null なら最後の点）と、
          「一度でも最後まで進めたか」（仕事の分析の欄を出しておくかどうか） */
       eqPair: null, _wkReady: false
@@ -7916,15 +9253,22 @@ function buildPanel() {
   /* 立式の3つの開閉と、くらべる2点の選択。
      #eqzone の中身は作り直されるので、外側の箱に1つだけ付けて委譲する。 */
   $('eqzone').addEventListener('click', function (e) {
-    var el = e.target, k = null, pr = null;
+    var el = e.target, k = null, pr = null, sc = null, kd = null;
     while (el && el !== this) {
       if (el.getAttribute) {
+        if (el.getAttribute('data-sc')) {              /* モード3の 2×3 ボタン */
+          sc = el.getAttribute('data-sc'); kd = el.getAttribute('data-kd'); break;
+        }
         if (el.getAttribute('data-eqk')) { k = el.getAttribute('data-eqk'); break; }
         if (el.getAttribute('data-pair')) { pr = +el.getAttribute('data-pair'); break; }
       }
       el = el.parentNode;
     }
-    if (k) {
+    if (sc) {
+      s.eq3 = { scope: sc, kind: kd };
+      $('eqzone')._key = null;
+      renderActive();
+    } else if (k) {
       var op = eqOpenOf(d, s);
       op[k] = !op[k];
       applyEqOpen(d, s);
@@ -8353,7 +9697,7 @@ function preparePtBubbles(d, s, t) {
   if (!host) return;
   if (!endOn(d, s, t)) { if (host.style.display !== 'none') host.style.display = 'none'; return; }
   host.style.display = '';
-  var v = V(s), ps = ptsOf(d, v), cv = $('mainCv');
+  var v = V(s), ps = bubPts(d, v), cv = $('mainCv');
   var k = (cv && cv.clientWidth) ? cv.clientWidth / d.cw : 1;
   host.style.setProperty('--ptk', k.toFixed(4));
   var key = ps.map(function (p) { return p.name + '|' + ptTex(d, p) + '|' + fmt(p.m.E, 2); }).join('/');
@@ -8431,6 +9775,63 @@ function eqZoneKey(d, s, secs) {
   return a + '@' + (st.allEq ? '1' : '0') + '@' + eqPairOf(d, s);
 }
 
+/* ===== モード3：2（対象）× 3（式の種類）＝ 6パターンの切りかえ ===== */
+function renderEqZone3(d, s, box) {
+  var v = V(s), jj = eqPairOf(d, s), sel = s.eq3 || (s.eq3 = { scope: 'both', kind: 'cons' });
+  var list = eq3Pick(d, v, jj, sel.scope, sel.kind);
+  if (!list.length) return;
+  var key = sel.scope + '/' + sel.kind + '/' + st.cur + '/' + JSON.stringify(v) + '/' + jj;
+  if (box._key === key) return;
+  box._key = key;
+  var ps = ptsOf(d, v), h = [];
+  h.push('<div class="eqztop"><span class="eqztitle">' +
+    ps[0].jp + 'と' + ps[pairJ(d, v, jj)].jp + 'の間で立式する</span></div>');
+  /* 2×3 のボタン（列＝対象、行＝式の種類） */
+  h.push('<div class="eq3grid"><div class="eq3hd"></div>' +
+    '<div class="eq3click">↓をクリック</div>');
+  h.push('<div class="eq3hd"></div>');
+  EQ3_SCOPES.forEach(function (sc) { h.push('<div class="eq3hd">' + sc.label + '</div>'); });
+  EQ3_KINDS.forEach(function (kd, i) {
+    h.push('<div class="eq3row"><span class="eq3no">' + '①②③'.charAt(i) + '</span>' +
+      mathHtml(kd.label) + '<span class="eq3sub">' + kd.sub + '</span></div>');
+    EQ3_SCOPES.forEach(function (sc) {
+      var ok = eq3Ok(d, v, sc.k, kd.k);
+      var on = (sel.scope === sc.k && sel.kind === kd.k);
+      h.push('<button class="eq3b' + (ok ? ' ok' : ' ng') + (on ? ' on' : '') +
+        '" data-sc="' + sc.k + '" data-kd="' + kd.k + '">' + (ok ? '○' : '✕') + '</button>');
+    });
+  });
+  h.push('</div>');
+  /* 選んだパターンの中身 */
+  list.forEach(function (q) {
+    h.push('<div class="eqsec ' + (q.ok ? 'ok' : 'ng') + ' open">' +
+      '<div class="eqhead eq3head"><span class="badge">' + (q.ok ? '○ 成り立つ' : '✕ 成り立たない') +
+      '</span><span class="eqttl">' + q.who + '</span></div>' +
+      '<div class="eqbody">' +
+      '<div class="enqline symline"><span class="fk">記号</span><span class="fv"><span class="tex">' +
+      escTex(q.sym) + '</span></span></div>' +
+      '<div class="enqline"><span class="fk">中身</span><span class="fv"><span class="tex">' +
+      escTex(q.sym2) + '</span></span></div>' +
+      '<div class="enqline"><span class="fk num">数値</span><span class="fv"><span class="tex">' +
+      escTex(q.num) + '</span></span></div>' +
+      '<div class="eqnote">' + mathHtml(q.note) + '</div></div></div>');
+  });
+  /* ★千葉さんの指示：この2つのケースの説明を、いつも下に出す★ */
+  var cs = case3(d, v);
+  h.push('<div class="eq3case"><div class="eq3ct">' +
+    '※受験物理で2物体のエネルギーが問われる問題の大半は、以下のケース1。</div>' +
+    '<div class="eq3c' + (cs === 1 ? ' now' : '') + '"><b>ケース1</b>　1物体ずつ見ると力学的エネルギーが保存せず、' +
+    '2物体全体でみると保存。<span class="eq3cn">（摩擦がないケースが多い）</span>' +
+    (cs === 1 ? '<span class="eq3now">← いまの図はこちら</span>' : '') + '</div>' +
+    '<div class="eq3c' + (cs === 2 ? ' now' : '') + '"><b>ケース2</b>　1物体ずつ見ると力学的エネルギーが保存せず、' +
+    '2物体全体でみても保存しない。<span class="eq3cn">（摩擦があるケースが多い）</span>' +
+    (cs === 2 ? '<span class="eq3now">← いまの図はこちら</span>' : '') + '</div></div>');
+  box.innerHTML = h.join('');
+  renderMath(box);
+  fitFormula(box);
+  requestAnimationFrame(function () { fitFormula(box); });
+}
+
 function renderEqZone(d, s, t) {
   var box = $('eqzone');
   if (!box) return;
@@ -8438,6 +9839,8 @@ function renderEqZone(d, s, t) {
     if (!box.hidden) { box.hidden = true; box._key = null; }
     return;
   }
+  if (d.mode === 3) { box.hidden = false; box.classList.add('eq3pop'); renderEqZone3(d, s, box); return; }
+  box.classList.remove('eq3pop');
   var v = V(s), jj = eqPairOf(d, s), secs = eqSections(d, v, jj), prs = pairsOf(d, v);
   if (!secs.length) return;
   box.hidden = false;
@@ -8556,7 +9959,8 @@ function renderWorkPanel(d, s, t) {
       f.name + '　<span class="tex">' + escTex(f.sym) + '</span>' +
       '<span class="wkval"><span class="tex">' + escTex('W = ' + fmtE(f.W) + '\\ \\mathrm{J}') +
       '</span></span></div>' +
-      '<div class="wkwhy">' + mathHtml(workWhy(f.W)) + (f.why ? '　' + mathHtml(f.why) : '') + '</div>' +
+      '<div class="wkwhy">' + mathHtml(workWhy(f.W, f)) +
+      (f.why ? '　' + mathHtml(typeof f.why === 'function' ? f.why(f.W) : f.why) : '') + '</div>' +
       (f.wsym ? '<div class="enqline"><span class="fk">記号</span><span class="fv"><span class="tex">' +
         escTex(f.wsym) + '</span></span></div>' : '') +
       '</div>');
@@ -9253,6 +10657,41 @@ function tick(ts) {
       r.hit_Us_at_C = +P.hitSpring.sample(hs1, P.hitSpring.tC(hs1)).Us.toFixed(6);
       r.hit_E0 = +P.hitSpring.sample(hs1, 0).E.toFixed(6);
       r.drift_hit = drift('m1-10', hs1);
+
+      /* ===== モード3　2物体（第20回・新規） =====
+         ★2物体全体で保存するか／1物体ずつでは保存しないか★ を数で確かめる。 */
+      var m3 = {};
+      ['m3-1', 'm3-2', 'm3-3', 'm3-4', 'm3-5', 'm3-6'].forEach(function (id) {
+        var dd = DEFS[id], vv = {};
+        dd.vars.forEach(function (x) { vv[x.k] = x.def; });
+        var pp = ptsOf(dd, vv), q1 = pp[0].m, q2 = pp[pp.length - 1].m;
+        /* 全体の E は、A だけと B だけの合計になっているか */
+        var sumOk = Math.abs((q2.A.E + q2.B.E) - q2.E) < 1e-9 ? 1 : 0;
+        /* 2物体全体で保存する図（cons3.both）では、E が動かないこと。
+           保存しない図では、E の変化が【非保存力の仕事の合計】に一致すること（第22回：
+           3-4 は引く力で E が増えることもあるので「減る」ではなく「一致」で見る） */
+        var dE = q2.E - q1.E, Wnc = 0;
+        forcesOf(dd, vv, null).forEach(function (f) {
+          if (f.key !== 'g' && f.key !== 'N' && f.key !== 'sp') Wnc += f.W;
+        });
+        m3[id] = { sum: sumOk, dE: +dE.toFixed(4), Wnc: +Wnc.toFixed(4),
+          consBoth: cons3(dd, vv, 'both') ? 1 : 0,
+          eachA: +(q2.A.E - q1.A.E).toFixed(3), eachB: +(q2.B.E - q1.B.E).toFixed(3) };
+      });
+      r.m3 = JSON.stringify(m3);
+      /* 保存すると書いた図で E が動いていたら NG。しないと書いた図で動かなくても NG。 */
+      var m3bad = [];
+      Object.keys(m3).forEach(function (id) {
+        var o = m3[id];
+        if (!o.sum) m3bad.push(id + ':合計ちがう');
+        if (o.consBoth && Math.abs(o.dE) > 1e-6) m3bad.push(id + ':保存のはずが動く');
+        if (!o.consBoth && (Math.abs(o.dE) < 1e-6 || Math.abs(o.dE - o.Wnc) > 1e-3)) {
+          m3bad.push(id + ':ΔE が非保存力の仕事と合わない');
+        }
+        /* 1物体ずつは、どの図でも保存しない（張力や摩擦が仕事をするから） */
+        if (Math.abs(o.eachA) < 1e-6 || Math.abs(o.eachB) < 1e-6) m3bad.push(id + ':1物体の E が動かない');
+      });
+      r.m3_bad = m3bad.join(',');
 
       /* ===== 1-14 水平ばねから発射（第19回・新規） ===== */
       var lc1 = { x0: 0.50, k: 40, m: 1.0 };
