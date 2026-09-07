@@ -1555,6 +1555,9 @@ DG.draw = (function () {
    */
   var texCache = {};
   var katexCssText = null;
+  /** 数式の画像ができるたびに 1 つ増える番号（描き直しの合図に使う） */
+  var texGen = 0;
+  function texGeneration() { return texGen; }
   function texImage(tex, opt) {
     opt = opt || {};
     var key = tex + '|' + (opt.color || '') + '|' + (opt.size || '') + '|' + (opt.display ? 1 : 0);
@@ -1591,8 +1594,12 @@ DG.draw = (function () {
         + '</div></foreignObject></svg>';
       var url = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgStr)));
       var img = new Image();
-      img.onload = function () { entry.img = img; entry.w = w; entry.h = h; entry.loading = false; };
-      img.onerror = function () { entry.loading = false; entry.failed = true; };
+      /* 数式の画像は非同期にできあがる。できた瞬間に「描き直しが要る」と分かるよう、
+         世代番号を 1 つ進める（UI 側がこれを見て 1 コマ描き直す）。 */
+      img.onload = function () {
+        entry.img = img; entry.w = w; entry.h = h; entry.loading = false; texGen++;
+      };
+      img.onerror = function () { entry.loading = false; entry.failed = true; texGen++; };
       img.src = url;
     } catch (e) { entry.loading = false; entry.failed = true; }
     return entry;
@@ -2336,6 +2343,7 @@ DG.draw = (function () {
   }
 
   return {
+    texGeneration: texGeneration,
     L: L, COL: COL,
     font: font, FONT: FONT,
     vec: vec, add: add, sub: sub, mul: mul, dot: dot, len: len, nrmOf: nrmOf, unit: unit,
@@ -3056,6 +3064,30 @@ DG.scaleOut = (function () {
     ctx.restore();
   }
 
+  /* ---------- 場面 4 の暗い背景（たてのグラデーション） ----------
+   * 画面いっぱいをグラデーションで塗るのは、とても重い。
+   * （実測：1300×700 を 4 倍の解像度で塗ると 1 フレームあたり約 25 ms。
+   *   これだけで 60 コマ／秒にまるで間に合わず、ここがカクつきの主因だった）
+   * 色は「たて方向」にしか変わらないので、幅 1 px の帯に 1 度だけ描いておき、
+   * それを横にひきのばして貼れば同じ絵になる（実測 3 ms 弱）。
+   * ひきのばすときに にじませない（imageSmoothingEnabled = false）ほうが速く、
+   * たては 700 段の階調がそのまま出るので、見た目は変わらない。 */
+  var bgStrip = null;
+  function bgFill(ctx, W, H) {
+    if (!bgStrip) {
+      bgStrip = document.createElement('canvas');
+      bgStrip.width = 1; bgStrip.height = H;
+      var g = bgStrip.getContext('2d');
+      var lg = g.createLinearGradient(0, 0, 0, H);
+      lg.addColorStop(0, '#0f1216'); lg.addColorStop(1, '#1a2028');
+      g.fillStyle = lg; g.fillRect(0, 0, 1, H);
+    }
+    var sm = ctx.imageSmoothingEnabled;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(bgStrip, 0, 0, 1, H, 0, 0, W, H);
+    ctx.imageSmoothingEnabled = sm;
+  }
+
   function scene4(ctx, st, t) {
     var W = L.W, H = L.H;
     var view0 = st.d * 6;                          // はじめの視野 ＝ 格子 6 本ぶん
@@ -3065,9 +3097,7 @@ DG.scaleOut = (function () {
 
     /* ---- 背景（暗くして、光と棒を見やすく） ---- */
     ctx.save();
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#0f1216'); g.addColorStop(1, '#1a2028');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    bgFill(ctx, W, H);
 
     /* ---- 回折格子の表面（実寸）。地面のところに寝かせて描く ---- */
     var dpx = st.d * pxPerNm;
@@ -3198,11 +3228,15 @@ DG.scaleOut = (function () {
 
   /* ================= 本体 ================= */
   function render(ctx, st, sol, prog) {
-    ctx.save();
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, L.W, L.H);
-    ctx.restore();
     var s = sceneOf(prog), t = localT(prog);
+    /* 下じきの白。場面 4 はこのあと画面いっぱいを暗い色で塗りつぶすので、
+       白で塗るぶんはむだになる（画面ぜんぶを塗るのは 1 回でも軽くない）。 */
+    if (s !== 3) {
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, L.W, L.H);
+      ctx.restore();
+    }
     if (s === 0) scene1(ctx, st, t);
     else if (s === 1) scene2(ctx, st, t);
     else if (s === 2) scene3(ctx, st, t);
@@ -4710,6 +4744,16 @@ DG.modeField = (function () {
     return buf;
   }
 
+  /** |u| の 0.75 乗の早見表（0〜1 を 257 段）。1 画素ごとの Math.pow をやめるため */
+  var POW_LUT = null;
+  function powLut() {
+    if (!POW_LUT) {
+      POW_LUT = new Float32Array(257);
+      for (var i = 0; i <= 256; i++) POW_LUT[i] = Math.pow(i / 256, 0.75);
+    }
+    return POW_LUT;
+  }
+
   /** ある瞬間の変位を色で */
   function drawSnapshot(ctx, st) {
     var f = ensureField(st);
@@ -4717,10 +4761,11 @@ DG.modeField = (function () {
     var wt = 2 * Math.PI * (P.V_NM_PER_S / st.lambda) * (st.t || 0);
     var cw = Math.cos(wt), sw = Math.sin(wt);
     var dat = b.img.data;
+    var LUT = powLut();                              // Math.pow を 1 画素ごとに呼ぶと重いので早見表で
     for (var i = 0; i < f.w * f.h; i++) {
       var v = (-sw * f.A[i] + cw * f.B[i]) / f.S[i];  // −1〜1（距離による弱まりは打ち消す）
       var u = v > 1 ? 1 : (v < -1 ? -1 : v);
-      var m = Math.pow(Math.abs(u), 0.75);
+      var m = LUT[((u < 0 ? -u : u) * 256) | 0];      // ＝ |u| の 0.75 乗
       var r, g, bl;
       if (u >= 0) { r = 255 - 23 * m; g = 255 - 121 * m; bl = 255 - 213 * m; }
       else { r = 255 - 224 * m; g = 255 - 139 * m; bl = 255 - 47 * m; }
@@ -4732,8 +4777,14 @@ DG.modeField = (function () {
     ctx.beginPath();
     ctx.rect(FL.x0, FL.y0, screenX(st) - FL.x0, FL.y1 - FL.y0);
     ctx.clip();
+    /* ★重さの山その 2★ 場の絵をひきのばして貼るところ。
+       にじませ方を 'high' のままにすると、ここだけで 1 フレーム 50 ms 以上かかる
+       （実測）。'low'（ふつうの線形補間）にすると半分以下になり、
+       もともとなめらかな色の場なので見た目はほとんど変わらない。 */
     ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
     ctx.drawImage(b.cv, FL.x0, FL.y0, f.w * FL.step, f.h * FL.step);
+    ctx.imageSmoothingQuality = 'high';
     ctx.restore();
   }
 
@@ -5482,16 +5533,27 @@ DG.modeSlit = (function () {
     return buf;
   }
 
+  /** |u| の 0.75 乗の早見表（0〜1 を 257 段）。1 画素ごとの Math.pow をやめるため */
+  var POW_LUT = null;
+  function powLut() {
+    if (!POW_LUT) {
+      POW_LUT = new Float32Array(257);
+      for (var i = 0; i <= 256; i++) POW_LUT[i] = Math.pow(i / 256, 0.75);
+    }
+    return POW_LUT;
+  }
+
   function drawSnapshot(ctx, st) {
     var f = ensureField(st);
     var b = ensureBuf(f.w, f.h);
     var wt = 2 * Math.PI * (P.V_NM_PER_S / st.lambda) * (st.t || 0);
     var cw = Math.cos(wt), sw = Math.sin(wt);
     var dat = b.img.data;
+    var LUT = powLut();                              // Math.pow を 1 画素ごとに呼ぶと重いので早見表で
     for (var i = 0; i < f.w * f.h; i++) {
       var v = (-sw * f.A[i] + cw * f.B[i]) / f.S[i];
       var u = v > 1 ? 1 : (v < -1 ? -1 : v);
-      var m = Math.pow(Math.abs(u), 0.75);
+      var m = LUT[((u < 0 ? -u : u) * 256) | 0];      // ＝ |u| の 0.75 乗
       var r, g, bl;
       if (u >= 0) { r = 255 - 23 * m; g = 255 - 121 * m; bl = 255 - 213 * m; }
       else { r = 255 - 224 * m; g = 255 - 139 * m; bl = 255 - 47 * m; }
@@ -5502,8 +5564,13 @@ DG.modeSlit = (function () {
     ctx.beginPath();
     ctx.rect(FL.x0, FL.y0, screenX(st) - FL.x0, FL.y1 - FL.y0);
     ctx.clip();
+    /* 場の絵をひきのばして貼るところ。にじませ方を 'high' のままにすると、
+       ここだけで 1 フレーム 50 ms 以上かかる（実測）。'low' で半分以下になり、
+       もともとなめらかな色の場なので見た目はほとんど変わらない。 */
     ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'low';
     ctx.drawImage(b.cv, FL.x0, FL.y0, f.w * FL.step, f.h * FL.step);
+    ctx.imageSmoothingQuality = 'high';
     ctx.restore();
   }
 
@@ -6480,13 +6547,25 @@ DG.ui = (function () {
 
   function $(id) { return document.getElementById(id); }
 
-  /* ---------- canvas ---------- */
+  /* ---------- canvas ----------
+   * 図の中の小さな字までくっきり出すため、画面よりも高い解像度で描く（ふだんは 4 倍）。
+   * ただし 1 フレームで塗る画素の数がそのまま重さになるので、
+   * 「実験の概要」の動画が動いているあいだだけ 2 倍に落とす（画素の数は 4 分の 1）。
+   * 止めれば元のくっきりした絵に戻るので、読むときの見え方は変わらない。 */
+  function wantDpr() {
+    var still = (window.innerWidth >= 900) ? 4 : 3;   // せまい画面はメモリを食いすぎないように 3 倍
+    /* 動いているあいだ（波の再生・実験の概要の動画・図をドラッグ中）は 2 倍にする。
+       止めた瞬間にもとのくっきりした絵に戻るので、読むときの見え方は変わらない。 */
+    var moving = st.playing || !!st.dragging
+      || (st.mode === 'scale' && st.scaleOut && !st.scaleOut.paused);
+    return moving ? Math.min(2, still) : still;
+  }
+  /** 解像度が変わるときだけ canvas を作り直す（毎フレーム呼んでよい） */
   function setupCanvas() {
+    var want = wantDpr();
+    if (ctx && want === dpr) return;
     var c = $('view');
-    // 図の中の小さな字までくっきり出すため、画面よりも高い解像度で描く。
-    // せまい画面ではメモリを食いすぎないように 3 倍でとめる。
-    var wide = (window.innerWidth >= 900);
-    dpr = Math.min(wide ? 4 : 3, Math.max(wide ? 4 : 3, (window.devicePixelRatio || 1) * 1.5));
+    dpr = want;
     c.width = L.W * dpr;
     c.height = L.H * dpr;
     c.style.aspectRatio = L.W + ' / ' + L.H;
@@ -6499,20 +6578,24 @@ DG.ui = (function () {
 
   /* ---------- 描画 ---------- */
   function render() {
+    setupCanvas();                 // 動画の再生・停止で解像度が変わったときだけ作り直す
     D.setLightColor(st.lambda);
     var sol = P.solve(st);
-    var sc = D.buildScene(st, sol);
     D.resetButtons();
+
+    /* 「実験の概要」は場面ごとに自分で下じきを塗るので、ここでは塗らない
+       （画面ぜんぶを塗る回数を 2 回から 1 回に減らす） */
+    if (st.mode === 'scale' && DG.scaleOut) {
+      DG.scaleOut.render(ctx, st, sol, P.clamp(st.scaleOut ? st.scaleOut.prog : 0, 0, 1));
+      updateReadout(sol);
+      lastKey = stateKey();
+      return;
+    }
+
+    var sc = D.buildScene(st, sol);
     ctx.save();
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, L.W, L.H);
-
-    if (st.mode === 'scale' && DG.scaleOut) {
-      DG.scaleOut.render(ctx, st, sol, P.clamp(st.scaleOut ? st.scaleOut.prog : 0, 0, 1));
-      ctx.restore();
-      updateReadout(sol);
-      return;
-    }
 
     if (st.mode === 'slit' && DG.modeSlit) {
       DG.modeSlit.render(ctx, st);
@@ -6532,6 +6615,7 @@ DG.ui = (function () {
     ctx.restore();
 
     updateReadout(sol);
+    lastKey = stateKey();
   }
 
   function loop(now) {
@@ -6549,8 +6633,37 @@ DG.ui = (function () {
         syncSceneBtns();
       }
     }
-    render();
+    if (needRender(now)) render();
     requestAnimationFrame(loop);
+  }
+
+  /* ---------- むだな描き直しをやめる ----------
+   * 何も変わっていないのに毎秒 60 回も描き直すと、そのあいだじゅう計算機を
+   * 働かせつづけることになる（補足のモードは 1 コマ描くのに数十 ms かかる）。
+   * 「動くもの」が何もなく、状態（st）も前のコマと同じなら描かない。
+   *   ・①のモードは 5 秒ごとにゆっくり光る合図がいつも動いているので、つねに描く
+   *   ・数式の画像はあとからできあがるので、その世代番号も見ている
+   * 状態を JSON にして比べるので、あとから st に項目を足しても取りこぼさない。 */
+  var lastKey = null;
+  function stateKey() {
+    var save = st.nowSec;
+    st.nowSec = 0;                       // 時計は毎コマ変わるので比べる対象から外す
+    var s;
+    try { s = JSON.stringify(st); } catch (e) { s = String(Math.random()); }
+    st.nowSec = save;
+    return s + '|' + (D.texGeneration ? D.texGeneration() : 0);
+  }
+  var lastGlow = 0;
+  function needRender(now) {
+    if (st.playing || st.dragging) return true;
+    if (st.mode === 'scale' && st.scaleOut && !st.scaleOut.paused) return true;
+    /* ①のモードには「5 秒ごとにゆっくり光る合図」がいつも動いている。
+       ゆっくりした明滅なので、毎秒 60 回も描き直す必要はない（24 回で十分なめらか）。
+       マウスを動かしたときの反応は、その場で render() を呼んでいるので鈍らない。 */
+    if (st.mode === 'path') {
+      if (now - lastGlow >= 1000 / 24) { lastGlow = now; return true; }
+    }
+    return stateKey() !== lastKey;
   }
 
   /* ---------- 図の上での操作（スクリーンをクリック／ドラッグ） ---------- */
