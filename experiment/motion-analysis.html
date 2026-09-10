@@ -1,0 +1,3923 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>動画解析ツール（高校物理）</title>
+<style>
+:root{
+  --ink:#1b1f24; --sub:#5b6672; --line:#d9dee4; --bg:#f6f7f9; --card:#fff; --panel:#fbfcfd;
+  --accent:#1663b5; --accent-d:#0f4c8f; --orange:#e07b18; --ok:#1c8f4a; --ng:#c0392b;
+  --warn:#8a6d00; --warnbg:#fff8e1;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --jp:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --panelw:352px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--jp);font-size:15px;line-height:1.6;
+  overscroll-behavior-y:contain}
+button,input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+button{cursor:pointer}
+
+/* ===== ヘッダ ===== */
+.apphd{position:sticky;top:0;z-index:40;background:var(--accent);color:#fff;
+  display:flex;align-items:center;gap:10px;padding:6px 10px;flex-wrap:wrap}
+.apphd h1{font-size:1.02rem;margin:0;font-weight:700;letter-spacing:.02em;flex:0 1 auto}
+.apphd .sp{flex:1 1 auto}
+.apphd .hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.55);color:#fff;
+  border-radius:8px;padding:7px 11px;min-height:38px}
+.apphd .hbtn:hover{background:rgba(255,255,255,.28)}
+.apphd .chk{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:6px 10px;min-height:38px;font-size:.86rem}
+.apphd .chk input{width:18px;height:18px}
+
+/* ===== タブ・実験バー ===== */
+.tabs{display:flex;gap:4px;padding:6px 8px 0;background:#e9edf2;border-bottom:1px solid var(--line);
+  position:sticky;top:var(--hdh,50px);z-index:35;flex-wrap:wrap}
+.tabs button{background:#dde3ea;border:1px solid var(--line);border-bottom:none;border-radius:9px 9px 0 0;
+  padding:9px 14px;min-height:42px;font-weight:700;color:#42505f}
+.tabs button.on{background:var(--card);color:var(--accent);box-shadow:0 -2px 0 var(--accent) inset}
+.expbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:7px 10px;background:var(--card);
+  border-bottom:1px solid var(--line)}
+.expbar select,.expbar input{border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-height:36px}
+.expbar .nm{width:150px}
+.expbar .memo{width:190px}
+.expbar .lb{font-size:.85rem;color:var(--sub)}
+
+/* ===== レイアウト ===== */
+.wrap{padding:10px}
+.m1grid{display:grid;grid-template-columns:var(--panelw) minmax(0,1fr);gap:12px;align-items:start}
+.m1grid.top{grid-template-columns:minmax(0,1fr)}
+.m1grid.top .side{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;align-items:start}
+.side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.rightcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+/* 狭い画面：動画を先頭に出し、操作パネルはその下（カードはたたむ） */
+@media(max-width:860px){
+  .m1grid{grid-template-columns:minmax(0,1fr)}
+  .m1grid .rightcol{order:-1}
+  .wrap{padding:8px 6px 40px}
+}
+@media(max-width:600px){
+  .apphd h1{font-size:.95rem}
+  .apphd .chk{font-size:.78rem;padding:5px 8px}
+  .apphd .hbtn{padding:6px 9px;font-size:.85rem}
+  .tabs button{padding:8px 10px;font-size:.88rem}
+  .expbar{gap:4px;padding:5px 6px}
+  .expbar .nm{flex:1 1 130px;width:auto;min-width:0}
+  .expbar .memo{flex:1 1 110px;width:auto;min-width:0}
+  .expbar .btn{font-size:.8rem;padding:5px 7px}
+  .stepbtns .btn{min-width:40px;padding:7px 4px;font-size:.8rem}
+}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 12px;min-width:0}
+.card>h3{margin:0 0 8px;font-size:.95rem;color:var(--accent-d);display:flex;align-items:center;gap:6px}
+.card.op{border-left:5px solid var(--orange)}
+details.card>summary{cursor:pointer;font-weight:700;color:var(--accent-d);font-size:.95rem;list-style:none;
+  display:flex;align-items:center;gap:6px;min-height:30px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"▸";color:var(--sub)}
+details.card[open]>summary::before{content:"▾"}
+details.card>summary+*{margin-top:9px}
+.mini{font-size:.83rem;color:var(--sub);margin:4px 0}
+.hr{height:1px;background:var(--line);margin:9px 0}
+
+/* ===== 部品 ===== */
+.btn{background:#fff;border:1px solid #b9c3cf;border-radius:9px;padding:9px 12px;min-height:42px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:.92rem}
+.btn:hover{background:#eef3f9}
+.btn:active{background:#e2eaf4}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.pri:hover{background:var(--accent-d)}
+.btn.on{background:#fff3d6;border-color:var(--orange);color:#8a5300;font-weight:700}
+.btn.sm{min-height:36px;padding:6px 9px;font-size:.86rem}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row.tight{gap:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+input[type=text],input[type=number],select,textarea{border:1px solid #b9c3cf;border-radius:8px;padding:7px 8px;
+  min-height:40px;background:#fff;max-width:100%}
+input[type=number]{width:88px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+label.f{display:flex;align-items:center;gap:6px;font-size:.88rem;flex-wrap:wrap}
+label.cb{display:inline-flex;align-items:center;gap:7px;font-size:.89rem;min-height:38px}
+label.cb input{width:19px;height:19px}
+.val{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tag{display:inline-block;background:#eef2f7;border:1px solid var(--line);border-radius:999px;
+  padding:2px 9px;font-size:.79rem;color:var(--sub)}
+.ok{color:var(--ok)} .ng{color:var(--ng)}
+.note{background:var(--warnbg);border:1px solid #e8d9a0;color:var(--warn);border-radius:9px;padding:8px 10px;font-size:.85rem}
+.err{background:#fdecea;border:1px solid #f2b8b2;color:#8c2118;border-radius:9px;padding:10px 12px;font-size:.9rem}
+.hide{display:none !important}
+
+/* ===== 手順の進み具合（光る／薄くする／まだ触れない） ===== */
+details.card.step-active{border-color:var(--orange);box-shadow:0 0 0 3px rgba(224,123,24,.22);
+  animation:stepglow 1.8s ease-in-out infinite}
+@keyframes stepglow{0%,100%{box-shadow:0 0 0 3px rgba(224,123,24,.18)}50%{box-shadow:0 0 0 6px rgba(224,123,24,.30)}}
+details.card.step-active>summary{color:#a35b00}
+details.card.step-active>summary::after{content:"いまここ";margin-left:auto;background:var(--orange);color:#fff;
+  border-radius:999px;font-size:.72rem;padding:1px 9px;font-weight:700}
+details.card.step-done{opacity:.62;background:#fafbfc}
+details.card.step-done>summary{color:#77838f}
+details.card.step-done>summary::after{content:"済";margin-left:auto;color:var(--ok);font-size:.82rem;font-weight:700}
+.again{display:none;margin-left:8px;min-height:26px;padding:1px 9px;font-size:.75rem;
+  background:#eef3f9;border-color:#b9c3cf}
+details.card.step-done>summary .again{display:inline-flex}
+details.card.step-lock{opacity:.5;background:#fafbfc}
+details.card.step-lock>summary{color:#98a3ae}
+details.card.step-lock>summary::after{content:"まだ";margin-left:auto;color:#98a3ae;font-size:.75rem}
+details.card.step-lock>*:not(summary){pointer-events:none}
+@media(prefers-reduced-motion:reduce){details.card.step-active{animation:none}}
+
+/* いま押してほしいボタン */
+.btn.glow{background:#fff3d6;border-color:var(--orange);color:#8a5300;font-weight:700;
+  box-shadow:0 0 0 3px rgba(224,123,24,.25);animation:btnglow 1.6s ease-in-out infinite}
+@keyframes btnglow{0%,100%{box-shadow:0 0 0 3px rgba(224,123,24,.20)}50%{box-shadow:0 0 0 6px rgba(224,123,24,.34)}}
+.tabs button.glow{background:#fff3d6;color:#8a5300;box-shadow:0 -3px 0 var(--orange) inset,0 0 0 3px rgba(224,123,24,.25)}
+@media(prefers-reduced-motion:reduce){.btn.glow{animation:none}}
+
+/* 動画と表を並べる */
+.rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,420px);
+  gap:12px;align-items:start}
+.rightcol.sbs .videobox{grid-column:1;grid-row:1}
+.rightcol.sbs .vidbar{grid-column:1;grid-row:2}
+.rightcol.sbs #tblCard{grid-column:2;grid-row:1 / span 2}
+.rightcol.sbs #tblCard .tblwrap{max-height:70vh}
+.rightcol.sbs .strobox{grid-column:1 / -1}
+@media(max-width:860px){ .rightcol.sbs{display:flex;flex-direction:column} }
+
+/* いま何をすべきか（赤文字） */
+.todo{color:#c0392b;font-weight:700;font-size:.88rem;line-height:1.55;margin:4px 0 2px;
+  padding-left:20px;position:relative}
+.todo::before{content:"➡";position:absolute;left:0;top:0}
+/* 「動画ファイルを選択」はいつも薄く青く光らせておく */
+#btnFile{background:#e8f1fb;border-color:#8fb8e0;color:#0f4c8f;font-weight:700;
+  box-shadow:0 0 0 3px rgba(22,99,181,.16)}
+#btnFile:hover{background:#d7e7f8}
+
+/* 動画エリアの吹き出し */
+#vhint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;
+  max-width:92%;background:rgba(20,26,34,.88);color:#fff;border-radius:10px;
+  padding:9px 34px 9px 13px;font-size:.9rem;font-weight:700;line-height:1.5;
+  box-shadow:0 3px 14px rgba(0,0,0,.35);pointer-events:none}
+#vhint b{color:#ffd66e}
+#vhintX{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;
+  border:none;background:rgba(255,255,255,.18);color:#fff;font-size:15px;line-height:1;
+  pointer-events:auto;display:flex;align-items:center;justify-content:center}
+#vhintX:hover{background:rgba(255,255,255,.34)}
+
+/* ===== 動画の上の大きな再生ボタン・ドロップ表示 ===== */
+#bigPlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
+  width:88px;height:88px;border-radius:50%;border:3px solid rgba(255,255,255,.9);
+  background:rgba(20,26,34,.45);color:#fff;font-size:30px;line-height:1;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#bigPlay:hover{background:rgba(22,99,181,.75)}
+#bigPlay span{margin-left:6px}
+#dropHint{position:absolute;inset:8px;z-index:8;border:3px dashed #7fb2e5;border-radius:12px;
+  background:rgba(22,99,181,.35);color:#fff;font-weight:700;font-size:1.05rem;
+  display:flex;align-items:center;justify-content:center;pointer-events:none}
+body.dropping #dropHint{display:flex !important}
+
+/* ===== シークバーの縦棒（t=0 と おわり） ===== */
+.smark{position:absolute;top:0;height:34px;width:26px;margin-left:-13px;z-index:3;
+  cursor:ew-resize;touch-action:none;display:flex;justify-content:center}
+.smark::before{content:"";position:absolute;top:2px;bottom:2px;width:3px;border-radius:2px}
+.smark.t0::before{background:#1c8f4a}
+.smark.tb::before{background:#c0392b}
+.smark b{position:absolute;top:-3px;font-size:.66rem;font-weight:700;white-space:nowrap;
+  padding:0 4px;border-radius:4px;color:#fff;pointer-events:none}
+.smark.t0 b{background:#1c8f4a}
+.smark.tb b{background:#c0392b}
+
+/* 手順の箇条書き（操作説明） */
+ol.steps{margin:0;padding-left:1.25em;font-size:.85rem;color:#39434e}
+ol.steps li{margin:.28em 0}
+ol.steps b{color:var(--accent-d)}
+kbd{font-family:var(--mono);font-size:.8em;background:#eef2f7;border:1px solid #c6cfda;
+  border-bottom-width:2px;border-radius:5px;padding:1px 5px}
+
+/* ===== 動画エリア ===== */
+.videobox{position:relative;background:#20262e;border:1px solid var(--line);border-radius:11px;overflow:hidden;
+  touch-action:none;-webkit-user-select:none;user-select:none;min-height:180px}
+.videobox{display:flex;justify-content:center;align-items:flex-start}
+.vwrap{position:relative;line-height:0;max-width:100%}
+.videobox canvas{display:block;width:100%;height:auto;touch-action:none}
+.videobox .ph{color:#c7d0da;text-align:center;padding:46px 16px;font-size:.92rem;flex:1}
+#loupe{position:absolute;width:132px;height:132px;border-radius:50%;border:3px solid #fff;
+  box-shadow:0 3px 12px rgba(0,0,0,.45);pointer-events:none;display:none;z-index:6;background:#000;overflow:hidden}
+#loupe canvas{width:132px;height:132px}
+.vidbar{display:flex;flex-direction:column;gap:7px;background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:9px 10px}
+.seekwrap{position:relative;padding-top:6px;overflow:hidden}
+input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
+.rangemark{position:absolute;top:2px;height:8px;background:rgba(22,99,181,.28);border-radius:4px;pointer-events:none}
+.stepbtns{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
+.stepbtns .btn{min-width:46px;padding:8px 6px;font-family:var(--mono);font-size:.85rem}
+.stepbtns .btn.n{background:#fff8e8;border-color:#e2c98a}
+.tline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.86rem;color:var(--sub)}
+.tline .val{color:var(--ink)}
+
+/* ===== ストロボ ===== */
+.strobox{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px}
+.strobox canvas{width:auto;height:auto;max-width:100%;max-height:70vh;display:block;
+  background:#111;border-radius:8px;margin:0 auto}
+
+/* ===== グラフ ===== */
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.chartcard{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px}
+.chartcard canvas{width:100%;height:auto;display:block}
+.chartcard .ttl{font-size:.88rem;font-weight:700;color:var(--accent-d);margin:0 0 4px 4px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.82rem;margin:4px 0 0 4px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.explist{display:flex;gap:10px;flex-wrap:wrap}
+.explist label{display:inline-flex;align-items:center;gap:5px;font-size:.86rem;background:#f1f4f8;
+  border:1px solid var(--line);border-radius:8px;padding:5px 9px;min-height:36px}
+
+/* ===== 表 ===== */
+.tbl{width:100%;border-collapse:collapse;font-size:.84rem}
+.tbl th,.tbl td{border:1px solid var(--line);padding:4px 7px;text-align:right;font-family:var(--mono);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl th{background:#eef2f7;font-family:var(--jp);text-align:center;font-size:.8rem;
+  position:sticky;top:0;z-index:1}
+.tbl tr.cur td{background:#fff3d6;font-weight:700}
+.tblwrap{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+/* 自由選択グラフ */
+#cgCard select{max-width:148px}
+.cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;align-items:center}
+.cgY{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:5px;
+  background:#f6f9fc;border:1px solid var(--line);border-radius:9px;padding:8px 9px}
+.cgY .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
+.cgY label.cb{min-height:30px;font-size:.82rem}
+.cgPlot{grid-column:2;grid-row:1}
+.cgX{grid-column:2;grid-row:2;display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.cgX .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
+.cgX label.cb{min-height:30px;font-size:.82rem}
+@media(max-width:700px){
+  .cgrid{grid-template-columns:minmax(0,1fr)}
+  .cgY,.cgPlot,.cgX{grid-column:1}
+  .cgY{grid-row:1} .cgPlot{grid-row:2} .cgX{grid-row:3;justify-content:flex-start}
+  .cgY{flex-direction:row;flex-wrap:wrap;align-items:center}
+}
+
+/* グラフの並べ方（物体ごとのブロック → 列） */
+.gblock{margin:0 0 14px}
+.gblock>h3{margin:0 0 6px;font-size:.95rem;color:var(--accent-d)}
+.gwrap{display:grid;gap:12px;align-items:start}
+.gcol{display:flex;flex-direction:column;gap:10px;min-width:0;align-items:flex-start}
+.gcol>.chartcard{width:max-content;max-width:100%}
+.chartcard{position:relative}
+.chartcard .maxbtn{position:absolute;right:6px;top:5px;z-index:2;min-height:26px;padding:1px 8px;
+  font-size:.74rem;background:#eef3f9;border:1px solid #b9c3cf;border-radius:7px;color:#39434e}
+.chartcard .maxbtn:hover{background:#dce7f4}
+#gmodal .box{max-width:1200px}
+#cgCard .lb{font-size:.85rem;color:var(--sub);font-weight:700}
+
+/* ===== モーダル ===== */
+.modal{position:fixed;inset:0;background:rgba(20,26,34,.55);z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:14px}
+.modal .box{background:#fff;border-radius:14px;max-width:820px;width:100%;max-height:88vh;overflow:auto;
+  padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.modal h2{margin:.2em 0 .5em;font-size:1.15rem;color:var(--accent-d)}
+.modal h3{margin:1.1em 0 .3em;font-size:1rem;color:var(--accent-d)}
+.modal .cls{position:sticky;top:0;float:right}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:rgba(20,26,34,.92);color:#fff;
+  padding:10px 18px;border-radius:999px;z-index:200;font-size:.9rem;pointer-events:none;opacity:0;
+  transition:opacity .18s}
+.toast.on{opacity:1}
+.prog{height:8px;background:#e6ebf1;border-radius:5px;overflow:hidden}
+.prog>i{display:block;height:100%;background:var(--accent);width:0%}
+
+/* 印刷 */
+@media print{.apphd,.tabs,.expbar,.side{display:none}}
+
+</style>
+</head>
+<body>
+<header class="apphd">
+  <h1>動画解析ツール</h1>
+  <span class="sp"></span>
+  <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
+  <button class="hbtn" id="btnMenuPos">メニュー：左</button>
+  <button class="hbtn" id="btnHelp">使い方</button>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-mode="1" class="on">① 撮影・トラッキング</button>
+  <button data-mode="2">② グラフ</button>
+  <button data-mode="3">③ 解析</button>
+</nav>
+
+<div class="expbar">
+  <span class="lb">実験</span>
+  <select id="expSel"></select>
+  <input type="text" id="expName" class="nm" placeholder="実験の名前（例：斜面20度）">
+  <input type="text" id="expMemo" class="memo" placeholder="メモ">
+  <button class="btn sm" id="btnExpNew">＋ 新しい実験</button>
+  <button class="btn sm" id="btnExpClear">この実験の測定を消去</button>
+  <button class="btn sm" id="btnResetAll">すべての実験を消してリセット</button>
+  <span class="sp" style="flex:1"></span>
+  <span class="tag" id="expInfo">点 0</span>
+</div>
+
+<main class="wrap">
+
+<!-- ================= モード1 ================= -->
+<section id="mode1">
+ <div class="m1grid" id="m1grid">
+  <div class="side" id="side1">
+
+    <details class="card op" open data-key="howto">
+      <summary>操作説明</summary>
+      <ol class="steps">
+        <li><b>動画をよみこむ</b>（ドラッグ＆ドロップでも可）。<b>コマ表</b>ができると、コマの実測時刻が使えます</li>
+        <li><b>解析する時間範囲</b>：再生して見どころをさがし、<b>時刻の原点（t=0）</b>と<b>この時刻まで解析</b>を決める</li>
+        <li><b>空間の原点・スケール・軸</b>：原点 → x軸の向き → スケール（長さのわかる物を2点クリック）</li>
+        <li><b>トラッキング</b>：物体番号を選び、動画の上をタップ（クリック）して1点ずつ記録<br>
+            <kbd>Shift</kbd>＋クリック＝記録して1コマ進む／<kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋クリック＝記録してNコマ進む</li>
+        <li>取り消しは <b>↩取消</b> または <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</li>
+        <li>ストロボ画像・CSV・グラフ（②）・フィット（③）へ</li>
+      </ol>
+      <p class="mini">いま作業するところが<b>オレンジ色に光ります</b>。終わったところは薄くなります。</p>
+      <p class="mini">指ではタップした所にルーペが出ます。そのままドラッグで微調整、指をはなすと確定です。</p>
+    </details>
+
+    <details class="card" open data-key="video" data-step="1">
+      <summary>1. 動画</summary>
+      <p class="todo hide"></p>
+      <div class="row">
+        <button class="btn" id="btnFile">動画ファイルを選択</button>
+        <button class="btn" id="btnCam">カメラで撮影</button>
+      </div>
+      <p class="mini">動画ファイルを、この画面に<b>ドラッグ＆ドロップ</b>しても開けます。</p>
+      <input type="file" id="fileVideo" accept="video/*" class="hide">
+      <input type="file" id="fileCam" accept="video/*" capture="environment" class="hide">
+      <div class="row" id="sampleRow" style="margin-top:6px">
+        <span class="lb mini">サンプル：</span>
+      </div>
+      <p class="mini" id="camNote"></p>
+      <div id="vidErr" class="err hide"></div>
+      <div class="hr"></div>
+      <p class="mini" id="vinfo">動画はまだ読み込まれていません。</p>
+      <div class="row">
+        <button class="btn sm" id="btnKadai">課題ファイルを書き出す（先生用）</button>
+      </div>
+      <p class="mini">いま読み込んでいる動画と設問を、1つの HTML にまとめて配れます。</p>
+    </details>
+
+    <details class="card" data-key="range" data-step="2">
+      <summary>2. 解析する時間範囲</summary>
+      <p class="todo hide"></p>
+      <div class="row">
+        <button class="btn" id="btnPlay2">▶ 再生</button>
+        <button class="btn sm" id="btnHead2">最初から</button>
+        <button class="btn sm" id="btnHeadR2">解析範囲の最初から</button>
+      </div>
+      <p class="mini">コマ <span class="val" id="frInfo2">-/-</span>　t = <span class="val" id="tInfo2">-</span> s</p>
+      <div class="hr"></div>
+      <button class="btn wide" id="btnTimeZero">時刻の原点（t = 0）</button>
+      <p class="mini">この画像の時刻を時間の原点（t=0）に</p>
+      <button class="btn wide" id="btnRangeB">この時刻まで解析</button>
+      <p class="mini">この画像の時刻を、解析のおわりに</p>
+      <div class="row">
+        <button class="btn sm" id="btnRangeClr">範囲を解除</button>
+        <button class="btn sm" id="btnStep2Next">このままでよい → 次へ</button>
+      </div>
+      <p class="mini" id="rangeInfo">範囲：全体</p>
+      <div class="hr"></div>
+      <label class="f">fps <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001">
+        <span class="mini" id="fpsSrc">（既定値）</span></label>
+      <p class="mini">fps は「コマ送りの歩幅」に使うだけです。時刻は各コマの実測値を記録します。</p>
+      <div class="row">
+        <button class="btn sm" id="btnFrameTable">コマ表を作る（実測時刻）</button>
+        <span class="tag" id="ftState">未作成</span>
+      </div>
+      <div class="prog hide" id="ftProg"><i></i></div>
+    </details>
+
+    <details class="card" data-key="cal" data-step="3">
+      <summary>3. 空間の原点・スケール・軸</summary>
+      <p class="todo hide"></p>
+      <div class="row">
+        <button class="btn sm" id="btnStroOver">ストロボ写真を重ねる</button>
+      </div>
+      <p class="mini">運動の全体を見ながら原点や軸を決められます（重ねた写真は記録には影響しません）。</p>
+      <div class="row">
+        <button class="btn sm" id="btnOrigin">原点を設定</button>
+        <button class="btn sm" id="btnAxis">x軸の向き</button>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <label class="f">軸の表示
+          <select id="selAxisDisp"><option value="x">x軸のみ</option><option value="xy">x軸とy軸</option><option value="no">表示しない</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="cb"><input type="checkbox" id="cbXFlip">x軸を反転</label>
+        <label class="cb hide" id="labYFlip"><input type="checkbox" id="cbYFlip">y軸を反転</label>
+      </div>
+      <div class="hr"></div>
+      <div class="row"><button class="btn sm" id="btnScale">スケールを設定</button></div>
+      <label class="f">スケール長さ <input type="number" id="inScaleLen" value="10" step="0.1" min="0.000001">
+        <select id="selScaleUnit"><option value="1">m</option><option value="0.01" selected>cm</option><option value="0.001">mm</option></select>
+      </label>
+      <p class="mini" id="calInfo">原点：未設定／スケール：未設定／x軸：0.0°</p>
+      <p class="mini" id="precInfo">クリック精度：スケール未設定</p>
+    </details>
+
+    <details class="card" data-key="track" data-step="4">
+      <summary>4. トラッキング</summary>
+      <p class="todo hide"></p>
+      <div class="row">
+        <button class="btn sm" id="btnSbs">動画と表を並べる</button>
+      </div>
+      <label class="f">物体番号
+        <select id="selObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        <input type="text" id="inObjName" placeholder="名前（例：10円玉）" style="width:120px">
+      </label>
+      <label class="f">進むフレーム数 N <input type="number" id="inStepN" value="5" min="1" max="500" step="1"></label>
+      <label class="f">記録したら
+        <select id="selAfter">
+          <option value="0">その場にとどまる</option>
+          <option value="1">1コマ進む</option>
+          <option value="n" selected>Nコマ進む</option>
+        </select>
+      </label>
+      <div class="row">
+        <button class="btn" id="btnUndo">↩ 取消</button>
+        <button class="btn sm" id="btnClearObj">この物体の点を消す</button>
+      </div>
+      <div class="hr"></div>
+      <label class="cb"><input type="checkbox" id="cbDrift">手ぶれ補正を使う</label>
+      <div class="row">
+        <button class="btn sm" id="btnRefPt">画面内の固定点を記録</button>
+        <span class="tag" id="refInfo">固定点 0</span>
+        <button class="btn sm" id="btnRefClr">消去</button>
+      </div>
+      <p class="mini">動かない目印（机の角など）を、いくつかのコマで同じ場所にクリックします。</p>
+    </details>
+
+    <details class="card hide" id="autoCard" data-key="auto" data-lock="4">
+      <summary>色マーカーの自動追跡</summary>
+      <div class="row">
+        <button class="btn sm" id="btnPickColor">色を取得</button>
+        <span class="tag" id="colorTag">色：未取得</span>
+      </div>
+      <label class="f">探索半径 <input type="number" id="inSearchR" value="40" min="5" max="300" step="1"> px</label>
+      <label class="f">色のしきい値 <input type="number" id="inColTh" value="60" min="5" max="255" step="1"></label>
+      <div class="row">
+        <button class="btn" id="btnAutoRun">最後まで自動追跡</button>
+        <button class="btn sm" id="btnAutoStop">停止</button>
+      </div>
+      <p class="mini">結果は手で直せます。ずれた点はその点までUndoするか、上からクリックし直してください。</p>
+    </details>
+
+    <details class="card" data-key="strobe" data-lock="4">
+      <summary>5. ストロボ画像</summary>
+      <div class="row">
+        <label class="f">使うコマ
+          <select id="selStroSrc"><option value="pts">記録した点のコマ</option><option value="step">範囲を N コマおき</option></select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="f">重ね方
+          <select id="selStroMode"><option value="diff">動いた所だけ重ねる（おすすめ）</option><option value="lighten">明るい方を残す</option><option value="darken">暗い方を残す</option><option value="avg">平均</option></select>
+        </label>
+        <label class="cb"><input type="checkbox" id="cbStroPts" checked>点も描く</label>
+      </div>
+      <div class="row">
+        <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
+        <button class="btn sm" id="btnStroSave">PNG保存</button>
+      </div>
+    </details>
+
+    <details class="card" data-key="out" data-lock="4">
+      <summary>6. 出力・保存</summary>
+      <div class="grid2">
+        <button class="btn sm" id="btnCsv">CSV出力</button>
+        <button class="btn sm" id="btnCopy">コピー</button>
+        <button class="btn sm" id="btnJsonSave">測定データを保存</button>
+        <button class="btn sm" id="btnJsonLoad">測定データを開く</button>
+        <button class="btn sm" id="btnReportPng">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf">レポートPDF</button>
+      </div>
+      <input type="file" id="fileJson" accept=".json,application/json" class="hide">
+      <p class="mini"><b>「測定データを保存」</b>（JSONファイル）は、いま記録した<b>点・原点・スケール・時間範囲</b>を
+      1つのファイルにまとめて保存します。動画は入りません（ファイルは小さいです）。<br>
+      つづきをやるときは <b>「測定データを開く」</b>でそのファイルを読み、<b>同じ動画をもう一度読み込む</b>と再開できます。
+      提出もこのファイルで行います。</p>
+      <div class="hr"></div>
+      <div class="row">
+        <button class="btn sm" id="btnWipe">保存データを消去</button>
+      </div>
+      <p class="mini" id="saveState">自動保存：ON</p>
+    </details>
+
+  </div><!-- /side -->
+
+  <div class="rightcol">
+    <div class="videobox" id="videobox">
+      <div class="ph" id="vph">ここに動画が表示されます。<br>「動画ファイルを選択」から読み込んでください。</div>
+      <div class="vwrap" id="vwrap">
+        <canvas id="cvView" class="hide"></canvas>
+        <canvas id="cvOv" class="hide" style="position:absolute;left:0;top:0"></canvas>
+      </div>
+      <div id="vhint" class="hide"><span id="vhintTxt"></span><button id="vhintX" title="閉じる">×</button></div>
+      <button id="bigPlay" class="hide" title="再生"><span>&#9654;</span></button>
+      <div id="dropHint" class="hide">ここに動画ファイルをドロップ</div>
+      <div id="loupe"><canvas id="cvLoupe" width="132" height="132"></canvas></div>
+      <!-- 動画要素は画面に置いておく（画面外に置くとブラウザがコマを描かず、実測時刻がとれない） -->
+      <video id="vid" playsinline muted preload="auto"
+             style="position:absolute;right:0;bottom:0;width:4px;height:4px;opacity:.01;pointer-events:none"></video>
+    </div>
+
+    <div class="vidbar">
+      <div class="seekwrap" id="seekwrap">
+        <div class="rangemark hide" id="rangemark"></div>
+        <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+        <div class="smark t0 hide" id="mkT0" title="時刻の原点（t=0）：ドラッグで動かせます"><b>t=0</b></div>
+        <div class="smark tb hide" id="mkTB" title="この時刻まで解析：ドラッグで動かせます"><b>おわり</b></div>
+      </div>
+      <div class="row" style="justify-content:center">
+        <button class="btn sm" id="btnPlay">▶ 再生</button>
+        <button class="btn sm" id="btnHead">最初から</button>
+        <button class="btn sm" id="btnHeadR">解析範囲の最初から</button>
+      </div>
+      <div class="row hide" id="vidStep2" style="justify-content:center">
+        <button class="btn sm" id="btnTimeZero2">時刻の原点（t = 0）</button>
+        <button class="btn sm" id="btnRangeB2">この時刻まで解析</button>
+      </div>
+      <div class="stepbtns">
+        <button class="btn sm n" data-step="-n">←N</button>
+        <button class="btn sm" data-step="-10">←10</button>
+        <button class="btn sm" data-step="-8">←8</button>
+        <button class="btn sm" data-step="-5">←5</button>
+        <button class="btn sm" data-step="-1">←1</button>
+        <button class="btn sm" data-step="1">1→</button>
+        <button class="btn sm" data-step="5">5→</button>
+        <button class="btn sm" data-step="8">8→</button>
+        <button class="btn sm" data-step="10">10→</button>
+        <button class="btn sm n" data-step="n">N→</button>
+      </div>
+      <div class="tline">
+        <span>コマ <span class="val" id="frInfo">-/-</span></span>
+        <span>t = <span class="val" id="tInfo">-</span> s</span>
+        <span id="modeInfo" class="tag">クリックで記録</span>
+        <span class="sp" style="flex:1"></span>
+        <button class="btn sm" id="btnZoomIn">＋</button>
+        <button class="btn sm" id="btnZoomOut">－</button>
+        <button class="btn sm" id="btnZoomRst">全体</button>
+      </div>
+      <p class="mini" id="hintLine">2本指で拡大・移動できます。</p>
+    </div>
+
+    <details class="card" id="tblCard" open><summary>測定した値（表）</summary>
+      <div class="tblwrap"><table class="tbl" id="dataTbl"></table></div>
+    </details>
+
+    <div class="strobox">
+      <div class="row"><b style="font-size:.92rem;color:var(--accent-d)">ストロボ画像</b>
+        <span class="mini" id="stroInfo">まだ作っていません</span></div>
+      <canvas id="cvStrobe" width="640" height="360" class="hide"></canvas>
+    </details>
+
+  </div>
+ </div>
+</section>
+
+<!-- ================= モード2 ================= -->
+<section id="mode2" class="hide">
+  <div class="card">
+    <div class="row">
+      <b style="color:var(--accent-d)">表示</b>
+      <select id="selCmp"><option value="side">並べて表示</option><option value="over">重ねて表示</option></select>
+      <span class="lb mini">対象の実験：</span>
+      <span class="explist" id="expChecks"></span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn sm" id="btnGBig">グラフを拡大</button>
+      <button class="btn sm" id="btnGSmall">縮小</button>
+      <span style="width:10px"></span>
+      <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
+      <label class="cb"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
+      <label class="cb"><input type="checkbox" id="cbG_e">エネルギー</label>
+      <input type="checkbox" id="cbG_v" checked class="hide">
+      <input type="checkbox" id="cbG_a" checked class="hide">
+      <span class="hr" style="width:100%"></span>
+      <label class="f">質量 m₁ <input type="number" id="inM1" value="0.1" step="0.001" min="0.0001"> kg</label>
+      <label class="f">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
+      <label class="f">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
+      <span class="mini">位置エネルギーは U = mgy（y は上向き正）</span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn sm" id="btnXlsx">Excel（.xlsx）出力</button>
+      <button class="btn sm" id="btnCsv2">CSV出力</button>
+      <button class="btn sm" id="btnGraphPng">グラフをPNG保存</button>
+    </div>
+  </div>
+  <div id="charts2"></div>
+  <div id="cgHost2"></div>
+</section>
+
+<!-- ================= モード3 ================= -->
+<section id="mode3" class="hide">
+  <div class="card">
+    <div class="row">
+      <b style="color:var(--accent-d)">フィットする量</b>
+      <select id="selFitY">
+        <option value="x">x</option><option value="y">y</option>
+        <option value="vx">vx</option><option value="vy">vy</option>
+        <option value="ax">ax</option><option value="ay">ay</option>
+      </select>
+      <span class="lb mini">＝ f(t)</span>
+      <b style="color:var(--accent-d);margin-left:10px">関数</b>
+      <select id="selFitType">
+        <option value="lin">直線　y = a t + b</option>
+        <option value="quad">放物線　y = a t² + b t + c</option>
+        <option value="sin">正弦　y = A sin(ωt + φ) + C</option>
+        <option value="exp">指数　y = A e^(k t) + C</option>
+      </select>
+      <label class="f">物体 <select id="selFitObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+      <button class="btn pri sm" id="btnFit">フィットする</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <select id="selCmp3"><option value="side">並べて表示</option><option value="over">重ねて表示</option></select>
+      <span class="lb mini">対象の実験：</span>
+      <span class="explist" id="expChecks3"></span>
+    </div>
+    <p class="mini">※ 係数と決定係数 R² までを出します。そこから何がわかるかは自分で考えてください。</p>
+  </div>
+  <div class="charts" id="charts3"></div>
+  <div class="card" id="fitResult"></div>
+  <div id="cgHost3"></div>
+</section>
+
+</main>
+
+<section class="card hide" id="cgCard">
+  <h3>自由選択グラフ <span class="mini" style="font-weight:400;margin-left:6px">自分で軸を自由に選べます</span></h3>
+  <div class="cgrid">
+    <div class="cgY">
+      <div class="lb">縦軸</div>
+      <select id="cgExpA" title="実験"></select>
+      <select id="cgObjA" title="物体"></select>
+      <select id="cgQA"></select>
+      <label class="cb"><input type="checkbox" id="cgInvA">正負を反転</label>
+      <div id="cgRowB" class="hide" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px">
+        <div class="lb">縦軸2（右）</div>
+        <select id="cgExpB" title="実験"></select>
+        <select id="cgObjB" title="物体"></select>
+        <select id="cgQB"></select>
+        <label class="cb"><input type="checkbox" id="cgInvB">正負を反転</label>
+      </div>
+    </div>
+    <div class="cgPlot"><canvas id="cgCanvas"></canvas></div>
+    <div class="cgX">
+      <span class="lb">横軸</span>
+      <select id="cgQX"></select>
+      <label class="cb"><input type="checkbox" id="cgInvX">正負を反転</label>
+    </div>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <label class="cb"><input type="checkbox" id="cgTwo">縦軸を2つにする（2軸）</label>
+    <label class="cb"><input type="checkbox" id="cgLine" checked>点を線でつなぐ</label>
+    <button class="btn sm" id="cgMomentum">運動量保存則</button>
+    <button class="btn sm" id="cgPng">PNG保存</button>
+  </div>
+  <p class="mini hide" id="cgMomentumNote">※ 同質量の台車をぶつけると仮定</p>
+  <div class="row hide" id="cgFitRow">
+    <span class="lb">フィット</span>
+    <select id="cgFitType">
+      <option value="lin">直線　y = a x + b</option>
+      <option value="quad">放物線　y = a x² + b x + c</option>
+      <option value="sin">正弦　y = A sin(ω x + φ) + C</option>
+      <option value="exp">指数　y = A e^(k x) + C</option>
+    </select>
+    <button class="btn pri sm" id="cgFit">このグラフをフィット</button>
+    <button class="btn sm" id="cgFitClr">フィットを消す</button>
+  </div>
+  <div id="cgResult" class="mini"></div>
+</section>
+
+<div class="modal hide" id="helpModal"><div class="box" id="helpBox"></div></div>
+<div class="modal hide" id="kadaiModal"><div class="box" id="kadaiBox"></div></div>
+<div class="toast" id="toast"></div>
+<canvas id="cvFull" class="hide"></canvas>
+
+<script>
+/* ---- 30_core.js ---- */
+/* =========================================================
+   30_core.js  … 状態・保存・数値計算（描画やDOMを混ぜない）
+   ========================================================= */
+'use strict';
+var VER = '1.0';
+var MAXEXP = 10;
+var NOBJ = 3;                       /* 追跡できる物体の数 */
+var OBJCOL = ['#e8443a', '#1663b5', '#1c8f4a'];      /* 物体1,2,3 */
+var EXPCOL = ['#1663b5','#e8443a','#1c8f4a','#e07b18','#8e44ad','#00838f','#c2185b','#5d4037','#546e7a','#7cb342'];
+
+function $(id){ return document.getElementById(id); }
+function el(sel,root){ return (root||document).querySelector(sel); }
+function els(sel,root){ return Array.prototype.slice.call((root||document).querySelectorAll(sel)); }
+
+/* ---------- 数値の書式 ---------- */
+function nf(v, d){ if(v===null||v===undefined||!isFinite(v)) return '-'; return v.toFixed(d===undefined?3:d); }
+function sig(v, n){
+  if(v===null||v===undefined||!isFinite(v)) return '-';
+  if(v===0) return '0';
+  var a=Math.abs(v);
+  if(a>=1e5||a<1e-4) return v.toExponential((n||4)-1);
+  var d=Math.max(0,(n||4)-1-Math.floor(Math.log10(a)));
+  return v.toFixed(Math.min(d,10));
+}
+
+/* ---------- 実験データ ---------- */
+function newExp(n){
+  var o={ id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name:'実験'+n, memo:'',
+    objs:[], ref:[], useDrift:false,
+    origin:null, angle:0, yflip:false, xflip:false,
+    mPerPx:null, scaleRef:null, scaleLen:0.1,
+    t0:null, rangeA:null, rangeB:null, step2ok:false,
+    video:{name:'',w:0,h:0,dur:0,fps:30},
+    m1:0.1, m2:0.1, g:9.8,
+    objName:['','',''] };
+  for(var i=0;i<NOBJ;i++) o.objs.push([]);
+  return o;
+}
+var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1,
+  cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:1, qB:'x', invB:false,
+       xq:'t', invX:false, two:false, line:true }, cgFit:null,
+  editStep:0, lastEdit:0, played:false, gsize:430 };
+/* 解析する時間範囲のはじめ（＝時刻の原点） */
+function rangeStart(exp){ return (exp.t0!==null)? exp.t0 : (exp.rangeA!==null? exp.rangeA : 0); }
+function EXP(){ return APP.exps[APP.cur]; }
+
+/* ---------- 座標変換 ---------- */
+/* 画面（動画ピクセル）座標 → 物理座標[m] */
+function toPhys(exp, px, py, t){
+  var o = exp.origin || {x:0,y:0};
+  var d = driftAt(exp, t);
+  var dx = (px - d.x) - o.x, dy = (py - d.y) - o.y;
+  var c = Math.cos(exp.angle), s = Math.sin(exp.angle);
+  var X =  dx*c + dy*s;
+  var Y =  dx*s - dy*c;              /* 画面yは下向き → 既定でyは上向き正 */
+  if(exp.xflip) X = -X;
+  if(exp.yflip) Y = -Y;
+  var k = exp.mPerPx || 1;
+  return { x:X*k, y:Y*k };
+}
+/* 物理座標[m] → 画面（動画ピクセル）座標（軸の描画に使う。手ぶれ補正は入れない） */
+function toPix(exp, X, Y){
+  var o = exp.origin || {x:0,y:0};
+  var k = exp.mPerPx || 1;
+  var xx = (exp.xflip? -X : X)/k, yy = (exp.yflip? -Y : Y)/k;
+  var c = Math.cos(exp.angle), s = Math.sin(exp.angle);
+  return { x:o.x + xx*c + yy*s, y:o.y + xx*s - yy*c };
+}
+/* 手ぶれ補正：基準点の「最初の位置からのずれ」を時刻で線形補間 */
+function driftAt(exp, t){
+  if(!exp.useDrift || !exp.ref || exp.ref.length<1 || t===undefined || t===null) return {x:0,y:0};
+  var r=exp.ref, n=r.length, b=r[0];
+  if(n===1 || t<=r[0].t) return {x:r[0].x-b.x, y:r[0].y-b.y};
+  if(t>=r[n-1].t) return {x:r[n-1].x-b.x, y:r[n-1].y-b.y};
+  for(var i=0;i<n-1;i++){
+    if(t>=r[i].t && t<=r[i+1].t){
+      var f=(r[i+1].t===r[i].t)?0:(t-r[i].t)/(r[i+1].t-r[i].t);
+      return { x:(r[i].x+(r[i+1].x-r[i].x)*f)-b.x, y:(r[i].y+(r[i+1].y-r[i].y)*f)-b.y };
+    }
+  }
+  return {x:0,y:0};
+}
+
+/* ---------- 系列（時刻・位置・速度・加速度） ---------- */
+/* 速度・加速度は中央差分。両端は差分がとれないので null。 */
+function series(exp, obj){
+  var pts = (exp.objs[obj]||[]).slice().sort(function(a,b){return a.t-b.t;});
+  var out=[];
+  for(var i=0;i<pts.length;i++){
+    var p=pts[i], q=toPhys(exp,p.x,p.y,p.t);
+    out.push({ t:(p.t-(exp.t0||0)), x:q.x, y:q.y, px:p.x, py:p.y, fr:p.fr, raw:p.t, auto:!!p.auto,
+               vx:null, vy:null, ax:null, ay:null, v:null, a:null });
+  }
+  var n=out.length, i2;
+  for(i2=1;i2<n-1;i2++){
+    var dt=out[i2+1].t-out[i2-1].t;
+    if(dt>0){ out[i2].vx=(out[i2+1].x-out[i2-1].x)/dt; out[i2].vy=(out[i2+1].y-out[i2-1].y)/dt;
+              out[i2].v=Math.sqrt(out[i2].vx*out[i2].vx+out[i2].vy*out[i2].vy); }
+  }
+  for(i2=2;i2<n-2;i2++){
+    var dt2=out[i2+1].t-out[i2-1].t;
+    if(dt2>0 && out[i2+1].vx!==null && out[i2-1].vx!==null){
+      out[i2].ax=(out[i2+1].vx-out[i2-1].vx)/dt2; out[i2].ay=(out[i2+1].vy-out[i2-1].vy)/dt2;
+      out[i2].a=Math.sqrt(out[i2].ax*out[i2].ax+out[i2].ay*out[i2].ay);
+    }
+  }
+  return out;
+}
+function energy(exp, obj, s){
+  var m = (obj===0? exp.m1 : (obj===1? exp.m2 : exp.m1)), g=exp.g||9.8;
+  return s.map(function(p){
+    var K = (p.v===null)? null : 0.5*m*p.v*p.v;
+    var U = m*g*p.y;
+    return { t:p.t, K:K, U:U, E:(K===null?null:K+U) };
+  });
+}
+
+/* ---------- 最小二乗フィット ---------- */
+function solve(A, b){                       /* ガウスの消去法 */
+  var n=b.length, i,j,k,M=[];
+  for(i=0;i<n;i++) M.push(A[i].slice().concat([b[i]]));
+  for(i=0;i<n;i++){
+    var p=i; for(k=i+1;k<n;k++) if(Math.abs(M[k][i])>Math.abs(M[p][i])) p=k;
+    if(Math.abs(M[p][i])<1e-14) return null;
+    var tmp=M[i]; M[i]=M[p]; M[p]=tmp;
+    for(k=i+1;k<n;k++){ var f=M[k][i]/M[i][i]; for(j=i;j<=n;j++) M[k][j]-=f*M[i][j]; }
+  }
+  var x=new Array(n);
+  for(i=n-1;i>=0;i--){ var s=M[i][n]; for(j=i+1;j<n;j++) s-=M[i][j]*x[j]; x[i]=s/M[i][i]; }
+  return x;
+}
+function polyFit(xs, ys, deg){
+  var n=deg+1, A=[], b=[], i,j,k;
+  for(i=0;i<n;i++){ A.push(new Array(n).fill(0)); b.push(0); }
+  for(k=0;k<xs.length;k++){
+    var pw=[1]; for(i=1;i<=2*deg;i++) pw.push(pw[i-1]*xs[k]);
+    for(i=0;i<n;i++){ for(j=0;j<n;j++) A[i][j]+=pw[i+j]; b[i]+=pw[i]*ys[k]; }
+  }
+  return solve(A,b);            /* [c0,c1,...] 低次から */
+}
+function r2of(ys, pred){
+  var m=0,i; for(i=0;i<ys.length;i++) m+=ys[i]; m/=ys.length;
+  var ss=0, sr=0;
+  for(i=0;i<ys.length;i++){ ss+=(ys[i]-m)*(ys[i]-m); var d=ys[i]-pred[i]; sr+=d*d; }
+  if(ss<=0) return (sr<=1e-30)?1:0;
+  return 1-sr/ss;
+}
+/* 正弦：y = A sin(w t + p) + C  … w を走査して線形最小二乗（A sin+B cos+C）で解く */
+function sinFit(xs, ys){
+  var n=xs.length; if(n<4) return null;
+  var span=xs[n-1]-xs[0]; if(span<=0) return null;
+  var best=null;
+  var wlo=2*Math.PI/(span*4), whi=2*Math.PI*n/(2*span)*1.6;   /* ナイキストの少し上まで */
+  function trial(w){
+    var A=[[0,0,0],[0,0,0],[0,0,0]], b=[0,0,0], i;
+    for(i=0;i<n;i++){
+      var f=[Math.sin(w*xs[i]), Math.cos(w*xs[i]), 1], j,k;
+      for(j=0;j<3;j++){ for(k=0;k<3;k++) A[j][k]+=f[j]*f[k]; b[j]+=f[j]*ys[i]; }
+    }
+    var c=solve(A,b); if(!c) return null;
+    var pred=xs.map(function(t){ return c[0]*Math.sin(w*t)+c[1]*Math.cos(w*t)+c[2]; });
+    return { w:w, c:c, r2:r2of(ys,pred), pred:pred };
+  }
+  var steps=600, i2;
+  for(i2=0;i2<=steps;i2++){
+    var w=wlo+(whi-wlo)*i2/steps, r=trial(w);
+    if(r && (!best || r.r2>best.r2)) best=r;
+  }
+  if(!best) return null;
+  var d=(whi-wlo)/steps;                       /* 山の周りを細かく */
+  for(var pass=0;pass<4;pass++){
+    var lo=best.w-d, hi=best.w+d;
+    for(i2=0;i2<=40;i2++){ var r2=trial(lo+(hi-lo)*i2/40); if(r2 && r2.r2>best.r2) best=r2; }
+    d/=20;
+  }
+  var Amp=Math.sqrt(best.c[0]*best.c[0]+best.c[1]*best.c[1]);
+  var ph=Math.atan2(best.c[1],best.c[0]);
+  return { type:'sin', p:{A:Amp, w:best.w, phi:ph, C:best.c[2]}, r2:best.r2,
+           f:function(t){ return Amp*Math.sin(best.w*t+ph)+best.c[2]; } };
+}
+/* 指数：y = A e^{k t} + C  … C を走査し、log線形化 → 仕上げにガウス・ニュートン風の微調整 */
+function expFit(xs, ys){
+  var n=xs.length; if(n<3) return null;
+  var ymin=Math.min.apply(null,ys), ymax=Math.max.apply(null,ys), rng=ymax-ymin;
+  if(rng<=0) return null;
+  var best=null;
+  function trial(C){
+    var lx=[], ly=[], i, sgn=0;
+    for(i=0;i<n;i++){
+      var d=ys[i]-C; if(Math.abs(d)<1e-12) continue;
+      if(sgn===0) sgn=(d>0?1:-1);
+      if((d>0?1:-1)!==sgn) return null;
+      lx.push(xs[i]); ly.push(Math.log(Math.abs(d)));
+    }
+    if(lx.length<3) return null;
+    var c=polyFit(lx,ly,1); if(!c) return null;
+    var A=sgn*Math.exp(c[0]), k=c[1];
+    var pred=xs.map(function(t){ return A*Math.exp(k*t)+C; });
+    return { A:A,k:k,C:C, r2:r2of(ys,pred) };
+  }
+  var lo=ymin-2*rng, hi=ymax+2*rng, i2;
+  for(i2=0;i2<=400;i2++){ var r=trial(lo+(hi-lo)*i2/400); if(r && (!best||r.r2>best.r2)) best=r; }
+  if(!best) return null;
+  var step=(hi-lo)/400;
+  for(var p=0;p<5;p++){
+    for(i2=-20;i2<=20;i2++){ var r2=trial(best.C+step*i2/20); if(r2 && r2.r2>best.r2) best=r2; }
+    step/=10;
+  }
+  var A=best.A,k=best.k,C=best.C;
+  return { type:'exp', p:{A:A,k:k,C:C}, r2:best.r2, f:function(t){ return A*Math.exp(k*t)+C; } };
+}
+function doFit(kind, xs, ys){
+  if(xs.length<2) return null;
+  if(kind==='lin'){
+    var c=polyFit(xs,ys,1); if(!c) return null;
+    var f=function(t){ return c[1]*t+c[0]; };
+    return { type:'lin', p:{a:c[1], b:c[0]}, r2:r2of(ys,xs.map(f)), f:f };
+  }
+  if(kind==='quad'){
+    if(xs.length<3) return null;
+    var q=polyFit(xs,ys,2); if(!q) return null;
+    var f2=function(t){ return q[2]*t*t+q[1]*t+q[0]; };
+    return { type:'quad', p:{a:q[2], b:q[1], c:q[0]}, r2:r2of(ys,xs.map(f2)), f:f2 };
+  }
+  if(kind==='sin') return sinFit(xs,ys);
+  if(kind==='exp') return expFit(xs,ys);
+  return null;
+}
+function fitLabel(fit){
+  if(!fit) return '';
+  var p=fit.p;
+  if(fit.type==='lin')  return 'y = a t + b,  a = '+sig(p.a,5)+',  b = '+sig(p.b,5);
+  if(fit.type==='quad') return 'y = a t² + b t + c,  a = '+sig(p.a,5)+',  b = '+sig(p.b,5)+',  c = '+sig(p.c,5);
+  if(fit.type==='sin')  return 'y = A sin(ω t + φ) + C,  A = '+sig(p.A,5)+',  ω = '+sig(p.w,5)+',  φ = '+sig(p.phi,4)+',  C = '+sig(p.C,5);
+  if(fit.type==='exp')  return 'y = A e^(k t) + C,  A = '+sig(p.A,5)+',  k = '+sig(p.k,5)+',  C = '+sig(p.C,5);
+  return '';
+}
+
+/* ---------- 保存（localStorage） ---------- */
+var LSKEY = 'motion-analysis-v1';
+function packState(){
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize,
+           exps:APP.exps.map(function(e){
+             var o=JSON.parse(JSON.stringify(e));
+             return o;                                  /* 動画そのものは保存しない */
+           }) };
+}
+function applyState(st){
+  if(!st||!st.exps||!st.exps.length) return false;
+  APP.exps = st.exps.map(function(e){
+    var d=newExp(1);
+    for(var k in d) if(!(k in e)) e[k]=d[k];
+    if(!e.objs) e.objs=d.objs;
+    while(e.objs.length<NOBJ) e.objs.push([]);
+    return e;
+  });
+  APP.cur = Math.min(st.cur||0, APP.exps.length-1);
+  if(st.menuPos) APP.menuPos=st.menuPos;
+  if(st.axisDisp) APP.axisDisp=st.axisDisp;
+  if(st.cg) for(var k in st.cg) APP.cg[k]=st.cg[k];
+  if(st.gsize>0) APP.gsize=st.gsize;
+  return true;
+}
+function saveLocal(){
+  if(!APP.autosave) return;
+  try{ localStorage.setItem(LSKEY, JSON.stringify(packState())); }catch(e){}
+}
+function loadLocal(){
+  try{ var s=localStorage.getItem(LSKEY); if(!s) return false; return applyState(JSON.parse(s)); }
+  catch(e){ return false; }
+}
+function wipeLocal(){ try{ localStorage.removeItem(LSKEY); }catch(e){} }
+
+</script>
+
+<script>
+/* ---- 40_video.js ---- */
+/* =========================================================
+   40_video.js … 動画の読み込み・コマ送り・実測時刻
+   ここが精度の要。1コマ = 1/30 秒と決めつけず、各コマの実測時刻を使う。
+   ========================================================= */
+var VID = { el:null, url:null, name:'', w:0, h:0, natW:0, natH:0, dur:0, ready:false,
+            fps:30, fpsSrc:'既定値', frames:[], idx:-1, cur:0, hasRVFC:false,
+            playing:false, q:Promise.resolve(), building:false, cancelBuild:false, exact:false, rvfcFails:0, limit:null };
+
+function vidInit(){
+  VID.el = $('vid');
+  VID.hasRVFC = ('requestVideoFrameCallback' in HTMLVideoElement.prototype);
+}
+
+/* ---------- 読み込み ---------- */
+function vidLoad(src, name){
+  return new Promise(function(res, rej){
+    var v=VID.el;
+    VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0;
+    if(VID.url && VID.url.indexOf('blob:')===0){ try{URL.revokeObjectURL(VID.url);}catch(e){} }
+    VID.url=src; VID.name=name||'';
+    var done=false;
+    var to=setTimeout(function(){ if(done) return; done=true;
+      rej(new Error('timeout')); }, 20000);
+    function ok(){
+      if(done) return;
+      if(!v.videoWidth){ return; }                 /* まだ来ていない */
+      done=true; clearTimeout(to);
+      VID.natW=v.videoWidth; VID.natH=v.videoHeight;
+      VID.w=v.videoWidth; VID.h=v.videoHeight;
+      VID.dur=(isFinite(v.duration)&&v.duration>0)?v.duration:0;
+      VID.ready=true;
+      if(!VID.dur){                                 /* webm 等で duration が出ないときの定石 */
+        v.currentTime=1e6;
+        var t2=setTimeout(function(){ res(); }, 1200);
+        v.addEventListener('timeupdate', function h(){
+          if(isFinite(v.duration)&&v.duration>0){ VID.dur=v.duration; v.removeEventListener('timeupdate',h);
+            clearTimeout(t2); v.currentTime=0; res(); }
+        });
+      } else res();
+    }
+    v.addEventListener('loadeddata', ok, {once:false});
+    v.addEventListener('canplay', ok, {once:false});
+    v.addEventListener('error', function(){
+      if(done) return; done=true; clearTimeout(to);
+      rej(v.error||new Error('error'));
+    }, {once:true});
+    v.src=src;
+    v.load();
+  });
+}
+function vidErrMsg(err, fname){
+  var isMov = /\.(mov|hevc|heic)$/i.test(fname||'');
+  var s='<b>この動画は、この端末（ブラウザ）では開けませんでした。</b><br>';
+  if(isMov) s+='iPhone・iPad で撮った .MOV は HEVC という形式のことが多く、Windows の Chrome では再生できないことがあります。<br>';
+  s+='<b>対処法</b><ul style="margin:6px 0 0 1.1em;padding:0">'
+   + '<li>iPhone/iPad：<b>設定 → カメラ → フォーマット → 「互換性優先」</b>にして撮り直す（H.264 になります）</li>'
+   + '<li>すでに撮った動画：iPhone の写真アプリから <b>メールやAirDrop で「自動」画質で送る</b>と H.264 に変換されます</li>'
+   + '<li>その動画のまま使いたいとき：<b>Mac / iPad の Safari</b> で、このページを開くと再生できることがあります</li>'
+   + '<li>PC なら、動画を <b>MP4（H.264）</b> に変換してから読み込んでください</li></ul>';
+  return s;
+}
+
+/* ---------- シーク（実際の表示コマの時刻を読み直す） ---------- */
+function vidSeek(t){
+  VID.q = VID.q.then(function(){ return vidSeekNow(t); });
+  return VID.q;
+}
+function vidSeekNow(t){
+  return new Promise(function(res){
+    var v=VID.el;
+    if(!VID.ready){ res(0); return; }
+    t = Math.max(0, Math.min((VID.dur||0)-0.0005, t));
+    /* 解析する時間範囲が決まったら、その外へは動かさない（コマ表づくり中は別） */
+    if(VID.limit && !VID.building) t = Math.max(VID.limit.a, Math.min(VID.limit.b, t));
+    var done=false;
+    function fin(mt, exact){
+      if(done) return; done=true;
+      VID.exact=!!exact;
+      v.removeEventListener('seeked', onSeeked);
+      VID.cur = snapToFrame(mt); VID.idx = frameIndexAt(VID.cur);
+      res(VID.cur);
+    }
+    var to=setTimeout(function(){ fin(v.currentTime,false); }, 2500);
+    function afterSeek(){
+      if(VID.hasRVFC){
+        /* 実測時刻の読み取りを待つ時間。コマ表があれば時刻はそこから分かるので短くてよい。
+           この端末で読み取りが働かないと分かったら、待たずに進む（操作を軽くするため）。 */
+        var to2, fb=function(){ clearTimeout(to); VID.rvfcFails=(VID.rvfcFails||0)+1;
+              fin(v.currentTime,false); };
+        if(VID.needExact){
+          to2=setTimeout(fb, 700);            /* コマ表の修復中は実測時刻をしっかり待つ */
+        } else if(VID.frames.length>1){
+          /* コマ表があるときは時刻が表から分かるので、描画が1回まわるのを待つだけでよい（軽い） */
+          to2=setTimeout(function(){ requestAnimationFrame(function(){ requestAnimationFrame(fb); }); }, 0);
+        } else {
+          to2=setTimeout(fb, 420);      /* コマ表が無いときは実測時刻を待つ */
+        }
+        v.requestVideoFrameCallback(function(now, md){
+          if(done) return;
+          clearTimeout(to2); clearTimeout(to);
+          var ok=(md && typeof md.mediaTime==='number');
+          if(ok) VID.rvfcFails=0;
+          fin(ok? md.mediaTime : v.currentTime, ok);
+        });
+      } else { clearTimeout(to); fin(v.currentTime,false); }
+    }
+    function onSeeked(){ afterSeek(); }
+    v.addEventListener('seeked', onSeeked);
+    if(Math.abs(v.currentTime - t) < 1e-7){ v.removeEventListener('seeked',onSeeked); afterSeek(); }
+    else v.currentTime = t;
+  });
+}
+/* コマ表があるときは、いま表示されているコマの「表の時刻」に合わせる。
+   （シークで要求した時刻と、実際に出ているコマの時刻はずれるため） */
+function snapToFrame(t){
+  var f=VID.frames;
+  if(f.length<2) return t;
+  var i=frameIndexAt(t);
+  var half=0.6/(VID.fps||30);
+  if(Math.abs(t-f[i])<=half) return f[i];
+  return t;
+}
+function frameIndexAt(t){
+  var f=VID.frames; if(!f.length) return -1;
+  var lo=0, hi=f.length-1;
+  if(t<=f[0]+1e-9) return 0;
+  if(t>=f[hi]) return hi;
+  while(hi-lo>1){ var m=(lo+hi)>>1; if(f[m]<=t+1e-9) lo=m; else hi=m; }
+  return lo;
+}
+/* n コマ進む（負なら戻る）。コマ表があればそれに従い、無ければ 1/fps ずつ。 */
+function vidStep(n){
+  var fps=VID.fps>0?VID.fps:30;
+  if(VID.frames.length>1){
+    var i=(VID.idx>=0?VID.idx:frameIndexAt(VID.cur));
+    var j=Math.max(0, Math.min(VID.frames.length-1, i+n));
+    return vidSeek(frameSeekTime(j));
+  }
+  return vidSeek(VID.cur + n/fps + 0.25/fps);
+}
+function frameSeekTime(j){
+  var f=VID.frames;
+  var a=f[j], b=(j+1<f.length? f[j+1] : a + 1/(VID.fps||30));
+  return a + (b-a)*0.45;            /* コマの真ん中あたりを狙う（境界のズレ対策） */
+}
+function vidGotoFrame(j){
+  if(VID.frames.length>1){
+    j=Math.max(0,Math.min(VID.frames.length-1,j));
+    return vidSeek(frameSeekTime(j));
+  }
+  return vidSeek(j/(VID.fps||30) + 0.25/(VID.fps||30));
+}
+
+/* ---------- コマ表づくり（実測時刻の取得） ---------- */
+function vidBuildTable(onProg){
+  return new Promise(function(res){
+    var v=VID.el;
+    if(!VID.ready || !VID.hasRVFC){ res(false); return; }
+    VID.building=true; VID.cancelBuild=false;
+    var times=[], rate = (VID.dur>40? 2 : 1);
+    v.pause(); v.muted=true; v.playbackRate=rate;
+    var startedAt=0;
+    function step(now, md){
+      if(VID.cancelBuild || finished){ finish(); return; }
+      var mt=(md&&typeof md.mediaTime==='number')? md.mediaTime : v.currentTime;
+      if(!times.length || mt > times[times.length-1]+1e-6) times.push(mt);
+      if(onProg) onProg(VID.dur? Math.min(1, mt/VID.dur):0);
+      if(v.ended){ finish(); return; }
+      v.requestVideoFrameCallback(step);
+    }
+    var watchdog=null;
+    var finished=false;
+    function finish(){
+      if(finished) return; finished=true;
+      clearInterval(watchdog);
+      v.pause(); v.playbackRate=1;
+      v.removeEventListener('ended', onEnd);
+      times.sort(function(a,b){return a-b;});
+      var uniq=[]; for(var i=0;i<times.length;i++){ if(!uniq.length||times[i]-uniq[uniq.length-1]>1e-5) uniq.push(times[i]); }
+      if(uniq.length>2){
+        VID.frames=uniq; setFpsFromFrames();
+        /* 取りこぼしたコマを、実際にシークして測り直して埋める */
+        repairTable(0).then(function(){
+          vidSeek(0).then(function(){ VID.building=false; res(VID.frames.length>2); });
+        });
+      } else vidSeek(0).then(function(){ VID.building=false; res(false); });
+    }
+    function onEnd(){ finish(); }
+    v.addEventListener('ended', onEnd);
+    var last=-1, stall=0;
+    watchdog=setInterval(function(){
+      if(finished) return;
+      var c=v.currentTime;
+      if(Math.abs(c-last)<1e-4){ stall++; if(stall>12) finish(); } else { stall=0; last=c; }
+    }, 400);
+    vidSeekNow(0).then(function(){
+      times.push(VID.cur);            /* 先頭のコマは再生開始前なので、ここで入れておく */
+      v.requestVideoFrameCallback(step);
+      var p=v.play();
+      if(p && p.catch) p.catch(function(){ finish(); });
+    });
+  });
+}
+
+function setFpsFromFrames(){
+  var f=VID.frames;
+  if(f.length<3) return;
+  var span=f[f.length-1]-f[0];
+  if(span>0){ VID.fps=(f.length-1)/span; VID.fpsSrc='コマ表から実測'; }
+}
+/* 間隔が飛んでいる所を、その真ん中へシークして実測時刻を読み、表に入れる */
+function repairTable(pass){
+  if(pass>2){ VID.needExact=false; return Promise.resolve(); }
+  VID.needExact=true;
+  var f=VID.frames, d=[], i;
+  for(i=1;i<f.length;i++) d.push(f[i]-f[i-1]);
+  if(!d.length) return Promise.resolve();
+  var sd=d.slice().sort(function(a,b){return a-b;}), med=sd[Math.floor(sd.length/2)];
+  var gaps=[];
+  for(i=1;i<f.length;i++) if(f[i]-f[i-1] > med*1.6) gaps.push([f[i-1], f[i]]);
+  /* 末尾のコマ */
+  if(VID.dur - f[f.length-1] > med*1.6) gaps.push([f[f.length-1], VID.dur]);
+  if(!gaps.length || gaps.length>200){ VID.needExact=false; return Promise.resolve(); }
+  var k=0, added=0, tries=0;
+  function next(){
+    if(k>=gaps.length){
+      VID.needExact=false;
+      if(added){ VID.frames.sort(function(a,b){return a-b;}); setFpsFromFrames(); return repairTable(pass+1); }
+      return Promise.resolve();
+    }
+    var g=gaps[k], t=(g[0]+g[1])/2 + (tries*0.0007);
+    return vidSeekNow(t).then(function(){
+      var mt=VID.cur, ok=false;
+      if(VID.exact && mt>g[0]+med*0.4 && mt<g[1]-med*0.4){ VID.frames.push(mt); added++; ok=true; }
+      if(ok || tries>=2){ k++; tries=0; } else { tries++; }   /* 読めなければ数回やり直す */
+      return next();
+    });
+  }
+  return next();
+}
+
+/* ---------- 現在のコマを描く ---------- */
+function vidDrawFull(){
+  var c=$('cvFull');
+  if(!VID.ready) return c;
+  if(c.width!==VID.w || c.height!==VID.h){ c.width=VID.w; c.height=VID.h; }
+  var g=c.getContext('2d', {willReadFrequently:true});
+  try{ g.drawImage(VID.el, 0,0, VID.w, VID.h); }catch(e){}
+  return c;
+}
+function fpsFromTable(){
+  if(VID.frames.length>2){
+    var d=[], i;
+    for(i=1;i<VID.frames.length;i++) d.push(VID.frames[i]-VID.frames[i-1]);
+    d.sort(function(a,b){return a-b;});
+    var med=d[Math.floor(d.length/2)];
+    var jitter=(d[d.length-1]-d[0]);
+    return { fps: med>0? 1/med : 0, n:VID.frames.length, vfr: jitter> (med*0.25) };
+  }
+  return null;
+}
+
+</script>
+
+<script>
+/* ---- 50_track.js ---- */
+/* =========================================================
+   50_track.js … 動画エリアの描画とタップ操作（ルーペ・記録・校正）
+   ========================================================= */
+var VIEW = { zoom:1, panX:0, panY:0, K:1 };
+var UI = { mode:'record', obj:0, pend:null, scaleP1:null, drag:null, pointers:{},
+           pinch:null, undo:[], autoStop:false, lastPt:null, stroReady:false };
+var FONT = '"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif';
+
+/* ---------- キャンバスの大きさ ---------- */
+function fitCanvas(){
+  var box=$('videobox'), cv=$('cvView'), ov=$('cvOv'), wrap=$('vwrap');
+  if(!VID.ready) return;
+  var cssW = box.clientWidth || 640;
+  /* たての長い動画（スマホの縦撮り）でも画面に収まるように、高さで頭打ちにする */
+  var maxH = Math.max(240, Math.round(window.innerHeight*0.72));
+  if(cssW * VID.h / VID.w > maxH) cssW = Math.round(maxH * VID.w / VID.h);
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+  var w = Math.round(Math.min(cssW*dpr, VID.w*2));
+  var h = Math.round(w * VID.h / VID.w);
+  if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; ov.width=w; ov.height=h; }
+  wrap.style.width = cssW+'px';
+  ov.style.width = cv.style.width = '100%';
+  ov.style.height = 'auto';
+}
+function calcK(){ var cv=$('cvView'); VIEW.K = (cv.width / VID.w) * VIEW.zoom; }
+function clampPan(){
+  var cv=$('cvView');
+  var visW = cv.width/VIEW.K, visH = cv.height/VIEW.K;
+  if(visW>=VID.w) VIEW.panX=(VID.w-visW)/2; else VIEW.panX=Math.max(0,Math.min(VID.w-visW,VIEW.panX));
+  if(visH>=VID.h) VIEW.panY=(VID.h-visH)/2; else VIEW.panY=Math.max(0,Math.min(VID.h-visH,VIEW.panY));
+}
+function v2s(x,y){ return { x:(x-VIEW.panX)*VIEW.K, y:(y-VIEW.panY)*VIEW.K }; }
+function s2v(x,y){ return { x:x/VIEW.K+VIEW.panX, y:y/VIEW.K+VIEW.panY }; }
+function ev2canvas(e){
+  var cv=$('cvView'), r=cv.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*cv.width/r.width, y:(e.clientY-r.top)*cv.height/r.height };
+}
+function zoomAt(f, cxs, cys){
+  var cv=$('cvView');
+  if(cxs===undefined){ cxs=cv.width/2; cys=cv.height/2; }
+  var before=s2v(cxs,cys);
+  VIEW.zoom=Math.max(1, Math.min(12, VIEW.zoom*f));
+  calcK();
+  var after=s2v(cxs,cys);
+  VIEW.panX += before.x-after.x; VIEW.panY += before.y-after.y;
+  clampPan(); render();
+}
+
+/* ---------- 描画 ---------- */
+function render(){
+  if(!VID.ready) return;
+  fitCanvas(); calcK(); clampPan();
+  var cv=$('cvView'), g=cv.getContext('2d');
+  var full=vidDrawFull();
+  g.save();
+  g.fillStyle='#20262e'; g.fillRect(0,0,cv.width,cv.height);
+  g.imageSmoothingEnabled = (VIEW.zoom<3);
+  g.drawImage(full, VIEW.panX, VIEW.panY, cv.width/VIEW.K, cv.height/VIEW.K, 0,0, cv.width, cv.height);
+  if(UI.stroOverlay && UI.stroImg){          /* 3 で「ストロボ写真を重ねる」を押したとき */
+    g.globalAlpha=0.6;
+    g.drawImage(UI.stroImg, VIEW.panX, VIEW.panY, cv.width/VIEW.K, cv.height/VIEW.K, 0,0, cv.width, cv.height);
+    g.globalAlpha=1;
+  }
+  g.restore();
+  drawOverlay();
+}
+function drawOverlay(){
+  var ov=$('cvOv'), g=ov.getContext('2d'), exp=EXP();
+  g.clearRect(0,0,ov.width,ov.height);
+  var sc = ov.width/900;                       /* 線の太さの目安 */
+  var LW = Math.max(1.2, 2*sc);
+
+  /* --- 軸 --- */
+  if(exp.origin && APP.axisDisp!=='no'){
+    var o=v2s(exp.origin.x, exp.origin.y);
+    var L=Math.max(ov.width,ov.height)*1.5;
+    var c=Math.cos(exp.angle), s=Math.sin(exp.angle);
+    g.save();
+    g.strokeStyle='rgba(255,215,0,.95)'; g.lineWidth=LW; g.setLineDash([]);
+    /* x軸 */
+    var xd = exp.xflip? -1 : 1;
+    g.beginPath(); g.moveTo(o.x-c*L,o.y-s*L); g.lineTo(o.x+c*L,o.y+s*L); g.stroke();
+    arrowHead(g, o.x+c*xd*130*sc, o.y+s*xd*130*sc, exp.angle+(xd<0?Math.PI:0), 13*sc, 'rgba(255,215,0,.95)');
+    labelAt(g,'x', o.x+c*xd*150*sc, o.y+s*xd*150*sc, '#ffd700', 15*sc);
+    if(APP.axisDisp==='xy'){
+      var ay = exp.yflip? (exp.angle-Math.PI/2+Math.PI) : (exp.angle-Math.PI/2);
+      var cy=Math.cos(ay), sy=Math.sin(ay);
+      g.strokeStyle='rgba(120,230,160,.95)';
+      g.beginPath(); g.moveTo(o.x-cy*L,o.y-sy*L); g.lineTo(o.x+cy*L,o.y+sy*L); g.stroke();
+      arrowHead(g, o.x+cy*130*sc, o.y+sy*130*sc, ay, 13*sc, 'rgba(120,230,160,.95)');
+      labelAt(g,'y', o.x+cy*150*sc, o.y+sy*150*sc, '#78e6a0', 15*sc);
+    }
+    /* 原点の印 */
+    g.strokeStyle='#fff'; g.lineWidth=LW;
+    g.beginPath(); g.arc(o.x,o.y,7*sc,0,7); g.stroke();
+    g.strokeStyle='rgba(255,215,0,.95)';
+    g.beginPath(); g.arc(o.x,o.y,7*sc,0,7); g.stroke();
+    g.restore();
+  }
+  /* --- スケールの線 --- */
+  if(exp.scaleRef){
+    var a=v2s(exp.scaleRef.x1,exp.scaleRef.y1), b=v2s(exp.scaleRef.x2,exp.scaleRef.y2);
+    g.save(); g.strokeStyle='#00e5ff'; g.lineWidth=LW; g.setLineDash([6*sc,4*sc]);
+    g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]);
+    [a,b].forEach(function(p){ g.beginPath(); g.arc(p.x,p.y,5*sc,0,7); g.stroke(); });
+    g.fillStyle='#00e5ff'; g.font='bold '+(13*sc)+'px '+FONT;
+    g.fillText(fmtLen(exp.scaleLen), (a.x+b.x)/2+8*sc, (a.y+b.y)/2-8*sc);
+    g.restore();
+  }
+  if(UI.scaleP1){
+    var p1=v2s(UI.scaleP1.x,UI.scaleP1.y);
+    g.save(); g.strokeStyle='#00e5ff'; g.lineWidth=LW;
+    g.beginPath(); g.arc(p1.x,p1.y,6*sc,0,7); g.stroke(); g.restore();
+  }
+  /* --- 手ぶれ補正の固定点 --- */
+  if(exp.ref && exp.ref.length){
+    g.save(); g.strokeStyle='#ff8ad8'; g.lineWidth=LW;
+    exp.ref.forEach(function(r){ var p=v2s(r.x,r.y);
+      g.beginPath(); g.moveTo(p.x-8*sc,p.y); g.lineTo(p.x+8*sc,p.y);
+      g.moveTo(p.x,p.y-8*sc); g.lineTo(p.x,p.y+8*sc); g.stroke(); });
+    g.restore();
+  }
+  /* --- 記録した点 --- */
+  var half = 0.5/(VID.fps||30);
+  for(var ob=0; ob<NOBJ; ob++){
+    var pts=exp.objs[ob]; if(!pts||!pts.length) continue;
+    var col=OBJCOL[ob];
+    var sorted=pts.slice().sort(function(u,w){return u.t-w.t;});
+    g.save();
+    g.strokeStyle=col; g.lineWidth=Math.max(1,1.4*sc); g.globalAlpha=.55;
+    g.beginPath();
+    sorted.forEach(function(p,i){ var q=v2s(p.x,p.y); if(i===0) g.moveTo(q.x,q.y); else g.lineTo(q.x,q.y); });
+    g.stroke(); g.globalAlpha=1;
+    sorted.forEach(function(p,i){
+      var q=v2s(p.x,p.y), cur=Math.abs(p.t-VID.cur)<half;
+      g.strokeStyle=col; g.lineWidth=Math.max(1.4,2*sc);
+      var r=(cur?9:6)*sc;
+      g.beginPath(); g.moveTo(q.x-r,q.y); g.lineTo(q.x+r,q.y); g.moveTo(q.x,q.y-r); g.lineTo(q.x,q.y+r); g.stroke();
+      if(cur){ g.beginPath(); g.arc(q.x,q.y,r+3*sc,0,7); g.stroke(); }
+      /* 自動でつけた点は、中心に小さな輪をつけて区別する */
+      if(p.auto){ g.beginPath(); g.arc(q.x,q.y,r*0.5,0,7); g.stroke(); }
+    });
+    g.restore();
+  }
+  /* --- いま置こうとしている点 --- */
+  if(UI.pend){
+    var q=v2s(UI.pend.x,UI.pend.y);
+    g.save();
+    g.strokeStyle=(UI.mode==='record')?OBJCOL[UI.obj]:'#ffffff'; g.lineWidth=Math.max(1.6,2.4*sc);
+    g.beginPath(); g.arc(q.x,q.y,12*sc,0,7); g.stroke();
+    g.beginPath(); g.moveTo(q.x-18*sc,q.y); g.lineTo(q.x+18*sc,q.y);
+    g.moveTo(q.x,q.y-18*sc); g.lineTo(q.x,q.y+18*sc); g.stroke();
+    g.restore();
+  }
+}
+function arrowHead(g,x,y,ang,size,col){
+  g.save(); g.translate(x,y); g.rotate(ang); g.fillStyle=col;
+  g.beginPath(); g.moveTo(0,0); g.lineTo(-size,-size*0.5); g.lineTo(-size,size*0.5); g.closePath(); g.fill(); g.restore();
+}
+function labelAt(g,txt,x,y,col,size){
+  g.save(); g.font='bold '+size+'px '+FONT; g.textAlign='center'; g.textBaseline='middle';
+  g.lineWidth=size*0.35; g.strokeStyle='rgba(0,0,0,.75)'; g.strokeText(txt,x,y);
+  g.fillStyle=col; g.fillText(txt,x,y); g.restore();
+}
+function fmtLen(m){
+  if(m>=1) return nf(m,3)+' m';
+  if(m>=0.01) return nf(m*100,2)+' cm';
+  return nf(m*1000,1)+' mm';
+}
+
+/* ---------- ルーペ ---------- */
+function showLoupe(vx,vy){
+  var lp=$('loupe'), lc=$('cvLoupe'), g=lc.getContext('2d');
+  var full=$('cvFull'), R=lc.width;
+  g.fillStyle='#000'; g.fillRect(0,0,R,R);
+  /* いまの表示倍率の 3 倍で見せる（拡大しているときは、さらに細かく見える） */
+  var cvv=$('cvView'), rr=cvv.getBoundingClientRect();
+  var sPerV = rr.width? VIEW.K*rr.width/cvv.width : 1;      /* 画面px / 動画px */
+  var srcR = Math.max(4, (R/2)/(3*Math.max(0.2,sPerV)));
+  g.save();
+  g.imageSmoothingEnabled=false;
+  g.drawImage(full, vx-srcR, vy-srcR, srcR*2, srcR*2, 0,0,R,R);
+  g.restore();
+  g.strokeStyle='rgba(255,60,60,.95)'; g.lineWidth=1.5;
+  g.beginPath(); g.moveTo(R/2-14,R/2); g.lineTo(R/2-4,R/2); g.moveTo(R/2+4,R/2); g.lineTo(R/2+14,R/2);
+  g.moveTo(R/2,R/2-14); g.lineTo(R/2,R/2-4); g.moveTo(R/2,R/2+4); g.lineTo(R/2,R/2+14); g.stroke();
+  g.strokeStyle='rgba(255,255,255,.6)'; g.beginPath(); g.arc(R/2,R/2,10,0,7); g.stroke();
+  /* 位置 */
+  var box=$('videobox'), cv=$('cvView'), r=cv.getBoundingClientRect(), br=box.getBoundingClientRect();
+  var s=v2s(vx,vy);
+  var cssX = s.x*r.width/cv.width + (r.left-br.left);
+  var cssY = s.y*r.height/cv.height + (r.top-br.top);
+  var lx = cssX-66, ly = cssY-160;
+  if(ly<4) ly = cssY+34;
+  lx=Math.max(2, Math.min(br.width-136, lx));
+  lp.style.left=lx+'px'; lp.style.top=ly+'px'; lp.style.display='block';
+}
+function hideLoupe(){ $('loupe').style.display='none'; }
+
+/* ---------- ポインタ操作 ---------- */
+function bindCanvas(){
+  var cv=$('cvOv');
+  cv.addEventListener('pointerdown', onDown);
+  cv.addEventListener('pointermove', onMove);
+  cv.addEventListener('pointerup', onUp);
+  cv.addEventListener('pointercancel', onUp);
+  cv.addEventListener('wheel', function(e){
+    if(!VID.ready) return; e.preventDefault();
+    var p=ev2canvas(e); zoomAt(e.deltaY<0?1.15:1/1.15, p.x, p.y);
+  }, {passive:false});
+  cv.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+}
+function onDown(e){
+  if(!VID.ready) return;
+  var cv=$('cvOv');
+  UI.pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  var n=Object.keys(UI.pointers).length;
+  if(n===2){                                   /* ピンチ開始 */
+    UI.pend=null; hideLoupe();
+    var ps=Object.keys(UI.pointers).map(function(k){return UI.pointers[k];});
+    UI.pinch={ d:dist(ps[0],ps[1]), c:mid(ps[0],ps[1]), zoom:VIEW.zoom, panX:VIEW.panX, panY:VIEW.panY };
+    drawOverlay(); return;
+  }
+  if(n>2) return;
+  try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+  if(e.button===1 || e.button===2){ UI.drag={x:e.clientX,y:e.clientY,pan:true}; return; }
+  var p=ev2canvas(e), v=s2v(p.x,p.y);
+  /* 3 のあいだは、スケールの点をつまんで動かせる */
+  var sr=EXP().scaleRef, stp=(APP.editStep&&APP.editStep<APP.step)?APP.editStep:APP.step;
+  if(sr && stp===3 && UI.mode==='record'){
+    var d1=Math.hypot(v.x-sr.x1, v.y-sr.y1)*VIEW.K, d2=Math.hypot(v.x-sr.x2, v.y-sr.y2)*VIEW.K;
+    if(Math.min(d1,d2) < 22){
+      UI.dragScale=(d1<=d2)?1:2;
+      UI.drag={x:e.clientX,y:e.clientY,pan:false};
+      UI.pend={x:v.x,y:v.y};
+      showLoupe(v.x,v.y); drawOverlay(); return;
+    }
+  }
+  UI.pend={x:v.x, y:v.y};
+  UI.drag={x:e.clientX,y:e.clientY,pan:false};
+  showLoupe(v.x,v.y); drawOverlay();
+}
+function onMove(e){
+  if(!VID.ready) return;
+  if(!(e.pointerId in UI.pointers)) return;
+  UI.pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  var n=Object.keys(UI.pointers).length;
+  if(n>=2 && UI.pinch){
+    var ps=Object.keys(UI.pointers).map(function(k){return UI.pointers[k];});
+    var d=dist(ps[0],ps[1]), c=mid(ps[0],ps[1]);
+    var cv=$('cvView'), r=cv.getBoundingClientRect();
+    var f=d/(UI.pinch.d||1);
+    VIEW.zoom=Math.max(1,Math.min(12, UI.pinch.zoom*f));
+    calcK();
+    var K0=(cv.width/VID.w)*UI.pinch.zoom, K1=VIEW.K;
+    var cx0=(UI.pinch.c.x-r.left)*cv.width/r.width, cy0=(UI.pinch.c.y-r.top)*cv.height/r.height;
+    var cx1=(c.x-r.left)*cv.width/r.width, cy1=(c.y-r.top)*cv.height/r.height;
+    var vx=UI.pinch.panX+cx0/K0, vy=UI.pinch.panY+cy0/K0;
+    VIEW.panX=vx-cx1/K1; VIEW.panY=vy-cy1/K1;
+    clampPan(); render(); return;
+  }
+  if(!UI.drag) return;
+  if(UI.drag.pan){
+    var dx=(e.clientX-UI.drag.x), dy=(e.clientY-UI.drag.y);
+    var cvv=$('cvView'), rr=cvv.getBoundingClientRect();
+    VIEW.panX-=dx*(cvv.width/rr.width)/VIEW.K; VIEW.panY-=dy*(cvv.height/rr.height)/VIEW.K;
+    UI.drag.x=e.clientX; UI.drag.y=e.clientY; clampPan(); render(); return;
+  }
+  var p=ev2canvas(e), v=s2v(p.x,p.y);
+  UI.pend={x:v.x,y:v.y};
+  if(UI.dragScale) liveScale(v);
+  if(UI.mode==='axis') liveAxis(v);
+  showLoupe(v.x,v.y); drawOverlay();
+}
+function onUp(e){
+  delete UI.pointers[e.pointerId];
+  if(Object.keys(UI.pointers).length<2) UI.pinch=null;
+  if(!UI.drag){ hideLoupe(); return; }
+  var wasPan=UI.drag.pan; UI.drag=null; hideLoupe();
+  if(UI.dragScale){ UI.dragScale=0; UI.pend=null; afterChange(); toast('スケールを直しました'); return; }
+  if(wasPan || !UI.pend){ UI.pend=null; drawOverlay(); return; }
+  var v=UI.pend; UI.pend=null;
+  commitPoint(v.x, v.y, e);
+}
+function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+function mid(a,b){ return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
+/* スケールの点をつまんで動かす（長さは「スケール長さ」の値のまま） */
+function liveScale(v){
+  var e=EXP(), sr=e.scaleRef; if(!sr) return;
+  if(UI.dragScale===1){ sr.x1=v.x; sr.y1=v.y; } else { sr.x2=v.x; sr.y2=v.y; }
+  var d=Math.hypot(sr.x2-sr.x1, sr.y2-sr.y1);
+  if(d>2) e.mPerPx=e.scaleLen/d;
+  updateCalInfo();
+}
+function liveAxis(v){
+  var exp=EXP(); if(!exp.origin) return;
+  exp.angle=Math.atan2(v.y-exp.origin.y, v.x-exp.origin.x);
+}
+
+/* ---------- 点を確定する ---------- */
+function commitPoint(vx, vy, e){
+  var exp=EXP();
+  if(UI.mode==='origin'){
+    pushUndo({t:'cal', prev:{origin:exp.origin?{x:exp.origin.x,y:exp.origin.y}:null}});
+    exp.origin={x:vx,y:vy};
+    setMode('axis'); afterChange();          /* そのまま x軸の向きの設定へ */
+    toast('原点を決めました。つづけて x軸の向きへドラッグしてください');
+    return;
+  }
+  if(UI.mode==='scale1'){ UI.scaleP1={x:vx,y:vy}; setMode('scale2'); drawOverlay();
+    toast('もう1点をクリックしてください'); return; }
+  if(UI.mode==='scale2'){
+    var p1=UI.scaleP1||{x:vx,y:vy};
+    var d=Math.hypot(vx-p1.x, vy-p1.y);
+    if(d<3){ toast('2点が近すぎます'); return; }
+    var len=parseFloat($('inScaleLen').value)*parseFloat($('selScaleUnit').value);
+    if(!(len>0)){ toast('長さを入力してください'); setMode('record'); return; }
+    pushUndo({t:'cal', prev:{mPerPx:exp.mPerPx, scaleRef:exp.scaleRef, scaleLen:exp.scaleLen}});
+    exp.mPerPx=len/d; exp.scaleLen=len;
+    exp.scaleRef={x1:p1.x,y1:p1.y,x2:vx,y2:vy};
+    UI.scaleP1=null; setMode('record'); afterChange();
+    toast('スケール：'+sig(exp.mPerPx*1000,3)+' mm/px'); return;
+  }
+  if(UI.mode==='axis'){
+    if(!exp.origin){ toast('先に原点を決めてください'); setMode('record'); return; }
+    exp.angle=Math.atan2(vy-exp.origin.y, vx-exp.origin.x);
+    setMode('record'); afterChange();
+    toast('x軸の向き：'+nf(exp.angle*180/Math.PI,1)+'°'+(exp.mPerPx?'':'　つぎは「スケールを設定」です'));
+    return;
+  }
+  if(UI.mode==='ref'){
+    exp.ref.push({t:VID.cur, x:vx, y:vy});
+    exp.ref.sort(function(a,b){return a.t-b.t;});
+    pushUndo({t:'ref'});
+    setMode('record'); afterChange(); toast('固定点を記録しました'); return;
+  }
+  if(UI.mode==='color'){
+    var g=$('cvFull').getContext('2d',{willReadFrequently:true});
+    var d2=g.getImageData(Math.max(0,Math.round(vx)-2), Math.max(0,Math.round(vy)-2), 5,5).data;
+    var r=0,gg=0,b=0,n=0;
+    for(var i=0;i<d2.length;i+=4){ r+=d2[i]; gg+=d2[i+1]; b+=d2[i+2]; n++; }
+    APP.trackColor={r:r/n, g:gg/n, b:b/n};
+    $('colorTag').textContent='色：取得ずみ';
+    $('colorTag').style.background='rgb('+Math.round(r/n)+','+Math.round(gg/n)+','+Math.round(b/n)+')';
+    $('colorTag').style.color='#fff';
+    setMode('record'); toast('色を取得しました'); return;
+  }
+  /* 記録（1〜3 が終わるまでは記録させない） */
+  if(APP.step<4){
+    toast('「'+stepName(APP.step)+'」を先に終わらせてください');
+    return;
+  }
+  addPoint(UI.obj, vx, vy, false);
+  var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;
+  if(e && (e.ctrlKey||e.metaKey)) adv='n';
+  else if(e && e.shiftKey) adv='1';
+  if(adv==='1') stepFrames(1);
+  else if(adv==='n') stepFrames(N);
+  else { afterChange(); }
+}
+function addPoint(obj, vx, vy, auto){
+  var exp=EXP(), arr=exp.objs[obj], half=0.4/(VID.fps||30), t=VID.cur;
+  var idx=-1;
+  for(var i=0;i<arr.length;i++) if(Math.abs(arr[i].t-t)<half){ idx=i; break; }
+  var np={t:t, fr:VID.idx, x:vx, y:vy, auto:!!auto};
+  if(idx>=0){ pushUndo({t:'pt', obj:obj, i:idx, prev:arr[idx]}); arr[idx]=np; }
+  else { arr.push(np); arr.sort(function(a,b){return a.t-b.t;});
+         pushUndo({t:'pt', obj:obj, i:arr.indexOf(np), prev:null}); }
+  UI.lastPt={obj:obj, t:t};
+  afterChange();
+}
+function pushUndo(a){ UI.undo.push(a); if(UI.undo.length>400) UI.undo.shift(); }
+function doUndo(){
+  var a=UI.undo.pop(), exp=EXP();
+  if(!a){ toast('取り消せる操作はありません'); return; }
+  if(a.t==='pt'){
+    var arr=exp.objs[a.obj], back=null;
+    if(a.prev){ arr[a.i]=a.prev; back=a.prev.t; }
+    else { back=(arr[a.i]? arr[a.i].t : null); arr.splice(a.i,1); }
+    UI.obj=a.obj; $('selObj').value=String(a.obj+1);
+    if(back!==null && VID.ready){          /* 取り消した点のコマまで動画も戻す */
+      vidSeek(back).then(function(){ afterSeek(); afterChange(); });
+    }
+  } else if(a.t==='cal'){
+    for(var k in a.prev) exp[k]=a.prev[k];
+  } else if(a.t==='ref'){ exp.ref.pop(); }
+  else if(a.t==='bulk'){ exp.objs[a.obj]=a.prev; }
+  afterChange(); toast('取り消しました');
+}
+function nudgeLast(dx,dy){
+  var exp=EXP();
+  if(!UI.lastPt) return;
+  var arr=exp.objs[UI.lastPt.obj], half=0.4/(VID.fps||30);
+  for(var i=0;i<arr.length;i++) if(Math.abs(arr[i].t-UI.lastPt.t)<half){
+    arr[i].x+=dx; arr[i].y+=dy; afterChange(); return;
+  }
+}
+
+/* ---------- コマ送り ---------- */
+function stepFrames(n){
+  return vidStep(n).then(function(){ afterSeek(); });
+}
+function gotoFrame(i){ return vidGotoFrame(i).then(function(){ afterSeek(); }); }
+function afterSeek(){
+  render(); updateTimeLine();
+  if(APP.autoTrack && APP.trackColor) tryAutoPlace();
+}
+
+/* ---------- 色マーカーの自動追跡 ---------- */
+function predictPos(obj){
+  var exp=EXP(), arr=exp.objs[obj].slice().sort(function(a,b){return a.t-b.t;});
+  if(!arr.length) return null;
+  var last=arr[arr.length-1];
+  if(arr.length>=2){
+    var p=arr[arr.length-2], dt=last.t-p.t;
+    if(dt>0){ var f=(VID.cur-last.t)/dt;
+      f=Math.max(-3,Math.min(3,f));
+      return { x:last.x+(last.x-p.x)*f, y:last.y+(last.y-p.y)*f };
+    }
+  }
+  return { x:last.x, y:last.y };
+}
+function findColor(cx, cy, R, TH){
+  var col=APP.trackColor; if(!col) return null;
+  var g=$('cvFull').getContext('2d',{willReadFrequently:true});
+  var x0=Math.max(0,Math.round(cx-R)), y0=Math.max(0,Math.round(cy-R));
+  var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
+  if(x1-x0<2||y1-y0<2) return null;
+  var d=g.getImageData(x0,y0,x1-x0,y1-y0).data;
+  var sx=0, sy=0, sw=0, W=x1-x0;
+  for(var j=0;j<y1-y0;j++) for(var i=0;i<W;i++){
+    var k=(j*W+i)*4;
+    var dr=d[k]-col.r, dg=d[k+1]-col.g, db=d[k+2]-col.b;
+    var dd=Math.sqrt(dr*dr+dg*dg+db*db);
+    /* +0.5 は「ピクセルの中心」に合わせるため（クリックで取る座標と同じ基準にする） */
+    if(dd<TH){ var w=(TH-dd)*(TH-dd); sx+=(x0+i+0.5)*w; sy+=(y0+j+0.5)*w; sw+=w; }
+  }
+  if(sw<=0) return null;
+  return { x:sx/sw, y:sy/sw, w:sw };
+}
+function tryAutoPlace(){
+  var obj=UI.obj, pr=predictPos(obj);
+  if(!pr) return;
+  var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
+  var f=findColor(pr.x,pr.y,R,TH);
+  if(f){ addPoint(obj, f.x, f.y, true); render(); }
+}
+function autoRunAll(){
+  var N=parseInt($('inStepN').value)||1, exp=EXP();
+  UI.autoStop=false;
+  if(!APP.trackColor){ toast('先に「色を取得」でマーカーの色をクリックしてください'); return; }
+  if(!exp.objs[UI.obj].length){ toast('まず1点、手でクリックして始点を決めてください'); return; }
+  var endT = (exp.rangeB!==null? exp.rangeB : (VID.dur-1e-3));
+  function loop(){
+    if(UI.autoStop) { toast('停止しました'); return; }
+    if(VID.cur >= endT-1e-6){ toast('終わりまで追跡しました'); return; }
+    stepFrames(N).then(function(){
+      var pr=predictPos(UI.obj);
+      var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
+      var f=pr? findColor(pr.x,pr.y,R,TH) : null;
+      if(f){ addPoint(UI.obj,f.x,f.y,true); render();
+             setTimeout(loop, 0); }
+      else { toast('見失いました（'+nf(VID.cur,3)+' s）。ここから手で続けてください'); render(); }
+    });
+  }
+  loop();
+}
+
+/* ---------- ストロボ合成 ---------- */
+function makeStrobe(preview){
+  var exp=EXP(), cv=$('cvStrobe');
+  var mode=preview? 'diff' : $('selStroMode').value;
+  var src=preview? 'step' : $('selStroSrc').value;
+  var times=[];
+  if(preview){
+    var a0=rangeStart(exp), b0=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
+    if(VID.frames.length>1){
+      var ia=frameIndexAt(a0), ib=frameIndexAt(b0);
+      var stepN=Math.max(1, Math.round((ib-ia)/14));
+      for(var q=ia;q<=ib;q+=stepN) times.push(VID.frames[q]);
+    } else {
+      for(var tq=a0; tq<=b0; tq+=(b0-a0)/14) times.push(tq);
+    }
+  } else if(src==='pts'){
+    var seen={};
+    for(var ob=0; ob<NOBJ; ob++) exp.objs[ob].forEach(function(p){ var k=p.t.toFixed(4); if(!seen[k]){seen[k]=1; times.push(p.t);} });
+    times.sort(function(a,b){return a-b;});
+  }else{
+    var N=parseInt($('inStepN').value)||5;
+    var a=rangeStart(exp), b=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
+    if(VID.frames.length>1){
+      var i0=frameIndexAt(a), i1=frameIndexAt(b);
+      for(var i=i0;i<=i1;i+=N) times.push(VID.frames[i]);
+    } else { for(var t=a;t<=b;t+=N/(VID.fps||30)) times.push(t); }
+  }
+  if(!times.length){ toast('先に点を記録するか、範囲を決めてください'); return Promise.resolve(); }
+  if(times.length>120) times=times.filter(function(_,i){ return i%Math.ceil(times.length/120)===0; });
+  cv.width=VID.w; cv.height=VID.h;
+  var g=cv.getContext('2d',{willReadFrequently:true});
+  g.fillStyle=(mode==='darken')?'#fff':'#000'; g.fillRect(0,0,cv.width,cv.height);
+  $('stroInfo').textContent='作成中… 0/'+times.length;
+  var savedT=VID.cur, k=0, bg=null;
+  function next(){
+    if(mode==='diff' && !bg){
+      /* 何コマかの「まん中の値」で背景を作る（動いている物が消えた背景）。
+         そこから変わった所だけを重ねるので、背景が明るくても暗くても使える。 */
+      var samp=[], m=Math.min(7, times.length), j;
+      for(j=0;j<m;j++) samp.push(times[Math.round(j*(times.length-1)/(m-1||1))]);
+      var imgs=[], q=0;
+      var grab=function(){
+        if(q>=samp.length){
+          bg=medianImage(imgs, cv.width, cv.height);
+          g.putImageData(bg,0,0);
+          return next();
+        }
+        return vidSeek(samp[q++]).then(function(){
+          var f2=vidDrawFull();
+          imgs.push(f2.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height));
+          $('stroInfo').textContent='背景を作っています… '+q+'/'+samp.length;
+          return grab();
+        });
+      };
+      return grab();
+    }
+    if(k>=times.length){
+      if(!preview && $('cbStroPts').checked) drawStrobePoints(g);
+      $('stroInfo').textContent=times.length+' コマを合成しました'+(preview?'（仮）':'');
+      UI.stroReady=true; $('cvStrobe').classList.remove('hide');
+      if(preview){                       /* 動画に重ねる用に控えておく */
+        var oc=document.createElement('canvas');
+        oc.width=cv.width; oc.height=cv.height;
+        oc.getContext('2d').drawImage(cv,0,0);
+        UI.stroImg=oc;
+      }
+      return vidSeek(savedT).then(function(){ afterSeek(); });
+    }
+    return vidSeek(times[k]).then(function(){
+      var full=vidDrawFull();
+      if(mode==='diff'){
+        var fg=full.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height);
+        var cur=g.getImageData(0,0,cv.width,cv.height);
+        var a=fg.data, b0=bg.data, c=cur.data, TH=34*3;
+        for(var i=0;i<a.length;i+=4){
+          var d=Math.abs(a[i]-b0[i])+Math.abs(a[i+1]-b0[i+1])+Math.abs(a[i+2]-b0[i+2]);
+          if(d>TH){ c[i]=a[i]; c[i+1]=a[i+1]; c[i+2]=a[i+2]; c[i+3]=255; }
+        }
+        g.putImageData(cur,0,0);
+        k++; $('stroInfo').textContent='作成中… '+k+'/'+times.length;
+        return next();
+      }
+      g.save();
+      if(mode==='lighten') g.globalCompositeOperation='lighten';
+      else if(mode==='darken') g.globalCompositeOperation='darken';
+      else { g.globalCompositeOperation='source-over'; g.globalAlpha=1/(k+1)*1.6; }
+      g.drawImage(full,0,0);
+      g.restore();
+      k++; $('stroInfo').textContent='作成中… '+k+'/'+times.length;
+      return next();
+    });
+  }
+  return next();
+}
+/* 何枚かの画像から、画素ごとの中央値をとる（動く物が消えた「背景」になる） */
+function medianImage(imgs, w, h){
+  var n=imgs.length, out=imgs[0];
+  if(n<3) return out;
+  var res=new ImageData(w,h), d=res.data, half=n>>1, vals=new Array(n);
+  for(var i=0;i<d.length;i+=4){
+    for(var c=0;c<3;c++){
+      for(var k=0;k<n;k++) vals[k]=imgs[k].data[i+c];
+      vals.sort(function(a,b){return a-b;});
+      d[i+c]=vals[half];
+    }
+    d[i+3]=255;
+  }
+  return res;
+}
+/* 動画にストロボ写真を重ねる／やめる */
+function setStrobeOverlay(on){
+  UI.stroOverlay=!!on && !!UI.stroImg;
+  var b=$('btnStroOver');
+  if(b){ b.textContent = UI.stroOverlay? '写真を重ねない' : 'ストロボ写真を重ねる';
+         b.classList.toggle('on', UI.stroOverlay); b.disabled=false; }
+  if(VID.ready) render();
+}
+function drawStrobePoints(g){
+  var exp=EXP(), sc=VID.w/900;
+  for(var ob=0;ob<NOBJ;ob++){
+    var pts=exp.objs[ob]; if(!pts.length) continue;
+    g.save(); g.strokeStyle=OBJCOL[ob]; g.lineWidth=Math.max(1.5,2*sc); g.font='bold '+(13*sc)+'px '+FONT;
+    g.fillStyle=OBJCOL[ob];
+    pts.slice().sort(function(a,b){return a.t-b.t;}).forEach(function(p,i){
+      var r=6*sc;
+      g.beginPath(); g.moveTo(p.x-r,p.y); g.lineTo(p.x+r,p.y); g.moveTo(p.x,p.y-r); g.lineTo(p.x,p.y+r); g.stroke();
+      if(i%2===0) g.fillText(String(i+1), p.x+r+2*sc, p.y-r);
+    });
+    g.restore();
+  }
+}
+
+</script>
+
+<script>
+/* ---- 60_graph.js ---- */
+/* =========================================================
+   60_graph.js … グラフ描画エンジンとモード2・モード3の表示
+   ========================================================= */
+var GFONT='"Segoe UI","Helvetica Neue",Arial,"Yu Gothic UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif';
+function niceStep(range, target){
+  var raw=range/Math.max(1,target), p=Math.pow(10,Math.floor(Math.log10(raw))), n=raw/p;
+  var s = n<1.5?1 : n<3?2 : n<7?5 : 10;
+  return s*p;
+}
+/* spec = {title,xlab,ylab,series:[{name,color,pts,shape,line}],curves:[{color,f,x0,x1}] } */
+function drawChart(cv, spec, opt){
+  opt=opt||{};
+  var dpr=Math.max(2, Math.min(window.devicePixelRatio||1,3));   /* 文字をくっきり描く */
+  var W=opt.w||620, H=opt.h||390;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  if(opt.fixed){ cv.style.width=W+'px'; cv.style.height=H+'px'; }
+  else { cv.style.width='100%'; cv.style.height='auto'; }
+  var g=cv.getContext('2d'); g.scale(dpr,dpr);
+  g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+  var has2 = !!(spec.series2 && spec.series2.length && spec.series2.some(function(x){return x.pts.length;}));
+  var L=64, R=(has2?66:12), T=(spec.title?26:10), B=44;
+  var pw=W-L-R, ph=H-T-B;
+  /* 範囲 */
+  var xs=[], ys=[], ys2=[];
+  spec.series.forEach(function(s){ s.pts.forEach(function(p){ if(isFinite(p.x)&&isFinite(p.y)){xs.push(p.x); ys.push(p.y);} }); });
+  if(has2) spec.series2.forEach(function(s){ s.pts.forEach(function(p){ if(isFinite(p.x)&&isFinite(p.y)){xs.push(p.x); ys2.push(p.y);} }); });
+  if(!xs.length){ g.fillStyle='#8a95a1'; g.font='13px '+GFONT; g.textAlign='center';
+    g.fillText('データがありません', W/2, H/2); return; }
+  var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
+  var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
+  if(x1-x0<1e-12){ x0-=0.5; x1+=0.5; }
+  if(y1-y0<1e-12){ y0-=0.5; y1+=0.5; }
+  var my=(y1-y0)*0.08; y0-=my; y1+=my;
+  var mx=(x1-x0)*0.03; x0-=mx; x1+=mx;
+  if(y0<0&&y1>0){}
+  var sx=function(v){ return L+(v-x0)/(x1-x0)*pw; };
+  var sy=function(v){ return T+ph-(v-y0)/(y1-y0)*ph; };
+  var z0=0, z1=1, sy2=sy;
+  if(has2 && ys2.length){
+    z0=Math.min.apply(null,ys2); z1=Math.max.apply(null,ys2);
+    if(z1-z0<1e-12){ z0-=0.5; z1+=0.5; }
+    var mz=(z1-z0)*0.08; z0-=mz; z1+=mz;
+    sy2=function(v){ return T+ph-(v-z0)/(z1-z0)*ph; };
+  }
+  /* 目盛 */
+  var stx=niceStep(x1-x0,6), sty=niceStep(y1-y0,5);
+  g.strokeStyle='#e8ecf1'; g.lineWidth=1; g.fillStyle='#5b6672';
+  g.font='11.5px '+GFONT; g.textAlign='center'; g.textBaseline='top';
+  var t0=Math.ceil(x0/stx)*stx, i;
+  for(i=t0;i<=x1+1e-9;i+=stx){
+    var X=sx(i); g.beginPath(); g.moveTo(X,T); g.lineTo(X,T+ph); g.stroke();
+    g.fillText(tickLbl(i,stx), X, T+ph+6);
+  }
+  g.textAlign='right'; g.textBaseline='middle';
+  var u0=Math.ceil(y0/sty)*sty;
+  for(i=u0;i<=y1+1e-9;i+=sty){
+    var Y=sy(i); g.beginPath(); g.moveTo(L,Y); g.lineTo(L+pw,Y); g.stroke();
+    g.fillText(tickLbl(i,sty), L-6, Y);
+  }
+  /* 0 の線 */
+  g.strokeStyle='#b6c0cb'; g.lineWidth=1.2;
+  if(y0<0&&y1>0){ g.beginPath(); g.moveTo(L,sy(0)); g.lineTo(L+pw,sy(0)); g.stroke(); }
+  if(x0<0&&x1>0){ g.beginPath(); g.moveTo(sx(0),T); g.lineTo(sx(0),T+ph); g.stroke(); }
+  /* 右の縦軸（2軸モード） */
+  if(has2 && ys2.length){
+    var col2=(spec.series2[0].color||'#e8443a');
+    var st2=niceStep(z1-z0,5), w0=Math.ceil(z0/st2)*st2;
+    g.fillStyle=col2; g.textAlign='left'; g.textBaseline='middle'; g.font='11.5px '+GFONT;
+    for(i=w0;i<=z1+1e-9;i+=st2){
+      var Y2=sy2(i);
+      g.strokeStyle=col2; g.globalAlpha=.35; g.lineWidth=1;
+      g.beginPath(); g.moveTo(L+pw,Y2); g.lineTo(L+pw+5,Y2); g.stroke(); g.globalAlpha=1;
+      g.fillText(tickLbl(i,st2), L+pw+8, Y2);
+    }
+    g.save(); g.translate(W-12, T+ph/2); g.rotate(Math.PI/2);
+    g.textAlign='center'; g.font='12.5px '+GFONT; g.fillStyle=col2;
+    g.fillText(spec.ylab2||'', 0,0); g.restore();
+  }
+  /* 枠 */
+  g.strokeStyle='#8d99a6'; g.lineWidth=1.2; g.strokeRect(L,T,pw,ph);
+  /* 曲線（フィット） */
+  (spec.curves||[]).forEach(function(c){
+    g.save(); g.strokeStyle=c.color; g.lineWidth=2; g.setLineDash(c.dash||[]);
+    g.beginPath();
+    var n=180, first=true;
+    for(var k=0;k<=n;k++){
+      var xv=c.x0+(c.x1-c.x0)*k/n, yv=c.f(xv);
+      if(!isFinite(yv)) { first=true; continue; }
+      var X=sx(xv), Y=sy(yv);
+      if(Y<T-500||Y>T+ph+500){ first=true; continue; }
+      if(first){ g.moveTo(X,Y); first=false; } else g.lineTo(X,Y);
+    }
+    g.stroke(); g.restore();
+  });
+  /* データ */
+  var allSer=spec.series.concat(has2? spec.series2 : []);
+  allSer.forEach(function(s, si){
+    var Y = (has2 && si>=spec.series.length)? sy2 : sy;
+    g.save();
+    if(s.line!==false){
+      g.strokeStyle=s.color; g.globalAlpha=.5; g.lineWidth=1.4; g.beginPath();
+      var st=true;
+      s.pts.forEach(function(p){ if(!isFinite(p.y)){st=true;return;} var X=sx(p.x), yy=Y(p.y);
+        if(st){g.moveTo(X,yy); st=false;} else g.lineTo(X,yy); });
+      g.stroke(); g.globalAlpha=1;
+    }
+    g.fillStyle=s.color; g.strokeStyle=s.color; g.lineWidth=1.6;
+    s.pts.forEach(function(p){
+      if(!isFinite(p.y)) return;
+      var X=sx(p.x), yy=Y(p.y), r=3.1;
+      if(s.shape==='sq'){ g.fillRect(X-r,yy-r,2*r,2*r); }
+      else if(s.shape==='tri'){ g.beginPath(); g.moveTo(X,yy-r-1); g.lineTo(X+r+1,yy+r); g.lineTo(X-r-1,yy+r); g.closePath(); g.fill(); }
+      else if(s.shape==='open'){ g.beginPath(); g.arc(X,yy,r,0,7); g.stroke(); }
+      else { g.beginPath(); g.arc(X,yy,r,0,7); g.fill(); }
+    });
+    g.restore();
+  });
+  /* ラベル */
+  g.fillStyle='#1b1f24'; g.textAlign='center'; g.textBaseline='alphabetic';
+  g.font='12.5px '+GFONT;
+  g.fillText(spec.xlab||'', L+pw/2, H-8);
+  g.save(); g.translate(14, T+ph/2); g.rotate(-Math.PI/2); g.textAlign='center';
+  g.fillText(spec.ylab||'', 0,0); g.restore();
+  if(spec.title){ g.font='bold 13px '+GFONT; g.fillStyle='#0f4c8f'; g.textAlign='left';
+    g.fillText(spec.title, L-46, 17); }
+  /* 凡例 */
+  if(spec.series.length>1||opt.legend){
+    var lx=L+8, ly=T+12;
+    g.font='11.5px '+GFONT; g.textAlign='left'; g.textBaseline='middle';
+    allSer.forEach(function(s){
+      g.fillStyle=s.color; g.fillRect(lx,ly-5,10,10);
+      g.fillStyle='#39434e'; g.fillText(s.name, lx+15, ly);
+      var w=g.measureText(s.name).width+34;
+      lx+=w; if(lx>L+pw-60){ lx=L+8; ly+=15; }
+    });
+  }
+  return {sx:sx, sy:sy, x0:x0, x1:x1};
+}
+function tickLbl(v, step){
+  if(Math.abs(v)<step*1e-6) v=0;
+  var a=Math.abs(v);
+  if(a!==0&&(a>=1e5||a<1e-3)) return v.toExponential(1);
+  var d=Math.max(0, -Math.floor(Math.log10(step))+ (step<1?0:0));
+  d=Math.min(4,Math.max(0,d));
+  return v.toFixed(d);
+}
+
+/* ---------- 系列づくり ---------- */
+var QDEF = {
+  x:{lab:'x [m]', get:function(p){return p.x;}},
+  y:{lab:'y [m]', get:function(p){return p.y;}},
+  vx:{lab:'vx [m/s]', get:function(p){return p.vx;}},
+  vy:{lab:'vy [m/s]', get:function(p){return p.vy;}},
+  ax:{lab:'ax [m/s²]', get:function(p){return p.ax;}},
+  ay:{lab:'ay [m/s²]', get:function(p){return p.ay;}}
+};
+function expHasObj(exp, ob){ return exp.objs[ob] && exp.objs[ob].length>0; }
+function seriesFor(exp, kind, expIdx, overlay){
+  var out=[], shapes=['dot','sq','tri'];
+  for(var ob=0; ob<NOBJ; ob++){
+    if(!expHasObj(exp,ob)) continue;
+    var s=series(exp,ob);
+    var base = overlay? EXPCOL[expIdx%EXPCOL.length] : OBJCOL[ob];
+    var nm=(overlay? exp.name+' ' : '')+'物体'+(ob+1)+(exp.objName[ob]?'('+exp.objName[ob]+')':'');
+    if(kind==='x'||kind==='y'){
+      out.push({name:nm, color:base, shape:shapes[ob], pts:s.map(function(p){return {x:p.t,y:(kind==='x'?p.x:p.y)};})});
+    } else if(kind==='v'){
+      out.push({name:nm+' vx', color:base, shape:shapes[ob],
+        pts:s.filter(function(p){return p.vx!==null;}).map(function(p){return {x:p.t,y:p.vx};})});
+      out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
+        pts:s.filter(function(p){return p.vy!==null;}).map(function(p){return {x:p.t,y:p.vy};})});
+    } else if(kind==='a'){
+      out.push({name:nm+' ax', color:base, shape:shapes[ob],
+        pts:s.filter(function(p){return p.ax!==null;}).map(function(p){return {x:p.t,y:p.ax};})});
+      out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
+        pts:s.filter(function(p){return p.ay!==null;}).map(function(p){return {x:p.t,y:p.ay};})});
+    } else if(kind==='e'){
+      var en=energy(exp,ob,s);
+      out.push({name:nm+' 運動K', color:base, shape:'dot',
+        pts:en.filter(function(p){return p.K!==null;}).map(function(p){return {x:p.t,y:p.K};})});
+      out.push({name:nm+' 位置U', color:shade(base,0.5), shape:'open',
+        pts:en.map(function(p){return {x:p.t,y:p.U};})});
+      out.push({name:nm+' 和K+U', color:shade(base,-0.35), shape:'sq',
+        pts:en.filter(function(p){return p.E!==null;}).map(function(p){return {x:p.t,y:p.E};})});
+    }
+  }
+  return out;
+}
+function shade(hex, f){
+  var c=hex.replace('#',''), r=parseInt(c.substr(0,2),16), g=parseInt(c.substr(2,2),16), b=parseInt(c.substr(4,2),16);
+  function m(v){ return Math.max(0,Math.min(255, Math.round(f>0? v+(255-v)*f : v*(1+f)))); }
+  return 'rgb('+m(r)+','+m(g)+','+m(b)+')';
+}
+var KINDLAB={x:'x–t',y:'y–t',v:'v–t',a:'a–t',e:'エネルギー'};
+var KINDY={x:'x [m]',y:'y [m]',v:'v [m/s]',a:'a [m/s²]',e:'エネルギー [J]'};
+
+function selectedExps(listId){
+  var ids=[];
+  els('#'+listId+' input:checked').forEach(function(c){ ids.push(parseInt(c.dataset.i)); });
+  if(!ids.length) ids=[APP.cur];
+  return ids;
+}
+/* 実験（複数可）・物体・量 を指定して 1 枚ぶんのグラフ仕様をつくる */
+function specOne(ids, obj, q){
+  var ser=[], many=(ids.length>1);
+  ids.forEach(function(i){
+    var e=APP.exps[i]; if(!e || !e.objs[obj] || !e.objs[obj].length) return;
+    var s=series(e,obj), pts=[];
+    s.forEach(function(p){ var v=p[q]; if(v!==null&&v!==undefined&&isFinite(v)) pts.push({x:p.t,y:v}); });
+    ser.push({ name:(many? e.name : q), color: many? EXPCOL[i%EXPCOL.length] : OBJCOL[obj],
+               shape:'dot', pts:pts });
+  });
+  return { title:'', xlab:'t [s]', ylab:(CGQ[q]?CGQ[q].lab:q), series:ser };
+}
+function specEnergy(ids, obj){
+  var ser=[], many=(ids.length>1);
+  ids.forEach(function(i){
+    var e=APP.exps[i]; if(!e || !e.objs[obj] || !e.objs[obj].length) return;
+    var s=series(e,obj), en=energy(e,obj,s);
+    var base = many? EXPCOL[i%EXPCOL.length] : OBJCOL[obj];
+    ser.push({name:(many?e.name+' ':'')+'運動K', color:base, shape:'dot',
+      pts:en.filter(function(p){return p.K!==null;}).map(function(p){return {x:p.t,y:p.K};})});
+    ser.push({name:(many?e.name+' ':'')+'位置U', color:shade(base,0.5), shape:'open',
+      pts:en.map(function(p){return {x:p.t,y:p.U};})});
+    ser.push({name:(many?e.name+' ':'')+'K+U', color:shade(base,-0.35), shape:'sq',
+      pts:en.filter(function(p){return p.E!==null;}).map(function(p){return {x:p.t,y:p.E};})});
+  });
+  return { title:'', xlab:'t [s]', ylab:'エネルギー [J]', series:ser };
+}
+function objTitle(e, obj){ return '物体'+(obj+1)+(e&&e.objName[obj]?'（'+e.objName[obj]+'）':''); }
+
+function renderMode2(){
+  var host=$('charts2');
+  var cgc=$('cgCard');
+  if(cgc && host.contains(cgc)) $('cgHost2').appendChild(cgc);   /* 消される前に避難させる */
+  host.innerHTML='';
+  var over=($('selCmp').value==='over');
+  var sel=selectedExps('expChecks'), ids;
+  if(over) ids=sel;
+  else { ids=[APP.cur]; sel.forEach(function(i){ if(ids.indexOf(i)<0) ids.push(i); }); }
+  var showX=$('cbG_x').checked, showY=$('cbG_y').checked, showE=$('cbG_e').checked;
+  var w=APP.gsize, h=Math.round(w*0.62);
+  var blocks=[], o, i;
+  if(over){
+    for(o=0;o<NOBJ;o++){
+      var any=ids.some(function(i2){ var e=APP.exps[i2]; return e&&e.objs[o]&&e.objs[o].length; });
+      if(any) blocks.push({ label:objTitle(APP.exps[ids[0]],o)+'（重ねて表示）', ids:ids, obj:o });
+    }
+  } else {
+    ids.forEach(function(i2){
+      var e=APP.exps[i2]; if(!e) return;
+      for(var o2=0;o2<NOBJ;o2++) if(e.objs[o2] && e.objs[o2].length)
+        blocks.push({ label:e.name+'　'+objTitle(e,o2), ids:[i2], obj:o2 });
+    });
+  }
+  if(!blocks.length){
+    host.innerHTML='<div class="card mini">グラフに出せるデータがありません。①でいくつか点を記録してください。</div>';
+    if(cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); renderCG(); }
+    return;
+  }
+  blocks.forEach(function(b, bi){
+    var blk=document.createElement('div'); blk.className='gblock';
+    var t=document.createElement('h3'); t.textContent=b.label; blk.appendChild(t);
+    var wrap=document.createElement('div'); wrap.className='gwrap';
+    var colNodes=[];
+    function addCol(qs, withE){
+      var col=document.createElement('div'); col.className='gcol';
+      qs.forEach(function(q){
+        col.appendChild(chartCard((q==='x'?'x–t':q==='vx'?'vx–t':q==='ax'?'ax–t':
+                                   q==='y'?'y–t':q==='vy'?'vy–t':'ay–t'),
+                                  specOne(b.ids,b.obj,q), null, w, h));
+      });
+      if(withE) col.appendChild(chartCard('エネルギー–t', specEnergy(b.ids,b.obj), null, w, h));
+      wrap.appendChild(col); colNodes.push(col); return col;
+    }
+    if(showX) addCol(['x','vx','ax'], showE);
+    var ycol = showY? addCol(['y','vy','ay'], showE&&!showX) : null;
+    /* 自由選択グラフは、最初のブロック（物体1）だけに置く */
+    if(bi===0 && cgc){
+      cgc.classList.remove('hide');
+      if(ycol) ycol.appendChild(cgc);                 /* y列があれば、その下 */
+      else {                                           /* 無ければ x列の右 */
+        var cc=document.createElement('div'); cc.className='gcol';
+        cc.appendChild(cgc); wrap.appendChild(cc); colNodes.push(cc);
+      }
+    }
+    wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
+    blk.appendChild(wrap); host.appendChild(blk);
+  });
+  if(cgc && cgc.parentNode) renderCG();
+}
+function chartCard(title, spec, curves, w, h){
+  var d=document.createElement('div'); d.className='chartcard';
+  var t=document.createElement('div'); t.className='ttl'; t.textContent=title; d.appendChild(t);
+  var cv=document.createElement('canvas'); d.appendChild(cv);
+  spec.curves=curves||spec.curves;
+  w=w||APP.gsize; h=h||Math.round(w*0.62);
+  drawChart(cv, spec, {legend:true, w:w, h:h, fixed:true});
+  var b=document.createElement('button'); b.className='maxbtn'; b.textContent='⤢ 大きく';
+  b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
+  d.appendChild(b);
+  d.__spec=spec; d.__title=title;
+  return d;
+}
+/* グラフを大きく表示する */
+function openBigChart(title, spec){
+  var m=document.createElement('div'); m.className='modal'; m.id='gmodal';
+  m.innerHTML='<div class="box"><button class="btn sm cls" data-x="close">閉じる</button>'+
+    '<h2 style="font-size:1.02rem">'+esc(title)+'</h2><canvas id="gbig"></canvas></div>';
+  document.body.appendChild(m);
+  var w=Math.min(1100, window.innerWidth-90), h=Math.min(Math.round(w*0.6), window.innerHeight-160);
+  drawChart(m.querySelector('#gbig'), spec, {legend:true, w:w, h:h, fixed:true});
+  m.addEventListener('click', function(e){ if(e.target===m||e.target.dataset.x==='close') m.remove(); });
+}
+
+/* ---------- モード3 ---------- */
+function renderMode3(doFitNow){
+  var host=$('charts3'); host.innerHTML='';
+  var q=$('selFitY').value, kind=$('selFitType').value, ob=parseInt($('selFitObj').value)-1;
+  var over=$('selCmp3').value==='over';
+  var ids=selectedExps('expChecks3');
+  var res=[];
+  var getter=QDEF[q].get;
+  function dataOf(e){
+    var s=series(e,ob), xs=[], ys=[];
+    s.forEach(function(p){ var v=getter(p); if(v!==null&&isFinite(v)){ xs.push(p.t); ys.push(v); } });
+    return {xs:xs, ys:ys};
+  }
+  if(over){
+    var ss=[], cvs=[];
+    ids.forEach(function(i){
+      var e=APP.exps[i], d=dataOf(e);
+      if(!d.xs.length) return;
+      var col=EXPCOL[i%EXPCOL.length];
+      ss.push({name:e.name, color:col, shape:'dot', line:false,
+        pts:d.xs.map(function(t,k){return {x:t,y:d.ys[k]};})});
+      if(doFitNow){
+        var f=doFit(kind,d.xs,d.ys);
+        if(f){ cvs.push({color:col, f:f.f, x0:Math.min.apply(null,d.xs), x1:Math.max.apply(null,d.xs), dash:[6,3]});
+               res.push({name:e.name, fit:f}); }
+      }
+    });
+    host.appendChild(chartCard(q+' – t（重ねて表示）', {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:ss, curves:cvs}, null, Math.max(APP.gsize,520)));
+  } else {
+    ids.forEach(function(i){
+      var e=APP.exps[i], d=dataOf(e);
+      var col=EXPCOL[i%EXPCOL.length], cvs=[];
+      if(doFitNow && d.xs.length>1){
+        var f=doFit(kind,d.xs,d.ys);
+        if(f){ cvs.push({color:'#e8443a', f:f.f, x0:Math.min.apply(null,d.xs), x1:Math.max.apply(null,d.xs)});
+               res.push({name:e.name, fit:f}); }
+      }
+      host.appendChild(chartCard(q+' – t　'+e.name,
+        {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:[{name:e.name+' 物体'+(ob+1), color:col, shape:'dot', line:false,
+          pts:d.xs.map(function(t,k){return {x:t,y:d.ys[k]};})}], curves:cvs}, null, Math.max(APP.gsize,520)));
+    });
+  }
+  var box=$('fitResult');
+  if(doFitNow){
+    if(!res.length){ box.innerHTML='<p class="mini">フィットできませんでした。点の数が足りないか、その関数では合わせられません。</p>'; }
+    else {
+      box.innerHTML='<h3 style="margin:.1em 0 .4em;color:var(--accent-d);font-size:.98rem">フィット結果（'+
+        $('selFitY').value+' = f(t)、物体'+(ob+1)+'）</h3>'+
+        res.map(function(r){
+          return '<div style="margin:.35em 0"><b>'+esc(r.name)+'</b><br><span class="val">'+esc(fitLabel(r.fit))+
+                 '</span><br><span class="val">R² = '+sig(r.fit.r2,6)+'</span></div>';
+        }).join('')+
+        '<p class="mini">R² は 1 に近いほど、その関数でよく表せているという意味です。</p>';
+    }
+  } else if(!box.innerHTML){
+    box.innerHTML='<p class="mini">「フィットする」を押すと、最小二乗法で係数と R² を出します。</p>';
+  }
+  if(!host.children.length) host.innerHTML='<div class="card mini">データがありません。</div>';
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+
+/* =========================================================
+   じぶんで軸を選ぶグラフ（モード2・モード3で共有）
+   ========================================================= */
+var CGQ = { t:{lab:'t [s]', k:'t'}, x:{lab:'x [m]', k:'x'}, y:{lab:'y [m]', k:'y'},
+            vx:{lab:'vx [m/s]', k:'vx'}, vy:{lab:'vy [m/s]', k:'vy'},
+            ax:{lab:'ax [m/s²]', k:'ax'}, ay:{lab:'ay [m/s²]', k:'ay'} };
+function cgLab(q, inv){ var l=CGQ[q]?CGQ[q].lab:q; return inv? '−('+l+')' : l; }
+function cgName(ei, ob, q, inv){
+  var e=APP.exps[ei]; if(!e) return '';
+  return e.name+' 物体'+(ob+1)+(e.objName[ob]?'('+e.objName[ob]+')':'')+' '+(inv?'−':'')+q;
+}
+/* 指定した実験・物体で、(横軸の量, 縦軸の量) の組をつくる */
+function cgPoints(ei, ob, q, inv, xq, invX){
+  var e=APP.exps[ei]; if(!e||!e.objs[ob]) return [];
+  var s=series(e,ob), out=[];
+  s.forEach(function(p){
+    var xv=p[xq], yv=p[q];
+    if(xv===null||yv===null||xv===undefined||yv===undefined||!isFinite(xv)||!isFinite(yv)) return;
+    out.push({ x:(invX? -xv : xv), y:(inv? -yv : yv) });
+  });
+  return out;
+}
+function cgSpec(){
+  var c=APP.cg;
+  var pa=cgPoints(c.expA, c.objA, c.qA, c.invA, c.xq, c.invX);
+  var spec={ title:'', xlab:cgLab(c.xq,c.invX), ylab:cgLab(c.qA,c.invA),
+    series:[{ name:cgName(c.expA,c.objA,c.qA,c.invA), color:'#1663b5', shape:'dot',
+              line:c.line!==false, pts:pa }] };
+  if(c.two){
+    var pb=cgPoints(c.expB, c.objB, c.qB, c.invB, c.xq, c.invX);
+    spec.series2=[{ name:cgName(c.expB,c.objB,c.qB,c.invB), color:'#e8443a', shape:'sq',
+                    line:c.line!==false, pts:pb }];
+    spec.ylab2=cgLab(c.qB,c.invB);
+  }
+  if(APP.cgFit && pa.length>1){
+    var xs=pa.map(function(p){return p.x;});
+    spec.curves=[{ color:'#1c8f4a', f:APP.cgFit.f,
+                   x0:Math.min.apply(null,xs), x1:Math.max.apply(null,xs) }];
+  }
+  return spec;
+}
+function renderCG(){
+  var host=$('cgCard'); if(!host) return;
+  var w=Math.min(470, Math.max(300, (host.clientWidth||620)-190));
+  drawChart($('cgCanvas'), cgSpec(), {w:w, h:Math.round(w*0.575), legend:true, fixed:true});
+}
+function cgDoFit(kind){
+  var c=APP.cg;
+  var pa=cgPoints(c.expA,c.objA,c.qA,c.invA,c.xq,c.invX);
+  if(pa.length<2){ APP.cgFit=null; $('cgResult').innerHTML='<span class="ng">点が足りません。</span>'; renderCG(); return; }
+  var f=doFit(kind, pa.map(function(p){return p.x;}), pa.map(function(p){return p.y;}));
+  APP.cgFit=f;
+  if(!f){ $('cgResult').innerHTML='<span class="ng">この関数では合わせられませんでした。</span>'; }
+  else {
+    $('cgResult').innerHTML='<b>'+esc(cgName(c.expA,c.objA,c.qA,c.invA))+'</b>　'+
+      '（縦軸 '+esc(cgLab(c.qA,c.invA))+'、横軸 '+esc(cgLab(c.xq,c.invX))+'）<br>'+
+      '<span class="val">'+esc(fitLabel(f).replace(/ t/g,' x'))+'</span><br>'+
+      '<span class="val">R² = '+sig(f.r2,6)+'</span>';
+  }
+  renderCG();
+}
+
+</script>
+
+<script>
+/* ---- 70_export.js ---- */
+/* =========================================================
+   70_export.js … CSV / Excel(.xlsx) / PNG / PDF / JSON / 課題ファイル
+   外部ライブラリは使わない（ZIP も PDF も自前で組み立てる）
+   ========================================================= */
+
+/* ---------- ダウンロード ---------- */
+function dl(blob, name){
+  var a=document.createElement('a'), u=URL.createObjectURL(blob);
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 1500);
+}
+function fnameBase(){
+  var e=EXP(), s=(e.name||'実験').replace(/[\\\/:*?"<>|\s]+/g,'_');
+  var d=new Date(), p=function(n){return String(n).padStart(2,'0');};
+  return s+'_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes());
+}
+
+/* ---------- CSV ---------- */
+function csvOf(exp){
+  var L=[], i;
+  L.push('# 動画解析ツール  CSV');
+  L.push('# 実験名,'+q(exp.name));
+  L.push('# メモ,'+q(exp.memo));
+  L.push('# 動画,'+q(exp.video.name)+',幅,'+exp.video.w+',高さ,'+exp.video.h);
+  L.push('# fps(表示用),'+nf(exp.video.fps,4));
+  L.push('# スケール[m/px],'+(exp.mPerPx?exp.mPerPx.toPrecision(8):'未設定'));
+  L.push('# 原点[px],'+(exp.origin?nf(exp.origin.x,2)+','+nf(exp.origin.y,2):'未設定'));
+  L.push('# x軸の角度[deg],'+nf(exp.angle*180/Math.PI,3)+',y反転,'+(exp.yflip?'あり':'なし'));
+  L.push('# 時刻の原点[s],'+(exp.t0!==null?nf(exp.t0,5):'動画の先頭'));
+  L.push('# 手ぶれ補正,'+(exp.useDrift?'ON（固定点'+exp.ref.length+'個）':'OFF'));
+  L.push('# 速度・加速度は中央差分（両端は空欄）');
+  var objs=[]; for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
+  if(!objs.length) return L.join('\n')+'\n（データなし）\n';
+  var ss=objs.map(function(o){ return series(exp,o); });
+  var head=['t[s]'];
+  objs.forEach(function(o,k){
+    var n=(o+1)+(exp.objName[o]?'('+exp.objName[o]+')':'');
+    head.push('x'+n+'[m]','y'+n+'[m]','vx'+n+'[m/s]','vy'+n+'[m/s]','ax'+n+'[m/s2]','ay'+n+'[m/s2]');
+  });
+  L.push(head.join(','));
+  var n0=Math.max.apply(null, ss.map(function(s){return s.length;}));
+  for(i=0;i<n0;i++){
+    var row=[], t=null;
+    ss.forEach(function(s){ if(s[i]&&t===null) t=s[i].t; });
+    row.push(t===null?'':t.toFixed(6));
+    ss.forEach(function(s){
+      var p=s[i];
+      if(!p){ row.push('','','','','',''); return; }
+      row.push(fx(p.x),fx(p.y),fx(p.vx),fx(p.vy),fx(p.ax),fx(p.ay));
+    });
+    L.push(row.join(','));
+  }
+  return L.join('\n')+'\n';
+  function fx(v){ return (v===null||v===undefined||!isFinite(v))?'':v.toPrecision(8).replace(/0+$/,'').replace(/\.$/,''); }
+  function q(s){ s=String(s||''); return /[,"\n]/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }
+}
+function exportCsv(){
+  var t=csvOf(EXP());
+  dl(new Blob(['﻿'+t], {type:'text/csv;charset=utf-8'}), fnameBase()+'.csv');
+  toast('CSVを保存しました');
+}
+function copyCsv(){
+  var t=csvOf(EXP());
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ toast('クリップボードにコピーしました'); },
+      function(){ fallbackCopy(t); });
+  } else fallbackCopy(t);
+}
+function fallbackCopy(t){
+  var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast('クリップボードにコピーしました'); }
+  catch(e){ toast('コピーできませんでした'); }
+  ta.remove();
+}
+
+/* =========================================================
+   ZIP（無圧縮）… xlsx を作るのに使う
+   ========================================================= */
+var CRCT=(function(){ var t=new Uint32Array(256),c,n,k;
+  for(n=0;n<256;n++){ c=n; for(k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; } return t; })();
+function crc32(u8){ var c=0xFFFFFFFF; for(var i=0;i<u8.length;i++) c=CRCT[(c^u8[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function utf8(s){ return new TextEncoder().encode(s); }
+function zipStore(files){
+  var parts=[], central=[], off=0;
+  files.forEach(function(f){
+    var name=utf8(f.name), data=(f.data instanceof Uint8Array)? f.data : utf8(f.data);
+    var crc=crc32(data);
+    var lh=new Uint8Array(30+name.length), dv=new DataView(lh.buffer);
+    dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true); dv.setUint16(6,0x0800,true);
+    dv.setUint16(8,0,true); dv.setUint16(10,0,true); dv.setUint16(12,0,true);
+    dv.setUint32(14,crc,true); dv.setUint32(18,data.length,true); dv.setUint32(22,data.length,true);
+    dv.setUint16(26,name.length,true); dv.setUint16(28,0,true);
+    lh.set(name,30);
+    parts.push(lh, data);
+    var ch=new Uint8Array(46+name.length), cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+    cv.setUint16(8,0x0800,true); cv.setUint16(10,0,true); cv.setUint16(12,0,true); cv.setUint16(14,0,true);
+    cv.setUint32(16,crc,true); cv.setUint32(20,data.length,true); cv.setUint32(24,data.length,true);
+    cv.setUint16(28,name.length,true); cv.setUint16(30,0,true); cv.setUint16(32,0,true);
+    cv.setUint16(34,0,true); cv.setUint16(36,0,true); cv.setUint32(38,0,true); cv.setUint32(42,off,true);
+    ch.set(name,46);
+    central.push(ch);
+    off += lh.length + data.length;
+  });
+  var cdSize=central.reduce(function(a,b){return a+b.length;},0);
+  var end=new Uint8Array(22), ev=new DataView(end.buffer);
+  ev.setUint32(0,0x06054b50,true); ev.setUint16(8,files.length,true); ev.setUint16(10,files.length,true);
+  ev.setUint32(12,cdSize,true); ev.setUint32(16,off,true);
+  return new Blob(parts.concat(central).concat([end]), {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+/* =========================================================
+   xlsx（データ＋散布図）
+   ========================================================= */
+function colName(i){ var s=''; i++; while(i>0){ var m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; }
+function xesc(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c];}); }
+function sheetXml(rows, hasDrawing){
+  var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+   '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '+
+   'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+   '<sheetFormatPr defaultRowHeight="15"/><cols><col min="1" max="30" width="13" customWidth="1"/></cols><sheetData>';
+  rows.forEach(function(row,ri){
+    x+='<row r="'+(ri+1)+'">';
+    row.forEach(function(v,ci){
+      if(v===null||v===undefined||v==='') return;
+      var ref=colName(ci)+(ri+1);
+      if(typeof v==='number' && isFinite(v)) x+='<c r="'+ref+'"><v>'+v+'</v></c>';
+      else x+='<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xesc(v)+'</t></is></c>';
+    });
+    x+='</row>';
+  });
+  x+='</sheetData>';
+  if(hasDrawing) x+='<drawing r:id="rId1"/>';
+  x+='</worksheet>';
+  return x;
+}
+function chartXml(ch){
+  var sh=ch.sheet, n=ch.n;
+  var ax1=111111+n*10, ax2=222222+n*10;
+  function ref(col, r0, r1){ return xesc(sh)+'!$'+colName(col)+'$'+r0+':$'+colName(col)+'$'+r1; }
+  var sers='';
+  ch.series.forEach(function(s,i){
+    sers+='<c:ser><c:idx val="'+i+'"/><c:order val="'+i+'"/>'+
+      '<c:tx><c:v>'+xesc(s.name)+'</c:v></c:tx>'+
+      '<c:spPr><a:ln w="19050"><a:noFill/></a:ln></c:spPr>'+
+      '<c:marker><c:symbol val="'+(s.symbol||'circle')+'"/><c:size val="5"/>'+
+        '<c:spPr><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill>'+
+        '<a:ln><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill></a:ln></c:spPr></c:marker>'+
+      '<c:xVal><c:numRef><c:f>'+ref(ch.xcol,ch.r0,ch.r1)+'</c:f></c:numRef></c:xVal>'+
+      '<c:yVal><c:numRef><c:f>'+ref(s.col,ch.r0,ch.r1)+'</c:f></c:numRef></c:yVal>'+
+      '<c:smooth val="0"/></c:ser>';
+  });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+  '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '+
+   'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '+
+   'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+   '<c:chart>'+
+   '<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>'+xesc(ch.title)+'</a:t></a:r></a:p></c:rich></c:tx>'+
+   '<c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>'+
+   '<c:plotArea><c:layout/><c:scatterChart><c:scatterStyle val="lineMarker"/><c:varyColors val="0"/>'+
+   sers+
+   '<c:axId val="'+ax1+'"/><c:axId val="'+ax2+'"/></c:scatterChart>'+
+   '<c:valAx><c:axId val="'+ax1+'"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/>'+
+   '<c:axPos val="b"/><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>'+xesc(ch.xlab)+
+   '</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'+
+   '<c:majorTickMark val="out"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>'+
+   '<c:crossAx val="'+ax2+'"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx>'+
+   '<c:valAx><c:axId val="'+ax2+'"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/>'+
+   '<c:axPos val="l"/><c:majorGridlines/><c:title><c:tx><c:rich><a:bodyPr rot="-5400000" vert="horz"/><a:lstStyle/>'+
+   '<a:p><a:r><a:t>'+xesc(ch.ylab)+'</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'+
+   '<c:majorTickMark val="out"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>'+
+   '<c:crossAx val="'+ax1+'"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx>'+
+   '</c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>'+
+   '<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>';
+}
+function drawingXml(charts){
+  var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+   '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '+
+   'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '+
+   'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+  charts.forEach(function(ch,i){
+    var c0=ch.anchorCol, r0=ch.anchorRow;
+    x+='<xdr:twoCellAnchor><xdr:from><xdr:col>'+c0+'</xdr:col><xdr:colOff>0</xdr:colOff>'+
+       '<xdr:row>'+r0+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>'+
+       '<xdr:to><xdr:col>'+(c0+8)+'</xdr:col><xdr:colOff>0</xdr:colOff>'+
+       '<xdr:row>'+(r0+18)+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'+
+       '<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr>'+
+       '<xdr:cNvPr id="'+(i+2)+'" name="Chart '+(i+1)+'"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr>'+
+       '<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>'+
+       '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">'+
+       '<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId'+(i+1)+'"/>'+
+       '</a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>';
+  });
+  return x+'</xdr:wsDr>';
+}
+function buildXlsx(sheets){
+  var files=[], ct='', wbSheets='', wbRels='', ci=0;
+  files.push({name:'_rels/.rels', data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
+    '</Relationships>'});
+  files.push({name:'xl/styles.xml', data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'+
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'+
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+    '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'+
+    '</styleSheet>'});
+  sheets.forEach(function(sh, si){
+    var sn=si+1;
+    files.push({name:'xl/worksheets/sheet'+sn+'.xml', data:sheetXml(sh.rows, !!(sh.charts&&sh.charts.length))});
+    wbSheets+='<sheet name="'+xesc(sh.name)+'" sheetId="'+sn+'" r:id="rIdS'+sn+'"/>';
+    wbRels+='<Relationship Id="rIdS'+sn+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+sn+'.xml"/>';
+    ct+='<Override PartName="/xl/worksheets/sheet'+sn+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+    if(sh.charts && sh.charts.length){
+      var rels='', dn=sn;
+      sh.charts.forEach(function(ch){
+        ci++;
+        ch.n=ci; ch.sheet=sh.name;
+        files.push({name:'xl/charts/chart'+ci+'.xml', data:chartXml(ch)});
+        ct+='<Override PartName="/xl/charts/chart'+ci+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>';
+        rels+='<Relationship Id="rId'+(sh.charts.indexOf(ch)+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart'+ci+'.xml"/>';
+      });
+      files.push({name:'xl/drawings/drawing'+dn+'.xml', data:drawingXml(sh.charts)});
+      files.push({name:'xl/drawings/_rels/drawing'+dn+'.xml.rels', data:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>'});
+      files.push({name:'xl/worksheets/_rels/sheet'+sn+'.xml.rels', data:
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing'+dn+'.xml"/></Relationships>'});
+      ct+='<Override PartName="/xl/drawings/drawing'+dn+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>';
+    }
+  });
+  files.push({name:'xl/workbook.xml', data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '+
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+    '<sheets>'+wbSheets+'</sheets></workbook>'});
+  files.push({name:'xl/_rels/workbook.xml.rels', data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+wbRels+
+    '<Relationship Id="rIdStyle" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
+    '</Relationships>'});
+  files.unshift({name:'[Content_Types].xml', data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+    '<Default Extension="xml" ContentType="application/xml"/>'+
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+    ct+'</Types>'});
+  return zipStore(files);
+}
+/* 実験1つぶんのシートを組み立てる */
+function sheetForExp(exp, idx){
+  var rows=[], objs=[], i;
+  for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
+  rows.push(['実験名', exp.name, 'メモ', exp.memo||'']);
+  rows.push(['動画', exp.video.name||'', 'fps(表示用)', Number(nf(exp.video.fps,4))]);
+  rows.push(['スケール[m/px]', exp.mPerPx||'', 'x軸[deg]', Number(nf(exp.angle*180/Math.PI,3))]);
+  rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, 'g[m/s2]', exp.g]);
+  rows.push([]);
+  var head=['t[s]'], cols={};
+  objs.forEach(function(o){
+    ['x','y','vx','vy','ax','ay','K','U','K+U'].forEach(function(q){
+      cols[q+o]=head.length; head.push(q+'_'+(o+1));
+    });
+  });
+  rows.push(head);
+  var headRow=rows.length;                 /* 1-based のヘッダ行 */
+  var ss=objs.map(function(o){ return series(exp,o); });
+  var ens=objs.map(function(o,k){ return energy(exp,o,ss[k]); });
+  var n0=Math.max.apply(null, ss.map(function(s){return s.length;}).concat([0]));
+  for(i=0;i<n0;i++){
+    var row=[], t=null;
+    ss.forEach(function(s){ if(s[i]&&t===null) t=s[i].t; });
+    row.push(t===null?'':num(t));
+    ss.forEach(function(s,k){
+      var p=s[i], e=ens[k][i];
+      row.push(p?num(p.x):'', p?num(p.y):'', num(p&&p.vx), num(p&&p.vy), num(p&&p.ax), num(p&&p.ay),
+               e?num(e.K):'', e?num(e.U):'', e?num(e.E):'');
+    });
+    rows.push(row);
+  }
+  var r0=headRow+1, r1=rows.length;
+  var charts=[];
+  if(n0>1){
+    var anchor=head.length+1, chDefs=[
+      {t:'x - t', y:'x [m]', q:'x'}, {t:'y - t', y:'y [m]', q:'y'},
+      {t:'vx, vy - t', y:'v [m/s]', q:'v'}, {t:'ax, ay - t', y:'a [m/s2]', q:'a'},
+      {t:'エネルギー - t', y:'E [J]', q:'e'}
+    ];
+    chDefs.forEach(function(d,di){
+      var sers=[];
+      objs.forEach(function(o,k){
+        var c=['E8443A','1663B5','1C8F4A'][k%3], c2=['F09A94','7FB2E5','86C7A4'][k%3], c3=['8A241D','0F3F73','0E5A2E'][k%3];
+        if(d.q==='x') sers.push({name:'x物体'+(o+1), col:cols['x'+o], color:c, symbol:'circle'});
+        else if(d.q==='y') sers.push({name:'y物体'+(o+1), col:cols['y'+o], color:c, symbol:'circle'});
+        else if(d.q==='v'){ sers.push({name:'vx物体'+(o+1), col:cols['vx'+o], color:c, symbol:'circle'});
+                            sers.push({name:'vy物体'+(o+1), col:cols['vy'+o], color:c2, symbol:'square'}); }
+        else if(d.q==='a'){ sers.push({name:'ax物体'+(o+1), col:cols['ax'+o], color:c, symbol:'circle'});
+                            sers.push({name:'ay物体'+(o+1), col:cols['ay'+o], color:c2, symbol:'square'}); }
+        else { sers.push({name:'K物体'+(o+1), col:cols['K'+o], color:c, symbol:'circle'});
+               sers.push({name:'U物体'+(o+1), col:cols['U'+o], color:c2, symbol:'square'});
+               sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
+      });
+      charts.push({title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y, xcol:0, r0:r0, r1:r1,
+                   series:sers, anchorCol:anchor, anchorRow:di*19});
+    });
+  }
+  return { name:'Data'+(idx+1), rows:rows, charts:charts };
+  function num(v){ if(v===null||v===undefined||!isFinite(v)) return ''; return Math.round(v*1e8)/1e8; }
+}
+function exportXlsx(){
+  var ids = ($('selCmp').value==='over')? selectedExps('expChecks') : [APP.cur];
+  var extra=selectedExps('expChecks');
+  extra.forEach(function(i){ if(ids.indexOf(i)<0) ids.push(i); });
+  ids.sort(function(a,b){return a-b;});
+  var sheets=ids.map(function(i){ return sheetForExp(APP.exps[i], i); });
+  if(!sheets.length){ toast('データがありません'); return; }
+  var blob=buildXlsx(sheets);
+  dl(blob, fnameBase()+'.xlsx');
+  toast('Excelファイルを保存しました');
+}
+
+/* =========================================================
+   レポート（PNG / PDF）
+   ========================================================= */
+function buildReportCanvas(){
+  var W=1240, H=1754, cv=document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  var g=cv.getContext('2d');
+  g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+  var exp=EXP();
+  g.fillStyle='#0f4c8f'; g.font='bold 30px '+FONT;
+  g.fillText('動画解析レポート：'+exp.name, 50, 58);
+  g.fillStyle='#5b6672'; g.font='15px '+FONT;
+  var d=new Date();
+  g.fillText(d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'  '+(exp.memo||''), 50, 86);
+  g.strokeStyle='#1663b5'; g.lineWidth=2; g.beginPath(); g.moveTo(50,98); g.lineTo(W-50,98); g.stroke();
+  g.fillStyle='#1b1f24'; g.font='14px '+FONT;
+  var info=[
+    '動画：'+(exp.video.name||'-')+'（'+exp.video.w+'×'+exp.video.h+'）  fps(表示用) '+nf(exp.video.fps,3),
+    'スケール：'+(exp.mPerPx? sig(exp.mPerPx*1000,4)+' mm/px' : '未設定')+
+      '　x軸：'+nf(exp.angle*180/Math.PI,1)+'°'+(exp.yflip?'（y反転）':'')+
+      '　時刻の原点：'+(exp.t0!==null? nf(exp.t0,3)+' s':'動画の先頭'),
+    '手ぶれ補正：'+(exp.useDrift?'ON':'OFF')+'　記録点：'+exp.objs.map(function(a,i){return '物体'+(i+1)+' '+a.length;}).join(' / ')
+  ];
+  info.forEach(function(s,i){ g.fillText(s, 50, 124+i*22); });
+  /* ストロボ画像 */
+  var y=210;
+  var stro=$('cvStrobe');
+  if(UI.stroReady && stro.width>2){
+    var sw=W-100, sh=sw*stro.height/stro.width;
+    if(sh>360){ sh=360; sw=sh*stro.width/stro.height; }
+    g.drawImage(stro, 50, y, sw, sh);
+    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(50,y,sw,sh);
+    y+=sh+24;
+  }
+  /* グラフ4枚 */
+  var kinds=['x','y','v','a'];
+  var cw=(W-120)/2, chh=cw*0.62;
+  kinds.forEach(function(k,i){
+    var tmp=document.createElement('canvas');
+    drawChart(tmp, {title:KINDLAB[k], xlab:'t [s]', ylab:KINDY[k], series:seriesFor(exp,k,APP.cur,false)},
+              {w:cw, h:chh, legend:true});
+    var X=50+(i%2)*(cw+20), Y=y+Math.floor(i/2)*(chh+16);
+    g.drawImage(tmp, X, Y, cw, chh);
+    g.strokeStyle='#d9dee4'; g.strokeRect(X,Y,cw,chh);
+  });
+  y += chh*2+40;
+  /* フィット結果 */
+  var box=$('fitResult');
+  if(box && box.textContent.trim() && y<H-120){
+    g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT; g.fillText('解析（フィット）', 50, y);
+    g.fillStyle='#1b1f24'; g.font='14px '+FONT;
+    var txt=box.textContent.replace(/\s+/g,' ').trim();
+    y = wrapText(g, txt, 50, y+24, W-100, 20) + 26;
+  }
+  drawReportTable(g, exp, 50, y, W-100, H-70-y);
+  g.fillStyle='#8a95a1'; g.font='12px '+FONT;
+  g.fillText('動画解析ツール（単一HTML・オフライン）', 50, H-30);
+  return cv;
+}
+function wrapText(g, text, x, y, maxW, lh){
+  var words=text.split(''), line='', yy=y;
+  for(var i=0;i<words.length;i++){
+    var test=line+words[i];
+    if(g.measureText(test).width>maxW){ g.fillText(line,x,yy); line=words[i]; yy+=lh; if(yy>1700) return yy; }
+    else line=test;
+  }
+  g.fillText(line,x,yy);
+  return yy;
+}
+/* レポートの下半分に、測定した値の表を入れる（入るぶんだけ） */
+function drawReportTable(g, exp, x, y, w, h){
+  var objs=[], i;
+  for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
+  if(!objs.length || h<80) return;
+  var ss=objs.map(function(o){ return series(exp,o); });
+  var head=['t [s]'];
+  objs.forEach(function(o){ head.push('x'+(o+1)+' [m]','y'+(o+1)+' [m]','vx'+(o+1),'vy'+(o+1)); });
+  var rowH=17, maxRows=Math.floor((h-30)/rowH);
+  var n0=Math.max.apply(null, ss.map(function(s){return s.length;}));
+  var cols=(n0>maxRows && head.length<=5)?2:1;         /* 多いときは2段組 */
+  var perCol=Math.ceil(Math.min(n0, maxRows*cols)/cols);
+  g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT;
+  g.fillText('測定した値'+(n0>maxRows*cols? '（はじめの '+(maxRows*cols)+' 点）':''), x, y);
+  var top=y+14, cw=(w-20)/cols;
+  for(var c=0;c<cols;c++){
+    var X=x+c*(cw+20);
+    g.font='bold 11px '+FONT; g.fillStyle='#39434e';
+    var colW=cw/head.length;
+    head.forEach(function(t,k){ g.fillText(t, X+k*colW, top+12); });
+    g.strokeStyle='#c9d2dc'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(X,top+16); g.lineTo(X+cw,top+16); g.stroke();
+    g.font='11px '+FONT; g.fillStyle='#1b1f24';
+    for(var r=0;r<perCol;r++){
+      var idx=c*perCol+r; if(idx>=n0) break;
+      var yy=top+16+(r+1)*rowH;
+      var vals=[]; var t=null;
+      ss.forEach(function(s){ if(s[idx]&&t===null) t=s[idx].t; });
+      vals.push(t===null?'':nf(t,3));
+      ss.forEach(function(s){ var p=s[idx];
+        vals.push(p?nf(p.x,4):'', p?nf(p.y,4):'', (p&&p.vx!==null)?nf(p.vx,3):'', (p&&p.vy!==null)?nf(p.vy,3):''); });
+      vals.forEach(function(v,k){ g.fillText(v, X+k*colW, yy); });
+    }
+  }
+}
+function exportReportPng(){
+  var cv=buildReportCanvas();
+  cv.toBlob(function(b){ dl(b, fnameBase()+'_report.png'); toast('レポート（PNG）を保存しました'); }, 'image/png');
+}
+/* --- 最小構成の PDF（JPEG を1枚貼る） --- */
+function exportReportPdf(){
+  var cv=buildReportCanvas();
+  var jpg=cv.toDataURL('image/jpeg', 0.88);
+  var bin=atob(jpg.split(',')[1]);
+  var img=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) img[i]=bin.charCodeAt(i);
+  var pw=595.28, ph=841.89;                       /* A4 pt */
+  var s=Math.min(pw/cv.width, ph/cv.height);
+  var w=cv.width*s, h=cv.height*s, ox=(pw-w)/2, oy=(ph-h)/2;
+  var chunks=[], offs=[], pos=0;
+  function push(str){ var u=(typeof str==='string')? utf8(str) : str; chunks.push(u); pos+=u.length; }
+  push('%PDF-1.4\n');
+  function obj(n, body, stream){
+    offs[n]=pos;
+    push(n+' 0 obj\n'+body+'\n');
+    if(stream){ push('stream\n'); push(stream); push('\nendstream\n'); }
+    push('endobj\n');
+  }
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw.toFixed(2)+' '+ph.toFixed(2)+
+        '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+  obj(4,'<< /Type /XObject /Subtype /Image /Width '+cv.width+' /Height '+cv.height+
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>', img);
+  var cont='q\n'+w.toFixed(2)+' 0 0 '+h.toFixed(2)+' '+ox.toFixed(2)+' '+oy.toFixed(2)+' cm\n/Im0 Do\nQ\n';
+  obj(5,'<< /Length '+cont.length+' >>', cont);
+  var xref=pos;
+  var x='xref\n0 6\n0000000000 65535 f \n';
+  for(var n=1;n<=5;n++) x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
+  x+='trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+  push(x);
+  dl(new Blob(chunks,{type:'application/pdf'}), fnameBase()+'_report.pdf');
+  toast('レポート（PDF）を保存しました');
+}
+function exportGraphsPng(){
+  var cards=els('#charts2 .chartcard canvas');
+  if(!cards.length){ toast('グラフがありません'); return; }
+  var cols=Math.min(2,cards.length), rows=Math.ceil(cards.length/cols);
+  var w=640, h=400, cv=document.createElement('canvas');
+  cv.width=w*cols; cv.height=h*rows;
+  var g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+  cards.forEach(function(c,i){ g.drawImage(c, (i%cols)*w, Math.floor(i/cols)*h, w, h); });
+  cv.toBlob(function(b){ dl(b, fnameBase()+'_graphs.png'); toast('グラフを保存しました'); },'image/png');
+}
+function saveStrobePng(){
+  var cv=$('cvStrobe');
+  if(!UI.stroReady){ toast('先にストロボ画像を作ってください'); return; }
+  cv.toBlob(function(b){ dl(b, fnameBase()+'_strobe.png'); toast('ストロボ画像を保存しました'); },'image/png');
+}
+
+/* =========================================================
+   JSON 保存・読み込み
+   ========================================================= */
+function exportJson(){
+  var st=packState(); st.app='motion-analysis'; st.saved=new Date().toISOString();
+  dl(new Blob([JSON.stringify(st,null,1)],{type:'application/json'}), fnameBase()+'.json');
+  toast('JSONで保存しました（動画は含みません）');
+}
+function importJson(file){
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var st=JSON.parse(fr.result);
+      if(!applyState(st)) throw new Error('形式が違います');
+      refreshExpUI(); afterChange(); toast('読み込みました（動画は読み直してください）');
+    }catch(e){ alert('読み込めませんでした：'+e.message); }
+  };
+  fr.readAsText(file);
+}
+
+/* =========================================================
+   課題ファイルの書き出し（先生用）
+   ========================================================= */
+function openKadaiDialog(){
+  var box=$('kadaiBox');
+  box.innerHTML=
+   '<button class="btn sm cls" id="kdClose">閉じる</button>'+
+   '<h2>課題ファイルを書き出す（先生用）</h2>'+
+   '<p class="mini">いま読み込んでいる動画と設問を1つの HTML に埋め込みます。生徒はそのファイルを開くだけで、動画つきで始められます。</p>'+
+   '<label class="f" style="display:block;margin:.6em 0">課題の題名<br><input type="text" id="kdTitle" style="width:100%" value="課題：運動の解析"></label>'+
+   '<label class="f" style="display:block;margin:.6em 0">設問（1行に1問）<br>'+
+   '<textarea id="kdQ" rows="6" style="width:100%">1. 台車の x–t グラフをかき、どんな運動か説明しなさい。\n2. v–t グラフの傾きは何を表しますか。\n3. 直線でフィットしたときの係数 a の意味を答えなさい。</textarea></label>'+
+   '<div class="row"><label class="cb"><input type="checkbox" id="kdVideo" checked>動画を埋め込む'+
+   '（'+(KADAI_SRC.size? Math.round(KADAI_SRC.size/1048576*10)/10+' MB':'未読込')+'）</label>'+
+   '<label class="cb"><input type="checkbox" id="kdCal" checked>原点・スケール・軸の設定も入れる</label></div>'+
+   '<div class="note" style="margin-top:8px">動画を埋め込むと、ファイルは動画の約1.4倍の大きさになります。'+
+   '10MB を超えるときは、動画を短く切るか画質を下げてから読み込んでください。</div>'+
+   '<div class="row" style="margin-top:10px"><button class="btn pri" id="kdMake">この内容で書き出す</button></div>'+
+   '<h3>使い方（配布のしかた）</h3>'+
+   '<ol class="steps" style="font-size:.88rem">'+
+   '<li>先生の端末でこのツールを開き、課題にしたい<b>動画を読み込む</b>（必要なら原点・スケール・軸も決めておく）</li>'+
+   '<li>この画面で設問を書いて「書き出す」。<b>kadai_○○.html</b> ができます</li>'+
+   '<li>そのファイルを Classroom や共有フォルダで配る。生徒はダブルクリックで開くだけ（ネット不要）</li>'+
+   '<li>生徒は解析して「JSON保存」→ 提出。先生は「JSON読込」で開いて確認できます</li>'+
+   '</ol>';
+  $('kadaiModal').classList.remove('hide');
+  $('kdClose').onclick=function(){ $('kadaiModal').classList.add('hide'); };
+  $('kdMake').onclick=makeKadai;
+}
+function makeKadai(){
+  var title=$('kdTitle').value||'課題', qs=$('kdQ').value.split('\n').filter(function(s){return s.trim();});
+  var withVideo=$('kdVideo').checked, withCal=$('kdCal').checked;
+  if(withVideo && !KADAI_SRC.data){ alert('動画が読み込まれていません（またはサンプル動画は埋め込めません）。'); return; }
+  var exp=EXP();
+  var K={ title:title, questions:qs,
+          video: withVideo? {name:exp.video.name, data:KADAI_SRC.data, type:KADAI_SRC.type} : null,
+          cal: withCal? { origin:exp.origin, angle:exp.angle, yflip:exp.yflip, mPerPx:exp.mPerPx,
+                          scaleRef:exp.scaleRef, scaleLen:exp.scaleLen, rangeA:exp.rangeA, rangeB:exp.rangeB } : null };
+  var js='window.KADAI='+JSON.stringify(K)+';';
+  var html='<!DOCTYPE html>'+ORIGINAL_HTML.replace('</head>',
+      '<script id="kadaiData">'+js.replace(/<\//g,'<\\/')+'<'+'/script></head>');
+  var name='kadai_'+(title.replace(/[\\\/:*?"<>|\s]+/g,'_'))+'.html';
+  dl(new Blob([html],{type:'text/html;charset=utf-8'}), name);
+  $('kadaiModal').classList.add('hide');
+  toast('課題ファイルを書き出しました（'+name+'）');
+}
+
+</script>
+
+<script>
+/* ---- 80_ui.js ---- */
+/* =========================================================
+   80_ui.js … 画面まわりの配線
+   ========================================================= */
+var KADAI_SRC = { data:null, type:'', size:0 };
+var ORIGINAL_HTML = '';
+var SAMPLES = [ {f:'samples/uniform.mp4', n:'等速直線運動'}, {f:'samples/circular.mp4', n:'円運動（だんだん止まる）'} ];
+
+function toast(msg){
+  var t=$('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('on'); }, 1900);
+}
+function setMode(m){
+  UI.mode=m; UI.pend=null;
+  var lab={record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
+           scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
+           color:'マーカーの色の所をクリック'}[m]||'';
+  $('modeInfo').textContent=lab;
+  $('modeInfo').style.background = (m==='record')?'#eef2f7':'#fff3d6';
+  if(typeof APP.step==='number' && APP.step<4 && m==='record') $('modeInfo').textContent='まず '+stepName(APP.step)+' へ';
+  if(typeof APP.step==='number' && APP.step>0) updateTodo();
+  ['btnOrigin','btnScale','btnAxis','btnRefPt','btnPickColor'].forEach(function(id){ $(id).classList.remove('on'); });
+  if(m==='origin') $('btnOrigin').classList.add('on');
+  if(m==='scale1'||m==='scale2') $('btnScale').classList.add('on');
+  if(m==='axis') $('btnAxis').classList.add('on');
+  if(m==='ref') $('btnRefPt').classList.add('on');
+  if(m==='color') $('btnPickColor').classList.add('on');
+  drawOverlay();
+}
+/* 何か変わったら呼ぶ：表示を更新して保存 */
+function afterChange(){
+  var exp=EXP();
+  exp.m1=parseFloat($('inM1').value)||0.1;
+  exp.m2=parseFloat($('inM2').value)||0.1;
+  exp.g=parseFloat($('inG').value)||9.8;
+  updateCalInfo(); updateTimeLine(); updateTable();
+  var n=exp.objs.reduce(function(a,b){return a+b.length;},0);
+  $('expInfo').textContent='点 '+n+'（'+exp.objs.map(function(a){return a.length;}).join('/')+'）';
+  $('refInfo').textContent='固定点 '+exp.ref.length;
+  drawOverlay();
+  updateSteps();
+  saveLocal();
+}
+function updateCalInfo(){
+  var exp=EXP();
+  $('calInfo').innerHTML='原点：'+(exp.origin? '<b>設定ずみ</b>':'<span class="ng">未設定</span>')+
+    '／スケール：'+(exp.mPerPx? '<b>'+sig(exp.mPerPx*1000,4)+' mm/px</b>':'<span class="ng">未設定</span>')+
+    '／x軸：'+nf(exp.angle*180/Math.PI,1)+'°';
+  updatePrec();
+  $('rangeInfo').innerHTML='解析する時間範囲：'+
+    ((exp.t0===null&&exp.rangeB===null)?'動画ぜんぶ':
+     ('<b>'+(exp.t0!==null? nf(exp.t0,3)+' s（t=0）':'先頭')+' 〜 '+
+      (exp.rangeB!==null? nf(exp.rangeB,3)+' s':'最後')+'</b>'));
+  drawSeekMarks();
+}
+function updatePrec(){
+  var exp=EXP(), cv=$('cvView');
+  if(!exp.mPerPx || !VID.ready){ $('precInfo').textContent='クリック精度：スケール未設定'; return; }
+  var r=cv.getBoundingClientRect();
+  var pxPerCss = r.width? (VID.w/ r.width)/VIEW.zoom : 1;
+  var e3 = 3*pxPerCss*exp.mPerPx;      /* 指のずれ3画面px 相当 */
+  var e1 = 1*exp.mPerPx;
+  $('precInfo').innerHTML='クリック精度：<b>±3画面px ＝ ±'+fmtLen(e3)+'</b>'+
+    '<br>（動画の1pxは '+fmtLen(e1)+'。拡大すると精度は上がります）';
+}
+function updateTimeLine(){
+  var exp=EXP();
+  var n=VID.frames.length;
+  var fr=(n? ((VID.idx+1)+'/'+n) : (VID.dur? Math.round(VID.cur*(VID.fps||30))+1 : '-')+'/-');
+  $('frInfo').textContent=fr; $('frInfo2').textContent=fr;
+  var t=VID.cur-(exp.t0||0);
+  $('tInfo').textContent=nf(t,4); $('tInfo2').textContent=nf(t,4);
+  if(VID.dur>0 && !$('seek').matches(':active')) $('seek').value=Math.round(VID.cur/VID.dur*1000);
+  updatePrec();
+}
+function updateTable(){
+  var exp=EXP(), objs=[], i;
+  for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
+  var t=$('dataTbl');
+  if(!objs.length){ t.innerHTML='<tr><th>データなし</th></tr>'; return; }
+  var ss=objs.map(function(o){ return series(exp,o); });
+  var h='<tr><th>t [s]</th>';
+  objs.forEach(function(o){ h+='<th>x'+(o+1)+' [m]</th><th>y'+(o+1)+' [m]</th><th>vx'+(o+1)+'</th><th>vy'+(o+1)+'</th>'; });
+  h+='</tr>';
+  var n0=Math.max.apply(null, ss.map(function(s){return s.length;}));
+  var half=0.5/(VID.fps||30), curRow=-1;
+  for(i=0;i<n0;i++){
+    var tt=null, raw=null;
+    ss.forEach(function(s){ if(s[i]&&tt===null){ tt=s[i].t; raw=s[i].raw; } });
+    var isCur=(raw!==null && Math.abs(raw-VID.cur)<half);
+    if(isCur) curRow=i;
+    h+='<tr'+(isCur?' class="cur"':'')+'><td>'+(tt===null?'':nf(tt,4))+'</td>';
+    ss.forEach(function(s){ var p=s[i];
+      h+='<td>'+(p?nf(p.x,4):'')+'</td><td>'+(p?nf(p.y,4):'')+'</td>'+
+         '<td>'+(p&&p.vx!==null?nf(p.vx,3):'')+'</td><td>'+(p&&p.vy!==null?nf(p.vy,3):'')+'</td>';
+    });
+    h+='</tr>';
+  }
+  t.innerHTML=h;
+  if(curRow>=0){                       /* いま記録したところが見えるようにする */
+    var tr=t.rows[curRow+1], wrap=t.parentNode;
+    if(tr && wrap && wrap.scrollHeight>wrap.clientHeight){
+      var top=tr.offsetTop-wrap.clientHeight/2+tr.offsetHeight;
+      wrap.scrollTop=Math.max(0, top);
+    }
+  }
+}
+
+/* ---------- 実験の管理 ---------- */
+function refreshExpUI(){
+  var s=$('expSel'); s.innerHTML='';
+  APP.exps.forEach(function(e,i){
+    var o=document.createElement('option'); o.value=i; o.textContent=(i+1)+'. '+e.name; s.appendChild(o);
+  });
+  s.value=APP.cur;
+  $('expName').value=EXP().name; $('expMemo').value=EXP().memo||'';
+  $('inM1').value=EXP().m1; $('inM2').value=EXP().m2; $('inG').value=EXP().g;
+  ['expChecks','expChecks3'].forEach(function(id){
+    var host=$(id); host.innerHTML='';
+    APP.exps.forEach(function(e,i){
+      var l=document.createElement('label');
+      l.innerHTML='<input type="checkbox" data-i="'+i+'"'+(i===APP.cur?' checked':'')+'>'+
+        '<i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+EXPCOL[i%EXPCOL.length]+'"></i>'+
+        esc(e.name);
+      l.querySelector('input').addEventListener('change', function(){
+        if(id==='expChecks') renderMode2(); else renderMode3(false);
+      });
+      host.appendChild(l);
+    });
+  });
+  if($('cgExpA')) refreshCGExps();
+  var e=EXP();
+  $('selObj').value=String(UI.obj+1);
+  $('inObjName').value=e.objName[UI.obj]||'';
+  $('cbDrift').checked=!!e.useDrift;
+  $('cbYFlip').checked=!!e.yflip;
+  $('cbXFlip').checked=!!e.xflip;
+  $('selAxisDisp').value=APP.axisDisp;
+  if(e.scaleLen>0){                       /* スケール長さの入力欄も実験に合わせる */
+    if(e.scaleLen>=1){ $('selScaleUnit').value='1'; $('inScaleLen').value=+(e.scaleLen).toFixed(4); }
+    else if(e.scaleLen>=0.01){ $('selScaleUnit').value='0.01'; $('inScaleLen').value=+(e.scaleLen*100).toFixed(3); }
+    else { $('selScaleUnit').value='0.001'; $('inScaleLen').value=+(e.scaleLen*1000).toFixed(2); }
+  }
+}
+/* ===== 手順（1→2→3→4）の進み具合 ===== */
+function currentStep(){
+  var e=EXP();
+  if(!VID.ready) return 1;
+  if(!((e.t0!==null && e.rangeB!==null) || e.step2ok)) return 2;
+  if(!(e.origin && e.mPerPx)) return 3;
+  return 4;
+}
+function stepName(n){ return ['','1. 動画','2. 解析する時間範囲','3. 空間の原点・スケール・軸','4. トラッキング'][n]||''; }
+function updateSteps(){
+  var st=currentStep(), changed=(APP.step!==st);
+  var ed=(APP.editStep && APP.editStep<st)? APP.editStep : 0;   /* 「もう一度」で開いているカード */
+  var edChanged=(APP.lastEdit!==ed); APP.lastEdit=ed;
+  APP.step=st;
+  if(changed && st>=3) rewindToRangeStart();          /* 3・4へ進んだら解析範囲の先頭へ */
+  if(changed && st>=4) setStrobeOverlay(false);       /* 4に入ったら重ねた写真は外す */
+  els('#side1 details[data-step]').forEach(function(d){
+    var n=parseInt(d.dataset.step);
+    d.classList.toggle('step-active', n===st || n===ed);
+    d.classList.toggle('step-done', n<st && n!==ed);
+    d.classList.toggle('step-lock', n>st);
+    if(changed||edChanged){
+      if(n===st || n===ed) d.open=true;
+      else if(n>st) d.open=false;
+      else if(n!==4) d.open=false;                   /* 4 はたたまない */
+    }
+  });
+  if(changed||edChanged){
+    var howto=el('#side1 details[data-key="howto"]');
+    if(howto && st>=2) howto.open=false;        /* 動き出したら操作説明はたたむ */
+    var act=el('#side1 details.step-active');
+    if(act) setTimeout(function(){
+      var r=act.getBoundingClientRect();
+      if(r.top<60 || r.bottom>window.innerHeight) act.scrollIntoView({block:'nearest', behavior:'smooth'});
+    }, 60);
+  }
+  els('#side1 details[data-lock]').forEach(function(d){
+    var need=parseInt(d.dataset.lock), lock=(st<need);
+    d.classList.toggle('step-lock', lock);
+    if(changed){ if(lock) d.open=false; else if(d.id!=='autoCard') d.open=true; }
+  });
+  $('modeInfo').textContent = (st<4 && UI.mode==='record')? ('まず '+stepName(st)+' へ') :
+    ({record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
+      scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
+      color:'マーカーの色の所をクリック'}[UI.mode]||'');
+  updateBigPlay();
+  drawSeekMarks();
+  updateTodo();
+  applyRangeLimit();
+  updateGuide();
+}
+/* 解析範囲の先頭へ巻き戻す */
+function rewindToRangeStart(){
+  if(!VID.ready) return;
+  var a=rangeStart(EXP());
+  setTimeout(function(){ vidSeek(a).then(function(){ afterSeek(); }); }, 30);
+}
+/* いま押してほしいボタンを光らせる（2 の中の順番も案内する） */
+function updateGuide(){
+  var e=EXP(), st=(APP.editStep&&APP.editStep<APP.step)?APP.editStep:APP.step;
+  els('.btn.glow').forEach(function(b){ b.classList.remove('glow'); });
+  els('#tabs button.glow').forEach(function(b){ b.classList.remove('glow'); });
+  var show2=(st===2);
+  $('vidStep2').classList.toggle('hide', !show2);
+  if(show2){
+    if(!APP.played){ ['btnPlay','btnPlay2'].forEach(function(id){ $(id).classList.add('glow'); }); }
+    else if(e.t0===null){ ['btnTimeZero','btnTimeZero2'].forEach(function(id){ $(id).classList.add('glow'); }); }
+    else if(e.rangeB===null){ ['btnRangeB','btnRangeB2'].forEach(function(id){ $(id).classList.add('glow'); }); }
+  }
+  if(st===3){
+    if(!e.origin) $('btnOrigin').classList.add('glow');
+    else if(UI.mode==='axis') $('btnAxis').classList.add('glow');
+    else if(!e.mPerPx) $('btnScale').classList.add('glow');
+  }
+  /* トラッキングが範囲の終わりまで進んだら ②グラフ を光らせる */
+  if(APP.step>=4 && trackingDone()){
+    el('#tabs button[data-mode="2"]').classList.add('glow');
+  }
+  $('labYFlip').classList.toggle('hide', APP.axisDisp!=='xy');
+}
+function trackingDone(){
+  var e=EXP();
+  if(e.rangeB===null) return false;
+  var last=null;
+  for(var i=0;i<NOBJ;i++) e.objs[i].forEach(function(p){ if(last===null||p.t>last) last=p.t; });
+  if(last===null) return false;
+  return last >= e.rangeB - 1.2/(VID.fps||30);
+}
+/* 2 が決まったら、再生もコマ送りも解析する範囲の中だけにする */
+function applyRangeLimit(){
+  var e=EXP();
+  if(APP.step>=3 && VID.dur>0 && (e.t0!==null || e.rangeB!==null)){
+    VID.limit={ a:(e.t0!==null? e.t0:0), b:(e.rangeB!==null? e.rangeB:VID.dur) };
+  } else VID.limit=null;
+}
+/* いま何をすべきか（カードの赤文字＋動画エリアの吹き出し） */
+function todoText(){
+  var e=EXP(), st=APP.step;
+  if(st===1) return '動画ファイルを選ぶか、この画面に動画を<b>ドラッグ＆ドロップ</b>してください。';
+  if(st===2){
+    if(e.t0===null) return '再生して「運動が始まる時刻」を探し、解析をはじめたいコマで <b>［時刻の原点（t = 0）］</b> を押してください。';
+    if(e.rangeB===null) return 'つぎに、おわりにしたいコマまで進めて <b>［この時刻まで解析］</b> を押してください。';
+    return '';
+  }
+  if(st===3){
+    if(!e.origin) return '<b>［原点を設定］</b> を押して、原点にしたい所をクリックしてください。';
+    if(UI.mode==='axis') return 'そのまま <b>x軸の向き</b>へドラッグしてください（水平でよければ、そのままクリック）。';
+    if(!e.mPerPx) return 'つぎに <b>［スケールを設定］</b>：長さのわかる物の両はしを 2 か所クリックします。';
+    return '';
+  }
+  if(st===4){
+    if(UI.mode==='ref') return '動かない目印（机の角など）をクリックしてください。';
+    if(UI.mode==='color') return '追いかけたいマーカーの<b>色の所</b>をクリックしてください。';
+    var n=EXP().objs.reduce(function(a,b){return a+b.length;},0);
+    if(!n) return '<b>物体番号</b>をえらび、動画の中の物体を<b>クリック（タップ）</b>して位置を記録してください。';
+    return 'コマを進めながら、同じ物体をクリックしていきます。おわったら <b>② グラフ</b> へ。';
+  }
+  return '';
+}
+function updateTodo(){
+  var txt=todoText();
+  els('#side1 details[data-step]').forEach(function(d){
+    var t=d.querySelector('.todo'); if(!t) return;
+    if(d.classList.contains('step-active') && txt){ t.innerHTML=txt; t.classList.remove('hide'); }
+    else t.classList.add('hide');
+  });
+  setVideoHint(txt);
+}
+function setVideoHint(html){
+  var h=$('vhint');
+  if(!html){ h.classList.add('hide'); h.__t=''; return; }
+  if(h.__t!==html){
+    h.__t=html; h.__closed=false; $('vhintTxt').innerHTML=html;
+    clearTimeout(h.__to);
+    h.__to=setTimeout(function(){ h.classList.add('hide'); }, 9000);   /* しばらくすると自動で消える */
+  }
+  h.classList.toggle('hide', !!h.__closed);
+}
+/* 済んだカードの「もう一度」ボタン */
+function addAgainButtons(){
+  els('#side1 details[data-step]').forEach(function(d){
+    var n=parseInt(d.dataset.step);
+    if(n>=4) return;
+    var b=document.createElement('button');
+    b.className='btn sm again'; b.textContent='もう一度'; b.type='button';
+    b.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); redoStep(n); });
+    d.querySelector('summary').appendChild(b);
+  });
+}
+/* 「もう一度」＝そのカードを開いて、また触れるようにするだけ（決めた内容は消さない） */
+function redoStep(n){
+  APP.editStep=n;
+  if(n===2) VID.limit=null;                 /* 時間範囲を見直すあいだは範囲外も見られる */
+  if(n===4) setStrobeOverlay(false);
+  updateSteps();
+  var d=el('#side1 details[data-step="'+n+'"]');
+  if(d){ d.open=true; setTimeout(function(){ d.scrollIntoView({block:'nearest',behavior:'smooth'}); },60); }
+  toast(stepName(n)+' を直せます（決めた内容はそのままです）');
+}
+function endEdit(){
+  if(!APP.editStep) return;
+  APP.editStep=0; applyRangeLimit(); updateSteps();
+}
+/* まだ触れないカードを押したときの案内 */
+function bindEditEnd(){
+  els('#side1 details[data-step]').forEach(function(d){
+    d.addEventListener('toggle', function(){
+      if(!d.open && APP.editStep===parseInt(d.dataset.step)) endEdit();
+    });
+  });
+}
+function bindLockedSummaries(){
+  els('#side1 details>summary').forEach(function(sm){
+    sm.addEventListener('click', function(e){
+      var d=sm.parentNode;
+      if(d.classList.contains('step-lock')){
+        e.preventDefault();
+        var need=d.dataset.step? parseInt(d.dataset.step)-1 : parseInt(d.dataset.lock)-1;
+        toast('さきに「'+stepName(APP.step)+'」を終わらせてください');
+      }
+    });
+  });
+}
+/* 動画の真ん中の再生ボタン */
+function updateBigPlay(){
+  var b=$('bigPlay');
+  var show = VID.ready && VID.el.paused && APP.step<=2;
+  b.classList.toggle('hide', !show);
+}
+/* シークバーの縦棒（t=0 と おわり） */
+function drawSeekMarks(){
+  var e=EXP(), sk=$('seek'), r=sk.getBoundingClientRect();
+  var w=r.width||300;
+  if(!w || sk.offsetParent===null) return;      /* 見えていないときは触らない */
+  function place(el, t){
+    if(t===null||t===undefined||!VID.dur){ el.classList.add('hide'); return; }
+    el.classList.remove('hide');
+    el.style.left = Math.max(0, Math.min(w, 8 + (t/VID.dur)*(w-16))) + 'px';
+  }
+  place($('mkT0'), e.t0);
+  place($('mkTB'), e.rangeB);
+  var mk=$('rangemark');
+  if(VID.dur>0 && (e.t0!==null||e.rangeB!==null)){
+    var a=(e.t0||0)/VID.dur, b=(e.rangeB===null?VID.dur:e.rangeB)/VID.dur;
+    mk.classList.remove('hide');
+    mk.style.left=(8+a*(w-16))+'px';
+    mk.style.width=Math.max(2, Math.min(w-8-a*(w-16), (b-a)*(w-16)))+'px';
+  } else mk.classList.add('hide');
+}
+function bindSeekMarks(){
+  [['mkT0','t0'],['mkTB','rangeB']].forEach(function(pair){
+    var el=$(pair[0]), key=pair[1];
+    el.addEventListener('pointerdown', function(e){
+      e.preventDefault(); e.stopPropagation();
+      el.setPointerCapture(e.pointerId);
+      el.__drag=true;
+    });
+    el.addEventListener('pointermove', function(e){
+      if(!el.__drag||!VID.dur) return;
+      var sk=$('seek'), r=sk.getBoundingClientRect();
+      var f=Math.max(0,Math.min(1,(e.clientX-r.left-8)/(r.width-16)));
+      EXP()[key]=f*VID.dur;
+      updateCalInfo();
+    });
+    el.addEventListener('pointerup', function(e){
+      if(!el.__drag) return;
+      el.__drag=false;
+      var e2=EXP(), t=e2[key], one=1/(VID.fps||30);
+      /* 縦棒は「範囲そのもの」を決める道具なので、範囲の外へも動かせる。順番だけそろえる */
+      if(key==='t0' && e2.rangeB!==null) t=Math.min(t, e2.rangeB-one);
+      if(key==='rangeB' && e2.t0!==null) t=Math.max(t, e2.t0+one);
+      var keep=VID.limit; VID.limit=null;
+      e2[key]=t;
+      vidSeek(t).then(function(){
+        EXP()[key]=VID.cur; VID.limit=keep;
+        afterSeek(); afterChange(); updateSteps();
+      });
+    });
+  });
+}
+/* 狭い画面では、使用頻度の低いカードをたたんでおく */
+function applyNarrowLayout(){
+  if(window.innerWidth>=860) return;
+  els('#side1 details[data-key]').forEach(function(d){
+    if(['howto','range','strobe','out'].indexOf(d.dataset.key)>=0) d.open=false;
+  });
+}
+function clearStrobe(){
+  UI.stroReady=false;
+  $('cvStrobe').classList.add('hide');
+  $('stroInfo').textContent='まだ作っていません';
+}
+function switchExp(i){
+  APP.cur=i; UI.undo=[]; UI.lastPt=null; clearStrobe();
+  refreshExpUI(); afterChange(); render();
+}
+
+/* ---------- 動画の読み込み ---------- */
+function loadVideoFile(file){
+  $('vidErr').classList.add('hide');
+  var url=URL.createObjectURL(file);
+  vidLoad(url, file.name).then(function(){
+    onVideoReady(file.name);
+    if(file.size < 30*1024*1024){
+      var fr=new FileReader();
+      fr.onload=function(){ KADAI_SRC={data:fr.result, type:file.type, size:file.size}; };
+      fr.readAsDataURL(file);
+    } else KADAI_SRC={data:null,type:'',size:file.size};
+  }).catch(function(err){ showVidError(err, file.name); });
+}
+function loadVideoUrl(url, name){
+  $('vidErr').classList.add('hide');
+  vidLoad(url, name).then(function(){
+    onVideoReady(name);
+    if(location.protocol==='http:'||location.protocol==='https:'){
+      fetch(url).then(function(r){return r.blob();}).then(function(b){
+        if(b.size>30*1024*1024) return;
+        var fr=new FileReader(); fr.onload=function(){ KADAI_SRC={data:fr.result,type:b.type,size:b.size}; };
+        fr.readAsDataURL(b);
+      }).catch(function(){});
+    }
+  }).catch(function(err){ showVidError(err, name); });
+}
+function showVidError(err, name){
+  $('vidErr').innerHTML=vidErrMsg(err, name);
+  $('vidErr').classList.remove('hide');
+  $('vinfo').textContent='読み込みに失敗しました：'+name;
+  $('vph').classList.remove('hide');
+  $('vph').innerHTML='<b style="color:#ff9a90">この動画は、この端末では開けませんでした。</b><br>'+
+    '「1. 動画」の赤い案内に、どうすればよいかを書いています。';
+  $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
+  var c=document.querySelector('details[data-key="video"]'); if(c) c.open=true;
+  try{ $('vidErr').scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
+}
+function onVideoReady(name){
+  var exp=EXP();
+  clearStrobe();
+  exp.video={name:name, w:VID.w, h:VID.h, dur:VID.dur, fps:VID.fps};
+  $('vph').classList.add('hide');
+  $('cvView').classList.remove('hide'); $('cvOv').classList.remove('hide');
+  $('vinfo').innerHTML='<b>'+esc(name)+'</b>　'+VID.w+'×'+VID.h+' px　'+nf(VID.dur,2)+' 秒';
+  $('ftState').textContent='未作成';
+  VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0;
+  vidSeek(0).then(function(){
+    render(); afterChange(); updateSteps(); updateBigPlay();
+    if(VID.hasRVFC && VID.dur>0 && VID.dur<=40) buildTableUI();
+    else if(VID.hasRVFC) $('ftState').innerHTML='<b>長い動画です</b>（ボタンで作成）';
+    else if(!VID.hasRVFC) $('ftState').innerHTML='<span class="ng">この端末では作れません</span>';
+  });
+}
+function buildTableUI(){
+  if(!VID.hasRVFC){ toast('この端末（ブラウザ）ではコマ表を作れません。fps から計算します'); return; }
+  if(VID.building){ VID.cancelBuild=true; toast('コマ表づくりを止めました'); return; }
+  $('btnFrameTable').textContent='中止する';
+  var p=$('ftProg'); p.classList.remove('hide');
+  $('ftState').textContent='作成中…';
+  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; })
+   .then(function(okk){
+     p.classList.add('hide');
+     $('btnFrameTable').textContent='コマ表を作る（実測時刻）';
+     if(okk){
+       var st=fpsFromTable();
+       $('ftState').innerHTML='<b>'+VID.frames.length+' コマ</b>';
+       $('inFps').value=nf(VID.fps,3);
+       $('fpsSrc').textContent='（コマ表から実測'+(st&&st.vfr?'／コマ間隔にばらつきあり':'')+'）';
+       EXP().video.fps=VID.fps;
+       if(st&&st.vfr) toast('コマの間隔が一定ではありません（可変フレームレート）。実測時刻を使います');
+     } else {
+       $('ftState').innerHTML='<span class="ng">作れませんでした</span>';
+     }
+     render(); afterChange();
+   });
+}
+
+/* ---------- カメラ ---------- */
+function cameraSupported(){
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder && window.isSecureContext);
+}
+function openCamera(){
+  var stream=null, rec=null, chunks=[];
+  var m=document.createElement('div'); m.className='modal';
+  m.innerHTML='<div class="box" style="max-width:640px">'+
+    '<h2>カメラで撮影</h2>'+
+    '<video id="camPrev" playsinline muted autoplay style="width:100%;background:#000;border-radius:8px"></video>'+
+    '<div class="row" style="margin-top:8px">'+
+    '<button class="btn pri" id="camRec">● 録画開始</button>'+
+    '<button class="btn" id="camStop" disabled>■ 停止して使う</button>'+
+    '<button class="btn" id="camCancel">やめる</button>'+
+    '<span class="tag" id="camT">0.0 秒</span></div>'+
+    '<p class="mini">できるだけ動かないように置いて撮ってください。明るい所ほどブレません。</p></div>';
+  document.body.appendChild(m);
+  var t0=0, timer=null;
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:60}}, audio:false})
+    .then(function(s){ stream=s; el('#camPrev',m).srcObject=s; })
+    .catch(function(){ alert('カメラを使えませんでした。端末のカメラアプリで撮ってから読み込んでください。'); close(); });
+  function close(){ if(timer)clearInterval(timer); if(stream) stream.getTracks().forEach(function(t){t.stop();}); m.remove(); }
+  el('#camCancel',m).onclick=close;
+  el('#camRec',m).onclick=function(){
+    var types=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    var mt=types.filter(function(t){ return window.MediaRecorder.isTypeSupported(t); })[0];
+    rec=new MediaRecorder(stream, mt?{mimeType:mt, videoBitsPerSecond:6000000}:undefined);
+    chunks=[];
+    rec.ondataavailable=function(e){ if(e.data.size) chunks.push(e.data); };
+    rec.onstop=function(){
+      var b=new Blob(chunks,{type:rec.mimeType||'video/webm'});
+      var ext=(b.type.indexOf('mp4')>=0)?'mp4':'webm';
+      var f=new File([b],'撮影_'+Date.now()+'.'+ext,{type:b.type});
+      close(); loadVideoFile(f);
+    };
+    rec.start(); t0=Date.now();
+    el('#camRec',m).disabled=true; el('#camStop',m).disabled=false;
+    timer=setInterval(function(){ el('#camT',m).textContent=((Date.now()-t0)/1000).toFixed(1)+' 秒'; },100);
+  };
+  el('#camStop',m).onclick=function(){ if(rec&&rec.state!=='inactive') rec.stop(); };
+}
+
+/* ---------- ドラッグ＆ドロップ ---------- */
+function bindDrop(){
+  var n=0;
+  window.addEventListener('dragenter', function(e){ e.preventDefault(); n++; document.body.classList.add('dropping'); });
+  window.addEventListener('dragover', function(e){ e.preventDefault(); });
+  window.addEventListener('dragleave', function(e){ n--; if(n<=0){ n=0; document.body.classList.remove('dropping'); } });
+  window.addEventListener('drop', function(e){
+    e.preventDefault(); n=0; document.body.classList.remove('dropping');
+    var f=e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if(!f) return;
+    if(/\.json$/i.test(f.name)){ importJson(f); return; }
+    if(f.type.indexOf('video')<0 && !/\.(mp4|mov|webm|m4v|avi|mkv)$/i.test(f.name)){
+      toast('動画ファイル（mp4 など）を入れてください'); return;
+    }
+    loadVideoFile(f);
+  });
+}
+
+/* ---------- 再生 ---------- */
+var playTimer=null;
+function togglePlay(){
+  var v=VID.el;
+  if(!VID.ready) return;
+  if(!v.paused){ stopPlay(); return; }
+  /* 最後まで見たあとに押したときは、はじめに戻してから再生する */
+  var endT = VID.limit? VID.limit.b : VID.dur;
+  if(v.ended || (VID.dur>0 && v.currentTime >= endT-0.06)){
+    vidSeek(VID.limit? VID.limit.a : 0).then(function(){ afterSeek(); startPlay(); });
+    return;
+  }
+  startPlay();
+}
+function startPlay(){
+  var v=VID.el;
+  APP.played=true;
+  if(true){
+    v.play(); $('btnPlay').textContent='⏸ 停止'; $('btnPlay2').textContent='⏸ 停止';
+    updateBigPlay();
+    playTimer=setInterval(function(){
+      if(v.paused){ stopPlay(); return; }
+      if(VID.limit && v.currentTime >= VID.limit.b - 0.01){ stopPlay(); return; }
+      VID.cur=v.currentTime; VID.idx=frameIndexAt(VID.cur);
+      render(); updateTimeLine();
+    }, 60);
+  }
+}
+function stopPlay(){
+  var v=VID.el; v.pause(); $('btnPlay').textContent='▶ 再生'; $('btnPlay2').textContent='▶ 再生';
+  updateBigPlay();
+  if(playTimer){ clearInterval(playTimer); playTimer=null; }
+  vidSeek(v.currentTime).then(afterSeek);
+}
+
+/* ---------- かんたんなポップアップ ---------- */
+function popup(html, okLabel, onOk){
+  var m=document.createElement('div'); m.className='modal';
+  m.innerHTML='<div class="box" style="max-width:520px">'+html+
+    '<div class="row" style="margin-top:12px;justify-content:flex-end">'+
+    '<button class="btn" data-x="no">やめる</button>'+
+    '<button class="btn pri" data-x="ok">'+esc(okLabel||'OK')+'</button></div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', function(e){
+    if(e.target===m || e.target.dataset.x==='no'){ m.remove(); }
+    else if(e.target.dataset.x==='ok'){ m.remove(); if(onOk) onOk(); }
+  });
+}
+
+/* ---------- 使い方 ---------- */
+function openHelp(){
+  $('helpBox').innerHTML=
+  '<button class="btn sm cls" id="hpClose">閉じる</button>'+
+  '<h2>使い方</h2>'+
+  '<p class="mini">動画も測定値も、この端末の中だけで処理します。どこにも送信しません。ネットにつながっていなくても動きます。</p>'+
+  '<div class="note">画面の左（または上）のカードは <b>1 → 2 → 3 → 4 の順</b>に進みます。'+
+  'いま作業するところが<b>オレンジ色に光り</b>、終わったところは薄くなります。'+
+  '3 まで終わると、4 のトラッキングと 5・6 が使えるようになります。</div>'+
+  '<h3>1. 動画を読みこむ</h3>'+
+  '<p>「動画ファイルを選択」から選ぶか、<b>画面にドラッグ＆ドロップ</b>します。サンプル動画も使えます。'+
+  '読み込むと<b>コマ表</b>（各コマの実際の時刻の表）を自動で作ります。'+
+  'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います。</p>'+
+  '<p>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します。</p>'+
+  '<h3>2. 解析する時間範囲を決める</h3>'+
+  '<p>動画の真ん中の▶か「再生」で見どころをさがし、コマ送りで合わせてから：</p>'+
+  '<ul><li><b>時刻の原点（t=0）</b>：いま出ているコマを t=0 にします（もう一度押すと解除）</li>'+
+  '<li><b>この時刻まで解析</b>：いま出ているコマを、解析のおわりにします</li>'+
+  '<li>この2つは<b>シークバーの縦棒</b>（緑＝t=0、赤＝おわり）でも表示され、<b>ドラッグで動かせます</b></li>'+
+  '<li>fps の表示や「コマ表を作る」もここにあります</li></ul>'+
+  '<h3>3. 空間の原点・スケール・軸を決める</h3>'+
+  '<ul><li><b>原点を設定</b>：クリックした所が x=0, y=0。そのまま<b>x軸の向き</b>の設定に進みます（原点からドラッグ）</li>'+
+  '<li><b>スケールを設定</b>：先に「スケール長さ」（例 10 cm）を入れてからボタンを押し、'+
+  'その長さがどこからどこまでかを 2 か所クリックします。'+
+  'あとから<b>その点をつまんで動かす</b>こともできます</li>'+
+  '<li><b>ストロボ写真を重ねる</b>：運動の全体を薄く重ねて見ながら、原点や軸を決められます'+
+  '（記録には影響しません。4 に進むと自動で外れます）</li>'+
+  '<li>斜面や斜方投射では x 軸を傾けます。y 軸は自動で直角、必要なら「y軸を反転」</li></ul>'+
+  '<h3>4. 位置を記録する</h3>'+
+  '<ul><li>動画の上をタップ（クリック）すると、その位置が記録されます</li>'+
+  '<li>指でタップすると<b>ルーペ</b>が出ます。指をつけたままドラッグして合わせ、はなすと確定です</li>'+
+  '<li><kbd>Shift</kbd>＋クリック＝記録して1コマ進む、<kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋クリック＝記録してNコマ進む</li>'+
+  '<li>取消は <b>↩取消</b> か <kbd>Ctrl</kbd>＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ動かせます</li>'+
+  '<li><b>物体番号</b>を変えると、2つ目・3つ目の物体を追跡できます（衝突の実験など）</li>'+
+  '<li>2本指でピンチすると拡大、2本指で動かすと移動できます</li>'+
+  '<li><b>動画と表を並べる</b>：動画の右に「測定した値」の表を出して、数字を見ながら記録できます</li>'+
+  '<li>解析範囲のおわりまで記録できると、上の <b>②グラフ</b> のタブが光ります</li></ul>'+
+  '<h3>手ぶれ対策</h3>'+
+  '<p>三脚がないときは画面がゆれます。「画面内の固定点を記録」で<b>動かない目印</b>（机の角など）を、はじめ・中ごろ・終わりなど数コマでクリックし、'+
+  '「手ぶれ補正を使う」にチェックを入れると、そのずれの分だけ全部の点を補正します。</p>'+
+  '<h3>やり直したいとき</h3>'+
+  '<p>終わったカードには「<b>済</b>」がつき、自動でたたまれます。'+
+  '「<b>もう一度</b>」を押すと、そのカードが開いて<b>また触れるようになります</b>'+
+  '（決めた内容は消えません。必要なところだけ直してください）。</p>'+
+  '<p>ぜんぶ最初からやり直したいときは、上の「<b>すべての実験を消してリセット</b>」。'+
+  '実験も測定も保存データも消えて、まっさらになります。</p>'+
+  '<p>2 で時間範囲を決めたあとは、<b>再生もコマ送りもその範囲の中だけ</b>になります。'+
+  '範囲の外を見たいときは、2 の「もう一度」で範囲を決め直してください。</p>'+
+  '<h3>グラフ・解析</h3>'+
+  '<ul><li>②で x–t, y–t, v–t, a–t とエネルギーのグラフ。速度・加速度は<b>中央差分</b>で出しています（両端は出ません）</li>'+
+  '<li>グラフは <b>物体ごと</b>にまとまり、左の列が x・vx・ax、右の列が y・vy・ay です。'+
+  '「グラフを拡大／縮小」で全部の大きさを変えられ、各グラフの「⤢大きく」で 1 枚だけ大きく見られます</li>'+
+  '<li><b>自由選択グラフ</b>（グラフの右、③でも同じものが使えます）：'+
+  '実験・物体・量を選んで、縦軸と横軸を自由に決められます。<br>'+
+  '「正負を反転」でデータ点の符号を入れかえられます（右向きを正にしたいときなど）。<br>'+
+  '「縦軸を2つにする（2軸）」にすると、左と右で別々の目盛の縦軸になります。'+
+  '例：〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕で衝突の前後を見る、'+
+  '〔縦軸＝x／縦軸2＝y／横軸＝t〕で x と y を 1 枚で見る、など</li>'+
+  '<li><b>運動量保存則</b>ボタンで〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕に一発で切りかわります</li>'+
+  '<li>③では、そのグラフをそのまま<b>フィット</b>できます（係数と R²）</li>'+
+  '<li>実験は10個まで記録でき、「並べて表示」「重ねて表示」で比べられます</li>'+
+  '<li>③で直線・放物線・正弦・指数の最小二乗フィット。<b>係数と R² まで</b>を出します。そこから何が言えるかは自分で考えてください</li></ul>'+
+  '<h3>保存・提出</h3>'+
+  '<ul><li><b>CSV</b>／<b>Excel(.xlsx)</b>（グラフつき）／<b>レポートPNG・PDF</b></li>'+
+  '<li><b>JSON保存</b>：測定した点や設定だけを保存します（動画は入りません）。次に開くとき「JSON読込」で続きができます（ドロップでも読めます）</li>'+
+  '<li>この端末のブラウザにも自動保存されます。共用の端末では、終わったら「保存データを消去」を押してください</li></ul>'+
+  '<h3>精度について</h3>'+
+  '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
+  '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>';
+  $('helpModal').classList.remove('hide');
+  $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
+}
+
+/* ===== じぶんで軸を選ぶグラフ（モード2・3で共有） ===== */
+function buildCG(){
+  var qs=[['x','x（位置）'],['y','y（位置）'],['vx','vx（速度）'],['vy','vy（速度）'],
+          ['ax','ax（加速度）'],['ay','ay（加速度）']];
+  function fillQ(sel, withT){
+    sel.innerHTML='';
+    if(withT){ var o=document.createElement('option'); o.value='t'; o.textContent='t（時刻）'; sel.appendChild(o); }
+    qs.forEach(function(q){ var o=document.createElement('option'); o.value=q[0]; o.textContent=q[1]; sel.appendChild(o); });
+  }
+  fillQ($('cgQA'),false); fillQ($('cgQB'),false); fillQ($('cgQX'),true);
+  ['cgObjA','cgObjB'].forEach(function(id){
+    var sel=$(id); sel.innerHTML='';
+    for(var i=0;i<NOBJ;i++){ var o=document.createElement('option'); o.value=i; o.textContent='物体'+(i+1); sel.appendChild(o); }
+  });
+  refreshCGExps(); cgToUI();
+}
+function refreshCGExps(){
+  ['cgExpA','cgExpB'].forEach(function(id){
+    var sel=$(id); if(!sel) return;
+    var keep=sel.value;
+    sel.innerHTML='';
+    APP.exps.forEach(function(e,i){
+      var o=document.createElement('option'); o.value=i; o.textContent=(i+1)+'. '+e.name; sel.appendChild(o);
+    });
+    sel.value = (keep!=='' && keep<APP.exps.length)? keep : String(Math.min(APP.cg[id==='cgExpA'?'expA':'expB']||0, APP.exps.length-1));
+  });
+}
+function cgToUI(){
+  var c=APP.cg;
+  $('cgExpA').value=Math.min(c.expA,APP.exps.length-1); $('cgObjA').value=c.objA; $('cgQA').value=c.qA; $('cgInvA').checked=!!c.invA;
+  $('cgExpB').value=Math.min(c.expB,APP.exps.length-1); $('cgObjB').value=c.objB; $('cgQB').value=c.qB; $('cgInvB').checked=!!c.invB;
+  $('cgQX').value=c.xq; $('cgInvX').checked=!!c.invX;
+  $('cgTwo').checked=!!c.two; $('cgLine').checked=(c.line!==false);
+  $('cgRowB').classList.toggle('hide', !c.two);
+}
+function cgFromUI(){
+  var c=APP.cg;
+  c.expA=parseInt($('cgExpA').value)||0; c.objA=parseInt($('cgObjA').value)||0;
+  c.qA=$('cgQA').value; c.invA=$('cgInvA').checked;
+  c.expB=parseInt($('cgExpB').value)||0; c.objB=parseInt($('cgObjB').value)||0;
+  c.qB=$('cgQB').value; c.invB=$('cgInvB').checked;
+  c.xq=$('cgQX').value; c.invX=$('cgInvX').checked;
+  c.two=$('cgTwo').checked; c.line=$('cgLine').checked;
+  $('cgRowB').classList.toggle('hide', !c.two);
+}
+function bindCG(){
+  ['cgExpA','cgObjA','cgQA','cgInvA','cgExpB','cgObjB','cgQB','cgInvB','cgQX','cgInvX','cgTwo','cgLine']
+  .forEach(function(id){
+    $(id).addEventListener('change', function(){
+      cgFromUI(); APP.cgFit=null; $('cgResult').innerHTML='';
+      $('cgMomentumNote').classList.add('hide');
+      renderCG(); saveLocal();
+    });
+  });
+  $('cgFit').onclick=function(){ cgFromUI(); cgDoFit($('cgFitType').value); };
+  $('cgFitClr').onclick=function(){ APP.cgFit=null; $('cgResult').innerHTML=''; renderCG(); };
+  $('cgPng').onclick=function(){
+    $('cgCanvas').toBlob(function(b){ dl(b, fnameBase()+'_graph.png'); toast('グラフを保存しました'); },'image/png');
+  };
+}
+
+/* ---------- タブ ---------- */
+function setTab(m){
+  els('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.mode===m); });
+  $('mode1').classList.toggle('hide', m!=='1');
+  $('mode2').classList.toggle('hide', m!=='2');
+  $('mode3').classList.toggle('hide', m!=='3');
+  var card=$('cgCard');
+  if(m==='2'||m==='3'){
+    $(m==='2'?'cgHost2':'cgHost3').appendChild(card);
+    card.classList.remove('hide');
+    $('cgFitRow').classList.toggle('hide', m!=='3');
+    refreshCGExps(); cgToUI(); renderCG();
+  } else card.classList.add('hide');
+  if(m==='2') renderMode2();
+  if(m==='3') renderMode3(false);
+  if(m==='1') setTimeout(render, 30);
+}
+
+/* ---------- 配線 ---------- */
+function bindUI(){
+  /* ヘッダ */
+  $('btnHelp').onclick=openHelp;
+  $('btnMenuPos').onclick=function(){
+    APP.menuPos=(APP.menuPos==='left')?'top':'left';
+    $('m1grid').classList.toggle('top', APP.menuPos==='top');
+    this.textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
+    saveLocal(); setTimeout(render,50);
+  };
+  $('cbAuto').onchange=function(){
+    APP.autoTrack=this.checked;
+    $('autoCard').classList.toggle('hide', !this.checked);
+    if(this.checked) toast('自動追跡：ON（結果は手で直せます）');
+  };
+  els('#tabs button').forEach(function(b){ b.onclick=function(){ setTab(b.dataset.mode); }; });
+
+  /* 実験 */
+  $('expSel').onchange=function(){ switchExp(parseInt(this.value)); };
+  $('expName').oninput=function(){ EXP().name=this.value; saveLocal();
+    var o=$('expSel').options[APP.cur]; if(o) o.textContent=(APP.cur+1)+'. '+this.value; };
+  $('expMemo').oninput=function(){ EXP().memo=this.value; saveLocal(); };
+  $('btnExpNew').onclick=function(){
+    if(APP.exps.length>=MAXEXP){ toast('実験は'+MAXEXP+'個までです'); return; }
+    var e=newExp(APP.exps.length+1);
+    var c=EXP();
+    e.origin=c.origin?{x:c.origin.x,y:c.origin.y}:null; e.angle=c.angle; e.yflip=c.yflip;
+    e.mPerPx=c.mPerPx; e.scaleRef=c.scaleRef; e.scaleLen=c.scaleLen;
+    e.video=JSON.parse(JSON.stringify(c.video)); e.m1=c.m1; e.m2=c.m2; e.g=c.g;
+    APP.exps.push(e); switchExp(APP.exps.length-1);
+    toast('新しい実験を作りました（原点やスケールは引きつぎ）');
+  };
+  $('btnResetAll').onclick=function(){
+    if(!confirm('すべての実験・測定・保存データを消して、まっさらな状態にもどします。\nよろしいですか？（元にもどせません）')) return;
+    wipeLocal();
+    APP.exps=[newExp(1)]; APP.cur=0; APP.editStep=0; APP.step=0; APP.played=false;
+    APP.cg={ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:1, qB:'x', invB:false,
+             xq:'t', invX:false, two:false, line:true };
+    APP.cgFit=null; UI.undo=[]; UI.lastPt=null; UI.obj=0;
+    setStrobeOverlay(false); clearStrobe();
+    VID.limit=null; VID.frames=[]; VID.ready=false; VID.cur=0; VID.name='';
+    try{ VID.el.pause(); VID.el.removeAttribute('src'); VID.el.load(); }catch(err){}
+    $('vph').classList.remove('hide');
+    $('vph').innerHTML='ここに動画が表示されます。<br>「動画ファイルを選択」から読み込んでください。';
+    $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
+    $('vinfo').textContent='動画はまだ読み込まれていません。';
+    $('ftState').textContent='未作成'; $('vidErr').classList.add('hide');
+    $('rightcol') ; els('.rightcol').forEach(function(r){ r.classList.remove('sbs'); });
+    $('btnSbs').textContent='動画と表を並べる';
+    refreshExpUI(); cgToUI(); afterChange();
+    setTab('1');
+    toast('すべて消してリセットしました');
+  };
+  $('btnExpClear').onclick=function(){
+    if(!confirm('この実験の測定した点をすべて消します。よろしいですか？')) return;
+    var e=EXP(); for(var i=0;i<NOBJ;i++) e.objs[i]=[]; e.ref=[];
+    UI.undo=[]; afterChange(); render(); toast('消去しました');
+  };
+
+  /* 動画 */
+  $('btnFile').onclick=function(){ $('fileVideo').click(); };
+  $('fileVideo').onchange=function(){ if(this.files[0]) loadVideoFile(this.files[0]); this.value=''; };
+  $('btnCam').onclick=function(){ openCamera(); };
+  if(!cameraSupported()){
+    $('btnCam').classList.add('hide');
+    $('camNote').textContent='この端末では、アプリの中から撮影できません。端末のカメラアプリで撮ってから読み込んでください。';
+  }
+  var sr=$('sampleRow');
+  SAMPLES.forEach(function(s){
+    var b=document.createElement('button'); b.className='btn sm'; b.textContent=s.n;
+    b.onclick=function(){ loadVideoUrl(s.f, s.n); };
+    sr.appendChild(b);
+  });
+  $('inFps').onchange=function(){
+    var v=parseFloat(this.value);
+    if(v>0){ VID.fps=v; EXP().video.fps=v; $('fpsSrc').textContent='（手入力）'; afterChange(); }
+  };
+  $('btnFrameTable').onclick=buildTableUI;
+
+  /* 2. 解析する時間範囲 */
+  $('btnRangeB').onclick=function(){
+    if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
+    EXP().rangeB=VID.cur; afterChange(); toast('この時刻を解析のおわりにしました');
+  };
+  $('btnRangeClr').onclick=function(){
+    var e=EXP(); e.t0=null; e.rangeB=null; e.rangeA=null; e.step2ok=false; afterChange();
+    toast('時間範囲を解除しました');
+  };
+  $('btnStep2Next').onclick=function(){
+    if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
+    EXP().step2ok=true; afterChange();
+    toast('つぎは「3. 空間の原点・スケール・軸」です');
+  };
+  $('btnPlay2').onclick=togglePlay;
+  $('btnTimeZero2').onclick=function(){ $('btnTimeZero').click(); };
+  $('btnRangeB2').onclick=function(){ $('btnRangeB').click(); };
+  $('vhintX').onclick=function(e){ e.stopPropagation(); $('vhint').__closed=true; $('vhint').classList.add('hide'); };
+  $('bigPlay').onclick=togglePlay;
+  $('btnHead').onclick=$('btnHead2').onclick=function(){
+    stopPlay(); vidSeek(0).then(afterSeek);
+  };
+  $('btnHeadR').onclick=$('btnHeadR2').onclick=function(){
+    stopPlay(); vidSeek(rangeStart(EXP())).then(afterSeek);
+  };
+
+  /* ストロボ写真を重ねる（3のカード） */
+  $('btnStroOver').onclick=function(){
+    if(UI.stroOverlay){ setStrobeOverlay(false); return; }
+    this.disabled=true; this.textContent='作成中…';
+    makeStrobe(true).then(function(){
+      setStrobeOverlay(true);
+      $('btnStroOver').disabled=false;
+    });
+  };
+
+  /* 校正 */
+  $('btnOrigin').onclick=function(){ setMode(UI.mode==='origin'?'record':'origin'); };
+  $('btnScale').onclick=function(){
+    if(UI.mode==='scale1'||UI.mode==='scale2'){ UI.scaleP1=null; setMode('record'); return; }
+    var len=parseFloat($('inScaleLen').value)*parseFloat($('selScaleUnit').value);
+    popup('<h2>スケールを決めます</h2>'+
+      '<p style="font-size:1.05rem">画面内の <b>'+fmtLen(len)+'</b> が、どこからどこまでかをクリックしてください。</p>'+
+      '<p class="mini">ものさし・机の幅・台車の長さなど、長さが分かっている物の両端を 2 か所クリックします。<br>'+
+      '長さを変えるときは、いったん「やめる」を押して「スケール長さ」を直してください。</p>',
+      'はじめる', function(){ UI.scaleP1=null; setMode('scale1'); });
+  };
+  $('btnAxis').onclick=function(){
+    if(!EXP().origin){ toast('先に原点を決めてください'); return; }
+    setMode(UI.mode==='axis'?'record':'axis');
+  };
+  $('btnTimeZero').onclick=function(){
+    var e=EXP();
+    if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
+    if(e.t0!==null && Math.abs(e.t0-VID.cur)<1e-6){ e.t0=null; toast('時刻の原点を解除しました'); }
+    else { e.t0=VID.cur; toast('このコマを t=0 にしました'); }
+    afterChange();
+  };
+  $('selAxisDisp').onchange=function(){
+    APP.axisDisp=this.value;
+    $('labYFlip').classList.toggle('hide', this.value!=='xy');
+    drawOverlay(); saveLocal();
+  };
+  $('cbYFlip').onchange=function(){ EXP().yflip=this.checked; afterChange(); renderCG(); };
+  $('cbXFlip').onchange=function(){ EXP().xflip=this.checked; afterChange(); renderCG(); };
+  $('inScaleLen').onchange=function(){
+    var e=EXP();
+    if(e.scaleRef){
+      var d=Math.hypot(e.scaleRef.x2-e.scaleRef.x1, e.scaleRef.y2-e.scaleRef.y1);
+      var len=parseFloat(this.value)*parseFloat($('selScaleUnit').value);
+      if(len>0&&d>0){ e.mPerPx=len/d; e.scaleLen=len; afterChange(); }
+    }
+  };
+  $('selScaleUnit').onchange=function(){ $('inScaleLen').onchange(); };
+
+  /* トラッキング */
+  $('selObj').onchange=function(){ UI.obj=parseInt(this.value)-1; $('inObjName').value=EXP().objName[UI.obj]||''; drawOverlay(); };
+  $('inObjName').oninput=function(){ EXP().objName[UI.obj]=this.value; saveLocal(); };
+  $('btnSbs').onclick=function(){
+    var r=el('.rightcol'), on=!r.classList.contains('sbs');
+    r.classList.toggle('sbs', on);
+    this.textContent = on? '動画と表を分ける' : '動画と表を並べる';
+    setTimeout(function(){ render(); updatePrec(); }, 40);
+  };
+  $('btnUndo').onclick=doUndo;
+  $('btnClearObj').onclick=function(){
+    var e=EXP();
+    if(!e.objs[UI.obj].length) return;
+    pushUndo({t:'bulk', obj:UI.obj, prev:e.objs[UI.obj]});
+    e.objs[UI.obj]=[]; afterChange(); render(); toast('物体'+(UI.obj+1)+'の点を消しました');
+  };
+  $('cbDrift').onchange=function(){ EXP().useDrift=this.checked; afterChange(); };
+  $('btnRefPt').onclick=function(){ setMode(UI.mode==='ref'?'record':'ref'); };
+  $('btnRefClr').onclick=function(){ EXP().ref=[]; afterChange(); toast('固定点を消しました'); };
+
+  /* 自動追跡 */
+  $('btnPickColor').onclick=function(){ setMode(UI.mode==='color'?'record':'color'); };
+  $('btnAutoRun').onclick=autoRunAll;
+  $('btnAutoStop').onclick=function(){ UI.autoStop=true; };
+
+  /* ストロボ */
+  $('btnStrobe').onclick=function(){ $('btnStrobe').disabled=true;
+    makeStrobe().then(function(){ $('btnStrobe').disabled=false; }); };
+  $('btnStroSave').onclick=saveStrobePng;
+
+  /* 出力 */
+  $('btnCsv').onclick=exportCsv;
+  $('btnCsv2').onclick=exportCsv;
+  $('btnCopy').onclick=copyCsv;
+  $('btnJsonSave').onclick=exportJson;
+  $('btnJsonLoad').onclick=function(){ $('fileJson').click(); };
+  $('fileJson').onchange=function(){ if(this.files[0]) importJson(this.files[0]); this.value=''; };
+  $('btnReportPng').onclick=exportReportPng;
+  $('btnReportPdf').onclick=exportReportPdf;
+  $('btnKadai').onclick=openKadaiDialog;
+  $('btnWipe').onclick=function(){
+    if(!confirm('この端末に自動保存されている測定データを消します。よろしいですか？')) return;
+    wipeLocal();
+    APP.exps=[newExp(1)]; APP.cur=0; UI.undo=[];
+    refreshExpUI(); afterChange(); render(); toast('保存データを消しました');
+  };
+  $('btnXlsx').onclick=exportXlsx;
+  $('btnGraphPng').onclick=exportGraphsPng;
+
+  /* 再生・コマ送り */
+  els('.stepbtns .btn[data-step]').forEach(function(b){
+    b.onclick=function(){
+      var s=b.dataset.step, N=parseInt($('inStepN').value)||1;
+      var n=(s==='n')?N:(s==='-n')?-N:parseInt(s);
+      stepFrames(n);
+    };
+  });
+  $('btnPlay').onclick=togglePlay;
+  $('seek').oninput=function(){
+    if(!VID.ready) return;
+    var t=this.value/1000*VID.dur;
+    VID.el.currentTime=t; VID.cur=t; VID.idx=frameIndexAt(t);
+    $('tInfo').textContent=nf(t-(EXP().t0||0),4);
+    if(!seekBusy){ seekBusy=true; setTimeout(function(){ seekBusy=false; render(); updateTimeLine(); }, 60); }
+  };
+  $('seek').onchange=function(){ vidSeek(this.value/1000*VID.dur).then(afterSeek); };
+  $('btnZoomIn').onclick=function(){ zoomAt(1.4); updatePrec(); };
+  $('btnZoomOut').onclick=function(){ zoomAt(1/1.4); updatePrec(); };
+  $('btnZoomRst').onclick=function(){ VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0; render(); updatePrec(); };
+
+  /* モード2・3 */
+  ['selCmp','cbG_x','cbG_y','cbG_v','cbG_a','cbG_e','inM1','inM2','inG'].forEach(function(id){
+    $(id).addEventListener('change', function(){ afterChange(); renderMode2(); });
+  });
+  $('btnGBig').onclick=function(){ APP.gsize=Math.min(900, Math.round(APP.gsize*1.25)); renderMode2(); saveLocal(); };
+  $('btnGSmall').onclick=function(){ APP.gsize=Math.max(240, Math.round(APP.gsize/1.25)); renderMode2(); saveLocal(); };
+  $('cgMomentum').onclick=function(){
+    var c=APP.cg;
+    c.qA='vx'; c.objA=0; c.qB='vx'; c.objB=1; c.xq='t'; c.two=true; c.invA=false; c.invB=false; c.invX=false;
+    c.expB=c.expA;
+    cgToUI(); APP.cgFit=null; $('cgResult').innerHTML='';
+    $('cgMomentumNote').classList.remove('hide');
+    renderCG(); saveLocal();
+    toast('縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t にしました');
+  };
+  $('btnFit').onclick=function(){ renderMode3(true); };
+  ['selFitY','selFitType','selFitObj','selCmp3'].forEach(function(id){
+    $(id).addEventListener('change', function(){ renderMode3(false); });
+  });
+
+
+  /* キーボード */
+  document.addEventListener('keydown', function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||tag==='select') return;
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); doUndo(); return; }
+    var st=e.shiftKey?5:1;
+    if(e.key==='ArrowLeft'&&!e.altKey){ e.preventDefault(); nudgeLast(-st,0); render(); }
+    else if(e.key==='ArrowRight'&&!e.altKey){ e.preventDefault(); nudgeLast(st,0); render(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); nudgeLast(0,-st); render(); }
+    else if(e.key==='ArrowDown'){ e.preventDefault(); nudgeLast(0,st); render(); }
+    else if(e.key===','){ stepFrames(-1); }
+    else if(e.key==='.'){ stepFrames(1); }
+    else if(e.key===' '){ e.preventDefault(); togglePlay(); }
+  });
+  window.addEventListener('resize', function(){
+    clearTimeout(window.__rz); window.__rz=setTimeout(function(){ render(); updatePrec(); drawSeekMarks();
+      if(!$('mode2').classList.contains('hide')) renderMode2(); }, 180);
+  });
+  els('.modal').forEach(function(m){
+    m.addEventListener('click', function(e){ if(e.target===m) m.classList.add('hide'); });
+  });
+}
+var seekBusy=false;
+
+</script>
+
+<script>
+/* ---- 90_boot.js ---- */
+/* =========================================================
+   90_boot.js … 起動
+   ========================================================= */
+(function boot(){
+  /* 課題ファイル書き出し用に、いじる前の HTML を控えておく */
+  try{
+    var kd=document.getElementById('kadaiData');
+    if(kd) kd.remove();                       /* 二重埋め込みを防ぐ */
+    ORIGINAL_HTML=document.documentElement.outerHTML;
+    if(kd) document.head.appendChild(kd);
+  }catch(e){ ORIGINAL_HTML=''; }
+
+  vidInit();
+  var hd=document.querySelector('.apphd');
+  document.documentElement.style.setProperty('--hdh', (hd?hd.offsetHeight:50)+'px');
+
+  var restored=loadLocal();
+  bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries();
+  addAgainButtons(); bindEditEnd(); buildCG(); bindCG();
+  refreshExpUI();
+  $('m1grid').classList.toggle('top', APP.menuPos==='top');
+  $('btnMenuPos').textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
+  setMode('record');
+  applyNarrowLayout();
+  APP.step=0; updateSteps();
+  afterChange();
+  if(restored){
+    var n=APP.exps.reduce(function(a,e){ return a+e.objs.reduce(function(x,y){return x+y.length;},0); },0);
+    if(n>0) toast('前回の測定データを復元しました（動画は読み直してください）');
+  }
+  if(!VID.hasRVFC){
+    $('hintLine').innerHTML='<span class="ng">このブラウザはコマの実測時刻に対応していません。'+
+      'Chrome / Edge / Safari で開くと精度が上がります。</span>';
+  }
+
+  /* 課題ファイルとして開かれたとき */
+  if(window.KADAI){
+    var K=window.KADAI;
+    $('btnKadai').classList.add('hide');
+    var c=document.createElement('div'); c.className='card op';
+    c.innerHTML='<h3>'+esc(K.title||'課題')+'</h3><ol class="steps">'+
+      (K.questions||[]).map(function(q){ return '<li>'+esc(q)+'</li>'; }).join('')+'</ol>'+
+      '<p class="mini">終わったら「JSON保存」で保存して提出してください。</p>';
+    $('side1').insertBefore(c, $('side1').firstChild);
+    if(K.cal){
+      var e=EXP();
+      ['origin','angle','yflip','mPerPx','scaleRef','scaleLen','rangeA','rangeB'].forEach(function(k){
+        if(K.cal[k]!==undefined && K.cal[k]!==null) e[k]=K.cal[k];
+      });
+    }
+    if(K.video && K.video.data){
+      $('vinfo').textContent='課題の動画を読み込んでいます…';
+      loadVideoUrl(K.video.data, K.video.name||'課題の動画');
+    }
+  }
+})();
+
+</script>
+</body>
+</html>
