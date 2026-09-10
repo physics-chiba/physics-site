@@ -25,6 +25,9 @@ button{cursor:pointer}
 .apphd{position:sticky;top:0;z-index:40;background:var(--accent);color:#fff;
   display:flex;align-items:center;gap:10px;padding:6px 10px;flex-wrap:wrap}
 .apphd h1{font-size:1.02rem;margin:0;font-weight:700;letter-spacing:.02em;flex:0 1 auto}
+.apphd .lead{font-size:.8rem;color:#dbe8f7;flex:0 0 auto;line-height:1.35;
+  margin-left:3ch;white-space:nowrap}
+@media(max-width:1360px){ .apphd .lead{display:none} }
 .apphd .sp{flex:1 1 auto}
 .apphd .hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.55);color:#fff;
   border-radius:8px;padding:7px 11px;min-height:38px}
@@ -94,9 +97,47 @@ details.card>summary+*{margin-top:9px}
 .btn.sm{min-height:36px;padding:6px 9px;font-size:.86rem}
 .btn.wide{width:100%}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.quiet{background:#f4f6f9;border-color:#d5dce4;color:#5b6672;font-size:.8rem;
+  min-height:32px;padding:4px 8px}
+.btn.quiet:hover{background:#e9eef4}
+/* 2行に折り返す小さめのボタン（過去測定データを登録） */
+.btn.two{white-space:normal;line-height:1.25;font-size:.78rem;min-height:38px;padding:5px 8px;text-align:center}
+/* 薄い青のボタン（おまけの機能） */
+.btn.blue{background:#e8f1fb;border-color:#9cc3e8;color:#0d4d94}
+.btn.blue:hover{background:#d7e7f8}
+/* ボタンの右上に出す吹き出し */
+.btnwrap{position:relative}
+.callout{position:absolute;right:-4px;top:-14px;z-index:3;background:var(--orange);color:#fff;
+  font-size:.74rem;font-weight:700;border-radius:8px;padding:2px 8px;white-space:nowrap;
+  box-shadow:0 2px 6px rgba(0,0,0,.22)}
+.callout::after{content:"";position:absolute;left:18px;bottom:-5px;border:5px solid transparent;
+  border-top-color:var(--orange);border-bottom:none}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row.nowrap{flex-wrap:nowrap}
+.row.nowrap .btn{white-space:nowrap}
 .row.tight{gap:4px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* ②グラフ：左に測定した値の表、右にグラフ */
+.m2body{display:flex;gap:12px;align-items:flex-start;margin-top:10px}
+.m2tbl{flex:0 0 auto;width:330px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px);
+  display:flex;align-items:stretch;gap:0}
+.m2tbl>.card{flex:1 1 auto;min-width:0}
+.rsz{flex:0 0 10px;cursor:ew-resize;background:linear-gradient(#d9dee4,#d9dee4) center/3px 46px no-repeat;
+  border-radius:5px;touch-action:none}
+.rsz:hover{background-color:#eef3f9}
+.m2tbl .tblwrap{max-height:70vh}
+.m2charts{flex:1 1 0;min-width:0}
+@media(max-width:900px){
+  .m2body{flex-direction:column}
+  .m2tbl{width:100%;position:static}
+  .m2tbl .tblwrap{max-height:260px}
+}
+/* ②グラフの上のカード：左に表示の設定、右に出力ボタン */
+.m2top{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.m2left{flex:1 1 420px;min-width:0}
+.m2out{flex:0 0 auto;width:420px;max-width:100%}
+.m2out .grid2{grid-template-columns:1fr 1fr}
+@media(max-width:820px){ .m2out{width:100%} }
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 input[type=text],input[type=number],select,textarea{border:1px solid #b9c3cf;border-radius:8px;padding:7px 8px;
   min-height:40px;background:#fff;max-width:100%}
@@ -132,11 +173,17 @@ details.card.step-lock>*:not(summary){pointer-events:none}
 @media(prefers-reduced-motion:reduce){details.card.step-active{animation:none}}
 
 /* いま押してほしいボタン */
-.btn.glow{background:#fff3d6;border-color:var(--orange);color:#8a5300;font-weight:700;
+.btn.glow{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700;
   box-shadow:0 0 0 3px rgba(224,123,24,.25);animation:btnglow 1.6s ease-in-out infinite}
+.btn.glow:hover{background:#c96c11}
 @keyframes btnglow{0%,100%{box-shadow:0 0 0 3px rgba(224,123,24,.20)}50%{box-shadow:0 0 0 6px rgba(224,123,24,.34)}}
 .tabs button.glow{background:#fff3d6;color:#8a5300;box-shadow:0 -3px 0 var(--orange) inset,0 0 0 3px rgba(224,123,24,.25)}
 @media(prefers-reduced-motion:reduce){.btn.glow{animation:none}}
+/* 「動画ファイルを選択」は薄い青のまま、ふちだけ光らせる */
+#btnFile.glow{background:#e8f1fb;border-color:var(--accent);color:#0d4d94}
+/* 4 でまだ1点も無いときは、押す場所（動画）を光らせる */
+.videobox.glow{box-shadow:0 0 0 3px var(--orange), 0 0 14px rgba(224,123,24,.55)}
+@media(prefers-reduced-motion:reduce){.videobox.glow{box-shadow:0 0 0 3px var(--orange)}}
 
 /* 動画と表を並べる */
 .rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,420px);
@@ -168,26 +215,28 @@ details.card.step-lock>*:not(summary){pointer-events:none}
   pointer-events:auto;display:flex;align-items:center;justify-content:center}
 #vhintX:hover{background:rgba(255,255,255,.34)}
 
-/* 見出しの横の案内文（せまい画面では出さない） */
-.hdlead{margin-left:14px;font-size:.84rem;color:#cfe0f2;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:34em}
-@media (max-width:820px){ .hdlead{display:none} }
+/* 動画エリアの右上に出すボタン（4.トラッキングの間だけ） */
+.vtopbtn{position:absolute;right:8px;top:8px;z-index:9;
+  border:1px solid rgba(255,255,255,.55);border-radius:9px;
+  background:rgba(20,26,34,.72);color:#fff;font-size:.83rem;font-weight:700;
+  padding:6px 10px;line-height:1.2;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.vtopbtn:hover{background:rgba(232,68,58,.85)}
 
-/* ===== スケールが決まったら出る「トラッキングを開始する」 ===== */
-#startTrack{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;
-  padding:16px 30px;border-radius:14px;border:3px solid #fff;cursor:pointer;
-  background:#e07b18;color:#fff;font-family:inherit;font-weight:700;font-size:1.25rem;
-  line-height:1.4;text-align:center;box-shadow:0 6px 26px rgba(0,0,0,.35);
-  animation:stPulse 1.4s ease-out infinite}
-#startTrack small{display:block;font-size:.76rem;font-weight:400;opacity:.95;margin-top:4px}
-#startTrack:hover{background:#c96a10}
-@keyframes stPulse{
-  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85), 0 6px 26px rgba(0,0,0,.35)}
-  70%{box-shadow:0 0 0 22px rgba(224,123,24,0), 0 6px 26px rgba(0,0,0,.35)}
-  100%{box-shadow:0 0 0 0 rgba(224,123,24,0), 0 6px 26px rgba(0,0,0,.35)}
-}
-@media (prefers-reduced-motion:reduce){ #startTrack{animation:none} }
-@media (max-width:560px){ #startTrack{font-size:1.05rem;padding:13px 20px} }
+/* 動画の真ん中の「トラッキングを開始する」 */
+#btnTrkStart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:var(--orange);border:2px solid #fff;color:#fff;font-weight:700;font-size:1.06rem;
+  padding:16px 28px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.4);
+  animation:btnglow 1.6s ease-in-out infinite;max-width:88%}
+#btnTrkStart:hover{background:#c96c11}
+@media(prefers-reduced-motion:reduce){#btnTrkStart{animation:none}}
+
+/* 解析が終わったときの知らせ */
+#doneMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:rgba(28,143,74,.92);color:#fff;font-weight:700;font-size:1.05rem;
+  padding:14px 22px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.35);
+  pointer-events:none;text-align:center;max-width:88%}
+.donemsg{margin:.2em 0 .5em;color:#1c8f4a;font-weight:700;font-size:.94rem;
+  background:#e7f6ed;border:1px solid #9fd8b6;border-radius:9px;padding:6px 9px}
 
 /* ===== 動画の上の大きな再生ボタン・ドロップ表示 ===== */
 #bigPlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
@@ -202,12 +251,12 @@ details.card.step-lock>*:not(summary){pointer-events:none}
 body.dropping #dropHint{display:flex !important}
 
 /* ===== シークバーの縦棒（t=0 と おわり） ===== */
-.smark{position:absolute;top:0;height:34px;width:26px;margin-left:-13px;z-index:3;
+.smark{position:absolute;top:10px;height:51px;width:26px;margin-left:-13px;z-index:3;
   cursor:ew-resize;touch-action:none;display:flex;justify-content:center}
 .smark::before{content:"";position:absolute;top:2px;bottom:2px;width:3px;border-radius:2px}
 .smark.t0::before{background:#1c8f4a}
 .smark.tb::before{background:#c0392b}
-.smark b{position:absolute;top:-3px;font-size:.66rem;font-weight:700;white-space:nowrap;
+.smark b{position:absolute;top:-11px;font-size:.66rem;font-weight:700;white-space:nowrap;
   padding:0 4px;border-radius:4px;color:#fff;pointer-events:none}
 .smark.t0 b{background:#1c8f4a}
 .smark.tb b{background:#c0392b}
@@ -231,9 +280,10 @@ kbd{font-family:var(--mono);font-size:.8em;background:#eef2f7;border:1px solid #
 #loupe canvas{width:132px;height:132px}
 .vidbar{display:flex;flex-direction:column;gap:7px;background:var(--card);border:1px solid var(--line);
   border-radius:11px;padding:9px 10px}
-.seekwrap{position:relative;padding-top:6px;overflow:hidden}
+.seekwrap{position:relative;padding-top:16px;overflow:hidden}
 input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
-.rangemark{position:absolute;top:2px;height:8px;background:rgba(22,99,181,.28);border-radius:4px;pointer-events:none}
+.seekwrap input[type=range]{height:51px}
+.rangemark{position:absolute;top:12px;height:10px;background:rgba(22,99,181,.28);border-radius:5px;pointer-events:none}
 .stepbtns{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
 .stepbtns .btn{min-width:46px;padding:8px 6px;font-family:var(--mono);font-size:.85rem}
 .stepbtns .btn.n{background:#fff8e8;border-color:#e2c98a}
@@ -248,7 +298,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 /* ===== グラフ ===== */
 .charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
 .chartcard{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px}
-.chartcard canvas{width:100%;height:auto;display:block}
+.chartcard canvas{width:100%;height:auto;display:block;touch-action:none;cursor:grab}
+.chartcard canvas:active{cursor:grabbing}
+#cgCanvas{touch-action:none;cursor:grab}
 .chartcard .ttl{font-size:.88rem;font-weight:700;color:var(--accent-d);margin:0 0 4px 4px}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.82rem;margin:4px 0 0 4px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
@@ -264,22 +316,39 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   position:sticky;top:0;z-index:1}
 .tbl tr.cur td{background:#fff3d6;font-weight:700}
 .tblwrap{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+/* フィット結果（③と自由選択グラフでそろえる） */
+.fitone{margin:.3em 0;padding:.45em .6em;background:#f6f9fc;border:1px solid var(--line);border-radius:9px;
+  font-size:.88rem;line-height:1.7}
+.fitone b{color:var(--accent-d)}
+#fitResult,#cgResult{font-size:.88rem;color:var(--ink)}
+
 /* 自由選択グラフ */
 #cgCard select{max-width:148px}
-.cgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;align-items:center}
-.cgY{grid-column:1;grid-row:1;display:flex;flex-direction:column;gap:5px;
+.cgrid{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 12px;align-items:center}
+.cgTop{grid-column:1 / -1;grid-row:1;display:flex;gap:8px;align-items:center;
+  justify-content:flex-end;flex-wrap:wrap}
+.cgpick{display:inline-flex;gap:4px;align-items:center;background:#f6f9fc;
+  border:1px solid var(--line);border-radius:9px;padding:4px 7px}
+.cgY,.cgB{display:flex;flex-direction:column;gap:5px;
   background:#f6f9fc;border:1px solid var(--line);border-radius:9px;padding:8px 9px}
-.cgY .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
-.cgY label.cb{min-height:30px;font-size:.82rem}
-.cgPlot{grid-column:2;grid-row:1}
-.cgX{grid-column:2;grid-row:2;display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.cgY{grid-column:1;grid-row:2}
+.cgB{grid-column:3;grid-row:2}
+.cgY .lb,.cgB .lb,.cgpick .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
+.cgY label.cb,.cgB label.cb{min-height:30px;font-size:.82rem}
+.cgPlot{grid-column:2;grid-row:2;min-width:0;display:flex;justify-content:center}
+.cgX{grid-column:2 / -1;grid-row:3;display:flex;gap:8px;align-items:center;justify-content:flex-end}
 .cgX .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
 .cgX label.cb{min-height:30px;font-size:.82rem}
-@media(max-width:700px){
+/* 物理量を選ぶところは目立たせる */
+#cgCard select.qsel{background:#fff3d6;border:2px solid #e0a12a;color:#7a5200;
+  font-weight:700;border-radius:8px}
+#cgCard select.qsel:focus{outline:2px solid #e0a12a}
+@media(max-width:820px){
   .cgrid{grid-template-columns:minmax(0,1fr)}
-  .cgY,.cgPlot,.cgX{grid-column:1}
-  .cgY{grid-row:1} .cgPlot{grid-row:2} .cgX{grid-row:3;justify-content:flex-start}
-  .cgY{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .cgTop,.cgY,.cgPlot,.cgB,.cgX{grid-column:1}
+  .cgTop{grid-row:1;justify-content:flex-start}
+  .cgY{grid-row:2} .cgPlot{grid-row:3} .cgB{grid-row:4} .cgX{grid-row:5;justify-content:flex-start}
+  .cgY,.cgB{flex-direction:row;flex-wrap:wrap;align-items:center}
 }
 
 /* グラフの並べ方（物体ごとのブロック → 列） */
@@ -318,9 +387,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 <body>
 <header class="apphd">
   <h1>動画解析・トラッキングツール</h1>
-  <span class="hdlead">動画を読み込むか撮影し、物体の運動を解析してみましょう</span>
+  <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみましょう</span>
   <span class="sp"></span>
   <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
+  <label class="chk" title="先生用の機能（課題ファイルの書き出し）を出します"><input type="checkbox" id="cbTeacher">教員用</label>
   <button class="hbtn" id="btnMenuPos">メニュー：左</button>
   <button class="hbtn" id="btnHelp">使い方</button>
 </header>
@@ -336,11 +406,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <select id="expSel"></select>
   <input type="text" id="expName" class="nm" placeholder="実験の名前（例：斜面20度）">
   <input type="text" id="expMemo" class="memo" placeholder="メモ">
-  <button class="btn sm" id="btnExpNew">＋ 新しい実験</button>
+  <span class="sp" style="flex:1"></span>
+  <button class="btn sm hide" id="btnJsonSaveTop">測定データを保存</button>
   <button class="btn sm" id="btnExpClear">この実験の測定を消去</button>
   <button class="btn sm" id="btnResetAll">すべての実験を消してリセット</button>
-  <span class="sp" style="flex:1"></span>
-  <span class="tag" id="expInfo">点 0</span>
+  <button class="btn sm hide" id="btnExpNew">＋ 新しい実験</button>
+  <button class="btn sm two" id="btnJsonLoadTop">過去測定データを<br>実験2に登録</button>
 </div>
 
 <main class="wrap">
@@ -351,14 +422,14 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <div class="side" id="side1">
 
     <details class="card op" open data-key="howto">
-      <summary>操作説明</summary>
+      <summary>操作説明（クリックで折りたたみ）</summary>
       <ol class="steps">
         <li><b>動画をよみこむ</b>（ドラッグ＆ドロップでも可）。<b>コマ表</b>ができると、コマの実測時刻が使えます</li>
-        <li><b>解析する時間範囲</b>：再生して見どころをさがし、<b>時刻の原点（t=0）</b>と<b>この時刻まで解析</b>を決める</li>
+        <li><b>解析する時間範囲</b>：再生して見どころをさがし、<b>この時刻をt = 0</b>と<b>この時刻まで解析</b>を決める</li>
         <li><b>空間の原点・スケール・軸</b>：原点 → x軸の向き → スケール（長さのわかる物を2点クリック）</li>
         <li><b>トラッキング</b>：物体番号を選び、動画の上をタップ（クリック）して1点ずつ記録<br>
             <kbd>Shift</kbd>＋クリック＝記録して1コマ進む／<kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋クリック＝記録してNコマ進む</li>
-        <li>取り消しは <b>↩取消</b> または <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</li>
+        <li>取り消しは <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</li>
         <li>ストロボ画像・CSV・グラフ（②）・フィット（③）へ</li>
       </ol>
       <p class="mini">いま作業するところが<b>オレンジ色に光ります</b>。終わったところは薄くなります。</p>
@@ -382,14 +453,16 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div id="vidErr" class="err hide"></div>
       <div class="hr"></div>
       <p class="mini" id="vinfo">動画はまだ読み込まれていません。</p>
-      <div class="row">
-        <button class="btn sm" id="btnKadai">課題ファイルを書き出す（先生用）</button>
+      <div id="teacherBox" class="hide">
+        <div class="row">
+          <button class="btn sm" id="btnKadai">課題ファイルを書き出す（先生用）</button>
+        </div>
+        <p class="mini">いま読み込んでいる動画と設問を、1つの HTML にまとめて配れます。</p>
       </div>
-      <p class="mini">いま読み込んでいる動画と設問を、1つの HTML にまとめて配れます。</p>
     </details>
 
     <details class="card" data-key="range" data-step="2">
-      <summary>2. 解析する時間範囲</summary>
+      <summary>2. 解析する時間範囲の指定</summary>
       <p class="todo hide"></p>
       <div class="row">
         <button class="btn" id="btnPlay2">▶ 再生</button>
@@ -398,9 +471,15 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       </div>
       <p class="mini">コマ <span class="val" id="frInfo2">-/-</span>　t = <span class="val" id="tInfo2">-</span> s</p>
       <div class="hr"></div>
-      <button class="btn wide" id="btnTimeZero">時刻の原点（t = 0）</button>
+      <div class="btnwrap">
+        <button class="btn wide" id="btnTimeZero">この時刻をt = 0</button>
+        <span class="callout hide" id="coTimeZero">解析をはじめたいコマで押す</span>
+      </div>
       <p class="mini">この画像の時刻を時間の原点（t=0）に</p>
-      <button class="btn wide" id="btnRangeB">この時刻まで解析</button>
+      <div class="btnwrap">
+        <button class="btn wide" id="btnRangeB">この時刻まで解析</button>
+        <span class="callout hide" id="coRangeB">解析をおわりたいコマで押す</span>
+      </div>
       <p class="mini">この画像の時刻を、解析のおわりに</p>
       <div class="row">
         <button class="btn sm" id="btnRangeClr">範囲を解除</button>
@@ -422,10 +501,6 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <summary>3. 空間の原点・スケール・軸</summary>
       <p class="todo hide"></p>
       <div class="row">
-        <button class="btn sm" id="btnStroOver">ストロボ写真を重ねる</button>
-      </div>
-      <p class="mini">運動の全体を見ながら原点や軸を決められます（重ねた写真は記録には影響しません）。</p>
-      <div class="row">
         <button class="btn sm" id="btnOrigin">原点を設定</button>
         <button class="btn sm" id="btnAxis">x軸の向き</button>
       </div>
@@ -437,6 +512,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row">
         <label class="cb"><input type="checkbox" id="cbXFlip">x軸を反転</label>
         <label class="cb hide" id="labYFlip"><input type="checkbox" id="cbYFlip">y軸を反転</label>
+        <button class="btn sm blue" id="btnStroOver" title="運動の全体を薄く重ねて見ながら原点や軸を決められます（記録には影響しません）">ストロボ写真を重ねる</button>
       </div>
       <div class="hr"></div>
       <div class="row"><button class="btn sm" id="btnScale">スケールを設定</button></div>
@@ -450,8 +526,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <details class="card" data-key="track" data-step="4">
       <summary>4. トラッキング</summary>
       <p class="todo hide"></p>
+      <p class="donemsg hide" id="trkDone">解析終了。グラフを表示してみよう</p>
       <div class="row">
-        <button class="btn sm" id="btnSbs">動画と表を並べる</button>
+        <button class="btn sm blue" id="btnSbs">動画と表を並べる</button>
       </div>
       <label class="f">物体番号
         <select id="selObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
@@ -466,9 +543,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         </select>
       </label>
       <div class="row">
-        <button class="btn" id="btnUndo">↩ 取消</button>
         <button class="btn sm" id="btnClearObj">この物体の点を消す</button>
       </div>
+      <div class="row">
+        <button class="btn sm" id="btnTrkReset">トラッキングした点をリセット</button>
+      </div>
+      <p class="mini">この実験で記録した点を全部消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）。</p>
       <div class="hr"></div>
       <label class="cb"><input type="checkbox" id="cbDrift">手ぶれ補正を使う</label>
       <div class="row">
@@ -510,6 +590,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row">
         <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
         <button class="btn sm" id="btnStroSave">PNG保存</button>
+        <button class="btn sm" id="btnStroClr">画像をリセット</button>
       </div>
     </details>
 
@@ -517,16 +598,15 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <summary>6. 出力・保存</summary>
       <div class="grid2">
         <button class="btn sm" id="btnCsv">CSV出力</button>
-        <button class="btn sm" id="btnCopy">コピー</button>
-        <button class="btn sm" id="btnJsonSave">測定データを保存</button>
-        <button class="btn sm" id="btnJsonLoad">測定データを開く</button>
+        <button class="btn sm" id="btnCopy">CSVコピー</button>
         <button class="btn sm" id="btnReportPng">レポートPNG</button>
         <button class="btn sm" id="btnReportPdf">レポートPDF</button>
       </div>
       <input type="file" id="fileJson" accept=".json,application/json" class="hide">
       <p class="mini"><b>「測定データを保存」</b>（JSONファイル）は、いま記録した<b>点・原点・スケール・時間範囲</b>を
       1つのファイルにまとめて保存します。動画は入りません（ファイルは小さいです）。<br>
-      つづきをやるときは <b>「測定データを開く」</b>でそのファイルを読み、<b>同じ動画をもう一度読み込む</b>と再開できます。
+      <b>「過去測定データを実験○に登録」</b>でそのファイルを読むと、<b>いまの実験は消さずに</b>、
+      次の実験番号として追加されます（前の実験や去年のデータと並べて比べられます）。
       提出もこのファイルで行います。</p>
       <div class="hr"></div>
       <div class="row">
@@ -539,15 +619,16 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
   <div class="rightcol">
     <div class="videobox" id="videobox">
-      <div class="ph" id="vph">ここに動画が表示されます。<br>「動画ファイルを選択」から読み込んでください。</div>
+      <div class="ph" id="vph">「動画ファイルを選択」から読み込んでください。<br>このエリアにドラッグ＆ドロップでもOK</div>
       <div class="vwrap" id="vwrap">
         <canvas id="cvView" class="hide"></canvas>
         <canvas id="cvOv" class="hide" style="position:absolute;left:0;top:0"></canvas>
       </div>
       <div id="vhint" class="hide"><span id="vhintTxt"></span><button id="vhintX" title="閉じる">×</button></div>
       <button id="bigPlay" class="hide" title="再生"><span>&#9654;</span></button>
-      <button id="startTrack" class="hide" type="button">トラッキングを開始する
-        <small>動画の上をクリックして、物体の位置を1点ずつ記録します</small></button>
+      <button id="btnTrkReset2" class="vtopbtn hide">トラッキングした点をリセット</button>
+      <div id="doneMsg" class="hide">解析終了。グラフを表示してみよう</div>
+      <button id="btnTrkStart" class="hide">トラッキングを開始する</button>
       <div id="dropHint" class="hide">ここに動画ファイルをドロップ</div>
       <div id="loupe"><canvas id="cvLoupe" width="132" height="132"></canvas></div>
       <!-- 動画要素は画面に置いておく（画面外に置くとブラウザがコマを描かず、実測時刻がとれない） -->
@@ -559,7 +640,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="seekwrap" id="seekwrap">
         <div class="rangemark hide" id="rangemark"></div>
         <input type="range" id="seek" min="0" max="1000" value="0" step="1">
-        <div class="smark t0 hide" id="mkT0" title="時刻の原点（t=0）：ドラッグで動かせます"><b>t=0</b></div>
+        <div class="smark t0 hide" id="mkT0" title="この時刻をt = 0：ドラッグで動かせます"><b>t=0</b></div>
         <div class="smark tb hide" id="mkTB" title="この時刻まで解析：ドラッグで動かせます"><b>おわり</b></div>
       </div>
       <div class="row" style="justify-content:center">
@@ -567,9 +648,11 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm" id="btnHead">最初から</button>
         <button class="btn sm" id="btnHeadR">解析範囲の最初から</button>
       </div>
-      <div class="row hide" id="vidStep2" style="justify-content:center">
-        <button class="btn sm" id="btnTimeZero2">時刻の原点（t = 0）</button>
-        <button class="btn sm" id="btnRangeB2">この時刻まで解析</button>
+      <div class="row hide" id="vidStep2" style="justify-content:center;padding-top:14px">
+        <span class="btnwrap"><button class="btn sm" id="btnTimeZero2">この時刻をt = 0</button>
+          <span class="callout hide" id="coTimeZero2">解析をはじめたいコマで押す</span></span>
+        <span class="btnwrap"><button class="btn sm" id="btnRangeB2">この時刻まで解析</button>
+          <span class="callout hide" id="coRangeB2">解析をおわりたいコマで押す</span></span>
       </div>
       <div class="stepbtns">
         <button class="btn sm n" data-step="-n">←N</button>
@@ -611,47 +694,73 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 <!-- ================= モード2 ================= -->
 <section id="mode2" class="hide">
-  <div class="card">
-    <div class="row">
-      <b style="color:var(--accent-d)">表示</b>
-      <select id="selCmp"><option value="side">並べて表示</option><option value="over">重ねて表示</option></select>
-      <span class="lb mini">対象の実験：</span>
-      <span class="explist" id="expChecks"></span>
+  <div class="card m2top">
+    <div class="m2left">
+      <div class="row">
+        <b style="color:var(--accent-d)">表示</b>
+        <select id="selCmp"><option value="side">並べて表示</option><option value="over">重ねて表示</option></select>
+        <span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks"></span>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn sm" id="btnGBig">グラフを拡大</button>
+        <button class="btn sm" id="btnGSmall">縮小</button>
+        <button class="btn sm" id="btnGReset">スケールをリセット</button>
+        <span style="width:10px"></span>
+        <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
+        <label class="cb" id="labGY"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
+        <input type="checkbox" id="cbG_v" checked class="hide">
+        <input type="checkbox" id="cbG_a" checked class="hide">
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm blue" id="btnEnergyOn">エネルギーを解析する</button>
+      </div>
+      <div class="row hide" id="energyRow" style="margin-top:6px">
+        <label class="cb"><input type="checkbox" id="cbG_e">エネルギー</label>
+        <label class="f">質量 m₁ <input type="number" id="inM1" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
+        <span class="mini">位置エネルギーは U = mgy（y は上向き正）</span>
+      </div>
     </div>
-    <div class="row" style="margin-top:6px">
-      <button class="btn sm" id="btnGBig">グラフを拡大</button>
-      <button class="btn sm" id="btnGSmall">縮小</button>
-      <span style="width:10px"></span>
-      <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
-      <label class="cb"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
-      <label class="cb"><input type="checkbox" id="cbG_e">エネルギー</label>
-      <input type="checkbox" id="cbG_v" checked class="hide">
-      <input type="checkbox" id="cbG_a" checked class="hide">
-      <span class="hr" style="width:100%"></span>
-      <label class="f">質量 m₁ <input type="number" id="inM1" value="0.1" step="0.001" min="0.0001"> kg</label>
-      <label class="f">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
-      <label class="f">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
-      <span class="mini">位置エネルギーは U = mgy（y は上向き正）</span>
-    </div>
-    <div class="row" style="margin-top:6px">
-      <button class="btn sm" id="btnXlsx">Excel（.xlsx）出力</button>
-      <button class="btn sm" id="btnCsv2">CSV出力</button>
-      <button class="btn sm" id="btnGraphPng">グラフをPNG保存</button>
+    <div class="m2out">
+      <div class="grid2">
+        <button class="btn sm" id="btnCsv2">CSV出力</button>
+        <button class="btn sm" id="btnCopy2">CSVコピー</button>
+        <button class="btn sm" id="btnReportPng2">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf2">レポートPDF</button>
+      </div>
+      <div class="row nowrap" style="margin-top:6px;justify-content:flex-end">
+        <button class="btn sm quiet" id="btnXlsx">測定データ、グラフをまとめてExcel出力</button>
+        <button class="btn sm quiet" id="btnGraphPng">グラフをPNG保存</button>
+      </div>
     </div>
   </div>
-  <div id="charts2"></div>
-  <div id="cgHost2"></div>
+  <div class="m2body">
+    <div class="m2tbl" id="m2tbl">
+      <div class="card">
+        <h3>測定した値（表）</h3>
+        <div class="tblwrap"><table class="tbl" id="dataTbl2"></table></div>
+      </div>
+      <div class="rsz" id="tblRsz" title="ドラッグで表の幅を変えられます"></div>
+    </div>
+    <div class="m2charts">
+      <div id="charts2"></div>
+      <div id="cgHost2"></div>
+    </div>
+  </div>
 </section>
 
 <!-- ================= モード3 ================= -->
 <section id="mode3" class="hide">
+  <div class="charts" id="charts3"></div>
   <div class="card">
     <div class="row">
       <b style="color:var(--accent-d)">フィットする量</b>
       <select id="selFitY">
-        <option value="x">x</option><option value="y">y</option>
-        <option value="vx">vx</option><option value="vy">vy</option>
-        <option value="ax">ax</option><option value="ay">ay</option>
+        <option value="x">x</option><option value="y" data-y="1">y</option>
+        <option value="vx">vx</option><option value="vy" data-y="1">vy</option>
+        <option value="ax">ax</option><option value="ay" data-y="1">ay</option>
       </select>
       <span class="lb mini">＝ f(t)</span>
       <b style="color:var(--accent-d);margin-left:10px">関数</b>
@@ -669,9 +778,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <span class="lb mini">対象の実験：</span>
       <span class="explist" id="expChecks3"></span>
     </div>
-    <p class="mini">※ 係数と決定係数 R² までを出します。そこから何がわかるかは自分で考えてください。</p>
+    <p class="mini">※ 係数と決定係数 R² までを出します。青い帯の左右のつまみを<b>ドラッグ</b>すると、
+    フィットに使う範囲を変えられます。</p>
   </div>
-  <div class="charts" id="charts3"></div>
   <div class="card" id="fitResult"></div>
   <div id="cgHost3"></div>
 </section>
@@ -679,36 +788,42 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 </main>
 
 <section class="card hide" id="cgCard">
-  <h3>自由選択グラフ <span class="mini" style="font-weight:400;margin-left:6px">自分で軸を自由に選べます</span></h3>
+  <h3>自由選択グラフ <span class="mini" style="font-weight:400;margin-left:6px">自分で軸を自由に選べます</span>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn sm blue" id="cgMomentum">運動量保存則</button></h3>
   <div class="cgrid">
+    <div class="cgTop">
+      <span class="cgpick"><span class="lb">縦軸</span>
+        <select id="cgExpA" title="実験"></select><select id="cgObjA" title="物体"></select></span>
+      <span class="cgpick hide" id="cgPickB"><span class="lb">縦軸2</span>
+        <select id="cgExpB" title="実験"></select><select id="cgObjB" title="物体"></select></span>
+    </div>
     <div class="cgY">
       <div class="lb">縦軸</div>
-      <select id="cgExpA" title="実験"></select>
-      <select id="cgObjA" title="物体"></select>
-      <select id="cgQA"></select>
+      <select id="cgQA" class="qsel"></select>
       <label class="cb"><input type="checkbox" id="cgInvA">正負を反転</label>
-      <div id="cgRowB" class="hide" style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px">
-        <div class="lb">縦軸2（右）</div>
-        <select id="cgExpB" title="実験"></select>
-        <select id="cgObjB" title="物体"></select>
-        <select id="cgQB"></select>
-        <label class="cb"><input type="checkbox" id="cgInvB">正負を反転</label>
-      </div>
     </div>
     <div class="cgPlot"><canvas id="cgCanvas"></canvas></div>
+    <div class="cgB hide" id="cgRowB">
+      <div class="lb">縦軸2（右）</div>
+      <select id="cgQB" class="qsel"></select>
+      <label class="cb"><input type="checkbox" id="cgInvB">正負を反転</label>
+    </div>
     <div class="cgX">
       <span class="lb">横軸</span>
-      <select id="cgQX"></select>
+      <select id="cgQX" class="qsel"></select>
       <label class="cb"><input type="checkbox" id="cgInvX">正負を反転</label>
     </div>
   </div>
   <div class="row" style="margin-top:6px">
     <label class="cb"><input type="checkbox" id="cgTwo">縦軸を2つにする（2軸）</label>
     <label class="cb"><input type="checkbox" id="cgLine" checked>点を線でつなぐ</label>
-    <button class="btn sm" id="cgMomentum">運動量保存則</button>
-    <button class="btn sm" id="cgPng">PNG保存</button>
+    <span class="mini hide" id="cgEqualNote">縦横を同じ目盛りにしています</span>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn sm quiet" id="cgPng">PNG保存</button>
   </div>
   <p class="mini hide" id="cgMomentumNote">※ 同質量の台車をぶつけると仮定</p>
+  <p class="ng hide" id="cgMomentumErr">物体２のデータがないと表示できません</p>
   <div class="row hide" id="cgFitRow">
     <span class="lb">フィット</span>
     <select id="cgFitType">
@@ -762,7 +877,7 @@ function newExp(n){
     objs:[], ref:[], useDrift:false,
     origin:null, angle:0, yflip:false, xflip:false,
     mPerPx:null, scaleRef:null, scaleLen:0.1,
-    t0:null, rangeA:null, rangeB:null, step2ok:false,
+    t0:null, rangeA:null, rangeB:null, step2ok:false, trackReady:false,
     video:{name:'',w:0,h:0,dur:0,fps:30},
     m1:0.1, m2:0.1, g:9.8,
     objName:['','',''] };
@@ -770,9 +885,11 @@ function newExp(n){
   return o;
 }
 var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1,
-  cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:1, qB:'x', invB:false,
+  cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
-  editStep:0, lastEdit:0, played:false, gsize:430 };
+  editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330 };
+/* 「軸の表示」が x軸のみ のときは、y・vy・ay をグラフや解析に出さない */
+function useY(){ return APP.axisDisp!=='x'; }
 /* 解析する時間範囲のはじめ（＝時刻の原点） */
 function rangeStart(exp){ return (exp.t0!==null)? exp.t0 : (exp.rangeA!==null? exp.rangeA : 0); }
 function EXP(){ return APP.exps[APP.cur]; }
@@ -972,26 +1089,30 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
            }) };
 }
+/* 保存された実験に足りない項目をおぎなう */
+function normExp(e){
+  var d=newExp(1);
+  for(var k in d) if(!(k in e)) e[k]=d[k];
+  if(!e.objs) e.objs=d.objs;
+  while(e.objs.length<NOBJ) e.objs.push([]);
+  return e;
+}
 function applyState(st){
   if(!st||!st.exps||!st.exps.length) return false;
-  APP.exps = st.exps.map(function(e){
-    var d=newExp(1);
-    for(var k in d) if(!(k in e)) e[k]=d[k];
-    if(!e.objs) e.objs=d.objs;
-    while(e.objs.length<NOBJ) e.objs.push([]);
-    return e;
-  });
+  APP.exps = st.exps.map(normExp);
   APP.cur = Math.min(st.cur||0, APP.exps.length-1);
   if(st.menuPos) APP.menuPos=st.menuPos;
   if(st.axisDisp) APP.axisDisp=st.axisDisp;
   if(st.cg) for(var k in st.cg) APP.cg[k]=st.cg[k];
   if(st.gsize>0) APP.gsize=st.gsize;
+  APP.energyOn=!!st.energyOn;
+  if(st.tblw>0) APP.tblw=st.tblw;
   return true;
 }
 function saveLocal(){
@@ -1356,15 +1477,15 @@ function drawOverlay(){
     /* x軸 */
     var xd = exp.xflip? -1 : 1;
     g.beginPath(); g.moveTo(o.x-c*L,o.y-s*L); g.lineTo(o.x+c*L,o.y+s*L); g.stroke();
-    arrowHead(g, o.x+c*xd*130*sc, o.y+s*xd*130*sc, exp.angle+(xd<0?Math.PI:0), 13*sc, 'rgba(255,215,0,.95)');
-    labelAt(g,'x', o.x+c*xd*150*sc, o.y+s*xd*150*sc, '#ffd700', 15*sc);
+    axisArrows(g, o, c*xd, s*xd, exp.angle+(xd<0?Math.PI:0), sc, 'rgba(255,215,0,.95)', ov);
+    labelAt(g,'x', o.x+c*xd*215*sc+s*36*sc, o.y+s*xd*215*sc-c*36*sc, '#ffd700', 21*sc);
     if(APP.axisDisp==='xy'){
       var ay = exp.yflip? (exp.angle-Math.PI/2+Math.PI) : (exp.angle-Math.PI/2);
       var cy=Math.cos(ay), sy=Math.sin(ay);
       g.strokeStyle='rgba(120,230,160,.95)';
       g.beginPath(); g.moveTo(o.x-cy*L,o.y-sy*L); g.lineTo(o.x+cy*L,o.y+sy*L); g.stroke();
-      arrowHead(g, o.x+cy*130*sc, o.y+sy*130*sc, ay, 13*sc, 'rgba(120,230,160,.95)');
-      labelAt(g,'y', o.x+cy*150*sc, o.y+sy*150*sc, '#78e6a0', 15*sc);
+      axisArrows(g, o, cy, sy, ay, sc, 'rgba(120,230,160,.95)', ov);
+      labelAt(g,'y', o.x+cy*215*sc+sy*36*sc, o.y+sy*215*sc-cy*36*sc, '#78e6a0', 21*sc);
     }
     /* 原点の印 */
     g.strokeStyle='#fff'; g.lineWidth=LW;
@@ -1430,8 +1551,23 @@ function drawOverlay(){
   }
 }
 function arrowHead(g,x,y,ang,size,col){
-  g.save(); g.translate(x,y); g.rotate(ang); g.fillStyle=col;
-  g.beginPath(); g.moveTo(0,0); g.lineTo(-size,-size*0.5); g.lineTo(-size,size*0.5); g.closePath(); g.fill(); g.restore();
+  g.save(); g.translate(x,y); g.rotate(ang);
+  g.fillStyle=col; g.strokeStyle='rgba(0,0,0,.55)'; g.lineWidth=Math.max(1,size*0.09);
+  g.beginPath(); g.moveTo(0,0); g.lineTo(-size,-size*0.45); g.lineTo(-size,size*0.45); g.closePath();
+  g.fill(); g.stroke(); g.restore();
+}
+/* 軸の正の向きに、いくつも矢印を並べる（画面のどこを見ても向きが分かるように） */
+function axisArrows(g, o, ux, uy, ang, sc, col, ov){
+  var big=Math.max(22, 40*sc);                            /* 大きくして向きを分かりやすく */
+  var d=150*sc, step=Math.max(150*sc, Math.max(ov.width,ov.height)/4);
+  var far=Math.max(ov.width,ov.height)*1.2;
+  arrowHead(g, o.x+ux*d, o.y+uy*d, ang, big, col);        /* 原点の近く */
+  for(var r=step; r<far; r+=step){                        /* 線の途中にも */
+    var x=o.x+ux*r, y=o.y+uy*r;
+    if(x<-30||y<-30||x>ov.width+30||y>ov.height+30) continue;
+    if(Math.abs(r-d)<step*0.5) continue;
+    arrowHead(g, x, y, ang, big*0.85, col);
+  }
 }
 function labelAt(g,txt,x,y,col,size){
   g.save(); g.font='bold '+size+'px '+FONT; g.textAlign='center'; g.textBaseline='middle';
@@ -1626,6 +1762,10 @@ function commitPoint(vx, vy, e){
     toast('「'+stepName(APP.step)+'」を先に終わらせてください');
     return;
   }
+  if(needTrackStart()){                       /* 「トラッキングを開始する」を押すまで待つ */
+    toast('動画の真ん中の［トラッキングを開始する］を押してください');
+    return;
+  }
   addPoint(UI.obj, vx, vy, false);
   var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;
   if(e && (e.ctrlKey||e.metaKey)) adv='n';
@@ -1661,6 +1801,7 @@ function doUndo(){
     for(var k in a.prev) exp[k]=a.prev[k];
   } else if(a.t==='ref'){ exp.ref.pop(); }
   else if(a.t==='bulk'){ exp.objs[a.obj]=a.prev; }
+  else if(a.t==='bulkAll'){ exp.objs=a.prev; }
   afterChange(); toast('取り消しました');
 }
 function nudgeLast(dx,dy){
@@ -1887,7 +2028,20 @@ function niceStep(range, target){
   var s = n<1.5?1 : n<3?2 : n<7?5 : 10;
   return s*p;
 }
-/* spec = {title,xlab,ylab,series:[{name,color,pts,shape,line}],curves:[{color,f,x0,x1}] } */
+/* ===== グラフの表示範囲（ドラッグで動かす・軸で拡大縮小する） =====
+   GV.x は「横軸のキー」ごと（t 軸は 't' を共有）、GV.y は「グラフごと」に持つ */
+var GV = { x:{}, y:{} };
+function gvReset(){ GV.x={}; GV.y={}; }
+/* いま画面に出ているグラフを、DOM を作り直さずに描き直す */
+function redrawAllCharts(){
+  els('.chartcard').forEach(function(d){
+    var cv=d.querySelector('canvas');
+    if(cv && cv.__spec) drawChart(cv, cv.__spec, cv.__opt);
+  });
+  var cg=$('cgCanvas'); if(cg && cg.__spec) drawChart(cg, cg.__spec, cg.__opt);
+}
+/* spec = {title,xlab,ylab,series:[{name,color,pts,shape,line}],curves:[{color,f,x0,x1}],
+          xkey,key,range:{a,b}} */
 function drawChart(cv, spec, opt){
   opt=opt||{};
   var dpr=Math.max(2, Math.min(window.devicePixelRatio||1,3));   /* 文字をくっきり描く */
@@ -1904,14 +2058,26 @@ function drawChart(cv, spec, opt){
   var xs=[], ys=[], ys2=[];
   spec.series.forEach(function(s){ s.pts.forEach(function(p){ if(isFinite(p.x)&&isFinite(p.y)){xs.push(p.x); ys.push(p.y);} }); });
   if(has2) spec.series2.forEach(function(s){ s.pts.forEach(function(p){ if(isFinite(p.x)&&isFinite(p.y)){xs.push(p.x); ys2.push(p.y);} }); });
+  cv.__spec=spec; cv.__opt=opt;
   if(!xs.length){ g.fillStyle='#8a95a1'; g.font='13px '+GFONT; g.textAlign='center';
-    g.fillText('データがありません', W/2, H/2); return; }
+    g.fillText('データがありません', W/2, H/2); cv.__geo=null; return; }
   var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
   var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
   if(x1-x0<1e-12){ x0-=0.5; x1+=0.5; }
   if(y1-y0<1e-12){ y0-=0.5; y1+=0.5; }
   var my=(y1-y0)*0.08; y0-=my; y1+=my;
   var mx=(x1-x0)*0.03; x0-=mx; x1+=mx;
+  /* ドラッグで動かした範囲があれば、それを使う */
+  var xk=spec.xkey||null, yk=spec.key||null, moved=false;
+  if(xk && GV.x[xk]){ x0=GV.x[xk].a; x1=GV.x[xk].b; moved=true; }
+  if(yk && GV.y[yk]){ y0=GV.y[yk].a; y1=GV.y[yk].b; moved=true; }
+  /* 縦横を同じ目盛りにする（x–y のように、両方の軸が同じ単位のとき） */
+  if(spec.equal && !has2 && !moved){
+    var kx=(x1-x0)/pw, ky=(y1-y0)/ph, k=Math.max(kx,ky);
+    var cxm=(x0+x1)/2, cym=(y0+y1)/2;
+    x0=cxm-k*pw/2; x1=cxm+k*pw/2;
+    y0=cym-k*ph/2; y1=cym+k*ph/2;
+  }
   if(y0<0&&y1>0){}
   var sx=function(v){ return L+(v-x0)/(x1-x0)*pw; };
   var sy=function(v){ return T+ph-(v-y0)/(y1-y0)*ph; };
@@ -1955,6 +2121,20 @@ function drawChart(cv, spec, opt){
     g.save(); g.translate(W-12, T+ph/2); g.rotate(Math.PI/2);
     g.textAlign='center'; g.font='12.5px '+GFONT; g.fillStyle=col2;
     g.fillText(spec.ylab2||'', 0,0); g.restore();
+  }
+  /* フィットする範囲（③解析）の帯とつまみ */
+  if(spec.range){
+    var ra=Math.max(L, Math.min(L+pw, sx(spec.range.a)));
+    var rb=Math.max(L, Math.min(L+pw, sx(spec.range.b)));
+    g.save();
+    g.fillStyle='rgba(22,99,181,.10)'; g.fillRect(ra, T, rb-ra, ph);
+    g.strokeStyle='#1663b5'; g.lineWidth=2;
+    [ra,rb].forEach(function(X){
+      g.beginPath(); g.moveTo(X,T); g.lineTo(X,T+ph); g.stroke();
+      g.fillStyle='#1663b5';
+      g.fillRect(X-4, T+ph/2-13, 8, 26);
+    });
+    g.restore();
   }
   /* 枠 */
   g.strokeStyle='#8d99a6'; g.lineWidth=1.2; g.strokeRect(L,T,pw,ph);
@@ -2014,7 +2194,64 @@ function drawChart(cv, spec, opt){
       lx+=w; if(lx>L+pw-60){ lx=L+8; ly+=15; }
     });
   }
+  cv.__geo={L:L,T:T,pw:pw,ph:ph,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,xk:xk,yk:yk,range:spec.range||null};
+  cv.__spec=spec; cv.__opt=opt;
   return {sx:sx, sy:sy, x0:x0, x1:x1};
+}
+/* グラフをドラッグで動かす／軸をドラッグして目盛りを変える */
+function bindChartDrag(cv, onRange){
+  if(cv.__dragBound) return; cv.__dragBound=true;
+  cv.style.touchAction='none';
+  var st=null;
+  function pos(e){
+    var g=cv.__geo, r=cv.getBoundingClientRect();
+    var k=(g.W||r.width)/(r.width||1);
+    return { x:(e.clientX-r.left)*k, y:(e.clientY-r.top)*k };
+  }
+  cv.addEventListener('pointerdown', function(e){
+    var g=cv.__geo; if(!g) return;
+    var q=pos(e), mode;
+    if(g.range){                                   /* フィット範囲のつまみが近いか */
+      var sxf=function(v){ return g.L+(v-g.x0)/(g.x1-g.x0)*g.pw; };
+      if(Math.abs(q.x-sxf(g.range.a))<10) mode='ra';
+      else if(Math.abs(q.x-sxf(g.range.b))<10) mode='rb';
+    }
+    if(!mode){
+      if(q.x<g.L) mode='zoomY';
+      else if(q.y>g.T+g.ph) mode='zoomX';
+      else mode='pan';
+    }
+    st={ mode:mode, x:q.x, y:q.y, x0:g.x0, x1:g.x1, y0:g.y0, y1:g.y1,
+         ra:g.range?g.range.a:0, rb:g.range?g.range.b:0 };
+    try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', function(e){
+    if(!st) return;
+    var g=cv.__geo, q=pos(e), dx=q.x-st.x, dy=q.y-st.y;
+    var spanX=st.x1-st.x0, spanY=st.y1-st.y0;
+    if(st.mode==='pan'){
+      if(!g.xk) return;
+      var d=-dx*spanX/g.pw;
+      GV.x[g.xk]={a:st.x0+d, b:st.x1+d};
+    } else if(st.mode==='zoomX'){
+      if(!g.xk) return;
+      var f=Math.exp(-dx/220), c=(st.x0+st.x1)/2;
+      GV.x[g.xk]={a:c-spanX*f/2, b:c+spanX*f/2};
+    } else if(st.mode==='zoomY'){
+      if(!g.yk) return;
+      var f2=Math.exp(dy/220), c2=(st.y0+st.y1)/2;
+      GV.y[g.yk]={a:c2-spanY*f2/2, b:c2+spanY*f2/2};
+    } else {                                        /* フィット範囲のつまみ */
+      var v=st[st.mode==='ra'?'ra':'rb'] + dx*spanX/g.pw;
+      if(onRange) onRange(st.mode==='ra'?'a':'b', v);
+      return;
+    }
+    redrawAllCharts();
+  });
+  function up(e){ if(st){ st=null; try{ cv.releasePointerCapture(e.pointerId); }catch(err){} } }
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
 }
 function tickLbl(v, step){
   if(Math.abs(v)<step*1e-6) v=0;
@@ -2090,7 +2327,8 @@ function specOne(ids, obj, q){
     ser.push({ name:(many? e.name : q), color: many? EXPCOL[i%EXPCOL.length] : OBJCOL[obj],
                shape:'dot', pts:pts });
   });
-  return { title:'', xlab:'t [s]', ylab:(CGQ[q]?CGQ[q].lab:q), series:ser };
+  return { title:'', xlab:'t [s]', ylab:(CGQ[q]?CGQ[q].lab:q), series:ser,
+           xkey:'t', key:'q'+q+'_o'+obj+'_'+ids.join('-') };
 }
 function specEnergy(ids, obj){
   var ser=[], many=(ids.length>1);
@@ -2105,7 +2343,8 @@ function specEnergy(ids, obj){
     ser.push({name:(many?e.name+' ':'')+'K+U', color:shade(base,-0.35), shape:'sq',
       pts:en.filter(function(p){return p.E!==null;}).map(function(p){return {x:p.t,y:p.E};})});
   });
-  return { title:'', xlab:'t [s]', ylab:'エネルギー [J]', series:ser };
+  return { title:'', xlab:'t [s]', ylab:'エネルギー [J]', series:ser,
+           xkey:'t', key:'E_o'+obj+'_'+ids.join('-') };
 }
 function objTitle(e, obj){ return '物体'+(obj+1)+(e&&e.objName[obj]?'（'+e.objName[obj]+'）':''); }
 
@@ -2118,7 +2357,8 @@ function renderMode2(){
   var sel=selectedExps('expChecks'), ids;
   if(over) ids=sel;
   else { ids=[APP.cur]; sel.forEach(function(i){ if(ids.indexOf(i)<0) ids.push(i); }); }
-  var showX=$('cbG_x').checked, showY=$('cbG_y').checked, showE=$('cbG_e').checked;
+  var showX=$('cbG_x').checked, showY=$('cbG_y').checked && useY(), showE=$('cbG_e').checked && APP.energyOn;
+  if(!showX && !showY) showX=true;                 /* どちらも消えてしまわないように */
   var w=APP.gsize, h=Math.round(w*0.62);
   var blocks=[], o, i;
   if(over){
@@ -2176,6 +2416,7 @@ function chartCard(title, spec, curves, w, h){
   spec.curves=curves||spec.curves;
   w=w||APP.gsize; h=h||Math.round(w*0.62);
   drawChart(cv, spec, {legend:true, w:w, h:h, fixed:true});
+  bindChartDrag(cv, spec.onRange);
   var b=document.createElement('button'); b.className='maxbtn'; b.textContent='⤢ 大きく';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
   d.appendChild(b);
@@ -2206,6 +2447,26 @@ function renderMode3(doFitNow){
     s.forEach(function(p){ var v=getter(p); if(v!==null&&isFinite(v)){ xs.push(p.t); ys.push(v); } });
     return {xs:xs, ys:ys};
   }
+  /* フィットする範囲（ドラッグで動かせる青い帯）。はじめはデータ全体 */
+  var all=[]; ids.forEach(function(i){ var e=APP.exps[i]; if(e) all=all.concat(dataOf(e).xs); });
+  if(all.length && (!APP.fitRange || APP.fitRange.a===undefined)){
+    APP.fitRange={ a:Math.min.apply(null,all), b:Math.max.apply(null,all) };
+  }
+  var FR=APP.fitRange;
+  function inRange(d){                       /* 帯の中の点だけを使う */
+    if(!FR) return d;
+    var xs=[], ys=[];
+    for(var k=0;k<d.xs.length;k++) if(d.xs[k]>=Math.min(FR.a,FR.b) && d.xs[k]<=Math.max(FR.a,FR.b)){
+      xs.push(d.xs[k]); ys.push(d.ys[k]);
+    }
+    return {xs:xs, ys:ys};
+  }
+  function onRange(which, v){                /* つまみをドラッグしたとき */
+    APP.fitRange[which]=v;
+    els('#charts3 canvas').forEach(function(cv){ if(cv.__spec) cv.__spec.range=APP.fitRange; });
+    redrawAllCharts(); saveLocal();
+  }
+  var rangeSpec=FR? {a:FR.a, b:FR.b} : null;
   if(over){
     var ss=[], cvs=[];
     ids.forEach(function(i){
@@ -2215,37 +2476,41 @@ function renderMode3(doFitNow){
       ss.push({name:e.name, color:col, shape:'dot', line:false,
         pts:d.xs.map(function(t,k){return {x:t,y:d.ys[k]};})});
       if(doFitNow){
-        var f=doFit(kind,d.xs,d.ys);
-        if(f){ cvs.push({color:col, f:f.f, x0:Math.min.apply(null,d.xs), x1:Math.max.apply(null,d.xs), dash:[6,3]});
-               res.push({name:e.name, fit:f}); }
+        var dr=inRange(d), f=doFit(kind,dr.xs,dr.ys);
+        if(f){ cvs.push({color:col, f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs), dash:[6,3]});
+               res.push({name:e.name, fit:f, n:dr.xs.length}); }
       }
     });
-    host.appendChild(chartCard(q+' – t（重ねて表示）', {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:ss, curves:cvs}, null, Math.max(APP.gsize,520)));
+    host.appendChild(chartCard(q+' – t（重ねて表示）',
+      {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:ss, curves:cvs,
+       xkey:'t', key:'fit3_over_'+q+'_'+ob, range:rangeSpec, onRange:onRange}, null, Math.max(APP.gsize,520)));
   } else {
     ids.forEach(function(i){
       var e=APP.exps[i], d=dataOf(e);
       var col=EXPCOL[i%EXPCOL.length], cvs=[];
-      if(doFitNow && d.xs.length>1){
-        var f=doFit(kind,d.xs,d.ys);
-        if(f){ cvs.push({color:'#e8443a', f:f.f, x0:Math.min.apply(null,d.xs), x1:Math.max.apply(null,d.xs)});
-               res.push({name:e.name, fit:f}); }
+      var dr=inRange(d);
+      if(doFitNow && dr.xs.length>1){
+        var f=doFit(kind,dr.xs,dr.ys);
+        if(f){ cvs.push({color:'#e8443a', f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs)});
+               res.push({name:e.name, fit:f, n:dr.xs.length}); }
       }
       host.appendChild(chartCard(q+' – t　'+e.name,
         {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:[{name:e.name+' 物体'+(ob+1), color:col, shape:'dot', line:false,
-          pts:d.xs.map(function(t,k){return {x:t,y:d.ys[k]};})}], curves:cvs}, null, Math.max(APP.gsize,520)));
+          pts:d.xs.map(function(t,k){return {x:t,y:d.ys[k]};})}], curves:cvs,
+         xkey:'t', key:'fit3_'+i+'_'+q+'_'+ob, range:rangeSpec, onRange:onRange}, null, Math.max(APP.gsize,520)));
     });
   }
   var box=$('fitResult');
   if(doFitNow){
-    if(!res.length){ box.innerHTML='<p class="mini">フィットできませんでした。点の数が足りないか、その関数では合わせられません。</p>'; }
+    if(!res.length){ box.innerHTML='<span class="ng">フィットできませんでした。点の数が足りないか、その関数では合わせられません。</span>'; }
     else {
-      box.innerHTML='<h3 style="margin:.1em 0 .4em;color:var(--accent-d);font-size:.98rem">フィット結果（'+
-        $('selFitY').value+' = f(t)、物体'+(ob+1)+'）</h3>'+
-        res.map(function(r){
-          return '<div style="margin:.35em 0"><b>'+esc(r.name)+'</b><br><span class="val">'+esc(fitLabel(r.fit))+
-                 '</span><br><span class="val">R² = '+sig(r.fit.r2,6)+'</span></div>';
-        }).join('')+
-        '<p class="mini">R² は 1 に近いほど、その関数でよく表せているという意味です。</p>';
+      box.innerHTML=res.map(function(r){
+        return '<div class="fitone"><b>'+esc(r.name)+' 物体'+(ob+1)+'</b>　'+
+               '（縦軸 '+esc(QDEF[q].lab)+'、横軸 t [s]）<br>'+
+               '<span class="val">'+esc(fitLabel(r.fit))+'</span><br>'+
+               '<span class="val">R² = '+sig(r.fit.r2,6)+'</span>'+
+               '<span class="mini">　使った点 '+r.n+' 個'+(FR? '（t = '+nf(Math.min(FR.a,FR.b),3)+' 〜 '+nf(Math.max(FR.a,FR.b),3)+' s）':'')+'</span></div>';
+      }).join('');
     }
   } else if(!box.innerHTML){
     box.innerHTML='<p class="mini">「フィットする」を押すと、最小二乗法で係数と R² を出します。</p>';
@@ -2281,6 +2546,7 @@ function cgSpec(){
   var c=APP.cg;
   var pa=cgPoints(c.expA, c.objA, c.qA, c.invA, c.xq, c.invX);
   var spec={ title:'', xlab:cgLab(c.xq,c.invX), ylab:cgLab(c.qA,c.invA),
+    xkey:(c.xq==='t'&&!c.invX)? 't' : ('cgx_'+c.xq+(c.invX?'m':'')), key:'cg',
     series:[{ name:cgName(c.expA,c.objA,c.qA,c.invA), color:'#1663b5', shape:'dot',
               line:c.line!==false, pts:pa }] };
   if(c.two){
@@ -2289,6 +2555,9 @@ function cgSpec(){
                     line:c.line!==false, pts:pb }];
     spec.ylab2=cgLab(c.qB,c.invB);
   }
+  /* 縦横が同じ単位（位置どうし）なら、目盛りの間隔をそろえて形がゆがまないようにする */
+  spec.equal = (!c.two) && CGQ[c.qA] && CGQ[c.xq] &&
+               CGQ[c.qA].lab.slice(-4)===CGQ[c.xq].lab.slice(-4);
   if(APP.cgFit && pa.length>1){
     var xs=pa.map(function(p){return p.x;});
     spec.curves=[{ color:'#1c8f4a', f:APP.cgFit.f,
@@ -2296,10 +2565,20 @@ function cgSpec(){
   }
   return spec;
 }
+/* 自由選択グラフの大きさ（他のグラフと同じ「拡大／縮小」に合わせる） */
+function cgWidth(){
+  var w=Math.round(APP.gsize*0.78);
+  var win=window.innerWidth||900;
+  var avail=win - (win<820? 70 : 330);
+  return Math.max(240, Math.min(560, Math.min(w, avail)));
+}
 function renderCG(){
   var host=$('cgCard'); if(!host) return;
-  var w=Math.min(470, Math.max(300, (host.clientWidth||620)-190));
-  drawChart($('cgCanvas'), cgSpec(), {w:w, h:Math.round(w*0.575), legend:true, fixed:true});
+  var spec=cgSpec();
+  var eq=$('cgEqualNote'); if(eq) eq.classList.toggle('hide', !spec.equal);
+  var w=cgWidth();
+  drawChart($('cgCanvas'), spec, {w:w, h:Math.round(w*(spec.equal?0.8:0.575)), legend:true, fixed:true});
+  bindChartDrag($('cgCanvas'));
 }
 function cgDoFit(kind){
   var c=APP.cg;
@@ -2309,10 +2588,11 @@ function cgDoFit(kind){
   APP.cgFit=f;
   if(!f){ $('cgResult').innerHTML='<span class="ng">この関数では合わせられませんでした。</span>'; }
   else {
-    $('cgResult').innerHTML='<b>'+esc(cgName(c.expA,c.objA,c.qA,c.invA))+'</b>　'+
+    $('cgResult').innerHTML='<div class="fitone"><b>'+esc(cgName(c.expA,c.objA,c.qA,c.invA))+'</b>　'+
       '（縦軸 '+esc(cgLab(c.qA,c.invA))+'、横軸 '+esc(cgLab(c.xq,c.invX))+'）<br>'+
       '<span class="val">'+esc(fitLabel(f).replace(/ t/g,' x'))+'</span><br>'+
-      '<span class="val">R² = '+sig(f.r2,6)+'</span>';
+      '<span class="val">R² = '+sig(f.r2,6)+'</span>'+
+      '<span class="mini">　使った点 '+pa.length+' 個</span></div>';
   }
   renderCG();
 }
@@ -2581,16 +2861,16 @@ function sheetForExp(exp, idx){
   rows.push(['スケール[m/px]', exp.mPerPx||'', 'x軸[deg]', Number(nf(exp.angle*180/Math.PI,3))]);
   rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, 'g[m/s2]', exp.g]);
   rows.push([]);
+  var useE=!!APP.energyOn;                 /* 「エネルギーを解析する」を押したときだけ出す */
+  var QS = useE? ['x','y','vx','vy','ax','ay','K','U','K+U'] : ['x','y','vx','vy','ax','ay'];
   var head=['t[s]'], cols={};
   objs.forEach(function(o){
-    ['x','y','vx','vy','ax','ay','K','U','K+U'].forEach(function(q){
-      cols[q+o]=head.length; head.push(q+'_'+(o+1));
-    });
+    QS.forEach(function(q){ cols[q+o]=head.length; head.push(q+'_'+(o+1)); });
   });
   rows.push(head);
   var headRow=rows.length;                 /* 1-based のヘッダ行 */
   var ss=objs.map(function(o){ return series(exp,o); });
-  var ens=objs.map(function(o,k){ return energy(exp,o,ss[k]); });
+  var ens=objs.map(function(o,k){ return useE? energy(exp,o,ss[k]) : []; });
   var n0=Math.max.apply(null, ss.map(function(s){return s.length;}).concat([0]));
   for(i=0;i<n0;i++){
     var row=[], t=null;
@@ -2598,8 +2878,8 @@ function sheetForExp(exp, idx){
     row.push(t===null?'':num(t));
     ss.forEach(function(s,k){
       var p=s[i], e=ens[k][i];
-      row.push(p?num(p.x):'', p?num(p.y):'', num(p&&p.vx), num(p&&p.vy), num(p&&p.ax), num(p&&p.ay),
-               e?num(e.K):'', e?num(e.U):'', e?num(e.E):'');
+      row.push(p?num(p.x):'', p?num(p.y):'', num(p&&p.vx), num(p&&p.vy), num(p&&p.ax), num(p&&p.ay));
+      if(useE) row.push(e?num(e.K):'', e?num(e.U):'', e?num(e.E):'');
     });
     rows.push(row);
   }
@@ -2608,9 +2888,9 @@ function sheetForExp(exp, idx){
   if(n0>1){
     var anchor=head.length+1, chDefs=[
       {t:'x - t', y:'x [m]', q:'x'}, {t:'y - t', y:'y [m]', q:'y'},
-      {t:'vx, vy - t', y:'v [m/s]', q:'v'}, {t:'ax, ay - t', y:'a [m/s2]', q:'a'},
-      {t:'エネルギー - t', y:'E [J]', q:'e'}
+      {t:'vx, vy - t', y:'v [m/s]', q:'v'}, {t:'ax, ay - t', y:'a [m/s2]', q:'a'}
     ];
+    if(useE) chDefs.push({t:'エネルギー - t', y:'E [J]', q:'e'});
     chDefs.forEach(function(d,di){
       var sers=[];
       objs.forEach(function(o,k){
@@ -2811,13 +3091,23 @@ function exportJson(){
   dl(new Blob([JSON.stringify(st,null,1)],{type:'application/json'}), fnameBase()+'.json');
   toast('JSONで保存しました（動画は含みません）');
 }
+/* 過去の測定データを、いまの実験を消さずに「次の実験番号」から足す */
 function importJson(file){
   var fr=new FileReader();
   fr.onload=function(){
     try{
       var st=JSON.parse(fr.result);
-      if(!applyState(st)) throw new Error('形式が違います');
-      refreshExpUI(); afterChange(); toast('読み込みました（動画は読み直してください）');
+      if(!st||!st.exps||!st.exps.length) throw new Error('形式が違います');
+      var first=APP.exps.length+1, added=0;
+      st.exps.forEach(function(e){
+        if(APP.exps.length>=MAXEXP) return;
+        APP.exps.push(normExp(e)); added++;
+      });
+      if(!added) throw new Error('実験は'+MAXEXP+'個までです');
+      APP.cur=APP.exps.length-added;                 /* 足した最初の実験に切りかえる */
+      UI.undo=[]; UI.lastPt=null; clearStrobe();
+      refreshExpUI(); afterChange();
+      toast('過去の測定データを実験'+first+(added>1?'〜'+(first+added-1):'')+'に登録しました');
     }catch(e){ alert('読み込めませんでした：'+e.message); }
   };
   fr.readAsText(file);
@@ -2909,8 +3199,6 @@ function afterChange(){
   exp.m2=parseFloat($('inM2').value)||0.1;
   exp.g=parseFloat($('inG').value)||9.8;
   updateCalInfo(); updateTimeLine(); updateTable();
-  var n=exp.objs.reduce(function(a,b){return a+b.length;},0);
-  $('expInfo').textContent='点 '+n+'（'+exp.objs.map(function(a){return a.length;}).join('/')+'）';
   $('refInfo').textContent='固定点 '+exp.ref.length;
   drawOverlay();
   updateSteps();
@@ -2951,8 +3239,12 @@ function updateTimeLine(){
 function updateTable(){
   var exp=EXP(), objs=[], i;
   for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
-  var t=$('dataTbl');
-  if(!objs.length){ t.innerHTML='<tr><th>データなし</th></tr>'; return; }
+  var t=$('dataTbl'), t2=$('dataTbl2');
+  if(!objs.length){
+    t.innerHTML='<tr><th>データなし</th></tr>';
+    if(t2) t2.innerHTML='<tr><th>データなし</th></tr>';
+    return;
+  }
   var ss=objs.map(function(o){ return series(exp,o); });
   var h='<tr><th>t [s]</th>';
   objs.forEach(function(o){ h+='<th>x'+(o+1)+' [m]</th><th>y'+(o+1)+' [m]</th><th>vx'+(o+1)+'</th><th>vy'+(o+1)+'</th>'; });
@@ -2972,16 +3264,37 @@ function updateTable(){
     h+='</tr>';
   }
   t.innerHTML=h;
-  if(curRow>=0){                       /* いま記録したところが見えるようにする */
-    var tr=t.rows[curRow+1], wrap=t.parentNode;
+  if(t2) t2.innerHTML=h;               /* ②グラフの左にも同じ表を出す */
+  [t,t2].forEach(function(tb){
+    if(!tb || curRow<0) return;        /* いま記録したところが見えるようにする */
+    var tr=tb.rows[curRow+1], wrap=tb.parentNode;
     if(tr && wrap && wrap.scrollHeight>wrap.clientHeight){
       var top=tr.offsetTop-wrap.clientHeight/2+tr.offsetHeight;
       wrap.scrollTop=Math.max(0, top);
     }
-  }
+  });
 }
 
 /* ---------- 実験の管理 ---------- */
+/* 「過去測定データを実験○に登録」の○（次の実験番号）を出しなおす */
+/* エネルギーを解析するかどうか（②のチェック・入力欄・Excel出力に効く） */
+function setEnergyOn(on){
+  APP.energyOn=!!on;
+  var b=$('btnEnergyOn');
+  $('energyRow').classList.toggle('hide', !APP.energyOn);
+  if(b){ b.classList.toggle('on', APP.energyOn);
+         b.textContent = APP.energyOn? 'エネルギーの解析をやめる' : 'エネルギーを解析する'; }
+  if(!APP.energyOn) $('cbG_e').checked=false;
+  if(!$('mode2').classList.contains('hide')) renderMode2();
+}
+function updateOutButtons(){
+  var n=APP.exps.length+1, full=(APP.exps.length>=MAXEXP);
+  ['btnJsonLoadTop'].forEach(function(id){
+    var b=$(id); if(!b) return;
+    b.innerHTML = full? '実験はこれ以上<br>増やせません' : ('過去測定データを<br>実験'+n+'に登録');
+    b.disabled=full;
+  });
+}
 function refreshExpUI(){
   var s=$('expSel'); s.innerHTML='';
   APP.exps.forEach(function(e,i){
@@ -3004,6 +3317,8 @@ function refreshExpUI(){
     });
   });
   if($('cgExpA')) refreshCGExps();
+  updateOutButtons();
+  setEnergyOn(APP.energyOn);
   var e=EXP();
   $('selObj').value=String(UI.obj+1);
   $('inObjName').value=e.objName[UI.obj]||'';
@@ -3011,6 +3326,7 @@ function refreshExpUI(){
   $('cbYFlip').checked=!!e.yflip;
   $('cbXFlip').checked=!!e.xflip;
   $('selAxisDisp').value=APP.axisDisp;
+  applyAxisDisp();
   if(e.scaleLen>0){                       /* スケール長さの入力欄も実験に合わせる */
     if(e.scaleLen>=1){ $('selScaleUnit').value='1'; $('inScaleLen').value=+(e.scaleLen).toFixed(4); }
     else if(e.scaleLen>=0.01){ $('selScaleUnit').value='0.01'; $('inScaleLen').value=+(e.scaleLen*100).toFixed(3); }
@@ -3025,7 +3341,7 @@ function currentStep(){
   if(!(e.origin && e.mPerPx)) return 3;
   return 4;
 }
-function stepName(n){ return ['','1. 動画','2. 解析する時間範囲','3. 空間の原点・スケール・軸','4. トラッキング'][n]||''; }
+function stepName(n){ return ['','1. 動画','2. 解析する時間範囲の指定','3. 空間の原点・スケール・軸','4. トラッキング'][n]||''; }
 function updateSteps(){
   var st=currentStep(), changed=(APP.step!==st);
   var ed=(APP.editStep && APP.editStep<st)? APP.editStep : 0;   /* 「もう一度」で開いているカード */
@@ -3063,7 +3379,6 @@ function updateSteps(){
       scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
       color:'マーカーの色の所をクリック'}[UI.mode]||'');
   updateBigPlay();
-  updateStartTrack();
   drawSeekMarks();
   updateTodo();
   applyRangeLimit();
@@ -3080,23 +3395,47 @@ function updateGuide(){
   var e=EXP(), st=(APP.editStep&&APP.editStep<APP.step)?APP.editStep:APP.step;
   els('.btn.glow').forEach(function(b){ b.classList.remove('glow'); });
   els('#tabs button.glow').forEach(function(b){ b.classList.remove('glow'); });
+  /* 1：動画をえらぶまでは「動画ファイルを選択」を光らせる */
+  if(st===1 && !VID.ready) $('btnFile').classList.add('glow');
+  /* 4：まず「トラッキングを開始する」、押したら動画そのものを光らせる */
+  var start4=(st===4 && VID.ready && needTrackStart());
+  $('btnTrkStart').classList.toggle('hide', !start4);
+  var need4=(st===4 && VID.ready && !start4 &&
+             EXP().objs.reduce(function(a,b){return a+b.length;},0)===0);
+  els('.videobox').forEach(function(v){ v.classList.toggle('glow', need4); });
   var show2=(st===2);
   $('vidStep2').classList.toggle('hide', !show2);
+  /* 4.トラッキングの間だけ、動画エリアの右上にもリセットを出す */
+  $('btnTrkReset2').classList.toggle('hide', !(st===4 && VID.ready));
+  var wantT0=false, wantB=false;
   if(show2){
     if(!APP.played){ ['btnPlay','btnPlay2'].forEach(function(id){ $(id).classList.add('glow'); }); }
-    else if(e.t0===null){ ['btnTimeZero','btnTimeZero2'].forEach(function(id){ $(id).classList.add('glow'); }); }
-    else if(e.rangeB===null){ ['btnRangeB','btnRangeB2'].forEach(function(id){ $(id).classList.add('glow'); }); }
+    else if(e.t0===null){ wantT0=true; ['btnTimeZero','btnTimeZero2'].forEach(function(id){ $(id).classList.add('glow'); }); }
+    else if(e.rangeB===null){ wantB=true; ['btnRangeB','btnRangeB2'].forEach(function(id){ $(id).classList.add('glow'); }); }
   }
+  ['coTimeZero','coTimeZero2'].forEach(function(id){ $(id).classList.toggle('hide', !wantT0); });
+  ['coRangeB','coRangeB2'].forEach(function(id){ $(id).classList.toggle('hide', !wantB); });
   if(st===3){
-    if(!e.origin) $('btnOrigin').classList.add('glow');
+    /* 押したあと（クリック待ちの間）も光らせ続ける */
+    if(!e.origin || UI.mode==='origin') $('btnOrigin').classList.add('glow');
     else if(UI.mode==='axis') $('btnAxis').classList.add('glow');
-    else if(!e.mPerPx) $('btnScale').classList.add('glow');
+    else if(!e.mPerPx || UI.mode==='scale1' || UI.mode==='scale2') $('btnScale').classList.add('glow');
   }
-  /* トラッキングが範囲の終わりまで進んだら ②グラフ を光らせる */
-  if(APP.step>=4 && trackingDone()){
-    el('#tabs button[data-mode="2"]').classList.add('glow');
-  }
+  /* トラッキングが範囲の終わりまで進んだら ②グラフ を光らせ、終わりを知らせる */
+  var done=(APP.step>=4 && trackingDone());
+  if(done) el('#tabs button[data-mode="2"]').classList.add('glow');
+  $('doneMsg').classList.toggle('hide', !(done && VID.ready));
+  $('trkDone').classList.toggle('hide', !done);
+  $('btnExpNew').classList.toggle('hide', !done);
+  $('btnJsonSaveTop').classList.toggle('hide', !done);
   $('labYFlip').classList.toggle('hide', APP.axisDisp!=='xy');
+}
+/* 「トラッキングを開始する」をまだ押していない（＝記録させない）か */
+function needTrackStart(){
+  var e=EXP();
+  if(e.trackReady) return false;
+  if(e.objs.reduce(function(a,b){return a+b.length;},0)>0) return false;  /* 前のデータがあるなら不要 */
+  return true;
 }
 function trackingDone(){
   var e=EXP();
@@ -3118,7 +3457,7 @@ function todoText(){
   var e=EXP(), st=APP.step;
   if(st===1) return '動画ファイルを選ぶか、この画面に動画を<b>ドラッグ＆ドロップ</b>してください。';
   if(st===2){
-    if(e.t0===null) return '再生して「運動が始まる時刻」を探し、解析をはじめたいコマで <b>［時刻の原点（t = 0）］</b> を押してください。';
+    if(e.t0===null) return '再生して「運動が始まる時刻」を探し、解析をはじめたいコマで <b>［この時刻をt = 0］</b> を押してください。';
     if(e.rangeB===null) return 'つぎに、おわりにしたいコマまで進めて <b>［この時刻まで解析］</b> を押してください。';
     return '';
   }
@@ -3132,7 +3471,9 @@ function todoText(){
     if(UI.mode==='ref') return '動かない目印（机の角など）をクリックしてください。';
     if(UI.mode==='color') return '追いかけたいマーカーの<b>色の所</b>をクリックしてください。';
     var n=EXP().objs.reduce(function(a,b){return a+b.length;},0);
+    if(needTrackStart()) return '動画の真ん中の <b>［トラッキングを開始する］</b> を押してください。';
     if(!n) return '<b>物体番号</b>をえらび、動画の中の物体を<b>クリック（タップ）</b>して位置を記録してください。';
+    if(trackingDone()) return '';           /* 終わったら「解析終了」の知らせにゆずる */
     return 'コマを進めながら、同じ物体をクリックしていきます。おわったら <b>② グラフ</b> へ。';
   }
   return '';
@@ -3207,25 +3548,6 @@ function updateBigPlay(){
   var show = VID.ready && VID.el.paused && APP.step<=2;
   b.classList.toggle('hide', !show);
 }
-/* スケールまで決まったら、動画の上に大きく「トラッキングを開始する」を出す。
-   押すと 4.トラッキング へ進む（点を1つでも取ってあれば、もう出さない）。 */
-function updateStartTrack(){
-  var b=$('startTrack'); if(!b) return;
-  var e=EXP(), has=false;
-  for(var i=0;i<NOBJ;i++){ if(e.objs[i] && e.objs[i].length){ has=true; break; } }
-  var show = VID.ready && APP.step>=4 && !APP.trackStarted && !has;
-  b.classList.toggle('hide', !show);
-}
-function beginTracking(){
-  APP.trackStarted=true;
-  APP.editStep=0;
-  setMode('record');
-  var card=el('#side1 details[data-step="4"]');
-  if(card){ card.open=true;
-    setTimeout(function(){ card.scrollIntoView({block:'nearest', behavior:'smooth'}); }, 60); }
-  updateStartTrack(); updateSteps();
-  toast('動画の上をクリックして、物体の位置を記録しましょう');
-}
 /* シークバーの縦棒（t=0 と おわり） */
 function drawSeekMarks(){
   var e=EXP(), sk=$('seek'), r=sk.getBoundingClientRect();
@@ -3286,8 +3608,24 @@ function applyNarrowLayout(){
 }
 function clearStrobe(){
   UI.stroReady=false;
-  $('cvStrobe').classList.add('hide');
+  UI.stroImg=null;
+  setStrobeOverlay(false);
+  var cv=$('cvStrobe');
+  cv.classList.add('hide');
+  cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
   $('stroInfo').textContent='まだ作っていません';
+}
+/* トラッキングした点を全部消して、解析範囲の最初にもどる */
+function resetTracking(){
+  var e=EXP();
+  var n=e.objs.reduce(function(a,o){ return a+o.length; },0);
+  if(!n){ toast('記録した点はまだありません'); return; }
+  pushUndo({t:'bulkAll', prev:e.objs.map(function(o){ return o.slice(); })});
+  for(var i=0;i<NOBJ;i++) e.objs[i]=[];
+  UI.lastPt=null;
+  afterChange(); render();
+  rewindToRangeStart();
+  toast('トラッキングした点をリセットしました（Ctrl+Z でもどせます）');
 }
 function switchExp(i){
   APP.cur=i; UI.undo=[]; UI.lastPt=null; clearStrobe();
@@ -3448,6 +3786,7 @@ function togglePlay(){
 function startPlay(){
   var v=VID.el;
   APP.played=true;
+  updateGuide();                 /* 再生したら「この時刻をt = 0」を光らせる */
   if(true){
     v.play(); $('btnPlay').textContent='⏸ 停止'; $('btnPlay2').textContent='⏸ 停止';
     updateBigPlay();
@@ -3463,6 +3802,7 @@ function stopPlay(){
   var v=VID.el; v.pause(); $('btnPlay').textContent='▶ 再生'; $('btnPlay2').textContent='▶ 再生';
   updateBigPlay();
   if(playTimer){ clearInterval(playTimer); playTimer=null; }
+  updateGuide();
   vidSeek(v.currentTime).then(afterSeek);
 }
 
@@ -3494,9 +3834,10 @@ function openHelp(){
   '読み込むと<b>コマ表</b>（各コマの実際の時刻の表）を自動で作ります。'+
   'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います。</p>'+
   '<p>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します。</p>'+
-  '<h3>2. 解析する時間範囲を決める</h3>'+
+  '<p>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）。</p>'+
+  '<h3>2. 解析する時間範囲の指定</h3>'+
   '<p>動画の真ん中の▶か「再生」で見どころをさがし、コマ送りで合わせてから：</p>'+
-  '<ul><li><b>時刻の原点（t=0）</b>：いま出ているコマを t=0 にします（もう一度押すと解除）</li>'+
+  '<ul><li><b>この時刻をt = 0</b>：いま出ているコマを t=0 にします（もう一度押すと解除）</li>'+
   '<li><b>この時刻まで解析</b>：いま出ているコマを、解析のおわりにします</li>'+
   '<li>この2つは<b>シークバーの縦棒</b>（緑＝t=0、赤＝おわり）でも表示され、<b>ドラッグで動かせます</b></li>'+
   '<li>fps の表示や「コマ表を作る」もここにあります</li></ul>'+
@@ -3507,16 +3848,29 @@ function openHelp(){
   'あとから<b>その点をつまんで動かす</b>こともできます</li>'+
   '<li><b>ストロボ写真を重ねる</b>：運動の全体を薄く重ねて見ながら、原点や軸を決められます'+
   '（記録には影響しません。4 に進むと自動で外れます）</li>'+
-  '<li>斜面や斜方投射では x 軸を傾けます。y 軸は自動で直角、必要なら「y軸を反転」</li></ul>'+
+  '<li>斜面や斜方投射では x 軸を傾けます。y 軸は自動で直角、必要なら「y軸を反転」</li>'+
+  '<li>軸の線には<b>正の向きの矢印</b>がいくつも並びます。どちら向きが正か、画面のどこを見ても分かります</li>'+
+  '<li><b>軸の表示＝「x軸のみ」</b>にすると、②③でも y・vy・ay は出さず、x の運動だけを見ます'+
+  '（「x軸とy軸」にすればまた出ます）</li></ul>'+
   '<h3>4. 位置を記録する</h3>'+
-  '<ul><li>動画の上をタップ（クリック）すると、その位置が記録されます</li>'+
+  '<ul><li>まず動画の真ん中の <b>［トラッキングを開始する］</b> を押します。'+
+  '押すまでは、まちがえて動画をさわっても点は入りません</li>'+
+  '<li>動画の上をタップ（クリック）すると、その位置が記録されます</li>'+
   '<li>指でタップすると<b>ルーペ</b>が出ます。指をつけたままドラッグして合わせ、はなすと確定です</li>'+
   '<li><kbd>Shift</kbd>＋クリック＝記録して1コマ進む、<kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋クリック＝記録してNコマ進む</li>'+
-  '<li>取消は <b>↩取消</b> か <kbd>Ctrl</kbd>＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ動かせます</li>'+
+  '<li>取消は <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ動かせます</li>'+
   '<li><b>物体番号</b>を変えると、2つ目・3つ目の物体を追跡できます（衝突の実験など）</li>'+
   '<li>2本指でピンチすると拡大、2本指で動かすと移動できます</li>'+
-  '<li><b>動画と表を並べる</b>：動画の右に「測定した値」の表を出して、数字を見ながら記録できます</li>'+
-  '<li>解析範囲のおわりまで記録できると、上の <b>②グラフ</b> のタブが光ります</li></ul>'+
+  '<li><b>トラッキングした点をリセット</b>：この実験の点を全部消して、解析範囲の最初にもどります'+
+  '（動画エリアの右上にも同じボタンが出ます。Ctrl＋Z でもどせます）</li>'+
+  '<li><b>動画と表を並べる</b>：動画の右に「測定した値」の表を出して、数字を見ながら記録できます。'+
+  '同じ表は<b>②グラフの左</b>にも出ます</li>'+
+  '<li>解析範囲のおわりまで記録できると、動画の真ん中に<b>「解析終了。グラフを表示してみよう」</b>が出て、'+
+  '上の <b>②グラフ</b> のタブが光ります。同時に上のバーに <b>［＋新しい実験］</b> が出ます'+
+  '（動画1本の解析が終わったら、次の動画は新しい実験にします）</li></ul>'+
+  '<h3>5. ストロボ画像</h3>'+
+  '<ul><li>「ストロボ画像を作る」で、記録したコマを1枚に重ねた写真ができます</li>'+
+  '<li><b>画像をリセット</b>でその画像を消せます（重ねて表示していたときも外れます）</li></ul>'+
   '<h3>手ぶれ対策</h3>'+
   '<p>三脚がないときは画面がゆれます。「画面内の固定点を記録」で<b>動かない目印</b>（机の角など）を、はじめ・中ごろ・終わりなど数コマでクリックし、'+
   '「手ぶれ補正を使う」にチェックを入れると、そのずれの分だけ全部の点を補正します。</p>'+
@@ -3532,19 +3886,38 @@ function openHelp(){
   '<ul><li>②で x–t, y–t, v–t, a–t とエネルギーのグラフ。速度・加速度は<b>中央差分</b>で出しています（両端は出ません）</li>'+
   '<li>グラフは <b>物体ごと</b>にまとまり、左の列が x・vx・ax、右の列が y・vy・ay です。'+
   '「グラフを拡大／縮小」で全部の大きさを変えられ、各グラフの「⤢大きく」で 1 枚だけ大きく見られます</li>'+
+  '<li><b>グラフの中をドラッグ</b>すると左右に動きます。<b>横軸の目盛りの所をドラッグ</b>すると横の拡大縮小、'+
+  '<b>縦軸の目盛りの所をドラッグ</b>すると縦の拡大縮小。'+
+  '横軸（t）は x–t・v–t・a–t で<b>いっしょに動きます</b>（縦軸はグラフごと）。'+
+  'もとにもどすときは <b>［スケールをリセット］</b></li>'+
+  '<li>②の左の「測定した値（表）」は、右はしを<b>ドラッグして幅を変えられます</b></li>'+
   '<li><b>自由選択グラフ</b>（グラフの右、③でも同じものが使えます）：'+
   '実験・物体・量を選んで、縦軸と横軸を自由に決められます。<br>'+
   '「正負を反転」でデータ点の符号を入れかえられます（右向きを正にしたいときなど）。<br>'+
   '「縦軸を2つにする（2軸）」にすると、左と右で別々の目盛の縦軸になります。'+
   '例：〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕で衝突の前後を見る、'+
   '〔縦軸＝x／縦軸2＝y／横軸＝t〕で x と y を 1 枚で見る、など</li>'+
-  '<li><b>運動量保存則</b>ボタンで〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕に一発で切りかわります</li>'+
+  '<li><b>運動量保存則</b>ボタン（右下）で〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕に一発で切りかわります。'+
+  '物体2のデータが無いときは切りかわらず、赤字で知らせます</li>'+
+  '<li>縦軸と横軸が<b>同じ単位</b>のとき（x–y など）は、縦横の目盛りを自動でそろえます。'+
+  '円運動が<b>ちゃんと円に見えます</b></li>'+
+  '<li>エネルギーは②の左下の <b>［エネルギーを解析する］</b> を押すと、質量 m や g の入力欄が出ます。'+
+  '押していないときは Excel 出力にもエネルギーは入りません</li>'+
+  '<li><b>縦軸を2つにする（2軸）</b>の最初の設定は、縦軸1と同じ実験・同じ物体です</li>'+
   '<li>③では、そのグラフをそのまま<b>フィット</b>できます（係数と R²）</li>'+
+  '<li>③のグラフの<b>青い帯</b>は「フィットに使う範囲」です。左右のつまみをドラッグすると変えられます'+
+  '（たとえば、動き出しの前を外して直線でフィットする、など）</li>'+
   '<li>実験は10個まで記録でき、「並べて表示」「重ねて表示」で比べられます</li>'+
-  '<li>③で直線・放物線・正弦・指数の最小二乗フィット。<b>係数と R² まで</b>を出します。そこから何が言えるかは自分で考えてください</li></ul>'+
+  '<li>③で直線・放物線・正弦・指数の最小二乗フィット。<b>係数と R² まで</b>を出します</li></ul>'+
   '<h3>保存・提出</h3>'+
   '<ul><li><b>CSV</b>／<b>Excel(.xlsx)</b>（グラフつき）／<b>レポートPNG・PDF</b></li>'+
-  '<li><b>JSON保存</b>：測定した点や設定だけを保存します（動画は入りません）。次に開くとき「JSON読込」で続きができます（ドロップでも読めます）</li>'+
+  '<li><b>測定データを保存</b>：測定した点や設定だけを保存します（動画は入りません）</li>'+
+  '<li><b>過去測定データを実験○に登録</b>：保存したファイルを、<b>いまの実験を消さずに</b>'+
+  '次の実験番号として足します。前の実験や去年のデータと並べて比べられます（ドロップでも読めます）</li>'+
+  '<li>CSV出力・CSVコピー・レポートPNG・レポートPDF は <b>①・②のどちらからでも</b>同じように使えます</li>'+
+  '<li><b>測定データを保存</b>は、解析が終わると<b>上のバー</b>に出ます。'+
+  '<b>過去測定データを実験○に登録</b>も上のバーにあります</li>'+
+  '<li><b>測定データ、グラフをまとめてExcel出力</b>（②）：表とグラフの入った .xlsx になります</li>'+
   '<li>この端末のブラウザにも自動保存されます。共用の端末では、終わったら「保存データを消去」を押してください</li></ul>'+
   '<h3>精度について</h3>'+
   '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
@@ -3554,15 +3927,39 @@ function openHelp(){
 }
 
 /* ===== じぶんで軸を選ぶグラフ（モード2・3で共有） ===== */
-function buildCG(){
+/* 自由選択グラフの「量」の選択肢（x軸のみのときは y 系を出さない） */
+function cgFillQuantities(){
   var qs=[['x','x（位置）'],['y','y（位置）'],['vx','vx（速度）'],['vy','vy（速度）'],
           ['ax','ax（加速度）'],['ay','ay（加速度）']];
+  if(!useY()) qs=qs.filter(function(q){ return q[0].indexOf('y')<0; });
   function fillQ(sel, withT){
+    if(!sel) return;
     sel.innerHTML='';
     if(withT){ var o=document.createElement('option'); o.value='t'; o.textContent='t（時刻）'; sel.appendChild(o); }
     qs.forEach(function(q){ var o=document.createElement('option'); o.value=q[0]; o.textContent=q[1]; sel.appendChild(o); });
   }
   fillQ($('cgQA'),false); fillQ($('cgQB'),false); fillQ($('cgQX'),true);
+}
+/* 「軸の表示＝x軸のみ」に合わせて、②③の y 系の項目を出し入れする */
+function applyAxisDisp(){
+  var yOK=useY(), c=APP.cg;
+  var lab=$('labGY'); if(lab) lab.classList.toggle('hide', !yOK);
+  var sf=$('selFitY');
+  if(sf){
+    els('#selFitY option').forEach(function(o){
+      var isY=o.dataset.y==='1'; o.hidden=(!yOK&&isY); o.disabled=(!yOK&&isY);
+    });
+    if(!yOK && sf.value.indexOf('y')>=0) sf.value='x';
+  }
+  if(!yOK){
+    if(c.qA.indexOf('y')>=0) c.qA='x';
+    if(c.qB.indexOf('y')>=0) c.qB='x';
+    if(c.xq.indexOf('y')>=0) c.xq='t';
+  }
+  if($('cgQA')){ cgFillQuantities(); cgToUI(); }
+}
+function buildCG(){
+  cgFillQuantities();
   ['cgObjA','cgObjB'].forEach(function(id){
     var sel=$(id); sel.innerHTML='';
     for(var i=0;i<NOBJ;i++){ var o=document.createElement('option'); o.value=i; o.textContent='物体'+(i+1); sel.appendChild(o); }
@@ -3586,7 +3983,12 @@ function cgToUI(){
   $('cgExpB').value=Math.min(c.expB,APP.exps.length-1); $('cgObjB').value=c.objB; $('cgQB').value=c.qB; $('cgInvB').checked=!!c.invB;
   $('cgQX').value=c.xq; $('cgInvX').checked=!!c.invX;
   $('cgTwo').checked=!!c.two; $('cgLine').checked=(c.line!==false);
-  $('cgRowB').classList.toggle('hide', !c.two);
+  cgShowB(!!c.two);
+}
+/* 2軸のときだけ、右側の「縦軸2」欄と上の実験・物体えらびを出す */
+function cgShowB(on){
+  $('cgRowB').classList.toggle('hide', !on);
+  $('cgPickB').classList.toggle('hide', !on);
 }
 function cgFromUI(){
   var c=APP.cg;
@@ -3596,14 +3998,21 @@ function cgFromUI(){
   c.qB=$('cgQB').value; c.invB=$('cgInvB').checked;
   c.xq=$('cgQX').value; c.invX=$('cgInvX').checked;
   c.two=$('cgTwo').checked; c.line=$('cgLine').checked;
-  $('cgRowB').classList.toggle('hide', !c.two);
+  cgShowB(c.two);
 }
 function bindCG(){
+  $('cgTwo').addEventListener('change', function(){
+    if(this.checked){                       /* 既定は「縦軸1と同じ実験・物体」 */
+      var c=APP.cg; c.expB=c.expA; c.objB=c.objA; c.qB=c.qA; c.invB=false;
+      cgToUI();
+    }
+  });
   ['cgExpA','cgObjA','cgQA','cgInvA','cgExpB','cgObjB','cgQB','cgInvB','cgQX','cgInvX','cgTwo','cgLine']
   .forEach(function(id){
     $(id).addEventListener('change', function(){
       cgFromUI(); APP.cgFit=null; $('cgResult').innerHTML='';
       $('cgMomentumNote').classList.add('hide');
+      $('cgMomentumErr').classList.add('hide');
       renderCG(); saveLocal();
     });
   });
@@ -3612,6 +4021,26 @@ function bindCG(){
   $('cgPng').onclick=function(){
     $('cgCanvas').toBlob(function(b){ dl(b, fnameBase()+'_graph.png'); toast('グラフを保存しました'); },'image/png');
   };
+}
+
+/* ②の「測定した値（表）」の幅をドラッグで変える */
+function bindTblResize(){
+  var h=$('tblRsz'), box=$('m2tbl'); if(!h||!box) return;
+  box.style.width=APP.tblw+'px';
+  var st=null;
+  h.addEventListener('pointerdown', function(e){
+    st={x:e.clientX, w:box.getBoundingClientRect().width};
+    try{ h.setPointerCapture(e.pointerId); }catch(err){}
+    e.preventDefault();
+  });
+  h.addEventListener('pointermove', function(e){
+    if(!st) return;
+    APP.tblw=Math.max(200, Math.min(900, Math.round(st.w+(e.clientX-st.x))));
+    box.style.width=APP.tblw+'px';
+  });
+  function up(e){ if(st){ st=null; try{ h.releasePointerCapture(e.pointerId); }catch(err){} saveLocal(); } }
+  h.addEventListener('pointerup', up);
+  h.addEventListener('pointercancel', up);
 }
 
 /* ---------- タブ ---------- */
@@ -3641,6 +4070,9 @@ function bindUI(){
     $('m1grid').classList.toggle('top', APP.menuPos==='top');
     this.textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
     saveLocal(); setTimeout(render,50);
+  };
+  $('cbTeacher').onchange=function(){
+    $('teacherBox').classList.toggle('hide', !this.checked);
   };
   $('cbAuto').onchange=function(){
     APP.autoTrack=this.checked;
@@ -3675,7 +4107,7 @@ function bindUI(){
     VID.limit=null; VID.frames=[]; VID.ready=false; VID.cur=0; VID.name='';
     try{ VID.el.pause(); VID.el.removeAttribute('src'); VID.el.load(); }catch(err){}
     $('vph').classList.remove('hide');
-    $('vph').innerHTML='ここに動画が表示されます。<br>「動画ファイルを選択」から読み込んでください。';
+    $('vph').innerHTML='「動画ファイルを選択」から読み込んでください。<br>このエリアにドラッグ＆ドロップでもOK';
     $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
     $('vinfo').textContent='動画はまだ読み込まれていません。';
     $('ftState').textContent='未作成'; $('vidErr').classList.add('hide');
@@ -3730,7 +4162,6 @@ function bindUI(){
   $('btnRangeB2').onclick=function(){ $('btnRangeB').click(); };
   $('vhintX').onclick=function(e){ e.stopPropagation(); $('vhint').__closed=true; $('vhint').classList.add('hide'); };
   $('bigPlay').onclick=togglePlay;
-  $('startTrack').onclick=beginTracking;
   $('btnHead').onclick=$('btnHead2').onclick=function(){
     stopPlay(); vidSeek(0).then(afterSeek);
   };
@@ -3766,14 +4197,18 @@ function bindUI(){
   $('btnTimeZero').onclick=function(){
     var e=EXP();
     if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
-    if(e.t0!==null && Math.abs(e.t0-VID.cur)<1e-6){ e.t0=null; toast('時刻の原点を解除しました'); }
+    if(e.t0!==null && Math.abs(e.t0-VID.cur)<1e-6){ e.t0=null; toast('t = 0 の設定を解除しました'); }
     else { e.t0=VID.cur; toast('このコマを t=0 にしました'); }
     afterChange();
   };
   $('selAxisDisp').onchange=function(){
     APP.axisDisp=this.value;
     $('labYFlip').classList.toggle('hide', this.value!=='xy');
+    applyAxisDisp();
     drawOverlay(); saveLocal();
+    if(!$('mode2').classList.contains('hide')) renderMode2();
+    if(!$('mode3').classList.contains('hide')) renderMode3(false);
+    renderCG();
   };
   $('cbYFlip').onchange=function(){ EXP().yflip=this.checked; afterChange(); renderCG(); };
   $('cbXFlip').onchange=function(){ EXP().xflip=this.checked; afterChange(); renderCG(); };
@@ -3796,13 +4231,18 @@ function bindUI(){
     this.textContent = on? '動画と表を分ける' : '動画と表を並べる';
     setTimeout(function(){ render(); updatePrec(); }, 40);
   };
-  $('btnUndo').onclick=doUndo;
+  $('btnTrkStart').onclick=function(){
+    EXP().trackReady=true; afterChange(); render();
+    toast('動画の上をクリック（タップ）して位置を記録してください');
+  };
   $('btnClearObj').onclick=function(){
     var e=EXP();
     if(!e.objs[UI.obj].length) return;
     pushUndo({t:'bulk', obj:UI.obj, prev:e.objs[UI.obj]});
     e.objs[UI.obj]=[]; afterChange(); render(); toast('物体'+(UI.obj+1)+'の点を消しました');
   };
+  $('btnTrkReset').onclick=resetTracking;
+  $('btnTrkReset2').onclick=resetTracking;
   $('cbDrift').onchange=function(){ EXP().useDrift=this.checked; afterChange(); };
   $('btnRefPt').onclick=function(){ setMode(UI.mode==='ref'?'record':'ref'); };
   $('btnRefClr').onclick=function(){ EXP().ref=[]; afterChange(); toast('固定点を消しました'); };
@@ -3816,16 +4256,28 @@ function bindUI(){
   $('btnStrobe').onclick=function(){ $('btnStrobe').disabled=true;
     makeStrobe().then(function(){ $('btnStrobe').disabled=false; }); };
   $('btnStroSave').onclick=saveStrobePng;
+  $('btnStroClr').onclick=function(){
+    clearStrobe(); toast('ストロボ画像を消しました');
+  };
 
   /* 出力 */
   $('btnCsv').onclick=exportCsv;
   $('btnCsv2').onclick=exportCsv;
   $('btnCopy').onclick=copyCsv;
-  $('btnJsonSave').onclick=exportJson;
-  $('btnJsonLoad').onclick=function(){ $('fileJson').click(); };
+  $('btnCopy2').onclick=copyCsv;
+  $('btnJsonSaveTop').onclick=exportJson;
+  ['btnJsonLoadTop'].forEach(function(id){
+    $(id).onclick=function(){
+      if(APP.exps.length>=MAXEXP){ toast('実験は'+MAXEXP+'個までです'); return; }
+      $('fileJson').click();
+    };
+  });
   $('fileJson').onchange=function(){ if(this.files[0]) importJson(this.files[0]); this.value=''; };
+  $('btnEnergyOn').onclick=function(){ setEnergyOn(!APP.energyOn); saveLocal(); };
   $('btnReportPng').onclick=exportReportPng;
   $('btnReportPdf').onclick=exportReportPdf;
+  $('btnReportPng2').onclick=exportReportPng;
+  $('btnReportPdf2').onclick=exportReportPdf;
   $('btnKadai').onclick=openKadaiDialog;
   $('btnWipe').onclick=function(){
     if(!confirm('この端末に自動保存されている測定データを消します。よろしいですか？')) return;
@@ -3863,8 +4315,22 @@ function bindUI(){
   });
   $('btnGBig').onclick=function(){ APP.gsize=Math.min(900, Math.round(APP.gsize*1.25)); renderMode2(); saveLocal(); };
   $('btnGSmall').onclick=function(){ APP.gsize=Math.max(240, Math.round(APP.gsize/1.25)); renderMode2(); saveLocal(); };
+  $('btnGReset').onclick=function(){
+    gvReset(); APP.fitRange=null; APP.gsize=450;
+    if(!$('mode2').classList.contains('hide')) renderMode2();
+    if(!$('mode3').classList.contains('hide')) renderMode3(false);
+    renderCG(); saveLocal();
+    toast('グラフのスケールと位置をもとにもどしました');
+  };
+  bindTblResize();
   $('cgMomentum').onclick=function(){
-    var c=APP.cg;
+    var c=APP.cg, e=APP.exps[c.expA];
+    if(!e || !e.objs[1] || !e.objs[1].length){        /* 物体2が無いときは切りかえない */
+      $('cgMomentumErr').classList.remove('hide');
+      $('cgMomentumNote').classList.add('hide');
+      return;
+    }
+    $('cgMomentumErr').classList.add('hide');
     c.qA='vx'; c.objA=0; c.qB='vx'; c.objB=1; c.xq='t'; c.two=true; c.invA=false; c.invB=false; c.invX=false;
     c.expB=c.expA;
     cgToUI(); APP.cgFit=null; $('cgResult').innerHTML='';
