@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>動画解析・トラッキングツール（高校物理）</title>
+<title>動画解析・トラッキングツール</title>
 <style>
 :root{
   --ink:#1b1f24; --sub:#5b6672; --line:#d9dee4; --bg:#f6f7f9; --card:#fff; --panel:#fbfcfd;
@@ -219,6 +219,12 @@ details.card.step-lock>summary::after{content:"まだ";margin-left:auto;color:#9
 details.card.step-lock>*:not(summary){pointer-events:none}
 @media(prefers-reduced-motion:reduce){details.card.step-active{animation:none}}
 
+/* いま設定してほしい入力欄（探索半径など） */
+label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
+  padding:4px 8px;color:#8a5300;font-weight:700}
+/* 1.動画：解析できる動画のめやす */
+.vlimit{margin:6px 0;line-height:1.55}
+.vlimit b{color:#7a5c00}
 /* いま押してほしいボタン */
 .btn.glow{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700;
   box-shadow:0 0 0 3px rgba(224,123,24,.25);animation:btnglow 1.6s ease-in-out infinite}
@@ -477,7 +483,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 <body>
 <header class="apphd">
   <h1>動画解析・トラッキングツール</h1>
-  <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみましょう</span>
+  <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみよう！</span>
   <span class="sp"></span>
   <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
   <button class="hbtn" id="btnMenuPos">メニュー：左</button>
@@ -540,6 +546,14 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn" id="btnCam">カメラで撮影</button>
       </div>
       <p class="mini">動画ファイルを、この画面に<b>ドラッグ＆ドロップ</b>しても開けます。</p>
+      <div class="note vlimit">
+        <b>解析できる動画のめやす</b><br>
+        長さ <b>5〜30 秒</b>（長いほどコマ表づくりに時間がかかります）／
+        画質は <b>フルHD（1920×1080）まで</b>／ファイルは <b>100 MB 以内</b>。<br>
+        <span class="mini" style="color:inherit">これを超えると
+        <b>長さ 3 分・4096 px・500 MB</b> までは開けますが、動作が重くなります。
+        それ以上は開けません。</span>
+      </div>
       <input type="file" id="fileVideo" accept="video/*" class="hide">
       <input type="file" id="fileCam" accept="video/*" capture="environment" class="hide">
       <div class="row" id="sampleRow" style="margin-top:6px">
@@ -672,13 +686,17 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <details class="card hide" id="autoCard" data-key="auto" data-lock="4">
       <summary>色マーカーの自動追跡</summary>
       <div class="row">
-        <button class="btn sm" id="btnPickColor">色を取得</button>
+        <button class="btn sm" id="btnPickColor">始点を設定し色を取得</button>
         <span class="tag" id="colorTag">色：未取得</span>
       </div>
-      <label class="f">探索半径 <input type="number" id="inSearchR" value="40" min="5" max="300" step="1"> px</label>
+      <p class="mini">追いかけたい物体（マーカー）を<b>1回クリック</b>します。そこが<b>始点</b>になり、
+      同時にその<b>色</b>を覚えます。</p>
+      <label class="f" id="labSearchR">探索半径 <input type="number" id="inSearchR" value="40" min="5" max="300" step="1"> px</label>
+      <p class="mini" id="radHint">動画の上の<b>円をドラッグ</b>しても変えられます（つぎのコマで、この円の中から色をさがします）。</p>
       <label class="f">色のしきい値 <input type="number" id="inColTh" value="60" min="5" max="255" step="1"></label>
       <div class="row">
         <button class="btn" id="btnAutoRun">最後まで自動追跡</button>
+        <button class="btn sm" id="btnAutoRedo">解析範囲の最初から<br>やり直し</button>
         <button class="btn sm" id="btnAutoStop">停止</button>
       </div>
       <p class="mini">結果は手で直せます。ずれた点はその点までUndoするか、上からクリックし直してください。</p>
@@ -1735,6 +1753,21 @@ function drawOverlay(){
     });
     g.restore();
   }
+  /* --- 探索半径の円（始点を決めたあと） --- */
+  if(UI.mode==='radius' && UI.radCenter){
+    var rc=v2s(UI.radCenter.x, UI.radCenter.y);
+    var RR=(parseInt($('inSearchR').value)||40)*VIEW.K;
+    g.save();
+    g.strokeStyle='rgba(0,0,0,.55)'; g.lineWidth=Math.max(3,4.5*sc);
+    g.beginPath(); g.arc(rc.x,rc.y,RR,0,7); g.stroke();
+    g.strokeStyle='#00e5ff'; g.lineWidth=Math.max(1.8,2.6*sc); g.setLineDash([8*sc,5*sc]);
+    g.beginPath(); g.arc(rc.x,rc.y,RR,0,7); g.stroke(); g.setLineDash([]);
+    /* 右はしのつまみ */
+    g.fillStyle='#00e5ff'; g.strokeStyle='rgba(0,0,0,.6)'; g.lineWidth=Math.max(1,1.6*sc);
+    g.beginPath(); g.arc(rc.x+RR, rc.y, Math.max(7,9*sc), 0, 7); g.fill(); g.stroke();
+    labelAt(g, '探索半径 '+(parseInt($('inSearchR').value)||40)+' px', rc.x, rc.y-RR-14*sc, '#00e5ff', 15*sc);
+    g.restore();
+  }
   /* --- いま置こうとしている点 --- */
   if(UI.pend){
     var q=v2s(UI.pend.x,UI.pend.y);
@@ -1844,6 +1877,12 @@ function onDown(e){
       UI.pend=null; showLoupe(v.x,v.y); drawOverlay(); return;
     }
   }
+  /* 探索半径モード：どこを押しても、中心からの距離で半径を決める */
+  if(UI.mode==='radius' && UI.radCenter){
+    UI.dragRad=true;
+    UI.drag={x:e.clientX,y:e.clientY,pan:false};
+    UI.pend=null; setSearchR(v); drawOverlay(); return;
+  }
   /* 3 のあいだは、スケールの点をつまんで動かせる */
   if(sr && stp===3 && UI.mode==='record'){
     var d1=Math.hypot(v.x-sr.x1, v.y-sr.y1)*VIEW.K, d2=Math.hypot(v.x-sr.x2, v.y-sr.y2)*VIEW.K;
@@ -1899,6 +1938,7 @@ function onMove(e){
   }
   if(UI.drag.hint) return;
   var p=ev2canvas(e), v=s2v(p.x,p.y);
+  if(UI.dragRad){ setSearchR(v); drawOverlay(); return; }
   if(UI.dragOrigin){                      /* 原点をつまんで動かしている */
     var eo=EXP(); eo.origin={x:v.x,y:v.y};
     updateCalInfo(); showLoupe(v.x,v.y); drawOverlay(); return;
@@ -1913,6 +1953,7 @@ function onUp(e){
   if(Object.keys(UI.pointers).length<2) UI.pinch=null;
   if(!UI.drag){ hideLoupe(); return; }
   var wasPan=UI.drag.pan, wasHint=UI.drag.hint; UI.drag=null; hideLoupe();
+  if(UI.dragRad){ UI.dragRad=false; UI.pend=null; drawOverlay(); updateGuide(); saveLocal(); return; }
   if(wasHint){ UI.pend=null; drawOverlay(); step3Hint(); return; }
   if(UI.dragOrigin){
     UI.dragOrigin=false; UI.pend=null;
@@ -1936,6 +1977,12 @@ function liveScale(v){
   var d=Math.hypot(sr.x2-sr.x1, sr.y2-sr.y1);
   if(d>2) e.mPerPx=e.scaleLen/d;
   updateCalInfo();
+}
+/* 探索半径を、中心からの距離で決める */
+function setSearchR(v){
+  if(!UI.radCenter) return;
+  var d=Math.hypot(v.x-UI.radCenter.x, v.y-UI.radCenter.y);
+  $('inSearchR').value=Math.max(5, Math.min(300, Math.round(d)));
 }
 function liveAxis(v){
   var exp=EXP(); if(!exp.origin) return;
@@ -1989,7 +2036,17 @@ function commitPoint(vx, vy, e){
     $('colorTag').textContent='色：取得ずみ';
     $('colorTag').style.background='rgb('+Math.round(r/n)+','+Math.round(gg/n)+','+Math.round(b/n)+')';
     $('colorTag').style.color='#fff';
-    setMode('record'); toast('色を取得しました'); return;
+    /* ここを「始点」にする（この物体の点をいったん消して、1点目として記録） */
+    var e2=EXP();
+    if(e2.objs[UI.obj].length) pushUndo({t:'bulk', obj:UI.obj, prev:e2.objs[UI.obj].slice()});
+    e2.objs[UI.obj]=[];
+    e2.trackReady=true;
+    addPoint(UI.obj, vx, vy, false);
+    APP.startPt={x:vx, y:vy, t:VID.cur};
+    UI.radCenter={x:vx, y:vy};
+    setMode('radius'); render();
+    toast('始点と色を決めました。円をドラッグして探索半径を決められます');
+    return;
   }
   /* 記録（1〜3 が終わるまでは記録させない。「もう一度」で3にもどっている間も同じ） */
   var stp=effStep();
@@ -3650,7 +3707,8 @@ function setMode(m){
   UI.mode=m; UI.pend=null;
   var lab={record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
            scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
-           color:'マーカーの色の所をクリック'}[m]||'';
+           color:'追いかけたい物体（始点）をクリック',
+           radius:'探索半径を円のドラッグで決める'}[m]||'';
   $('modeInfo').textContent=lab;
   $('modeInfo').style.background = (m==='record')?'#eef2f7':'#fff3d6';
   if(typeof APP.step==='number' && APP.step<4 && m==='record') $('modeInfo').textContent='まず '+stepName(APP.step)+' へ';
@@ -3661,6 +3719,7 @@ function setMode(m){
   if(m==='axis') $('btnAxis').classList.add('on');
   if(m==='ref') $('btnRefPt').classList.add('on');
   if(m==='color') $('btnPickColor').classList.add('on');
+  $('labSearchR').classList.toggle('hot', m==='radius');
   if(typeof APP.step==='number' && APP.step>0) updateGuide();   /* 案内も出し直す */
   drawOverlay();
 }
@@ -3899,7 +3958,8 @@ function updateSteps(){
   $('modeInfo').textContent = (st<4 && UI.mode==='record')? ('まず '+stepName(st)+' へ') :
     ({record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
       scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
-      color:'マーカーの色の所をクリック'}[UI.mode]||'');
+      color:'追いかけたい物体（始点）をクリック',
+      radius:'探索半径を円のドラッグで決める'}[UI.mode]||'');
   updateBigPlay();
   drawSeekMarks();
   updateTodo();
@@ -3965,6 +4025,13 @@ function updateGuide(){
   $('btnExpNew').classList.toggle('hide', !done);
   $('btnJsonSaveTop').classList.toggle('hide', !done);
   $('labYFlip').classList.toggle('hide', APP.axisDisp!=='xy');
+  /* 色マーカーの自動追跡：始点と色 → 探索半径 → 最後まで自動追跡 の順に光らせる */
+  if(st===4 && VID.ready && APP.autoTrack && !$('autoCard').classList.contains('hide')){
+    var hasStart = EXP().objs[UI.obj].length>0;
+    if(!APP.trackColor || !hasStart || UI.mode==='color') $('btnPickColor').classList.add('glow');
+    else $('btnAutoRun').classList.add('glow');
+  }
+  $('labSearchR').classList.toggle('hot', UI.mode==='radius');
   /* ②で動画を再生しているときは、①用の案内やボタンは出さない */
   if(LIVE.on){
     ['doneMsg','btnTrkReset2','btnTrkStart','btnOriginBig','vhint','bigPlay'].forEach(function(id){
@@ -4012,7 +4079,8 @@ function todoText(){
   }
   if(st===4){
     if(UI.mode==='ref') return '動かない目印（机の角など）をクリックしてください。';
-    if(UI.mode==='color') return '追いかけたいマーカーの<b>色の所</b>をクリックしてください。';
+    if(UI.mode==='color') return '追いかけたい物体（マーカー）を<b>1回クリック</b>してください。そこが<b>始点</b>になり、色も覚えます。';
+    if(UI.mode==='radius') return '動画の上の<b>円をドラッグ</b>して<b>探索半径</b>を決め、<b>［最後まで自動追跡］</b>を押してください。';
     var n=EXP().objs.reduce(function(a,b){return a+b.length;},0);
     if(needTrackStart()) return '動画の真ん中の <b>［トラッキングを開始する］</b> を押してください。';
     if(!n) return '<b>物体番号</b>をえらび、動画の中の物体を<b>クリック（タップ）</b>して位置を記録してください。';
@@ -4182,10 +4250,57 @@ function switchExp(i){
 }
 
 /* ---------- 動画の読み込み ---------- */
+/* 解析できる動画の上限（これを超えたら開かない） */
+var VLIM = { bytes:500*1024*1024, dur:180, px:4096 };
+var VREC = { bytes:100*1024*1024, dur:30, w:1920, h:1080 };
+function sizeText(b){ return (b>=1024*1024*1024)? (b/1024/1024/1024).toFixed(2)+' GB' : Math.round(b/1024/1024)+' MB'; }
+function overLimitMsg(o){
+  var r=[];
+  if(o.bytes>VLIM.bytes) r.push('ファイルの大きさが <b>'+sizeText(o.bytes)+'</b>（上限 '+sizeText(VLIM.bytes)+'）');
+  if(o.dur>VLIM.dur) r.push('長さが <b>'+nf(o.dur,1)+' 秒</b>（上限 '+VLIM.dur+' 秒＝3分）');
+  if(o.w>VLIM.px || o.h>VLIM.px) r.push('画面の大きさが <b>'+o.w+'×'+o.h+' px</b>（上限 '+VLIM.px+' px）');
+  if(!r.length) return '';
+  return '<b>このファイルは解析できません。</b><br>'+r.join('<br>')+
+    '<br><span class="mini" style="color:inherit">スマートフォンの「トリミング」や「解像度を下げて書き出す」で'+
+    '小さくしてから、もう一度読み込んでください。おすすめは <b>5〜30 秒・フルHD・100 MB 以内</b>です。</span>';
+}
+/* 読み込んだあとに、長さと画面の大きさをたしかめる */
+function checkLoadedVideo(name){
+  var m=overLimitMsg({bytes:0, dur:VID.dur, w:VID.w, h:VID.h});
+  if(m){
+    vidUnload();
+    $('vidErr').innerHTML=m; $('vidErr').classList.remove('hide');
+    $('vinfo').innerHTML='<span class="ng">'+esc(name)+' は開けませんでした。</span>';
+    toast('この動画は解析できません');
+    return false;
+  }
+  var w=[];
+  if(VID.dur>VREC.dur) w.push('長さ '+nf(VID.dur,1)+' 秒');
+  if(VID.w>VREC.w || VID.h>VREC.h) w.push('画面 '+VID.w+'×'+VID.h+' px');
+  if(w.length) toast('大きめの動画です（'+w.join('・')+'）。少し重くなります');
+  return true;
+}
+/* 動画を外す（上限を超えたとき） */
+function vidUnload(){
+  try{ VID.el.pause(); }catch(e){}
+  VID.ready=false; VID.frames=[]; VID.dur=0; VID.cur=0; VID.idx=0; VID.limit=null;
+  try{ VID.el.removeAttribute('src'); VID.el.load(); }catch(e){}
+  $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
+  $('vph').classList.remove('hide');
+  $('ftState').textContent='未作成';
+  APP.step=0; updateSteps();
+}
 function loadVideoFile(file){
   $('vidErr').classList.add('hide');
+  var big=overLimitMsg({bytes:file.size, dur:0, w:0, h:0});
+  if(big){
+    $('vidErr').innerHTML=big; $('vidErr').classList.remove('hide');
+    toast('この動画は解析できません');
+    return;
+  }
   var url=URL.createObjectURL(file);
   vidLoad(url, file.name).then(function(){
+    if(!checkLoadedVideo(file.name)) return;
     onVideoReady(file.name);
     if(file.size < 30*1024*1024){
       var fr=new FileReader();
@@ -4197,6 +4312,7 @@ function loadVideoFile(file){
 function loadVideoUrl(url, name){
   $('vidErr').classList.add('hide');
   vidLoad(url, name).then(function(){
+    if(!checkLoadedVideo(name)) return;
     onVideoReady(name);
     if(location.protocol==='http:'||location.protocol==='https:'){
       fetch(url).then(function(r){return r.blob();}).then(function(b){
@@ -4896,7 +5012,11 @@ function bindUI(){
   $('cbAuto').onchange=function(){
     APP.autoTrack=this.checked;
     $('autoCard').classList.toggle('hide', !this.checked);
-    if(this.checked) toast('自動追跡：ON（結果は手で直せます）');
+    if(this.checked){
+      $('autoCard').open=true;                  /* すぐ使えるように開いておく */
+      toast('自動追跡：ON（結果は手で直せます）');
+    }
+    updateGuide();
   };
   els('#tabs button').forEach(function(b){ b.onclick=function(){ setTab(b.dataset.mode); }; });
 
@@ -5105,9 +5225,35 @@ function bindUI(){
   $('btnRefClr').onclick=function(){ EXP().ref=[]; afterChange(); toast('固定点を消しました'); };
 
   /* 自動追跡 */
-  $('btnPickColor').onclick=function(){ setMode(UI.mode==='color'?'record':'color'); };
-  $('btnAutoRun').onclick=autoRunAll;
+  $('btnPickColor').onclick=function(){ setMode((UI.mode==='color'||UI.mode==='radius')?'record':'color'); };
+  $('btnAutoRun').onclick=function(){
+    if(UI.mode==='radius') setMode('record');      /* 探索半径は決まったものとする */
+    autoRunAll();
+  };
   $('btnAutoStop').onclick=function(){ UI.autoStop=true; };
+  /* 解析範囲の最初からやり直し（この物体の点を消して、始点だけ置きなおす） */
+  $('btnAutoRedo').onclick=function(){
+    if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
+    UI.autoStop=true; stopAllPlay();
+    var e=EXP();
+    if(e.objs[UI.obj].length) pushUndo({t:'bulk', obj:UI.obj, prev:e.objs[UI.obj].slice()});
+    e.objs[UI.obj]=[];
+    if(UI.mode==='radius') setMode('record');
+    vidSeek(rangeStart(e)).then(function(){
+      afterSeek();
+      var sp=APP.startPt, f=null;
+      if(APP.trackColor && sp){
+        vidDrawFull();
+        var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
+        f=findColor(sp.x, sp.y, Math.max(R*2,80), TH);
+      }
+      if(f){ addPoint(UI.obj, f.x, f.y, false); APP.startPt={x:f.x,y:f.y,t:VID.cur};
+             toast('解析範囲の最初にもどしました。［最後まで自動追跡］を押してください'); }
+      else { afterChange();
+             toast('解析範囲の最初にもどしました。始点をクリックしてください'); }
+      render(); updateGuide();
+    });
+  };
 
   /* ストロボ */
   $('btnStrobe').onclick=function(){ $('btnStrobe').disabled=true;
