@@ -23,18 +23,20 @@ button{cursor:pointer}
 
 /* ===== ヘッダ ===== */
 .apphd{position:sticky;top:0;z-index:40;background:var(--accent);color:#fff;
-  display:flex;align-items:center;gap:10px;padding:6px 10px;flex-wrap:wrap}
+  display:flex;align-items:center;gap:7px;padding:6px 9px;flex-wrap:wrap}
 .apphd h1{font-size:1.02rem;margin:0;font-weight:700;letter-spacing:.02em;flex:0 1 auto}
 .apphd .lead{font-size:.8rem;color:#dbe8f7;flex:0 0 auto;line-height:1.35;
   margin-left:3ch;white-space:nowrap}
 @media(max-width:1360px){ .apphd .lead{display:none} }
 .apphd .sp{flex:1 1 auto}
 .apphd .hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.55);color:#fff;
-  border-radius:8px;padding:7px 11px;min-height:38px}
+  border-radius:8px;padding:6px 9px;min-height:38px;font-size:.86rem}
 .apphd .hbtn:hover{background:rgba(255,255,255,.28)}
-.apphd .chk{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);
-  border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:6px 10px;min-height:38px;font-size:.86rem}
-.apphd .chk input{width:18px;height:18px}
+.apphd .chk{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:5px 8px;min-height:38px;
+  font-size:.82rem;white-space:nowrap}
+.apphd .chk input{width:17px;height:17px}
+.apphd .hbtn{white-space:nowrap}
 
 #restoreBar{margin:8px 10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 #restoreBar .btn{min-height:30px;padding:2px 10px;font-size:.82rem}
@@ -407,6 +409,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 /* 自由選択グラフ */
 #cgCard select{max-width:148px}
+/* フィットする関数は式が長いので、広くとる */
+#cgCard select#cgFitType{max-width:none;min-width:210px;flex:0 1 auto}
+#cgFitRow{flex-wrap:wrap}
 #cgHost2>#cgCard,#cgHost3>#cgCard{max-width:900px}
 .cgbody{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .cgmain{flex:0 0 auto;min-width:0;max-width:100%}
@@ -460,6 +465,25 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 #gmodal .box{max-width:1200px}
 #cgCard .lb{font-size:.85rem;color:var(--sub);font-weight:700}
 
+/* ===== 読み込み中は操作させない ===== */
+.busy{position:fixed;inset:0;background:rgba(20,26,34,.45);z-index:300;display:flex;
+  align-items:center;justify-content:center;padding:16px;cursor:progress}
+.busy .box{background:#fff;border-radius:14px;padding:20px 26px;text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,.3);max-width:420px;width:100%}
+.busy p{margin:.4em 0;font-weight:700;color:var(--accent-d)}
+.busy p.mini{font-weight:400}
+.busy .spin{width:38px;height:38px;margin:2px auto 10px;border-radius:50%;
+  border:4px solid #dbe6f3;border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.busy .spin{animation:none}}
+
+/* 動画の真ん中に出す確認メッセージ（原点・x軸） */
+#calMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:rgba(20,26,34,.88);color:#fff;font-weight:700;font-size:1.02rem;line-height:1.6;
+  padding:14px 22px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.4);
+  text-align:center;max-width:88%;pointer-events:none;border:2px solid rgba(255,255,255,.55)}
+#calMsg b{color:#ffd66e}
+
 /* ===== モーダル ===== */
 .modal{position:fixed;inset:0;background:rgba(20,26,34,.55);z-index:100;display:flex;
   align-items:center;justify-content:center;padding:14px}
@@ -485,6 +509,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <h1>動画解析・トラッキングツール</h1>
   <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみよう！</span>
   <span class="sp"></span>
+  <label class="chk" title="2つの物体（衝突など）を続けてトラッキングします"><input type="checkbox" id="cbTwoObj">２物体の運動</label>
   <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
   <button class="hbtn" id="btnMenuPos">メニュー：左</button>
   <button class="hbtn" id="btnHelp">使い方</button>
@@ -554,6 +579,11 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <b>長さ 3 分・4096 px・500 MB</b> までは開けますが、動作が重くなります。
         それ以上は開けません。</span>
       </div>
+      <div class="row" id="cropRow">
+        <button class="btn sm blue" id="btnCrop">トリミング（切り取り）</button>
+        <button class="btn sm" id="btnCropClr">トリミングをリセット</button>
+      </div>
+      <p class="mini" id="cropInfo">使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります。</p>
       <input type="file" id="fileVideo" accept="video/*" class="hide">
       <input type="file" id="fileCam" accept="video/*" capture="environment" class="hide">
       <div class="row" id="sampleRow" style="margin-top:6px">
@@ -593,7 +623,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       </div>
       <p class="mini">この画像の時刻を、解析のおわりに</p>
       <div class="row">
-        <button class="btn sm" id="btnRangeClr">範囲を解除</button>
+        <button class="btn sm danger" id="btnRangeClr">範囲を解除</button>
         <button class="btn sm" id="btnStep2Next">このままでよい → 次へ</button>
       </div>
       <p class="mini" id="rangeInfo">範囲：全体</p>
@@ -654,10 +684,17 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row">
         <button class="btn sm blue" id="btnSbs">動画と表を並べる</button>
       </div>
-      <label class="f">物体番号
-        <select id="selObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-        <input type="text" id="inObjName" placeholder="名前（例：10円玉）" style="width:120px">
-      </label>
+      <div id="objBox" class="hide">
+        <label class="f" id="labObjNum">物体番号
+          <select id="selObj"><option value="1">1</option><option value="2">2</option></select>
+        </label>
+        <label class="f" id="labObjName">物体1の名前
+          <input type="text" id="inObjName" placeholder="例：10円玉" style="width:130px">
+        </label>
+        <p class="mini" id="objNameNote">名前を入れてから、下のボタンでトラッキングを始めます。</p>
+        <div class="row"><button class="btn" id="btnStartObj">物体1のトラッキングを開始</button></div>
+        <div class="hr"></div>
+      </div>
       <label class="f">進むフレーム数 N <input type="number" id="inStepN" value="5" min="1" max="500" step="1"></label>
       <label class="f">記録したら
         <select id="selAfter">
@@ -672,7 +709,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row">
         <button class="btn sm danger" id="btnTrkReset">トラッキングした点をリセット</button>
       </div>
-      <p class="mini">この実験で記録した点を全部消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）。</p>
+      <div class="row hide" id="rowTrkResetB">
+        <button class="btn sm danger" id="btnTrkResetB">物体2のトラッキングした点をリセット</button>
+      </div>
+      <p class="mini" id="trkResetNote">この実験で記録した点を全部消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）。</p>
       <div class="hr"></div>
       <label class="cb"><input type="checkbox" id="cbDrift">手ぶれ補正を使う</label>
       <div class="row">
@@ -758,6 +798,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <button id="doneMsg" class="hide" title="②グラフへ">解析終了。グラフを表示してみよう</button>
       <button id="btnTrkStart" class="hide">トラッキングを開始する</button>
       <button id="btnOriginBig" class="hide">原点を指定してください</button>
+      <div id="calMsg" class="hide"></div>
       <div id="dropHint" class="hide">ここに動画ファイルをドロップ</div>
       <div id="loupe"><canvas id="cvLoupe" width="132" height="132"></canvas></div>
       <!-- 動画要素は画面に置いておく（画面外に置くとブラウザがコマを描かず、実測時刻がとれない） -->
@@ -802,11 +843,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <span>t = <span class="val" id="tInfo">-</span> s</span>
         <span id="modeInfo" class="tag">クリックで記録</span>
         <span class="sp" style="flex:1"></span>
-        <button class="btn sm" id="btnZoomIn">＋</button>
-        <button class="btn sm" id="btnZoomOut">－</button>
-        <button class="btn sm" id="btnZoomRst">全体</button>
+        <button class="btn sm blue" id="btnCrop2">トリミング</button>
+        <button class="btn sm" id="btnCropClr2">全体にもどす</button>
       </div>
-      <p class="mini" id="hintLine">2本指で拡大・移動できます。</p>
+      <p class="mini" id="hintLine">タップした所にはルーペが出ます。そのままドラッグで微調整できます。</p>
     </div>
 
     <details class="card" id="tblCard" open><summary>測定した値（表）</summary>
@@ -838,6 +878,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <select id="selCmp"><option value="side">並べて表示</option><option value="over">重ねて表示</option></select>
         <span class="lb mini">対象の実験：</span>
         <span class="explist" id="expChecks"></span>
+        <span class="lb mini hide" id="lbObjSel">対象の物体：</span>
+        <span class="explist hide" id="objChecks"></span>
       </div>
       <div class="row" style="margin-top:6px">
         <button class="btn sm" id="btnGBig">グラフを拡大</button>
@@ -1017,6 +1059,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 <div class="modal hide" id="helpModal"><div class="box" id="helpBox"></div></div>
 <div class="modal hide" id="kadaiModal"><div class="box" id="kadaiBox"></div></div>
 <div class="toast" id="toast"></div>
+<div class="busy hide" id="busyLock"><div class="box">
+  <div class="spin"></div>
+  <p id="busyMsg">動画を読み込んでいます…</p>
+  <p class="mini" id="busySub">終わるまで、ボタンは押せません。</p>
+  <div class="prog hide" id="busyProg"><i></i></div>
+</div></div>
 <canvas id="cvFull" class="hide"></canvas>
 
 <script>
@@ -1054,6 +1102,7 @@ function newExp(n){
     origin:null, originSet:false, angle:0, yflip:false, xflip:false,
     mPerPx:null, scaleRef:null, scaleLen:0.1,
     t0:null, rangeA:null, rangeB:null, step2ok:false, trackReady:false, axisSet:false, tscale:1,
+    objReady:[false,false,false], crop:null,
     video:{name:'',w:0,h:0,dur:0,fps:30},
     m1:0.1, m2:0.1, g:9.8,
     objName:['','',''] };
@@ -1064,7 +1113,11 @@ var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x'
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330,
-  m2mode:'side', komaMode:false, cgRange:null };
+  m2mode:'side', komaMode:false, cgRange:null, twoObj:false };
+/* 使う物体の数（「２物体の運動」がONなら2、OFFなら1） */
+function nObj(){ return APP.twoObj? 2 : 1; }
+/* 表や出力で「x1」のように番号をつけるか（2物体のとき、または2つ以上のデータがあるとき） */
+function useObjIdx(objs){ return APP.twoObj || (objs && objs.length>1); }
 /* 「軸の表示」が x軸のみ のときは、y・vy・ay をグラフや解析に出さない */
 function useY(){ return APP.axisDisp!=='x'; }
 /* ②「動画と一緒にグラフを再生する」の状態（LIVE.t までの点だけ描く） */
@@ -1283,7 +1336,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -1297,6 +1350,7 @@ function normExp(e){
   if(hadOrigin && !hadFlag) e.originSet=true;      /* 前の版のデータは「決めずみ」あつかい */
   if(!e.objs) e.objs=d.objs;
   while(e.objs.length<NOBJ) e.objs.push([]);
+  if(!e.objReady || e.objReady.length<NOBJ) e.objReady=[!!e.trackReady,false,false];
   return e;
 }
 function applyState(st){
@@ -1310,6 +1364,7 @@ function applyState(st){
   APP.energyOn=!!st.energyOn;
   if(st.tblw>0) APP.tblw=st.tblw;
   if(st.m2mode) APP.m2mode=st.m2mode;
+  APP.twoObj=!!st.twoObj;
   return true;
 }
 function saveLocal(){
@@ -1600,44 +1655,70 @@ var UI = { mode:'record', obj:0, pend:null, scaleP1:null, drag:null, pointers:{}
            pinch:null, undo:[], autoStop:false, lastPt:null, stroReady:false };
 var FONT = '"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif';
 
+/* ---------- トリミング（切り取り） ----------
+   exp.crop = {x,y,w,h}（動画のピクセル座標）。記録した点の座標は動画全体のままなので、
+   トリミングしても測定値は変わらない。画面はこの四角だけを大きく映す。 */
+function CROP(){
+  var e=EXP(), c=e.crop;
+  if(c && c.w>20 && c.h>20 &&
+     c.x>=0 && c.y>=0 && c.x+c.w<=VID.w+1 && c.y+c.h<=VID.h+1) return c;
+  return { x:0, y:0, w:VID.w, h:VID.h };
+}
+function hasCrop(){ var c=CROP(); return !(c.x===0 && c.y===0 && c.w===VID.w && c.h===VID.h); }
 /* ---------- キャンバスの大きさ ---------- */
 function fitCanvas(){
   var box=$('videobox'), cv=$('cvView'), ov=$('cvOv'), wrap=$('vwrap');
   if(!VID.ready) return;
+  var c=CROP();
   var cssW = box.clientWidth || 640;
   /* たての長い動画（スマホの縦撮り）でも画面に収まるように、高さで頭打ちにする */
   var maxH = Math.max(240, Math.round(window.innerHeight*0.72));
-  if(cssW * VID.h / VID.w > maxH) cssW = Math.round(maxH * VID.w / VID.h);
+  if(cssW * c.h / c.w > maxH) cssW = Math.round(maxH * c.w / c.h);
   var dpr = Math.min(window.devicePixelRatio||1, 2);
-  var w = Math.round(Math.min(cssW*dpr, VID.w*2));
-  var h = Math.round(w * VID.h / VID.w);
+  var w = Math.round(Math.min(cssW*dpr, c.w*3));
+  var h = Math.round(w * c.h / c.w);
   if(cv.width!==w||cv.height!==h){ cv.width=w; cv.height=h; ov.width=w; ov.height=h; }
   wrap.style.width = cssW+'px';
   ov.style.width = cv.style.width = '100%';
   ov.style.height = 'auto';
 }
-function calcK(){ var cv=$('cvView'); VIEW.K = (cv.width / VID.w) * VIEW.zoom; }
-function clampPan(){
-  var cv=$('cvView');
-  var visW = cv.width/VIEW.K, visH = cv.height/VIEW.K;
-  if(visW>=VID.w) VIEW.panX=(VID.w-visW)/2; else VIEW.panX=Math.max(0,Math.min(VID.w-visW,VIEW.panX));
-  if(visH>=VID.h) VIEW.panY=(VID.h-visH)/2; else VIEW.panY=Math.max(0,Math.min(VID.h-visH,VIEW.panY));
+function calcK(){
+  var cv=$('cvView'), c=CROP();
+  VIEW.K = cv.width / c.w;
+  VIEW.zoom = VID.w / c.w;                 /* クリック精度の表示に使う */
 }
+function clampPan(){ var c=CROP(); VIEW.panX=c.x; VIEW.panY=c.y; }
 function v2s(x,y){ return { x:(x-VIEW.panX)*VIEW.K, y:(y-VIEW.panY)*VIEW.K }; }
 function s2v(x,y){ return { x:x/VIEW.K+VIEW.panX, y:y/VIEW.K+VIEW.panY }; }
 function ev2canvas(e){
   var cv=$('cvView'), r=cv.getBoundingClientRect();
   return { x:(e.clientX-r.left)*cv.width/r.width, y:(e.clientY-r.top)*cv.height/r.height };
 }
-function zoomAt(f, cxs, cys){
-  var cv=$('cvView');
-  if(cxs===undefined){ cxs=cv.width/2; cys=cv.height/2; }
-  var before=s2v(cxs,cys);
-  VIEW.zoom=Math.max(1, Math.min(12, VIEW.zoom*f));
-  calcK();
-  var after=s2v(cxs,cys);
-  VIEW.panX += before.x-after.x; VIEW.panY += before.y-after.y;
-  clampPan(); render();
+/* トリミングを決める／もどす */
+function setCrop(c){
+  var e=EXP();
+  e.crop = c? {x:Math.round(c.x), y:Math.round(c.y), w:Math.round(c.w), h:Math.round(c.h)} : null;
+  UI.cropDrag=null;
+  if(UI.mode==='crop') setMode('record');
+  afterChange();
+  setTimeout(function(){ if(VID.ready) render(); updatePrec(); updateCropInfo(); }, 10);
+  updateCropInfo();
+}
+function updateCropInfo(){
+  var c=CROP(), on=hasCrop();
+  ['cropInfo'].forEach(function(id){
+    var q=$(id); if(!q) return;
+    q.innerHTML = !VID.ready? '動画を読み込むと使えます。' :
+      (on? '<b>トリミング中：'+c.w+'×'+c.h+' px</b>（もとは '+VID.w+'×'+VID.h+' px）。'+
+           'この部分だけを大きく映しています。測定した値は変わりません。'
+         : '使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります。');
+  });
+  ['btnCropClr','btnCropClr2'].forEach(function(id){ var q=$(id); if(q) q.disabled=!on; });
+  ['btnCrop','btnCrop2'].forEach(function(id){
+    var q=$(id); if(!q) return;
+    q.classList.toggle('on', UI.mode==='crop');
+    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : (id==='btnCrop'? 'トリミング（切り取り）' : 'トリミング');
+  });
 }
 
 /* ---------- 描画 ---------- */
@@ -1688,23 +1769,26 @@ function drawOverlay(){
     }
     /* 原点の印（3 のあいだは、つまんで動かせる大きな印にする） */
     var grab = (effStep()===3);
-    var rr = grab? 16*sc : 7*sc;
-    g.lineWidth=Math.max(2, 3*sc);
+    var rr = grab? 32*sc : 7*sc;              /* 3 のあいだは大きく・赤く */
+    g.lineWidth=Math.max(2, 3.5*sc);
     g.strokeStyle='rgba(0,0,0,.6)';
     g.beginPath(); g.arc(o.x,o.y,rr,0,7); g.stroke();
     g.strokeStyle='#fff';
     g.beginPath(); g.arc(o.x,o.y,rr,0,7); g.stroke();
     if(grab){
-      g.fillStyle='rgba(255,215,0,.35)';
+      g.fillStyle='rgba(255,45,45,.35)';
       g.beginPath(); g.arc(o.x,o.y,rr,0,7); g.fill();
-      g.strokeStyle='rgba(255,215,0,.98)'; g.lineWidth=Math.max(1.6,2.2*sc);
-      g.beginPath(); g.moveTo(o.x-rr*0.75,o.y); g.lineTo(o.x+rr*0.75,o.y);
-      g.moveTo(o.x,o.y-rr*0.75); g.lineTo(o.x,o.y+rr*0.75); g.stroke();
+      g.strokeStyle='#ff2d2d'; g.lineWidth=Math.max(2.4,3.4*sc);
+      g.beginPath(); g.arc(o.x,o.y,rr,0,7); g.stroke();
+      g.beginPath(); g.moveTo(o.x-rr*0.8,o.y); g.lineTo(o.x+rr*0.8,o.y);
+      g.moveTo(o.x,o.y-rr*0.8); g.lineTo(o.x,o.y+rr*0.8); g.stroke();
+      g.fillStyle='#ff2d2d';
+      g.beginPath(); g.arc(o.x,o.y,Math.max(4,6*sc),0,7); g.fill();
       if(!exp.originSet){                       /* まだ動かしていないときは目立たせる */
         g.strokeStyle='rgba(224,123,24,.95)'; g.lineWidth=Math.max(2,3*sc);
-        g.beginPath(); g.arc(o.x,o.y,rr+9*sc,0,7); g.stroke();
+        g.beginPath(); g.arc(o.x,o.y,rr+11*sc,0,7); g.stroke();
       }
-      labelAt(g,'原点', o.x, o.y-rr-15*sc, '#ffd700', 16*sc);
+      labelAt(g,'原点', o.x, o.y-rr-17*sc, '#ff5a5a', 22*sc);
     }
     g.restore();
   }
@@ -1766,6 +1850,28 @@ function drawOverlay(){
     g.fillStyle='#00e5ff'; g.strokeStyle='rgba(0,0,0,.6)'; g.lineWidth=Math.max(1,1.6*sc);
     g.beginPath(); g.arc(rc.x+RR, rc.y, Math.max(7,9*sc), 0, 7); g.fill(); g.stroke();
     labelAt(g, '探索半径 '+(parseInt($('inSearchR').value)||40)+' px', rc.x, rc.y-RR-14*sc, '#00e5ff', 15*sc);
+    g.restore();
+  }
+  /* --- トリミングの四角 --- */
+  if(UI.mode==='crop'){
+    g.save();
+    var cd=UI.cropDrag;
+    if(cd){
+      var a1=v2s(Math.min(cd.x0,cd.x1), Math.min(cd.y0,cd.y1));
+      var b1=v2s(Math.max(cd.x0,cd.x1), Math.max(cd.y0,cd.y1));
+      g.fillStyle='rgba(20,26,34,.55)';
+      g.fillRect(0,0,ov.width,a1.y);
+      g.fillRect(0,b1.y,ov.width,ov.height-b1.y);
+      g.fillRect(0,a1.y,a1.x,b1.y-a1.y);
+      g.fillRect(b1.x,a1.y,ov.width-b1.x,b1.y-a1.y);
+      g.strokeStyle='#ffd700'; g.lineWidth=Math.max(2,3*sc); g.setLineDash([9*sc,6*sc]);
+      g.strokeRect(a1.x,a1.y,b1.x-a1.x,b1.y-a1.y); g.setLineDash([]);
+      labelAt(g, Math.round(Math.abs(cd.x1-cd.x0))+'×'+Math.round(Math.abs(cd.y1-cd.y0))+' px',
+              (a1.x+b1.x)/2, Math.max(16*sc, a1.y-12*sc), '#ffd700', 18*sc);
+    } else {
+      g.fillStyle='rgba(20,26,34,.35)'; g.fillRect(0,0,ov.width,ov.height);
+      labelAt(g,'のこしたい所を四角くドラッグしてください', ov.width/2, ov.height/2, '#fff', 22*sc);
+    }
     g.restore();
   }
   /* --- いま置こうとしている点 --- */
@@ -1845,10 +1951,7 @@ function bindCanvas(){
   cv.addEventListener('pointermove', onMove);
   cv.addEventListener('pointerup', onUp);
   cv.addEventListener('pointercancel', onUp);
-  cv.addEventListener('wheel', function(e){
-    if(!VID.ready) return; e.preventDefault();
-    var p=ev2canvas(e); zoomAt(e.deltaY<0?1.15:1/1.15, p.x, p.y);
-  }, {passive:false});
+
   cv.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 }
 function onDown(e){
@@ -1856,17 +1959,16 @@ function onDown(e){
   var cv=$('cvOv');
   UI.pointers[e.pointerId]={x:e.clientX,y:e.clientY};
   var n=Object.keys(UI.pointers).length;
-  if(n===2){                                   /* ピンチ開始 */
-    UI.pend=null; hideLoupe();
-    var ps=Object.keys(UI.pointers).map(function(k){return UI.pointers[k];});
-    UI.pinch={ d:dist(ps[0],ps[1]), c:mid(ps[0],ps[1]), zoom:VIEW.zoom, panX:VIEW.panX, panY:VIEW.panY };
-    drawOverlay(); return;
-  }
-  if(n>2) return;
+  if(n>1){ UI.pend=null; UI.drag=null; hideLoupe(); drawOverlay(); return; }
   try{ cv.setPointerCapture(e.pointerId); }catch(err){}
   if(e.button===1 || e.button===2){ UI.drag={x:e.clientX,y:e.clientY,pan:true}; return; }
   var p=ev2canvas(e), v=s2v(p.x,p.y);
   var exp0=EXP(), sr=exp0.scaleRef, stp=effStep();
+  if(UI.mode==='crop'){                        /* トリミングの四角をひく */
+    UI.cropDrag={x0:v.x, y0:v.y, x1:v.x, y1:v.y};
+    UI.drag={x:e.clientX,y:e.clientY,pan:false,crop:true};
+    UI.pend=null; drawOverlay(); return;
+  }
   /* 3 のあいだは、原点の印をつまんで動かせる */
   if(stp===3 && exp0.origin && (UI.mode==='record'||UI.mode==='origin')){
     var dO=Math.hypot(v.x-exp0.origin.x, v.y-exp0.origin.y)*VIEW.K;
@@ -1906,7 +2008,7 @@ function onDown(e){
 function step3Hint(){
   var e=EXP();
   if(!e.originSet){ toast('画面の「原点」の印を、原点にしたい所までドラッグしてください'); return; }
-  if(!e.axisSet){ setMode('axis'); toast('原点から x軸の向きへドラッグしてください（水平でよければクリック）'); return; }
+  if(!e.axisSet){ setMode('axis'); toast('x軸の正の方向をクリックしてください'); return; }
   if(!e.mPerPx){ $('btnScale').click(); return; }
   toast('3 は終わっています。「4. トラッキング」へ進んでください');
 }
@@ -1915,29 +2017,16 @@ function onMove(e){
   if(!(e.pointerId in UI.pointers)) return;
   UI.pointers[e.pointerId]={x:e.clientX,y:e.clientY};
   var n=Object.keys(UI.pointers).length;
-  if(n>=2 && UI.pinch){
-    var ps=Object.keys(UI.pointers).map(function(k){return UI.pointers[k];});
-    var d=dist(ps[0],ps[1]), c=mid(ps[0],ps[1]);
-    var cv=$('cvView'), r=cv.getBoundingClientRect();
-    var f=d/(UI.pinch.d||1);
-    VIEW.zoom=Math.max(1,Math.min(12, UI.pinch.zoom*f));
-    calcK();
-    var K0=(cv.width/VID.w)*UI.pinch.zoom, K1=VIEW.K;
-    var cx0=(UI.pinch.c.x-r.left)*cv.width/r.width, cy0=(UI.pinch.c.y-r.top)*cv.height/r.height;
-    var cx1=(c.x-r.left)*cv.width/r.width, cy1=(c.y-r.top)*cv.height/r.height;
-    var vx=UI.pinch.panX+cx0/K0, vy=UI.pinch.panY+cy0/K0;
-    VIEW.panX=vx-cx1/K1; VIEW.panY=vy-cy1/K1;
-    clampPan(); render(); return;
-  }
+  if(n>1) return;
   if(!UI.drag) return;
-  if(UI.drag.pan){
-    var dx=(e.clientX-UI.drag.x), dy=(e.clientY-UI.drag.y);
-    var cvv=$('cvView'), rr=cvv.getBoundingClientRect();
-    VIEW.panX-=dx*(cvv.width/rr.width)/VIEW.K; VIEW.panY-=dy*(cvv.height/rr.height)/VIEW.K;
-    UI.drag.x=e.clientX; UI.drag.y=e.clientY; clampPan(); render(); return;
-  }
+  if(UI.drag.pan){ return; }
   if(UI.drag.hint) return;
   var p=ev2canvas(e), v=s2v(p.x,p.y);
+  if(UI.drag.crop && UI.cropDrag){
+    UI.cropDrag.x1=Math.max(0,Math.min(VID.w,v.x));
+    UI.cropDrag.y1=Math.max(0,Math.min(VID.h,v.y));
+    drawOverlay(); return;
+  }
   if(UI.dragRad){ setSearchR(v); drawOverlay(); return; }
   if(UI.dragOrigin){                      /* 原点をつまんで動かしている */
     var eo=EXP(); eo.origin={x:v.x,y:v.y};
@@ -1952,15 +2041,26 @@ function onUp(e){
   delete UI.pointers[e.pointerId];
   if(Object.keys(UI.pointers).length<2) UI.pinch=null;
   if(!UI.drag){ hideLoupe(); return; }
-  var wasPan=UI.drag.pan, wasHint=UI.drag.hint; UI.drag=null; hideLoupe();
+  var wasPan=UI.drag.pan, wasHint=UI.drag.hint, wasCrop=UI.drag.crop; UI.drag=null; hideLoupe();
+  if(wasCrop){
+    var cd=UI.cropDrag; UI.cropDrag=null;
+    var w=cd? Math.abs(cd.x1-cd.x0) : 0, h=cd? Math.abs(cd.y1-cd.y0) : 0;
+    if(w<40 || h<40){ drawOverlay(); toast('小さすぎます。もう少し大きく囲んでください'); return; }
+    setCrop({ x:Math.min(cd.x0,cd.x1), y:Math.min(cd.y0,cd.y1), w:w, h:h });
+    toast('トリミングしました（測定した値は変わりません）');
+    return;
+  }
   if(UI.dragRad){ UI.dragRad=false; UI.pend=null; drawOverlay(); updateGuide(); saveLocal(); return; }
   if(wasHint){ UI.pend=null; drawOverlay(); step3Hint(); return; }
   if(UI.dragOrigin){
     UI.dragOrigin=false; UI.pend=null;
     var eo=EXP(); eo.originSet=true;
-    if(UI.mode==='origin') setMode('record');
+    if(!eo.axisSet){                       /* つぎは x軸：クリック1回で決める */
+      setMode('axis');
+      calMsg('原点はこの位置でいいですか？<br>よければ、つぎは<b>軸の正の方向をクリック</b>してください');
+    } else { if(UI.mode==='origin') setMode('record'); }
     afterChange();
-    toast(eo.axisSet? '原点を決めました' : '原点を決めました。つづけて［x軸の向き］へ');
+    toast(eo.axisSet? '原点を決めました' : '原点を決めました');
     return;
   }
   if(UI.dragScale){ UI.dragScale=0; UI.pend=null; afterChange(); toast('スケールを直しました'); return; }
@@ -2010,15 +2110,23 @@ function commitPoint(vx, vy, e){
     pushUndo({t:'cal', prev:{mPerPx:exp.mPerPx, scaleRef:exp.scaleRef, scaleLen:exp.scaleLen}});
     exp.mPerPx=len/d; exp.scaleLen=len;
     exp.scaleRef={x1:p1.x,y1:p1.y,x2:vx,y2:vy};
-    UI.scaleP1=null; setMode('record'); afterChange();
+    UI.scaleP1=null; setMode('record'); afterChange(); calMsg('');
     toast('スケール：'+sig(exp.mPerPx*1000,3)+' mm/px'); return;
   }
   if(UI.mode==='axis'){
     if(!exp.origin){ toast('先に原点を決めてください'); setMode('record'); return; }
+    var d0=Math.hypot(vx-exp.origin.x, vy-exp.origin.y);
+    if(d0<6){ toast('原点から少しはなれた所をクリックしてください'); return; }
     exp.angle=Math.atan2(vy-exp.origin.y, vx-exp.origin.x);
     exp.axisSet=true;
-    setMode('record'); afterChange();
-    toast('x軸の向き：'+nf(exp.angle*180/Math.PI,1)+'°'+(exp.mPerPx?'':'　つぎは「スケールを設定」です'));
+    afterChange();
+    if(!exp.mPerPx){
+      var len=parseFloat($('inScaleLen').value)*parseFloat($('selScaleUnit').value);
+      UI.scaleP1=null; setMode('scale1');
+      calMsg('X軸はこの方向でいいですか？<br>よければ、つぎは<b>スケールの設定</b>です。'+
+             '<b>'+fmtLen(len>0?len:0.1)+'間隔</b>の点を画面上に打ってください');
+    } else { setMode('record'); calMsg(''); }
+    toast('x軸の向き：'+nf(exp.angle*180/Math.PI,1)+'°');
     return;
   }
   if(UI.mode==='ref'){
@@ -2058,6 +2166,14 @@ function commitPoint(vx, vy, e){
   if(needTrackStart()){                       /* 「トラッキングを開始する」を押すまで待つ */
     toast('動画の真ん中の［トラッキングを開始する］を押してください');
     return;
+  }
+  /* 解析する時間範囲の外では記録しない（まちがってクリックしても点が増えないように） */
+  var half2=0.6/(VID.fps||30);
+  if(exp.t0!==null && VID.cur < exp.t0-half2){
+    toast('解析する時間範囲より前です。［解析範囲の最初から］を押してください'); return;
+  }
+  if(exp.rangeB!==null && VID.cur > exp.rangeB+half2){
+    toast('解析する時間範囲より後です。［解析範囲の最初から］を押してください'); return;
   }
   addPoint(UI.obj, vx, vy, false);
   var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;
@@ -2659,7 +2775,9 @@ function seriesFor(exp, kind, expIdx, overlay){
     if(!expHasObj(exp,ob)) continue;
     var s=series(exp,ob);
     var base = overlay? EXPCOL[expIdx%EXPCOL.length] : OBJCOL[ob];
-    var nm=(overlay? exp.name+' ' : '')+'物体'+(ob+1)+(exp.objName[ob]?'('+exp.objName[ob]+')':'');
+    var nm=(overlay? exp.name+' ' : '')+
+      (APP.twoObj? ('物体'+(ob+1)+(exp.objName[ob]?'('+exp.objName[ob]+')':''))
+                 : (exp.objName[ob]||'物体'));
     if(kind==='x'||kind==='y'){
       out.push({name:nm, color:base, shape:shapes[ob], pts:s.map(function(p){return {x:p.t,y:(kind==='x'?p.x:p.y)};})});
     } else if(kind==='v'){
@@ -2730,7 +2848,10 @@ function specEnergy(ids, obj){
   return { title:'', xlab:'t [s]', ylab:'エネルギー [J]', series:ser,
            xkey:'t', key:'E_o'+obj+'_'+ids.join('-') };
 }
-function objTitle(e, obj){ return '物体'+(obj+1)+(e&&e.objName[obj]?'（'+e.objName[obj]+'）':''); }
+function objTitle(e, obj){
+  if(!APP.twoObj) return (e&&e.objName[obj])? '（'+e.objName[obj]+'）' : '';
+  return '物体'+(obj+1)+(e&&e.objName[obj]?'（'+e.objName[obj]+'）':'');
+}
 
 function renderMode2(){
   var host=$('charts2');
@@ -2750,16 +2871,21 @@ function renderMode2(){
   if(live) w=Math.round(APP.gsize*((showX&&showY)?0.52:0.72));
   var h=Math.round(w*0.62);
   var blocks=[], o, i;
+  var objSel=selectedObjs();
   if(over){
     for(o=0;o<NOBJ;o++){
+      if(objSel.indexOf(o)<0) continue;
       var any=ids.some(function(i2){ var e=APP.exps[i2]; return e&&e.objs[o]&&e.objs[o].length; });
-      if(any) blocks.push({ label:objTitle(APP.exps[ids[0]],o)+'（重ねて表示）', ids:ids, obj:o });
+      if(any) blocks.push({ label:(objTitle(APP.exps[ids[0]],o)||'')+'（重ねて表示）', ids:ids, obj:o });
     }
   } else {
     ids.forEach(function(i2){
       var e=APP.exps[i2]; if(!e) return;
-      for(var o2=0;o2<NOBJ;o2++) if(e.objs[o2] && e.objs[o2].length)
-        blocks.push({ label:e.name+'　'+objTitle(e,o2), ids:[i2], obj:o2 });
+      for(var o2=0;o2<NOBJ;o2++){
+        if(objSel.indexOf(o2)<0) continue;
+        if(e.objs[o2] && e.objs[o2].length)
+          blocks.push({ label:(e.name+'　'+objTitle(e,o2)).replace(/\s+$/,''), ids:[i2], obj:o2 });
+      }
     });
   }
   if(!blocks.length){
@@ -2986,7 +3112,9 @@ var CGQ = { t:{lab:'t [s]', k:'t'}, x:{lab:'x [m]', k:'x'}, y:{lab:'y [m]', k:'y
 function cgLab(q, inv){ var l=CGQ[q]?CGQ[q].lab:q; return inv? '−('+l+')' : l; }
 function cgName(ei, ob, q, inv){
   var e=APP.exps[ei]; if(!e) return '';
-  return e.name+' 物体'+(ob+1)+(e.objName[ob]?'('+e.objName[ob]+')':'')+' '+(inv?'−':'')+q;
+  var on = APP.twoObj? (' 物体'+(ob+1)+(e.objName[ob]?'('+e.objName[ob]+')':''))
+                     : (e.objName[ob]? ' ('+e.objName[ob]+')' : '');
+  return e.name+on+' '+(inv?'−':'')+q;
 }
 /* 指定した実験・物体で、(横軸の量, 縦軸の量) の組をつくる */
 function cgPoints(ei, ob, q, inv, xq, invX){
@@ -3142,9 +3270,10 @@ function csvOf(exp){
   if(!objs.length) return L.join('\n')+'\n（データなし）\n';
   var ss=objs.map(function(o){ return series(exp,o); });
   var wy=useY();                    /* 「軸の表示」が x軸のみ なら y の列は出さない */
+  var idx=useObjIdx(objs);
   var head=['t[s]','tv[s]'];
   objs.forEach(function(o,k){
-    var n=(o+1)+(exp.objName[o]?'('+exp.objName[o]+')':'');
+    var n=(idx?(o+1):'')+(exp.objName[o]?'('+exp.objName[o]+')':'');
     head.push('x'+n+'[m]');
     if(wy) head.push('y'+n+'[m]');
     head.push('vx'+n+'[m/s]');
@@ -3379,9 +3508,10 @@ function sheetForExp(exp, idx){
   var wy=useY();                           /* x軸のみのときは y の列とグラフを出さない */
   var QS = wy? ['x','y','vx','vy','ax','ay'] : ['x','vx','ax'];
   if(useE) QS=QS.concat(['K','U','K+U']);
+  var idx2=useObjIdx(objs);
   var head=['t[s]','tv[s]'], cols={};
   objs.forEach(function(o){
-    QS.forEach(function(q){ cols[q+o]=head.length; head.push(q+'_'+(o+1)); });
+    QS.forEach(function(q){ cols[q+o]=head.length; head.push(idx2? (q+'_'+(o+1)) : q); });
   });
   rows.push(head);
   var headRow=rows.length;                 /* 1-based のヘッダ行 */
@@ -3521,11 +3651,12 @@ function drawReportTable(g, exp, x, y, w, h){
   for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
   if(!objs.length || h<80) return;
   var ss=objs.map(function(o){ return series(exp,o); });
-  var wy=useY();
+  var wy=useY(), idx=useObjIdx(objs);
   var head=['t [s]'];
-  objs.forEach(function(o){ head.push('x'+(o+1)+' [m]');
-    if(wy) head.push('y'+(o+1)+' [m]');
-    head.push('vx'+(o+1)); if(wy) head.push('vy'+(o+1)); });
+  objs.forEach(function(o){ var n=idx?(o+1):'';
+    head.push('x'+n+' [m]');
+    if(wy) head.push('y'+n+' [m]');
+    head.push('vx'+n); if(wy) head.push('vy'+n); });
   var rowH=17, maxRows=Math.floor((h-30)/rowH);
   var n0=Math.max.apply(null, ss.map(function(s){return s.length;}));
   var cols=(n0>maxRows && head.length<=5)?2:1;         /* 多いときは2段組 */
@@ -3699,6 +3830,30 @@ var KADAI_SRC = { data:null, type:'', size:0 };
 var ORIGINAL_HTML = '';
 var SAMPLES = [ {f:'samples/uniform.mp4', n:'等速直線運動'}, {f:'samples/circular.mp4', n:'円運動（だんだん止まる）'} ];
 
+/* 動画の真ん中に出す確認メッセージ（空文字で消す） */
+function calMsg(html){
+  var m=$('calMsg'); if(!m) return;
+  if(!html){ m.classList.add('hide'); m.innerHTML=''; return; }
+  m.innerHTML=html; m.classList.remove('hide');
+  var h=$('vhint'); if(h) h.classList.add('hide');    /* 上の吹き出しとかさならないように */
+  clearTimeout(m.__t);
+  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 9000);
+}
+/* 読み込み中・コマ表づくり中は、ボタンを押せないようにする */
+function setBusy(on, msg, sub){
+  var b=$('busyLock'); if(!b) return;
+  if(on){
+    $('busyMsg').textContent=msg||'処理しています…';
+    $('busySub').textContent=sub||'終わるまで、ボタンは押せません。';
+    b.classList.remove('hide');
+  } else b.classList.add('hide');
+}
+function busyProg(f){
+  var p=$('busyProg'); if(!p) return;
+  if(f===null||f===undefined){ p.classList.add('hide'); return; }
+  p.classList.remove('hide');
+  p.querySelector('i').style.width=Math.round(Math.max(0,Math.min(1,f))*100)+'%';
+}
 function toast(msg){
   var t=$('toast'); t.textContent=msg; t.classList.add('on');
   clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('on'); }, 1900);
@@ -3782,9 +3937,10 @@ function updateTable(){
   /* 速さは「となりの2点の間」の値なので、行と行のあいだに書く（記録タイマーと同じ書き方）。
      加速度はその速さの変わり方なので、また位置と同じ行にもどる。 */
 
+  var idx=useObjIdx(objs);
   var h='<tr><th>t [s]</th>';
   objs.forEach(function(o){
-    var n=(o+1);
+    var n=idx? (o+1) : '';
     h+='<th>x'+n+' [m]</th>'+(showY?'<th>y'+n+' [m]</th>':'')+
        '<th>vx'+n+' [m/s]</th>'+(showY?'<th>vy'+n+' [m/s]</th>':'')+
        '<th>ax'+n+' [m/s²]</th>'+(showY?'<th>ay'+n+' [m/s²]</th>':'');
@@ -3884,6 +4040,7 @@ function refreshExpUI(){
     });
   });
   if($('cgExpA')) refreshCGExps();
+  refreshObjUI();
   updateOutButtons();
   setEnergyOn(APP.energyOn);
   var e=EXP();
@@ -3914,7 +4071,8 @@ function currentStep(){
 function ensureOrigin(){
   var e=EXP();
   if(!VID.ready || e.origin) return;
-  e.origin={ x:Math.round(VID.w/2), y:Math.round(VID.h/2) };
+  var c=CROP();                       /* トリミングしているときは、その真ん中に置く */
+  e.origin={ x:Math.round(c.x+c.w/2), y:Math.round(c.y+c.h/2) };
   e.originSet=false;
 }
 function stepName(n){ return ['','1. 動画','2. 解析する時間範囲の指定','3. 空間の原点・スケール・軸','4. トラッキング'][n]||''; }
@@ -3926,6 +4084,11 @@ function updateSteps(){
   var edChanged=(APP.lastEdit!==ed); APP.lastEdit=ed;
   APP.step=st;
   if(changed && st>=3) rewindToRangeStart();          /* 3・4へ進んだら解析範囲の先頭へ */
+  if(changed && st===4){
+    applyRangeLimit();                               /* 先に範囲を効かせてから巻きもどす */
+    stopAllPlay();
+    setTimeout(rewindToRangeStart, 60);
+  }
   if(changed && st>=4){
     setStrobeOverlay(false);                          /* 4に入ったら重ねた写真は外す */
     if(window.innerWidth>=980) setSbs(true);          /* 4 では動画と表を並べておく */
@@ -4017,6 +4180,27 @@ function updateGuide(){
     }
     else if(!e.mPerPx || UI.mode==='scale1' || UI.mode==='scale2') $('btnScale').classList.add('glow');
   }
+  /* ===== ２物体の運動：名前 → 開始 → 物体2 の順に光らせる ===== */
+  if(APP.twoObj && st===4 && VID.ready){
+    var o=UI.obj, nameOK=!!(e.objName[o]||'').trim();
+    $('labObjName').classList.toggle('hot', !nameOK);
+    $('btnStartObj').classList.toggle('hide', !nameOK);
+    if(nameOK && needTrackStart()) $('btnStartObj').classList.add('glow');
+    /* 名前がまだのときは、動画の真ん中の開始ボタンも出さない */
+    if(!nameOK) $('btnTrkStart').classList.add('hide');
+    else if(needTrackStart()) $('btnTrkStart').classList.remove('hide');
+    $('btnTrkStart').textContent='物体'+(o+1)+'のトラッキングを開始する';
+    /* 物体1が終わったら、自動で物体2へ */
+    if(o===0 && objDone(0) && !EXP().objs[1].length && !EXP().objReady[1]){
+      UI.obj=1; $('selObj').value='2'; refreshObjUI();
+      toast('物体1のトラッキングが終わりました。つぎは物体2の名前を入れてください');
+      setTimeout(updateGuide, 0);
+    }
+  } else {
+    $('labObjName').classList.remove('hot');
+    $('btnStartObj').classList.add('hide');
+    if(!APP.twoObj) $('btnTrkStart').textContent='トラッキングを開始する';
+  }
   /* トラッキングが範囲の終わりまで進んだら ②グラフ を光らせ、終わりを知らせる */
   var done=(APP.step>=4 && trackingDone());
   if(done) el('#tabs button[data-mode="2"]').classList.add('glow');
@@ -4043,17 +4227,103 @@ function updateGuide(){
 /* 「トラッキングを開始する」をまだ押していない（＝記録させない）か */
 function needTrackStart(){
   var e=EXP();
+  if(APP.twoObj){                       /* 2物体：物体ごとに「開始」を押してもらう */
+    if(e.objReady[UI.obj]) return false;
+    if(e.objs[UI.obj].length>0) return false;
+    return true;
+  }
   if(e.trackReady) return false;
   if(e.objs.reduce(function(a,b){return a+b.length;},0)>0) return false;  /* 前のデータがあるなら不要 */
   return true;
 }
+/* その物体が、解析範囲のおわりまで記録できているか */
+function objDone(o){
+  var e=EXP();
+  if(e.rangeB===null) return false;
+  var arr=e.objs[o]; if(!arr || !arr.length) return false;
+  var last=null;
+  arr.forEach(function(p){ if(last===null||p.t>last) last=p.t; });
+  return last >= e.rangeB - 1.2/(VID.fps||30);
+}
 function trackingDone(){
   var e=EXP();
   if(e.rangeB===null) return false;
+  if(APP.twoObj) return objDone(0) && objDone(1);
   var last=null;
   for(var i=0;i<NOBJ;i++) e.objs[i].forEach(function(p){ if(last===null||p.t>last) last=p.t; });
   if(last===null) return false;
   return last >= e.rangeB - 1.2/(VID.fps||30);
+}
+/* 「２物体の運動」の切りかえ。画面の見た目と選べる物体をそろえる */
+function setTwoObj(on, quiet){
+  APP.twoObj=!!on;
+  $('cbTwoObj').checked=APP.twoObj;
+  if(!APP.twoObj) UI.obj=0;
+  refreshObjUI();
+  if(!quiet){
+    afterChange(); refreshExpUI();
+    if(!$('mode2').classList.contains('hide')) renderMode2();
+    if(!$('mode3').classList.contains('hide')) renderMode3(false);
+    renderCG(); saveLocal();
+    if(VID.ready) render();
+  }
+}
+/* 物体えらびの見た目（4.トラッキング／自由選択グラフ／②の対象） */
+function refreshObjUI(){
+  var two=APP.twoObj, e=EXP();
+  $('objBox').classList.toggle('hide', !two);
+  /* 物体番号は 1・2 だけ */
+  var sel=$('selObj');
+  if(sel.options.length!==2){
+    sel.innerHTML='<option value="1">1</option><option value="2">2</option>';
+  }
+  if(UI.obj>1) UI.obj=two?1:0;
+  sel.value=String(UI.obj+1);
+  $('labObjName').firstChild.nodeValue='物体'+(UI.obj+1)+'の名前 ';
+  $('inObjName').value=e.objName[UI.obj]||'';
+  $('btnStartObj').textContent='物体'+(UI.obj+1)+'のトラッキングを開始';
+  /* 物体2は、物体1が終わってから */
+  sel.options[1].disabled = two && !objDone(0);
+  /* リセットのボタン */
+  $('btnTrkReset').textContent = two? '物体1のトラッキングした点をリセット' : 'トラッキングした点をリセット';
+  $('rowTrkResetB').classList.toggle('hide', !(two && (objDone(0) || e.objs[1].length)));
+  $('trkResetNote').textContent = two?
+    'その物体の点を消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）。' :
+    'この実験で記録した点を全部消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）。';
+  /* 自由選択グラフの「物体」えらび */
+  ['cgObjA','cgObjB'].forEach(function(id){
+    var q=$(id); if(!q) return;
+    q.classList.toggle('hide', !two);
+    els('option', q).forEach(function(o,i){ o.hidden=(i>=nObj()); });
+  });
+  /* ②の「対象の物体」 */
+  var oc=$('objChecks');
+  if(oc){
+    $('lbObjSel').classList.toggle('hide', !two);
+    oc.classList.toggle('hide', !two);
+    if(two && oc.children.length!==2){
+      oc.innerHTML='';
+      for(var i=0;i<2;i++){
+        var l=document.createElement('label');
+        l.innerHTML='<input type="checkbox" data-o="'+i+'" checked>'+
+          '<i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+OBJCOL[i]+'"></i>'+
+          '<span class="onm">物体'+(i+1)+'</span>';
+        l.querySelector('input').addEventListener('change', function(){ renderMode2(); });
+        oc.appendChild(l);
+      }
+    }
+    if(two) els('#objChecks .onm').forEach(function(sp,i){
+      sp.textContent='物体'+(i+1)+(e.objName[i]? '（'+e.objName[i]+'）':'');
+    });
+  }
+}
+/* ②で表示する物体 */
+function selectedObjs(){
+  if(!APP.twoObj) return [0];
+  var out=[];
+  els('#objChecks input:checked').forEach(function(c){ out.push(parseInt(c.dataset.o)); });
+  if(!out.length) out=[0,1];
+  return out;
 }
 /* 2 が決まったら、再生もコマ送りも解析する範囲の中だけにする */
 function applyRangeLimit(){
@@ -4073,7 +4343,7 @@ function todoText(){
   }
   if(st===3){
     if(!e.originSet) return '画面中央の <b>「原点」</b> を正しい位置にドラッグしてください。';
-    if(!e.axisSet) return 'つぎに <b>x軸の向き</b>：原点からドラッグしてください（水平でよければ、そのまま<b>「スケールを設定」</b>をクリック）。';
+    if(!e.axisSet) return 'つぎに <b>x軸の向き</b>：<b>軸の正の方向をクリック</b>してください（水平でよければ、そのまま<b>「スケールを設定」</b>をクリック）。';
     if(!e.mPerPx) return 'つぎに <b>［スケールを設定］</b>：長さのわかる物の両はしを 2 か所クリックします。';
     return '';
   }
@@ -4233,16 +4503,26 @@ function clearStrobe(){
   $('stroInfo').textContent='まだ作っていません';
 }
 /* トラッキングした点を全部消して、解析範囲の最初にもどる */
-function resetTracking(){
-  var e=EXP();
-  var n=e.objs.reduce(function(a,o){ return a+o.length; },0);
-  if(!n){ toast('記録した点はまだありません'); return; }
-  pushUndo({t:'bulkAll', prev:e.objs.map(function(o){ return o.slice(); })});
-  for(var i=0;i<NOBJ;i++) e.objs[i]=[];
+function resetTracking(obj){
+  var e=EXP(), i;
+  if(obj===undefined && APP.twoObj) obj=0;         /* 2物体のときは、ボタンごとに物体を指定 */
+  if(obj===undefined){
+    var n=e.objs.reduce(function(a,o){ return a+o.length; },0);
+    if(!n){ toast('記録した点はまだありません'); return; }
+    pushUndo({t:'bulkAll', prev:e.objs.map(function(o){ return o.slice(); })});
+    for(i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; }
+    e.trackReady=false;
+  } else {
+    if(!e.objs[obj].length){ toast('物体'+(obj+1)+'の点はまだありません'); return; }
+    pushUndo({t:'bulk', obj:obj, prev:e.objs[obj].slice()});
+    e.objs[obj]=[]; e.objReady[obj]=false;
+    UI.obj=obj; $('selObj').value=String(obj+1);
+  }
   UI.lastPt=null;
+  refreshObjUI();
   afterChange(); render();
   rewindToRangeStart();
-  toast('トラッキングした点をリセットしました（Ctrl+Z でもどせます）');
+  toast((obj===undefined? 'トラッキングした点' : '物体'+(obj+1)+'の点')+'をリセットしました（Ctrl+Z でもどせます）');
 }
 function switchExp(i){
   APP.cur=i; UI.undo=[]; UI.lastPt=null; clearStrobe();
@@ -4299,7 +4579,9 @@ function loadVideoFile(file){
     return;
   }
   var url=URL.createObjectURL(file);
+  setBusy(true, '動画を読み込んでいます…', 'ファイルの大きさによっては少し時間がかかります。');
   vidLoad(url, file.name).then(function(){
+    setBusy(false);
     if(!checkLoadedVideo(file.name)) return;
     onVideoReady(file.name);
     if(file.size < 30*1024*1024){
@@ -4307,11 +4589,13 @@ function loadVideoFile(file){
       fr.onload=function(){ KADAI_SRC={data:fr.result, type:file.type, size:file.size}; };
       fr.readAsDataURL(file);
     } else KADAI_SRC={data:null,type:'',size:file.size};
-  }).catch(function(err){ showVidError(err, file.name); });
+  }).catch(function(err){ setBusy(false); showVidError(err, file.name); });
 }
 function loadVideoUrl(url, name){
   $('vidErr').classList.add('hide');
+  setBusy(true, '動画を読み込んでいます…', 'ファイルの大きさによっては少し時間がかかります。');
   vidLoad(url, name).then(function(){
+    setBusy(false);
     if(!checkLoadedVideo(name)) return;
     onVideoReady(name);
     if(location.protocol==='http:'||location.protocol==='https:'){
@@ -4321,7 +4605,7 @@ function loadVideoUrl(url, name){
         fr.readAsDataURL(b);
       }).catch(function(){});
     }
-  }).catch(function(err){ showVidError(err, name); });
+  }).catch(function(err){ setBusy(false); showVidError(err, name); });
 }
 function showVidError(err, name){
   $('vidErr').innerHTML=vidErrMsg(err, name);
@@ -4357,7 +4641,7 @@ function onVideoReady(name){
   $('ftState').textContent='未作成';
   VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0;
   vidSeek(0).then(function(){
-    render(); afterChange(); updateSteps(); updateBigPlay();
+    render(); afterChange(); updateSteps(); updateBigPlay(); updateCropInfo();
     if(VID.hasRVFC && VID.dur>0 && VID.dur<=40) buildTableUI();
     else if(VID.hasRVFC) $('ftState').innerHTML='<b>長い動画です</b>（ボタンで作成）';
     else if(!VID.hasRVFC) $('ftState').innerHTML='<span class="ng">この端末では作れません</span>';
@@ -4369,9 +4653,12 @@ function buildTableUI(){
   $('btnFrameTable').textContent='中止する';
   var p=$('ftProg'); p.classList.remove('hide');
   $('ftState').textContent='作成中…';
-  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; })
+  setBusy(true, 'コマ表を作っています…',
+    '動画を1回さいごまで再生して、コマごとの時刻を測っています。動画の長さぶんかかります。');
+  busyProg(0);
+  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f); })
    .then(function(okk){
-     p.classList.add('hide');
+     p.classList.add('hide'); setBusy(false); busyProg(null);
      $('btnFrameTable').textContent='コマ表を作る（実測時刻）';
      if(okk){
        var st=fpsFromTable();
@@ -5093,12 +5380,22 @@ function bindUI(){
 
   /* 2. 解析する時間範囲 */
   $('btnRangeB').onclick=function(){
+    var e=EXP();
     if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
-    EXP().rangeB=VID.cur; afterChange(); toast('この時刻を解析のおわりにしました');
+    /* 「おわり」は、かならず t=0 より後 */
+    if(e.t0!==null && VID.cur <= e.t0 + 0.5/(VID.fps||30)){
+      toast('「おわり」は「t = 0」より後のコマにしてください'); return;
+    }
+    askResetPts(function(){
+      e.rangeB=VID.cur; afterChange(); toast('この時刻を解析のおわりにしました');
+    });
   };
   $('btnRangeClr').onclick=function(){
-    var e=EXP(); e.t0=null; e.rangeB=null; e.rangeA=null; e.step2ok=false; afterChange();
-    toast('時間範囲を解除しました');
+    askResetPts(function(){
+      var e=EXP(); e.t0=null; e.rangeB=null; e.rangeA=null; e.step2ok=false;
+      APP.editStep=0; afterChange();
+      toast('時間範囲を解除しました');
+    });
   };
   $('btnStep2Next').onclick=function(){
     if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
@@ -5149,10 +5446,37 @@ function bindUI(){
   $('btnTimeZero').onclick=function(){
     var e=EXP();
     if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
-    if(e.t0!==null && Math.abs(e.t0-VID.cur)<1e-6){ e.t0=null; toast('t = 0 の設定を解除しました'); }
-    else { e.t0=VID.cur; toast('このコマを t=0 にしました'); }
-    afterChange();
+    if(e.t0!==null && Math.abs(e.t0-VID.cur)<1e-6){
+      askResetPts(function(){ e.t0=null; afterChange(); toast('t = 0 の設定を解除しました'); });
+      return;
+    }
+    /* 「t = 0」は、かならず「おわり」より前 */
+    if(e.rangeB!==null && VID.cur >= e.rangeB - 0.5/(VID.fps||30)){
+      toast('「t = 0」は「この時刻まで解析」より前のコマにしてください'); return;
+    }
+    askResetPts(function(){
+      e.t0=VID.cur; afterChange();
+      toast('このコマを t=0 にしました');
+      stepFrames(1);          /* 同じコマで「おわり」を押せないように、1コマ進める */
+    });
   };
+/* トラッキングずみのときは、消えることを知らせてから */
+function askResetPts(go){
+  var e=EXP(), n=e.objs.reduce(function(a,o){ return a+o.length; },0);
+  if(!n){ go(); return; }
+  popup('<h2>トラッキングの点がすべて消えます</h2>'+
+    '<p style="font-size:1.02rem">解析する時間範囲を変えると、いま記録した <b>'+n+' 点</b>は'+
+    'すべて消えます。よろしいですか？</p>',
+    'はい、消してやり直す', function(){
+      pushUndo({t:'bulkAll', prev:e.objs.map(function(o){ return o.slice(); })});
+      for(var i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; }
+      e.trackReady=false; UI.lastPt=null;
+      if(typeof refreshObjUI==='function') refreshObjUI();
+      go();
+      render();
+      toast('トラッキングをリセットしました（Ctrl+Z でもどせます）');
+    });
+}
   $('btnAxX').onclick=function(){ setAxisDisp('x'); };
   $('btnAxXY').onclick=function(){ setAxisDisp('xy'); };
   $('cbYFlip').onchange=function(){ EXP().yflip=this.checked; afterChange(); renderCG(); };
@@ -5185,8 +5509,22 @@ function bindUI(){
   };
 
   /* トラッキング */
-  $('selObj').onchange=function(){ UI.obj=parseInt(this.value)-1; $('inObjName').value=EXP().objName[UI.obj]||''; drawOverlay(); };
-  $('inObjName').oninput=function(){ EXP().objName[UI.obj]=this.value; saveLocal(); };
+  $('cbTwoObj').onchange=function(){ setTwoObj(this.checked);
+    toast(this.checked? '２物体の運動：ON（物体1 → 物体2 の順に追いかけます）' : '２物体の運動：OFF'); };
+  $('selObj').onchange=function(){
+    UI.obj=parseInt(this.value)-1; refreshObjUI(); updateGuide(); drawOverlay();
+  };
+  $('inObjName').oninput=function(){
+    EXP().objName[UI.obj]=this.value; refreshObjUI(); updateGuide(); saveLocal();
+  };
+  $('btnStartObj').onclick=function(){
+    var e=EXP(), o=UI.obj;
+    if(!(e.objName[o]||'').trim()){ toast('先に物体'+(o+1)+'の名前を入れてください'); return; }
+    e.objReady[o]=true; e.trackReady=true;
+    stopAllPlay();
+    vidSeek(rangeStart(e)).then(function(){ afterSeek(); afterChange(); render();
+      toast('物体'+(o+1)+'（'+e.objName[o]+'）を、動画の上でクリックして記録してください'); });
+  };
   $('btnSbs').onclick=function(){
     setSbs(!el('.rightcol').classList.contains('sbs'));
   };
@@ -5194,7 +5532,9 @@ function bindUI(){
   $('doneMsg').onclick=function(){ setTab('2'); };
   $('trkDone').onclick=function(){ setTab('2'); };
   $('btnTrkStart').onclick=function(){
-    EXP().trackReady=true; afterChange(); render();
+    var e=EXP();
+    e.trackReady=true; e.objReady[UI.obj]=true;
+    refreshObjUI(); afterChange(); render();
     toast('動画の上をクリック（タップ）して位置を記録してください');
   };
   $('btnClearObj').onclick=function(){
@@ -5203,8 +5543,9 @@ function bindUI(){
     pushUndo({t:'bulk', obj:UI.obj, prev:e.objs[UI.obj]});
     e.objs[UI.obj]=[]; afterChange(); render(); toast('物体'+(UI.obj+1)+'の点を消しました');
   };
-  $('btnTrkReset').onclick=resetTracking;
-  $('btnTrkReset2').onclick=resetTracking;
+  $('btnTrkReset').onclick=function(){ resetTracking(APP.twoObj? 0 : undefined); };
+  $('btnTrkResetB').onclick=function(){ resetTracking(1); };
+  $('btnTrkReset2').onclick=function(){ resetTracking(APP.twoObj? UI.obj : undefined); };
   /* ②の 2 つの表示モード */
   $('btnM2Side').onclick=function(){ setM2Mode('side'); };
   $('btnM2Live').onclick=function(){ setM2Mode('live'); };
@@ -5304,14 +5645,31 @@ function bindUI(){
     if(!VID.ready) return;
     if(komaTimer) stopAllPlay();          /* シークバーを動かしたら、コマ送りは止める */
     var t=this.value/1000*VID.dur;
+    if(VID.limit && (t < VID.limit.a-1e-6 || t > VID.limit.b+1e-6)){
+      t=Math.max(VID.limit.a, Math.min(VID.limit.b, t));
+      this.value=Math.round(t/VID.dur*1000);
+      toast('解析する時間範囲の外です。変えたいときは「2. 解析する時間範囲の指定」の［もう一度］→［範囲を解除］を押してください');
+    }
     VID.el.currentTime=t; VID.cur=t; VID.idx=frameIndexAt(t);
     $('tInfo').textContent=nf(t-(EXP().t0||0),4);
     if(!seekBusy){ seekBusy=true; setTimeout(function(){ seekBusy=false; render(); updateTimeLine(); }, 60); }
   };
   $('seek').onchange=function(){ vidSeek(this.value/1000*VID.dur).then(afterSeek); };
-  $('btnZoomIn').onclick=function(){ zoomAt(1.4); updatePrec(); };
-  $('btnZoomOut').onclick=function(){ zoomAt(1/1.4); updatePrec(); };
-  $('btnZoomRst').onclick=function(){ VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0; render(); updatePrec(); };
+  ['btnCrop','btnCrop2'].forEach(function(id){
+    $(id).onclick=function(){
+      if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
+      if(UI.mode==='crop'){ UI.cropDrag=null; setMode('record'); updateCropInfo(); render(); return; }
+      stopAllPlay();
+      UI.cropDrag=null; setMode('crop'); updateCropInfo(); render();
+      toast('のこしたい所を、動画の上で四角くドラッグしてください');
+    };
+  });
+  ['btnCropClr','btnCropClr2'].forEach(function(id){
+    $(id).onclick=function(){
+      if(!hasCrop()){ toast('トリミングしていません'); return; }
+      setCrop(null); toast('トリミングをもとにもどしました');
+    };
+  });
 
   /* モード2・3 */
   ['selCmp','cbG_x','cbG_y','cbG_v','cbG_a','cbG_e','inM1','inM2','inG'].forEach(function(id){
@@ -5404,6 +5762,7 @@ var seekBusy=false;
   refreshExpUI();
   $('m1grid').classList.toggle('top', APP.menuPos==='top');
   $('btnMenuPos').textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
+  setTwoObj(APP.twoObj, true);
   setMode('record');
   applyNarrowLayout();
   /* はじめから「動画と表を並べる」大きさにしておく（あとで大きく変わらないように） */
