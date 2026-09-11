@@ -29,6 +29,7 @@ button{cursor:pointer}
   margin-left:3ch;white-space:nowrap}
 @media(max-width:1360px){ .apphd .lead{display:none} }
 .apphd .sp{flex:1 1 auto}
+.apphd .hdtools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
 .apphd .hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.55);color:#fff;
   border-radius:8px;padding:6px 9px;min-height:38px;font-size:.86rem}
 .apphd .hbtn:hover{background:rgba(255,255,255,.28)}
@@ -388,7 +389,16 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .tbl tr.cur td{background:#fff3d6;font-weight:700}
 /* 速さは行と行のあいだ（半マスずらして見せる） */
 .tbl tr.vrow td{border-top:none;border-bottom:none;color:#0f4c8f;background:#fbfcfd;padding:1px 8px}
-.tblwrap{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.tblwrap{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;position:relative}
+/* 表のとちゅうを飛ばしたときの行（クリックで前後を表示） */
+.tbl tr.more td{background:#eef4fb;color:var(--accent-d);font-weight:700;cursor:pointer;text-align:center}
+.tbl tr.more td:hover{background:#dfeaf7}
+/* 「いまのトラッキング点」を指す矢印（上下にドラッグできる） */
+#trkMk{position:absolute;left:1px;z-index:5;color:#e07b18;font-size:15px;line-height:1;
+  cursor:grab;touch-action:none;text-shadow:0 0 3px #fff,0 0 3px #fff;user-select:none}
+#trkMk:hover{color:#c1660d;transform:scale(1.25)}
+#trkMk.drag{cursor:grabbing;color:#c1660d;transform:scale(1.3)}
+.tbl tr.mkrow td{background:#fff4e2}
 /* 説明ポップアップの数式 */
 .fml{font-family:var(--mono);background:#f6f9fc;border:1px solid var(--line);border-radius:8px;
   padding:8px 10px;font-size:.9rem;overflow-x:auto;white-space:nowrap}
@@ -483,6 +493,17 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   padding:14px 22px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.4);
   text-align:center;max-width:88%;pointer-events:none;border:2px solid rgba(255,255,255,.55)}
 #calMsg b{color:#ffd66e}
+/* 自動追跡の知らせ（見失った・見つけた） */
+#autoMsg{position:absolute;left:50%;z-index:9;text-align:center;max-width:90%;
+  pointer-events:none;border-radius:12px;transition:all .35s}
+#autoMsg.big{top:50%;transform:translate(-50%,-50%);background:rgba(20,26,34,.9);color:#fff;
+  font-weight:700;font-size:1.12rem;line-height:1.6;padding:16px 24px;
+  box-shadow:0 4px 18px rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.6)}
+#autoMsg.faint{top:auto;bottom:10px;transform:translate(-50%,0);max-width:74%;background:rgba(20,26,34,.45);color:#fff;
+  font-weight:600;font-size:.86rem;line-height:1.4;padding:5px 12px;border:1px solid rgba(255,255,255,.35)}
+#autoMsg b{color:#ffd66e}
+#autoMsg.ok.big{background:rgba(18,110,60,.92)}
+#autoMsg.ok.faint{background:rgba(18,110,60,.5)}
 
 /* ===== モーダル ===== */
 .modal{position:fixed;inset:0;background:rgba(20,26,34,.55);z-index:100;display:flex;
@@ -509,11 +530,13 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <h1>動画解析・トラッキングツール</h1>
   <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみよう！</span>
   <span class="sp"></span>
+  <span class="hdtools">
   <label class="chk" title="2つの物体（衝突など）を続けてトラッキングします"><input type="checkbox" id="cbTwoObj">２物体の運動</label>
   <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
   <button class="hbtn" id="btnMenuPos">メニュー：左</button>
-  <button class="hbtn" id="btnHelp">使い方</button>
+  <button class="hbtn" id="btnHelp">使い方と時間算出法</button>
   <label class="chk" title="先生用の機能（課題ファイルの書き出し）を出します"><input type="checkbox" id="cbTeacher">教員用</label>
+  </span>
 </header>
 
 <nav class="tabs" id="tabs">
@@ -549,9 +572,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <div class="side" id="side1">
 
     <details class="card op" open data-key="howto">
-      <summary>操作説明（クリックで折りたたみ）</summary>
+      <summary id="howtoSum">操作説明（クリックで折りたたみ）</summary>
       <ol class="steps">
-        <li><b>動画を読み込む</b>（ドラッグ＆ドロップでも可）。<b>コマ表</b>ができると、コマの実測時刻が使えます</li>
+        <li><b>動画を読み込む</b>（ドラッグ＆ドロップでも可）と解析します。</li>
         <li><b>解析する時間範囲</b>：再生して見どころをさがし、<b>この時刻をt = 0</b>と<b>この時刻まで解析</b>を決める</li>
         <li><b>空間の原点・スケール・軸</b>：原点 → x軸の向き → スケール（長さのわかる物の両端を2点クリック）</li>
         <li><b>トラッキング</b>：物体番号を選び、動画の上をタップ（クリック）して1点ずつ記録<br>
@@ -573,7 +596,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <p class="mini">動画ファイルを、この画面に<b>ドラッグ＆ドロップ</b>しても開けます。</p>
       <div class="note vlimit">
         <b>解析できる動画のめやす</b><br>
-        長さ <b>5〜30 秒</b>（長いほどコマ表づくりに時間がかかります）／
+        長さ <b>5〜30 秒</b>（長いほど解析に時間がかかります）／
         画質は <b>フルHD（1920×1080）まで</b>／ファイルは <b>100 MB 以内</b>。<br>
         <span class="mini" style="color:inherit">これを超えると
         <b>長さ 3 分・4096 px・500 MB</b> までは開けますが、動作が重くなります。
@@ -630,10 +653,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="hr"></div>
       <label class="f">fps <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001">
         <span class="mini" id="fpsSrc">（既定値）</span></label>
-      <p class="mini">fps は「コマ送りの歩幅」に使うだけです。時刻は各コマの実測値を記録します。</p>
+      <p class="mini">fps は「コマ送りが何秒にあたるか」の目安です。t = 0 以降の時刻は、コマごとに実際に測った値を記録しています（測れない端末だけ fps から計算します）。右上の［使い方と時間算出法］にくわしく書いています。</p>
       <label class="f">スロー撮影
         <select id="selTScale">
-          <option value="1">ふつうの速さで撮った</option>
+          <option value="1">普通の速さで撮った</option>
           <option value="0.5">1/2 のスロー</option>
           <option value="0.25">1/4 のスロー</option>
           <option value="0.125">1/8 のスロー（240fps→30fps など）</option>
@@ -643,9 +666,11 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <p class="mini" id="tscaleNote">ゆっくり再生される形で保存された動画のときだけ変えます。
       「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します。</p>
       <div class="row">
-        <button class="btn sm" id="btnFrameTable">コマ表を作る（実測時刻）</button>
-        <span class="tag" id="ftState">未作成</span>
+        <button class="btn sm" id="btnFrameTable">コマごとの時刻を測る</button>
+        <span class="tag" id="ftState">未測定</span>
       </div>
+      <p class="mini" id="ftNote">40 秒より長い動画は自動では測りません。<b>上で解析する時間範囲を決めてから</b>
+      このボタンを押すと、<b>その範囲だけ</b>を測るので短い時間で終わります。</p>
       <div class="prog hide" id="ftProg"><i></i></div>
     </details>
 
@@ -708,6 +733,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm danger" id="btnClearObj">この物体の点を消す</button>
       </div>
       <div class="row">
+        <button class="btn sm" id="btnUndo1">1回分トラッキングを取り消す</button>
         <button class="btn sm danger" id="btnTrkReset">トラッキングした点をリセット</button>
       </div>
       <div class="row hide" id="rowTrkResetB">
@@ -739,6 +765,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn" id="btnAutoRun">最後まで自動追跡</button>
         <button class="btn sm" id="btnAutoRedo">解析範囲の最初から<br>やり直し</button>
         <button class="btn sm" id="btnAutoStop">停止</button>
+      </div>
+      <div class="row">
+        <button class="btn sm" id="btnUndo1b">1回分トラッキングを取り消す</button>
       </div>
       <p class="mini">結果は手で直せます。ずれた点はその点までUndoするか、上からクリックし直してください。</p>
     </details>
@@ -798,6 +827,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <button id="btnTrkStart" class="hide">トラッキングを開始する</button>
       <button id="btnOriginBig" class="hide">原点を指定してください</button>
       <div id="calMsg" class="hide"></div>
+      <div id="autoMsg" class="hide"></div>
       <div id="dropHint" class="hide">ここに動画ファイルをドロップ</div>
       <div id="loupe"><canvas id="cvLoupe" width="132" height="132"></canvas></div>
       <!-- 動画要素は画面に置いておく（画面外に置くとブラウザがコマを描かず、実測時刻がとれない） -->
@@ -849,7 +879,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     </div>
 
     <details class="card" id="tblCard" open><summary>測定した値（表）</summary>
-      <div class="tblwrap"><table class="tbl" id="dataTbl"></table></div>
+      <div class="tblwrap"><table class="tbl" id="dataTbl"></table><div id="trkMk" class="hide" title="上下にドラッグすると、その時刻からやり直せます">&#9654;</div></div>
     </details>
 
     <div class="strobox">
@@ -1112,7 +1142,7 @@ var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x'
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330,
-  m2mode:'side', komaMode:false, cgRange:null, twoObj:false };
+  tab:'1', m2mode:'side', komaMode:false, cgRange:null, twoObj:false };
 /* 使う物体の数（「２物体の運動」がONなら2、OFFなら1） */
 function nObj(){ return APP.twoObj? 2 : 1; }
 /* 表や出力で「x1」のように番号をつけるか（2物体のとき、または2つ以上のデータがあるとき） */
@@ -1386,7 +1416,8 @@ function wipeLocal(){ try{ localStorage.removeItem(LSKEY); }catch(e){} }
    ========================================================= */
 var VID = { el:null, url:null, name:'', w:0, h:0, natW:0, natH:0, dur:0, ready:false,
             fps:30, fpsSrc:'既定値', frames:[], idx:-1, cur:0, hasRVFC:false,
-            playing:false, q:Promise.resolve(), building:false, cancelBuild:false, exact:false, rvfcFails:0, limit:null };
+            playing:false, q:Promise.resolve(), building:false, cancelBuild:false, exact:false, rvfcFails:0, limit:null,
+            tableA:0, tableB:0 };
 
 function vidInit(){
   VID.el = $('vid');
@@ -1397,7 +1428,7 @@ function vidInit(){
 function vidLoad(src, name){
   return new Promise(function(res, rej){
     var v=VID.el;
-    VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0;
+    VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0; VID.tableA=0; VID.tableB=0;
     if(VID.url && VID.url.indexOf('blob:')===0){ try{URL.revokeObjectURL(VID.url);}catch(e){} }
     VID.url=src; VID.name=name||'';
     var done=false;
@@ -1510,10 +1541,16 @@ function frameIndexAt(t){
   while(hi-lo>1){ var m=(lo+hi)>>1; if(f[m]<=t+1e-9) lo=m; else hi=m; }
   return lo;
 }
-/* n コマ進む（負なら戻る）。コマ表があればそれに従い、無ければ 1/fps ずつ。 */
+/* 測った時刻の一覧が、その時刻をふくんでいるか（一部だけ測ったときのため） */
+function tableCovers(t){
+  var f=VID.frames; if(f.length<2) return false;
+  var m=1.5/(VID.fps||30);
+  return t>=f[0]-m && t<=f[f.length-1]+m;
+}
+/* n コマ進む（負なら戻る）。測った時刻があればそれに従い、無ければ 1/fps ずつ。 */
 function vidStep(n){
   var fps=VID.fps>0?VID.fps:30;
-  if(VID.frames.length>1){
+  if(VID.frames.length>1 && tableCovers(VID.cur)){
     var i=(VID.idx>=0?VID.idx:frameIndexAt(VID.cur));
     var j=Math.max(0, Math.min(VID.frames.length-1, i+n));
     return vidSeek(frameSeekTime(j));
@@ -1534,20 +1571,25 @@ function vidGotoFrame(j){
 }
 
 /* ---------- コマ表づくり（実測時刻の取得） ---------- */
-function vidBuildTable(onProg){
+function vidBuildTable(onProg, tA, tB){
   return new Promise(function(res){
     var v=VID.el;
     if(!VID.ready || !VID.hasRVFC){ res(false); return; }
     VID.building=true; VID.cancelBuild=false;
-    var times=[], rate = (VID.dur>40? 2 : 1);
+    /* tA〜tB を渡すと、その部分だけ測る（長い動画で、解析する範囲だけを速く測るため） */
+    var A=(typeof tA==='number' && tA>0)? tA : 0;
+    var B=(typeof tB==='number' && tB>A)? Math.min(tB, VID.dur) : VID.dur;
+    var span=Math.max(0.001, B-A);
+    VID.tableA=A; VID.tableB=B;            /* どこからどこまでを測ったか（取りこぼし直しで使う） */
+    var times=[], rate = (span>40? 2 : 1);
     v.pause(); v.muted=true; v.playbackRate=rate;
     var startedAt=0;
     function step(now, md){
       if(VID.cancelBuild || finished){ finish(); return; }
       var mt=(md&&typeof md.mediaTime==='number')? md.mediaTime : v.currentTime;
       if(!times.length || mt > times[times.length-1]+1e-6) times.push(mt);
-      if(onProg) onProg(VID.dur? Math.min(1, mt/VID.dur):0);
-      if(v.ended){ finish(); return; }
+      if(onProg) onProg(Math.max(0, Math.min(1, (mt-A)/span)));
+      if(v.ended || mt>=B){ finish(); return; }
       v.requestVideoFrameCallback(step);
     }
     var watchdog=null;
@@ -1563,9 +1605,9 @@ function vidBuildTable(onProg){
         VID.frames=uniq; setFpsFromFrames();
         /* 取りこぼしたコマを、実際にシークして測り直して埋める */
         repairTable(0).then(function(){
-          vidSeek(0).then(function(){ VID.building=false; res(VID.frames.length>2); });
+          vidSeek(A).then(function(){ VID.building=false; res(VID.frames.length>2); });
         });
-      } else vidSeek(0).then(function(){ VID.building=false; res(false); });
+      } else vidSeek(A).then(function(){ VID.building=false; res(false); });
     }
     function onEnd(){ finish(); }
     v.addEventListener('ended', onEnd);
@@ -1575,7 +1617,7 @@ function vidBuildTable(onProg){
       var c=v.currentTime;
       if(Math.abs(c-last)<1e-4){ stall++; if(stall>12) finish(); } else { stall=0; last=c; }
     }, 400);
-    vidSeekNow(0).then(function(){
+    vidSeekNow(A).then(function(){
       times.push(VID.cur);            /* 先頭のコマは再生開始前なので、ここで入れておく */
       v.requestVideoFrameCallback(step);
       var p=v.play();
@@ -1588,7 +1630,7 @@ function setFpsFromFrames(){
   var f=VID.frames;
   if(f.length<3) return;
   var span=f[f.length-1]-f[0];
-  if(span>0){ VID.fps=(f.length-1)/span; VID.fpsSrc='コマ表から実測'; }
+  if(span>0){ VID.fps=(f.length-1)/span; VID.fpsSrc='実測した時刻から'; }
 }
 /* 間隔が飛んでいる所を、その真ん中へシークして実測時刻を読み、表に入れる */
 function repairTable(pass){
@@ -1600,8 +1642,9 @@ function repairTable(pass){
   var sd=d.slice().sort(function(a,b){return a-b;}), med=sd[Math.floor(sd.length/2)];
   var gaps=[];
   for(i=1;i<f.length;i++) if(f[i]-f[i-1] > med*1.6) gaps.push([f[i-1], f[i]]);
-  /* 末尾のコマ */
-  if(VID.dur - f[f.length-1] > med*1.6) gaps.push([f[f.length-1], VID.dur]);
+  /* 末尾のコマ（一部だけ測ったときは、そのおわりまで） */
+  var END=(typeof VID.tableB==='number' && VID.tableB>0)? VID.tableB : VID.dur;
+  if(END - f[f.length-1] > med*1.6) gaps.push([f[f.length-1], END]);
   if(!gaps.length || gaps.length>200){ VID.needExact=false; return Promise.resolve(); }
   var k=0, added=0, tries=0;
   function next(){
@@ -1787,7 +1830,7 @@ function drawOverlay(){
         g.strokeStyle='rgba(224,123,24,.95)'; g.lineWidth=Math.max(2,3*sc);
         g.beginPath(); g.arc(o.x,o.y,rr+11*sc,0,7); g.stroke();
       }
-      labelAt(g,'原点', o.x, o.y-rr-17*sc, '#ff5a5a', 22*sc);
+      labelAt(g,'原点', o.x, o.y-rr-30*sc, '#ff5a5a', 66*sc);   /* 3 のあいだは大きく出す */
     }
     g.restore();
   }
@@ -2184,6 +2227,7 @@ function commitPoint(vx, vy, e){
     toast('解析する時間範囲より後です。［解析範囲の最初から］を押してください'); return;
   }
   addPoint(UI.obj, vx, vy, false);
+  if(typeof autoFoundCheck==='function') autoFoundCheck(vx, vy);   /* 見失ったあと、また見つかったか */
   var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;
   if(e && (e.ctrlKey||e.metaKey)) adv='n';
   else if(e && e.shiftKey) adv='1';
@@ -2200,6 +2244,7 @@ function addPoint(obj, vx, vy, auto){
   else { arr.push(np); arr.sort(function(a,b){return a.t-b.t;});
          pushUndo({t:'pt', obj:obj, i:arr.indexOf(np), prev:null}); }
   UI.lastPt={obj:obj, t:t};
+  tblFrom=null;                     /* 表は、いま記録した所が見えるようにもどす */
   afterChange();
 }
 function pushUndo(a){ UI.undo.push(a); if(UI.undo.length>400) UI.undo.shift(); }
@@ -2254,6 +2299,11 @@ function predictPos(obj){
   }
   return { x:last.x, y:last.y };
 }
+/* 探索半径の中から、追いかけている色の「かたまり」を1つだけ見つける。
+   ① 円の中だけを見る（四角のすみは見ない）
+   ② 色が近いほど、そして<b>探索の中心（予測した位置）に近いほど</b>重くする
+   ③ いちばん重い画素を「種」にして、その<b>まわりだけ</b>で重心をとる
+      （同じ色の物が2つ写っていても、真ん中あたりに引っぱられない） */
 function findColor(cx, cy, R, TH){
   var col=APP.trackColor; if(!col) return null;
   var g=$('cvFull').getContext('2d',{willReadFrequently:true});
@@ -2261,23 +2311,61 @@ function findColor(cx, cy, R, TH){
   var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
   if(x1-x0<2||y1-y0<2) return null;
   var d=g.getImageData(x0,y0,x1-x0,y1-y0).data;
-  var sx=0, sy=0, sw=0, W=x1-x0;
-  for(var j=0;j<y1-y0;j++) for(var i=0;i<W;i++){
-    var k=(j*W+i)*4;
-    var dr=d[k]-col.r, dg=d[k+1]-col.g, db=d[k+2]-col.b;
-    var dd=Math.sqrt(dr*dr+dg*dg+db*db);
-    /* +0.5 は「ピクセルの中心」に合わせるため（クリックで取る座標と同じ基準にする） */
-    if(dd<TH){ var w=(TH-dd)*(TH-dd); sx+=(x0+i+0.5)*w; sy+=(y0+j+0.5)*w; sw+=w; }
+  var W=x1-x0, H=y1-y0, R2=R*R;
+  var bx=0, by=0, bw=-1, any=false;
+  var i,j,k,dr,dg,db,dd,px,py,q,w;
+  /* ① 種をさがす */
+  for(j=0;j<H;j++) for(i=0;i<W;i++){
+    px=x0+i+0.5; py=y0+j+0.5;                 /* +0.5 ＝ 画素の中心（クリックの基準と同じ） */
+    q=(px-cx)*(px-cx)+(py-cy)*(py-cy);
+    if(q>R2) continue;                        /* 円の外は見ない */
+    k=(j*W+i)*4;
+    dr=d[k]-col.r; dg=d[k+1]-col.g; db=d[k+2]-col.b;
+    dd=Math.sqrt(dr*dr+dg*dg+db*db);
+    if(dd>=TH) continue;
+    any=true;
+    w=(TH-dd)*(TH-dd)*(1-0.75*q/R2);          /* 中心に近いほど重く */
+    if(w>bw){ bw=w; bx=px; by=py; }
   }
-  if(sw<=0) return null;
-  return { x:sx/sw, y:sy/sw, w:sw };
+  if(!any) return null;
+  /* ② 種のまわりだけで重心をとる */
+  var rs=Math.max(6, R*0.45), rs2=rs*rs, sx=0, sy=0, sw=0, n=0;
+  for(j=0;j<H;j++) for(i=0;i<W;i++){
+    px=x0+i+0.5; py=y0+j+0.5;
+    if((px-bx)*(px-bx)+(py-by)*(py-by)>rs2) continue;
+    k=(j*W+i)*4;
+    dr=d[k]-col.r; dg=d[k+1]-col.g; db=d[k+2]-col.b;
+    dd=Math.sqrt(dr*dr+dg*dg+db*db);
+    if(dd>=TH) continue;
+    w=(TH-dd)*(TH-dd); sx+=px*w; sy+=py*w; sw+=w; n++;
+  }
+  if(sw<=0) return { x:bx, y:by, w:bw, n:1 };
+  return { x:sx/sw, y:sy/sw, w:sw, n:n };
+}
+/* 見つけた点が「ありえない飛び方」をしていないか調べる。
+   直前の1コマぶんの動きを目安に、そこから大きくはずれたら「見失った」とみなす。 */
+function autoJumpBad(obj, f, pr){
+  var arr=EXP().objs[obj].slice().sort(function(a,b){return a.t-b.t;});
+  if(arr.length<2 || !f || !pr) return false;
+  var last=arr[arr.length-1], prev=arr[arr.length-2];
+  var stepPx=Math.hypot(last.x-prev.x, last.y-prev.y);
+  var off=Math.hypot(f.x-pr.x, f.y-pr.y);          /* 予測した位置からのずれ */
+  var lim=Math.max(8, stepPx*1.8+6);               /* 1コマの動きの2倍くらいまでは許す */
+  return off>lim;
 }
 function tryAutoPlace(){
-  var obj=UI.obj, pr=predictPos(obj);
+  /* 自動で点を置いてよい場面か、手でクリックするときと同じ条件でたしかめる */
+  if(typeof effStep==='function' && effStep()<4) return;        /* 4 に入るまでは置かない */
+  if(typeof needTrackStart==='function' && needTrackStart()) return;
+  var exp=EXP(), obj=UI.obj, half=0.6/(VID.fps||30);
+  if(exp.t0!==null && VID.cur < exp.t0-half) return;            /* 解析範囲の外には置かない */
+  if(exp.rangeB!==null && VID.cur > exp.rangeB+half) return;
+  if(typeof objDone==='function' && objDone(obj)) return;       /* もう終わっていたら増やさない */
+  var pr=predictPos(obj);
   if(!pr) return;
   var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
   var f=findColor(pr.x,pr.y,R,TH);
-  if(f){ addPoint(obj, f.x, f.y, true); render(); }
+  if(f && !autoJumpBad(obj,f,pr)){ addPoint(obj, f.x, f.y, true); render(); }
 }
 /* 自動追跡を止める（範囲を変えた・タブを移した・リセットした…どこからでも呼べる） */
 function stopAuto(){ UI.autoStop=true; UI.autoRunning=false; }
@@ -2287,7 +2375,8 @@ function autoRunAll(){
   if(!APP.trackColor){ toast('先に「始点を設定し色を取得」でマーカーの色をクリックしてください'); return; }
   if(!exp.objs[obj].length){ toast('まず1点、手でクリックして始点を決めてください'); return; }
   var endT = (exp.rangeB!==null? exp.rangeB : (VID.dur-1e-3));
-  UI.autoRunning=true;
+  UI.autoRunning=true; UI.autoLost=false;
+  if(typeof autoMsgHide==='function') autoMsgHide();
   function stop(msg){ UI.autoRunning=false; if(msg) toast(msg); }
   function loop(){
     if(UI.autoStop) { stop('停止しました'); return; }
@@ -2299,9 +2388,10 @@ function autoRunAll(){
       var pr=predictPos(obj);
       var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
       var f=pr? findColor(pr.x,pr.y,R,TH) : null;
+      if(f && autoJumpBad(obj,f,pr)) f=null;       /* 変な所へ飛んだときは「見失った」とみなす */
       if(f){ addPoint(obj,f.x,f.y,true); render();
              setTimeout(loop, 0); }
-      else { stop('見失いました（'+nf(VID.cur,3)+' s）。ここから手で続けてください'); render(); }
+      else { stop(); autoLost(); render(); }
     });
   }
   loop();
@@ -3906,6 +3996,122 @@ function afterChange(){
   updateRestoreBar();
   saveLocal();
 }
+/* ---------- 自動追跡の知らせ（見失った・見つけた） ---------- */
+function autoMsgShow(html, ok, shortHtml){
+  var m=$('autoMsg'); if(!m) return;
+  m.innerHTML=html;
+  m.className='';                       /* hide を外す */
+  m.classList.add('big'); if(ok) m.classList.add('ok');
+  clearTimeout(m.__to);
+  if(shortHtml){                        /* 大きく出したあと、小さく出しつづける */
+    m.__to=setTimeout(function(){
+      if(!UI.autoLost && !ok){ m.classList.add('hide'); return; }
+      m.innerHTML=shortHtml;
+      m.classList.remove('big'); m.classList.add('faint');
+      if(ok) m.__to=setTimeout(function(){ m.classList.add('hide'); }, 6000);
+    }, 3500);
+  } else {
+    m.__to=setTimeout(function(){ m.classList.add('hide'); }, 4000);
+  }
+}
+function autoMsgHide(){ var m=$('autoMsg'); if(m){ clearTimeout(m.__to); m.classList.add('hide'); } }
+/* 見失った */
+function autoLost(){
+  UI.autoLost=true;
+  autoMsgShow('見失いました（t = '+nf(VID.cur-(EXP().t0||0),3)+' s）<br>'+
+    'ここからは<b>動画の中の物体をクリック</b>して、手で記録してください', false,
+    '見失い中：<b>手でクリック</b>して記録してください');
+  toast('見失いました。ここから手でクリックして続けてください');
+  updateGuide(); updateTodo();
+}
+/* 手でクリックしたときに、また色が見つかったかどうかを見る */
+function autoFoundCheck(vx, vy){
+  if(!UI.autoLost || !APP.autoTrack || !APP.trackColor) return;
+  var TH=parseInt($('inColTh').value)||60;
+  var f=findColor(vx, vy, Math.max(14, (parseInt($('inSearchR').value)||40)*0.5), TH);
+  if(!f) return;
+  UI.autoLost=false;
+  APP.startPt={x:f.x, y:f.y, t:VID.cur};
+  autoMsgShow('見つけました！<br>つづきは <b>［最後まで自動追跡］</b>（オレンジのボタン）でどうぞ', true,
+    '見つけました。<b>［最後まで自動追跡］</b>でつづきへ');
+  toast('色を見つけました。［最後まで自動追跡］を押せます');
+  updateGuide(); updateTodo();
+}
+/* ---------- 表の中の「いまのトラッキング点」の矢印 ---------- */
+function lastPtOf(obj){
+  var a=EXP().objs[obj]; if(!a||!a.length) return null;
+  var p=a[0];
+  for(var i=1;i<a.length;i++) if(a[i].t>p.t) p=a[i];
+  return p;
+}
+function markTrkPoint(){
+  var mk=$('trkMk'); if(!mk) return;
+  var p=(effStep()>=4)? lastPtOf(UI.obj) : null;
+  if(!p){ mk.classList.add('hide'); return; }
+  var half=0.5/(VID.fps||30), tb=$('dataTbl'), row=null;
+  for(var i=0;i<tb.rows.length;i++){
+    var dt=tb.rows[i].dataset? tb.rows[i].dataset.t : null;
+    if(dt!==undefined && dt!==null && dt!=='' && Math.abs(parseFloat(dt)-p.t)<half){ row=tb.rows[i]; break; }
+  }
+  if(!row){ mk.classList.add('hide'); return; }
+  mk.classList.remove('hide');
+  mk.style.top=(row.offsetTop+Math.max(0,(row.offsetHeight-15)/2))+'px';
+  mk.__t=p.t;
+}
+/* 矢印を上下にドラッグして、やり直したい時刻をえらぶ */
+function bindTrkMark(){
+  var mk=$('trkMk'); if(!mk) return;
+  var tb=$('dataTbl'), wrap=tb.parentNode, target=null;
+  function rowAt(cy){
+    var el2=document.elementFromPoint(wrap.getBoundingClientRect().left+30, cy);
+    var tr=el2 && el2.closest? el2.closest('tr[data-t]') : null;
+    return (tr && tb.contains(tr))? tr : null;
+  }
+  mk.addEventListener('pointerdown', function(ev){
+    if(mk.classList.contains('hide')) return;
+    ev.preventDefault(); ev.stopPropagation();
+    mk.setPointerCapture(ev.pointerId); mk.classList.add('drag');
+    stopAllPlay(); stopAuto(); target=null;
+  });
+  mk.addEventListener('pointermove', function(ev){
+    if(!mk.classList.contains('drag')) return;
+    ev.preventDefault();
+    var tr=rowAt(ev.clientY);
+    els('#dataTbl tr.mkrow').forEach(function(r){ r.classList.remove('mkrow'); });
+    if(tr){ tr.classList.add('mkrow'); target=tr;
+            mk.style.top=(tr.offsetTop+Math.max(0,(tr.offsetHeight-15)/2))+'px'; }
+  });
+  mk.addEventListener('pointerup', function(ev){
+    if(!mk.classList.contains('drag')) return;
+    mk.classList.remove('drag');
+    try{ mk.releasePointerCapture(ev.pointerId); }catch(e){}
+    els('#dataTbl tr.mkrow').forEach(function(r){ r.classList.remove('mkrow'); });
+    var tr=target; target=null;
+    if(!tr){ markTrkPoint(); return; }
+    var tt=parseFloat(tr.dataset.t), half=0.5/(VID.fps||30);
+    if(!isFinite(tt) || Math.abs(tt-(mk.__t||0))<half){ markTrkPoint(); return; }
+    askRetrackFrom(tt);
+  });
+}
+/* 「この時刻からトラッキングをやり直しますか？」 */
+function askRetrackFrom(tt){
+  var e=EXP(), obj=UI.obj, half=0.5/(VID.fps||30);
+  var after=e.objs[obj].filter(function(q){ return q.t>tt+half; }).length;
+  var ts=nf(tt-(e.t0||0),4);
+  popup('<h2>この時刻からトラッキングをやり直しますか？</h2>'+
+    '<p style="font-size:1.04rem">動画を <b>t = '+ts+' s</b> のコマにもどします。</p>'+
+    (after? '<p class="mini">この時刻より後に記録した <b>'+after+' 点</b>は消えます（Ctrl＋Z でもどせます）。</p>'
+          : '<p class="mini">この時刻より後の点はありません。ここから続けて記録できます。</p>'),
+    'やり直す', function(){
+      if(after){
+        pushUndo({t:'bulk', obj:obj, prev:e.objs[obj].slice()});
+        e.objs[obj]=e.objs[obj].filter(function(q){ return q.t<=tt+half; });
+      }
+      tblFrom=null;
+      vidSeek(tt).then(function(){ afterSeek(); afterChange(); render();
+        toast('t = '+ts+' s からやり直せます'); });
+    }, { noLabel:'やめる', onNo:function(){ markTrkPoint(); } });
+}
 function updateCalInfo(){
   var exp=EXP();
   $('calInfo').innerHTML='原点：'+(exp.originSet? '<b>設定ずみ</b>':'<span class="ng">未設定</span>')+
@@ -3938,6 +4144,19 @@ function updateTimeLine(){
   if(VID.dur>0 && !$('seek').matches(':active')) $('seek').value=Math.round(VID.cur/VID.dur*1000);
   updatePrec();
 }
+/* ===== 測定した値（表） =====
+   点が何百もあると、毎回すべての行を作り直すのは重い（2000点で 0.7 秒くらいかかる）。
+   そこで、いま見ている所のまわり TBLMAX 点だけを描き、前後は「…」の行にする。
+   CSV・グラフ・レポートは、いつでも全部の点を使う。 */
+var TBLMAX=150;
+var tblFrom=null;                 /* 手で前後に動かしたときの開始位置（null なら自動でいまの点） */
+function tblShift(d){
+  var e=EXP(), n=0;
+  for(var i=0;i<NOBJ;i++) n=Math.max(n, e.objs[i].length);
+  if(tblFrom===null) tblFrom=0;
+  tblFrom=Math.max(0, Math.min(Math.max(0,n-TBLMAX), tblFrom+d));
+  updateTable();
+}
 function updateTable(){
   var exp=EXP(), objs=[], i;
   for(i=0;i<NOBJ;i++) if(exp.objs[i].length) objs.push(i);
@@ -3945,6 +4164,7 @@ function updateTable(){
   if(!objs.length){
     t.innerHTML='<tr><th>データなし</th></tr>';
     if(t2) t2.innerHTML='<tr><th>データなし</th></tr>';
+    markTrkPoint();
     return;
   }
   var showY=useY();
@@ -3953,6 +4173,7 @@ function updateTable(){
      加速度はその速さの変わり方なので、また位置と同じ行にもどる。 */
 
   var idx=useObjIdx(objs);
+  var ncol=1+objs.length*(showY?6:3);
   var h='<tr><th>t [s]</th>';
   objs.forEach(function(o){
     var n=idx? (o+1) : '';
@@ -3963,13 +4184,31 @@ function updateTable(){
   h+='</tr>';
   var n0=Math.max.apply(null, ss.map(function(s){return s.length;}));
   var half=0.5/(VID.fps||30), curRow=-1, rowN=0;
+  /* いまの時刻にいちばん近い点をさがす（表の窓の中心にする） */
+  var cIdx=-1;
   for(i=0;i<n0;i++){
+    var r0=null;
+    ss.forEach(function(s){ if(s[i]&&r0===null) r0=s[i].raw; });
+    if(r0!==null && Math.abs(r0-VID.cur)<half){ cIdx=i; break; }
+  }
+  var from=0, to=n0;
+  if(n0>TBLMAX){
+    if(tblFrom!==null) from=Math.max(0, Math.min(n0-TBLMAX, tblFrom));
+    else {
+      var c=(cIdx>=0? cIdx : n0-1);
+      from=Math.max(0, Math.min(n0-TBLMAX, c-Math.round(TBLMAX/2)));
+    }
+    to=Math.min(n0, from+TBLMAX);
+  }
+  if(from>0){ h+='<tr class="more" data-d="-1"><td colspan="'+ncol+'">▲ 前の '+from+' 点（クリックで表示）</td></tr>'; rowN++; }
+  for(i=from;i<to;i++){
     var tt=null, raw=null;
     ss.forEach(function(s){ if(s[i]&&tt===null){ tt=s[i].t; raw=s[i].raw; } });
     var isCur=(raw!==null && Math.abs(raw-VID.cur)<half);
     if(isCur) curRow=rowN;
     /* 位置と加速度の行 */
-    h+='<tr'+(isCur?' class="cur"':'')+'><td>'+(tt===null?'':nf(tt,4))+'</td>';
+    h+='<tr'+(isCur?' class="cur"':'')+' data-i="'+i+'"'+(raw!==null?' data-t="'+raw+'"':'')+
+       '><td>'+(tt===null?'':nf(tt,4))+'</td>';
     ss.forEach(function(s){
       var p=s[i];
       h+='<td>'+(p?nf(p.x,4):'')+'</td>'+(showY?'<td>'+(p?nf(p.y,4):'')+'</td>':'')+
@@ -3978,7 +4217,7 @@ function updateTable(){
     });
     h+='</tr>'; rowN++;
     /* そのつぎの点とのあいだ ＝ 速さの行（半マスずらして見せる） */
-    if(i<n0-1){
+    if(i<to-1){
       var anyV=ss.some(function(s){ return s[i] && s[i].vx!==null; });
       if(anyV){
         h+='<tr class="vrow"><td></td>';
@@ -3992,8 +4231,10 @@ function updateTable(){
       }
     }
   }
+  if(to<n0) h+='<tr class="more" data-d="1"><td colspan="'+ncol+'">▼ 後の '+(n0-to)+' 点（クリックで表示）</td></tr>';
   t.innerHTML=h;
-  if(t2) t2.innerHTML=h;               /* ②グラフの左にも同じ表を出す */
+  /* ②の表は、②を見ているときだけ作る（いつも両方作ると2倍の時間がかかる） */
+  if(t2 && APP.tab==='2') t2.innerHTML=h;
   [t,t2].forEach(function(tb){
     if(!tb || curRow<0) return;        /* いま記録したところが見えるようにする */
     var tr=tb.rows[curRow+1], wrap=tb.parentNode;
@@ -4002,6 +4243,7 @@ function updateTable(){
       wrap.scrollTop=Math.max(0, top);
     }
   });
+  markTrkPoint();
 }
 
 
@@ -4228,7 +4470,7 @@ function updateGuide(){
   if(st===4 && VID.ready && APP.autoTrack && !$('autoCard').classList.contains('hide')){
     var hasStart = EXP().objs[UI.obj].length>0;
     if(!APP.trackColor || !hasStart || UI.mode==='color') $('btnPickColor').classList.add('glow');
-    else $('btnAutoRun').classList.add('glow');
+    else if(!UI.autoLost) $('btnAutoRun').classList.add('glow');   /* 見失っている間は光らせない */
   }
   $('labSearchR').classList.toggle('hot', UI.mode==='radius');
   /* ②で動画を再生しているときは、①用の案内やボタンは出さない */
@@ -4374,6 +4616,13 @@ function todoText(){
     if(UI.mode==='radius') return '動画の上の<b>円をドラッグ</b>して<b>探索半径</b>を決め、<b>［最後まで自動追跡］</b>を押してください。';
     var n=EXP().objs.reduce(function(a,b){return a+b.length;},0);
     if(needTrackStart()) return '動画の真ん中の <b>［トラッキングを開始する］</b> を押してください。';
+    /* 自動追跡のときは、手でクリックする案内は出さない（左の「色マーカーの自動追跡」にゆずる） */
+    if(APP.autoTrack){
+      if(trackingDone() || UI.autoLost) return '';
+      if(!APP.trackColor || !EXP().objs[UI.obj].length)
+        return '<b>［始点を設定し色を取得］</b>を押して、追いかけたい物体を1回クリックしてください。';
+      return '';
+    }
     if(!n) return (APP.twoObj? '<b>物体番号</b>を選び、':'')+
       '動画の中の物体を<b>クリック（タップ）</b>して位置を記録してください。';
     if(trackingDone()) return '';           /* 終わったら「解析終了」の知らせにゆずる */
@@ -4527,7 +4776,7 @@ function clearStrobe(){
 }
 /* トラッキングした点を全部消して、解析範囲の最初にもどる */
 function resetTracking(obj){
-  stopAuto(); stopAllPlay();
+  stopAuto(); stopAllPlay(); UI.autoLost=false; autoMsgHide();
   var e=EXP(), i;
   if(obj===undefined && APP.twoObj) obj=0;         /* 2物体のときは、ボタンごとに物体を指定 */
   if(obj===undefined){
@@ -4591,7 +4840,7 @@ function vidUnload(){
   try{ VID.el.removeAttribute('src'); VID.el.load(); }catch(e){}
   $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
   $('vph').classList.remove('hide');
-  $('ftState').textContent='未作成';
+  $('ftState').textContent='未測定';
   APP.step=0; updateSteps();
 }
 /* 新しい動画を読む前に：ここまでの実験を残すか聞く
@@ -4685,6 +4934,7 @@ function resetCG(){
 }
 function onVideoReady(name){
   var exp=EXP();
+  UI.autoLost=false; autoMsgHide(); tblFrom=null;
   clearStrobe();
   resetCG();                       /* 新しい動画を読んだら、自由選択グラフは既定にもどす */
   selClear(); gvReset();
@@ -4692,38 +4942,50 @@ function onVideoReady(name){
   $('vph').classList.add('hide');
   $('cvView').classList.remove('hide'); $('cvOv').classList.remove('hide');
   $('vinfo').innerHTML='<b>'+esc(name)+'</b>　'+VID.w+'×'+VID.h+' px　'+nf(VID.dur,2)+' 秒';
-  $('ftState').textContent='未作成';
+  $('ftState').textContent='未測定';
   VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0;
   vidSeek(0).then(function(){
     render(); afterChange(); updateSteps(); updateBigPlay(); updateCropInfo();
     if(VID.hasRVFC && VID.dur>0 && VID.dur<=40) buildTableUI();
-    else if(VID.hasRVFC) $('ftState').innerHTML='<b>長い動画です</b>（ボタンで作成）';
-    else if(!VID.hasRVFC) $('ftState').innerHTML='<span class="ng">この端末では作れません</span>';
+    else if(VID.hasRVFC) $('ftState').innerHTML='<b>長い動画です</b>（ボタンで測れます）';
+    else if(!VID.hasRVFC) $('ftState').innerHTML='<span class="ng">この端末では測れません</span>';
     if(!VID.building) setBusy(false);       /* コマ表を作らないときは、ここで解放 */
   });
 }
+/* 測る時間の範囲：2 で解析範囲が決まっていれば、その部分だけを測る（長い動画で速く終わる） */
+function tableSpan(){
+  var e=EXP();
+  if(VID.dur<=40) return null;
+  if(e.t0===null || e.rangeB===null) return null;
+  return { a:Math.max(0, e.t0-0.4), b:Math.min(VID.dur, e.rangeB+0.4) };
+}
 function buildTableUI(){
-  if(!VID.hasRVFC){ toast('この端末（ブラウザ）ではコマ表を作れません。fps から計算します'); return; }
-  if(VID.building){ VID.cancelBuild=true; toast('コマ表づくりを止めました'); return; }
+  if(!VID.hasRVFC){ toast('この端末（ブラウザ）ではコマごとの時刻を測れません。fps から計算します'); return; }
+  if(VID.building){ VID.cancelBuild=true; toast('時刻の測定を止めました'); return; }
   $('btnFrameTable').textContent='中止する';
   var p=$('ftProg'); p.classList.remove('hide');
-  $('ftState').textContent='作成中…';
-  setBusy(true, 'コマ表を作っています…',
-    '動画を1回だけ最後まで再生して、コマごとの時刻を測っています。動画の長さと同じくらい時間がかかります。');
+  $('ftState').textContent='測定中…';
+  var sp=tableSpan(), len=sp? (sp.b-sp.a) : VID.dur;
+  var mins=(len>40? len/2 : len)*1.2;            /* 40秒を超える分は2倍速で再生する */
+  setBusy(true, 'コマごとの時刻を測っています…',
+    (sp? '<b>解析する時間範囲（'+nf(len,1)+' 秒）</b>だけを測っています。'
+       : '動画を1回だけ最後まで再生して、コマごとの時刻を測っています。')+
+    'めやすは <b>'+(mins>=60? nf(mins/60,1)+' 分':Math.round(mins)+' 秒')+'</b>です。');
   busyProg(0);
-  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f); })
+  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f); },
+                sp? sp.a : 0, sp? sp.b : 0)
    .then(function(okk){
      p.classList.add('hide'); setBusy(false); busyProg(null);
-     $('btnFrameTable').textContent='コマ表を作る（実測時刻）';
+     $('btnFrameTable').textContent='コマごとの時刻を測る';
      if(okk){
        var st=fpsFromTable();
        $('ftState').innerHTML='<b>'+VID.frames.length+' コマ</b>';
        $('inFps').value=nf(VID.fps,3);
-       $('fpsSrc').textContent='（コマ表から実測'+(st&&st.vfr?'／コマ間隔にばらつきあり':'')+'）';
+       $('fpsSrc').textContent='（実測した時刻から'+(st&&st.vfr?'／コマ間隔にばらつきあり':'')+'）';
        EXP().video.fps=VID.fps;
        if(st&&st.vfr) toast('コマの間隔が一定ではありません（可変フレームレート）。実測時刻を使います');
      } else {
-       $('ftState').innerHTML='<span class="ng">作れませんでした</span>';
+       $('ftState').innerHTML='<span class="ng">測れませんでした</span>';
      }
      render(); afterChange();
    });
@@ -4897,26 +5159,26 @@ function openWhatFit(){
   $('helpBox').innerHTML=
    '<button class="btn sm cls" id="hpClose">閉じる</button>'+
    '<h2>フィッティングって何をしているの？</h2>'+
-   '<p><b>フィッティング</b>は、測り取った<b>点のならび</b>に、いちばん近い<b>式（グラフ）</b>を見つけることです。</p>'+
+   '<p><b>フィッティング</b>は、測り取った<b>点のならび</b>に、一番近い<b>式（グラフ）</b>を見つけることです。</p>'+
    '<div class="row" style="align-items:flex-start;gap:12px">'+svg+
    '<div style="flex:1 1 220px;min-width:200px">'+
    '<p class="mini">青い点＝測った値。緑の線＝あてはめた式。<br>赤い点線＝そのずれ（残差）。</p>'+
    '<p class="mini">ずれが小さいほど、その式で運動をうまく表せている、ということです。</p></div></div>'+
    '<h3>最小二乗法</h3>'+
    '<p>ずれには＋と－があるので、そのまま足すと打ち消し合ってしまいます。そこで<b>2乗してから足し</b>、'+
-   'その合計がいちばん小さくなるように係数を決めます。これが<b>最小二乗法</b>です。</p>'+
+   'その合計が一番小さくなるように係数を決めます。これが<b>最小二乗法</b>です。</p>'+
    '<p class="fml">S = ( y₁ − ŷ₁ )² + ( y₂ − ŷ₂ )² + … + ( y<sub>n</sub> − ŷ<sub>n</sub> )² &nbsp;→&nbsp; 最小</p>'+
    '<p class="mini">y は測った値、ŷ（ワイハット）はその x での式の値です。'+
-   'たとえば直線 y = a x + b なら、S がいちばん小さくなる a と b を計算で求めます。</p>'+
+   'たとえば直線 y = a x + b なら、S が一番小さくなる a と b を計算で求めます。</p>'+
    '<h3>R²（決定係数）</h3>'+
-   '<p>「その式でどれくらい説明できたか」を 0〜1 で表した数です。</p>'+
+   '<p>「その式でどれほど説明できたか」を 0〜1 で表した数です。</p>'+
    '<p class="fml">R² = 1 − ( ずれの2乗の合計 ) ÷ ( 平均からの散らばりの2乗の合計 )</p>'+
    '<ul><li><b>1 に近い</b>ほど、点が式にぴったりのっています</li>'+
    '<li>0 に近いときは、その式では表せていません（別の式を試す）</li>'+
    '<li>R² が高い＝物理的に正しい、とはかぎりません。次数を上げれば R² は上がってしまいます</li></ul>'+
    '<h3>使うときのコツ</h3>'+
    '<ul><li>グラフの<b>青い帯</b>で、フィットに使う範囲を選べます。'+
-   '手を離す前や、ぶつかったあとなど「別の運動」の部分は外しましょう</li>'+
+   '手を離す前や、ぶつかった後など「別の運動」の部分は外しましょう</li>'+
    '<li>どの式を選ぶかは自分で決めます（等速なら直線、等加速度なら放物線、ばねなら正弦…）</li></ul>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
@@ -4926,14 +5188,40 @@ function openWhatFit(){
 function openHelp(){
   $('helpBox').innerHTML=
   '<button class="btn sm cls" id="hpClose">閉じる</button>'+
-  '<h2>使い方</h2>'+
+  '<h2>使い方と時間算出法</h2>'+
   '<p class="mini">動画も測定値も、この端末の中だけで処理します。どこにも送信しません。ネットにつながっていなくても動きます。</p>'+
   '<div class="note">画面の左（または上）のカードは <b>1 → 2 → 3 → 4 の順</b>に進みます。'+
   'いま作業するところが<b>オレンジ色に光り</b>、終わったところは薄くなります。'+
   '3 まで終わると、4 のトラッキングと 5・6 が使えるようになります。</div>'+
+  '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
+  '<p>動画は<b>コマ（フレーム）</b>がぱらぱらと並んだものです。1 秒あたりのコマ数が <b>fps</b> ですが、'+
+  'スマホやタブレットの動画は<b>コマの間隔がいつも同じとは限りません</b>（可変フレームレート）。'+
+  'そこでこのツールは「1 コマ＝ 1/30 秒」のような決め打ちをせず、<b>コマ 1 枚ごとの本当の時刻</b>を測って使います。</p>'+
+  '<svg width="100%" viewBox="0 0 640 250" style="max-width:640px;background:#fff;border:1px solid var(--line);border-radius:9px"><text x="8" y="18" font-size="12" fill="#5b6672">動画＝コマ（フレーム）の並び</text><rect x="34" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="48" cy="62" r="5" fill="#e8443a"/><text x="70" y="44" font-size="10" text-anchor="middle" fill="#5b6672">1 枚目</text><line x1="70" y1="82" x2="34.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="120" y="28" width="72" height="52" rx="5" fill="#e6f6ea" stroke="#1c8f4a" stroke-width="2"/><circle cx="141" cy="62" r="5" fill="#e8443a"/><text x="156" y="44" font-size="10" text-anchor="middle" fill="#5b6672">2 枚目</text><line x1="156" y1="82" x2="110.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="206" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="234" cy="62" r="5" fill="#e8443a"/><text x="242" y="44" font-size="10" text-anchor="middle" fill="#5b6672">3 枚目</text><line x1="242" y1="82" x2="189.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="292" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="327" cy="62" r="5" fill="#e8443a"/><text x="328" y="44" font-size="10" text-anchor="middle" fill="#5b6672">4 枚目</text><line x1="328" y1="82" x2="305.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="378" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="420" cy="62" r="5" fill="#e8443a"/><text x="414" y="44" font-size="10" text-anchor="middle" fill="#5b6672">5 枚目</text><line x1="414" y1="82" x2="382.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="464" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="513" cy="62" r="5" fill="#e8443a"/><text x="500" y="44" font-size="10" text-anchor="middle" fill="#5b6672">6 枚目</text><line x1="500" y1="82" x2="458.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="550" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="606" cy="62" r="5" fill="#e8443a"/><text x="586" y="44" font-size="10" text-anchor="middle" fill="#5b6672">7 枚目</text><line x1="586" y1="82" x2="537.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><line x1="20" y1="152" x2="628" y2="152" stroke="#5b6672" stroke-width="1.5"/><text x="628" y="143" font-size="11" text-anchor="end" fill="#5b6672">動画の中の時刻 [s]</text><line x1="34.0" y1="145" x2="34.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="34.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.000</text><line x1="110.56" y1="145" x2="110.56" y2="159" stroke="#1c8f4a" stroke-width="2"/><text x="110.56" y="186" font-size="10" text-anchor="middle" fill="#1c8f4a">0.033</text><line x1="189.44" y1="145" x2="189.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="189.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.067</text><line x1="305.44" y1="145" x2="305.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="305.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.117</text><line x1="382.0" y1="145" x2="382.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="382.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.150</text><line x1="458.56" y1="145" x2="458.56" y2="159" stroke="#1663b5" stroke-width="2"/><text x="458.56" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.183</text><line x1="537.44" y1="145" x2="537.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="537.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.217</text><text x="110.56" y="206" font-size="11" text-anchor="middle" fill="#1c8f4a" font-weight="bold">↑ t = 0 に選んだコマ</text><path d="M189.44 134 L305.44 134" stroke="#e8443a" stroke-width="1.5"/><text x="247.44" y="128" font-size="10" text-anchor="middle" fill="#e8443a">ここだけ間隔が広い</text><text x="20" y="232" font-size="11" fill="#333">4 枚目に打った点の時刻 t = 0.117 − 0.033 = <tspan font-weight="bold">0.084 s</tspan>（1/30 秒の決め打ちではない）</text></svg>'+
+  '<ol>'+
+  '<li><b>測る</b>：動画を読み込むと、いちど最後まで再生しながら、ブラウザから'+
+  '「いま画面に出したコマの時刻」を 1 枚ずつ受け取ります'+
+  '（<code>requestVideoFrameCallback</code> という仕組み）。'+
+  'こうして「1 枚目＝0.000 秒、2 枚目＝0.033 秒、3 枚目＝0.067 秒…」という<b>時刻の一覧</b>ができます。'+
+  '2 のカードに出る「<b>45 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
+  '<li><b>取りこぼしを埋める</b>：再生が速くて受け取れなかったコマは、'+
+  'あとでそのコマへシークして測り直し、一覧のすきまを埋めます</li>'+
+  '<li><b>使う</b>：点を記録するときは、いま画面に出ているコマが一覧の何番目かを調べ、'+
+  '<b>その時刻をそのまま</b>その点の時刻にします。'+
+  '表やグラフの t は、そこから <b>［この時刻をt = 0］で選んだコマの時刻を引いた値</b>です</li>'+
+  '</ol>'+
+  '<p>コマ送りも、この一覧の<b>となりのコマへ移る</b>形で進みます。'+
+  'だから <b>fps は「1 コマがおよそ何秒か」の目安</b>であって、記録される時刻そのものには使っていません。'+
+  'fps 欄の横に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
+  '<p class="mini">※ この仕組みが使えないブラウザ（Firefox など）では、'+
+  '<b>1 コマ＝ 1/fps 秒</b>として計算します。このときだけ fps の値が時刻に効くので、'+
+  '必要なら fps 欄を手で直してください。'+
+  'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
+  '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
+  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>'+
   '<h3>1. 動画を読みこむ</h3>'+
   '<p>「動画ファイルを選択」から選ぶか、<b>画面にドラッグ＆ドロップ</b>します。サンプル動画も使えます。'+
-  '読み込むと<b>コマ表</b>（各コマの実際の時刻の表）を自動で作ります。'+
+  '読み込むと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（下の「時刻はどうやって求めているか」）。'+
   'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います。</p>'+
   '<p>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します。</p>'+
   '<p>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）。</p>'+
@@ -4942,27 +5230,27 @@ function openHelp(){
   '<ul><li><b>この時刻をt = 0</b>：いま出ているコマを t=0 にします（もう一度押すと解除）</li>'+
   '<li><b>この時刻まで解析</b>：いま出ているコマを、解析の終わりにします</li>'+
   '<li>この2つは<b>シークバーの縦棒</b>（緑＝t=0、赤＝終わり）でも表示され、<b>ドラッグで動かせます</b>。'+
-  'シークバー自体をドラッグして時間を探すのがいちばん早いです</li>'+
-  '<li>fps の表示や「コマ表を作る」もここにあります</li>'+
+  'シークバー自体をドラッグして時間を探すのが一番早いです</li>'+
+  '<li>fps の表示や［コマごとの時刻を測る］もここにあります</li>'+
   '<li><b>スロー撮影</b>：ゆっくり再生される形で保存された動画のときだけ変えます。'+
   '「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します'+
   '（240fps で撮って 30fps で保存された動画など）</li></ul>'+
   '<h3>3. 空間の原点・スケール・軸を決める</h3>'+
   '<ul><li>3 に入ると、動画の真ん中に <b>［原点を指定してください］</b> が出ます。'+
-  '押すと「原点を設定」を押したのと同じで、そのあと動画の上で原点にしたい所をクリックします</li>'+
+  '押すと「原点を設定」を押したのと同じで、その後、動画の上で原点にしたい所をクリックします</li>'+
   '<li><b>原点を設定</b>：クリックした所が x=0, y=0。そのまま<b>x軸の向き</b>の設定に進みます（原点からドラッグ）</li>'+
   '<li>ボタンを押さずに動画をクリックしても、<b>原点 → x軸の向き → スケール</b>の順に自動で進みます</li>'+
   '<li><b>x軸の向きも決めないと 4 には進めません</b>（水平でよければ、原点の右あたりをクリックするだけ）</li>'+
   '<li><b>スケールを設定</b>：先に「スケール長さ」（例 10 cm）を入れてからボタンを押し、'+
   'その長さがどこからどこまでかを 2 か所クリックします。'+
-  'あとから<b>その点をつまんで動かす</b>こともできます</li>'+
+  '後から<b>その点をつまんで動かす</b>こともできます</li>'+
   '<li><b>ストロボ写真を重ねる</b>：運動の全体を薄く重ねて見ながら、原点や軸を決められます'+
   '（記録には影響しません。4 に進むと自動で外れます）</li>'+
   '<li>斜面や斜方投射では x 軸を傾けます。y 軸は自動で直角、必要なら「y軸を反転」</li>'+
   '<li>軸の線には<b>正の向きの矢印</b>がいくつも並びます。どちら向きが正か、画面のどこを見ても分かります</li>'+
   '<li><b>軸の表示</b>は <b>［x軸］</b> と <b>［x軸とy軸］</b> の2つのボタン。'+
   '［x軸］にすると②③でも y・vy・ay を出さず、x の運動だけを見ます</li>'+
-  '<li>点を記録したあとで［x軸］に切りかえると、<b>「y軸のデータを消しますか？」</b>と聞きます。'+
+  '<li>点を記録した後で［x軸］に切りかえると、<b>「y軸のデータを消しますか？」</b>と聞きます。'+
   '「消さない」を選べば、グラフから消えるだけでデータは残ります</li></ul>'+
   '<h3>4. 位置を記録する</h3>'+
   '<ul><li>まず動画の真ん中の <b>［トラッキングを開始する］</b> を押します。'+
@@ -5001,7 +5289,7 @@ function openHelp(){
   '「2. 解析する時間範囲の指定」からやり直せる状態にもどします（動画はそのままです）。</p>'+
   '<p>全部を最初からやり直したいときは、上の「<b>すべての実験を消してリセット</b>」。'+
   '実験も測定も保存データも消えて、まっさらになります。</p>'+
-  '<p>2 で時間範囲を決めたあとは、<b>再生もコマ送りもその範囲の中だけ</b>になります。'+
+  '<p>2 で時間範囲を決めた後は、<b>再生もコマ送りもその範囲の中だけ</b>になります。'+
   '範囲の外を見たいときは、2 の「もう一度」で範囲を決め直してください。</p>'+
   '<h3>グラフ・解析</h3>'+
   '<ul><li>②で x–t, y–t, v–t, a–t とエネルギーのグラフ。速度・加速度は<b>中央差分</b>で出しています（両端は出ません）</li>'+
@@ -5032,7 +5320,7 @@ function openHelp(){
   '<li><b>縦軸を2つにする（2軸）</b>の最初の設定は、縦軸1と同じ実験・同じ物体です</li>'+
   '<li>③では、そのグラフをそのまま<b>フィット</b>できます（係数と R²）</li>'+
   '<li>③のグラフの<b>青い帯</b>（←数式をフィッティングするエリア→）は「フィットに使う範囲」です。'+
-  '左右のつまみをドラッグすると変えられます（動き出しの前や、ぶつかったあとを外せます）</li>'+
+  '左右のつまみをドラッグすると変えられます（動き出しの前や、ぶつかった後を外せます）</li>'+
   '<li>③の <b>［フィッティングとは］</b> ボタンで、最小二乗法と R² の説明が図つきで出ます</li>'+
   '<li>実験は10個まで記録でき、「並べて表示」「重ねて表示」で比べられます</li>'+
   '<li>③で直線・放物線・正弦・指数の最小二乗フィット。<b>係数と R² まで</b>を出します</li></ul>'+
@@ -5319,13 +5607,14 @@ function komaStart(){
   } else { if(LIVE.on) liveTick(); run(); }
 }
 function setTab(m){
+  APP.tab=m;
   if(typeof stopAuto==='function') stopAuto();      /* 自動追跡の途中でタブを移したら止める */
   if(typeof stopAllPlay==='function' && VID.ready) stopAllPlay();
   els('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.mode===m); });
   $('mode1').classList.toggle('hide', m!=='1');
   $('mode2').classList.toggle('hide', m!=='2');
   $('mode3').classList.toggle('hide', m!=='3');
-  if(m==='2') APP.m2mode='side';               /* ②に来たときは、いつも「グラフを並べる」から */
+  if(m==='2'){ APP.m2mode='side'; updateTable(); }   /* ②に来たときは、いつも「グラフを並べる」から */
   setM2Mode(APP.m2mode, true);                 /* ②以外では動画をもとの場所へ */
   var card=$('cgCard');
   if(m==='2'||m==='3'){
@@ -5341,6 +5630,20 @@ function setTab(m){
 
 /* ---------- 配線 ---------- */
 function bindUI(){
+  ['dataTbl','dataTbl2'].forEach(function(id){
+    var tb=$(id); if(!tb) return;
+    tb.addEventListener('click', function(ev){
+      var tr=ev.target.closest? ev.target.closest('tr.more') : null;
+      if(tr) tblShift(parseInt(tr.dataset.d)*TBLMAX);
+    });
+  });
+  bindTrkMark();
+  var hw=el('details[data-key="howto"]');
+  if(hw){
+    var updHowto=function(){ $('howtoSum').textContent='操作説明（クリックで'+(hw.open?'折りたたみ':'開く')+'）'; };
+    hw.addEventListener('toggle', updHowto); updHowto();
+  }
+
   /* ヘッダ */
   $('btnHelp').onclick=openHelp;
   $('btnMenuPos').onclick=function(){
@@ -5358,8 +5661,8 @@ function bindUI(){
     if(this.checked){
       $('autoCard').open=true;                  /* すぐ使えるように開いておく */
       toast('自動追跡：ON（結果は手で直せます）');
-    }
-    updateGuide();
+    } else { UI.autoLost=false; autoMsgHide(); }
+    updateGuide(); updateTodo();
   };
   els('#tabs button').forEach(function(b){ b.onclick=function(){ setTab(b.dataset.mode); }; });
 
@@ -5394,7 +5697,7 @@ function bindUI(){
     $('vph').innerHTML='「動画ファイルを選択」から読み込んでください。<br>このエリアにドラッグ＆ドロップでもOK';
     $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
     $('vinfo').textContent='動画はまだ読み込まれていません。';
-    $('ftState').textContent='未作成'; $('vidErr').classList.add('hide');
+    $('ftState').textContent='未測定'; $('vidErr').classList.add('hide');
     $('rightcol') ; els('.rightcol').forEach(function(r){ r.classList.remove('sbs'); });
     $('btnSbs').textContent='動画と表を並べる'; setSbs(false);
     refreshExpUI(); cgToUI(); afterChange();
@@ -5577,7 +5880,7 @@ function askResetPts(go){
     if(!$('mode2').classList.contains('hide')) renderMode2();
     if(!$('mode3').classList.contains('hide')) renderMode3(false);
     renderCG();
-    toast(EXP().tscale===1? 'ふつうの速さとして計算します' : '動画の時間 × '+EXP().tscale+' を実際の時間として計算します');
+    toast(EXP().tscale===1? '普通の速さとして計算します' : '動画の時間 × '+EXP().tscale+' を実際の時間として計算します');
   };
   $('btnRestoreClear').onclick=function(){
     if(!confirm('前回のデータ（記録した点・原点・スケールなど）を消します。よろしいですか？')) return;
@@ -5656,6 +5959,9 @@ function askResetPts(go){
     autoRunAll();
   };
   $('btnAutoStop').onclick=function(){ stopAuto(); };
+  ['btnUndo1','btnUndo1b'].forEach(function(id){
+    if($(id)) $(id).onclick=function(){ stopAuto(); stopAllPlay(); doUndo(); };
+  });
   /* 解析範囲の最初からやり直し（この物体の点を消して、始点だけ置きなおす） */
   $('btnAutoRedo').onclick=function(){
     if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
