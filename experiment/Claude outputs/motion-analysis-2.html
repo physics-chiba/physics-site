@@ -54,13 +54,10 @@ button{cursor:pointer}
 .tabs .expsel{border:1px solid var(--line);border-radius:7px;padding:5px 8px;min-height:34px;
   margin-bottom:5px;background:#fff;max-width:150px}
 .tabs .tabright{margin-left:auto;display:flex;gap:5px;align-items:flex-end;flex-wrap:wrap;padding-bottom:4px}
-/* 「実験エリア最大表示」「このメニューを最小化」は、置き場所がちがっても同じ見た目にする */
-.tabchk{display:inline-flex;align-items:center;gap:5px;background:#fff6e2;border:1px solid var(--orange);
-  border-radius:8px;padding:4px 8px;margin-bottom:5px;font-size:.8rem;white-space:nowrap;cursor:pointer;
-  color:#8a5300;font-family:inherit}
-.tabchk input{width:16px;height:16px}
-.tabchk.on{background:#fff3d6;font-weight:700}
-.m2top .tabchk{margin-bottom:0}
+.tabs .tabchk{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);
+  border-radius:8px;padding:4px 8px;margin-bottom:5px;font-size:.8rem;white-space:nowrap;cursor:pointer}
+.tabs .tabchk input{width:16px;height:16px}
+.tabs .tabchk.on{background:#fff3d6;border-color:var(--orange);color:#8a5300;font-weight:700}
 /* 「実験エリア最大表示」のとき、上の段（ヘッダ）を隠す */
 body.bigview .apphd{display:none}
 body.bigview .tabs{top:0}
@@ -79,16 +76,6 @@ body.panelhid #side1{display:none}
   background:#c8d2dd;border-radius:3px}
 #panelRsz:hover::before{background:var(--accent)}
 @media(max-width:860px){ #panelRsz{display:none} }
-/* 操作パネルをたたんでいるときは、つまみが動画の左はしに重なるので出さない（☰ でもどせる） */
-body.panelhid #panelRsz{display:none}
-/* トリミング中は、つまみが囲みの邪魔をしないように */
-body.cropping #panelRsz,body.cropping #vidRsz{pointer-events:none}
-/* 動画エリアの高さを変えるつまみ（動画エリアの下辺） */
-#vidRsz{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:ns-resize;touch-action:none;z-index:11}
-#vidRsz::before{content:"";position:absolute;left:50%;margin-left:-35px;bottom:4px;width:70px;height:4px;
-  background:rgba(255,255,255,.55);border-radius:3px}
-#vidRsz:hover::before{background:var(--orange)}
-body.novidrsz #vidRsz{display:none}
 .tabs .tabright .btn{min-height:32px;padding:4px 9px;font-size:.8rem}
 .tabs .tabright .btn.two{line-height:1.15}
 
@@ -162,9 +149,9 @@ select.selbtn{padding:9px 2px;font-family:inherit;color:inherit;font-size:.88rem
 .callout.left{left:auto;right:calc(100% + 9px)}
 .callout.left::after{left:auto;right:-6px;border-right-color:transparent;border-left-color:#e6c48c;border-right:none;border-left-width:5px}
 .callout.left::before{left:auto;right:-5px;border-right-color:transparent;border-left-color:#fff6e8;border-right:none;border-left-width:5px}
-/* シークバーの下に出す吹き出し（位置は普通の流れの中） */
+/* シークバーの上に出す吹き出し（位置は普通の流れの中） */
 .callout.seek{position:static;transform:none;display:inline-block;align-self:flex-start;width:auto;flex:0 0 auto;
-  margin:3px 0 0 6px}
+  margin:0 0 2px 6px}
 .callout.seek::after,.callout.seek::before{display:none}
 /* 2つならぶ切りかえボタン */
 .seg{display:inline-flex;gap:0}
@@ -346,10 +333,6 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 #btnUndo1v{background:rgba(192,57,43,.88);border-color:#fff;font-size:.78rem;padding:6px 8px}
 /* 動画エリアがせまいときは、2つが重ならないように下の段へ */
 .videobox.narrow .vtopbtn.left{top:44px}
-/* いま出ている動画が、その実験の動画とちがうときの帯 */
-#vidMis{position:absolute;left:0;right:0;top:0;z-index:12;background:rgba(192,57,43,.94);color:#fff;
-  font-size:.84rem;font-weight:700;line-height:1.35;padding:7px 10px;text-align:center}
-.videobox.mismatch{outline:3px solid var(--ng);outline-offset:-3px}
 #btnTrkReset2:hover{background:rgba(232,68,58,.95)}
 
 /* 動画の真ん中の「トラッキングを開始する」 */
@@ -374,8 +357,8 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
   padding:14px 22px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.35);
   border:none;cursor:pointer;text-align:center;max-width:88%;transition:all .4s}
 #doneMsg:hover{background:rgba(22,120,62,.96)}
-/* 2秒たったら、左下に小さく出しておく（左上は「1回分トラッキングを取り消す」があるので重なる） */
-#doneMsg.small{left:8px;top:auto;bottom:20px;transform:none;font-size:.8rem;font-weight:600;
+/* 2秒たったら、左上に小さく出しておく（じゃまにならないように） */
+#doneMsg.small{left:8px;top:8px;transform:none;font-size:.8rem;font-weight:600;
   padding:4px 10px;background:rgba(28,143,74,.55);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:70%}
 #doneMsg.small:hover{background:rgba(22,120,62,.9)}
 .donemsg{margin:.2em 0 .5em;color:#1c8f4a;font-weight:700;font-size:.94rem;
@@ -603,9 +586,6 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 #autoMsg.faint{top:auto;bottom:10px;transform:translate(-50%,0);max-width:74%;background:rgba(20,26,34,.45);color:#fff;
   font-weight:600;font-size:.86rem;line-height:1.4;padding:5px 12px;border:1px solid rgba(255,255,255,.35)}
 #autoMsg b{color:#ffd66e}
-/* 押すとそのまま実行できる知らせ（見つけました！ 最後まで追跡 しますか？） */
-#autoMsg.act{cursor:pointer;border:2px solid #ffd66e}
-#autoMsg.act:hover{filter:brightness(1.18)}
 #autoMsg.ok.big{background:rgba(18,110,60,.92)}
 #autoMsg.ok.faint{background:rgba(18,110,60,.5)}
 
@@ -708,7 +688,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         それ以上は開けません。</span>
       </div>
       <div class="row" id="cropRow">
-        <button class="btn sm blue" id="btnCrop">動画をトリミング（端を切る）</button>
+        <button class="btn sm blue" id="btnCrop">トリミング（切り取り）</button>
         <button class="btn sm" id="btnCropClr">トリミングをリセット</button>
       </div>
       <p class="mini" id="cropInfo">使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります。</p>
@@ -934,7 +914,6 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <canvas id="cvView" class="hide"></canvas>
         <canvas id="cvOv" class="hide" style="position:absolute;left:0;top:0"></canvas>
       </div>
-      <div id="vidMis" class="hide"></div>
       <div id="vhint" class="hide"><span id="vhintTxt"></span><button id="vhintX" title="閉じる">×</button></div>
       <button id="bigPlay" class="hide" title="再生"><span>&#9654;</span></button>
       <button id="btnUndo1v" class="vtopbtn left hide">1回分トラッキングを取り消す</button>
@@ -945,7 +924,6 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div id="calMsg" class="hide"></div>
       <div id="autoMsg" class="hide"></div>
       <div id="dropHint" class="hide">ここに動画ファイルをドロップ</div>
-      <div id="vidRsz" title="上下にドラッグすると、動画エリアの高さを変えられます（ダブルクリックでおまかせ）"></div>
       <div id="loupe"><canvas id="cvLoupe" width="132" height="132"></canvas></div>
       <!-- 動画要素は画面に置いておく（画面外に置くとブラウザがコマを描かず、実測時刻がとれない） -->
       <video id="vid" playsinline muted preload="auto"
@@ -953,6 +931,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     </div>
 
     <div class="vidbar">
+      <div class="callout seek hide" id="coSeek">下の時間バーをドラッグして時間を選ぶと楽です</div>
       <div class="seekwrap" id="seekwrap">
         <div class="rangemark hide" id="rangemark"></div>
         <div class="donemark hide" id="donemark"></div>
@@ -961,7 +940,6 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <div class="smark t0 hide" id="mkT0" title="この時刻をt = 0：ドラッグで動かせます"><b>t=0</b></div>
         <div class="smark tb hide" id="mkTB" title="この時刻まで解析：ドラッグで動かせます"><b>終わり</b></div>
       </div>
-      <div class="callout seek hide" id="coSeek">上の時間バーをドラッグして時間を選ぶと楽です</div>
       <div class="row" style="justify-content:center">
         <button class="btn sm" id="btnPlay">▶ 再生</button>
         <label class="koma sw" id="swKoma" title="ONにして［再生］を押すと、Nコマずつゆっくり進みます"><input type="checkbox" class="cbKoma">🐢 コマ送り</label>
@@ -972,7 +950,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row hide" id="vidAuto" style="justify-content:center;padding-top:10px">
         <button class="btn" id="btnAutoRun2">最後まで自動追跡</button>
         <button class="btn sm" id="btnAutoStop2">停止</button>
-        <button class="btn sm" id="btnUndo1c">1回分トラッキングを取り消す</button>
+        <button class="btn sm" id="btnUndo1c">1回分取り消す</button>
       </div>
       <div class="row hide" id="vidStep2" style="justify-content:center;padding-top:14px">
         <span class="btnwrap"><button class="btn sm" id="btnTimeZero2">この時刻をt = 0</button>
@@ -1022,15 +1000,15 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <div class="card m2top" id="m2top">
     <div class="m2left">
       <div class="row" style="margin-bottom:8px">
-        <label class="tabchk" id="labM2Min"><input type="checkbox" id="cbM2Min">このメニューを最小化</label>
+        <label class="cb" id="labM2Min"><input type="checkbox" id="cbM2Min">このメニューを最小化</label>
         <div class="seg big">
           <button class="btn" id="btnM2Side">グラフを並べる</button>
           <button class="btn" id="btnM2Live">動画と一緒にグラフを再生する</button>
         </div>
       </div>
       <div class="row">
-        <span id="cmpBox"><b style="color:var(--accent-d)">表示</b>
-        <select id="selCmp"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
+        <b style="color:var(--accent-d)">表示</b>
+        <select id="selCmp"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select>
         <span class="lb mini">対象の実験：</span>
         <span class="explist" id="expChecks"></span>
         <span class="lb mini hide" id="lbObjSel">対象の物体：</span>
@@ -1105,8 +1083,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <div class="card m2top">
     <div class="m2left">
       <div class="row">
-        <span id="cmpBox3"><b style="color:var(--accent-d)">表示</b>
-        <select id="selCmp3"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
+        <b style="color:var(--accent-d)">表示</b>
+        <select id="selCmp3"><option value="side">並べて表示</option><option value="over">重ねて表示</option></select>
         <span class="lb mini">対象の実験：</span>
         <span class="explist" id="expChecks3"></span>
       </div>
@@ -1265,7 +1243,7 @@ function newExp(n){
   return o;
 }
 var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1, aFit:false,
-  bigView:false, m2menu:true, panelw:352, vidh:0,
+  bigView:false, m2menu:true, panelw:352,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330,
@@ -1522,7 +1500,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -1569,7 +1547,6 @@ function applyState(st){
   APP.aFit=!!st.aFit;
   if(st.panelw>=0 && st.panelw!==undefined) APP.panelw=st.panelw;
   if(st.m2menu!==undefined) APP.m2menu=!!st.m2menu;
-  if(st.vidh>=0 && st.vidh!==undefined) APP.vidh=st.vidh;
   return true;
 }
 function saveLocal(){
@@ -1966,8 +1943,7 @@ function fitCanvas(){
   var bw=(box.offsetWidth-box.clientWidth) || 2;          /* 枠線のぶん */
   var cssW = Math.max(120, Math.min(box.clientWidth || avail, avail-bw));
   /* たての長い動画（スマホの縦撮り）でも画面に収まるように、高さで頭打ちにする */
-  /* 高さの上限。動画エリアの下辺をドラッグすると APP.vidh（px）で決められる */
-  var maxH = (APP.vidh>0)? APP.vidh : Math.max(240, Math.round(window.innerHeight*0.72));
+  var maxH = Math.max(240, Math.round(window.innerHeight*0.72));
   if(cssW * c.h / c.w > maxH) cssW = Math.round(maxH * c.w / c.h);
   var dpr = Math.min(window.devicePixelRatio||1, 2);
   var w = Math.round(Math.min(cssW*dpr, c.w*3));
@@ -1992,10 +1968,6 @@ function ev2canvas(e){
 /* トリミングを決める／もどす */
 function setCrop(c){
   var e=EXP();
-  if(c){                                   /* 念のため、かならず動画の中におさめる */
-    var x=Math.max(0,Math.min(VID.w-1, c.x)), y=Math.max(0,Math.min(VID.h-1, c.y));
-    c={ x:x, y:y, w:Math.min(c.w, VID.w-x), h:Math.min(c.h, VID.h-y) };
-  }
   e.crop = c? {x:Math.round(c.x), y:Math.round(c.y), w:Math.round(c.w), h:Math.round(c.h)} : null;
   UI.cropDrag=null;
   if(UI.mode==='crop') setMode('record');
@@ -2016,7 +1988,7 @@ function updateCropInfo(){
   ['btnCrop','btnCrop2'].forEach(function(id){
     var q=$(id); if(!q) return;
     q.classList.toggle('on', UI.mode==='crop');
-    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : (id==='btnCrop'? '動画をトリミング（端を切る）' : 'トリミング');
+    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : (id==='btnCrop'? 'トリミング（切り取り）' : 'トリミング');
   });
 }
 
@@ -2265,28 +2237,6 @@ function bindCanvas(){
   cv.addEventListener('pointercancel', onUp);
 
   cv.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-
-  /* トリミング中は、動画の左右（上下）にできる暗い余白から囲みはじめても効くようにする。
-     ここに載せないと、生徒が少し外から囲んだときに「押しても何も起きない」ことがある。
-     動画の上（キャンバス）を押したときは、そちらの処理にまかせる。 */
-  var box=$('videobox');
-  if(box){
-    var onBox=function(fn){ return function(e){
-      if(UI.mode!=='crop' || !VID.ready) return;
-      if(e.target && e.target!==box) return;           /* キャンバスの上なら二重に処理しない */
-      fn(e);
-    }; };
-    box.addEventListener('pointerdown', onBox(function(e){
-      try{ box.setPointerCapture(e.pointerId); }catch(x){}
-      onDown(e);
-    }));
-    box.addEventListener('pointermove', onBox(onMove));
-    box.addEventListener('pointerup', onBox(function(e){
-      try{ box.releasePointerCapture(e.pointerId); }catch(x){}
-      onUp(e);
-    }));
-    box.addEventListener('pointercancel', onBox(onUp));
-  }
 }
 function onDown(e){
   if(!VID.ready) return;
@@ -2299,11 +2249,7 @@ function onDown(e){
   var p=ev2canvas(e), v=s2v(p.x,p.y);
   var exp0=EXP(), sr=exp0.scaleRef, stp=effStep();
   if(UI.mode==='crop'){                        /* トリミングの四角をひく */
-    /* 動画の外（左右の暗い余白）から囲みはじめても大丈夫なように、動画の中におさめる。
-       おさめないと x0 がマイナスになり、できた四角が「動画からはみ出す」ので
-       CROP() に捨てられ、囲んだのに反映されない */
-    var cx0=Math.max(0,Math.min(VID.w,v.x)), cy0=Math.max(0,Math.min(VID.h,v.y));
-    UI.cropDrag={x0:cx0, y0:cy0, x1:cx0, y1:cy0};
+    UI.cropDrag={x0:v.x, y0:v.y, x1:v.x, y1:v.y};
     UI.drag={x:e.clientX,y:e.clientY,pan:false,crop:true};
     UI.pend=null; drawOverlay(); return;
   }
@@ -2430,11 +2376,6 @@ function liveAxis(v){
 /* ---------- 点を確定する ---------- */
 function commitPoint(vx, vy, e){
   var exp=EXP();
-  /* いま映っている動画が、この実験の動画でないときは記録させない */
-  if(typeof vidMismatch==='function' && vidMismatch()){
-    toast('この実験の動画（'+(exp.video&&exp.video.name||'')+'）ではありません。動画を読み直してください');
-    return;
-  }
   if(UI.mode==='origin'){
     pushUndo({t:'cal', prev:{origin:exp.origin?{x:exp.origin.x,y:exp.origin.y}:null, originSet:exp.originSet}});
     exp.origin={x:vx,y:vy}; exp.originSet=true;
@@ -2698,7 +2639,6 @@ function autoJumpBad(obj, f, pr){
 }
 function tryAutoPlace(){
   if(Date.now() < (UI.noAutoUntil||0)) return;     /* 取り消した直後は置かない */
-  if(typeof vidMismatch==='function' && vidMismatch()) return;   /* この実験の動画ではない */
   /* 自動で点を置いてよい場面か、手でクリックするときと同じ条件でたしかめる */
   if(typeof effStep==='function' && effStep()<4) return;        /* 4 に入るまでは置かない */
   if(typeof needTrackStart==='function' && needTrackStart()) return;
@@ -3334,7 +3274,7 @@ function renderMode2(){
   else { ids=[APP.cur]; sel.forEach(function(i){ if(ids.indexOf(i)<0) ids.push(i); }); }
   /* 「他の実験を重ねて表示」は、実験が2つ以上あるときだけ選べる */
   var manyExp=(APP.exps.length>1);
-  $('cmpBox').classList.toggle('hide', !manyExp);
+  $('selCmp').classList.toggle('hide', !manyExp);
   if(!manyExp && $('selCmp').value==='over'){ $('selCmp').value='side'; over=false; }
   /* x の組は、y のデータがあるときだけ OFF にできる（無いときは常に ON） */
   var hasY=useY();
@@ -3546,10 +3486,6 @@ function renderMode3(doFitNow){
   var host=$('charts3'); host.innerHTML='';
   var q=$('selFitY').value, kind=$('selFitType').value, ob=parseInt($('selFitObj').value)-1;
   var over=$('selCmp3').value==='over';
-  /* 「表示」のえらび方は、実験が2つ以上あるときだけ出す */
-  var manyExp3=(APP.exps.length>1);
-  if($('cmpBox3')) $('cmpBox3').classList.toggle('hide', !manyExp3);
-  if(!manyExp3 && over){ $('selCmp3').value='side'; over=false; }
   var ids=selectedExps('expChecks3');
   var res=[];
   var getter=QDEF[q].get;
@@ -4427,7 +4363,6 @@ function toast(msg){
 }
 function setMode(m){
   UI.mode=m; UI.pend=null;
-  document.body.classList.toggle('cropping', m==='crop');
   var lab={record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
            scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
            color:'追いかけたい物体（始点）をクリック',
@@ -4470,23 +4405,12 @@ function afterChange(){
   saveLocal();
 }
 /* ---------- 自動追跡の知らせ（見失った・見つけた） ---------- */
-function autoMsgShow(html, ok, shortHtml, onClick){
+function autoMsgShow(html, ok, shortHtml){
   var m=$('autoMsg'); if(!m) return;
   m.__short=shortHtml||'';
-  m.__act=onClick||null;                /* この知らせ自体を押したときにすること */
   m.innerHTML=html;
   m.className='';                       /* hide を外す */
   m.classList.add('big'); if(ok) m.classList.add('ok');
-  if(m.__act) m.classList.add('act');
-  if(!m.__bound){                       /* 押せる知らせは、押したらそのまま実行する */
-    m.__bound=true;
-    m.addEventListener('click', function(ev){
-      if(!m.__act || m.classList.contains('hide')) return;
-      ev.preventDefault(); ev.stopPropagation();
-      var f=m.__act; m.__act=null; clearTimeout(m.__to); m.classList.add('hide');
-      f();
-    });
-  }
   clearTimeout(m.__to);
   if(shortHtml){                        /* 大きく出したあと、小さく出しつづける */
     m.__to=setTimeout(function(){
@@ -4531,10 +4455,9 @@ function autoFoundCheck(vx, vy){
   if(!f) return;
   UI.autoLost=false;
   APP.startPt={x:f.x, y:f.y, t:VID.cur};
-  autoMsgShow('見つけました！　<b>最後まで追跡</b> しますか？', true,
-    '見つけました！　<b>最後まで追跡</b> しますか？',
-    function(){ var b=$('btnAutoRun'); if(b) b.click(); });
-  toast('色を見つけました。この知らせを押すと、最後まで追跡します');
+  autoMsgShow('見つけました！<br>つづきは <b>［最後まで自動追跡］</b>（オレンジのボタン）でどうぞ', true,
+    '見つけました。<b>［最後まで自動追跡］</b>でつづきへ');
+  toast('色を見つけました。［最後まで自動追跡］を押せます');
   updateGuide(); updateTodo();
 }
 /* ---------- 表の中の「いまのトラッキング点」の矢印 ---------- */
@@ -4889,47 +4812,6 @@ function updateSteps(){
   applyRangeLimit();
   updateGuide();
 }
-/* ===== 物体の名前がほかとかぶっていないか ===== */
-function dupObjName(o){
-  var e=EXP(), me=(e.objName[o]||'').trim();
-  if(!me) return -1;
-  for(var i=0;i<NOBJ;i++){
-    if(i===o) continue;
-    if((e.objName[i]||'').trim()===me) return i;
-  }
-  return -1;
-}
-/* かぶっていたら、その名前は受け付けずに空にもどす */
-function checkObjName(){
-  var o=UI.obj, d=dupObjName(o);
-  if(d<0) return true;
-  toast('物体'+(d+1)+'と同じ名前です。別の名前にしてください');
-  EXP().objName[o]='';
-  if($('inObjName')) { $('inObjName').value=''; try{ $('inObjName').focus(); }catch(e){} }
-  refreshObjUI(); updateGuide(); saveLocal();
-  return false;
-}
-/* ===== いま映っている動画が、その実験の動画かどうか ===== */
-/* 実験2で別の動画を読んだあと実験1にもどると、実験1の点の上に実験2の動画が映る。
-   そのまま記録すると、ちがう動画の座標が混ざるので、帯を出して記録を止める。 */
-function vidMismatch(){
-  var e=EXP(), n=e.video && e.video.name;
-  return !!(VID.ready && n && VID.name && n!==VID.name);
-}
-function updateVidMis(){
-  var bad=vidMismatch(), d=$('vidMis');
-  if(d){
-    d.classList.toggle('hide', !bad);
-    if(bad) d.innerHTML='いま映っているのは <b>'+esc(VID.name)+'</b> です。'+
-      'この実験（'+esc(EXP().name)+'）の動画は <b>'+esc(EXP().video.name)+'</b> なので、記録できません。<br>'+
-      '<span style="font-weight:400">この実験を続けるときは <b>1. 動画</b> でその動画を読み直してください。</span>';
-  }
-  els('.videobox').forEach(function(v){ v.classList.toggle('mismatch', bad); });
-  /* 高さのつまみは、動画があるときだけ（②の再生中は出さない） */
-  document.body.classList.toggle('novidrsz', !VID.ready || LIVE.on);
-  /* 帯を出しているあいだは、動画の上の吹き出しは引っこめる（重なって読めないため） */
-  if(bad){ var vh=$('vhint'); if(vh) vh.classList.add('hide'); calMsg(''); }
-}
 /* ===== 実験エリア最大表示（上の段まで隠す。esc でもどる） ===== */
 function setBigView(on){
   APP.bigView=!!on;
@@ -4941,16 +4823,11 @@ function setBigView(on){
     if(!n){ n=document.createElement('div'); n.id='escNote'; document.body.appendChild(n); }
     n.textContent='最大化は esc で解除されます';
     n.classList.remove('hide');
-    /* すでにブラウザ側が全画面（F11）なら、こちらから全画面にはしない
-       （そのほうがブラウザの「…全画面表示です」の知らせが出ない） */
-    var already = (window.innerHeight >= (screen.height||0) - 2);
-    UI.wantFull=false;
-    if(!already && document.documentElement.requestFullscreen && !document.fullscreenElement){
+    if(document.documentElement.requestFullscreen && !document.fullscreenElement){
       try{ document.documentElement.requestFullscreen(); }catch(e){}
     }
   } else {
     if(n) n.remove();
-    UI.wantFull=false;
     if(document.fullscreenElement && document.exitFullscreen){ try{ document.exitFullscreen(); }catch(e){} }
   }
   setTimeout(function(){ if(VID.ready) render(); drawSeekMarks(); redrawAllCharts(); }, 60);
@@ -4985,34 +4862,6 @@ function updateVBoxNarrow(){
   if(u && !u.classList.contains('hide')) need += u.offsetWidth;
   if(r && !r.classList.contains('hide')) need += r.offsetWidth;
   b.classList.toggle('narrow', need>0 && need+28 > b.clientWidth);
-}
-/* ===== 動画エリアの高さ（下辺のつまみ） ===== */
-function setVidH(h){
-  var max=Math.round(window.innerHeight*0.95);
-  APP.vidh = (h>0)? Math.max(160, Math.min(max, Math.round(h))) : 0;
-  if(VID.ready) render();
-  drawSeekMarks();
-}
-function bindVidRsz(){
-  var r=$('vidRsz'); if(!r) return;
-  var st=null;
-  r.addEventListener('pointerdown', function(e){
-    var box=$('videobox');
-    st={ y:e.clientY, h:box.getBoundingClientRect().height };
-    r.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation();
-  });
-  r.addEventListener('pointermove', function(e){
-    if(!st) return;
-    setVidH(st.h + (e.clientY-st.y)); e.preventDefault();
-  });
-  r.addEventListener('pointerup', function(e){
-    if(!st) return; st=null;
-    try{ r.releasePointerCapture(e.pointerId); }catch(x){}
-    saveLocal();
-  });
-  r.addEventListener('dblclick', function(e){
-    e.preventDefault(); setVidH(0); saveLocal(); toast('動画エリアの高さをおまかせにもどしました');
-  });
 }
 function placePanelRsz(){
   var r=$('panelRsz'), g=$('m1grid'); if(!r||!g) return;
@@ -5098,7 +4947,6 @@ function updateGuide(){
   $('btnTrkReset2').classList.toggle('hide', !topBtn);
   $('btnUndo1v').classList.toggle('hide', !(topBtn && EXP().objs.reduce(function(a,b2){ return a+b2.length; },0)>0));
   els('.videobox').forEach(function(v){ v.classList.toggle('topbtn', topBtn); });
-  updateVidMis();
   updateVBoxNarrow();
   var wantT0=false, wantB=false;
   if(show2){
@@ -5208,10 +5056,7 @@ function updateGuide(){
   if(st===4 && VID.ready && APP.autoTrack && !needTrackStart() && !$('autoCard').classList.contains('hide')){
     var hasStart = EXP().objs[UI.obj].length>0;
     if(!APP.trackColor || !hasStart || UI.mode==='color') $('btnPickColor').classList.add('glow');
-    else if(!UI.autoLost){                                          /* 見失っている間は光らせない */
-      $('btnAutoRun').classList.add('glow');
-      var a2=$('btnAutoRun2'); if(a2) a2.classList.add('glow');     /* 動画の下の同じボタンも */
-    }
+    else if(!UI.autoLost) $('btnAutoRun').classList.add('glow');   /* 見失っている間は光らせない */
   }
   $('labSearchR').classList.toggle('hot', UI.mode==='radius');
   /* ②で動画を再生しているときは、①用の案内やボタンは出さない */
@@ -5237,9 +5082,6 @@ function updateColorTag(){
 function startTracking(auto){
   var e=EXP(), o=UI.obj;
   if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
-  if(vidMismatch()){
-    toast('この実験の動画（'+(e.video&&e.video.name||'')+'）を読み直してください'); return;
-  }
   if(effStep()<4){ toast('「'+stepName(effStep())+'」を先に終わらせてください'); return; }
   if(auto && !APP.autoTrack){        /* チェックが入っていないときは、自動追跡には入らない */
     toast('右上の［色マーカーの自動追跡］にチェックを入れてください'); return;
@@ -5247,7 +5089,6 @@ function startTracking(auto){
   if(APP.twoObj && !(e.objName[o]||'').trim()){
     toast('先に物体'+(o+1)+'の名前を入れてください'); $('inObjName').focus(); return;
   }
-  if(APP.twoObj && !checkObjName()) return;      /* ほかの物体と同じ名前 */
   e.objReady[o]=true; e.trackReady=true;
   UI.startedAuto=!!auto;
   stopAllPlay(); stopAuto(); UI.autoLost=false; autoMsgHide();
@@ -6779,9 +6620,6 @@ function askResetPts(go){
   $('inObjName').oninput=function(){
     EXP().objName[UI.obj]=this.value; refreshObjUI(); updateGuide(); saveLocal();
   };
-  /* 入力し終わったところで、ほかの物体と同じ名前になっていないか見る
-     （打っている途中は言わない。同じ名前だとグラフの凡例が見分けられなくなる） */
-  $('inObjName').onchange=function(){ checkObjName(); };
   $('btnStartHand').onclick=function(){ switchWay(false); };
   $('btnStartAuto').onclick=function(){ switchWay(true); };
   $('btnNextTrk').onclick=function(){
@@ -6793,26 +6631,14 @@ function askResetPts(go){
   };
   $('cbBig').onchange=function(){ setBigView(this.checked); saveLocal(); };
   document.addEventListener('fullscreenchange', function(){
-    if(document.fullscreenElement){ UI.wantFull=false; return; }
-    /* ファイルを選ぶダイアログなどで全画面が外れることがある。
-       そのときは最大表示をやめず、次に画面を触ったときに全画面へもどす。
-       （esc で外したときは、下の keydown が最大表示もやめる） */
-    if(APP.bigView) UI.wantFull=true;
+    if(!document.fullscreenElement && APP.bigView) setBigView(false);
   });
-  document.addEventListener('pointerdown', function(){
-    if(UI.wantFull && APP.bigView && !document.fullscreenElement &&
-       document.documentElement.requestFullscreen &&
-       window.innerHeight < (screen.height||0) - 2){
-      UI.wantFull=false;
-      try{ document.documentElement.requestFullscreen(); }catch(e){}
-    }
-  }, true);
   document.addEventListener('keydown', function(e){
     if(e.key==='Escape' && APP.bigView) setBigView(false);
   });
   $('cbM2Min').onchange=function(){ setM2Menu(!this.checked); saveLocal(); };
   $('cbM2MenuTop').onchange=function(){ setM2Menu(this.checked); saveLocal(); };
-  bindPanelRsz(); bindVidRsz();
+  bindPanelRsz();
   /* 1. 動画：動画エリアをクリックしたら「動画を選択」 */
   $('vph').onclick=function(){ if(!VID.ready) $('btnFile').click(); };
   $('selSample').onchange=function(){

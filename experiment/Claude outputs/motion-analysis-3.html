@@ -218,8 +218,11 @@ label.koma.sw.on{background:#1c8f4a;border-color:#166f3a;color:#fff}
 .m2body.live .m2tbl{display:none}
 .livenote{margin:0 0 8px;background:#e7f2fd;border:1px solid #9cc3e8;color:#0d4d94;
   border-radius:9px;padding:7px 10px;font-size:.86rem;font-weight:700;line-height:1.5}
-/* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける） */
-.m2body.live{display:grid;grid-template-columns:minmax(190px,38%) minmax(0,1fr);gap:12px;align-items:start}
+/* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける）。
+   左の列は「グラフの実際の幅」までにして、あいだに無駄なすき間を作らない */
+.m2body.live{display:grid;grid-template-columns:minmax(190px,max-content) minmax(0,1fr);
+  gap:12px;align-items:start}
+.m2body.live .m2charts>*{width:max-content;max-width:100%}
 .m2body.live .m2charts{flex:none;min-width:0}
 .m2body.live .m2live{flex:none;min-width:0}
 .m2body.live .gwrap{flex-direction:column}
@@ -435,7 +438,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .donet{position:absolute;top:7px;font-size:.7rem;font-weight:700;color:#12603a;background:#e9f6ee;
   border:1px solid #9fd3b4;border-radius:6px;padding:0 5px;white-space:nowrap;pointer-events:none;z-index:4}
 .btn.nextpt{background:#1c8f4a;border-color:#177a3f;color:#fff;font-weight:700}
-.awayrow{margin:6px 0 0;gap:8px;align-items:center}
+.awayrow{margin:6px 0 0;gap:8px;align-items:center;flex-wrap:wrap}
 .awayrow .seg .btn{font-size:.78rem;padding:3px 9px;min-height:26px;
   background:#eaf2fb;border-color:#b7d3ef;color:var(--accent-d)}
 .awayrow .seg .btn.on{background:#1663b5;border-color:#0f4c8f;color:#fff;font-weight:700}
@@ -444,9 +447,26 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .btn.nextpt:hover{background:#177a3f}
 .sub .subhead{position:relative}
 .sub .subnote{float:right;font-weight:400;font-size:.72rem;color:var(--sub);line-height:1.25;text-align:right}
-.stepbtns{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
-.stepbtns .btn{min-width:46px;padding:8px 6px;font-family:var(--mono);font-size:.85rem}
-.stepbtns .btn.n{background:#fff8e8;border-color:#e2c98a}
+/* コマ送りのボタン。もどる（赤）／すすむ（緑）の2つのまとまりを1段にならべる */
+.stepbtns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.stepgrp{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.steprow{display:flex;gap:3px;flex-wrap:nowrap}
+.stepbtns .btn{min-width:44px;padding:8px 5px;font-family:var(--mono);font-size:.85rem}
+.stepbtns .btn.back{background:#fff4f2;border-color:#e3a79e;color:#a5342a;font-weight:700}
+.stepbtns .btn.back:hover{background:#fde8e4}
+.stepbtns .btn.fwd{background:#f1fbf5;border-color:#9ed2b4;color:#136b39;font-weight:700}
+.stepbtns .btn.fwd:hover{background:#e2f6ea}
+.stepbtns .btn.n{box-shadow:0 0 0 2px #f4dfae inset}
+/* ボタンの下の小さな吹き出し（もどる・すすむ） */
+.steplab{font-size:.72rem;font-weight:700;border-radius:7px;padding:1px 9px;position:relative;
+  border:1px solid transparent;line-height:1.5}
+.steplab::before{content:"";position:absolute;left:50%;top:-5px;margin-left:-4px;
+  border:4px solid transparent;border-bottom-width:5px}
+.steplab.back{background:#fff4f2;border-color:#e3a79e;color:#a5342a}
+.steplab.back::before{border-bottom-color:#e3a79e}
+.steplab.fwd{background:#f1fbf5;border-color:#9ed2b4;color:#136b39}
+.steplab.fwd::before{border-bottom-color:#9ed2b4}
+@media(max-width:520px){ .stepbtns{gap:8px} .stepbtns .btn{min-width:36px;padding:7px 2px;font-size:.76rem} }
 .tline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.86rem;color:var(--sub)}
 .tline .val{color:var(--ink)}
 
@@ -570,6 +590,14 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .chartcard .dydt{position:absolute;right:96px;top:5px;z-index:2;min-height:24px;font-size:.74rem;
   color:var(--sub);background:#f4f6f9;border:1px solid var(--line);border-radius:7px;padding:0 6px;gap:4px}
 .chartcard .dydt input{width:14px;height:14px}
+/* グラフのすぐ下・右よせ：スケールフィット */
+.chartcard .fitrow{display:flex;justify-content:flex-end;margin:2px 2px 0}
+.chartcard .fitbtn{min-height:26px;padding:2px 9px;
+  display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;
+  background:#eef6ff;border:1px solid #9cc3e8;color:#0d4d94;border-radius:8px;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.chartcard .fitbtn:hover{background:#dce7f4}
+.chartcard .fitbtn:active{background:#cddff2}
 .chartcard .maxbtn{position:absolute;right:6px;top:5px;z-index:2;min-height:26px;padding:1px 8px;
   font-size:.74rem;background:#eef3f9;border:1px solid #b9c3cf;border-radius:7px;color:#39434e}
 .chartcard .maxbtn:hover{background:#dce7f4}
@@ -981,16 +1009,24 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
           <span class="callout hide" id="coRangeB2">解析を終わりたいコマで押す</span></span>
       </div>
       <div class="stepbtns">
-        <button class="btn sm n" data-step="-n">←N</button>
-        <button class="btn sm" data-step="-10">←10</button>
-        <button class="btn sm" data-step="-8">←8</button>
-        <button class="btn sm" data-step="-5">←5</button>
-        <button class="btn sm" data-step="-1">←1</button>
-        <button class="btn sm" data-step="1">1→</button>
-        <button class="btn sm" data-step="5">5→</button>
-        <button class="btn sm" data-step="8">8→</button>
-        <button class="btn sm" data-step="10">10→</button>
-        <button class="btn sm n" data-step="n">N→</button>
+        <div class="stepgrp back">
+          <div class="steprow">
+            <button class="btn sm n back" data-step="-n">←N</button>
+            <button class="btn sm back" data-step="-10">←10</button>
+            <button class="btn sm back" data-step="-5">←5</button>
+            <button class="btn sm back" data-step="-1">←1</button>
+          </div>
+          <span class="steplab back">もどる</span>
+        </div>
+        <div class="stepgrp fwd">
+          <div class="steprow">
+            <button class="btn sm fwd" data-step="1">1→</button>
+            <button class="btn sm fwd" data-step="5">5→</button>
+            <button class="btn sm fwd" data-step="10">10→</button>
+            <button class="btn sm n fwd" data-step="n">N→</button>
+          </div>
+          <span class="steplab fwd">すすむ</span>
+        </div>
       </div>
       <div class="tline">
         <span>コマ <span class="val" id="frInfo">-/-</span></span>
@@ -1031,8 +1067,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row">
         <span id="cmpBox"><b style="color:var(--accent-d)">表示</b>
         <select id="selCmp"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
-        <span class="lb mini">対象の実験：</span>
-        <span class="explist" id="expChecks"></span>
+        <span id="expBox2"><span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks"></span></span>
         <span class="lb mini hide" id="lbObjSel">対象の物体：</span>
         <span class="explist hide" id="objChecks"></span>
       </div>
@@ -1040,6 +1076,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm" id="btnGBig">グラフを拡大</button>
         <button class="btn sm" id="btnGSmall">縮小</button>
         <button class="btn sm" id="btnGReset">スケールをリセット</button>
+        <button class="btn sm blue" id="btnGFitAll" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
         <span style="width:10px"></span>
         <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
         <label class="cb" id="labGY"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
@@ -1102,18 +1139,22 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 <!-- ================= モード3 ================= -->
 <section id="mode3" class="hide">
-  <div class="card m2top">
+  <div class="card m2top" id="m3top">
     <div class="m2left">
+      <div class="row" style="margin-bottom:8px">
+        <label class="tabchk" id="labM3Min"><input type="checkbox" id="cbM3Min">このメニューを最小化</label>
+      </div>
       <div class="row">
         <span id="cmpBox3"><b style="color:var(--accent-d)">表示</b>
         <select id="selCmp3"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
-        <span class="lb mini">対象の実験：</span>
-        <span class="explist" id="expChecks3"></span>
+        <span id="expBox3"><span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks3"></span></span>
       </div>
       <div class="row" style="margin-top:6px">
         <button class="btn sm" id="btnGBig3">グラフを拡大</button>
         <button class="btn sm" id="btnGSmall3">縮小</button>
         <button class="btn sm" id="btnGReset3">スケールをリセット</button>
+        <button class="btn sm blue" id="btnGFitAll3" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
       </div>
     </div>
   </div>
@@ -1163,9 +1204,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <div class="cgrid">
     <div class="cgTop">
       <span class="cgpick"><span class="lb">縦軸</span>
-        <select id="cgExpA" title="実験"></select><select id="cgObjA" title="物体"></select></span>
+        <select id="cgExpA" title="実験" class="hide"></select><select id="cgObjA" title="物体"></select></span>
       <span class="cgpick hide" id="cgPickB"><span class="lb">縦軸2</span>
-        <select id="cgExpB" title="実験"></select><select id="cgObjB" title="物体"></select></span>
+        <select id="cgExpB" title="実験" class="hide"></select><select id="cgObjB" title="物体"></select></span>
     </div>
     <div class="cgY">
       <div class="lb">縦軸</div>
@@ -1265,7 +1306,7 @@ function newExp(n){
   return o;
 }
 var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1, aFit:false,
-  bigView:false, m2menu:true, panelw:352, vidh:0,
+  bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330,
@@ -1522,7 +1563,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -1569,6 +1610,7 @@ function applyState(st){
   APP.aFit=!!st.aFit;
   if(st.panelw>=0 && st.panelw!==undefined) APP.panelw=st.panelw;
   if(st.m2menu!==undefined) APP.m2menu=!!st.m2menu;
+  if(st.m3menu!==undefined) APP.m3menu=!!st.m3menu;
   if(st.vidh>=0 && st.vidh!==undefined) APP.vidh=st.vidh;
   return true;
 }
@@ -2906,6 +2948,49 @@ var GV = { x:{}, y:{} };
 /* クリックで選んだデータ点（key＝そのグラフ、xk＝横軸の種類、x,y＝値） */
 var SEL = { key:null, xk:null, x:null, y:null, lab:'', d:null };
 function gvReset(){ GV.x={}; GV.y={}; }
+/* ===== スケールフィット =====
+   いま出ているデータが、グラフの枠いっぱいに気持ちよく収まるように
+   軸の最小・最大を「目盛りの切りのよい値」までひろげてそろえる。
+   例）値が -0.05〜0.4 なら、縦軸は -0.1〜0.5 になる。 */
+function fitSpecRange(spec){
+  if(!spec) return false;
+  var xs=[], ys=[];
+  function eat(list, toY){
+    (list||[]).forEach(function(s){
+      (s.pts||[]).forEach(function(p){
+        if(isFinite(p.x)&&isFinite(p.y)){ xs.push(p.x); if(toY) ys.push(p.y); }
+      });
+    });
+  }
+  eat(spec.series, true);
+  eat(spec.series2, false);          /* 右の縦軸は別ものなので、横軸だけ見る */
+  if(!xs.length) return false;
+  var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
+  var y0=ys.length? Math.min.apply(null,ys) : 0, y1=ys.length? Math.max.apply(null,ys) : 1;
+  function snap(a, b, n){
+    if(!(b-a>1e-12)){ a-=0.5; b+=0.5; }
+    var m=(b-a)*0.05; a-=m; b+=m;                 /* すこし余白をとってから */
+    var st=niceStep(b-a, n);                      /* 目盛りの切りのよい値へ */
+    a=Math.floor(a/st)*st; b=Math.ceil(b/st)*st;
+    if(!(b-a>1e-12)){ a-=st; b+=st; }
+    return {a:a, b:b};
+  }
+  var rx=snap(x0,x1,6), ry=snap(y0,y1,5);
+  if(spec.xkey) GV.x[spec.xkey]=rx;
+  if(spec.key && ys.length) GV.y[spec.key]=ry;
+  return true;
+}
+/* いま画面に出ているグラフを、まとめてスケールフィットする */
+function fitAllCharts(){
+  var n=0;
+  els('.chartcard canvas').forEach(function(cv){
+    if(cv.__spec && fitSpecRange(cv.__spec)) n++;
+  });
+  if(!n){ toast('スケールを合わせるデータがありません'); return 0; }
+  redrawAllCharts();
+  toast(n+' 個のグラフのスケールを合わせました');
+  return n;
+}
 function selClear(){ SEL={key:null, xk:null, x:null, y:null, lab:'', d:null}; }
 /* 表示のたんい（位置は cm、速度は cm/s、加速度は cm/s²） */
 function unitOf(lab){
@@ -3335,6 +3420,7 @@ function renderMode2(){
   /* 「他の実験を重ねて表示」は、実験が2つ以上あるときだけ選べる */
   var manyExp=(APP.exps.length>1);
   $('cmpBox').classList.toggle('hide', !manyExp);
+  if($('expBox2')) $('expBox2').classList.toggle('hide', !manyExp);
   if(!manyExp && $('selCmp').value==='over'){ $('selCmp').value='side'; over=false; }
   /* x の組は、y のデータがあるときだけ OFF にできる（無いときは常に ON） */
   var hasY=useY();
@@ -3371,6 +3457,7 @@ function renderMode2(){
     if(cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); renderCG(); }
     return;
   }
+  var cgBelow=false;
   blocks.forEach(function(b, bi){
     var blk=document.createElement('div'); blk.className='gblock';
     var t=document.createElement('h3'); t.textContent=b.label; blk.appendChild(t);
@@ -3387,23 +3474,19 @@ function renderMode2(){
       wrap.appendChild(col); colNodes.push(col); return col;
     }
     if(showX) addCol(['x','vx','ax'], showE);
-    var ycol = showY? addCol(['y','vy','ay'], showE&&!showX) : null;
+    if(showY) addCol(['y','vy','ay'], showE&&!showX);
     /* 自由選択グラフは、最初のブロック（物体1）だけに置く。
        「動画と一緒に再生」のときは、グラフの下（cgHost2）に移す */
-    if(bi===0 && cgc && !live){
-      cgc.classList.remove('hide');
-      if(ycol) ycol.appendChild(cgc);                 /* y列があれば、その下 */
-      else {                                           /* 無ければ x列の右 */
-        var cc=document.createElement('div'); cc.className='gcol';
-        cc.appendChild(cgc); wrap.appendChild(cc); colNodes.push(cc);
-      }
-    }
+    /* 自由選択グラフは、グラフのならびの「下」に置く。
+       横にならべると場所が足りず、グラフが小さくなってしまうため。 */
+    if(bi===0 && cgc && !live){ cgc.classList.remove('hide'); cgBelow=true; }
     wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
     blk.appendChild(wrap); host.appendChild(blk);
   });
   /* 「動画と一緒に再生」のときは、自由選択グラフは②ぜんぶの下に置く
      （グラフの列が広がって、動画とのあいだにすき間ができないように） */
   if(live && cgc){ $('cgHostLive').appendChild(cgc); cgc.classList.remove('hide'); }
+  else if(cgBelow && cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); }
   if(cgc && cgc.parentNode) renderCG();
   if(live) setTimeout(alignLive, 30);
 }
@@ -3411,6 +3494,11 @@ var EXPAND_ICON='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="tr
   '<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+
   '<path d="M10 4H4v6"/><path d="M4 4l7 7"/><path d="M14 4h6v6"/><path d="M20 4l-7 7"/>'+
   '<path d="M10 20H4v-6"/><path d="M4 20l7-7"/><path d="M14 20h6v-6"/><path d="M20 20l-7-7"/></g></svg>';
+/* スケールフィットのアイコン（枠の中に点が収まる様子） */
+var FIT_ICON='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">'+
+  '<g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">'+
+  '<rect x="3" y="4" width="18" height="16" rx="2"/>'+
+  '<path d="M7 16l3.5-4 3 2.5L17 8"/></g></svg>';
 /* 選んだ点の値を、グラフの上（最大化ボタンの左）に出す */
 function readoutHtml(spec){
   if(SEL.x===null || SEL.key!==spec.key) return '';
@@ -3463,9 +3551,22 @@ function chartCard(title, spec, curves, w, h){
   b.innerHTML=EXPAND_ICON+' 最大化';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
   d.appendChild(b);
+  /* グラフのすぐ下・右よせ：このグラフだけスケールフィット
+     （枠の中に重ねると、横軸の文字にかぶるので、流れの中に置く） */
+  var fr=document.createElement('div'); fr.className='fitrow';
+  var fb=document.createElement('button'); fb.className='fitbtn';
+  fb.innerHTML=FIT_ICON+' スケールフィット';
+  fb.title='いまのデータが枠いっぱいに収まるように、軸の目盛りを合わせます';
+  fb.onclick=function(ev){ ev.preventDefault(); ev.stopPropagation();
+    if(!fitSpecRange(spec)){ toast('スケールを合わせるデータがありません'); return; }
+    redrawAllCharts(); toast('このグラフのスケールを合わせました');
+  };
+  fr.appendChild(fb);
+  d.insertBefore(fr, cv.nextSibling);
   /* 加速度のグラフ：出し方をえらぶボタンと、ばらつきの目安 */
   if(/^a/.test(String(spec.ylab||''))){
     var row=document.createElement('div'); row.className='row awayrow';
+    row.style.maxWidth=w+'px';        /* ボタンが多くてもグラフの幅を広げない */
     var seg=document.createElement('span'); seg.className='seg';
     var b1=document.createElement('button');
     b1.className='btn sm'+(APP.aFit?'':' on'); b1.textContent='v の差から計算';
@@ -3549,6 +3650,7 @@ function renderMode3(doFitNow){
   /* 「表示」のえらび方は、実験が2つ以上あるときだけ出す */
   var manyExp3=(APP.exps.length>1);
   if($('cmpBox3')) $('cmpBox3').classList.toggle('hide', !manyExp3);
+  if($('expBox3')) $('expBox3').classList.toggle('hide', !manyExp3);
   if(!manyExp3 && over){ $('selCmp3').value='side'; over=false; }
   var ids=selectedExps('expChecks3');
   var res=[];
@@ -3716,11 +3818,20 @@ function cgSpec(){
 }
 /* 自由選択グラフの大きさ（他のグラフと同じ「拡大／縮小」に合わせる） */
 function cgWidth(){
-  /* 右にフィット結果をならべるので、グラフ自体はひかえめの幅にする */
-  var w=Math.round(APP.gsize*0.66);
-  var win=window.innerWidth||900;
-  var avail=win - (win<820? 90 : 640);
-  return Math.max(230, Math.min(420, Math.max(230, Math.min(w, avail))));
+  /* 上のグラフより小さいと見にくいので、大きめにとる（前の2倍）。
+     ただし、置いてある場所からはみ出さないところまで。 */
+  var w=Math.round(APP.gsize*1.32);
+  var card=$('cgCard');
+  var win=(document.documentElement && document.documentElement.clientWidth) || window.innerWidth || 900;
+  /* このカードが置かれている場所から、画面の右はしまでの残りで決める */
+  var left=0;
+  if(card){ var r=card.getBoundingClientRect(); if(r.width>0) left=Math.max(0, r.left); }
+  var box=Math.max(300, win-left-20);
+  /* 左の「縦軸」えらびと、③のときは右のフィット結果のぶんを空ける */
+  var side=(APP.tab==='3')? 430 : 210;
+  if(box<560) side=40;
+  var avail=box - side;
+  return Math.max(260, Math.min(840, Math.max(260, Math.min(w, avail))));
 }
 function cgOnRange(which, v){        /* 自由選択グラフのつまみをドラッグしたとき */
   var c=APP.cg, pa=cgPoints(c.expA,c.objA,c.qA,c.invA,c.xq,c.invX);
@@ -3738,9 +3849,18 @@ function renderCG(){
   var host=$('cgCard'); if(!host) return;
   var spec=cgSpec();
   var eq=$('cgEqualNote'); if(eq) eq.classList.toggle('hide', !spec.equal);
+  var cv=$('cgCanvas');
   var w=cgWidth();
-  drawChart($('cgCanvas'), spec, {w:w, h:Math.round(w*(spec.equal?0.8:0.575)), legend:true, fixed:true});
-  bindChartDrag($('cgCanvas'), cgOnRange);
+  var draw=function(ww){
+    drawChart(cv, spec, {w:ww, h:Math.round(ww*(spec.equal?0.8:0.575)), legend:true, fixed:true});
+  };
+  draw(w);
+  /* はみ出していたら、実際のはみ出し量ぶんだけ縮めて描き直す（1回だけ） */
+  var win=(document.documentElement && document.documentElement.clientWidth) || window.innerWidth || 900;
+  var r=host.getBoundingClientRect();
+  var over=Math.round(r.right - (win-12));
+  if(over>2 && w-over>=260) draw(w-over);
+  bindChartDrag(cv, cgOnRange);
 }
 function cgDoFit(kind){
   var c=APP.cg;
@@ -4955,15 +5075,33 @@ function setBigView(on){
   }
   setTimeout(function(){ if(VID.ready) render(); drawSeekMarks(); redrawAllCharts(); }, 60);
 }
-/* ===== ②の上のメニューを畳む ===== */
-function setM2Menu(open){
-  APP.m2menu=!!open;
-  $('m2top').classList.toggle('hide', !APP.m2menu);
-  $('cbM2Min').checked=!APP.m2menu;
-  $('cbM2MenuTop').checked=APP.m2menu;
-  $('labM2Menu').classList.toggle('hide', !(APP.tab==='2' && !APP.m2menu));
-  $('labM2Menu').classList.toggle('on', !APP.m2menu);
+/* ===== ②・③の上のメニューを畳む ===== */
+function setM2Menu(open){ setMenuOpen('2', open); }
+function setM3Menu(open){ setMenuOpen('3', open); }
+function setMenuOpen(tab, open){
+  if(tab==='3'){
+    APP.m3menu=!!open;
+    if($('m3top')) $('m3top').classList.toggle('hide', !APP.m3menu);
+    if($('cbM3Min')) $('cbM3Min').checked=!APP.m3menu;
+  } else {
+    APP.m2menu=!!open;
+    $('m2top').classList.toggle('hide', !APP.m2menu);
+    $('cbM2Min').checked=!APP.m2menu;
+  }
+  updateMenuChip();
   setTimeout(function(){ redrawAllCharts(); alignLive(); }, 40);
+}
+/* タブの段に出す「②グラフメニューを開く／③解析メニューを開く」 */
+function updateMenuChip(){
+  var lab=$('labM2Menu'); if(!lab) return;
+  var t=APP.tab;
+  var min=(t==='2' && !APP.m2menu) || (t==='3' && !APP.m3menu);
+  lab.classList.toggle('hide', !min);
+  lab.classList.toggle('on', min);
+  $('cbM2MenuTop').checked=!min;
+  var txt=(t==='3')? '③解析メニューを開く' : '②グラフメニューを開く';
+  var last=lab.lastChild;
+  if(last && last.nodeType===3) last.nodeValue=txt;
 }
 /* ===== 操作パネルの幅（動画エリアの大きさ） ===== */
 function setPanelW(w){
@@ -5355,6 +5493,11 @@ function refreshObjUI(){
     q.classList.toggle('hide', !two);
     els('option', q).forEach(function(o,i){ o.hidden=(i>=nObj()); });
   });
+  /* 実験も物体もえらばないときは、「縦軸」のラベルだけが浮くので、まとまりごと消す */
+  var pk=el('.cgTop .cgpick');
+  if(pk) pk.classList.toggle('hide', !two);
+  var pkT=$('cgTop')||el('.cgTop');
+  if(pkT) pkT.classList.toggle('hide', !two);
   /* ②の「対象の物体」 */
   var oc=$('objChecks');
   if(oc){
@@ -6316,6 +6459,9 @@ function refreshCGExps(){
 }
 function cgToUI(){
   var c=APP.cg;
+  /* 実験は、一番上の「対象の実験」でえらぶので、ここではいまの実験に合わせる */
+  c.expA=Math.min(Math.max(0,APP.cur), APP.exps.length-1);
+  c.expB=c.expA;
   $('cgExpA').value=Math.min(c.expA,APP.exps.length-1); $('cgObjA').value=c.objA; $('cgQA').value=c.qA; $('cgInvA').checked=!!c.invA;
   $('cgExpB').value=Math.min(c.expB,APP.exps.length-1); $('cgObjB').value=c.objB; $('cgQB').value=c.qB; $('cgInvB').checked=!!c.invB;
   $('cgQX').value=c.xq; $('cgInvX').checked=!!c.invX;
@@ -6412,15 +6558,11 @@ function setM2Mode(m, quiet){
   setTimeout(function(){ if(VID.ready) render(); alignLive(); updateGuide(); }, 40);
   setTimeout(alignLive, 200);
 }
-/* live のとき、左のグラフの上と動画の上をそろえる */
+/* live のとき、グラフの上に空きを作らない
+   （以前は動画の画像の上端に合わせていたが、そのぶん大きなすき間ができて見にくかった） */
 function alignLive(){
   var ch=$('charts2'); if(!ch) return;
   ch.style.paddingTop='';
-  if(!LIVE.on || $('m2live').classList.contains('hide')) return;
-  var card=ch.querySelector('.chartcard'), vb=$('videobox');
-  if(!card || !vb) return;
-  var d=vb.getBoundingClientRect().top - card.getBoundingClientRect().top;
-  if(d>0 && d<400) ch.style.paddingTop=Math.round(d)+'px';
 }
 /* 表をたたんだら、②の左の欄も細くする */
 function updateTblFold(){
@@ -6494,7 +6636,8 @@ function setTab(m){
   $('mode2').classList.toggle('hide', m!=='2');
   $('mode3').classList.toggle('hide', m!=='3');
   if(m==='2'){ APP.m2mode='side'; updateTable(); }   /* ②に来たときは、いつも「グラフを並べる」から */
-  setM2Menu(APP.m2menu);
+  setM2Menu(APP.m2menu); setM3Menu(APP.m3menu);
+  updateMenuChip();
   placePanelRsz();
   setM2Mode(APP.m2mode, true);                 /* ②以外では動画をもとの場所へ */
   var card=$('cgCard');
@@ -6811,7 +6954,11 @@ function askResetPts(go){
     if(e.key==='Escape' && APP.bigView) setBigView(false);
   });
   $('cbM2Min').onchange=function(){ setM2Menu(!this.checked); saveLocal(); };
-  $('cbM2MenuTop').onchange=function(){ setM2Menu(this.checked); saveLocal(); };
+  if($('cbM3Min')) $('cbM3Min').onchange=function(){ setM3Menu(!this.checked); saveLocal(); };
+  $('cbM2MenuTop').onchange=function(){
+    if(APP.tab==='3') setM3Menu(this.checked); else setM2Menu(this.checked);
+    saveLocal();
+  };
   bindPanelRsz(); bindVidRsz();
   /* 1. 動画：動画エリアをクリックしたら「動画を選択」 */
   $('vph').onclick=function(){ if(!VID.ready) $('btnFile').click(); };
@@ -6998,6 +7145,7 @@ function askResetPts(go){
   ['btnGBig','btnGBig3'].forEach(function(id){ $(id).onclick=function(){ gSize(1.25); }; });
   ['btnGSmall','btnGSmall3'].forEach(function(id){ $(id).onclick=function(){ gSize(1/1.25); }; });
   ['btnGReset','btnGReset3'].forEach(function(id){ $(id).onclick=gReset; });
+  ['btnGFitAll','btnGFitAll3'].forEach(function(id){ var q=$(id); if(q) q.onclick=function(){ fitAllCharts(); }; });
   bindTblResize();
   $('cgMomentum').onclick=function(){
     var c=APP.cg, e=APP.exps[c.expA];
@@ -7081,7 +7229,7 @@ var seekBusy=false;
   m2ModeButtons();
   APP.step=0; updateSteps();
   setBigView(false);                 /* 最大表示は毎回オフから */
-  setM2Menu(APP.m2menu!==false);
+  setM2Menu(APP.m2menu!==false); setM3Menu(APP.m3menu!==false);
   setPanelW(APP.panelw||352);
   afterChange();
   if(restored){
