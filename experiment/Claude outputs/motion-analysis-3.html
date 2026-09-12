@@ -96,7 +96,17 @@ body.novidrsz #vidRsz{display:none}
 .wrap{padding:10px}
 .m1grid{display:grid;grid-template-columns:var(--panelw) minmax(0,1fr);gap:12px;align-items:start}
 .m1grid.top{grid-template-columns:minmax(0,1fr)}
-.m1grid.top .side{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;align-items:start}
+/* 「メニュー：上」＝メニューを上に集めるとき。
+   いま使うカードだけを開き、終わったカードは見出しだけの細い札にして、かならず1段におさめる */
+.m1grid.top .side{display:flex;flex-direction:row;flex-wrap:nowrap;gap:8px;align-items:flex-start;
+  overflow-x:auto;padding-bottom:4px}
+.m1grid.top .side>details{flex:0 0 auto;max-width:100%}
+.m1grid.top .side>details:not([open]){padding:8px 10px}
+.m1grid.top .side>details:not([open])>summary{white-space:nowrap}
+.m1grid.top .side>details[open]{flex:0 1 auto;width:340px;min-width:250px;
+  max-height:30vh;overflow-y:auto;overscroll-behavior:contain}
+/* 上に集めているときは、幅を変えるつまみは出さない（動画の左はしに縦線が出て紛らわしい） */
+.m1grid.top #panelRsz{display:none}
 .side{display:flex;flex-direction:column;gap:10px;min-width:0}
 .rightcol{display:flex;flex-direction:column;gap:12px;min-width:0}
 /* 狭い画面：動画を先頭に出し、操作パネルはその下（カードはたたむ） */
@@ -174,6 +184,14 @@ select.selbtn{padding:9px 2px;font-family:inherit;color:inherit;font-size:.88rem
 .seg .btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .seg.big .btn{font-size:.9rem;font-weight:700;padding:8px 14px}
 /* 消すボタン（赤） */
+/* ストロボの「時間間隔調整」 */
+.strotune{margin:6px 0 2px;padding:6px 8px 4px;border:1px solid #e2c98a;border-radius:9px;background:#fffaf0}
+.strotune.glow{border-color:var(--orange);background:#fff3d6;box-shadow:0 0 0 3px rgba(224,123,24,.28)}
+.strotune input[type=range]{width:100%;margin:2px 0 0;accent-color:var(--orange)}
+.strotune .lb{font-weight:700;color:#8a5300}
+.strotune .tag{background:#fff;border:1px solid #e2c98a;color:#8a5300}
+.strotick{display:flex;justify-content:space-between;font-size:.72rem;color:#8a5300;
+  font-family:var(--mono);padding:0 2px}
 .btn.danger{background:#fdecea;border-color:#e3a49d;color:#a8281c;font-weight:700}
 .btn.danger:hover{background:#f9d8d4}
 .btn.danger:active{background:#f3c4be}
@@ -381,6 +399,8 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 #doneMsg.small{left:8px;top:auto;bottom:20px;transform:none;font-size:.8rem;font-weight:600;
   padding:4px 10px;background:rgba(28,143,74,.55);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:70%}
 #doneMsg.small:hover{background:rgba(22,120,62,.9)}
+.calok{background:#f2f8f3;border:1px solid #b9dcc4;border-radius:8px;padding:4px 9px;color:#1c6b3c}
+.calok b{color:#155c33}
 .donemsg{margin:.2em 0 .5em;color:#1c8f4a;font-weight:700;font-size:.94rem;
   background:#e7f6ed;border:1px solid #9fd8b6;border-radius:9px;padding:6px 9px;cursor:pointer}
 .donemsg:hover{background:#d8f0e2}
@@ -534,7 +554,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .m3body{display:flex;gap:12px;align-items:flex-start}
 .m3graphs{flex:0 1 auto;min-width:0}
 #charts3 .chartcard{width:max-content;max-width:100%}
-.m3res{flex:0 0 330px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px)}
+.m3res{flex:0 0 360px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px);
+  display:flex;flex-direction:column;gap:10px}
+#residHost:empty{display:none}
 .m3res>.card{min-height:74px}
 @media(max-width:980px){ .m3body{flex-direction:column} .m3res{width:100%;position:static} }
 
@@ -836,6 +858,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <summary>4. トラッキング</summary>
       <p class="todo hide"></p>
       <p class="donemsg hide" id="trkDone" title="②グラフへ">解析終了。グラフを表示してみよう</p>
+      <p class="mini calok" id="calOkNote">原点・x軸・スケールは<b>設定ずみ</b>です（直すときは <b>3</b> の［もう一度］へ）。</p>
       <div id="objBox" class="hide">
         <label class="f" id="labObjNum">物体番号
           <select id="selObj"><option value="1">1</option><option value="2">2</option></select>
@@ -914,9 +937,16 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <details class="card" data-key="strobe" data-lock="4">
       <summary>5. ストロボ画像</summary>
       <div class="row">
-        <label class="f">使うコマ
-          <select id="selStroSrc"><option value="pts">記録した点のコマ</option><option value="step">範囲を N コマおき</option></select>
-        </label>
+        <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
+      </div>
+      <div id="stroTune" class="strotune hide">
+        <div class="row">
+          <span class="lb" id="lbStroStep">時間間隔調整</span>
+          <span class="tag" id="stroStepInfo">1 コマおき</span>
+        </div>
+        <input type="range" id="stroStep" min="0" max="4" step="1" value="0"
+               title="何コマおきに重ねるかを決めます">
+        <div class="strotick"><span>1</span><span>2</span><span>5</span><span>10</span><span>20</span></div>
       </div>
       <div class="row">
         <label class="f">重ね方
@@ -925,9 +955,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <label class="cb"><input type="checkbox" id="cbStroPts" checked>点も描く</label>
       </div>
       <div class="row">
-        <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
         <button class="btn sm" id="btnStroSave">PNG保存</button>
-        <button class="btn sm" id="btnStroClr">画像をリセット</button>
+        <button class="btn sm danger" id="btnStroClr">画像をリセット</button>
       </div>
     </details>
 
@@ -947,10 +976,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       次の実験番号として追加されます（前の実験や去年のデータと並べて比べられます）。
       提出もこのファイルで行います。</p>
       <div class="hr"></div>
-      <div class="row">
-        <button class="btn sm" id="btnWipe">保存データを消去</button>
-      </div>
-      <p class="mini" id="saveState">自動保存：ON</p>
+      <p class="mini" id="saveState">トラッキングデータ等は自動保存されます。動画をもう一度開くと続きからできます。</p>
+      <p class="mini">消したいときは、上の段の <b>［この実験の測定を消去］</b>（いまの実験だけ）か
+      <b>［すべての実験を消してリセット］</b>（この端末に保存したぶんも全部）を使ってください。
+      みんなで使う端末では、終わったら <b>［すべての実験を消してリセット］</b> を押します。</p>
     </details>
 
   </div><!-- /side -->
@@ -1007,6 +1036,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
           <span class="callout hide" id="coTimeZero2">解析を始めたいコマで押す</span></span>
         <span class="btnwrap"><button class="btn sm" id="btnRangeB2">この時刻まで解析</button>
           <span class="callout hide" id="coRangeB2">解析を終わりたいコマで押す</span></span>
+        <button class="btn sm danger" id="btnRangeClr2">範囲を解除</button>
+        <button class="btn sm" id="btnStep2Next2">このままでよい → 次へ</button>
       </div>
       <div class="stepbtns">
         <div class="stepgrp back">
@@ -1033,8 +1064,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <span>t = <span class="val" id="tInfo">-</span> s</span>
         <span id="modeInfo" class="tag">クリックで記録</span>
         <span class="sp" style="flex:1"></span>
-        <button class="btn sm blue" id="btnCrop2">トリミング</button>
-        <button class="btn sm" id="btnCropClr2">全体に戻す</button>
+        <button class="btn sm blue" id="btnCrop2">動画をトリミング（端を切る）</button>
+        <button class="btn sm" id="btnCropClr2">トリミングをリセット</button>
       </div>
       <p class="mini hide" id="hintLine">タップした所にはルーペが出ます。そのままドラッグで微調整できます。</p>
     </div>
@@ -1157,10 +1188,21 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm blue" id="btnGFitAll3" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
       </div>
     </div>
+    <div class="m2out">
+      <div class="grid2">
+        <button class="btn sm" id="btnReportPng3">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf3">レポートPDF</button>
+      </div>
+      <div class="row nowrap" style="margin-top:6px;justify-content:flex-end">
+        <button class="btn sm quiet" id="btnXlsx3">測定データ、グラフをまとめてExcel出力</button>
+        <button class="btn sm quiet" id="btnGraphPng3">グラフをPNG保存</button>
+      </div>
+    </div>
   </div>
   <div class="m3body">
     <div class="m3graphs"><div class="charts" id="charts3"></div></div>
-    <div class="m3res"><div class="card" id="fitResult"></div></div>
+    <div class="m3res"><div class="card" id="fitResult"></div>
+      <div id="residHost"></div></div>
   </div>
   <div class="card">
     <div class="row">
@@ -1634,7 +1676,9 @@ function showSaveState(){
     el0.innerHTML='<b class="ng">自動保存できていません</b>（この画面に置ける量を超えました）。'+
                   'CSV や Excel で保存してください。';
   } else {
-    el0.textContent='自動保存：'+(APP.autosave?'ON':'OFF');
+    el0.textContent = APP.autosave?
+      'トラッキングデータ等は自動保存されます。動画をもう一度開くと続きからできます。' :
+      '自動保存はOFFです。';
   }
 }
 function loadLocal(){
@@ -2058,7 +2102,7 @@ function updateCropInfo(){
   ['btnCrop','btnCrop2'].forEach(function(id){
     var q=$(id); if(!q) return;
     q.classList.toggle('on', UI.mode==='crop');
-    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : (id==='btnCrop'? '動画をトリミング（端を切る）' : 'トリミング');
+    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : '動画をトリミング（端を切る）';
   });
 }
 
@@ -2093,7 +2137,7 @@ function drawOverlay(){
     var c=Math.cos(exp.angle), s=Math.sin(exp.angle);
     g.save();
     /* 4. トラッキング中は、物体が見えるように軸を薄くする */
-    if(effStep()>=4) g.globalAlpha=0.30;
+    if(effStep()>=4) g.globalAlpha=0.45;      /* 4 でも「原点と軸は決まっている」と分かる濃さに */
     g.strokeStyle='rgba(255,215,0,.95)'; g.lineWidth=LW; g.setLineDash([]);
     /* x軸 */
     var xd = exp.xflip? -1 : 1;
@@ -2132,6 +2176,19 @@ function drawOverlay(){
       labelAt(g,'原点', o.x, o.y-rr-14*sc, '#ff5a5a', 34*sc);
     }
     g.restore();
+    /* 4 のあいだも、原点だけははっきり見せる（設定できていないと勘違いしないように） */
+    if(effStep()>=4 && exp.originSet){
+      g.save();
+      g.lineWidth=Math.max(2, 3*sc);
+      g.strokeStyle='rgba(0,0,0,.55)';
+      g.beginPath(); g.arc(o.x,o.y,9*sc,0,7); g.stroke();
+      g.strokeStyle='#ff5a5a';
+      g.beginPath(); g.arc(o.x,o.y,9*sc,0,7); g.stroke();
+      g.beginPath(); g.moveTo(o.x-14*sc,o.y); g.lineTo(o.x+14*sc,o.y);
+      g.moveTo(o.x,o.y-14*sc); g.lineTo(o.x,o.y+14*sc); g.stroke();
+      labelAt(g,'原点', o.x, o.y-22*sc, '#ff5a5a', 17*sc);
+      g.restore();
+    }
   }
   /* --- スケールの線（②の再生中は出さない） --- */
   if(exp.scaleRef && !LIVE.on){
@@ -2801,7 +2858,6 @@ function autoRunAll(){
 function makeStrobe(preview){
   var exp=EXP(), cv=$('cvStrobe');
   var mode=preview? 'diff' : $('selStroMode').value;
-  var src=preview? 'step' : $('selStroSrc').value;
   var times=[];
   if(preview){
     var a0=rangeStart(exp), b0=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
@@ -2812,12 +2868,8 @@ function makeStrobe(preview){
     } else {
       for(var tq=a0; tq<=b0; tq+=(b0-a0)/14) times.push(tq);
     }
-  } else if(src==='pts'){
-    var seen={};
-    for(var ob=0; ob<NOBJ; ob++) exp.objs[ob].forEach(function(p){ var k=p.t.toFixed(4); if(!seen[k]){seen[k]=1; times.push(p.t);} });
-    times.sort(function(a,b){return a-b;});
-  }else{
-    var N=parseInt($('inStepN').value)||5;
+  } else {
+    var N=stroStepVal();                 /* 「時間間隔調整」で決めた、何コマおきか */
     var a=rangeStart(exp), b=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
     if(VID.frames.length>1){
       var i0=frameIndexAt(a), i1=frameIndexAt(b);
@@ -2857,6 +2909,7 @@ function makeStrobe(preview){
       if(!preview && $('cbStroPts').checked) drawStrobePoints(g);
       $('stroInfo').textContent=times.length+' コマを合成しました'+(preview?'（仮）':'');
       UI.stroReady=true; $('cvStrobe').classList.remove('hide');
+      if(typeof updateStroUI==='function') updateStroUI();
       if(preview){                       /* 動画に重ねる用に控えておく */
         var oc=document.createElement('canvas');
         oc.width=cv.width; oc.height=cv.height;
@@ -2954,30 +3007,30 @@ function gvReset(){ GV.x={}; GV.y={}; }
    例）値が -0.05〜0.4 なら、縦軸は -0.1〜0.5 になる。 */
 function fitSpecRange(spec){
   if(!spec) return false;
-  var xs=[], ys=[];
-  function eat(list, toY){
-    (list||[]).forEach(function(s){
-      (s.pts||[]).forEach(function(p){
-        if(isFinite(p.x)&&isFinite(p.y)){ xs.push(p.x); if(toY) ys.push(p.y); }
-      });
+  /* 横軸（t）は動かさない。いま見えている横軸の範囲に入っている点だけを見て、
+     縦軸の最小・最大と目盛りを合わせる（見たい時間のところを、ちょうどよい大きさで見せる） */
+  var xk=spec.xkey||null;
+  var lim=(xk && GV.x[xk])? GV.x[xk] : null;
+  var ys=[];
+  (spec.series||[]).forEach(function(s){
+    (s.pts||[]).forEach(function(p){
+      if(!isFinite(p.x)||!isFinite(p.y)) return;
+      if(lim && (p.x<lim.a || p.x>lim.b)) return;   /* 見えていない所は数えない */
+      ys.push(p.y);
     });
+  });
+  if(!ys.length) return false;
+  var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
+  if(!(y1-y0>1e-12)){                              /* 見えているのが1点だけのとき */
+    var hw=Math.max(Math.abs(y0)*0.1, 1e-6);
+    y0-=hw; y1+=hw;
   }
-  eat(spec.series, true);
-  eat(spec.series2, false);          /* 右の縦軸は別ものなので、横軸だけ見る */
-  if(!xs.length) return false;
-  var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
-  var y0=ys.length? Math.min.apply(null,ys) : 0, y1=ys.length? Math.max.apply(null,ys) : 1;
-  function snap(a, b, n){
-    if(!(b-a>1e-12)){ a-=0.5; b+=0.5; }
-    var m=(b-a)*0.05; a-=m; b+=m;                 /* すこし余白をとってから */
-    var st=niceStep(b-a, n);                      /* 目盛りの切りのよい値へ */
-    a=Math.floor(a/st)*st; b=Math.ceil(b/st)*st;
-    if(!(b-a>1e-12)){ a-=st; b+=st; }
-    return {a:a, b:b};
-  }
-  var rx=snap(x0,x1,6), ry=snap(y0,y1,5);
-  if(spec.xkey) GV.x[spec.xkey]=rx;
-  if(spec.key && ys.length) GV.y[spec.key]=ry;
+  var m=(y1-y0)*0.05; y0-=m; y1+=m;               /* すこし余白をとってから */
+  var st=niceStep(y1-y0, 5);                       /* 目盛りの切りのよい値へ */
+  y0=Math.floor(y0/st)*st; y1=Math.ceil(y1/st)*st;
+  if(!(y1-y0>1e-12)){ y0-=st; y1+=st; }
+  if(!spec.key) return false;
+  GV.y[spec.key]={a:y0, b:y1};
   return true;
 }
 /* いま画面に出ているグラフを、まとめてスケールフィットする */
@@ -3332,13 +3385,14 @@ function seriesFor(exp, kind, expIdx, overlay){
     } else if(kind==='v'){
       out.push({name:nm+' vx', color:base, shape:shapes[ob],
         pts:s.filter(function(p){return p.vx!==null;}).map(function(p){return {x:p.t,y:p.vx};})});
-      out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
+      /* 「軸の表示：x軸」にしたら、y 方向はどこにも出さない（レポートにも出さない） */
+      if(useY()) out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
         pts:s.filter(function(p){return p.vy!==null;}).map(function(p){return {x:p.t,y:p.vy};})});
     } else if(kind==='a'){
       out.push({name:nm+' ax', color:base, shape:shapes[ob],
         pts: APP.aFit? aByFit(s,'vx')
            : s.filter(function(p){return p.ax!==null;}).map(function(p){return {x:p.t,y:p.ax};})});
-      out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
+      if(useY()) out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
         pts: APP.aFit? aByFit(s,'vy')
            : s.filter(function(p){return p.ay!==null;}).map(function(p){return {x:p.t,y:p.ay};})});
     } else if(kind==='e'){
@@ -3540,13 +3594,16 @@ function chartCard(title, spec, curves, w, h){
   w=w||APP.gsize; h=h||Math.round(w*0.62);
   drawChart(cv, spec, {legend:true, w:w, h:h, fixed:true});
   bindChartDrag(cv, spec.onRange);
-  /* d○/dt を表示するチェック（グラフごと。はじめは OFF） */
-  var lab=document.createElement('label'); lab.className='cb dydt';
-  var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!spec.__dydt;
-  cb.onchange=function(){ spec.__dydt=cb.checked; updateReadouts(); };
-  lab.appendChild(cb);
-  lab.appendChild(document.createTextNode(dydtLabel(spec.ylab)+' を表示'));
-  d.appendChild(lab);
+  /* d○/dt を表示するチェック（グラフごと。はじめは OFF）
+     残差のグラフでは意味がないので出さない */
+  if(!spec.__noDydt){
+    var lab=document.createElement('label'); lab.className='cb dydt';
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!spec.__dydt;
+    cb.onchange=function(){ spec.__dydt=cb.checked; updateReadouts(); };
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(dydtLabel(spec.ylab)+' を表示'));
+    d.appendChild(lab);
+  }
   var b=document.createElement('button'); b.className='maxbtn';
   b.innerHTML=EXPAND_ICON+' 最大化';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
@@ -3643,8 +3700,11 @@ function openBigChart(title, spec){
 }
 
 /* ---------- モード3 ---------- */
+/* いちばん最近のフィットの中身（残差のプロットに使う） */
+var RESID=[], RESID_INFO={};
 function renderMode3(doFitNow){
   var host=$('charts3'); host.innerHTML='';
+  if(doFitNow) RESID=[];
   var q=$('selFitY').value, kind=$('selFitType').value, ob=parseInt($('selFitObj').value)-1;
   var over=$('selCmp3').value==='over';
   /* 「表示」のえらび方は、実験が2つ以上あるときだけ出す */
@@ -3700,7 +3760,8 @@ function renderMode3(doFitNow){
       if(doFitNow){
         var dr=inRange(d), f=doFit(kind,dr.xs,dr.ys);
         if(f){ cvs.push({color:col, f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs), dash:[6,3]});
-               res.push({name:e.name, fit:f, n:dr.xs.length}); }
+               res.push({name:e.name, fit:f, n:dr.xs.length});
+               RESID.push({name:e.name, color:col, xs:dr.xs, ys:dr.ys, f:f.f}); }
       }
     });
     host.appendChild(chartCard(q+' – t（重ねて表示）',
@@ -3714,7 +3775,8 @@ function renderMode3(doFitNow){
       if(doFitNow && dr.xs.length>1){
         var f=doFit(kind,dr.xs,dr.ys);
         if(f){ cvs.push({color:'#e8443a', f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs)});
-               res.push({name:e.name, fit:f, n:dr.xs.length}); }
+               res.push({name:e.name, fit:f, n:dr.xs.length});
+               RESID.push({name:e.name, color:col, xs:dr.xs, ys:dr.ys, f:f.f}); }
       }
       host.appendChild(chartCard(q+' – t　'+e.name,
         {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:[{name:e.name+' 物体'+(ob+1), color:col, shape:'dot', line:false,
@@ -3733,11 +3795,73 @@ function renderMode3(doFitNow){
                '<span class="val">R² = '+sig(r.fit.r2,6)+'</span><br>'+
                '<span class="mini">使った点 '+r.n+' 個'+(FR? '（t = '+nf(Math.min(FR.a,FR.b),3)+' 〜 '+nf(Math.max(FR.a,FR.b),3)+' s）':'')+'</span></div>';
       }).join('');
+      RESID_INFO={ q:q, ob:ob, kind:kind };
+      if(RESID.length){
+        box.innerHTML += '<div class="row" style="margin-top:8px">'+
+          '<button class="btn sm blue" id="btnResid">フィット残差のプロット</button></div>'+
+          '<p class="mini">「測った値 − フィットの値」を、そのまま点にしたグラフです。</p>';
+        var rb=$('btnResid');
+        if(rb) rb.onclick=function(){ toggleResid(); };
+      }
+      if($('residHost') && $('residHost').innerHTML) renderResid();   /* 出ていれば描き直す */
     }
   } else if(!box.innerHTML){
     box.innerHTML='<p class="mini">まだフィットしていません。下の「フィットする」を押してください。</p>';
   }
   if(!host.children.length) host.innerHTML='<div class="card mini">データがありません。</div>';
+}
+/* ---------- フィット残差のプロット ---------- */
+/* 残差 ＝ 測った値 − フィットの値。0 のまわりに散らばっていれば、その関数でよく合っている。
+   かたよって曲がっていたら、関数の形が合っていない（空気抵抗など）。 */
+function residSeries(){
+  var out=[];
+  RESID.forEach(function(r){
+    var pts=[];
+    for(var i=0;i<r.xs.length;i++){
+      var d=r.ys[i]-r.f(r.xs[i]);
+      if(isFinite(d)) pts.push({x:r.xs[i], y:d});
+    }
+    if(pts.length) out.push({name:r.name, color:r.color, shape:'dot', line:false, pts:pts});
+  });
+  return out;
+}
+function residSpec(){
+  var ss=residSeries(); if(!ss.length) return null;
+  var q=RESID_INFO.q||'x', lab=(QDEF[q]? QDEF[q].lab : q);
+  var xa=Infinity, xb=-Infinity;
+  ss.forEach(function(s){ s.pts.forEach(function(p){ if(p.x<xa) xa=p.x; if(p.x>xb) xb=p.x; }); });
+  return { title:'', xlab:'t [s]', ylab:'残差（'+lab+'）', series:ss,
+           curves:[{color:'#8a93a0', f:function(){return 0;}, dash:[5,4], x0:xa, x1:xb}],
+           __noDydt:true,
+           xkey:'t', key:'resid3_'+q+'_'+(RESID_INFO.ob||0) };
+}
+function residSd(){
+  var n=0, s2=0;
+  RESID.forEach(function(r){
+    for(var i=0;i<r.xs.length;i++){ var d=r.ys[i]-r.f(r.xs[i]); if(isFinite(d)){ n++; s2+=d*d; } }
+  });
+  return n? Math.sqrt(s2/n) : null;
+}
+function renderResid(w){
+  var host=$('residHost'); if(!host) return false;
+  var spec=residSpec();
+  if(!spec){ host.innerHTML=''; return false; }
+  host.innerHTML='';
+  var q=RESID_INFO.q||'x', lab=(QDEF[q]? QDEF[q].lab : q);
+  var card=chartCard('フィット残差（'+q+'）', spec, null, w||330, Math.round((w||330)*0.62));
+  host.appendChild(card);
+  var sd=residSd();
+  var p2=document.createElement('p'); p2.className='mini';
+  p2.innerHTML='0 のまわりに<b>ばらばら</b>に散っていれば、その関数でよく合っています。'+
+    '<b>曲がったかたより</b>があれば、関数の形が合っていません。'+
+    (sd!==null? '<br>残差の大きさ（RMS）＝ <b>'+sig(sd,3)+'</b>' : '');
+  host.appendChild(p2);
+  return true;
+}
+function toggleResid(){
+  var host=$('residHost'); if(!host) return;
+  if(host.innerHTML){ host.innerHTML=''; return; }
+  if(!renderResid()) toast('先に「フィットする」を押してください');
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
@@ -4076,7 +4200,8 @@ function chartXml(ch){
   ch.series.forEach(function(s,i){
     sers+='<c:ser><c:idx val="'+i+'"/><c:order val="'+i+'"/>'+
       '<c:tx><c:v>'+xesc(s.name)+'</c:v></c:tx>'+
-      '<c:spPr><a:ln w="19050"><a:noFill/></a:ln></c:spPr>'+
+      '<c:spPr><a:ln w="19050">'+(s.line?
+         '<a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill>' : '<a:noFill/>')+'</a:ln></c:spPr>'+
       '<c:marker><c:symbol val="'+(s.symbol||'circle')+'"/><c:size val="5"/>'+
         '<c:spPr><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill>'+
         '<a:ln><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill></a:ln></c:spPr></c:marker>'+
@@ -4218,6 +4343,24 @@ function sheetForExp(exp, idx){
     });
     rows.push(row);
   }
+  /* ③でフィットしていれば、「フィットの値」と「残差」の列を足す */
+  var fitCol=null, resCol=null;
+  if(typeof RESID!=='undefined' && RESID.length && idx===APP.cur){
+    var R0=RESID[0], fq=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
+    var lo=Math.min.apply(null,R0.xs), hi=Math.max.apply(null,R0.xs);
+    var isV=(fq==='vx'||fq==='vy');
+    fitCol=head.length; head.push('fit('+fq+')');
+    resCol=head.length; head.push('残差('+fq+')');
+    for(var rr=headRow+1; rr<rows.length; rr++){
+      var row2=rows[rr], si=rr-(headRow+1);
+      var p2=ss[0]? ss[0][si] : null;
+      var xv=p2? (isV? p2.tv : p2.t) : null, yv=p2? p2[fq] : null;
+      if(p2 && xv!==null && yv!==null && isFinite(xv) && isFinite(yv) && xv>=lo-1e-9 && xv<=hi+1e-9){
+        var fv=R0.f(xv);
+        row2[fitCol]=num(fv); row2[resCol]=num(yv-fv);
+      } else { row2[fitCol]=''; row2[resCol]=''; }
+    }
+  }
   var r0=headRow+1, r1=rows.length;
   var charts=[];
   if(n0>1){
@@ -4229,6 +4372,8 @@ function sheetForExp(exp, idx){
       {t:'vx - t', y:'vx [m/s]', q:'v'}, {t:'ax - t', y:'ax [m/s2]', q:'a'}
     ];
     if(useE) chDefs.push({t:'エネルギー - t', y:'E [J]', q:'e'});
+    if(fitCol!==null) chDefs.push({t:'フィットしたグラフ', y:'値', q:'fit'},
+                                  {t:'フィット残差', y:'残差', q:'res'});
     chDefs.forEach(function(d,di){
       var sers=[];
       objs.forEach(function(o,k){
@@ -4239,12 +4384,20 @@ function sheetForExp(exp, idx){
                             if(wy) sers.push({name:'vy物体'+(o+1), col:cols['vy'+o], color:c2, symbol:'square'}); }
         else if(d.q==='a'){ sers.push({name:'ax物体'+(o+1), col:cols['ax'+o], color:c, symbol:'circle'});
                             if(wy) sers.push({name:'ay物体'+(o+1), col:cols['ay'+o], color:c2, symbol:'square'}); }
+        else if(d.q==='fit'){ if(k===0){
+                 var fq2=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
+                 sers.push({name:fq2+'（測った値）', col:cols[fq2+o], color:c, symbol:'circle'});
+                 sers.push({name:'フィット', col:fitCol, color:'8A241D', symbol:'none', line:true}); } }
+        else if(d.q==='res'){ if(k===0)
+                 sers.push({name:'残差', col:resCol, color:'0F3F73', symbol:'circle'}); }
         else { sers.push({name:'K物体'+(o+1), col:cols['K'+o], color:c, symbol:'circle'});
                sers.push({name:'U物体'+(o+1), col:cols['U'+o], color:c2, symbol:'square'});
                sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
       });
       charts.push({title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y,
-                   xcol:(d.q==='v'?1:0), r0:r0, r1:r1,          /* 速さは tv[s] を横軸に */
+                   xcol:((d.q==='v'||((d.q==='fit'||d.q==='res') &&
+                          typeof RESID_INFO!=='undefined' &&
+                          (RESID_INFO.q==='vx'||RESID_INFO.q==='vy')))?1:0), r0:r0, r1:r1,   /* 速さは tv[s] を横軸に */
                    series:sers, anchorCol:anchor, anchorRow:di*19});
     });
   }
@@ -4266,62 +4419,165 @@ function exportXlsx(){
 /* =========================================================
    レポート（PNG / PDF）
    ========================================================= */
-function buildReportCanvas(){
-  var W=1240, H=1754, cv=document.createElement('canvas');
-  cv.width=W; cv.height=H;
-  var g=cv.getContext('2d');
-  g.fillStyle='#fff'; g.fillRect(0,0,W,H);
-  var exp=EXP();
+/* レポートは A4 たて（1240×1754）を1ページとして、入らなければページを足す */
+function buildReportPages(){
+  var W=1240, H=1754, M=50;
+  var pages=[], g=null, y=0, exp=EXP();
+  function newPage(){
+    var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+    pages.push(cv); y=60;
+    if(pages.length>1){
+      g.fillStyle='#8a95a1'; g.font='13px '+FONT;
+      g.fillText('動画解析レポート：'+exp.name+'（つづき）', M, 40);
+      y=72;
+    }
+    return g;
+  }
+  function need(h){ if(y+h > H-70) newPage(); }
+  function head(t){
+    need(46);
+    g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT; g.fillText(t, M, y+14); y+=26;
+  }
+  newPage();
+  /* ---- 見出しと条件 ---- */
   g.fillStyle='#0f4c8f'; g.font='bold 30px '+FONT;
-  g.fillText('動画解析レポート：'+exp.name, 50, 58);
+  g.fillText('動画解析レポート：'+exp.name, M, 58);
   g.fillStyle='#5b6672'; g.font='15px '+FONT;
   var d=new Date();
-  g.fillText(d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'  '+(exp.memo||''), 50, 86);
-  g.strokeStyle='#1663b5'; g.lineWidth=2; g.beginPath(); g.moveTo(50,98); g.lineTo(W-50,98); g.stroke();
+  g.fillText(d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'  '+(exp.memo||''), M, 86);
+  g.strokeStyle='#1663b5'; g.lineWidth=2; g.beginPath(); g.moveTo(M,98); g.lineTo(W-M,98); g.stroke();
   g.fillStyle='#1b1f24'; g.font='14px '+FONT;
-  var info=[
+  [
     '動画：'+(exp.video.name||'-')+'（'+exp.video.w+'×'+exp.video.h+'）  fps(表示用) '+nf(exp.video.fps,3),
     'スケール：'+(exp.mPerPx? sig(exp.mPerPx*1000,4)+' mm/px' : '未設定')+
       '　x軸：'+nf(exp.angle*180/Math.PI,1)+'°'+(exp.yflip?'（y反転）':'')+
       '　時刻の原点：'+(exp.t0!==null? nf(exp.t0,3)+' s':'動画の先頭'),
-    '手ぶれ補正：'+(exp.useDrift?'ON':'OFF')+'　記録点：'+exp.objs.map(function(a,i){return '物体'+(i+1)+' '+a.length;}).join(' / ')
-  ];
-  info.forEach(function(s,i){ g.fillText(s, 50, 124+i*22); });
-  /* ストロボ画像 */
-  var y=210;
+    '手ぶれ補正：'+(exp.useDrift?'ON':'OFF')+'　記録点：'+
+      exp.objs.map(function(a,i){return '物体'+(i+1)+' '+a.length;}).join(' / ')+
+      '　軸の表示：'+(useY()? 'x軸とy軸' : 'x軸のみ')
+  ].forEach(function(t,i){ g.fillText(t, M, 124+i*22); });
+  y=206;
+  /* ---- ストロボ画像 ---- */
   var stro=$('cvStrobe');
   if(UI.stroReady && stro.width>2){
-    var sw=W-100, sh=sw*stro.height/stro.width;
-    if(sh>360){ sh=360; sw=sh*stro.width/stro.height; }
-    g.drawImage(stro, 50, y, sw, sh);
-    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(50,y,sw,sh);
-    y+=sh+24;
+    var sw=W-2*M, sh=sw*stro.height/stro.width, cap=useY()? 250 : 330;
+    if(sh>cap){ sh=cap; sw=sh*stro.width/stro.height; }
+    need(sh+24);
+    g.drawImage(stro, M, y, sw, sh);
+    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(M,y,sw,sh);
+    y+=sh+22;
   }
-  /* グラフ4枚 */
-  var kinds=useY()? ['x','y','v','a'] : ['x','v','a'];
-  var cw=(W-120)/2, chh=cw*0.62;
-  kinds.forEach(function(k,i){
-    var tmp=document.createElement('canvas');
-    drawChart(tmp, {title:KINDLAB[k], xlab:'t [s]', ylab:KINDY[k], series:seriesFor(exp,k,APP.cur,false)},
-              {w:cw, h:chh, legend:true});
-    var X=50+(i%2)*(cw+20), Y=y+Math.floor(i/2)*(chh+16);
-    g.drawImage(tmp, X, Y, cw, chh);
-    g.strokeStyle='#d9dee4'; g.strokeRect(X,Y,cw,chh);
-  });
-  y += chh*2+40;
-  /* フィット結果 */
+  /* ---- グラフ：左に x 方向をたてに、右に y 方向をたてに ---- */
+  var wy=useY();
+  var cw=(W-2*M-20)/2;
+  var chh=Math.round(cw*0.53);
+  var colX=['x','v','a'], colY=['y','vy','ay'];
+  need(46+chh+14);
+  head('グラフ');
+  for(var r=0;r<3;r++){
+    need(chh+14);
+    var kx=colX[r];
+    drawInto(g, M, y, cw, chh, {title:KINDLAB[kx], xlab:'t [s]', ylab:KINDY[kx],
+      series:seriesFor(exp,kx,APP.cur,false)});
+    if(wy){
+      var ky=colY[r];
+      var spec = (ky==='y')? {title:KINDLAB.y, xlab:'t [s]', ylab:KINDY.y, series:seriesFor(exp,'y',APP.cur,false)}
+                           : ySpecOf(exp, ky);
+      drawInto(g, M+cw+20, y, cw, chh, spec);
+    }
+    y+=chh+12;
+  }
+  /* ---- フィットの結果・グラフ・残差 ---- */
   var box=$('fitResult');
-  if(box && box.textContent.trim() && y<H-120){
-    g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT; g.fillText('解析（フィット）', 50, y);
+  var hasFit = (typeof RESID!=='undefined') && RESID.length;
+  if(hasFit && box){
+    g.font='14px '+FONT;
+    /* .fitone の中は <br> で行が分かれている。ボタンの説明文は入れない */
+    var lines=[];
+    [].forEach.call(box.querySelectorAll('.fitone'), function(d){
+      d.innerHTML.split(/<br\s*\/?>/i).forEach(function(h){
+        var tmp=document.createElement('div'); tmp.innerHTML=h;
+        var s=tmp.textContent.replace(/\s+/g,' ').trim();
+        if(s) lines.push(s);
+      });
+    });
+    need(46+lines.length*20+16);
+    head('解析（フィット）');
     g.fillStyle='#1b1f24'; g.font='14px '+FONT;
-    var txt=box.textContent.replace(/\s+/g,' ').trim();
-    y = wrapText(g, txt, 50, y+24, W-100, 20) + 26;
+    y+=4;
+    lines.forEach(function(s){ y=wrapText(g, s, M, y+20, W-2*M, 20); });
+    y+=16;
   }
-  drawReportTable(g, exp, 50, y, W-100, H-70-y);
-  g.fillStyle='#8a95a1'; g.font='12px '+FONT;
-  g.fillText('動画解析ツール（単一HTML・オフライン）', 50, H-30);
-  return cv;
+  if(hasFit){
+    /* 画面のグラフをそのまま写すと、青いドラッグ帯まで入ってしまう。
+       フィットに使った点と、フィットの式のグラフを、あらためて描き直す。 */
+    var fw=(W-2*M-20)/2, fh=Math.round(fw*0.55);
+    var q=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
+    var qlab=(typeof QDEF!=='undefined' && QDEF[q])? QDEF[q].lab : q;
+    var fser=[], fcur=[];
+    RESID.forEach(function(r, i){
+      var pts=[];
+      for(var k=0;k<r.xs.length;k++) pts.push({x:r.xs[k], y:r.ys[k]});
+      fser.push({name:r.name, color:r.color, shape:['dot','sq','tri'][i%3], line:false, pts:pts});
+      fcur.push({color:['#e8443a','#2e8b57','#8a5cd6'][i%3], f:r.f,
+                 x0:Math.min.apply(null,r.xs), x1:Math.max.apply(null,r.xs)});
+    });
+    var fitSpec={ title:'フィットしたグラフ', xlab:'t [s]', ylab:qlab,
+                  series:fser, curves:fcur };
+    var rs=(typeof residSpec==='function')? residSpec() : null;
+    if(rs) rs.title='フィット残差（測った値 − フィットの値）';
+    need(46+fh+30);            /* 見出しだけ前のページに残さない */
+    head('フィットしたグラフと、フィット残差');
+    drawInto(g, M, y, fw, fh, fitSpec);
+    if(rs){
+      drawInto(g, M+fw+20, y, fw, fh, rs);
+      var sd=(typeof residSd==='function')? residSd() : null;
+      if(sd!==null){
+        g.fillStyle='#5b6672'; g.font='12px '+FONT;
+        g.fillText('残差の大きさ（RMS）＝ '+sig(sd,3), M+fw+20, y+fh+16);
+      }
+    }
+    g.fillStyle='#5b6672'; g.font='12px '+FONT;
+    g.fillText('点＝測った値、線＝フィットの式', M, y+fh+16);
+    y+=fh+34;
+  }
+  /* ---- 測定した値 ---- */
+  need(200);
+  drawReportTable(g, exp, M, y, W-2*M, H-70-y);
+  pages.forEach(function(cv,i){
+    var gg=cv.getContext('2d');
+    gg.fillStyle='#8a95a1'; gg.font='12px '+FONT;
+    gg.fillText('動画解析ツール（単一HTML・オフライン）', M, H-30);
+    if(pages.length>1) gg.fillText((i+1)+' / '+pages.length, W-M-40, H-30);
+  });
+  return pages;
+
+  function drawInto(gg, X, Y, w, h, spec){
+    var tmp=document.createElement('canvas');
+    drawChart(tmp, spec, {w:w, h:h, legend:true});
+    gg.drawImage(tmp, X, Y, w, h);
+    gg.strokeStyle='#d9dee4'; gg.lineWidth=1; gg.strokeRect(X,Y,w,h);
+  }
+  /* vy・ay だけのグラフ（右の列） */
+  function ySpecOf(e, kind){
+    var out=[], shapes=['dot','sq','tri'];
+    for(var ob=0; ob<NOBJ; ob++){
+      if(!expHasObj(e,ob)) continue;
+      var s=series(e,ob), base=OBJCOL[ob];
+      var nm=(APP.twoObj? ('物体'+(ob+1)) : (e.objName[ob]||'物体'));
+      if(kind==='vy') out.push({name:nm+' vy', color:base, shape:shapes[ob],
+        pts:s.filter(function(p){return p.vy!==null;}).map(function(p){return {x:p.t,y:p.vy};})});
+      else out.push({name:nm+' ay', color:base, shape:shapes[ob],
+        pts: APP.aFit? aByFit(s,'vy')
+           : s.filter(function(p){return p.ay!==null;}).map(function(p){return {x:p.t,y:p.ay};})});
+    }
+    return { title:(kind==='vy'?'vy – t':'ay – t'), xlab:'t [s]',
+             ylab:(kind==='vy'?'vy [m/s]':'ay [m/s²]'), series:out };
+  }
 }
+/* 1ページだけほしいとき（古い呼び出し用） */
+function buildReportCanvas(){ return buildReportPages()[0]; }
 function wrapText(g, text, x, y, maxW, lh){
   var words=text.split(''), line='', yy=y;
   for(var i=0;i<words.length;i++){
@@ -4375,19 +4631,31 @@ function drawReportTable(g, exp, x, y, w, h){
   }
 }
 function exportReportPng(){
-  var cv=buildReportCanvas();
+  var pages=buildReportPages();
+  if(pages.length===1){
+    pages[0].toBlob(function(b){ dl(b, fnameBase()+'_report.png'); toast('レポート（PNG）を保存しました'); }, 'image/png');
+    return;
+  }
+  /* 2ページ以上のときは、たてにつないで1枚の PNG にする */
+  var W=pages[0].width, H=pages[0].height;
+  var cv=document.createElement('canvas'); cv.width=W; cv.height=H*pages.length;
+  var g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+  pages.forEach(function(p2,i){ g.drawImage(p2, 0, i*H);
+    if(i){ g.strokeStyle='#c9d2dc'; g.lineWidth=2; g.beginPath(); g.moveTo(0,i*H); g.lineTo(W,i*H); g.stroke(); } });
   cv.toBlob(function(b){ dl(b, fnameBase()+'_report.png'); toast('レポート（PNG）を保存しました'); }, 'image/png');
 }
-/* --- 最小構成の PDF（JPEG を1枚貼る） --- */
+/* --- 最小構成の PDF（1ページに JPEG を1枚。ページ数ぶん並べる） --- */
 function exportReportPdf(){
-  var cv=buildReportCanvas();
-  var jpg=cv.toDataURL('image/jpeg', 0.88);
-  var bin=atob(jpg.split(',')[1]);
-  var img=new Uint8Array(bin.length);
-  for(var i=0;i<bin.length;i++) img[i]=bin.charCodeAt(i);
+  var pages=buildReportPages();
   var pw=595.28, ph=841.89;                       /* A4 pt */
-  var s=Math.min(pw/cv.width, ph/cv.height);
-  var w=cv.width*s, h=cv.height*s, ox=(pw-w)/2, oy=(ph-h)/2;
+  var imgs=pages.map(function(cv){
+    var jpg=cv.toDataURL('image/jpeg', 0.88);
+    var bin=atob(jpg.split(',')[1]);
+    var u=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    return { data:u, w:cv.width, h:cv.height };
+  });
+  var N=imgs.length;
   var chunks=[], offs=[], pos=0;
   function push(str){ var u=(typeof str==='string')? utf8(str) : str; chunks.push(u); pos+=u.length; }
   push('%PDF-1.4\n');
@@ -4397,30 +4665,49 @@ function exportReportPdf(){
     if(stream){ push('stream\n'); push(stream); push('\nendstream\n'); }
     push('endobj\n');
   }
+  /* 1:Catalog 2:Pages 3..: ページごとに Page / Image / Contents の3つ */
+  var kids=[];
+  for(var k=0;k<N;k++) kids.push((3+k*3)+' 0 R');
   obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
-  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw.toFixed(2)+' '+ph.toFixed(2)+
-        '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
-  obj(4,'<< /Type /XObject /Subtype /Image /Width '+cv.width+' /Height '+cv.height+
-        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>', img);
-  var cont='q\n'+w.toFixed(2)+' 0 0 '+h.toFixed(2)+' '+ox.toFixed(2)+' '+oy.toFixed(2)+' cm\n/Im0 Do\nQ\n';
-  obj(5,'<< /Length '+cont.length+' >>', cont);
+  obj(2,'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+N+' >>');
+  imgs.forEach(function(im,k){
+    var pn=3+k*3, inum=pn+1, cnum=pn+2;
+    var sc=Math.min(pw/im.w, ph/im.h);
+    var w=im.w*sc, h=im.h*sc, ox=(pw-w)/2, oy=(ph-h)/2;
+    obj(pn,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw.toFixed(2)+' '+ph.toFixed(2)+
+        '] /Resources << /XObject << /Im0 '+inum+' 0 R >> >> /Contents '+cnum+' 0 R >>');
+    obj(inum,'<< /Type /XObject /Subtype /Image /Width '+im.w+' /Height '+im.h+
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+im.data.length+' >>', im.data);
+    var cont='q\n'+w.toFixed(2)+' 0 0 '+h.toFixed(2)+' '+ox.toFixed(2)+' '+oy.toFixed(2)+' cm\n/Im0 Do\nQ\n';
+    obj(cnum,'<< /Length '+cont.length+' >>', cont);
+  });
+  var last=2+N*3;
   var xref=pos;
-  var x='xref\n0 6\n0000000000 65535 f \n';
-  for(var n=1;n<=5;n++) x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
-  x+='trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+  var x='xref\n0 '+(last+1)+'\n0000000000 65535 f \n';
+  for(var n=1;n<=last;n++) x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
+  x+='trailer\n<< /Size '+(last+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
   push(x);
   dl(new Blob(chunks,{type:'application/pdf'}), fnameBase()+'_report.pdf');
-  toast('レポート（PDF）を保存しました');
+  toast('レポート（PDF）を保存しました'+(N>1? '（'+N+'ページ）':''));
 }
 function exportGraphsPng(){
   var cards=els('#charts2 .chartcard canvas');
-  if(!cards.length){ toast('グラフがありません'); return; }
-  var cols=Math.min(2,cards.length), rows=Math.ceil(cards.length/cols);
-  var w=640, h=400, cv=document.createElement('canvas');
+  /* ③でフィットしていれば、フィットしたグラフと残差のプロットも一緒に出す */
+  els('#charts3 .chartcard canvas').forEach(function(c){ cards.push(c); });
+  var w=640, h=400;
+  var extra=[];
+  if(typeof residSpec==='function'){
+    var rs=residSpec();
+    if(rs){ var tmp=document.createElement('canvas');
+            drawChart(tmp, rs, {w:w, h:h, legend:true, fixed:true}); extra.push(tmp); }
+  }
+  var all=cards.concat(extra);
+  if(!all.length){ toast('グラフがありません'); return; }
+  var cols=Math.min(2,all.length), rows=Math.ceil(all.length/cols);
+  var cv=document.createElement('canvas');
   cv.width=w*cols; cv.height=h*rows;
   var g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
-  cards.forEach(function(c,i){ g.drawImage(c, (i%cols)*w, Math.floor(i/cols)*h, w, h); });
+  all.forEach(function(c,i){ g.drawImage(c, (i%cols)*w, Math.floor(i/cols)*h, w, h); });
   cv.toBlob(function(b){ dl(b, fnameBase()+'_graphs.png'); toast('グラフを保存しました'); },'image/png');
 }
 function saveStrobePng(){
@@ -4524,7 +4811,7 @@ function calMsg(html){
   m.innerHTML=html; m.classList.remove('hide');
   var h=$('vhint'); if(h) h.classList.add('hide');    /* 上の吹き出しとかさならないように */
   clearTimeout(m.__t);
-  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 9000);
+  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 6700);   /* 最初の 9.0 秒から 2.3 秒みじかく */
 }
 /* 読み込み中・コマ表づくり中は、ボタンを押せないようにする */
 function setBusy(on, msg, sub){
@@ -4554,7 +4841,7 @@ function setMode(m){
            radius:'探索半径を円のドラッグで決める'}[m]||'';
   $('modeInfo').textContent=lab;
   $('modeInfo').style.background = (m==='record')?'#eef2f7':'#fff3d6';
-  if(typeof APP.step==='number' && APP.step<4 && m==='record') $('modeInfo').textContent='まず '+stepName(APP.step)+' へ';
+  if(typeof APP.step==='number' && APP.step<4 && m==='record') $('modeInfo').textContent='';
   if(typeof APP.step==='number' && APP.step>0) updateTodo();
   ['btnOrigin','btnScale','btnAxis','btnRefPt','btnPickColor'].forEach(function(id){ $(id).classList.remove('on'); });
   if(m==='origin') $('btnOrigin').classList.add('on');
@@ -4613,8 +4900,9 @@ function autoMsgShow(html, ok, shortHtml, onClick){
       if(!UI.autoLost && !ok){ m.classList.add('hide'); return; }
       m.innerHTML=shortHtml;
       m.classList.remove('big'); m.classList.add('faint');
+      if(m.__act) m.classList.add('act');       /* 小さくなっても、押せば追跡が始まる */
       if(ok) m.__to=setTimeout(function(){ m.classList.add('hide'); }, 6000);
-    }, 3500);
+    }, 4500);
   } else {
     m.__to=setTimeout(function(){ m.classList.add('hide'); }, 4000);
   }
@@ -4972,6 +5260,7 @@ function updateSteps(){
     setStrobeOverlay(false);                          /* 4に入ったら重ねた写真は外す */
     if(window.innerWidth>=980) setSbs(true);          /* 4 では動画と表を並べておく */
   }
+  if(changed||edChanged) setTimeout(foldSideCards, 0);
   els('#side1 details[data-step]').forEach(function(d){
     var n=parseInt(d.dataset.step);
     d.classList.toggle('step-active', n===st || n===ed);
@@ -4997,7 +5286,8 @@ function updateSteps(){
     d.classList.toggle('step-lock', lock);
     if(changed){ if(lock) d.open=false; else if(d.id!=='autoCard') d.open=true; }
   });
-  $('modeInfo').textContent = (st<4 && UI.mode==='record')? ('まず '+stepName(st)+' へ') :
+  /* 「まず ○○ へ」は、いまその手順を操作しているときに出ると意味がないので出さない */
+  $('modeInfo').textContent = (st<4 && UI.mode==='record')? '' :
     ({record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
       scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
       color:'追いかけたい物体（始点）をクリック',
@@ -5008,6 +5298,25 @@ function updateSteps(){
   updateTodo();
   applyRangeLimit();
   updateGuide();
+}
+/* ===== メニューを左に置くか、上に集めるか ===== */
+function setMenuPos(pos){
+  APP.menuPos=(pos==='top')? 'top' : 'left';
+  var g=$('m1grid'); if(g) g.classList.toggle('top', APP.menuPos==='top');
+  var b=$('btnMenuPos'); if(b) b.textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
+  foldSideCards();
+  placePanelRsz();
+  setTimeout(function(){ if(VID.ready) render(); drawSeekMarks(); }, 50);
+}
+/* 上に集めているときは、いま使うカードだけを開いて、1段におさめる */
+function foldSideCards(){
+  if(APP.menuPos!=='top') return;
+  var st=effStep();
+  els('#side1 details').forEach(function(d){
+    var n=parseInt(d.dataset.step);
+    d.open = (n===st);                       /* 手順のカードは、いまの手順だけ開く */
+    if(isNaN(n)) d.open=false;               /* 操作説明・ストロボ・出力はたたむ */
+  });
 }
 /* ===== 物体の名前がほかとかぶっていないか ===== */
 function dupObjName(o){
@@ -5238,6 +5547,7 @@ function updateGuide(){
   els('.videobox').forEach(function(v){ v.classList.toggle('topbtn', topBtn); });
   updateVidMis();
   updateVBoxNarrow();
+  updateStroUI();
   var wantT0=false, wantB=false;
   if(show2){
     if(!APP.played){ ['btnPlay','btnPlay2'].forEach(function(id){ $(id).classList.add('glow'); }); }
@@ -5340,6 +5650,10 @@ function updateGuide(){
     }
   } else { clearTimeout(dm2.__t); dm2.__t=null; dm2.classList.remove('small'); }
   $('trkDone').classList.toggle('hide', !done);
+  /* 3 が終わっていることを、4 のカードでも分かるようにしておく */
+  var cok=$('calOkNote');
+  if(cok){ var e9=EXP();
+    cok.classList.toggle('hide', !(st>=4 && e9.origin && e9.originSet && e9.axisSet && e9.mPerPx>0)); }
   $('btnJsonSaveTop').classList.toggle('hide', !done);
   $('labYFlip').classList.toggle('hide', APP.axisDisp!=='xy');
   /* 色マーカーの自動追跡：始点と色 → 探索半径 → 最後まで自動追跡 の順に光らせる */
@@ -5574,7 +5888,8 @@ function todoText(){
     if(!n) return (APP.twoObj? '<b>物体番号</b>を選び、':'')+
       '動画の中の物体を<b>クリック（タップ）</b>して位置を記録してください。';
     if(trackingDone()) return '';           /* 終わったら「解析終了」の知らせにゆずる */
-    return 'コマを進めながら、同じ物体をクリックしていきます。おわったら <b>② グラフ</b> へ。';
+    return '物体をクリックするたびコマがすすみます。<br>'+
+           '<b>長押し</b>するとズームアップして、正確に点が打てます。';
   }
   return '';
 }
@@ -5753,6 +6068,23 @@ function applyNarrowLayout(){
     if(['howto','range','strobe','out'].indexOf(d.dataset.key)>=0) d.open=false;
   });
 }
+/* 「時間間隔調整」のつまみ → 何コマおきか */
+var STRO_STEPS=[1,2,5,10,20];
+function stroStepVal(){
+  var q=$('stroStep'); var i=q? (parseInt(q.value)||0) : 0;
+  return STRO_STEPS[Math.max(0, Math.min(STRO_STEPS.length-1, i))];
+}
+/* ストロボまわりの見た目（どこを光らせるか・いま何コマおきか） */
+function updateStroUI(){
+  var made=!!UI.stroReady, n=stroStepVal();
+  var t=$('stroTune'); if(t){ t.classList.toggle('hide', !made); t.classList.toggle('glow', made); }
+  var q=$('stroStepInfo'); if(q) q.textContent=n+' コマおき';
+  var b=$('btnStrobe'); if(b){
+    b.classList.toggle('glow', !made && VID.ready && effStep()>=4);
+    b.textContent = made? 'ストロボ画像を作り直す' : 'ストロボ画像を作る';
+  }
+  ['btnStroSave','btnStroClr'].forEach(function(id){ var x=$(id); if(x) x.disabled=!made; });
+}
 function clearStrobe(){
   UI.stroReady=false;
   UI.stroImg=null;
@@ -5761,6 +6093,8 @@ function clearStrobe(){
   cv.classList.add('hide');
   cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
   $('stroInfo').textContent='まだ作っていません';
+  if($('stroStep')) $('stroStep').value='0';       /* 1コマおきにもどす */
+  updateStroUI();
 }
 /* トラッキングした点を全部消して、解析範囲の最初にもどる */
 function resetTracking(obj){
@@ -6197,7 +6531,23 @@ function openWhatFit(){
    '<h3>使うときのコツ</h3>'+
    '<ul><li>グラフの<b>青い帯</b>で、フィットに使う範囲を選べます。'+
    '手を離す前や、ぶつかった後など「別の運動」の部分は外しましょう</li>'+
-   '<li>どの式を選ぶかは自分で決めます（等速なら直線、等加速度なら放物線、ばねなら正弦…）</li></ul>';
+   '<li>どの式を選ぶかは自分で決めます（等速なら直線、等加速度なら放物線、ばねなら正弦…）</li></ul>'+
+   '<h3>フィット残差とは</h3>'+
+   '<p><b>残差</b>は「<b>測った値 − 式の値</b>」、つまり上の図の<span style="color:#e8443a;font-weight:700">赤い点線</span>の長さ（符号つき）です。'+
+   'これを横軸 t にならべて点で描いたものが<b>フィット残差のプロット</b>です。</p>'+
+   '<p class="fml">残差 = y − ŷ　（＋なら式より上、−なら式より下）</p>'+
+   '<p>R² は「全体としてどれくらい合ったか」を1つの数にまとめたものなので、'+
+   '<b>どこで、どんなふうに合わなかったか</b>までは分かりません。残差のプロットはそこを見せてくれます。</p>'+
+   '<ul>'+
+   '<li><b>0 のまわりにばらばら</b>に散っている → その式でよく表せています。'+
+   '残っているのはクリックのずれ（偶然の誤差）だけ、ということです</li>'+
+   '<li><b>ゆるやかに曲がったかたより</b>がある（Uの字や逆Uの字）→ <b>式の形が合っていません</b>。'+
+   '直線でフィットしたけれど本当は放物線だった、空気抵抗や摩擦がはたらいていた、などが考えられます</li>'+
+   '<li><b>途中から急にずれる</b> → その時刻で運動が変わっています'+
+   '（手が離れた、ぶつかった、床についた…）。青い帯でそこを外してフィットし直します</li>'+
+   '<li><b>だんだん大きくなる／小さくなる</b> → 動画がぶれている、スケールが合っていない、なども疑えます</li></ul>'+
+   '<p class="mini">残差の大きさ（RMS）は、残差を2乗して平均し、ルートをとったものです。'+
+   '測った量と同じ単位なので、「だいたい何 m ずれているか」が分かります。</p>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
 }
@@ -6211,35 +6561,9 @@ function openHelp(){
   '<div class="note">画面の左（または上）のカードは <b>1 → 2 → 3 → 4 の順</b>に進みます。'+
   'いま作業するところが<b>オレンジ色に光り</b>、終わったところは薄くなります。'+
   '3 まで終わると、4 のトラッキングと 5・6 が使えるようになります。</div>'+
-  '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
-  '<p>動画は<b>コマ（フレーム）</b>がぱらぱらと並んだものです。1 秒あたりのコマ数が <b>fps</b> ですが、'+
-  'スマホやタブレットの動画は<b>コマの間隔がいつも同じとは限りません</b>（可変フレームレート）。'+
-  'そこでこのツールは「1 コマ＝ 1/30 秒」のような決め打ちをせず、<b>コマ 1 枚ごとの本当の時刻</b>を測って使います。</p>'+
-  '<svg width="100%" viewBox="0 0 640 250" style="max-width:640px;background:#fff;border:1px solid var(--line);border-radius:9px"><text x="8" y="18" font-size="12" fill="#5b6672">動画＝コマ（フレーム）の並び</text><rect x="34" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="48" cy="62" r="5" fill="#e8443a"/><text x="70" y="44" font-size="10" text-anchor="middle" fill="#5b6672">1 枚目</text><line x1="70" y1="82" x2="34.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="120" y="28" width="72" height="52" rx="5" fill="#e6f6ea" stroke="#1c8f4a" stroke-width="2"/><circle cx="141" cy="62" r="5" fill="#e8443a"/><text x="156" y="44" font-size="10" text-anchor="middle" fill="#5b6672">2 枚目</text><line x1="156" y1="82" x2="110.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="206" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="234" cy="62" r="5" fill="#e8443a"/><text x="242" y="44" font-size="10" text-anchor="middle" fill="#5b6672">3 枚目</text><line x1="242" y1="82" x2="189.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="292" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="327" cy="62" r="5" fill="#e8443a"/><text x="328" y="44" font-size="10" text-anchor="middle" fill="#5b6672">4 枚目</text><line x1="328" y1="82" x2="305.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="378" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="420" cy="62" r="5" fill="#e8443a"/><text x="414" y="44" font-size="10" text-anchor="middle" fill="#5b6672">5 枚目</text><line x1="414" y1="82" x2="382.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="464" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="513" cy="62" r="5" fill="#e8443a"/><text x="500" y="44" font-size="10" text-anchor="middle" fill="#5b6672">6 枚目</text><line x1="500" y1="82" x2="458.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="550" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="606" cy="62" r="5" fill="#e8443a"/><text x="586" y="44" font-size="10" text-anchor="middle" fill="#5b6672">7 枚目</text><line x1="586" y1="82" x2="537.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><line x1="20" y1="152" x2="628" y2="152" stroke="#5b6672" stroke-width="1.5"/><text x="628" y="143" font-size="11" text-anchor="end" fill="#5b6672">動画の中の時刻 [s]</text><line x1="34.0" y1="145" x2="34.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="34.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.000</text><line x1="110.56" y1="145" x2="110.56" y2="159" stroke="#1c8f4a" stroke-width="2"/><text x="110.56" y="186" font-size="10" text-anchor="middle" fill="#1c8f4a">0.033</text><line x1="189.44" y1="145" x2="189.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="189.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.067</text><line x1="305.44" y1="145" x2="305.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="305.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.117</text><line x1="382.0" y1="145" x2="382.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="382.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.150</text><line x1="458.56" y1="145" x2="458.56" y2="159" stroke="#1663b5" stroke-width="2"/><text x="458.56" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.183</text><line x1="537.44" y1="145" x2="537.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="537.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.217</text><text x="110.56" y="206" font-size="11" text-anchor="middle" fill="#1c8f4a" font-weight="bold">↑ t = 0 に選んだコマ</text><path d="M189.44 134 L305.44 134" stroke="#e8443a" stroke-width="1.5"/><text x="247.44" y="128" font-size="10" text-anchor="middle" fill="#e8443a">ここだけ間隔が広い</text><text x="20" y="232" font-size="11" fill="#333">4 枚目に打った点の時刻 t = 0.117 − 0.033 = <tspan font-weight="bold">0.084 s</tspan>（1/30 秒の決め打ちではない）</text></svg>'+
-  '<ol>'+
-  '<li><b>測る</b>：動画を読み込むと、いちど最後まで再生しながら、ブラウザから'+
-  '「いま画面に出したコマの時刻」を 1 枚ずつ受け取ります'+
-  '（<code>requestVideoFrameCallback</code> という仕組み）。'+
-  'こうして「1 枚目＝0.000 秒、2 枚目＝0.033 秒、3 枚目＝0.067 秒…」という<b>時刻の一覧</b>ができます。'+
-  '2 のカードに出る「<b>45 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
-  '<li><b>取りこぼしを埋める</b>：再生が速くて受け取れなかったコマは、'+
-  'あとでそのコマへシークして測り直し、一覧のすきまを埋めます</li>'+
-  '<li><b>使う</b>：点を記録するときは、いま画面に出ているコマが一覧の何番目かを調べ、'+
-  '<b>その時刻をそのまま</b>その点の時刻にします。'+
-  '表やグラフの t は、そこから <b>［この時刻をt = 0］で選んだコマの時刻を引いた値</b>です</li>'+
-  '</ol>'+
-  '<p>コマ送りも、この一覧の<b>となりのコマへ移る</b>形で進みます。'+
-  'だから <b>fps は「1 コマがおよそ何秒か」の目安</b>であって、記録される時刻そのものには使っていません。'+
-  'fps 欄の横に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
-  '<p class="mini">※ この仕組みが使えないブラウザ（Firefox など）では、'+
-  '<b>1 コマ＝ 1/fps 秒</b>として計算します。このときだけ fps の値が時刻に効くので、'+
-  '必要なら fps 欄を手で直してください。'+
-  'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
-  '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
-  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>'+
   '<h3>1. 動画を読みこむ</h3>'+
   '<p>「<b>動画を選択</b>」から選ぶか、<b>動画エリアをクリック</b>するか、<b>画面にドラッグ＆ドロップ</b>します。サンプル動画も使えます。'+
-  '読み込むと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（下の「時刻はどうやって求めているか」）。'+
+  '読み込むと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（いちばん下の「時刻はどうやって求めているか」）。'+
   'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います。</p>'+
   '<p>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します。</p>'+
   '<p>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）。</p>'+
@@ -6356,10 +6680,37 @@ function openHelp(){
   '<li><b>測定データを保存</b>は、解析が終わると<b>上のバー</b>に出ます。'+
   '<b>過去測定データを実験○に登録</b>も上のバーにあります</li>'+
   '<li><b>測定データ、グラフをまとめてExcel出力</b>（②）：表とグラフの入った .xlsx になります</li>'+
-  '<li>この端末のブラウザにも自動保存されます。共用の端末では、終わったら「保存データを消去」を押してください</li></ul>'+
+  '<li>この端末のブラウザにも自動保存されます。同じ動画をもう一度開くと、続きからできます。'+
+  'みんなで使う端末では、終わったら上の段の「すべての実験を消してリセット」を押してください</li></ul>'+
   '<h3>精度について</h3>'+
   '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
-  '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>';
+  '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>'+
+  '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
+  '<p>動画は<b>コマ（フレーム）</b>がぱらぱらと並んだものです。1 秒あたりのコマ数が <b>fps</b> ですが、'+
+  'スマホやタブレットの動画は<b>コマの間隔がいつも同じとは限りません</b>（可変フレームレート）。'+
+  'そこでこのツールは「1 コマ＝ 1/30 秒」のような決め打ちをせず、<b>コマ 1 枚ごとの本当の時刻</b>を測って使います。</p>'+
+  '<svg width="100%" viewBox="0 0 640 250" style="max-width:640px;background:#fff;border:1px solid var(--line);border-radius:9px"><text x="8" y="18" font-size="12" fill="#5b6672">動画＝コマ（フレーム）の並び</text><rect x="34" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="48" cy="62" r="5" fill="#e8443a"/><text x="70" y="44" font-size="10" text-anchor="middle" fill="#5b6672">1 枚目</text><line x1="70" y1="82" x2="34.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="120" y="28" width="72" height="52" rx="5" fill="#e6f6ea" stroke="#1c8f4a" stroke-width="2"/><circle cx="141" cy="62" r="5" fill="#e8443a"/><text x="156" y="44" font-size="10" text-anchor="middle" fill="#5b6672">2 枚目</text><line x1="156" y1="82" x2="110.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="206" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="234" cy="62" r="5" fill="#e8443a"/><text x="242" y="44" font-size="10" text-anchor="middle" fill="#5b6672">3 枚目</text><line x1="242" y1="82" x2="189.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="292" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="327" cy="62" r="5" fill="#e8443a"/><text x="328" y="44" font-size="10" text-anchor="middle" fill="#5b6672">4 枚目</text><line x1="328" y1="82" x2="305.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="378" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="420" cy="62" r="5" fill="#e8443a"/><text x="414" y="44" font-size="10" text-anchor="middle" fill="#5b6672">5 枚目</text><line x1="414" y1="82" x2="382.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="464" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="513" cy="62" r="5" fill="#e8443a"/><text x="500" y="44" font-size="10" text-anchor="middle" fill="#5b6672">6 枚目</text><line x1="500" y1="82" x2="458.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="550" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="606" cy="62" r="5" fill="#e8443a"/><text x="586" y="44" font-size="10" text-anchor="middle" fill="#5b6672">7 枚目</text><line x1="586" y1="82" x2="537.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><line x1="20" y1="152" x2="628" y2="152" stroke="#5b6672" stroke-width="1.5"/><text x="628" y="143" font-size="11" text-anchor="end" fill="#5b6672">動画の中の時刻 [s]</text><line x1="34.0" y1="145" x2="34.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="34.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.000</text><line x1="110.56" y1="145" x2="110.56" y2="159" stroke="#1c8f4a" stroke-width="2"/><text x="110.56" y="186" font-size="10" text-anchor="middle" fill="#1c8f4a">0.033</text><line x1="189.44" y1="145" x2="189.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="189.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.067</text><line x1="305.44" y1="145" x2="305.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="305.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.117</text><line x1="382.0" y1="145" x2="382.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="382.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.150</text><line x1="458.56" y1="145" x2="458.56" y2="159" stroke="#1663b5" stroke-width="2"/><text x="458.56" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.183</text><line x1="537.44" y1="145" x2="537.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="537.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.217</text><text x="110.56" y="206" font-size="11" text-anchor="middle" fill="#1c8f4a" font-weight="bold">↑ t = 0 に選んだコマ</text><path d="M189.44 134 L305.44 134" stroke="#e8443a" stroke-width="1.5"/><text x="247.44" y="128" font-size="10" text-anchor="middle" fill="#e8443a">ここだけ間隔が広い</text><text x="20" y="232" font-size="11" fill="#333">4 枚目に打った点の時刻 t = 0.117 − 0.033 = <tspan font-weight="bold">0.084 s</tspan>（1/30 秒の決め打ちではない）</text></svg>'+
+  '<ol>'+
+  '<li><b>測る</b>：動画を読み込むと、いちど最後まで再生しながら、ブラウザから'+
+  '「いま画面に出したコマの時刻」を 1 枚ずつ受け取ります'+
+  '（<code>requestVideoFrameCallback</code> という仕組み）。'+
+  'こうして「1 枚目＝0.000 秒、2 枚目＝0.033 秒、3 枚目＝0.067 秒…」という<b>時刻の一覧</b>ができます。'+
+  '2 のカードに出る「<b>45 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
+  '<li><b>取りこぼしを埋める</b>：再生が速くて受け取れなかったコマは、'+
+  'あとでそのコマへシークして測り直し、一覧のすきまを埋めます</li>'+
+  '<li><b>使う</b>：点を記録するときは、いま画面に出ているコマが一覧の何番目かを調べ、'+
+  '<b>その時刻をそのまま</b>その点の時刻にします。'+
+  '表やグラフの t は、そこから <b>［この時刻をt = 0］で選んだコマの時刻を引いた値</b>です</li>'+
+  '</ol>'+
+  '<p>コマ送りも、この一覧の<b>となりのコマへ移る</b>形で進みます。'+
+  'だから <b>fps は「1 コマがおよそ何秒か」の目安</b>であって、記録される時刻そのものには使っていません。'+
+  'fps 欄の横に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
+  '<p class="mini">※ この仕組みが使えないブラウザ（Firefox など）では、'+
+  '<b>1 コマ＝ 1/fps 秒</b>として計算します。このときだけ fps の値が時刻に効くので、'+
+  '必要なら fps 欄を手で直してください。'+
+  'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
+  '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
+  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
 }
@@ -6658,6 +7009,10 @@ function bindUI(){
      動画エリアの中をクリックしたときは、そのクリックは「消すだけ」に使う（記録や設定には使わない）。 */
   document.addEventListener('pointerdown', function(ev){
     if(!bigMsgOpen()) return;
+    /* 「見つけました！ 最後まで追跡 しますか？」のように押せる知らせは、
+       ここで消してしまうと click が届かない。そのまま通す。 */
+    var am=$('autoMsg');
+    if(am && am.__act && ev.target && ev.target.closest && ev.target.closest('#autoMsg')) return;
     var inVideo = ev.target && ev.target.closest && ev.target.closest('#videobox');
     closeBigMsg();
     if(inVideo && !(ev.target.tagName==='BUTTON' || (ev.target.closest && ev.target.closest('button')))){
@@ -6682,10 +7037,8 @@ function bindUI(){
   /* ヘッダ */
   $('btnHelp').onclick=openHelp;
   $('btnMenuPos').onclick=function(){
-    APP.menuPos=(APP.menuPos==='left')?'top':'left';
-    $('m1grid').classList.toggle('top', APP.menuPos==='top');
-    this.textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
-    saveLocal(); setTimeout(render,50);
+    setMenuPos(APP.menuPos==='left'? 'top' : 'left');
+    saveLocal();
   };
   $('cbTeacher').onchange=function(){
     $('teacherBox').classList.toggle('hide', !this.checked);
@@ -6798,6 +7151,8 @@ function bindUI(){
   $('btnPlay2').onclick=togglePlay;
   $('btnTimeZero2').onclick=function(){ $('btnTimeZero').click(); };
   $('btnRangeB2').onclick=function(){ $('btnRangeB').click(); };
+  $('btnRangeClr2').onclick=function(){ $('btnRangeClr').click(); };
+  $('btnStep2Next2').onclick=function(){ $('btnStep2Next').click(); };
   $('vhintX').onclick=function(e){ e.stopPropagation(); $('vhint').__closed=true; $('vhint').classList.add('hide'); };
   $('bigPlay').onclick=togglePlay;
   $('btnHead').onclick=$('btnHead2').onclick=function(){
@@ -7053,8 +7408,20 @@ function askResetPts(go){
   };
 
   /* ストロボ */
-  $('btnStrobe').onclick=function(){ $('btnStrobe').disabled=true;
-    makeStrobe().then(function(){ $('btnStrobe').disabled=false; }); };
+  $('btnStrobe').onclick=function(){
+    $('btnStrobe').disabled=true;
+    makeStrobe().then(function(){
+      $('btnStrobe').disabled=false;
+      $('stroTune').classList.remove('hide');   /* 作ったあとに「時間間隔調整」を出す */
+      updateStroUI();
+    });
+  };
+  $('stroStep').oninput=function(){ updateStroUI(); };
+  $('stroStep').onchange=function(){
+    if(!UI.stroReady){ updateStroUI(); return; }
+    $('btnStrobe').disabled=true;
+    makeStrobe().then(function(){ $('btnStrobe').disabled=false; updateStroUI(); });
+  };
   $('btnStroSave').onclick=function(){ askSaveName('ストロボ画像', saveStrobePng); };
   $('btnStroClr').onclick=function(){
     clearStrobe(); toast('ストロボ画像を消しました');
@@ -7080,13 +7447,12 @@ function askResetPts(go){
   $('btnReportPng2').onclick=askThen('レポート（PNG）', exportReportPng);
   $('btnReportPdf2').onclick=askThen('レポート（PDF）', exportReportPdf);
   $('btnKadai').onclick=openKadaiDialog;
-  $('btnWipe').onclick=function(){
-    if(!confirm('この端末に自動保存されている測定データを消します。よろしいですか？')) return;
-    wipeLocal();
-    APP.exps=[newExp(1)]; APP.cur=0; UI.undo=[];
-    refreshExpUI(); afterChange(); render(); toast('保存データを消しました');
-  };
   $('btnXlsx').onclick=askThen('Excel', exportXlsx);
+  /* ③にも同じ出力ボタン（CSV は置かない） */
+  $('btnReportPng3').onclick=askThen('レポート（PNG）', exportReportPng);
+  $('btnReportPdf3').onclick=askThen('レポート（PDF）', exportReportPdf);
+  $('btnXlsx3').onclick=askThen('Excel', exportXlsx);
+  $('btnGraphPng3').onclick=askThen('グラフの画像', exportGraphsPng);
   $('btnGraphPng').onclick=askThen('グラフの画像', exportGraphsPng);
 
   /* 再生・コマ送り */
@@ -7219,7 +7585,7 @@ var seekBusy=false;
   bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries();
   addAgainButtons(); bindEditEnd(); buildCG(); bindCG();
   refreshExpUI();
-  $('m1grid').classList.toggle('top', APP.menuPos==='top');
+  setMenuPos(APP.menuPos);
   $('btnMenuPos').textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
   setTwoObj(APP.twoObj, true);
   setMode('record');

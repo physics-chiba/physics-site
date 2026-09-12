@@ -96,7 +96,17 @@ body.novidrsz #vidRsz{display:none}
 .wrap{padding:10px}
 .m1grid{display:grid;grid-template-columns:var(--panelw) minmax(0,1fr);gap:12px;align-items:start}
 .m1grid.top{grid-template-columns:minmax(0,1fr)}
-.m1grid.top .side{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;align-items:start}
+/* 「メニュー：上」＝メニューを上に集めるとき。
+   いま使うカードだけを開き、終わったカードは見出しだけの細い札にして、かならず1段におさめる */
+.m1grid.top .side{display:flex;flex-direction:row;flex-wrap:nowrap;gap:8px;align-items:flex-start;
+  overflow-x:auto;padding-bottom:4px}
+.m1grid.top .side>details{flex:0 0 auto;max-width:100%}
+.m1grid.top .side>details:not([open]){padding:8px 10px}
+.m1grid.top .side>details:not([open])>summary{white-space:nowrap}
+.m1grid.top .side>details[open]{flex:0 1 auto;width:340px;min-width:250px;
+  max-height:30vh;overflow-y:auto;overscroll-behavior:contain}
+/* 上に集めているときは、幅を変えるつまみは出さない（動画の左はしに縦線が出て紛らわしい） */
+.m1grid.top #panelRsz{display:none}
 .side{display:flex;flex-direction:column;gap:10px;min-width:0}
 .rightcol{display:flex;flex-direction:column;gap:12px;min-width:0}
 /* 狭い画面：動画を先頭に出し、操作パネルはその下（カードはたたむ） */
@@ -174,6 +184,14 @@ select.selbtn{padding:9px 2px;font-family:inherit;color:inherit;font-size:.88rem
 .seg .btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .seg.big .btn{font-size:.9rem;font-weight:700;padding:8px 14px}
 /* 消すボタン（赤） */
+/* ストロボの「時間間隔調整」 */
+.strotune{margin:6px 0 2px;padding:6px 8px 4px;border:1px solid #e2c98a;border-radius:9px;background:#fffaf0}
+.strotune.glow{border-color:var(--orange);background:#fff3d6;box-shadow:0 0 0 3px rgba(224,123,24,.28)}
+.strotune input[type=range]{width:100%;margin:2px 0 0;accent-color:var(--orange)}
+.strotune .lb{font-weight:700;color:#8a5300}
+.strotune .tag{background:#fff;border:1px solid #e2c98a;color:#8a5300}
+.strotick{display:flex;justify-content:space-between;font-size:.72rem;color:#8a5300;
+  font-family:var(--mono);padding:0 2px}
 .btn.danger{background:#fdecea;border-color:#e3a49d;color:#a8281c;font-weight:700}
 .btn.danger:hover{background:#f9d8d4}
 .btn.danger:active{background:#f3c4be}
@@ -218,8 +236,11 @@ label.koma.sw.on{background:#1c8f4a;border-color:#166f3a;color:#fff}
 .m2body.live .m2tbl{display:none}
 .livenote{margin:0 0 8px;background:#e7f2fd;border:1px solid #9cc3e8;color:#0d4d94;
   border-radius:9px;padding:7px 10px;font-size:.86rem;font-weight:700;line-height:1.5}
-/* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける） */
-.m2body.live{display:grid;grid-template-columns:minmax(190px,38%) minmax(0,1fr);gap:12px;align-items:start}
+/* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける）。
+   左の列は「グラフの実際の幅」までにして、あいだに無駄なすき間を作らない */
+.m2body.live{display:grid;grid-template-columns:minmax(190px,max-content) minmax(0,1fr);
+  gap:12px;align-items:start}
+.m2body.live .m2charts>*{width:max-content;max-width:100%}
 .m2body.live .m2charts{flex:none;min-width:0}
 .m2body.live .m2live{flex:none;min-width:0}
 .m2body.live .gwrap{flex-direction:column}
@@ -378,6 +399,8 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 #doneMsg.small{left:8px;top:auto;bottom:20px;transform:none;font-size:.8rem;font-weight:600;
   padding:4px 10px;background:rgba(28,143,74,.55);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:70%}
 #doneMsg.small:hover{background:rgba(22,120,62,.9)}
+.calok{background:#f2f8f3;border:1px solid #b9dcc4;border-radius:8px;padding:4px 9px;color:#1c6b3c}
+.calok b{color:#155c33}
 .donemsg{margin:.2em 0 .5em;color:#1c8f4a;font-weight:700;font-size:.94rem;
   background:#e7f6ed;border:1px solid #9fd8b6;border-radius:9px;padding:6px 9px;cursor:pointer}
 .donemsg:hover{background:#d8f0e2}
@@ -435,7 +458,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .donet{position:absolute;top:7px;font-size:.7rem;font-weight:700;color:#12603a;background:#e9f6ee;
   border:1px solid #9fd3b4;border-radius:6px;padding:0 5px;white-space:nowrap;pointer-events:none;z-index:4}
 .btn.nextpt{background:#1c8f4a;border-color:#177a3f;color:#fff;font-weight:700}
-.awayrow{margin:6px 0 0;gap:8px;align-items:center}
+.awayrow{margin:6px 0 0;gap:8px;align-items:center;flex-wrap:wrap}
 .awayrow .seg .btn{font-size:.78rem;padding:3px 9px;min-height:26px;
   background:#eaf2fb;border-color:#b7d3ef;color:var(--accent-d)}
 .awayrow .seg .btn.on{background:#1663b5;border-color:#0f4c8f;color:#fff;font-weight:700}
@@ -444,9 +467,26 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .btn.nextpt:hover{background:#177a3f}
 .sub .subhead{position:relative}
 .sub .subnote{float:right;font-weight:400;font-size:.72rem;color:var(--sub);line-height:1.25;text-align:right}
-.stepbtns{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
-.stepbtns .btn{min-width:46px;padding:8px 6px;font-family:var(--mono);font-size:.85rem}
-.stepbtns .btn.n{background:#fff8e8;border-color:#e2c98a}
+/* コマ送りのボタン。もどる（赤）／すすむ（緑）の2つのまとまりを1段にならべる */
+.stepbtns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.stepgrp{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.steprow{display:flex;gap:3px;flex-wrap:nowrap}
+.stepbtns .btn{min-width:44px;padding:8px 5px;font-family:var(--mono);font-size:.85rem}
+.stepbtns .btn.back{background:#fff4f2;border-color:#e3a79e;color:#a5342a;font-weight:700}
+.stepbtns .btn.back:hover{background:#fde8e4}
+.stepbtns .btn.fwd{background:#f1fbf5;border-color:#9ed2b4;color:#136b39;font-weight:700}
+.stepbtns .btn.fwd:hover{background:#e2f6ea}
+.stepbtns .btn.n{box-shadow:0 0 0 2px #f4dfae inset}
+/* ボタンの下の小さな吹き出し（もどる・すすむ） */
+.steplab{font-size:.72rem;font-weight:700;border-radius:7px;padding:1px 9px;position:relative;
+  border:1px solid transparent;line-height:1.5}
+.steplab::before{content:"";position:absolute;left:50%;top:-5px;margin-left:-4px;
+  border:4px solid transparent;border-bottom-width:5px}
+.steplab.back{background:#fff4f2;border-color:#e3a79e;color:#a5342a}
+.steplab.back::before{border-bottom-color:#e3a79e}
+.steplab.fwd{background:#f1fbf5;border-color:#9ed2b4;color:#136b39}
+.steplab.fwd::before{border-bottom-color:#9ed2b4}
+@media(max-width:520px){ .stepbtns{gap:8px} .stepbtns .btn{min-width:36px;padding:7px 2px;font-size:.76rem} }
 .tline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.86rem;color:var(--sub)}
 .tline .val{color:var(--ink)}
 
@@ -570,6 +610,14 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .chartcard .dydt{position:absolute;right:96px;top:5px;z-index:2;min-height:24px;font-size:.74rem;
   color:var(--sub);background:#f4f6f9;border:1px solid var(--line);border-radius:7px;padding:0 6px;gap:4px}
 .chartcard .dydt input{width:14px;height:14px}
+/* グラフのすぐ下・右よせ：スケールフィット */
+.chartcard .fitrow{display:flex;justify-content:flex-end;margin:2px 2px 0}
+.chartcard .fitbtn{min-height:26px;padding:2px 9px;
+  display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;
+  background:#eef6ff;border:1px solid #9cc3e8;color:#0d4d94;border-radius:8px;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.chartcard .fitbtn:hover{background:#dce7f4}
+.chartcard .fitbtn:active{background:#cddff2}
 .chartcard .maxbtn{position:absolute;right:6px;top:5px;z-index:2;min-height:26px;padding:1px 8px;
   font-size:.74rem;background:#eef3f9;border:1px solid #b9c3cf;border-radius:7px;color:#39434e}
 .chartcard .maxbtn:hover{background:#dce7f4}
@@ -808,6 +856,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <summary>4. トラッキング</summary>
       <p class="todo hide"></p>
       <p class="donemsg hide" id="trkDone" title="②グラフへ">解析終了。グラフを表示してみよう</p>
+      <p class="mini calok" id="calOkNote">原点・x軸・スケールは<b>設定ずみ</b>です（直すときは <b>3</b> の［もう一度］へ）。</p>
       <div id="objBox" class="hide">
         <label class="f" id="labObjNum">物体番号
           <select id="selObj"><option value="1">1</option><option value="2">2</option></select>
@@ -886,9 +935,16 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <details class="card" data-key="strobe" data-lock="4">
       <summary>5. ストロボ画像</summary>
       <div class="row">
-        <label class="f">使うコマ
-          <select id="selStroSrc"><option value="pts">記録した点のコマ</option><option value="step">範囲を N コマおき</option></select>
-        </label>
+        <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
+      </div>
+      <div id="stroTune" class="strotune hide">
+        <div class="row">
+          <span class="lb" id="lbStroStep">時間間隔調整</span>
+          <span class="tag" id="stroStepInfo">1 コマおき</span>
+        </div>
+        <input type="range" id="stroStep" min="0" max="4" step="1" value="0"
+               title="何コマおきに重ねるかを決めます">
+        <div class="strotick"><span>1</span><span>2</span><span>5</span><span>10</span><span>20</span></div>
       </div>
       <div class="row">
         <label class="f">重ね方
@@ -897,9 +953,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <label class="cb"><input type="checkbox" id="cbStroPts" checked>点も描く</label>
       </div>
       <div class="row">
-        <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
         <button class="btn sm" id="btnStroSave">PNG保存</button>
-        <button class="btn sm" id="btnStroClr">画像をリセット</button>
+        <button class="btn sm danger" id="btnStroClr">画像をリセット</button>
       </div>
     </details>
 
@@ -919,10 +974,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       次の実験番号として追加されます（前の実験や去年のデータと並べて比べられます）。
       提出もこのファイルで行います。</p>
       <div class="hr"></div>
-      <div class="row">
-        <button class="btn sm" id="btnWipe">保存データを消去</button>
-      </div>
-      <p class="mini" id="saveState">自動保存：ON</p>
+      <p class="mini" id="saveState">トラッキングデータ等は自動保存されます。動画をもう一度開くと続きからできます。</p>
+      <p class="mini">消したいときは、上の段の <b>［この実験の測定を消去］</b>（いまの実験だけ）か
+      <b>［すべての実験を消してリセット］</b>（この端末に保存したぶんも全部）を使ってください。
+      みんなで使う端末では、終わったら <b>［すべての実験を消してリセット］</b> を押します。</p>
     </details>
 
   </div><!-- /side -->
@@ -979,26 +1034,36 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
           <span class="callout hide" id="coTimeZero2">解析を始めたいコマで押す</span></span>
         <span class="btnwrap"><button class="btn sm" id="btnRangeB2">この時刻まで解析</button>
           <span class="callout hide" id="coRangeB2">解析を終わりたいコマで押す</span></span>
+        <button class="btn sm danger" id="btnRangeClr2">範囲を解除</button>
+        <button class="btn sm" id="btnStep2Next2">このままでよい → 次へ</button>
       </div>
       <div class="stepbtns">
-        <button class="btn sm n" data-step="-n">←N</button>
-        <button class="btn sm" data-step="-10">←10</button>
-        <button class="btn sm" data-step="-8">←8</button>
-        <button class="btn sm" data-step="-5">←5</button>
-        <button class="btn sm" data-step="-1">←1</button>
-        <button class="btn sm" data-step="1">1→</button>
-        <button class="btn sm" data-step="5">5→</button>
-        <button class="btn sm" data-step="8">8→</button>
-        <button class="btn sm" data-step="10">10→</button>
-        <button class="btn sm n" data-step="n">N→</button>
+        <div class="stepgrp back">
+          <div class="steprow">
+            <button class="btn sm n back" data-step="-n">←N</button>
+            <button class="btn sm back" data-step="-10">←10</button>
+            <button class="btn sm back" data-step="-5">←5</button>
+            <button class="btn sm back" data-step="-1">←1</button>
+          </div>
+          <span class="steplab back">もどる</span>
+        </div>
+        <div class="stepgrp fwd">
+          <div class="steprow">
+            <button class="btn sm fwd" data-step="1">1→</button>
+            <button class="btn sm fwd" data-step="5">5→</button>
+            <button class="btn sm fwd" data-step="10">10→</button>
+            <button class="btn sm n fwd" data-step="n">N→</button>
+          </div>
+          <span class="steplab fwd">すすむ</span>
+        </div>
       </div>
       <div class="tline">
         <span>コマ <span class="val" id="frInfo">-/-</span></span>
         <span>t = <span class="val" id="tInfo">-</span> s</span>
         <span id="modeInfo" class="tag">クリックで記録</span>
         <span class="sp" style="flex:1"></span>
-        <button class="btn sm blue" id="btnCrop2">トリミング</button>
-        <button class="btn sm" id="btnCropClr2">全体に戻す</button>
+        <button class="btn sm blue" id="btnCrop2">動画をトリミング（端を切る）</button>
+        <button class="btn sm" id="btnCropClr2">トリミングをリセット</button>
       </div>
       <p class="mini hide" id="hintLine">タップした所にはルーペが出ます。そのままドラッグで微調整できます。</p>
     </div>
@@ -1031,8 +1096,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row">
         <span id="cmpBox"><b style="color:var(--accent-d)">表示</b>
         <select id="selCmp"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
-        <span class="lb mini">対象の実験：</span>
-        <span class="explist" id="expChecks"></span>
+        <span id="expBox2"><span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks"></span></span>
         <span class="lb mini hide" id="lbObjSel">対象の物体：</span>
         <span class="explist hide" id="objChecks"></span>
       </div>
@@ -1040,6 +1105,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm" id="btnGBig">グラフを拡大</button>
         <button class="btn sm" id="btnGSmall">縮小</button>
         <button class="btn sm" id="btnGReset">スケールをリセット</button>
+        <button class="btn sm blue" id="btnGFitAll" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
         <span style="width:10px"></span>
         <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
         <label class="cb" id="labGY"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
@@ -1102,18 +1168,22 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 <!-- ================= モード3 ================= -->
 <section id="mode3" class="hide">
-  <div class="card m2top">
+  <div class="card m2top" id="m3top">
     <div class="m2left">
+      <div class="row" style="margin-bottom:8px">
+        <label class="tabchk" id="labM3Min"><input type="checkbox" id="cbM3Min">このメニューを最小化</label>
+      </div>
       <div class="row">
         <span id="cmpBox3"><b style="color:var(--accent-d)">表示</b>
         <select id="selCmp3"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
-        <span class="lb mini">対象の実験：</span>
-        <span class="explist" id="expChecks3"></span>
+        <span id="expBox3"><span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks3"></span></span>
       </div>
       <div class="row" style="margin-top:6px">
         <button class="btn sm" id="btnGBig3">グラフを拡大</button>
         <button class="btn sm" id="btnGSmall3">縮小</button>
         <button class="btn sm" id="btnGReset3">スケールをリセット</button>
+        <button class="btn sm blue" id="btnGFitAll3" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
       </div>
     </div>
   </div>
@@ -1163,9 +1233,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <div class="cgrid">
     <div class="cgTop">
       <span class="cgpick"><span class="lb">縦軸</span>
-        <select id="cgExpA" title="実験"></select><select id="cgObjA" title="物体"></select></span>
+        <select id="cgExpA" title="実験" class="hide"></select><select id="cgObjA" title="物体"></select></span>
       <span class="cgpick hide" id="cgPickB"><span class="lb">縦軸2</span>
-        <select id="cgExpB" title="実験"></select><select id="cgObjB" title="物体"></select></span>
+        <select id="cgExpB" title="実験" class="hide"></select><select id="cgObjB" title="物体"></select></span>
     </div>
     <div class="cgY">
       <div class="lb">縦軸</div>
@@ -1265,7 +1335,7 @@ function newExp(n){
   return o;
 }
 var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1, aFit:false,
-  bigView:false, m2menu:true, panelw:352, vidh:0,
+  bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330,
@@ -1522,7 +1592,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -1569,6 +1639,7 @@ function applyState(st){
   APP.aFit=!!st.aFit;
   if(st.panelw>=0 && st.panelw!==undefined) APP.panelw=st.panelw;
   if(st.m2menu!==undefined) APP.m2menu=!!st.m2menu;
+  if(st.m3menu!==undefined) APP.m3menu=!!st.m3menu;
   if(st.vidh>=0 && st.vidh!==undefined) APP.vidh=st.vidh;
   return true;
 }
@@ -1592,7 +1663,9 @@ function showSaveState(){
     el0.innerHTML='<b class="ng">自動保存できていません</b>（この画面に置ける量を超えました）。'+
                   'CSV や Excel で保存してください。';
   } else {
-    el0.textContent='自動保存：'+(APP.autosave?'ON':'OFF');
+    el0.textContent = APP.autosave?
+      'トラッキングデータ等は自動保存されます。動画をもう一度開くと続きからできます。' :
+      '自動保存はOFFです。';
   }
 }
 function loadLocal(){
@@ -2016,7 +2089,7 @@ function updateCropInfo(){
   ['btnCrop','btnCrop2'].forEach(function(id){
     var q=$(id); if(!q) return;
     q.classList.toggle('on', UI.mode==='crop');
-    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : (id==='btnCrop'? '動画をトリミング（端を切る）' : 'トリミング');
+    q.textContent = (UI.mode==='crop')? 'トリミングをやめる' : '動画をトリミング（端を切る）';
   });
 }
 
@@ -2051,7 +2124,7 @@ function drawOverlay(){
     var c=Math.cos(exp.angle), s=Math.sin(exp.angle);
     g.save();
     /* 4. トラッキング中は、物体が見えるように軸を薄くする */
-    if(effStep()>=4) g.globalAlpha=0.30;
+    if(effStep()>=4) g.globalAlpha=0.45;      /* 4 でも「原点と軸は決まっている」と分かる濃さに */
     g.strokeStyle='rgba(255,215,0,.95)'; g.lineWidth=LW; g.setLineDash([]);
     /* x軸 */
     var xd = exp.xflip? -1 : 1;
@@ -2090,6 +2163,19 @@ function drawOverlay(){
       labelAt(g,'原点', o.x, o.y-rr-14*sc, '#ff5a5a', 34*sc);
     }
     g.restore();
+    /* 4 のあいだも、原点だけははっきり見せる（設定できていないと勘違いしないように） */
+    if(effStep()>=4 && exp.originSet){
+      g.save();
+      g.lineWidth=Math.max(2, 3*sc);
+      g.strokeStyle='rgba(0,0,0,.55)';
+      g.beginPath(); g.arc(o.x,o.y,9*sc,0,7); g.stroke();
+      g.strokeStyle='#ff5a5a';
+      g.beginPath(); g.arc(o.x,o.y,9*sc,0,7); g.stroke();
+      g.beginPath(); g.moveTo(o.x-14*sc,o.y); g.lineTo(o.x+14*sc,o.y);
+      g.moveTo(o.x,o.y-14*sc); g.lineTo(o.x,o.y+14*sc); g.stroke();
+      labelAt(g,'原点', o.x, o.y-22*sc, '#ff5a5a', 17*sc);
+      g.restore();
+    }
   }
   /* --- スケールの線（②の再生中は出さない） --- */
   if(exp.scaleRef && !LIVE.on){
@@ -2759,7 +2845,6 @@ function autoRunAll(){
 function makeStrobe(preview){
   var exp=EXP(), cv=$('cvStrobe');
   var mode=preview? 'diff' : $('selStroMode').value;
-  var src=preview? 'step' : $('selStroSrc').value;
   var times=[];
   if(preview){
     var a0=rangeStart(exp), b0=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
@@ -2770,12 +2855,8 @@ function makeStrobe(preview){
     } else {
       for(var tq=a0; tq<=b0; tq+=(b0-a0)/14) times.push(tq);
     }
-  } else if(src==='pts'){
-    var seen={};
-    for(var ob=0; ob<NOBJ; ob++) exp.objs[ob].forEach(function(p){ var k=p.t.toFixed(4); if(!seen[k]){seen[k]=1; times.push(p.t);} });
-    times.sort(function(a,b){return a-b;});
-  }else{
-    var N=parseInt($('inStepN').value)||5;
+  } else {
+    var N=stroStepVal();                 /* 「時間間隔調整」で決めた、何コマおきか */
     var a=rangeStart(exp), b=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
     if(VID.frames.length>1){
       var i0=frameIndexAt(a), i1=frameIndexAt(b);
@@ -2815,6 +2896,7 @@ function makeStrobe(preview){
       if(!preview && $('cbStroPts').checked) drawStrobePoints(g);
       $('stroInfo').textContent=times.length+' コマを合成しました'+(preview?'（仮）':'');
       UI.stroReady=true; $('cvStrobe').classList.remove('hide');
+      if(typeof updateStroUI==='function') updateStroUI();
       if(preview){                       /* 動画に重ねる用に控えておく */
         var oc=document.createElement('canvas');
         oc.width=cv.width; oc.height=cv.height;
@@ -2906,6 +2988,49 @@ var GV = { x:{}, y:{} };
 /* クリックで選んだデータ点（key＝そのグラフ、xk＝横軸の種類、x,y＝値） */
 var SEL = { key:null, xk:null, x:null, y:null, lab:'', d:null };
 function gvReset(){ GV.x={}; GV.y={}; }
+/* ===== スケールフィット =====
+   いま出ているデータが、グラフの枠いっぱいに気持ちよく収まるように
+   軸の最小・最大を「目盛りの切りのよい値」までひろげてそろえる。
+   例）値が -0.05〜0.4 なら、縦軸は -0.1〜0.5 になる。 */
+function fitSpecRange(spec){
+  if(!spec) return false;
+  /* 横軸（t）は動かさない。いま見えている横軸の範囲に入っている点だけを見て、
+     縦軸の最小・最大と目盛りを合わせる（見たい時間のところを、ちょうどよい大きさで見せる） */
+  var xk=spec.xkey||null;
+  var lim=(xk && GV.x[xk])? GV.x[xk] : null;
+  var ys=[];
+  (spec.series||[]).forEach(function(s){
+    (s.pts||[]).forEach(function(p){
+      if(!isFinite(p.x)||!isFinite(p.y)) return;
+      if(lim && (p.x<lim.a || p.x>lim.b)) return;   /* 見えていない所は数えない */
+      ys.push(p.y);
+    });
+  });
+  if(!ys.length) return false;
+  var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
+  if(!(y1-y0>1e-12)){                              /* 見えているのが1点だけのとき */
+    var hw=Math.max(Math.abs(y0)*0.1, 1e-6);
+    y0-=hw; y1+=hw;
+  }
+  var m=(y1-y0)*0.05; y0-=m; y1+=m;               /* すこし余白をとってから */
+  var st=niceStep(y1-y0, 5);                       /* 目盛りの切りのよい値へ */
+  y0=Math.floor(y0/st)*st; y1=Math.ceil(y1/st)*st;
+  if(!(y1-y0>1e-12)){ y0-=st; y1+=st; }
+  if(!spec.key) return false;
+  GV.y[spec.key]={a:y0, b:y1};
+  return true;
+}
+/* いま画面に出ているグラフを、まとめてスケールフィットする */
+function fitAllCharts(){
+  var n=0;
+  els('.chartcard canvas').forEach(function(cv){
+    if(cv.__spec && fitSpecRange(cv.__spec)) n++;
+  });
+  if(!n){ toast('スケールを合わせるデータがありません'); return 0; }
+  redrawAllCharts();
+  toast(n+' 個のグラフのスケールを合わせました');
+  return n;
+}
 function selClear(){ SEL={key:null, xk:null, x:null, y:null, lab:'', d:null}; }
 /* 表示のたんい（位置は cm、速度は cm/s、加速度は cm/s²） */
 function unitOf(lab){
@@ -3335,6 +3460,7 @@ function renderMode2(){
   /* 「他の実験を重ねて表示」は、実験が2つ以上あるときだけ選べる */
   var manyExp=(APP.exps.length>1);
   $('cmpBox').classList.toggle('hide', !manyExp);
+  if($('expBox2')) $('expBox2').classList.toggle('hide', !manyExp);
   if(!manyExp && $('selCmp').value==='over'){ $('selCmp').value='side'; over=false; }
   /* x の組は、y のデータがあるときだけ OFF にできる（無いときは常に ON） */
   var hasY=useY();
@@ -3371,6 +3497,7 @@ function renderMode2(){
     if(cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); renderCG(); }
     return;
   }
+  var cgBelow=false;
   blocks.forEach(function(b, bi){
     var blk=document.createElement('div'); blk.className='gblock';
     var t=document.createElement('h3'); t.textContent=b.label; blk.appendChild(t);
@@ -3387,23 +3514,19 @@ function renderMode2(){
       wrap.appendChild(col); colNodes.push(col); return col;
     }
     if(showX) addCol(['x','vx','ax'], showE);
-    var ycol = showY? addCol(['y','vy','ay'], showE&&!showX) : null;
+    if(showY) addCol(['y','vy','ay'], showE&&!showX);
     /* 自由選択グラフは、最初のブロック（物体1）だけに置く。
        「動画と一緒に再生」のときは、グラフの下（cgHost2）に移す */
-    if(bi===0 && cgc && !live){
-      cgc.classList.remove('hide');
-      if(ycol) ycol.appendChild(cgc);                 /* y列があれば、その下 */
-      else {                                           /* 無ければ x列の右 */
-        var cc=document.createElement('div'); cc.className='gcol';
-        cc.appendChild(cgc); wrap.appendChild(cc); colNodes.push(cc);
-      }
-    }
+    /* 自由選択グラフは、グラフのならびの「下」に置く。
+       横にならべると場所が足りず、グラフが小さくなってしまうため。 */
+    if(bi===0 && cgc && !live){ cgc.classList.remove('hide'); cgBelow=true; }
     wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
     blk.appendChild(wrap); host.appendChild(blk);
   });
   /* 「動画と一緒に再生」のときは、自由選択グラフは②ぜんぶの下に置く
      （グラフの列が広がって、動画とのあいだにすき間ができないように） */
   if(live && cgc){ $('cgHostLive').appendChild(cgc); cgc.classList.remove('hide'); }
+  else if(cgBelow && cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); }
   if(cgc && cgc.parentNode) renderCG();
   if(live) setTimeout(alignLive, 30);
 }
@@ -3411,6 +3534,11 @@ var EXPAND_ICON='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="tr
   '<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'+
   '<path d="M10 4H4v6"/><path d="M4 4l7 7"/><path d="M14 4h6v6"/><path d="M20 4l-7 7"/>'+
   '<path d="M10 20H4v-6"/><path d="M4 20l7-7"/><path d="M14 20h6v-6"/><path d="M20 20l-7-7"/></g></svg>';
+/* スケールフィットのアイコン（枠の中に点が収まる様子） */
+var FIT_ICON='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">'+
+  '<g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">'+
+  '<rect x="3" y="4" width="18" height="16" rx="2"/>'+
+  '<path d="M7 16l3.5-4 3 2.5L17 8"/></g></svg>';
 /* 選んだ点の値を、グラフの上（最大化ボタンの左）に出す */
 function readoutHtml(spec){
   if(SEL.x===null || SEL.key!==spec.key) return '';
@@ -3463,9 +3591,22 @@ function chartCard(title, spec, curves, w, h){
   b.innerHTML=EXPAND_ICON+' 最大化';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
   d.appendChild(b);
+  /* グラフのすぐ下・右よせ：このグラフだけスケールフィット
+     （枠の中に重ねると、横軸の文字にかぶるので、流れの中に置く） */
+  var fr=document.createElement('div'); fr.className='fitrow';
+  var fb=document.createElement('button'); fb.className='fitbtn';
+  fb.innerHTML=FIT_ICON+' スケールフィット';
+  fb.title='いまのデータが枠いっぱいに収まるように、軸の目盛りを合わせます';
+  fb.onclick=function(ev){ ev.preventDefault(); ev.stopPropagation();
+    if(!fitSpecRange(spec)){ toast('スケールを合わせるデータがありません'); return; }
+    redrawAllCharts(); toast('このグラフのスケールを合わせました');
+  };
+  fr.appendChild(fb);
+  d.insertBefore(fr, cv.nextSibling);
   /* 加速度のグラフ：出し方をえらぶボタンと、ばらつきの目安 */
   if(/^a/.test(String(spec.ylab||''))){
     var row=document.createElement('div'); row.className='row awayrow';
+    row.style.maxWidth=w+'px';        /* ボタンが多くてもグラフの幅を広げない */
     var seg=document.createElement('span'); seg.className='seg';
     var b1=document.createElement('button');
     b1.className='btn sm'+(APP.aFit?'':' on'); b1.textContent='v の差から計算';
@@ -3549,6 +3690,7 @@ function renderMode3(doFitNow){
   /* 「表示」のえらび方は、実験が2つ以上あるときだけ出す */
   var manyExp3=(APP.exps.length>1);
   if($('cmpBox3')) $('cmpBox3').classList.toggle('hide', !manyExp3);
+  if($('expBox3')) $('expBox3').classList.toggle('hide', !manyExp3);
   if(!manyExp3 && over){ $('selCmp3').value='side'; over=false; }
   var ids=selectedExps('expChecks3');
   var res=[];
@@ -3716,11 +3858,20 @@ function cgSpec(){
 }
 /* 自由選択グラフの大きさ（他のグラフと同じ「拡大／縮小」に合わせる） */
 function cgWidth(){
-  /* 右にフィット結果をならべるので、グラフ自体はひかえめの幅にする */
-  var w=Math.round(APP.gsize*0.66);
-  var win=window.innerWidth||900;
-  var avail=win - (win<820? 90 : 640);
-  return Math.max(230, Math.min(420, Math.max(230, Math.min(w, avail))));
+  /* 上のグラフより小さいと見にくいので、大きめにとる（前の2倍）。
+     ただし、置いてある場所からはみ出さないところまで。 */
+  var w=Math.round(APP.gsize*1.32);
+  var card=$('cgCard');
+  var win=(document.documentElement && document.documentElement.clientWidth) || window.innerWidth || 900;
+  /* このカードが置かれている場所から、画面の右はしまでの残りで決める */
+  var left=0;
+  if(card){ var r=card.getBoundingClientRect(); if(r.width>0) left=Math.max(0, r.left); }
+  var box=Math.max(300, win-left-20);
+  /* 左の「縦軸」えらびと、③のときは右のフィット結果のぶんを空ける */
+  var side=(APP.tab==='3')? 430 : 210;
+  if(box<560) side=40;
+  var avail=box - side;
+  return Math.max(260, Math.min(840, Math.max(260, Math.min(w, avail))));
 }
 function cgOnRange(which, v){        /* 自由選択グラフのつまみをドラッグしたとき */
   var c=APP.cg, pa=cgPoints(c.expA,c.objA,c.qA,c.invA,c.xq,c.invX);
@@ -3738,9 +3889,18 @@ function renderCG(){
   var host=$('cgCard'); if(!host) return;
   var spec=cgSpec();
   var eq=$('cgEqualNote'); if(eq) eq.classList.toggle('hide', !spec.equal);
+  var cv=$('cgCanvas');
   var w=cgWidth();
-  drawChart($('cgCanvas'), spec, {w:w, h:Math.round(w*(spec.equal?0.8:0.575)), legend:true, fixed:true});
-  bindChartDrag($('cgCanvas'), cgOnRange);
+  var draw=function(ww){
+    drawChart(cv, spec, {w:ww, h:Math.round(ww*(spec.equal?0.8:0.575)), legend:true, fixed:true});
+  };
+  draw(w);
+  /* はみ出していたら、実際のはみ出し量ぶんだけ縮めて描き直す（1回だけ） */
+  var win=(document.documentElement && document.documentElement.clientWidth) || window.innerWidth || 900;
+  var r=host.getBoundingClientRect();
+  var over=Math.round(r.right - (win-12));
+  if(over>2 && w-over>=260) draw(w-over);
+  bindChartDrag(cv, cgOnRange);
 }
 function cgDoFit(kind){
   var c=APP.cg;
@@ -4404,7 +4564,7 @@ function calMsg(html){
   m.innerHTML=html; m.classList.remove('hide');
   var h=$('vhint'); if(h) h.classList.add('hide');    /* 上の吹き出しとかさならないように */
   clearTimeout(m.__t);
-  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 9000);
+  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 8200);   /* 前より 0.8 秒みじかく */
 }
 /* 読み込み中・コマ表づくり中は、ボタンを押せないようにする */
 function setBusy(on, msg, sub){
@@ -4434,7 +4594,7 @@ function setMode(m){
            radius:'探索半径を円のドラッグで決める'}[m]||'';
   $('modeInfo').textContent=lab;
   $('modeInfo').style.background = (m==='record')?'#eef2f7':'#fff3d6';
-  if(typeof APP.step==='number' && APP.step<4 && m==='record') $('modeInfo').textContent='まず '+stepName(APP.step)+' へ';
+  if(typeof APP.step==='number' && APP.step<4 && m==='record') $('modeInfo').textContent='';
   if(typeof APP.step==='number' && APP.step>0) updateTodo();
   ['btnOrigin','btnScale','btnAxis','btnRefPt','btnPickColor'].forEach(function(id){ $(id).classList.remove('on'); });
   if(m==='origin') $('btnOrigin').classList.add('on');
@@ -4493,8 +4653,9 @@ function autoMsgShow(html, ok, shortHtml, onClick){
       if(!UI.autoLost && !ok){ m.classList.add('hide'); return; }
       m.innerHTML=shortHtml;
       m.classList.remove('big'); m.classList.add('faint');
+      if(m.__act) m.classList.add('act');       /* 小さくなっても、押せば追跡が始まる */
       if(ok) m.__to=setTimeout(function(){ m.classList.add('hide'); }, 6000);
-    }, 3500);
+    }, 4500);
   } else {
     m.__to=setTimeout(function(){ m.classList.add('hide'); }, 4000);
   }
@@ -4852,6 +5013,7 @@ function updateSteps(){
     setStrobeOverlay(false);                          /* 4に入ったら重ねた写真は外す */
     if(window.innerWidth>=980) setSbs(true);          /* 4 では動画と表を並べておく */
   }
+  if(changed||edChanged) setTimeout(foldSideCards, 0);
   els('#side1 details[data-step]').forEach(function(d){
     var n=parseInt(d.dataset.step);
     d.classList.toggle('step-active', n===st || n===ed);
@@ -4877,7 +5039,8 @@ function updateSteps(){
     d.classList.toggle('step-lock', lock);
     if(changed){ if(lock) d.open=false; else if(d.id!=='autoCard') d.open=true; }
   });
-  $('modeInfo').textContent = (st<4 && UI.mode==='record')? ('まず '+stepName(st)+' へ') :
+  /* 「まず ○○ へ」は、いまその手順を操作しているときに出ると意味がないので出さない */
+  $('modeInfo').textContent = (st<4 && UI.mode==='record')? '' :
     ({record:'クリックで記録', origin:'原点をクリック', scale1:'長さのわかる 1点目をクリック',
       scale2:'2点目をクリック', axis:'x軸の向きへドラッグ', ref:'動かない目印をクリック',
       color:'追いかけたい物体（始点）をクリック',
@@ -4888,6 +5051,25 @@ function updateSteps(){
   updateTodo();
   applyRangeLimit();
   updateGuide();
+}
+/* ===== メニューを左に置くか、上に集めるか ===== */
+function setMenuPos(pos){
+  APP.menuPos=(pos==='top')? 'top' : 'left';
+  var g=$('m1grid'); if(g) g.classList.toggle('top', APP.menuPos==='top');
+  var b=$('btnMenuPos'); if(b) b.textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
+  foldSideCards();
+  placePanelRsz();
+  setTimeout(function(){ if(VID.ready) render(); drawSeekMarks(); }, 50);
+}
+/* 上に集めているときは、いま使うカードだけを開いて、1段におさめる */
+function foldSideCards(){
+  if(APP.menuPos!=='top') return;
+  var st=effStep();
+  els('#side1 details').forEach(function(d){
+    var n=parseInt(d.dataset.step);
+    d.open = (n===st);                       /* 手順のカードは、いまの手順だけ開く */
+    if(isNaN(n)) d.open=false;               /* 操作説明・ストロボ・出力はたたむ */
+  });
 }
 /* ===== 物体の名前がほかとかぶっていないか ===== */
 function dupObjName(o){
@@ -4955,15 +5137,33 @@ function setBigView(on){
   }
   setTimeout(function(){ if(VID.ready) render(); drawSeekMarks(); redrawAllCharts(); }, 60);
 }
-/* ===== ②の上のメニューを畳む ===== */
-function setM2Menu(open){
-  APP.m2menu=!!open;
-  $('m2top').classList.toggle('hide', !APP.m2menu);
-  $('cbM2Min').checked=!APP.m2menu;
-  $('cbM2MenuTop').checked=APP.m2menu;
-  $('labM2Menu').classList.toggle('hide', !(APP.tab==='2' && !APP.m2menu));
-  $('labM2Menu').classList.toggle('on', !APP.m2menu);
+/* ===== ②・③の上のメニューを畳む ===== */
+function setM2Menu(open){ setMenuOpen('2', open); }
+function setM3Menu(open){ setMenuOpen('3', open); }
+function setMenuOpen(tab, open){
+  if(tab==='3'){
+    APP.m3menu=!!open;
+    if($('m3top')) $('m3top').classList.toggle('hide', !APP.m3menu);
+    if($('cbM3Min')) $('cbM3Min').checked=!APP.m3menu;
+  } else {
+    APP.m2menu=!!open;
+    $('m2top').classList.toggle('hide', !APP.m2menu);
+    $('cbM2Min').checked=!APP.m2menu;
+  }
+  updateMenuChip();
   setTimeout(function(){ redrawAllCharts(); alignLive(); }, 40);
+}
+/* タブの段に出す「②グラフメニューを開く／③解析メニューを開く」 */
+function updateMenuChip(){
+  var lab=$('labM2Menu'); if(!lab) return;
+  var t=APP.tab;
+  var min=(t==='2' && !APP.m2menu) || (t==='3' && !APP.m3menu);
+  lab.classList.toggle('hide', !min);
+  lab.classList.toggle('on', min);
+  $('cbM2MenuTop').checked=!min;
+  var txt=(t==='3')? '③解析メニューを開く' : '②グラフメニューを開く';
+  var last=lab.lastChild;
+  if(last && last.nodeType===3) last.nodeValue=txt;
 }
 /* ===== 操作パネルの幅（動画エリアの大きさ） ===== */
 function setPanelW(w){
@@ -5100,6 +5300,7 @@ function updateGuide(){
   els('.videobox').forEach(function(v){ v.classList.toggle('topbtn', topBtn); });
   updateVidMis();
   updateVBoxNarrow();
+  updateStroUI();
   var wantT0=false, wantB=false;
   if(show2){
     if(!APP.played){ ['btnPlay','btnPlay2'].forEach(function(id){ $(id).classList.add('glow'); }); }
@@ -5202,6 +5403,10 @@ function updateGuide(){
     }
   } else { clearTimeout(dm2.__t); dm2.__t=null; dm2.classList.remove('small'); }
   $('trkDone').classList.toggle('hide', !done);
+  /* 3 が終わっていることを、4 のカードでも分かるようにしておく */
+  var cok=$('calOkNote');
+  if(cok){ var e9=EXP();
+    cok.classList.toggle('hide', !(st>=4 && e9.origin && e9.originSet && e9.axisSet && e9.mPerPx>0)); }
   $('btnJsonSaveTop').classList.toggle('hide', !done);
   $('labYFlip').classList.toggle('hide', APP.axisDisp!=='xy');
   /* 色マーカーの自動追跡：始点と色 → 探索半径 → 最後まで自動追跡 の順に光らせる */
@@ -5355,6 +5560,11 @@ function refreshObjUI(){
     q.classList.toggle('hide', !two);
     els('option', q).forEach(function(o,i){ o.hidden=(i>=nObj()); });
   });
+  /* 実験も物体もえらばないときは、「縦軸」のラベルだけが浮くので、まとまりごと消す */
+  var pk=el('.cgTop .cgpick');
+  if(pk) pk.classList.toggle('hide', !two);
+  var pkT=$('cgTop')||el('.cgTop');
+  if(pkT) pkT.classList.toggle('hide', !two);
   /* ②の「対象の物体」 */
   var oc=$('objChecks');
   if(oc){
@@ -5431,7 +5641,8 @@ function todoText(){
     if(!n) return (APP.twoObj? '<b>物体番号</b>を選び、':'')+
       '動画の中の物体を<b>クリック（タップ）</b>して位置を記録してください。';
     if(trackingDone()) return '';           /* 終わったら「解析終了」の知らせにゆずる */
-    return 'コマを進めながら、同じ物体をクリックしていきます。おわったら <b>② グラフ</b> へ。';
+    return '物体をクリックするたびコマがすすみます。<br>'+
+           '<b>長押し</b>するとズームアップして、正確に点が打てます。';
   }
   return '';
 }
@@ -5610,6 +5821,23 @@ function applyNarrowLayout(){
     if(['howto','range','strobe','out'].indexOf(d.dataset.key)>=0) d.open=false;
   });
 }
+/* 「時間間隔調整」のつまみ → 何コマおきか */
+var STRO_STEPS=[1,2,5,10,20];
+function stroStepVal(){
+  var q=$('stroStep'); var i=q? (parseInt(q.value)||0) : 0;
+  return STRO_STEPS[Math.max(0, Math.min(STRO_STEPS.length-1, i))];
+}
+/* ストロボまわりの見た目（どこを光らせるか・いま何コマおきか） */
+function updateStroUI(){
+  var made=!!UI.stroReady, n=stroStepVal();
+  var t=$('stroTune'); if(t){ t.classList.toggle('hide', !made); t.classList.toggle('glow', made); }
+  var q=$('stroStepInfo'); if(q) q.textContent=n+' コマおき';
+  var b=$('btnStrobe'); if(b){
+    b.classList.toggle('glow', !made && VID.ready && effStep()>=4);
+    b.textContent = made? 'ストロボ画像を作り直す' : 'ストロボ画像を作る';
+  }
+  ['btnStroSave','btnStroClr'].forEach(function(id){ var x=$(id); if(x) x.disabled=!made; });
+}
 function clearStrobe(){
   UI.stroReady=false;
   UI.stroImg=null;
@@ -5618,6 +5846,8 @@ function clearStrobe(){
   cv.classList.add('hide');
   cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
   $('stroInfo').textContent='まだ作っていません';
+  if($('stroStep')) $('stroStep').value='0';       /* 1コマおきにもどす */
+  updateStroUI();
 }
 /* トラッキングした点を全部消して、解析範囲の最初にもどる */
 function resetTracking(obj){
@@ -6068,35 +6298,9 @@ function openHelp(){
   '<div class="note">画面の左（または上）のカードは <b>1 → 2 → 3 → 4 の順</b>に進みます。'+
   'いま作業するところが<b>オレンジ色に光り</b>、終わったところは薄くなります。'+
   '3 まで終わると、4 のトラッキングと 5・6 が使えるようになります。</div>'+
-  '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
-  '<p>動画は<b>コマ（フレーム）</b>がぱらぱらと並んだものです。1 秒あたりのコマ数が <b>fps</b> ですが、'+
-  'スマホやタブレットの動画は<b>コマの間隔がいつも同じとは限りません</b>（可変フレームレート）。'+
-  'そこでこのツールは「1 コマ＝ 1/30 秒」のような決め打ちをせず、<b>コマ 1 枚ごとの本当の時刻</b>を測って使います。</p>'+
-  '<svg width="100%" viewBox="0 0 640 250" style="max-width:640px;background:#fff;border:1px solid var(--line);border-radius:9px"><text x="8" y="18" font-size="12" fill="#5b6672">動画＝コマ（フレーム）の並び</text><rect x="34" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="48" cy="62" r="5" fill="#e8443a"/><text x="70" y="44" font-size="10" text-anchor="middle" fill="#5b6672">1 枚目</text><line x1="70" y1="82" x2="34.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="120" y="28" width="72" height="52" rx="5" fill="#e6f6ea" stroke="#1c8f4a" stroke-width="2"/><circle cx="141" cy="62" r="5" fill="#e8443a"/><text x="156" y="44" font-size="10" text-anchor="middle" fill="#5b6672">2 枚目</text><line x1="156" y1="82" x2="110.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="206" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="234" cy="62" r="5" fill="#e8443a"/><text x="242" y="44" font-size="10" text-anchor="middle" fill="#5b6672">3 枚目</text><line x1="242" y1="82" x2="189.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="292" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="327" cy="62" r="5" fill="#e8443a"/><text x="328" y="44" font-size="10" text-anchor="middle" fill="#5b6672">4 枚目</text><line x1="328" y1="82" x2="305.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="378" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="420" cy="62" r="5" fill="#e8443a"/><text x="414" y="44" font-size="10" text-anchor="middle" fill="#5b6672">5 枚目</text><line x1="414" y1="82" x2="382.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="464" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="513" cy="62" r="5" fill="#e8443a"/><text x="500" y="44" font-size="10" text-anchor="middle" fill="#5b6672">6 枚目</text><line x1="500" y1="82" x2="458.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="550" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="606" cy="62" r="5" fill="#e8443a"/><text x="586" y="44" font-size="10" text-anchor="middle" fill="#5b6672">7 枚目</text><line x1="586" y1="82" x2="537.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><line x1="20" y1="152" x2="628" y2="152" stroke="#5b6672" stroke-width="1.5"/><text x="628" y="143" font-size="11" text-anchor="end" fill="#5b6672">動画の中の時刻 [s]</text><line x1="34.0" y1="145" x2="34.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="34.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.000</text><line x1="110.56" y1="145" x2="110.56" y2="159" stroke="#1c8f4a" stroke-width="2"/><text x="110.56" y="186" font-size="10" text-anchor="middle" fill="#1c8f4a">0.033</text><line x1="189.44" y1="145" x2="189.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="189.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.067</text><line x1="305.44" y1="145" x2="305.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="305.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.117</text><line x1="382.0" y1="145" x2="382.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="382.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.150</text><line x1="458.56" y1="145" x2="458.56" y2="159" stroke="#1663b5" stroke-width="2"/><text x="458.56" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.183</text><line x1="537.44" y1="145" x2="537.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="537.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.217</text><text x="110.56" y="206" font-size="11" text-anchor="middle" fill="#1c8f4a" font-weight="bold">↑ t = 0 に選んだコマ</text><path d="M189.44 134 L305.44 134" stroke="#e8443a" stroke-width="1.5"/><text x="247.44" y="128" font-size="10" text-anchor="middle" fill="#e8443a">ここだけ間隔が広い</text><text x="20" y="232" font-size="11" fill="#333">4 枚目に打った点の時刻 t = 0.117 − 0.033 = <tspan font-weight="bold">0.084 s</tspan>（1/30 秒の決め打ちではない）</text></svg>'+
-  '<ol>'+
-  '<li><b>測る</b>：動画を読み込むと、いちど最後まで再生しながら、ブラウザから'+
-  '「いま画面に出したコマの時刻」を 1 枚ずつ受け取ります'+
-  '（<code>requestVideoFrameCallback</code> という仕組み）。'+
-  'こうして「1 枚目＝0.000 秒、2 枚目＝0.033 秒、3 枚目＝0.067 秒…」という<b>時刻の一覧</b>ができます。'+
-  '2 のカードに出る「<b>45 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
-  '<li><b>取りこぼしを埋める</b>：再生が速くて受け取れなかったコマは、'+
-  'あとでそのコマへシークして測り直し、一覧のすきまを埋めます</li>'+
-  '<li><b>使う</b>：点を記録するときは、いま画面に出ているコマが一覧の何番目かを調べ、'+
-  '<b>その時刻をそのまま</b>その点の時刻にします。'+
-  '表やグラフの t は、そこから <b>［この時刻をt = 0］で選んだコマの時刻を引いた値</b>です</li>'+
-  '</ol>'+
-  '<p>コマ送りも、この一覧の<b>となりのコマへ移る</b>形で進みます。'+
-  'だから <b>fps は「1 コマがおよそ何秒か」の目安</b>であって、記録される時刻そのものには使っていません。'+
-  'fps 欄の横に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
-  '<p class="mini">※ この仕組みが使えないブラウザ（Firefox など）では、'+
-  '<b>1 コマ＝ 1/fps 秒</b>として計算します。このときだけ fps の値が時刻に効くので、'+
-  '必要なら fps 欄を手で直してください。'+
-  'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
-  '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
-  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>'+
   '<h3>1. 動画を読みこむ</h3>'+
   '<p>「<b>動画を選択</b>」から選ぶか、<b>動画エリアをクリック</b>するか、<b>画面にドラッグ＆ドロップ</b>します。サンプル動画も使えます。'+
-  '読み込むと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（下の「時刻はどうやって求めているか」）。'+
+  '読み込むと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（いちばん下の「時刻はどうやって求めているか」）。'+
   'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います。</p>'+
   '<p>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します。</p>'+
   '<p>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）。</p>'+
@@ -6213,10 +6417,37 @@ function openHelp(){
   '<li><b>測定データを保存</b>は、解析が終わると<b>上のバー</b>に出ます。'+
   '<b>過去測定データを実験○に登録</b>も上のバーにあります</li>'+
   '<li><b>測定データ、グラフをまとめてExcel出力</b>（②）：表とグラフの入った .xlsx になります</li>'+
-  '<li>この端末のブラウザにも自動保存されます。共用の端末では、終わったら「保存データを消去」を押してください</li></ul>'+
+  '<li>この端末のブラウザにも自動保存されます。同じ動画をもう一度開くと、続きからできます。'+
+  'みんなで使う端末では、終わったら上の段の「すべての実験を消してリセット」を押してください</li></ul>'+
   '<h3>精度について</h3>'+
   '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
-  '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>';
+  '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>'+
+  '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
+  '<p>動画は<b>コマ（フレーム）</b>がぱらぱらと並んだものです。1 秒あたりのコマ数が <b>fps</b> ですが、'+
+  'スマホやタブレットの動画は<b>コマの間隔がいつも同じとは限りません</b>（可変フレームレート）。'+
+  'そこでこのツールは「1 コマ＝ 1/30 秒」のような決め打ちをせず、<b>コマ 1 枚ごとの本当の時刻</b>を測って使います。</p>'+
+  '<svg width="100%" viewBox="0 0 640 250" style="max-width:640px;background:#fff;border:1px solid var(--line);border-radius:9px"><text x="8" y="18" font-size="12" fill="#5b6672">動画＝コマ（フレーム）の並び</text><rect x="34" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="48" cy="62" r="5" fill="#e8443a"/><text x="70" y="44" font-size="10" text-anchor="middle" fill="#5b6672">1 枚目</text><line x1="70" y1="82" x2="34.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="120" y="28" width="72" height="52" rx="5" fill="#e6f6ea" stroke="#1c8f4a" stroke-width="2"/><circle cx="141" cy="62" r="5" fill="#e8443a"/><text x="156" y="44" font-size="10" text-anchor="middle" fill="#5b6672">2 枚目</text><line x1="156" y1="82" x2="110.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="206" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="234" cy="62" r="5" fill="#e8443a"/><text x="242" y="44" font-size="10" text-anchor="middle" fill="#5b6672">3 枚目</text><line x1="242" y1="82" x2="189.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="292" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="327" cy="62" r="5" fill="#e8443a"/><text x="328" y="44" font-size="10" text-anchor="middle" fill="#5b6672">4 枚目</text><line x1="328" y1="82" x2="305.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="378" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="420" cy="62" r="5" fill="#e8443a"/><text x="414" y="44" font-size="10" text-anchor="middle" fill="#5b6672">5 枚目</text><line x1="414" y1="82" x2="382.0" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="464" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="513" cy="62" r="5" fill="#e8443a"/><text x="500" y="44" font-size="10" text-anchor="middle" fill="#5b6672">6 枚目</text><line x1="500" y1="82" x2="458.56" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><rect x="550" y="28" width="72" height="52" rx="5" fill="#e8f1fb" stroke="#8fb4d9" stroke-width="1"/><circle cx="606" cy="62" r="5" fill="#e8443a"/><text x="586" y="44" font-size="10" text-anchor="middle" fill="#5b6672">7 枚目</text><line x1="586" y1="82" x2="537.44" y2="150" stroke="#9aa7b4" stroke-width="1" stroke-dasharray="3 3"/><line x1="20" y1="152" x2="628" y2="152" stroke="#5b6672" stroke-width="1.5"/><text x="628" y="143" font-size="11" text-anchor="end" fill="#5b6672">動画の中の時刻 [s]</text><line x1="34.0" y1="145" x2="34.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="34.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.000</text><line x1="110.56" y1="145" x2="110.56" y2="159" stroke="#1c8f4a" stroke-width="2"/><text x="110.56" y="186" font-size="10" text-anchor="middle" fill="#1c8f4a">0.033</text><line x1="189.44" y1="145" x2="189.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="189.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.067</text><line x1="305.44" y1="145" x2="305.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="305.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.117</text><line x1="382.0" y1="145" x2="382.0" y2="159" stroke="#1663b5" stroke-width="2"/><text x="382.0" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.150</text><line x1="458.56" y1="145" x2="458.56" y2="159" stroke="#1663b5" stroke-width="2"/><text x="458.56" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.183</text><line x1="537.44" y1="145" x2="537.44" y2="159" stroke="#1663b5" stroke-width="2"/><text x="537.44" y="186" font-size="10" text-anchor="middle" fill="#1663b5">0.217</text><text x="110.56" y="206" font-size="11" text-anchor="middle" fill="#1c8f4a" font-weight="bold">↑ t = 0 に選んだコマ</text><path d="M189.44 134 L305.44 134" stroke="#e8443a" stroke-width="1.5"/><text x="247.44" y="128" font-size="10" text-anchor="middle" fill="#e8443a">ここだけ間隔が広い</text><text x="20" y="232" font-size="11" fill="#333">4 枚目に打った点の時刻 t = 0.117 − 0.033 = <tspan font-weight="bold">0.084 s</tspan>（1/30 秒の決め打ちではない）</text></svg>'+
+  '<ol>'+
+  '<li><b>測る</b>：動画を読み込むと、いちど最後まで再生しながら、ブラウザから'+
+  '「いま画面に出したコマの時刻」を 1 枚ずつ受け取ります'+
+  '（<code>requestVideoFrameCallback</code> という仕組み）。'+
+  'こうして「1 枚目＝0.000 秒、2 枚目＝0.033 秒、3 枚目＝0.067 秒…」という<b>時刻の一覧</b>ができます。'+
+  '2 のカードに出る「<b>45 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
+  '<li><b>取りこぼしを埋める</b>：再生が速くて受け取れなかったコマは、'+
+  'あとでそのコマへシークして測り直し、一覧のすきまを埋めます</li>'+
+  '<li><b>使う</b>：点を記録するときは、いま画面に出ているコマが一覧の何番目かを調べ、'+
+  '<b>その時刻をそのまま</b>その点の時刻にします。'+
+  '表やグラフの t は、そこから <b>［この時刻をt = 0］で選んだコマの時刻を引いた値</b>です</li>'+
+  '</ol>'+
+  '<p>コマ送りも、この一覧の<b>となりのコマへ移る</b>形で進みます。'+
+  'だから <b>fps は「1 コマがおよそ何秒か」の目安</b>であって、記録される時刻そのものには使っていません。'+
+  'fps 欄の横に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
+  '<p class="mini">※ この仕組みが使えないブラウザ（Firefox など）では、'+
+  '<b>1 コマ＝ 1/fps 秒</b>として計算します。このときだけ fps の値が時刻に効くので、'+
+  '必要なら fps 欄を手で直してください。'+
+  'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
+  '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
+  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
 }
@@ -6316,6 +6547,9 @@ function refreshCGExps(){
 }
 function cgToUI(){
   var c=APP.cg;
+  /* 実験は、一番上の「対象の実験」でえらぶので、ここではいまの実験に合わせる */
+  c.expA=Math.min(Math.max(0,APP.cur), APP.exps.length-1);
+  c.expB=c.expA;
   $('cgExpA').value=Math.min(c.expA,APP.exps.length-1); $('cgObjA').value=c.objA; $('cgQA').value=c.qA; $('cgInvA').checked=!!c.invA;
   $('cgExpB').value=Math.min(c.expB,APP.exps.length-1); $('cgObjB').value=c.objB; $('cgQB').value=c.qB; $('cgInvB').checked=!!c.invB;
   $('cgQX').value=c.xq; $('cgInvX').checked=!!c.invX;
@@ -6412,15 +6646,11 @@ function setM2Mode(m, quiet){
   setTimeout(function(){ if(VID.ready) render(); alignLive(); updateGuide(); }, 40);
   setTimeout(alignLive, 200);
 }
-/* live のとき、左のグラフの上と動画の上をそろえる */
+/* live のとき、グラフの上に空きを作らない
+   （以前は動画の画像の上端に合わせていたが、そのぶん大きなすき間ができて見にくかった） */
 function alignLive(){
   var ch=$('charts2'); if(!ch) return;
   ch.style.paddingTop='';
-  if(!LIVE.on || $('m2live').classList.contains('hide')) return;
-  var card=ch.querySelector('.chartcard'), vb=$('videobox');
-  if(!card || !vb) return;
-  var d=vb.getBoundingClientRect().top - card.getBoundingClientRect().top;
-  if(d>0 && d<400) ch.style.paddingTop=Math.round(d)+'px';
 }
 /* 表をたたんだら、②の左の欄も細くする */
 function updateTblFold(){
@@ -6494,7 +6724,8 @@ function setTab(m){
   $('mode2').classList.toggle('hide', m!=='2');
   $('mode3').classList.toggle('hide', m!=='3');
   if(m==='2'){ APP.m2mode='side'; updateTable(); }   /* ②に来たときは、いつも「グラフを並べる」から */
-  setM2Menu(APP.m2menu);
+  setM2Menu(APP.m2menu); setM3Menu(APP.m3menu);
+  updateMenuChip();
   placePanelRsz();
   setM2Mode(APP.m2mode, true);                 /* ②以外では動画をもとの場所へ */
   var card=$('cgCard');
@@ -6515,6 +6746,10 @@ function bindUI(){
      動画エリアの中をクリックしたときは、そのクリックは「消すだけ」に使う（記録や設定には使わない）。 */
   document.addEventListener('pointerdown', function(ev){
     if(!bigMsgOpen()) return;
+    /* 「見つけました！ 最後まで追跡 しますか？」のように押せる知らせは、
+       ここで消してしまうと click が届かない。そのまま通す。 */
+    var am=$('autoMsg');
+    if(am && am.__act && ev.target && ev.target.closest && ev.target.closest('#autoMsg')) return;
     var inVideo = ev.target && ev.target.closest && ev.target.closest('#videobox');
     closeBigMsg();
     if(inVideo && !(ev.target.tagName==='BUTTON' || (ev.target.closest && ev.target.closest('button')))){
@@ -6539,10 +6774,8 @@ function bindUI(){
   /* ヘッダ */
   $('btnHelp').onclick=openHelp;
   $('btnMenuPos').onclick=function(){
-    APP.menuPos=(APP.menuPos==='left')?'top':'left';
-    $('m1grid').classList.toggle('top', APP.menuPos==='top');
-    this.textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
-    saveLocal(); setTimeout(render,50);
+    setMenuPos(APP.menuPos==='left'? 'top' : 'left');
+    saveLocal();
   };
   $('cbTeacher').onchange=function(){
     $('teacherBox').classList.toggle('hide', !this.checked);
@@ -6655,6 +6888,8 @@ function bindUI(){
   $('btnPlay2').onclick=togglePlay;
   $('btnTimeZero2').onclick=function(){ $('btnTimeZero').click(); };
   $('btnRangeB2').onclick=function(){ $('btnRangeB').click(); };
+  $('btnRangeClr2').onclick=function(){ $('btnRangeClr').click(); };
+  $('btnStep2Next2').onclick=function(){ $('btnStep2Next').click(); };
   $('vhintX').onclick=function(e){ e.stopPropagation(); $('vhint').__closed=true; $('vhint').classList.add('hide'); };
   $('bigPlay').onclick=togglePlay;
   $('btnHead').onclick=$('btnHead2').onclick=function(){
@@ -6811,7 +7046,11 @@ function askResetPts(go){
     if(e.key==='Escape' && APP.bigView) setBigView(false);
   });
   $('cbM2Min').onchange=function(){ setM2Menu(!this.checked); saveLocal(); };
-  $('cbM2MenuTop').onchange=function(){ setM2Menu(this.checked); saveLocal(); };
+  if($('cbM3Min')) $('cbM3Min').onchange=function(){ setM3Menu(!this.checked); saveLocal(); };
+  $('cbM2MenuTop').onchange=function(){
+    if(APP.tab==='3') setM3Menu(this.checked); else setM2Menu(this.checked);
+    saveLocal();
+  };
   bindPanelRsz(); bindVidRsz();
   /* 1. 動画：動画エリアをクリックしたら「動画を選択」 */
   $('vph').onclick=function(){ if(!VID.ready) $('btnFile').click(); };
@@ -6906,8 +7145,20 @@ function askResetPts(go){
   };
 
   /* ストロボ */
-  $('btnStrobe').onclick=function(){ $('btnStrobe').disabled=true;
-    makeStrobe().then(function(){ $('btnStrobe').disabled=false; }); };
+  $('btnStrobe').onclick=function(){
+    $('btnStrobe').disabled=true;
+    makeStrobe().then(function(){
+      $('btnStrobe').disabled=false;
+      $('stroTune').classList.remove('hide');   /* 作ったあとに「時間間隔調整」を出す */
+      updateStroUI();
+    });
+  };
+  $('stroStep').oninput=function(){ updateStroUI(); };
+  $('stroStep').onchange=function(){
+    if(!UI.stroReady){ updateStroUI(); return; }
+    $('btnStrobe').disabled=true;
+    makeStrobe().then(function(){ $('btnStrobe').disabled=false; updateStroUI(); });
+  };
   $('btnStroSave').onclick=function(){ askSaveName('ストロボ画像', saveStrobePng); };
   $('btnStroClr').onclick=function(){
     clearStrobe(); toast('ストロボ画像を消しました');
@@ -6933,12 +7184,6 @@ function askResetPts(go){
   $('btnReportPng2').onclick=askThen('レポート（PNG）', exportReportPng);
   $('btnReportPdf2').onclick=askThen('レポート（PDF）', exportReportPdf);
   $('btnKadai').onclick=openKadaiDialog;
-  $('btnWipe').onclick=function(){
-    if(!confirm('この端末に自動保存されている測定データを消します。よろしいですか？')) return;
-    wipeLocal();
-    APP.exps=[newExp(1)]; APP.cur=0; UI.undo=[];
-    refreshExpUI(); afterChange(); render(); toast('保存データを消しました');
-  };
   $('btnXlsx').onclick=askThen('Excel', exportXlsx);
   $('btnGraphPng').onclick=askThen('グラフの画像', exportGraphsPng);
 
@@ -6998,6 +7243,7 @@ function askResetPts(go){
   ['btnGBig','btnGBig3'].forEach(function(id){ $(id).onclick=function(){ gSize(1.25); }; });
   ['btnGSmall','btnGSmall3'].forEach(function(id){ $(id).onclick=function(){ gSize(1/1.25); }; });
   ['btnGReset','btnGReset3'].forEach(function(id){ $(id).onclick=gReset; });
+  ['btnGFitAll','btnGFitAll3'].forEach(function(id){ var q=$(id); if(q) q.onclick=function(){ fitAllCharts(); }; });
   bindTblResize();
   $('cgMomentum').onclick=function(){
     var c=APP.cg, e=APP.exps[c.expA];
@@ -7071,7 +7317,7 @@ var seekBusy=false;
   bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries();
   addAgainButtons(); bindEditEnd(); buildCG(); bindCG();
   refreshExpUI();
-  $('m1grid').classList.toggle('top', APP.menuPos==='top');
+  setMenuPos(APP.menuPos);
   $('btnMenuPos').textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
   setTwoObj(APP.twoObj, true);
   setMode('record');
@@ -7081,7 +7327,7 @@ var seekBusy=false;
   m2ModeButtons();
   APP.step=0; updateSteps();
   setBigView(false);                 /* 最大表示は毎回オフから */
-  setM2Menu(APP.m2menu!==false);
+  setM2Menu(APP.m2menu!==false); setM3Menu(APP.m3menu!==false);
   setPanelW(APP.panelw||352);
   afterChange();
   if(restored){
