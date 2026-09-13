@@ -554,7 +554,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .m3body{display:flex;gap:12px;align-items:flex-start}
 .m3graphs{flex:0 1 auto;min-width:0}
 #charts3 .chartcard{width:max-content;max-width:100%}
-.m3res{flex:0 0 330px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px)}
+.m3res{flex:0 0 360px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px);
+  display:flex;flex-direction:column;gap:10px}
+#residHost:empty{display:none}
 .m3res>.card{min-height:74px}
 @media(max-width:980px){ .m3body{flex-direction:column} .m3res{width:100%;position:static} }
 
@@ -677,6 +679,35 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 /* 印刷 */
 @media print{.apphd,.tabs,.side{display:none}}
 
+/* ---- この動画の撮れぐあい（読み込み直後の自動チェック） ---- */
+.diagbox{ margin-top:8px; border:1px solid #d9dee4; border-radius:8px; padding:8px 10px;
+  background:#fbfcfe; font-size:.86rem; line-height:1.5 }
+.diagbox.warn{ border-color:#e3a33a; background:#fff8ec }
+.diagbox.bad{ border-color:#d9534f; background:#fdf1f0 }
+.diagbox .dgt{ font-weight:700; color:#0f4c8f; display:block; margin-bottom:4px }
+.diagbox ul{ margin:0; padding:0; list-style:none }
+.diagbox li{ display:flex; gap:6px; align-items:flex-start; margin:2px 0 }
+.diagbox .mk{ flex:0 0 1.15em; text-align:center; font-weight:700 }
+.diagbox .mk.o{ color:#12703c } .diagbox .mk.t{ color:#c07a12 } .diagbox .mk.x{ color:#c0332e }
+.diagbox .dgtip{ margin-top:5px; color:#41525f }
+.diagbox .btn{ margin-top:6px }
+
+/* ---- ものさしの奥ゆき ---- */
+.depthbox{ margin-top:8px; border:1px solid #cfd8e3; border-radius:8px; padding:8px 10px;
+  background:#f6f9fd; font-size:.86rem }
+.depthbox b{ color:#0f4c8f }
+.depthbox .row{ margin-top:4px }
+.depthbox .f{ font-size:.84rem }
+#depthMsg.ok{ color:#12703c } #depthMsg.ng{ color:#c0332e; font-weight:700 }
+
+/* ---- 謝意・参考文献（①の一番下） ---- */
+.credits{ margin:18px 8px 10px; padding:10px 14px; border-top:1px solid #d9dee4;
+  font-size:.8rem; line-height:1.6; color:#41525f }
+.credits b{ color:#0f4c8f }
+.credits a{ color:#1663b5; word-break:break-all }
+.credits ul{ margin:4px 0 6px; padding-left:1.3em }
+.credits li{ margin:1px 0 }
+
 </style>
 </head>
 <body>
@@ -749,11 +780,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <p class="mini">動画エリアをクリックしても選べます。この画面に<b>ドラッグ＆ドロップ</b>でも開けます。</p>
       <div class="note vlimit">
         <b>解析できる動画のめやす</b><br>
-        長さ <b>5〜30 秒</b>（長いほど解析に時間がかかります）／
+        長さ <b>5〜30 秒</b>（<b>40 秒まで</b>。長いほど解析に時間がかかります）／
         画質は <b>フルHD（1920×1080）まで</b>／ファイルは <b>100 MB 以内</b>。<br>
-        <span class="mini" style="color:inherit">これを超えると
-        <b>長さ 3 分・4096 px・500 MB</b> までは開けますが、動作が重くなります。
-        それ以上は開けません。</span>
+        <span class="mini" style="color:inherit">40 秒より長い動画は開けません。見たい運動の前後だけを切り出してください。
+        画面の大きさ 4096 px・500 MB までは開けますが、動作が重くなります。</span>
       </div>
       <div class="row" id="cropRow">
         <button class="btn sm blue" id="btnCrop">動画をトリミング（端を切る）</button>
@@ -766,6 +796,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div id="vidErr" class="err hide"></div>
       <div class="hr"></div>
       <p class="mini" id="vinfo">動画はまだ読み込まれていません。</p>
+      <div id="vidDiag" class="diagbox hide"></div>
       <div id="teacherBox" class="hide">
         <div class="row">
           <button class="btn sm" id="btnKadai">課題ファイルを書き出す（先生用）</button>
@@ -789,38 +820,31 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn wide" id="btnTimeZero">この時刻をt = 0</button>
         <span class="callout hide" id="coTimeZero">解析を始めたいコマで押す</span>
       </div>
-      <p class="mini">この画像の時刻を時間の原点（t=0）に</p>
       <div class="btnwrap">
         <button class="btn wide" id="btnRangeB">この時刻まで解析</button>
         <span class="callout hide" id="coRangeB">解析を終わりたいコマで押す</span>
       </div>
-      <p class="mini">この画像の時刻を、解析の終わりに</p>
       <div class="row">
         <button class="btn sm danger" id="btnRangeClr">範囲を解除</button>
         <button class="btn sm" id="btnStep2Next">このままでよい → 次へ</button>
       </div>
       <p class="mini" id="rangeInfo">範囲：全体</p>
       <div class="hr"></div>
-      <label class="f">fps <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001">
-        <span class="mini" id="fpsSrc">（既定値）</span></label>
-      <p class="mini">fps は「コマ送りが何秒にあたるか」の目安です。t = 0 以降の時刻は、コマごとに実際に測った値を記録しています（測れない端末だけ fps から計算します）。右上の［使い方と時間算出法］にくわしく書いています。</p>
-      <label class="f">スロー撮影
-        <select id="selTScale">
-          <option value="1">普通の速さで撮った</option>
-          <option value="0.5">1/2 のスロー</option>
-          <option value="0.25">1/4 のスロー</option>
-          <option value="0.125">1/8 のスロー（240fps→30fps など）</option>
-          <option value="0.0625">1/16 のスロー</option>
-        </select>
-      </label>
-      <p class="mini" id="tscaleNote">ゆっくり再生される形で保存された動画のときだけ変えます。
-      「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します。</p>
-      <div class="row">
+      <p class="mini" id="fpsLine">fps <b>30.000</b>（既定値）</p>
+      <p class="mini">fps は「コマ送りが何秒にあたるか」の目安です。詳細は右上の［使い方と時間算出法］に。</p>
+      <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001" class="hide">
+      <span class="hide" id="fpsSrc">（既定値）</span>
+      <select id="selTScale" class="hide">
+        <option value="1">普通の速さで撮った</option>
+        <option value="0.5">1/2 のスロー</option>
+        <option value="0.25">1/4 のスロー</option>
+        <option value="0.125">1/8 のスロー（240fps→30fps など）</option>
+        <option value="0.0625">1/16 のスロー</option>
+      </select>
+      <div class="row hide" id="ftRow">
         <button class="btn sm" id="btnFrameTable">コマごとの時刻を測る</button>
         <span class="tag" id="ftState">未測定</span>
       </div>
-      <p class="mini" id="ftNote">40 秒より長い動画は自動では測りません。<b>上で解析する時間範囲を決めてから</b>
-      このボタンを押すと、<b>その範囲だけ</b>を測るので短い時間で終わります。</p>
       <div class="prog hide" id="ftProg"><i></i></div>
     </details>
 
@@ -847,6 +871,30 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <label class="f">スケール長さ <input type="number" id="inScaleLen" value="10" step="0.1" min="0.000001">
         <select id="selScaleUnit"><option value="1">m</option><option value="0.01" selected>cm</option><option value="0.001">mm</option></select>
       </label>
+      <div id="depthBox" class="depthbox hide">
+        <b>ものさしの奥ゆき</b>
+        <p class="mini">ものさしが物体より<b>手前や奥</b>にあると、長さがそのぶんだけずれます。
+        x も v も a も、<b>同じ割合で</b>ずれます。</p>
+        <div class="row">
+          <label class="f">カメラから物体まで
+            <select id="selCamDist">
+              <option value="1">約 1 m</option>
+              <option value="2">約 2 m</option>
+              <option value="3" selected>約 3 m</option>
+              <option value="5">5 m 以上</option>
+            </select>
+          </label>
+          <label class="f">ものさしのズレ
+            <select id="selRulerGap">
+              <option value="0" selected>同じ奥ゆき</option>
+              <option value="0.2">20 cm ほど</option>
+              <option value="0.5">50 cm ほど</option>
+              <option value="1">1 m ほど</option>
+            </select>
+          </label>
+        </div>
+        <p class="mini" id="depthMsg"></p>
+      </div>
       <div class="row"><button class="btn sm danger" id="btnCalClr">原点・軸・スケールを解除</button></div>
       <p class="mini" id="calInfo">原点：未設定／スケール：未設定／x軸：0.0°</p>
       <p class="mini" id="precInfo">クリック精度：スケール未設定</p>
@@ -1076,10 +1124,25 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row"><b style="font-size:.92rem;color:var(--accent-d)">ストロボ画像</b>
         <span class="mini" id="stroInfo">まだ作っていません</span></div>
       <canvas id="cvStrobe" width="640" height="360" class="hide"></canvas>
-    </details>
+    </div>
 
   </div>
  </div>
+ <footer class="credits" id="credits">
+  <b>謝意</b>　一般社団法人 国際物理オリンピック2023記念協会様のページを参考にこのページを作成しました。大変ありがとうございました。
+  <a href="https://apps.ipho2023-commemorative-association.jp/%E5%8B%95%E7%94%BB%E8%A7%A3%E6%9E%90%E3%82%A2%E3%83%97%E3%83%AA" target="_blank" rel="noopener">https://apps.ipho2023-commemorative-association.jp/動画解析アプリ</a><br>
+  その他、以下のサイトや論文等を参考にしています。
+  <ul>
+   <li>Tracker – Video Analysis and Modeling Tool（Open Source Physics, D. Brown）<a href="https://physlets.org/tracker/" target="_blank" rel="noopener">https://physlets.org/tracker/</a></li>
+   <li>FizziQ – Video analysis for teaching physics <a href="https://www.fizziq.org/" target="_blank" rel="noopener">https://www.fizziq.org/</a></li>
+   <li>Vernier Video Analysis <a href="https://www.vernier.com/physics/vernier-video-analysis/" target="_blank" rel="noopener">https://www.vernier.com/physics/vernier-video-analysis/</a></li>
+   <li>R. J. Beichner, “The impact of video motion analysis on kinematics graph interpretation skills,” Am. J. Phys. 64, 1272–1277 (1996).</li>
+   <li>P. W. Laws and H. Pfister, “Using digital video analysis in introductory mechanics projects,” Phys. Teach. 36, 282–287 (1998).</li>
+   <li>D. Brown and A. J. Cox, “Innovative uses of video analysis,” Phys. Teach. 47, 145–150 (2009).</li>
+   <li>L. K. Wee, C. Chew, G. H. Goh, S. Tan and T. L. Lee, “Using Tracker as a pedagogical tool for understanding projectile motion,” Phys. Educ. 47, 448–455 (2012).</li>
+  </ul>
+  <span class="mini">このページは外部と通信しません。上のリンクを開くときだけブラウザが外部サイトにつながります。</span>
+ </footer>
 </section>
 
 <!-- ================= モード2 ================= -->
@@ -1186,10 +1249,21 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm blue" id="btnGFitAll3" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
       </div>
     </div>
+    <div class="m2out">
+      <div class="grid2">
+        <button class="btn sm" id="btnReportPng3">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf3">レポートPDF</button>
+      </div>
+      <div class="row nowrap" style="margin-top:6px;justify-content:flex-end">
+        <button class="btn sm quiet" id="btnXlsx3">測定データ、グラフをまとめてExcel出力</button>
+        <button class="btn sm quiet" id="btnGraphPng3">グラフをPNG保存</button>
+      </div>
+    </div>
   </div>
   <div class="m3body">
     <div class="m3graphs"><div class="charts" id="charts3"></div></div>
-    <div class="m3res"><div class="card" id="fitResult"></div></div>
+    <div class="m3res"><div class="card" id="fitResult"></div>
+      <div id="residHost"></div></div>
   </div>
   <div class="card">
     <div class="row">
@@ -1329,7 +1403,7 @@ function newExp(n){
     t0:null, rangeA:null, rangeB:null, step2ok:false, trackReady:false, axisSet:false, tscale:1,
     objReady:[false,false,false], crop:null, aStep:1,
     video:{name:'',w:0,h:0,dur:0,fps:30},
-    m1:0.1, m2:0.1, g:9.8,
+    m1:0.1, m2:0.1, g:9.8, camDist:3, rulerGap:0, shotFps:0, fpsOk:false,
     objName:['','',''] };
   for(var i=0;i<NOBJ;i++) o.objs.push([]);
   return o;
@@ -1700,6 +1774,7 @@ function vidLoad(src, name){
        （生徒が続けざまに動画を選ぶと、前の測定の結果が新しい動画に混ざるため） */
     VID.loadSeq=(VID.loadSeq||0)+1; VID.cancelBuild=true;
     VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0; VID.tableA=0; VID.tableB=0;
+    try{ diagReset(); }catch(e){}
     if(VID.url && VID.url.indexOf('blob:')===0){ try{URL.revokeObjectURL(VID.url);}catch(e){} }
     VID.url=src; VID.name=name||'';
     var done=false;
@@ -1858,11 +1933,18 @@ function vidBuildTable(onProg, tA, tB){
     VID.tableA=A; VID.tableB=B;            /* どこからどこまでを測ったか（取りこぼし直しで使う） */
     var times=[], rate = (span>40? 2 : 1);
     v.pause(); v.muted=true; v.playbackRate=rate;
+    diagStart();                       /* 撮れぐあいも、この再生のついでに測る */
     var startedAt=0;
     function step(now, md){
       if(VID.cancelBuild || finished){ finish(); return; }
       var mt=(md&&typeof md.mediaTime==='number')? md.mediaTime : v.currentTime;
       if(!times.length || mt > times[times.length-1]+1e-6) times.push(mt);
+      if(VDIAG.on){
+        var t0=performance.now();
+        try{ diagStep(); }catch(e){ VDIAG.on=false; }
+        /* おそい端末で再生の足を引っぱるようなら、撮れぐあいの測定はあきらめる */
+        if(performance.now()-t0>30) VDIAG.on=false;
+      }
       if(onProg) onProg(Math.max(0, Math.min(1, (mt-A)/span)));
       if(v.ended || mt>=B){ finish(); return; }
       v.requestVideoFrameCallback(step);
@@ -1873,14 +1955,17 @@ function vidBuildTable(onProg, tA, tB){
       if(finished) return; finished=true;
       clearInterval(watchdog);
       v.pause(); v.playbackRate=1;
+      VDIAG.on=false; VDIAG.done=(VDIAG.n>0);
       v.removeEventListener('ended', onEnd);
       if(myseq!==VID.loadSeq){ VID.building=false; res(false); return; }   /* 別の動画になった */
       times.sort(function(a,b){return a-b;});
       var uniq=[]; for(var i=0;i<times.length;i++){ if(!uniq.length||times[i]-uniq[uniq.length-1]>1e-5) uniq.push(times[i]); }
       if(uniq.length>2){
         VID.frames=uniq; setFpsFromFrames();
-        /* 取りこぼしたコマを、実際にシークして測り直して埋める */
-        repairTable(0).then(function(){
+        /* 取りこぼしたコマを、実際にシークして測り直して埋める。
+           ただし時間を区切る（穴が多いと何分もかかって「固まった」ように見えるため）。 */
+        var deadline=performance.now()+Math.min(15000, 4000+span*700);
+        repairTable(0, deadline, onProg).then(function(){
           trimTable();                 /* 穴があったら、続いている所だけを残す */
           vidSeek(Math.max(A, VID.tableA||A)).then(function(){
             VID.building=false; res(VID.frames.length>2);
@@ -1948,8 +2033,9 @@ function trimTable(){
   setFpsFromFrames();
 }
 /* 間隔が飛んでいる所を、その真ん中へシークして実測時刻を読み、表に入れる */
-function repairTable(pass){
+function repairTable(pass, deadline, onProg){
   if(pass>4){ VID.needExact=false; return Promise.resolve(); }
+  if(deadline && performance.now()>deadline){ VID.needExact=false; return Promise.resolve(); }
   VID.needExact=true;
   var f=VID.frames, d=[], i;
   for(i=1;i<f.length;i++) d.push(f[i]-f[i-1]);
@@ -1967,11 +2053,13 @@ function repairTable(pass){
   if(!gaps.length || gaps.length>200){ VID.needExact=false; return Promise.resolve(); }
   var k=0, added=0, tries=0;
   function next(){
-    if(k>=gaps.length){
+    if(k>=gaps.length || (deadline && performance.now()>deadline)){
       VID.needExact=false;
-      if(added){ VID.frames.sort(function(a,b){return a-b;}); setFpsFromFrames(); return repairTable(pass+1); }
+      if(added){ VID.frames.sort(function(a,b){return a-b;}); setFpsFromFrames();
+        if(k>=gaps.length) return repairTable(pass+1, deadline, onProg); }
       return Promise.resolve();
     }
+    if(onProg && (k%3===0)) onProg(1, '取りこぼしたコマを測り直しています（'+(k+1)+' / '+gaps.length+'）');
     var g=gaps[k], t=(g[0]+g[1])/2 + (tries*0.0007);
     return vidSeekNow(t).then(function(){
       var mt=VID.cur, ok=false;
@@ -2002,6 +2090,114 @@ function fpsFromTable(){
     return { fps: med>0? 1/med : 0, n:VID.frames.length, vfr: jitter> (med*0.25) };
   }
   return null;
+}
+
+/* =========================================================
+   この動画の「撮れぐあい」を、コマ表を作るついでに調べる
+   （余分なシークはしない。再生しながら小さく描き写して測るだけ）
+   ・明るさ … 暗いと 1 コマ 1 コマがぼやけて、点が打ちにくい
+   ・コマのくっきりさ … 動きが速い・暗いとコマがぶれる（相対で見る）
+   ・手ぶれ … となりあう 2 コマで、背景がどれだけずれたか
+   ここでは「良い・悪い」を数で決めつけず、生徒が気づけるようにするのが目的。
+   ========================================================= */
+var VDIAG = { on:false };
+var DGW = 320;                          /* 測るときの小さい絵の幅 */
+function diagReset(){
+  VDIAG = { on:false, cv:null, g:null, sc:1, fc:0, n:0, lumSum:0, dark:0,
+            sharp:[], shake:[], prev:null, pairWait:false, samples:0, done:false };
+}
+diagReset();
+function diagStart(){
+  diagReset();
+  if(!VID.ready || !VID.w || !VID.h) return;
+  var c=document.createElement('canvas');
+  c.width=DGW; c.height=Math.max(8, Math.round(DGW*VID.h/VID.w));
+  VDIAG.cv=c; VDIAG.g=c.getContext('2d', {willReadFrequently:true});
+  VDIAG.sc=VID.w/DGW;                   /* 小さい絵の 1 px は、もとの動画の何 px か */
+  VDIAG.on=true;
+}
+function diagGray(){
+  var c=VDIAG.cv, g=VDIAG.g;
+  if(!c||!g) return null;
+  try{ g.drawImage(VID.el, 0,0, c.width, c.height); }catch(e){ VDIAG.on=false; return null; }
+  var im; try{ im=g.getImageData(0,0,c.width,c.height); }catch(e){ VDIAG.on=false; return null; }
+  var p=im.data, w=c.width, h=c.height, N=w*h, gr=new Uint8Array(N), s=0, i, j;
+  for(i=0,j=0;i<N;i++,j+=4){ var y=(p[j]*77+p[j+1]*150+p[j+2]*29)>>8; gr[i]=y; s+=y; }
+  var lum=s/N;
+  var lap=0, cnt=0, x, yy;
+  for(yy=1; yy<h-1; yy+=2) for(x=1; x<w-1; x+=2){
+    var k=yy*w+x;
+    var L=4*gr[k]-gr[k-1]-gr[k+1]-gr[k-w]-gr[k+w];
+    lap += (L<0? -L : L); cnt++;
+  }
+  /* 明るさで割って正規化（暗い動画でも公平に比べられるように） */
+  return { g:gr, w:w, h:h, lum:lum, sharp: cnt? (lap/cnt)/Math.max(24,lum) : 0 };
+}
+/* となりあう 2 コマの「背景のずれ」を測る（真ん中は物体がいるので使わない） */
+function diagShift(a, b, w, h){
+  var R=5, cx0=w>>2, cx1=w-(w>>2), cy0=h>>2, cy1=h-(h>>2);
+  var best=1e18, bx=0, by=0, sc={}, dx, dy, x, y;
+  for(dy=-R; dy<=R; dy++) for(dx=-R; dx<=R; dx++){
+    var s=0, n=0;
+    for(y=R; y<h-R; y+=2){
+      var inY=(y>=cy0 && y<cy1);
+      for(x=R; x<w-R; x+=2){
+        if(inY && x>=cx0 && x<cx1) continue;
+        var d=a[y*w+x]-b[(y+dy)*w+(x+dx)];
+        s += (d<0? -d : d); n++;
+      }
+    }
+    if(!n) return null;
+    var v=s/n; sc[dx+','+dy]=v;
+    if(v<best){ best=v; bx=dx; by=dy; }
+  }
+  /* 山の形から、1 px より細かく読む（放物線あてはめ） */
+  function sub(ax, ay, kx, ky){
+    var m=sc[(ax-kx)+','+(ay-ky)], p=sc[(ax+kx)+','+(ay+ky)];
+    if(m===undefined||p===undefined) return 0;
+    var den=(m - 2*best + p);
+    if(!(Math.abs(den)>1e-9)) return 0;
+    var t=0.5*(m-p)/den;
+    return (t>1||t<-1)? 0 : t;
+  }
+  var fx=bx+sub(bx,by,1,0), fy=by+sub(bx,by,0,1);
+  return Math.sqrt(fx*fx+fy*fy);
+}
+/* コマ表づくりの再生中に、1 コマごとに呼ばれる */
+function diagStep(){
+  var d=VDIAG;
+  if(!d.on || d.samples>=30) return;
+  var k=d.fc++;
+  var take=(k%8===0);
+  if(!take && !d.pairWait) return;
+  var gy=diagGray();
+  if(!gy){ d.pairWait=false; d.prev=null; return; }
+  d.n++; d.lumSum+=gy.lum; if(gy.lum<50) d.dark++;
+  d.sharp.push(gy.sharp);
+  if(d.pairWait && d.prev){
+    var s=diagShift(d.prev, gy.g, gy.w, gy.h);
+    if(s!==null && isFinite(s)) d.shake.push(s*d.sc);   /* もとの動画の px に直す */
+    d.pairWait=false; d.prev=null; d.samples++;
+  } else if(take){
+    d.prev=gy.g; d.pairWait=true;
+  }
+}
+function med(a){ if(!a.length) return null;
+  var b=a.slice().sort(function(x,y){return x-y;}); return b[Math.floor(b.length/2)]; }
+/* 測った結果をまとめる（無ければ null） */
+function diagResult(){
+  var d=VDIAG;
+  if(!d.n) return null;
+  var sh=med(d.shake), sp=d.sharp.slice().sort(function(a,b){return a-b;});
+  return {
+    lum: d.lumSum/d.n,
+    darkRate: d.dark/d.n,
+    shake: sh,                                   /* 1 コマあたり何 px 動いたか */
+    shakePct: (sh!==null && VID.w)? sh/VID.w*100 : null,
+    sharpMed: sp.length? sp[Math.floor(sp.length/2)] : null,
+    sharpMax: sp.length? sp[sp.length-1] : null,
+    n: d.n, pairs: d.shake.length
+  };
 }
 
 </script>
@@ -3372,13 +3568,14 @@ function seriesFor(exp, kind, expIdx, overlay){
     } else if(kind==='v'){
       out.push({name:nm+' vx', color:base, shape:shapes[ob],
         pts:s.filter(function(p){return p.vx!==null;}).map(function(p){return {x:p.t,y:p.vx};})});
-      out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
+      /* 「軸の表示：x軸」にしたら、y 方向はどこにも出さない（レポートにも出さない） */
+      if(useY()) out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
         pts:s.filter(function(p){return p.vy!==null;}).map(function(p){return {x:p.t,y:p.vy};})});
     } else if(kind==='a'){
       out.push({name:nm+' ax', color:base, shape:shapes[ob],
         pts: APP.aFit? aByFit(s,'vx')
            : s.filter(function(p){return p.ax!==null;}).map(function(p){return {x:p.t,y:p.ax};})});
-      out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
+      if(useY()) out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
         pts: APP.aFit? aByFit(s,'vy')
            : s.filter(function(p){return p.ay!==null;}).map(function(p){return {x:p.t,y:p.ay};})});
     } else if(kind==='e'){
@@ -3580,13 +3777,16 @@ function chartCard(title, spec, curves, w, h){
   w=w||APP.gsize; h=h||Math.round(w*0.62);
   drawChart(cv, spec, {legend:true, w:w, h:h, fixed:true});
   bindChartDrag(cv, spec.onRange);
-  /* d○/dt を表示するチェック（グラフごと。はじめは OFF） */
-  var lab=document.createElement('label'); lab.className='cb dydt';
-  var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!spec.__dydt;
-  cb.onchange=function(){ spec.__dydt=cb.checked; updateReadouts(); };
-  lab.appendChild(cb);
-  lab.appendChild(document.createTextNode(dydtLabel(spec.ylab)+' を表示'));
-  d.appendChild(lab);
+  /* d○/dt を表示するチェック（グラフごと。はじめは OFF）
+     残差のグラフでは意味がないので出さない */
+  if(!spec.__noDydt){
+    var lab=document.createElement('label'); lab.className='cb dydt';
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!spec.__dydt;
+    cb.onchange=function(){ spec.__dydt=cb.checked; updateReadouts(); };
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(dydtLabel(spec.ylab)+' を表示'));
+    d.appendChild(lab);
+  }
   var b=document.createElement('button'); b.className='maxbtn';
   b.innerHTML=EXPAND_ICON+' 最大化';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
@@ -3683,8 +3883,11 @@ function openBigChart(title, spec){
 }
 
 /* ---------- モード3 ---------- */
+/* いちばん最近のフィットの中身（残差のプロットに使う） */
+var RESID=[], RESID_INFO={};
 function renderMode3(doFitNow){
   var host=$('charts3'); host.innerHTML='';
+  if(doFitNow) RESID=[];
   var q=$('selFitY').value, kind=$('selFitType').value, ob=parseInt($('selFitObj').value)-1;
   var over=$('selCmp3').value==='over';
   /* 「表示」のえらび方は、実験が2つ以上あるときだけ出す */
@@ -3740,7 +3943,8 @@ function renderMode3(doFitNow){
       if(doFitNow){
         var dr=inRange(d), f=doFit(kind,dr.xs,dr.ys);
         if(f){ cvs.push({color:col, f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs), dash:[6,3]});
-               res.push({name:e.name, fit:f, n:dr.xs.length}); }
+               res.push({name:e.name, fit:f, n:dr.xs.length});
+               RESID.push({name:e.name, color:col, xs:dr.xs, ys:dr.ys, f:f.f}); }
       }
     });
     host.appendChild(chartCard(q+' – t（重ねて表示）',
@@ -3754,7 +3958,8 @@ function renderMode3(doFitNow){
       if(doFitNow && dr.xs.length>1){
         var f=doFit(kind,dr.xs,dr.ys);
         if(f){ cvs.push({color:'#e8443a', f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs)});
-               res.push({name:e.name, fit:f, n:dr.xs.length}); }
+               res.push({name:e.name, fit:f, n:dr.xs.length});
+               RESID.push({name:e.name, color:col, xs:dr.xs, ys:dr.ys, f:f.f}); }
       }
       host.appendChild(chartCard(q+' – t　'+e.name,
         {title:'', xlab:'t [s]', ylab:QDEF[q].lab, series:[{name:e.name+' 物体'+(ob+1), color:col, shape:'dot', line:false,
@@ -3773,11 +3978,73 @@ function renderMode3(doFitNow){
                '<span class="val">R² = '+sig(r.fit.r2,6)+'</span><br>'+
                '<span class="mini">使った点 '+r.n+' 個'+(FR? '（t = '+nf(Math.min(FR.a,FR.b),3)+' 〜 '+nf(Math.max(FR.a,FR.b),3)+' s）':'')+'</span></div>';
       }).join('');
+      RESID_INFO={ q:q, ob:ob, kind:kind };
+      if(RESID.length){
+        box.innerHTML += '<div class="row" style="margin-top:8px">'+
+          '<button class="btn sm blue" id="btnResid">フィット残差のプロット</button></div>'+
+          '<p class="mini">「測った値 − フィットの値」を、そのまま点にしたグラフです。</p>';
+        var rb=$('btnResid');
+        if(rb) rb.onclick=function(){ toggleResid(); };
+      }
+      if($('residHost') && $('residHost').innerHTML) renderResid();   /* 出ていれば描き直す */
     }
   } else if(!box.innerHTML){
     box.innerHTML='<p class="mini">まだフィットしていません。下の「フィットする」を押してください。</p>';
   }
   if(!host.children.length) host.innerHTML='<div class="card mini">データがありません。</div>';
+}
+/* ---------- フィット残差のプロット ---------- */
+/* 残差 ＝ 測った値 − フィットの値。0 のまわりに散らばっていれば、その関数でよく合っている。
+   かたよって曲がっていたら、関数の形が合っていない（空気抵抗など）。 */
+function residSeries(){
+  var out=[];
+  RESID.forEach(function(r){
+    var pts=[];
+    for(var i=0;i<r.xs.length;i++){
+      var d=r.ys[i]-r.f(r.xs[i]);
+      if(isFinite(d)) pts.push({x:r.xs[i], y:d});
+    }
+    if(pts.length) out.push({name:r.name, color:r.color, shape:'dot', line:false, pts:pts});
+  });
+  return out;
+}
+function residSpec(){
+  var ss=residSeries(); if(!ss.length) return null;
+  var q=RESID_INFO.q||'x', lab=(QDEF[q]? QDEF[q].lab : q);
+  var xa=Infinity, xb=-Infinity;
+  ss.forEach(function(s){ s.pts.forEach(function(p){ if(p.x<xa) xa=p.x; if(p.x>xb) xb=p.x; }); });
+  return { title:'', xlab:'t [s]', ylab:'残差（'+lab+'）', series:ss,
+           curves:[{color:'#8a93a0', f:function(){return 0;}, dash:[5,4], x0:xa, x1:xb}],
+           __noDydt:true,
+           xkey:'t', key:'resid3_'+q+'_'+(RESID_INFO.ob||0) };
+}
+function residSd(){
+  var n=0, s2=0;
+  RESID.forEach(function(r){
+    for(var i=0;i<r.xs.length;i++){ var d=r.ys[i]-r.f(r.xs[i]); if(isFinite(d)){ n++; s2+=d*d; } }
+  });
+  return n? Math.sqrt(s2/n) : null;
+}
+function renderResid(w){
+  var host=$('residHost'); if(!host) return false;
+  var spec=residSpec();
+  if(!spec){ host.innerHTML=''; return false; }
+  host.innerHTML='';
+  var q=RESID_INFO.q||'x', lab=(QDEF[q]? QDEF[q].lab : q);
+  var card=chartCard('フィット残差（'+q+'）', spec, null, w||330, Math.round((w||330)*0.62));
+  host.appendChild(card);
+  var sd=residSd();
+  var p2=document.createElement('p'); p2.className='mini';
+  p2.innerHTML='0 のまわりに<b>ばらばら</b>に散っていれば、その関数でよく合っています。'+
+    '<b>曲がったかたより</b>があれば、関数の形が合っていません。'+
+    (sd!==null? '<br>残差の大きさ（RMS）＝ <b>'+sig(sd,3)+'</b>' : '');
+  host.appendChild(p2);
+  return true;
+}
+function toggleResid(){
+  var host=$('residHost'); if(!host) return;
+  if(host.innerHTML){ host.innerHTML=''; return; }
+  if(!renderResid()) toast('先に「フィットする」を押してください');
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
@@ -4116,7 +4383,8 @@ function chartXml(ch){
   ch.series.forEach(function(s,i){
     sers+='<c:ser><c:idx val="'+i+'"/><c:order val="'+i+'"/>'+
       '<c:tx><c:v>'+xesc(s.name)+'</c:v></c:tx>'+
-      '<c:spPr><a:ln w="19050"><a:noFill/></a:ln></c:spPr>'+
+      '<c:spPr><a:ln w="19050">'+(s.line?
+         '<a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill>' : '<a:noFill/>')+'</a:ln></c:spPr>'+
       '<c:marker><c:symbol val="'+(s.symbol||'circle')+'"/><c:size val="5"/>'+
         '<c:spPr><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill>'+
         '<a:ln><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill></a:ln></c:spPr></c:marker>'+
@@ -4258,6 +4526,24 @@ function sheetForExp(exp, idx){
     });
     rows.push(row);
   }
+  /* ③でフィットしていれば、「フィットの値」と「残差」の列を足す */
+  var fitCol=null, resCol=null;
+  if(typeof RESID!=='undefined' && RESID.length && idx===APP.cur){
+    var R0=RESID[0], fq=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
+    var lo=Math.min.apply(null,R0.xs), hi=Math.max.apply(null,R0.xs);
+    var isV=(fq==='vx'||fq==='vy');
+    fitCol=head.length; head.push('fit('+fq+')');
+    resCol=head.length; head.push('残差('+fq+')');
+    for(var rr=headRow+1; rr<rows.length; rr++){
+      var row2=rows[rr], si=rr-(headRow+1);
+      var p2=ss[0]? ss[0][si] : null;
+      var xv=p2? (isV? p2.tv : p2.t) : null, yv=p2? p2[fq] : null;
+      if(p2 && xv!==null && yv!==null && isFinite(xv) && isFinite(yv) && xv>=lo-1e-9 && xv<=hi+1e-9){
+        var fv=R0.f(xv);
+        row2[fitCol]=num(fv); row2[resCol]=num(yv-fv);
+      } else { row2[fitCol]=''; row2[resCol]=''; }
+    }
+  }
   var r0=headRow+1, r1=rows.length;
   var charts=[];
   if(n0>1){
@@ -4269,6 +4555,8 @@ function sheetForExp(exp, idx){
       {t:'vx - t', y:'vx [m/s]', q:'v'}, {t:'ax - t', y:'ax [m/s2]', q:'a'}
     ];
     if(useE) chDefs.push({t:'エネルギー - t', y:'E [J]', q:'e'});
+    if(fitCol!==null) chDefs.push({t:'フィットしたグラフ', y:'値', q:'fit'},
+                                  {t:'フィット残差', y:'残差', q:'res'});
     chDefs.forEach(function(d,di){
       var sers=[];
       objs.forEach(function(o,k){
@@ -4279,12 +4567,20 @@ function sheetForExp(exp, idx){
                             if(wy) sers.push({name:'vy物体'+(o+1), col:cols['vy'+o], color:c2, symbol:'square'}); }
         else if(d.q==='a'){ sers.push({name:'ax物体'+(o+1), col:cols['ax'+o], color:c, symbol:'circle'});
                             if(wy) sers.push({name:'ay物体'+(o+1), col:cols['ay'+o], color:c2, symbol:'square'}); }
+        else if(d.q==='fit'){ if(k===0){
+                 var fq2=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
+                 sers.push({name:fq2+'（測った値）', col:cols[fq2+o], color:c, symbol:'circle'});
+                 sers.push({name:'フィット', col:fitCol, color:'8A241D', symbol:'none', line:true}); } }
+        else if(d.q==='res'){ if(k===0)
+                 sers.push({name:'残差', col:resCol, color:'0F3F73', symbol:'circle'}); }
         else { sers.push({name:'K物体'+(o+1), col:cols['K'+o], color:c, symbol:'circle'});
                sers.push({name:'U物体'+(o+1), col:cols['U'+o], color:c2, symbol:'square'});
                sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
       });
       charts.push({title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y,
-                   xcol:(d.q==='v'?1:0), r0:r0, r1:r1,          /* 速さは tv[s] を横軸に */
+                   xcol:((d.q==='v'||((d.q==='fit'||d.q==='res') &&
+                          typeof RESID_INFO!=='undefined' &&
+                          (RESID_INFO.q==='vx'||RESID_INFO.q==='vy')))?1:0), r0:r0, r1:r1,   /* 速さは tv[s] を横軸に */
                    series:sers, anchorCol:anchor, anchorRow:di*19});
     });
   }
@@ -4306,62 +4602,166 @@ function exportXlsx(){
 /* =========================================================
    レポート（PNG / PDF）
    ========================================================= */
-function buildReportCanvas(){
-  var W=1240, H=1754, cv=document.createElement('canvas');
-  cv.width=W; cv.height=H;
-  var g=cv.getContext('2d');
-  g.fillStyle='#fff'; g.fillRect(0,0,W,H);
-  var exp=EXP();
+/* レポートは A4 たて（1240×1754）を1ページとして、入らなければページを足す */
+function buildReportPages(){
+  var W=1240, H=1754, M=50;
+  var pages=[], g=null, y=0, exp=EXP();
+  function newPage(){
+    var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+    pages.push(cv); y=60;
+    if(pages.length>1){
+      g.fillStyle='#8a95a1'; g.font='13px '+FONT;
+      g.fillText('動画解析レポート：'+exp.name+'（つづき）', M, 40);
+      y=72;
+    }
+    return g;
+  }
+  function need(h){ if(y+h > H-70) newPage(); }
+  function head(t){
+    need(46);
+    g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT; g.fillText(t, M, y+14); y+=26;
+  }
+  newPage();
+  /* ---- 見出しと条件 ---- */
   g.fillStyle='#0f4c8f'; g.font='bold 30px '+FONT;
-  g.fillText('動画解析レポート：'+exp.name, 50, 58);
+  g.fillText('動画解析レポート：'+exp.name, M, 58);
   g.fillStyle='#5b6672'; g.font='15px '+FONT;
   var d=new Date();
-  g.fillText(d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'  '+(exp.memo||''), 50, 86);
-  g.strokeStyle='#1663b5'; g.lineWidth=2; g.beginPath(); g.moveTo(50,98); g.lineTo(W-50,98); g.stroke();
+  g.fillText(d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'  '+(exp.memo||''), M, 86);
+  g.strokeStyle='#1663b5'; g.lineWidth=2; g.beginPath(); g.moveTo(M,98); g.lineTo(W-M,98); g.stroke();
   g.fillStyle='#1b1f24'; g.font='14px '+FONT;
-  var info=[
+  [
     '動画：'+(exp.video.name||'-')+'（'+exp.video.w+'×'+exp.video.h+'）  fps(表示用) '+nf(exp.video.fps,3),
     'スケール：'+(exp.mPerPx? sig(exp.mPerPx*1000,4)+' mm/px' : '未設定')+
       '　x軸：'+nf(exp.angle*180/Math.PI,1)+'°'+(exp.yflip?'（y反転）':'')+
       '　時刻の原点：'+(exp.t0!==null? nf(exp.t0,3)+' s':'動画の先頭'),
-    '手ぶれ補正：'+(exp.useDrift?'ON':'OFF')+'　記録点：'+exp.objs.map(function(a,i){return '物体'+(i+1)+' '+a.length;}).join(' / ')
-  ];
-  info.forEach(function(s,i){ g.fillText(s, 50, 124+i*22); });
-  /* ストロボ画像 */
-  var y=210;
+    '手ぶれ補正：'+(exp.useDrift?'ON':'OFF')+'　記録点：'+
+      exp.objs.map(function(a,i){return '物体'+(i+1)+' '+a.length;}).join(' / ')+
+      '　軸の表示：'+(useY()? 'x軸とy軸' : 'x軸のみ'),
+    '撮影の条件：'+((typeof diagLine==='function')? diagLine() : '-')
+  ].forEach(function(t,i){ g.fillText(t, M, 124+i*22); });
+  y=228;
+  /* ---- ストロボ画像 ---- */
   var stro=$('cvStrobe');
   if(UI.stroReady && stro.width>2){
-    var sw=W-100, sh=sw*stro.height/stro.width;
-    if(sh>360){ sh=360; sw=sh*stro.width/stro.height; }
-    g.drawImage(stro, 50, y, sw, sh);
-    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(50,y,sw,sh);
-    y+=sh+24;
+    var sw=W-2*M, sh=sw*stro.height/stro.width, cap=useY()? 250 : 330;
+    if(sh>cap){ sh=cap; sw=sh*stro.width/stro.height; }
+    need(sh+24);
+    g.drawImage(stro, M, y, sw, sh);
+    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(M,y,sw,sh);
+    y+=sh+22;
   }
-  /* グラフ4枚 */
-  var kinds=useY()? ['x','y','v','a'] : ['x','v','a'];
-  var cw=(W-120)/2, chh=cw*0.62;
-  kinds.forEach(function(k,i){
-    var tmp=document.createElement('canvas');
-    drawChart(tmp, {title:KINDLAB[k], xlab:'t [s]', ylab:KINDY[k], series:seriesFor(exp,k,APP.cur,false)},
-              {w:cw, h:chh, legend:true});
-    var X=50+(i%2)*(cw+20), Y=y+Math.floor(i/2)*(chh+16);
-    g.drawImage(tmp, X, Y, cw, chh);
-    g.strokeStyle='#d9dee4'; g.strokeRect(X,Y,cw,chh);
-  });
-  y += chh*2+40;
-  /* フィット結果 */
+  /* ---- グラフ：左に x 方向をたてに、右に y 方向をたてに ---- */
+  var wy=useY();
+  var cw=(W-2*M-20)/2;
+  var chh=Math.round(cw*0.53);
+  var colX=['x','v','a'], colY=['y','vy','ay'];
+  need(46+chh+14);
+  head('グラフ');
+  for(var r=0;r<3;r++){
+    need(chh+14);
+    var kx=colX[r];
+    drawInto(g, M, y, cw, chh, {title:KINDLAB[kx], xlab:'t [s]', ylab:KINDY[kx],
+      series:seriesFor(exp,kx,APP.cur,false)});
+    if(wy){
+      var ky=colY[r];
+      var spec = (ky==='y')? {title:KINDLAB.y, xlab:'t [s]', ylab:KINDY.y, series:seriesFor(exp,'y',APP.cur,false)}
+                           : ySpecOf(exp, ky);
+      drawInto(g, M+cw+20, y, cw, chh, spec);
+    }
+    y+=chh+12;
+  }
+  /* ---- フィットの結果・グラフ・残差 ---- */
   var box=$('fitResult');
-  if(box && box.textContent.trim() && y<H-120){
-    g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT; g.fillText('解析（フィット）', 50, y);
+  var hasFit = (typeof RESID!=='undefined') && RESID.length;
+  if(hasFit && box){
+    g.font='14px '+FONT;
+    /* .fitone の中は <br> で行が分かれている。ボタンの説明文は入れない */
+    var lines=[];
+    [].forEach.call(box.querySelectorAll('.fitone'), function(d){
+      d.innerHTML.split(/<br\s*\/?>/i).forEach(function(h){
+        var tmp=document.createElement('div'); tmp.innerHTML=h;
+        var s=tmp.textContent.replace(/\s+/g,' ').trim();
+        if(s) lines.push(s);
+      });
+    });
+    need(46+lines.length*20+16);
+    head('解析（フィット）');
     g.fillStyle='#1b1f24'; g.font='14px '+FONT;
-    var txt=box.textContent.replace(/\s+/g,' ').trim();
-    y = wrapText(g, txt, 50, y+24, W-100, 20) + 26;
+    y+=4;
+    lines.forEach(function(s){ y=wrapText(g, s, M, y+20, W-2*M, 20); });
+    y+=16;
   }
-  drawReportTable(g, exp, 50, y, W-100, H-70-y);
-  g.fillStyle='#8a95a1'; g.font='12px '+FONT;
-  g.fillText('動画解析ツール（単一HTML・オフライン）', 50, H-30);
-  return cv;
+  if(hasFit){
+    /* 画面のグラフをそのまま写すと、青いドラッグ帯まで入ってしまう。
+       フィットに使った点と、フィットの式のグラフを、あらためて描き直す。 */
+    var fw=(W-2*M-20)/2, fh=Math.round(fw*0.55);
+    var q=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
+    var qlab=(typeof QDEF!=='undefined' && QDEF[q])? QDEF[q].lab : q;
+    var fser=[], fcur=[];
+    RESID.forEach(function(r, i){
+      var pts=[];
+      for(var k=0;k<r.xs.length;k++) pts.push({x:r.xs[k], y:r.ys[k]});
+      fser.push({name:r.name, color:r.color, shape:['dot','sq','tri'][i%3], line:false, pts:pts});
+      fcur.push({color:['#e8443a','#2e8b57','#8a5cd6'][i%3], f:r.f,
+                 x0:Math.min.apply(null,r.xs), x1:Math.max.apply(null,r.xs)});
+    });
+    var fitSpec={ title:'フィットしたグラフ', xlab:'t [s]', ylab:qlab,
+                  series:fser, curves:fcur };
+    var rs=(typeof residSpec==='function')? residSpec() : null;
+    if(rs) rs.title='フィット残差（測った値 − フィットの値）';
+    need(46+fh+30);            /* 見出しだけ前のページに残さない */
+    head('フィットしたグラフと、フィット残差');
+    drawInto(g, M, y, fw, fh, fitSpec);
+    if(rs){
+      drawInto(g, M+fw+20, y, fw, fh, rs);
+      var sd=(typeof residSd==='function')? residSd() : null;
+      if(sd!==null){
+        g.fillStyle='#5b6672'; g.font='12px '+FONT;
+        g.fillText('残差の大きさ（RMS）＝ '+sig(sd,3), M+fw+20, y+fh+16);
+      }
+    }
+    g.fillStyle='#5b6672'; g.font='12px '+FONT;
+    g.fillText('点＝測った値、線＝フィットの式', M, y+fh+16);
+    y+=fh+34;
+  }
+  /* ---- 測定した値 ---- */
+  need(200);
+  drawReportTable(g, exp, M, y, W-2*M, H-70-y);
+  pages.forEach(function(cv,i){
+    var gg=cv.getContext('2d');
+    gg.fillStyle='#8a95a1'; gg.font='12px '+FONT;
+    gg.fillText('動画解析ツール（単一HTML・オフライン）', M, H-30);
+    if(pages.length>1) gg.fillText((i+1)+' / '+pages.length, W-M-40, H-30);
+  });
+  return pages;
+
+  function drawInto(gg, X, Y, w, h, spec){
+    var tmp=document.createElement('canvas');
+    drawChart(tmp, spec, {w:w, h:h, legend:true});
+    gg.drawImage(tmp, X, Y, w, h);
+    gg.strokeStyle='#d9dee4'; gg.lineWidth=1; gg.strokeRect(X,Y,w,h);
+  }
+  /* vy・ay だけのグラフ（右の列） */
+  function ySpecOf(e, kind){
+    var out=[], shapes=['dot','sq','tri'];
+    for(var ob=0; ob<NOBJ; ob++){
+      if(!expHasObj(e,ob)) continue;
+      var s=series(e,ob), base=OBJCOL[ob];
+      var nm=(APP.twoObj? ('物体'+(ob+1)) : (e.objName[ob]||'物体'));
+      if(kind==='vy') out.push({name:nm+' vy', color:base, shape:shapes[ob],
+        pts:s.filter(function(p){return p.vy!==null;}).map(function(p){return {x:p.t,y:p.vy};})});
+      else out.push({name:nm+' ay', color:base, shape:shapes[ob],
+        pts: APP.aFit? aByFit(s,'vy')
+           : s.filter(function(p){return p.ay!==null;}).map(function(p){return {x:p.t,y:p.ay};})});
+    }
+    return { title:(kind==='vy'?'vy – t':'ay – t'), xlab:'t [s]',
+             ylab:(kind==='vy'?'vy [m/s]':'ay [m/s²]'), series:out };
+  }
 }
+/* 1ページだけほしいとき（古い呼び出し用） */
+function buildReportCanvas(){ return buildReportPages()[0]; }
 function wrapText(g, text, x, y, maxW, lh){
   var words=text.split(''), line='', yy=y;
   for(var i=0;i<words.length;i++){
@@ -4415,19 +4815,31 @@ function drawReportTable(g, exp, x, y, w, h){
   }
 }
 function exportReportPng(){
-  var cv=buildReportCanvas();
+  var pages=buildReportPages();
+  if(pages.length===1){
+    pages[0].toBlob(function(b){ dl(b, fnameBase()+'_report.png'); toast('レポート（PNG）を保存しました'); }, 'image/png');
+    return;
+  }
+  /* 2ページ以上のときは、たてにつないで1枚の PNG にする */
+  var W=pages[0].width, H=pages[0].height;
+  var cv=document.createElement('canvas'); cv.width=W; cv.height=H*pages.length;
+  var g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+  pages.forEach(function(p2,i){ g.drawImage(p2, 0, i*H);
+    if(i){ g.strokeStyle='#c9d2dc'; g.lineWidth=2; g.beginPath(); g.moveTo(0,i*H); g.lineTo(W,i*H); g.stroke(); } });
   cv.toBlob(function(b){ dl(b, fnameBase()+'_report.png'); toast('レポート（PNG）を保存しました'); }, 'image/png');
 }
-/* --- 最小構成の PDF（JPEG を1枚貼る） --- */
+/* --- 最小構成の PDF（1ページに JPEG を1枚。ページ数ぶん並べる） --- */
 function exportReportPdf(){
-  var cv=buildReportCanvas();
-  var jpg=cv.toDataURL('image/jpeg', 0.88);
-  var bin=atob(jpg.split(',')[1]);
-  var img=new Uint8Array(bin.length);
-  for(var i=0;i<bin.length;i++) img[i]=bin.charCodeAt(i);
+  var pages=buildReportPages();
   var pw=595.28, ph=841.89;                       /* A4 pt */
-  var s=Math.min(pw/cv.width, ph/cv.height);
-  var w=cv.width*s, h=cv.height*s, ox=(pw-w)/2, oy=(ph-h)/2;
+  var imgs=pages.map(function(cv){
+    var jpg=cv.toDataURL('image/jpeg', 0.88);
+    var bin=atob(jpg.split(',')[1]);
+    var u=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+    return { data:u, w:cv.width, h:cv.height };
+  });
+  var N=imgs.length;
   var chunks=[], offs=[], pos=0;
   function push(str){ var u=(typeof str==='string')? utf8(str) : str; chunks.push(u); pos+=u.length; }
   push('%PDF-1.4\n');
@@ -4437,30 +4849,49 @@ function exportReportPdf(){
     if(stream){ push('stream\n'); push(stream); push('\nendstream\n'); }
     push('endobj\n');
   }
+  /* 1:Catalog 2:Pages 3..: ページごとに Page / Image / Contents の3つ */
+  var kids=[];
+  for(var k=0;k<N;k++) kids.push((3+k*3)+' 0 R');
   obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
-  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw.toFixed(2)+' '+ph.toFixed(2)+
-        '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
-  obj(4,'<< /Type /XObject /Subtype /Image /Width '+cv.width+' /Height '+cv.height+
-        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>', img);
-  var cont='q\n'+w.toFixed(2)+' 0 0 '+h.toFixed(2)+' '+ox.toFixed(2)+' '+oy.toFixed(2)+' cm\n/Im0 Do\nQ\n';
-  obj(5,'<< /Length '+cont.length+' >>', cont);
+  obj(2,'<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+N+' >>');
+  imgs.forEach(function(im,k){
+    var pn=3+k*3, inum=pn+1, cnum=pn+2;
+    var sc=Math.min(pw/im.w, ph/im.h);
+    var w=im.w*sc, h=im.h*sc, ox=(pw-w)/2, oy=(ph-h)/2;
+    obj(pn,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw.toFixed(2)+' '+ph.toFixed(2)+
+        '] /Resources << /XObject << /Im0 '+inum+' 0 R >> >> /Contents '+cnum+' 0 R >>');
+    obj(inum,'<< /Type /XObject /Subtype /Image /Width '+im.w+' /Height '+im.h+
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+im.data.length+' >>', im.data);
+    var cont='q\n'+w.toFixed(2)+' 0 0 '+h.toFixed(2)+' '+ox.toFixed(2)+' '+oy.toFixed(2)+' cm\n/Im0 Do\nQ\n';
+    obj(cnum,'<< /Length '+cont.length+' >>', cont);
+  });
+  var last=2+N*3;
   var xref=pos;
-  var x='xref\n0 6\n0000000000 65535 f \n';
-  for(var n=1;n<=5;n++) x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
-  x+='trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+  var x='xref\n0 '+(last+1)+'\n0000000000 65535 f \n';
+  for(var n=1;n<=last;n++) x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
+  x+='trailer\n<< /Size '+(last+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
   push(x);
   dl(new Blob(chunks,{type:'application/pdf'}), fnameBase()+'_report.pdf');
-  toast('レポート（PDF）を保存しました');
+  toast('レポート（PDF）を保存しました'+(N>1? '（'+N+'ページ）':''));
 }
 function exportGraphsPng(){
   var cards=els('#charts2 .chartcard canvas');
-  if(!cards.length){ toast('グラフがありません'); return; }
-  var cols=Math.min(2,cards.length), rows=Math.ceil(cards.length/cols);
-  var w=640, h=400, cv=document.createElement('canvas');
+  /* ③でフィットしていれば、フィットしたグラフと残差のプロットも一緒に出す */
+  els('#charts3 .chartcard canvas').forEach(function(c){ cards.push(c); });
+  var w=640, h=400;
+  var extra=[];
+  if(typeof residSpec==='function'){
+    var rs=residSpec();
+    if(rs){ var tmp=document.createElement('canvas');
+            drawChart(tmp, rs, {w:w, h:h, legend:true, fixed:true}); extra.push(tmp); }
+  }
+  var all=cards.concat(extra);
+  if(!all.length){ toast('グラフがありません'); return; }
+  var cols=Math.min(2,all.length), rows=Math.ceil(all.length/cols);
+  var cv=document.createElement('canvas');
   cv.width=w*cols; cv.height=h*rows;
   var g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
-  cards.forEach(function(c,i){ g.drawImage(c, (i%cols)*w, Math.floor(i/cols)*h, w, h); });
+  all.forEach(function(c,i){ g.drawImage(c, (i%cols)*w, Math.floor(i/cols)*h, w, h); });
   cv.toBlob(function(b){ dl(b, fnameBase()+'_graphs.png'); toast('グラフを保存しました'); },'image/png');
 }
 function saveStrobePng(){
@@ -4564,7 +4995,7 @@ function calMsg(html){
   m.innerHTML=html; m.classList.remove('hide');
   var h=$('vhint'); if(h) h.classList.add('hide');    /* 上の吹き出しとかさならないように */
   clearTimeout(m.__t);
-  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 8200);   /* 前より 0.8 秒みじかく */
+  m.__t=setTimeout(function(){ m.classList.add('hide'); }, 6700);   /* 最初の 9.0 秒から 2.3 秒みじかく */
 }
 /* 読み込み中・コマ表づくり中は、ボタンを押せないようにする */
 function setBusy(on, msg, sub){
@@ -4776,6 +5207,7 @@ function askRetrackFrom(tt){
     }, { noLabel:'やめる', onNo:function(){ markTrkPoint(); } });
 }
 function updateCalInfo(){
+  try{ updateDepth(); }catch(e){}
   var exp=EXP();
   $('calInfo').innerHTML='原点：'+(exp.originSet? '<b>設定ずみ</b>':'<span class="ng">未設定</span>')+
     '／スケール：'+(exp.mPerPx? '<b>'+sig(exp.mPerPx*1000,4)+' mm/px</b>':'<span class="ng">未設定</span>')+
@@ -4972,6 +5404,7 @@ function refreshExpUI(){
   updateAxisButtons();
   applyAxisDisp();
   $('selTScale').value=String(EXP().tscale||1);
+  try{ updateFpsLine(); }catch(e){}
   updateRestoreBar();
   if(e.scaleLen>0){                       /* スケール長さの入力欄も実験に合わせる */
     if(e.scaleLen>=1){ $('selScaleUnit').value='1'; $('inScaleLen').value=+(e.scaleLen).toFixed(4); }
@@ -5879,18 +6312,18 @@ function switchExp(i){
 
 /* ---------- 動画の読み込み ---------- */
 /* 解析できる動画の上限（これを超えたら開かない） */
-var VLIM = { bytes:500*1024*1024, dur:180, px:4096 };
+var VLIM = { bytes:500*1024*1024, dur:40, px:4096 };
 var VREC = { bytes:100*1024*1024, dur:30, w:1920, h:1080 };
 function sizeText(b){ return (b>=1024*1024*1024)? (b/1024/1024/1024).toFixed(2)+' GB' : Math.round(b/1024/1024)+' MB'; }
 function overLimitMsg(o){
   var r=[];
   if(o.bytes>VLIM.bytes) r.push('ファイルの大きさが <b>'+sizeText(o.bytes)+'</b>（上限 '+sizeText(VLIM.bytes)+'）');
-  if(o.dur>VLIM.dur) r.push('長さが <b>'+nf(o.dur,1)+' 秒</b>（上限 '+VLIM.dur+' 秒＝3分）');
+  if(o.dur>VLIM.dur) r.push('長さが <b>'+nf(o.dur,1)+' 秒</b>（上限 '+VLIM.dur+' 秒）');
   if(o.w>VLIM.px || o.h>VLIM.px) r.push('画面の大きさが <b>'+o.w+'×'+o.h+' px</b>（上限 '+VLIM.px+' px）');
   if(!r.length) return '';
   return '<b>このファイルは解析できません。</b><br>'+r.join('<br>')+
-    '<br><span class="mini" style="color:inherit">スマートフォンの「トリミング」や「解像度を下げて書き出す」で'+
-    '小さくしてから、もう一度読み込んでください。おすすめは <b>5〜30 秒・フルHD・100 MB 以内</b>です。</span>';
+    '<br><span class="mini" style="color:inherit">スマートフォンの「トリミング」で<b>見たい運動の前後だけ</b>を切り出すか、'+
+    '「解像度を下げて書き出す」で小さくしてから、もう一度読み込んでください。おすすめは <b>5〜30 秒・フルHD・100 MB 以内</b>です。</span>';
 }
 /* 読み込んだあとに、長さと画面の大きさをたしかめる */
 function checkLoadedVideo(name){
@@ -5959,6 +6392,7 @@ function loadVideoFile(file){
     return;
   }
   var url=URL.createObjectURL(file);
+  VID.bytes=file.size;
   setBusy(true, '動画を読み込んでいます…', 'ファイルの大きさによっては少し時間がかかります。');
   var pr=vidLoad(url, file.name), myseq=VID.loadSeq;
   pr.then(function(){
@@ -5977,6 +6411,7 @@ function loadVideoFile(file){
 }
 function loadVideoUrl(url, name){
   $('vidErr').classList.add('hide');
+  VID.bytes=0;
   setBusy(true, '動画を読み込んでいます…', 'ファイルの大きさによっては少し時間がかかります。');
   var pr=vidLoad(url, name), myseq=VID.loadSeq;
   pr.then(function(){
@@ -6027,6 +6462,10 @@ function onVideoReady(name){
   clearStrobe();
   resetCG();                       /* 新しい動画を読んだら、自由選択グラフは既定にもどす */
   selClear(); gvReset();
+  /* 同じ動画を開き直したとき（続きから）だけ、fps の確認は聞かない */
+  var same = !!(exp.fpsOk && exp.video && exp.video.name===name &&
+                exp.video.w===VID.w && exp.video.h===VID.h && Math.abs((exp.video.dur||0)-VID.dur)<0.05);
+  exp.fpsOk = same;
   exp.video={name:name, w:VID.w, h:VID.h, dur:VID.dur, fps:VID.fps};
   $('vph').classList.add('hide');
   $('cvView').classList.remove('hide'); $('cvOv').classList.remove('hide');
@@ -6035,10 +6474,10 @@ function onVideoReady(name){
   VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0;
   vidSeek(0).then(function(){
     render(); afterChange(); updateSteps(); updateBigPlay(); updateCropInfo();
-    if(VID.hasRVFC && VID.dur>0 && VID.dur<=40) buildTableUI(true);
-    else if(VID.hasRVFC) $('ftState').innerHTML='<b>長い動画です</b>（ボタンで測れます）';
+    renderVidDiag(); updateFpsLine();
+    if(VID.hasRVFC && VID.dur>0) buildTableUI(true);
     else if(!VID.hasRVFC) $('ftState').innerHTML='<span class="ng">この端末では測れません</span>';
-    if(!VID.building) setBusy(false);       /* コマ表を作らないときは、ここで解放 */
+    if(!VID.building){ setBusy(false); if(!EXP().fpsOk) askFpsUI(); }   /* コマ表を作らないときは、ここで解放 */
   });
 }
 /* 測る時間の範囲：2 で解析範囲が決まっていれば、その部分だけを測る（長い動画で速く終わる） */
@@ -6070,10 +6509,30 @@ function buildTableUI(auto, seq){
        : '動画を1回だけ最後まで再生して、コマごとの時刻を測っています。')+
     'めやすは <b>'+(mins>=60? nf(mins/60,1)+' 分':Math.round(mins)+' 秒')+'</b>です。');
   busyProg(0);
-  var myseq=VID.loadSeq;
-  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f); },
+  var myseq=VID.loadSeq, settled=false;
+  /* 番犬：何かの理由で測定が終わらなくても、画面を固めたままにしない。
+     （取りこぼしの測り直しが長引く・端末が再生を止める、など） */
+  var guard=setTimeout(function(){
+    if(settled || myseq!==VID.loadSeq) return;
+    VID.cancelBuild=true;
+    setTimeout(function(){
+      if(settled || myseq!==VID.loadSeq) return;
+      settled=true; VID.building=false; VID.needExact=false;
+      p.classList.add('hide'); setBusy(false); busyProg(null);
+      $('btnFrameTable').textContent='コマごとの時刻を測る';
+      if(VID.frames.length>2){ trimTable(); $('ftState').innerHTML='<b>'+VID.frames.length+' コマ</b>（途中で打ち切り）'; }
+      else { VID.frames=[]; $('ftState').innerHTML='<span class="ng">測れませんでした（fps から計算します）</span>'; }
+      toast('時刻の測定に時間がかかりすぎたので、ここまでで進めます');
+      renderVidDiag(); render(); afterChange(); askFpsUI();
+    }, 1500);
+  }, Math.round((mins+25)*1000));
+  vidBuildTable(function(f, msg){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f);
+                  if(msg) $('busySub').innerHTML=msg; },
                 sp? sp.a : 0, sp? sp.b : 0)
    .then(function(okk){
+     clearTimeout(guard);
+     if(settled) return;
+     settled=true;
      if(myseq!==VID.loadSeq){ p.classList.add('hide'); return; }   /* 別の動画になった */
      p.classList.add('hide'); setBusy(false); busyProg(null);
      $('btnFrameTable').textContent='コマごとの時刻を測る';
@@ -6092,7 +6551,9 @@ function buildTableUI(auto, seq){
      } else {
        $('ftState').innerHTML='<span class="ng">測れませんでした</span>';
      }
+     renderVidDiag(); updateFpsLine();
      render(); afterChange();
+     if(!EXP().fpsOk) askFpsUI();       /* 撮影 fps・スローの確認（入れ忘れ防止） */
    });
 }
 
@@ -6284,7 +6745,23 @@ function openWhatFit(){
    '<h3>使うときのコツ</h3>'+
    '<ul><li>グラフの<b>青い帯</b>で、フィットに使う範囲を選べます。'+
    '手を離す前や、ぶつかった後など「別の運動」の部分は外しましょう</li>'+
-   '<li>どの式を選ぶかは自分で決めます（等速なら直線、等加速度なら放物線、ばねなら正弦…）</li></ul>';
+   '<li>どの式を選ぶかは自分で決めます（等速なら直線、等加速度なら放物線、ばねなら正弦…）</li></ul>'+
+   '<h3>フィット残差とは</h3>'+
+   '<p><b>残差</b>は「<b>測った値 − 式の値</b>」、つまり上の図の<span style="color:#e8443a;font-weight:700">赤い点線</span>の長さ（符号つき）です。'+
+   'これを横軸 t にならべて点で描いたものが<b>フィット残差のプロット</b>です。</p>'+
+   '<p class="fml">残差 = y − ŷ　（＋なら式より上、−なら式より下）</p>'+
+   '<p>R² は「全体としてどれくらい合ったか」を1つの数にまとめたものなので、'+
+   '<b>どこで、どんなふうに合わなかったか</b>までは分かりません。残差のプロットはそこを見せてくれます。</p>'+
+   '<ul>'+
+   '<li><b>0 のまわりにばらばら</b>に散っている → その式でよく表せています。'+
+   '残っているのはクリックのずれ（偶然の誤差）だけ、ということです</li>'+
+   '<li><b>ゆるやかに曲がったかたより</b>がある（Uの字や逆Uの字）→ <b>式の形が合っていません</b>。'+
+   '直線でフィットしたけれど本当は放物線だった、空気抵抗や摩擦がはたらいていた、などが考えられます</li>'+
+   '<li><b>途中から急にずれる</b> → その時刻で運動が変わっています'+
+   '（手が離れた、ぶつかった、床についた…）。青い帯でそこを外してフィットし直します</li>'+
+   '<li><b>だんだん大きくなる／小さくなる</b> → 動画がぶれている、スケールが合っていない、なども疑えます</li></ul>'+
+   '<p class="mini">残差の大きさ（RMS）は、残差を2乗して平均し、ルートをとったものです。'+
+   '測った量と同じ単位なので、「だいたい何 m ずれているか」が分かります。</p>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
 }
@@ -6310,10 +6787,10 @@ function openHelp(){
   '<li><b>この時刻まで解析</b>：いま出ているコマを、解析の終わりにします</li>'+
   '<li>この2つは<b>シークバーの縦棒</b>（緑＝t=0、赤＝終わり）でも表示され、<b>ドラッグで動かせます</b>。'+
   '<b>下の時間バー</b>をドラッグして時間を選ぶと楽です</li>'+
-  '<li>fps の表示や［コマごとの時刻を測る］もここにあります</li>'+
-  '<li><b>スロー撮影</b>：ゆっくり再生される形で保存された動画のときだけ変えます。'+
+  '<li><b>撮影 fps とスロー撮影</b>：動画を読みこんだ直後に確認の画面が出ます（入れ忘れを防ぐため）。'+
   '「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します'+
-  '（240fps で撮って 30fps で保存された動画など）</li></ul>'+
+  '（240fps で撮って 30fps で保存された動画など）。あとから直すときは、この段の［変更］を押します</li>'+
+  '<li>動画は <b>40 秒まで</b>です。長いときは、見たい運動の前後だけを切り出してから読みこんでください</li></ul>'+
   '<h3>3. 空間の原点・スケール・軸を決める</h3>'+
   '<ul><li>3 に入ると、動画の真ん中に <b>［原点を指定してください］</b> が出ます。'+
   '押すと「原点を設定」を押したのと同じで、その後、動画の上で原点にしたい所をクリックします</li>'+
@@ -6447,7 +6924,7 @@ function openHelp(){
   '必要なら fps 欄を手で直してください。'+
   'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
   '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
-  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>';
+  '動画を読みこんだ直後の確認画面（または 2 の［変更］）で「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
 }
@@ -7051,7 +7528,7 @@ function askResetPts(go){
     if(APP.tab==='3') setM3Menu(this.checked); else setM2Menu(this.checked);
     saveLocal();
   };
-  bindPanelRsz(); bindVidRsz();
+  bindPanelRsz(); bindVidRsz(); bindDepth();
   /* 1. 動画：動画エリアをクリックしたら「動画を選択」 */
   $('vph').onclick=function(){ if(!VID.ready) $('btnFile').click(); };
   $('selSample').onchange=function(){
@@ -7185,6 +7662,11 @@ function askResetPts(go){
   $('btnReportPdf2').onclick=askThen('レポート（PDF）', exportReportPdf);
   $('btnKadai').onclick=openKadaiDialog;
   $('btnXlsx').onclick=askThen('Excel', exportXlsx);
+  /* ③にも同じ出力ボタン（CSV は置かない） */
+  $('btnReportPng3').onclick=askThen('レポート（PNG）', exportReportPng);
+  $('btnReportPdf3').onclick=askThen('レポート（PDF）', exportReportPdf);
+  $('btnXlsx3').onclick=askThen('Excel', exportXlsx);
+  $('btnGraphPng3').onclick=askThen('グラフの画像', exportGraphsPng);
   $('btnGraphPng').onclick=askThen('グラフの画像', exportGraphsPng);
 
   /* 再生・コマ送り */
@@ -7292,6 +7774,238 @@ function askResetPts(go){
   });
 }
 var seekBusy=false;
+
+/* =========================================================
+   撮れぐあいのチェック（②）と、ものさしの奥ゆき（③）
+   ========================================================= */
+/* 判定はゆるめにしておく。生徒を止めるためではなく、
+   「なぜグラフが荒れるのか」を自分で見つけられるようにするのが目的。 */
+function diagItems(){
+  var out=[], d=(typeof diagResult==='function')? diagResult() : null;
+  function add(mk, name, val, tip){ out.push({mk:mk, name:name, val:val, tip:tip||''}); }
+  /* --- 測らなくても分かること --- */
+  var dur=VID.dur||0;
+  if(dur>0){
+    if(dur<=VREC.dur) add('o','長さ', nf(dur,1)+' 秒','');
+    else if(dur<=60) add('t','長さ', nf(dur,1)+' 秒','少し長めです。2 で「解析する時間範囲」をみじかくしぼると軽くなります。');
+    else add('x','長さ', nf(dur,1)+' 秒','長すぎます。見たい運動の前後だけを切り出して撮り直すのがおすすめです。');
+  }
+  if(VID.w){
+    if(VID.w<=VREC.w && VID.h<=VREC.h) add('o','画面の大きさ', VID.w+'×'+VID.h+' px','');
+    else add('t','画面の大きさ', VID.w+'×'+VID.h+' px','4K などは重くなるだけで、精度は上がりません。フルHD で十分です。');
+  }
+  if(VID.bytes>0){
+    if(VID.bytes<=VREC.bytes) add('o','ファイル', sizeText(VID.bytes),'');
+    else add('t','ファイル', sizeText(VID.bytes),'大きいと動きが重くなります。');
+  }
+  if(VID.frames.length>2){
+    var f=nf(VID.fps,1);
+    if(VID.fps>=45) add('t','コマ数', f+' コマ/秒','こまかく撮れていますが、そのぶん 1 コマの動きが小さくなります。'+
+      '4 では［進むフレーム数 N］を大きめ（4〜8）にすると、v・a のグラフが落ち着きます。');
+    else add('o','コマ数', f+' コマ/秒','');
+  }
+  /* --- 再生しながら測ったこと --- */
+  if(d){
+    var L=d.lum;
+    if(L>=80) add('o','明るさ','じゅうぶん','');
+    else if(L>=50) add('t','明るさ','やや暗い','暗いと 1 コマ 1 コマがぼやけて、点が打ちにくくなります。');
+    else add('x','明るさ','暗い','照明をつけるか、明るい場所で撮り直すと、ぐっと点が打ちやすくなります。');
+    if(d.sharpMed!==null && d.sharpMax>0){
+      var r=d.sharpMed/d.sharpMax;
+      if(r>=0.6) add('o','コマのくっきりさ','そろっています','');
+      else if(r>=0.4) add('t','コマのくっきりさ','コマによってぼやけます',
+        '物体が速いか、暗いためです。物体をもう少し遠くから撮るか、明るくすると直ります。');
+      else add('x','コマのくっきりさ','ぶれているコマが多い',
+        '物体が速すぎるか、暗すぎます。このままだと点の位置が読み取りにくくなります。');
+    }
+    if(d.shakePct!==null){
+      var p=d.shakePct, px=nf(d.shake,1)+' px';
+      if(p<0.2) add('o','手ぶれ','ほぼ固定','');
+      else if(p<0.6) add('t','手ぶれ','少しゆれています（'+px+'/コマ）',
+        '4 の［手ぶれ補正を使う］にチェックを入れ、［画面内の固定点を記録］で動かない目印を'+
+        'いくつかのコマでクリックすると、そのぶんを差し引けます。');
+      else add('x','手ぶれ','ゆれが大きい（'+px+'/コマ）',
+        'このままだと v・a が実際よりずれます。4 の［手ぶれ補正を使う］で固定点をとるか、'+
+        'カメラを机や壁に固定して撮り直してください。');
+    }
+  }
+  return out;
+}
+function diagWorst(items){
+  var w='o';
+  items.forEach(function(i){ if(i.mk==='x') w='x'; else if(i.mk==='t' && w!=='x') w='t'; });
+  return w;
+}
+var MK={ o:'○', t:'△', x:'×' };
+function renderVidDiag(){
+  var box=$('vidDiag'); if(!box) return;
+  if(!VID.ready){ box.classList.add('hide'); box.innerHTML=''; return; }
+  var items=diagItems();
+  if(!items.length){ box.classList.add('hide'); box.innerHTML=''; return; }
+  var w=diagWorst(items);
+  box.className='diagbox'+(w==='x'?' bad':(w==='t'?' warn':''));
+  var head=(w==='o')? 'この動画の撮れぐあい：よく撮れています'
+         : (w==='t')? 'この動画の撮れぐあい：気になるところがあります'
+                    : 'この動画の撮れぐあい：撮り直したほうがよいところがあります';
+  var h='<span class="dgt">'+head+'</span><ul>';
+  items.forEach(function(i){
+    h+='<li><span class="mk '+i.mk+'">'+MK[i.mk]+'</span><span>'+esc(i.name)+'：<b>'+esc(i.val)+'</b>'+
+       (i.tip? '<br><span class="dgtip">'+i.tip+'</span>' : '')+'</span></li>';
+  });
+  h+='</ul>';
+  if(!(typeof diagResult==='function' && diagResult()))
+    h+='<p class="mini dgtip">明るさ・手ぶれは、コマごとの時刻を測るときに調べます。</p>';
+  box.innerHTML=h;
+}
+/* 撮れぐあいを1行にまとめる（レポートの条件欄に出す） */
+function diagLine(){
+  var d=(typeof diagResult==='function')? diagResult() : null;
+  var s=[];
+  if(d){
+    s.push('明るさ '+(d.lum>=80?'○':(d.lum>=50?'△':'×')));
+    if(d.shakePct!==null) s.push('手ぶれ '+(d.shakePct<0.2? 'ほぼ無し（○）'
+      : nf(d.shake,1)+' px/コマ'+(d.shakePct<0.6?'（△）':'（×）')));
+    if(d.sharpMed!==null && d.sharpMax>0)
+      s.push('コマのくっきりさ '+(d.sharpMed/d.sharpMax>=0.6?'○':(d.sharpMed/d.sharpMax>=0.4?'△':'×')));
+  }
+  var e=EXP(), er=depthErrPct(e);
+  if(er!==null) s.push('ものさしの奥ゆき '+(er===0? '同じ（○）' : '約 '+nf(er,0)+'% ずれ'));
+  return s.length? s.join('　') : '（測っていません）';
+}
+/* ---- ものさしの奥ゆき ---- */
+/* カメラから物体まで L、ものさしが d だけ手前（または奥）なら、
+   写る大きさが L/(L∓d) 倍ちがうので、長さは およそ d/L の割合でずれる。 */
+function depthErrPct(e){
+  e=e||EXP();
+  if(!(e.mPerPx>0)) return null;
+  var L=+e.camDist||3, gp=+e.rulerGap||0;
+  if(!(L>0)) return null;
+  return Math.min(90, gp/L*100);
+}
+function updateDepth(){
+  var e=EXP(), box=$('depthBox'), msg=$('depthMsg');
+  if(!box) return;
+  if(!(e.mPerPx>0)){ box.classList.add('hide'); return; }
+  box.classList.remove('hide');
+  if($('selCamDist')) $('selCamDist').value=String(e.camDist||3);
+  if($('selRulerGap')) $('selRulerGap').value=String(e.rulerGap||0);
+  var p=depthErrPct(e);
+  if(!msg) return;
+  if(!p){ msg.className='mini ok';
+    msg.innerHTML='同じ奥ゆきなら、この心配はありません。'; return; }
+  msg.className='mini ng';
+  msg.innerHTML='長さが <b>約 '+nf(p,0)+' %</b> ずれます'+
+    '（ものさしが手前なら小さく、奥なら大きく出ます）。'+
+    (p>=10? '<br>ものさしを物体と同じ奥ゆきに置いて、撮り直すことをおすすめします。' : '');
+}
+function bindDepth(){
+  ['selCamDist','selRulerGap'].forEach(function(id){
+    var s=$(id); if(!s) return;
+    s.onchange=function(){
+      var e=EXP();
+      if(id==='selCamDist') e.camDist=parseFloat(s.value)||3;
+      else e.rulerGap=parseFloat(s.value)||0;
+      updateDepth(); saveLocal();
+    };
+  });
+}
+
+/* =========================================================
+   動画を読んだ直後の「撮影 fps（フレームレート）の確認」
+   ・fps とスロー撮影の入れ忘れを防ぐため、動画を読んだらかならず1回聞く
+   ・撮影 fps と スロー倍率 は同じことの表と裏：撮影 fps ＝ 再生 fps ÷ 倍率
+   ・同じ動画を開き直したとき（続きから）は聞かない
+   ========================================================= */
+var SLOW_OPTS=[[1,'普通の速さで撮った'],[0.5,'1/2 のスロー'],[0.25,'1/4 のスロー'],
+               [0.125,'1/8 のスロー（240fps→30fps など）'],[0.0625,'1/16 のスロー']];
+function fpsMeasured(){ return VID.frames.length>2; }
+/* 倍率の表示：8 なら「8」、2.5 なら「2.5」 */
+function niceX(v){ return (Math.abs(v-Math.round(v))<0.02)? String(Math.round(v)) : sig(v,3); }
+function askFpsUI(){
+  var e=EXP();
+  if(!VID.ready) return;
+  var play=VID.fps>0? VID.fps : 30;
+  var ts=(e.tscale>0? e.tscale : 1);
+  var st=fpsFromTable();
+  var info = fpsMeasured()
+    ? VID.frames.length+' コマ / '+nf(VID.frames[VID.frames.length-1]-VID.frames[0],3)+' s / 再生 '+nf(play,3)+' fps'+
+      (st&&st.vfr? '（可変フレームレート）':'（固定フレームレート）')
+    : '<span class="ng">コマごとの時刻は測れませんでした。</span>再生 fps を入力してください（ふつうは 30 か 60）';
+  if(window.__noAskFps){ applyFps(play, ts); return; }
+  var old=document.getElementById('fpsDlg'); if(old) old.remove();
+  var m=document.createElement('div'); m.className='modal'; m.id='fpsDlg';
+  m.innerHTML='<div class="box" style="max-width:560px">'+
+    '<h2>撮影 fps（フレームレート）の確認</h2>'+
+    '<p>撮影 fps（<b>1 秒間に何コマ撮ったか</b>）を入力してください。</p>'+
+    '<label class="f" style="font-size:1.05rem">撮影 fps：<input type="number" id="inShotFps" min="1" max="2000" step="0.001" style="width:120px"></label>'+
+    '<p class="mini" style="margin:6px 0 10px">ファイル解析：'+info+'</p>'+
+    (fpsMeasured()? '' :
+      '<label class="f">再生 fps：<input type="number" id="inPlayFps" min="1" max="1000" step="0.001" style="width:110px" value="'+nf(play,3)+'"></label>')+
+    '<label class="f" style="font-size:1.02rem">スロー撮影：<select id="selShotSlow">'+
+      SLOW_OPTS.map(function(o){ return '<option value="'+o[0]+'">'+o[1]+'</option>'; }).join('')+
+      '<option value="x">その他（撮影 fps から計算）</option></select></label>'+
+    '<p class="mini" id="shotNote" style="margin-top:6px"></p>'+
+    '<p class="mini">※ ここで入れるのは<b>時刻の計算に使う値</b>です。コマの数やコマ送りの動きは動画ファイルで決まっているので、変わりません。</p>'+
+    '<div class="row" style="margin-top:12px;justify-content:flex-end">'+
+    '<button class="btn pri" id="btnFpsOk">この設定で進む</button></div></div>';
+  document.body.appendChild(m);
+  var inS=$('inShotFps'), sel=$('selShotSlow'), inP=$('inPlayFps'), note=$('shotNote');
+  function P(){ var v=inP? parseFloat(inP.value) : play; return (v>0)? v : play; }
+  function setSel(t){
+    var hit=null; SLOW_OPTS.forEach(function(o){ if(Math.abs(o[0]-t)/o[0]<0.06) hit=o[0]; });
+    sel.value = hit!==null? String(hit) : 'x';
+  }
+  function showNote(){
+    var t=P()/(parseFloat(inS.value)||P());
+    note.innerHTML = (Math.abs(t-1)<0.02)
+      ? '普通の速さとして計算します（動画の 1 秒 ＝ 実際の 1 秒）。'
+      : '動画の 1 秒 ＝ 実際の <b>'+sig(t,3)+' 秒</b>として計算します（'+niceX(1/t)+' 倍のスロー）。';
+  }
+  inS.value=nf(play/ts,3); setSel(ts); showNote();
+  sel.onchange=function(){
+    if(sel.value==='x'){ showNote(); return; }
+    var v=P()/parseFloat(sel.value);
+    if(Math.abs(v-Math.round(v))<0.25) v=Math.round(v);     /* 29.97fps×8 = 239.8 → 240 と見せる */
+    inS.value=nf(v,3); showNote();
+  };
+  inS.oninput=function(){ var v=parseFloat(inS.value); if(v>0){ setSel(P()/v); showNote(); } };
+  if(inP) inP.oninput=function(){ var v=parseFloat(inP.value); if(v>0){ inS.value=nf(v/(parseFloat(sel.value)||1),3); showNote(); } };
+  $('btnFpsOk').onclick=function(){
+    var shot=parseFloat(inS.value), pl=P();
+    if(!(shot>0) || shot>2000){ toast('撮影 fps は 1 〜 2000 の数を入れてください'); inS.focus(); return; }
+    var t=pl/shot;
+    if(!(t>0.01 && t<=1.5)){ toast('撮影 fps が再生 fps より小さすぎます／大きすぎます'); inS.focus(); return; }
+    if(t>1) t=1;                        /* 撮影 < 再生 はふつう無いので、普通の速さとする */
+    if(sel.value!=='x') t=parseFloat(sel.value);   /* 1/8 などを選んでいれば、その値そのもの */
+    m.remove();
+    applyFps(pl, t, shot);
+  };
+  setTimeout(function(){ try{ inS.focus(); inS.select(); }catch(x){} }, 30);
+}
+function applyFps(play, ts, shot){
+  var e=EXP();
+  if(!fpsMeasured() && play>0){ VID.fps=play; $('fpsSrc').textContent='（手入力）'; }
+  e.video.fps=VID.fps;
+  e.tscale=ts; e.shotFps=shot||(VID.fps/ts); e.fpsOk=true;
+  $('inFps').value=nf(VID.fps,3);
+  $('selTScale').value=String(ts);
+  if(![].some.call($('selTScale').options, function(o){ return o.value===String(ts); })) $('selTScale').value='1';
+  updateFpsLine(); afterChange();
+  if(!$('mode2').classList.contains('hide')) renderMode2();
+  saveLocal();
+}
+/* 2 のカードの fps の行（短く） */
+function updateFpsLine(){
+  var e=EXP(), el0=$('fpsLine'); if(!el0) return;
+  var ts=(e.tscale>0? e.tscale : 1);
+  var src=fpsMeasured()? '実測した時刻から' : ($('fpsSrc').textContent.replace(/[（）]/g,'')||'既定値');
+  el0.innerHTML='fps <b>'+nf(VID.fps,3)+'</b>（'+esc(src)+'）　'+
+    (ts===1? '普通の速さで撮影' : '<b>'+niceX(1/ts)+' 倍のスロー</b>で撮影（撮影 '+nf(e.shotFps||VID.fps/ts,1)+' fps）')+
+    '　<button class="btn sm" id="btnFpsDlg">変更</button>';
+  var b=$('btnFpsDlg'); if(b) b.onclick=function(){ askFpsUI(); };
+  /* 測れなかった／一部しか測れなかったときだけ、測り直すボタンを出す */
+  var row=$('ftRow'); if(row) row.classList.toggle('hide', !(VID.ready && VID.hasRVFC && (!fpsMeasured() || VID.tablePartial)));
+}
 
 </script>
 

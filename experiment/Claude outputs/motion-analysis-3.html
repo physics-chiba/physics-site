@@ -654,7 +654,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   font-weight:600;font-size:.86rem;line-height:1.4;padding:5px 12px;border:1px solid rgba(255,255,255,.35)}
 #autoMsg b{color:#ffd66e}
 /* 押すとそのまま実行できる知らせ（見つけました！ 最後まで追跡 しますか？） */
-#autoMsg.act{cursor:pointer;border:2px solid #ffd66e}
+#autoMsg.act{cursor:pointer;border:2px solid #ffd66e;pointer-events:auto}
 #autoMsg.act:hover{filter:brightness(1.18)}
 #autoMsg.ok.big{background:rgba(18,110,60,.92)}
 #autoMsg.ok.faint{background:rgba(18,110,60,.5)}
@@ -678,6 +678,40 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 /* 印刷 */
 @media print{.apphd,.tabs,.side{display:none}}
+
+/* ---- この動画の撮れぐあい（読み込み直後の自動チェック） ---- */
+.diagbox{ margin-top:8px; border:1px solid #d9dee4; border-radius:8px; padding:8px 10px;
+  background:#fbfcfe; font-size:.86rem; line-height:1.5 }
+.diagbox.warn{ border-color:#e3a33a; background:#fff8ec }
+.diagbox.bad{ border-color:#d9534f; background:#fdf1f0 }
+.diagbox .dgt{ font-weight:700; color:#0f4c8f; display:block; margin-bottom:4px }
+.diagbox ul{ margin:0; padding:0; list-style:none }
+.diagbox li{ display:flex; gap:6px; align-items:flex-start; margin:2px 0 }
+.diagbox .mk{ flex:0 0 1.15em; text-align:center; font-weight:700 }
+.diagbox .mk.o{ color:#12703c } .diagbox .mk.t{ color:#c07a12 } .diagbox .mk.x{ color:#c0332e }
+.diagbox .dgtip{ margin-top:5px; color:#41525f }
+.diagbox .btn{ margin-top:6px }
+
+/* ---- ものさしの奥ゆき ---- */
+.depthbox{ margin-top:8px; border:1px solid #cfd8e3; border-radius:8px; padding:8px 10px;
+  background:#f6f9fd; font-size:.86rem }
+.depthbox b{ color:#0f4c8f }
+.depthbox .row{ margin-top:4px }
+.depthbox .f{ font-size:.84rem }
+#depthMsg.ok{ color:#12703c } #depthMsg.ng{ color:#c0332e; font-weight:700 }
+
+/* ---- 謝意・参考文献（①の一番下） ---- */
+.credits{ margin:18px 8px 10px; padding:10px 14px; border-top:1px solid #d9dee4;
+  font-size:.8rem; line-height:1.6; color:#41525f }
+.credits b{ color:#0f4c8f }
+.credits a{ color:#1663b5; word-break:break-all }
+.credits ul{ margin:4px 0 6px; padding-left:1.3em }
+.credits li{ margin:1px 0 }
+
+/* ストロボを作っている最中 */
+.strowait{ color:#c0332e; font-weight:700; margin:4px 0 0 }
+.strotune.busy{ opacity:.75 }
+.strotune.busy input[type=range]{ cursor:not-allowed }
 
 </style>
 </head>
@@ -728,13 +762,13 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <details class="card op" open data-key="howto">
       <summary id="howtoSum">操作説明（クリックで折りたたみ）</summary>
       <ol class="steps">
-        <li><b>動画を読み込む</b>（ドラッグ＆ドロップでも可）と解析します。</li>
+        <li><b>動画を読み込む</b>（ドラッグ＆ドロップでも可）。コマごとの時刻を測ったら、<b>撮影 fps の確認</b>に答える</li>
         <li><b>解析する時間範囲</b>：再生して見どころをさがし、<b>この時刻をt = 0</b>と<b>この時刻まで解析</b>を決める</li>
-        <li><b>空間の原点・スケール・軸</b>：原点 → x軸の向き → スケール（長さのわかる物の両端を2点クリック）</li>
-        <li><b>トラッキング</b>：物体番号を選び、動画の上をタップ（クリック）して1点ずつ記録<br>
+        <li><b>空間の原点・スケール・軸</b>：原点 → x軸の向き → スケール（長さのわかる物の両端を2点クリック）。3つそろわないと 4 に進めない</li>
+        <li><b>トラッキング</b>：［手でクリックして記録］を押し、物体をタップ（クリック）。<b>クリックするたび N コマ進む</b><br>
             <kbd>Shift</kbd>＋クリック＝記録して1コマ進む／<kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋クリック＝記録してNコマ進む</li>
-        <li>取り消しは <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</li>
-        <li>ストロボ画像・CSV・グラフ（②）・フィット（③）へ</li>
+        <li>取り消しは［1回分トラッキングを取り消す］か <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</li>
+        <li>ストロボ画像（5）・出力（6）・グラフ（②）・フィット（③）へ</li>
       </ol>
       <p class="mini">いま作業するところが<b>オレンジ色に光ります</b>。終わったところは薄くなります。</p>
       <p class="mini">指ではタップした所にルーペが出ます。そのままドラッグで微調整、指を離すと確定です。</p>
@@ -751,11 +785,10 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <p class="mini">動画エリアをクリックしても選べます。この画面に<b>ドラッグ＆ドロップ</b>でも開けます。</p>
       <div class="note vlimit">
         <b>解析できる動画のめやす</b><br>
-        長さ <b>5〜30 秒</b>（長いほど解析に時間がかかります）／
+        長さ <b>5〜30 秒</b>（<b>40 秒まで</b>。長いほど解析に時間がかかります）／
         画質は <b>フルHD（1920×1080）まで</b>／ファイルは <b>100 MB 以内</b>。<br>
-        <span class="mini" style="color:inherit">これを超えると
-        <b>長さ 3 分・4096 px・500 MB</b> までは開けますが、動作が重くなります。
-        それ以上は開けません。</span>
+        <span class="mini" style="color:inherit">40 秒より長い動画は開けません。見たい運動の前後だけを切り出してください。
+        画面の大きさ 4096 px・500 MB までは開けますが、動作が重くなります。</span>
       </div>
       <div class="row" id="cropRow">
         <button class="btn sm blue" id="btnCrop">動画をトリミング（端を切る）</button>
@@ -768,6 +801,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div id="vidErr" class="err hide"></div>
       <div class="hr"></div>
       <p class="mini" id="vinfo">動画はまだ読み込まれていません。</p>
+      <div id="vidDiag" class="diagbox hide"></div>
       <div id="teacherBox" class="hide">
         <div class="row">
           <button class="btn sm" id="btnKadai">課題ファイルを書き出す（先生用）</button>
@@ -791,38 +825,31 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn wide" id="btnTimeZero">この時刻をt = 0</button>
         <span class="callout hide" id="coTimeZero">解析を始めたいコマで押す</span>
       </div>
-      <p class="mini">この画像の時刻を時間の原点（t=0）に</p>
       <div class="btnwrap">
         <button class="btn wide" id="btnRangeB">この時刻まで解析</button>
         <span class="callout hide" id="coRangeB">解析を終わりたいコマで押す</span>
       </div>
-      <p class="mini">この画像の時刻を、解析の終わりに</p>
       <div class="row">
         <button class="btn sm danger" id="btnRangeClr">範囲を解除</button>
         <button class="btn sm" id="btnStep2Next">このままでよい → 次へ</button>
       </div>
       <p class="mini" id="rangeInfo">範囲：全体</p>
       <div class="hr"></div>
-      <label class="f">fps <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001">
-        <span class="mini" id="fpsSrc">（既定値）</span></label>
-      <p class="mini">fps は「コマ送りが何秒にあたるか」の目安です。t = 0 以降の時刻は、コマごとに実際に測った値を記録しています（測れない端末だけ fps から計算します）。右上の［使い方と時間算出法］にくわしく書いています。</p>
-      <label class="f">スロー撮影
-        <select id="selTScale">
-          <option value="1">普通の速さで撮った</option>
-          <option value="0.5">1/2 のスロー</option>
-          <option value="0.25">1/4 のスロー</option>
-          <option value="0.125">1/8 のスロー（240fps→30fps など）</option>
-          <option value="0.0625">1/16 のスロー</option>
-        </select>
-      </label>
-      <p class="mini" id="tscaleNote">ゆっくり再生される形で保存された動画のときだけ変えます。
-      「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します。</p>
-      <div class="row">
+      <p class="mini" id="fpsLine">fps <b>30.000</b>（既定値）</p>
+      <p class="mini">fps は「コマ送りが何秒にあたるか」の目安です。詳細は右上の［使い方と時間算出法］に。</p>
+      <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001" class="hide">
+      <span class="hide" id="fpsSrc">（既定値）</span>
+      <select id="selTScale" class="hide">
+        <option value="1">普通の速さで撮った</option>
+        <option value="0.5">1/2 のスロー</option>
+        <option value="0.25">1/4 のスロー</option>
+        <option value="0.125">1/8 のスロー（240fps→30fps など）</option>
+        <option value="0.0625">1/16 のスロー</option>
+      </select>
+      <div class="row hide" id="ftRow">
         <button class="btn sm" id="btnFrameTable">コマごとの時刻を測る</button>
         <span class="tag" id="ftState">未測定</span>
       </div>
-      <p class="mini" id="ftNote">40 秒より長い動画は自動では測りません。<b>上で解析する時間範囲を決めてから</b>
-      このボタンを押すと、<b>その範囲だけ</b>を測るので短い時間で終わります。</p>
       <div class="prog hide" id="ftProg"><i></i></div>
     </details>
 
@@ -849,6 +876,30 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <label class="f">スケール長さ <input type="number" id="inScaleLen" value="10" step="0.1" min="0.000001">
         <select id="selScaleUnit"><option value="1">m</option><option value="0.01" selected>cm</option><option value="0.001">mm</option></select>
       </label>
+      <div id="depthBox" class="depthbox hide">
+        <b>ものさしの奥ゆき</b>
+        <p class="mini">ものさしが物体より<b>手前や奥</b>にあると、長さがそのぶんだけずれます。
+        x も v も a も、<b>同じ割合で</b>ずれます。</p>
+        <div class="row">
+          <label class="f">カメラから物体まで
+            <select id="selCamDist">
+              <option value="1">約 1 m</option>
+              <option value="2">約 2 m</option>
+              <option value="3" selected>約 3 m</option>
+              <option value="5">5 m 以上</option>
+            </select>
+          </label>
+          <label class="f">ものさしのズレ
+            <select id="selRulerGap">
+              <option value="0" selected>同じ奥ゆき</option>
+              <option value="0.2">20 cm ほど</option>
+              <option value="0.5">50 cm ほど</option>
+              <option value="1">1 m ほど</option>
+            </select>
+          </label>
+        </div>
+        <p class="mini" id="depthMsg"></p>
+      </div>
       <div class="row"><button class="btn sm danger" id="btnCalClr">原点・軸・スケールを解除</button></div>
       <p class="mini" id="calInfo">原点：未設定／スケール：未設定／x軸：0.0°</p>
       <p class="mini" id="precInfo">クリック精度：スケール未設定</p>
@@ -948,11 +999,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
                title="何コマおきに重ねるかを決めます">
         <div class="strotick"><span>1</span><span>2</span><span>5</span><span>10</span><span>20</span></div>
       </div>
+      <p class="mini strowait hide" id="stroWait">お待ちください…</p>
       <div class="row">
         <label class="f">重ね方
           <select id="selStroMode"><option value="diff">動いた所だけ重ねる（おすすめ）</option><option value="lighten">明るい方を残す</option><option value="darken">暗い方を残す</option><option value="avg">平均</option></select>
         </label>
-        <label class="cb"><input type="checkbox" id="cbStroPts" checked>点も描く</label>
+        <label class="cb"><input type="checkbox" id="cbStroPts" checked>トラッキングした点も描く</label>
       </div>
       <div class="row">
         <button class="btn sm" id="btnStroSave">PNG保存</button>
@@ -1078,10 +1130,25 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="row"><b style="font-size:.92rem;color:var(--accent-d)">ストロボ画像</b>
         <span class="mini" id="stroInfo">まだ作っていません</span></div>
       <canvas id="cvStrobe" width="640" height="360" class="hide"></canvas>
-    </details>
+    </div>
 
   </div>
  </div>
+ <footer class="credits" id="credits">
+  <b>謝意</b>　一般社団法人 国際物理オリンピック2023記念協会様のページを参考にこのページを作成しました。大変ありがとうございました。
+  <a href="https://apps.ipho2023-commemorative-association.jp/%E5%8B%95%E7%94%BB%E8%A7%A3%E6%9E%90%E3%82%A2%E3%83%97%E3%83%AA" target="_blank" rel="noopener">https://apps.ipho2023-commemorative-association.jp/動画解析アプリ</a><br>
+  その他、以下のサイトや論文等を参考にしています。
+  <ul>
+   <li>Tracker – Video Analysis and Modeling Tool（Open Source Physics, D. Brown）<a href="https://physlets.org/tracker/" target="_blank" rel="noopener">https://physlets.org/tracker/</a></li>
+   <li>FizziQ – Video analysis for teaching physics <a href="https://www.fizziq.org/" target="_blank" rel="noopener">https://www.fizziq.org/</a></li>
+   <li>Vernier Video Analysis <a href="https://www.vernier.com/physics/vernier-video-analysis/" target="_blank" rel="noopener">https://www.vernier.com/physics/vernier-video-analysis/</a></li>
+   <li>R. J. Beichner, “The impact of video motion analysis on kinematics graph interpretation skills,” Am. J. Phys. 64, 1272–1277 (1996).</li>
+   <li>P. W. Laws and H. Pfister, “Using digital video analysis in introductory mechanics projects,” Phys. Teach. 36, 282–287 (1998).</li>
+   <li>D. Brown and A. J. Cox, “Innovative uses of video analysis,” Phys. Teach. 47, 145–150 (2009).</li>
+   <li>L. K. Wee, C. Chew, G. H. Goh, S. Tan and T. L. Lee, “Using Tracker as a pedagogical tool for understanding projectile motion,” Phys. Educ. 47, 448–455 (2012).</li>
+  </ul>
+  <span class="mini">このページは外部と通信しません。上のリンクを開くときだけブラウザが外部サイトにつながります。</span>
+ </footer>
 </section>
 
 <!-- ================= モード2 ================= -->
@@ -1113,16 +1180,15 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <label class="cb" id="labGY"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
         <input type="checkbox" id="cbG_v" checked class="hide">
         <input type="checkbox" id="cbG_a" checked class="hide">
+        <label class="cb" id="labGSel" title="グラフの点をクリックすると ON になります。OFF にすると座標の表示が消えます"><input type="checkbox" id="cbG_sel">座標の選択</label>
       </div>
-      <div class="row" style="margin-top:10px">
-        <button class="btn sm blue" id="btnEnergyOn">エネルギーを解析する</button>
-      </div>
-      <div class="row hide" id="energyRow" style="margin-top:6px">
+      <div class="row hide" id="energyRow" style="margin-top:8px">
         <label class="cb"><input type="checkbox" id="cbG_e">エネルギー</label>
         <label class="f">質量 m₁ <input type="number" id="inM1" value="0.1" step="0.001" min="0.0001"> kg</label>
         <label class="f">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
         <label class="f">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
-        <span class="mini">位置エネルギーは U = mgy（y は上向き正）</span>
+        <span class="mini enote">※ <b>y 方向の正の向きを鉛直上向き</b>だと仮定して計算します（U = mgy）。
+        円運動など、y が鉛直でない実験には当てはまりません。</span>
       </div>
     </div>
     <div class="m2out">
@@ -1133,6 +1199,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <button class="btn sm" id="btnReportPdf2">レポートPDF</button>
       </div>
       <div class="row nowrap" style="margin-top:6px;justify-content:flex-end">
+        <button class="btn sm" id="btnEnergyOn">エネルギーを解析する</button>
+        <span style="width:2em;flex:0 0 2em"></span>
         <button class="btn sm quiet" id="btnXlsx">測定データ、グラフをまとめてExcel出力</button>
         <button class="btn sm quiet" id="btnGraphPng">グラフをPNG保存</button>
       </div>
@@ -1342,7 +1410,7 @@ function newExp(n){
     t0:null, rangeA:null, rangeB:null, step2ok:false, trackReady:false, axisSet:false, tscale:1,
     objReady:[false,false,false], crop:null, aStep:1,
     video:{name:'',w:0,h:0,dur:0,fps:30},
-    m1:0.1, m2:0.1, g:9.8,
+    m1:0.1, m2:0.1, g:9.8, camDist:3, rulerGap:0, shotFps:0, fpsOk:false,
     objName:['','',''] };
   for(var i=0;i<NOBJ;i++) o.objs.push([]);
   return o;
@@ -1713,6 +1781,7 @@ function vidLoad(src, name){
        （生徒が続けざまに動画を選ぶと、前の測定の結果が新しい動画に混ざるため） */
     VID.loadSeq=(VID.loadSeq||0)+1; VID.cancelBuild=true;
     VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0; VID.tableA=0; VID.tableB=0;
+    try{ diagReset(); }catch(e){}
     if(VID.url && VID.url.indexOf('blob:')===0){ try{URL.revokeObjectURL(VID.url);}catch(e){} }
     VID.url=src; VID.name=name||'';
     var done=false;
@@ -1871,11 +1940,18 @@ function vidBuildTable(onProg, tA, tB){
     VID.tableA=A; VID.tableB=B;            /* どこからどこまでを測ったか（取りこぼし直しで使う） */
     var times=[], rate = (span>40? 2 : 1);
     v.pause(); v.muted=true; v.playbackRate=rate;
+    diagStart();                       /* 撮れぐあいも、この再生のついでに測る */
     var startedAt=0;
     function step(now, md){
       if(VID.cancelBuild || finished){ finish(); return; }
       var mt=(md&&typeof md.mediaTime==='number')? md.mediaTime : v.currentTime;
       if(!times.length || mt > times[times.length-1]+1e-6) times.push(mt);
+      if(VDIAG.on){
+        var t0=performance.now();
+        try{ diagStep(); }catch(e){ VDIAG.on=false; }
+        /* おそい端末で再生の足を引っぱるようなら、撮れぐあいの測定はあきらめる */
+        if(performance.now()-t0>30) VDIAG.on=false;
+      }
       if(onProg) onProg(Math.max(0, Math.min(1, (mt-A)/span)));
       if(v.ended || mt>=B){ finish(); return; }
       v.requestVideoFrameCallback(step);
@@ -1886,14 +1962,17 @@ function vidBuildTable(onProg, tA, tB){
       if(finished) return; finished=true;
       clearInterval(watchdog);
       v.pause(); v.playbackRate=1;
+      VDIAG.on=false; VDIAG.done=(VDIAG.n>0);
       v.removeEventListener('ended', onEnd);
       if(myseq!==VID.loadSeq){ VID.building=false; res(false); return; }   /* 別の動画になった */
       times.sort(function(a,b){return a-b;});
       var uniq=[]; for(var i=0;i<times.length;i++){ if(!uniq.length||times[i]-uniq[uniq.length-1]>1e-5) uniq.push(times[i]); }
       if(uniq.length>2){
         VID.frames=uniq; setFpsFromFrames();
-        /* 取りこぼしたコマを、実際にシークして測り直して埋める */
-        repairTable(0).then(function(){
+        /* 取りこぼしたコマを、実際にシークして測り直して埋める。
+           ただし時間を区切る（穴が多いと何分もかかって「固まった」ように見えるため）。 */
+        var deadline=performance.now()+Math.min(15000, 4000+span*700);
+        repairTable(0, deadline, onProg).then(function(){
           trimTable();                 /* 穴があったら、続いている所だけを残す */
           vidSeek(Math.max(A, VID.tableA||A)).then(function(){
             VID.building=false; res(VID.frames.length>2);
@@ -1961,8 +2040,9 @@ function trimTable(){
   setFpsFromFrames();
 }
 /* 間隔が飛んでいる所を、その真ん中へシークして実測時刻を読み、表に入れる */
-function repairTable(pass){
+function repairTable(pass, deadline, onProg){
   if(pass>4){ VID.needExact=false; return Promise.resolve(); }
+  if(deadline && performance.now()>deadline){ VID.needExact=false; return Promise.resolve(); }
   VID.needExact=true;
   var f=VID.frames, d=[], i;
   for(i=1;i<f.length;i++) d.push(f[i]-f[i-1]);
@@ -1980,11 +2060,13 @@ function repairTable(pass){
   if(!gaps.length || gaps.length>200){ VID.needExact=false; return Promise.resolve(); }
   var k=0, added=0, tries=0;
   function next(){
-    if(k>=gaps.length){
+    if(k>=gaps.length || (deadline && performance.now()>deadline)){
       VID.needExact=false;
-      if(added){ VID.frames.sort(function(a,b){return a-b;}); setFpsFromFrames(); return repairTable(pass+1); }
+      if(added){ VID.frames.sort(function(a,b){return a-b;}); setFpsFromFrames();
+        if(k>=gaps.length) return repairTable(pass+1, deadline, onProg); }
       return Promise.resolve();
     }
+    if(onProg && (k%3===0)) onProg(1, '取りこぼしたコマを測り直しています（'+(k+1)+' / '+gaps.length+'）');
     var g=gaps[k], t=(g[0]+g[1])/2 + (tries*0.0007);
     return vidSeekNow(t).then(function(){
       var mt=VID.cur, ok=false;
@@ -2015,6 +2097,114 @@ function fpsFromTable(){
     return { fps: med>0? 1/med : 0, n:VID.frames.length, vfr: jitter> (med*0.25) };
   }
   return null;
+}
+
+/* =========================================================
+   この動画の「撮れぐあい」を、コマ表を作るついでに調べる
+   （余分なシークはしない。再生しながら小さく描き写して測るだけ）
+   ・明るさ … 暗いと 1 コマ 1 コマがぼやけて、点が打ちにくい
+   ・コマのくっきりさ … 動きが速い・暗いとコマがぶれる（相対で見る）
+   ・手ぶれ … となりあう 2 コマで、背景がどれだけずれたか
+   ここでは「良い・悪い」を数で決めつけず、生徒が気づけるようにするのが目的。
+   ========================================================= */
+var VDIAG = { on:false };
+var DGW = 320;                          /* 測るときの小さい絵の幅 */
+function diagReset(){
+  VDIAG = { on:false, cv:null, g:null, sc:1, fc:0, n:0, lumSum:0, dark:0,
+            sharp:[], shake:[], prev:null, pairWait:false, samples:0, done:false };
+}
+diagReset();
+function diagStart(){
+  diagReset();
+  if(!VID.ready || !VID.w || !VID.h) return;
+  var c=document.createElement('canvas');
+  c.width=DGW; c.height=Math.max(8, Math.round(DGW*VID.h/VID.w));
+  VDIAG.cv=c; VDIAG.g=c.getContext('2d', {willReadFrequently:true});
+  VDIAG.sc=VID.w/DGW;                   /* 小さい絵の 1 px は、もとの動画の何 px か */
+  VDIAG.on=true;
+}
+function diagGray(){
+  var c=VDIAG.cv, g=VDIAG.g;
+  if(!c||!g) return null;
+  try{ g.drawImage(VID.el, 0,0, c.width, c.height); }catch(e){ VDIAG.on=false; return null; }
+  var im; try{ im=g.getImageData(0,0,c.width,c.height); }catch(e){ VDIAG.on=false; return null; }
+  var p=im.data, w=c.width, h=c.height, N=w*h, gr=new Uint8Array(N), s=0, i, j;
+  for(i=0,j=0;i<N;i++,j+=4){ var y=(p[j]*77+p[j+1]*150+p[j+2]*29)>>8; gr[i]=y; s+=y; }
+  var lum=s/N;
+  var lap=0, cnt=0, x, yy;
+  for(yy=1; yy<h-1; yy+=2) for(x=1; x<w-1; x+=2){
+    var k=yy*w+x;
+    var L=4*gr[k]-gr[k-1]-gr[k+1]-gr[k-w]-gr[k+w];
+    lap += (L<0? -L : L); cnt++;
+  }
+  /* 明るさで割って正規化（暗い動画でも公平に比べられるように） */
+  return { g:gr, w:w, h:h, lum:lum, sharp: cnt? (lap/cnt)/Math.max(24,lum) : 0 };
+}
+/* となりあう 2 コマの「背景のずれ」を測る（真ん中は物体がいるので使わない） */
+function diagShift(a, b, w, h){
+  var R=5, cx0=w>>2, cx1=w-(w>>2), cy0=h>>2, cy1=h-(h>>2);
+  var best=1e18, bx=0, by=0, sc={}, dx, dy, x, y;
+  for(dy=-R; dy<=R; dy++) for(dx=-R; dx<=R; dx++){
+    var s=0, n=0;
+    for(y=R; y<h-R; y+=2){
+      var inY=(y>=cy0 && y<cy1);
+      for(x=R; x<w-R; x+=2){
+        if(inY && x>=cx0 && x<cx1) continue;
+        var d=a[y*w+x]-b[(y+dy)*w+(x+dx)];
+        s += (d<0? -d : d); n++;
+      }
+    }
+    if(!n) return null;
+    var v=s/n; sc[dx+','+dy]=v;
+    if(v<best){ best=v; bx=dx; by=dy; }
+  }
+  /* 山の形から、1 px より細かく読む（放物線あてはめ） */
+  function sub(ax, ay, kx, ky){
+    var m=sc[(ax-kx)+','+(ay-ky)], p=sc[(ax+kx)+','+(ay+ky)];
+    if(m===undefined||p===undefined) return 0;
+    var den=(m - 2*best + p);
+    if(!(Math.abs(den)>1e-9)) return 0;
+    var t=0.5*(m-p)/den;
+    return (t>1||t<-1)? 0 : t;
+  }
+  var fx=bx+sub(bx,by,1,0), fy=by+sub(bx,by,0,1);
+  return Math.sqrt(fx*fx+fy*fy);
+}
+/* コマ表づくりの再生中に、1 コマごとに呼ばれる */
+function diagStep(){
+  var d=VDIAG;
+  if(!d.on || d.samples>=30) return;
+  var k=d.fc++;
+  var take=(k%8===0);
+  if(!take && !d.pairWait) return;
+  var gy=diagGray();
+  if(!gy){ d.pairWait=false; d.prev=null; return; }
+  d.n++; d.lumSum+=gy.lum; if(gy.lum<50) d.dark++;
+  d.sharp.push(gy.sharp);
+  if(d.pairWait && d.prev){
+    var s=diagShift(d.prev, gy.g, gy.w, gy.h);
+    if(s!==null && isFinite(s)) d.shake.push(s*d.sc);   /* もとの動画の px に直す */
+    d.pairWait=false; d.prev=null; d.samples++;
+  } else if(take){
+    d.prev=gy.g; d.pairWait=true;
+  }
+}
+function med(a){ if(!a.length) return null;
+  var b=a.slice().sort(function(x,y){return x-y;}); return b[Math.floor(b.length/2)]; }
+/* 測った結果をまとめる（無ければ null） */
+function diagResult(){
+  var d=VDIAG;
+  if(!d.n) return null;
+  var sh=med(d.shake), sp=d.sharp.slice().sort(function(a,b){return a-b;});
+  return {
+    lum: d.lumSum/d.n,
+    darkRate: d.dark/d.n,
+    shake: sh,                                   /* 1 コマあたり何 px 動いたか */
+    shakePct: (sh!==null && VID.w)? sh/VID.w*100 : null,
+    sharpMed: sp.length? sp[Math.floor(sp.length/2)] : null,
+    sharpMax: sp.length? sp[sp.length-1] : null,
+    n: d.n, pairs: d.shake.length
+  };
 }
 
 </script>
@@ -2878,11 +3068,31 @@ function makeStrobe(preview){
   }
   if(!times.length){ toast('先に点を記録するか、範囲を決めてください'); return Promise.resolve(); }
   if(times.length>120) times=times.filter(function(_,i){ return i%Math.ceil(times.length/120)===0; });
+  if(!preview){
+    if(UI.stroBusy) return Promise.resolve();      /* 作っている最中は、もう1枚を始めない */
+    UI.stroBusy=true;
+    if(typeof stroBusyUI==='function') stroBusyUI(true);
+  }
   cv.width=VID.w; cv.height=VID.h;
   var g=cv.getContext('2d',{willReadFrequently:true});
   g.fillStyle=(mode==='darken')?'#fff':'#000'; g.fillRect(0,0,cv.width,cv.height);
-  $('stroInfo').textContent='作成中… 0/'+times.length;
+  var t0=performance.now(), extra=(mode==='diff'? Math.min(7,times.length) : 0);
+  /* 進みぐあいと「あと何秒」（測った速さから見積もる） */
+  function prog(done, total, label){
+    $('stroInfo').textContent=label+' '+done+'/'+total;
+    if(preview) return;
+    var el=performance.now()-t0, per=(done>0)? el/done : 0;
+    var left=per? Math.max(1, Math.ceil((total-done)*per/1000)) : null;
+    if(typeof stroWaitUI==='function') stroWaitUI(left);
+  }
+  prog(0, times.length+extra, '作成中…');
   var savedT=VID.cur, k=0, bg=null;
+  function finishStro(){
+    if(!preview){
+      UI.stroBusy=false;
+      if(typeof stroBusyUI==='function') stroBusyUI(false);
+    }
+  }
   function next(){
     if(mode==='diff' && !bg){
       /* 何コマかの「まん中の値」で背景を作る（動いている物が消えた背景）。
@@ -2899,16 +3109,24 @@ function makeStrobe(preview){
         return vidSeek(samp[q++]).then(function(){
           var f2=vidDrawFull();
           imgs.push(f2.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height));
-          $('stroInfo').textContent='背景を作っています… '+q+'/'+samp.length;
+          prog(q, times.length+extra, '背景を作っています…');
           return grab();
         });
       };
       return grab();
     }
     if(k>=times.length){
-      if(!preview && $('cbStroPts').checked) drawStrobePoints(g);
+      if(!preview){
+        /* 点を描く前の絵を控えておく（「トラッキングした点も描く」を一瞬で切りかえるため） */
+        var base=document.createElement('canvas');
+        base.width=cv.width; base.height=cv.height;
+        base.getContext('2d').drawImage(cv,0,0);
+        UI.stroBase=base;
+        if($('cbStroPts').checked) drawStrobePoints(g);
+      }
       $('stroInfo').textContent=times.length+' コマを合成しました'+(preview?'（仮）':'');
       UI.stroReady=true; $('cvStrobe').classList.remove('hide');
+      finishStro();
       if(typeof updateStroUI==='function') updateStroUI();
       if(preview){                       /* 動画に重ねる用に控えておく */
         var oc=document.createElement('canvas');
@@ -2929,7 +3147,7 @@ function makeStrobe(preview){
           if(d>TH){ c[i]=a[i]; c[i+1]=a[i+1]; c[i+2]=a[i+2]; c[i+3]=255; }
         }
         g.putImageData(cur,0,0);
-        k++; $('stroInfo').textContent='作成中… '+k+'/'+times.length;
+        k++; prog(k+extra, times.length+extra, '作成中…');
         return next();
       }
       g.save();
@@ -2938,11 +3156,13 @@ function makeStrobe(preview){
       else { g.globalCompositeOperation='source-over'; g.globalAlpha=1/(k+1)*1.6; }
       g.drawImage(full,0,0);
       g.restore();
-      k++; $('stroInfo').textContent='作成中… '+k+'/'+times.length;
+      k++; prog(k+extra, times.length+extra, '作成中…');
       return next();
     });
   }
-  return next();
+  var pr;
+  try{ pr=next(); }catch(e){ finishStro(); return Promise.resolve(); }
+  return (pr && pr.catch)? pr.catch(function(){ finishStro(); }) : Promise.resolve(pr);
 }
 /* 何枚かの画像から、画素ごとの中央値をとる（動く物が消えた「背景」になる） */
 function medianImage(imgs, w, h){
@@ -2966,6 +3186,15 @@ function setStrobeOverlay(on){
   if(b){ b.textContent = UI.stroOverlay? '写真を重ねない' : 'ストロボ写真を重ねる';
          b.classList.toggle('on', UI.stroOverlay); b.disabled=false; }
   if(VID.ready) render();
+}
+/* 「トラッキングした点も描く」の切りかえ：作り直さずに、控えておいた絵から描き直す */
+function applyStroPts(){
+  var cv=$('cvStrobe'); if(!UI.stroReady || !UI.stroBase || !cv) return false;
+  var g=cv.getContext('2d',{willReadFrequently:true});
+  g.clearRect(0,0,cv.width,cv.height);
+  g.drawImage(UI.stroBase,0,0);
+  if($('cbStroPts').checked) drawStrobePoints(g);
+  return true;
 }
 function drawStrobePoints(g){
   var exp=EXP(), sc=VID.w/900;
@@ -3295,6 +3524,7 @@ function bindChartDrag(cv, onRange){
         if(d<bd){ bd=d; cand=h; }
       });
       if(bd>12) cand=null;
+      var inPlot=true, bdist=bd;
     }
     if(g.range){                                   /* フィット範囲のつまみが近いか */
       /* つまみは枠の中に収めて描いているので、つかむ判定も同じ場所で見る
@@ -3310,7 +3540,8 @@ function bindChartDrag(cv, onRange){
     }
     var clp=function(v){ return Math.max(g.x0, Math.min(g.x1, v)); };
     st={ mode:mode, x:q.x, y:q.y, x0:g.x0, x1:g.x1, y0:g.y0, y1:g.y1,
-         ra:g.range?clp(g.range.a):0, rb:g.range?clp(g.range.b):0, cand:cand, far:false };
+         ra:g.range?clp(g.range.a):0, rb:g.range?clp(g.range.b):0, cand:cand, far:false,
+         inPlot:!!inPlot, bd:(typeof bdist==='number'? bdist : 1e9) };
     try{ cv.setPointerCapture(e.pointerId); }catch(err){}
     e.preventDefault();
   });
@@ -3346,6 +3577,9 @@ function bindChartDrag(cv, onRange){
       if(SEL.key===g.yk && SEL.x===h.x && SEL.y===h.y) selClear();   /* もう一度押すと消える */
       else SEL={ key:g.yk, xk:g.xk, x:h.x, y:h.y, lab:'', d:null };
       redrawAllCharts(); updateReadouts();
+    } else if(!st.far && st.inPlot && st.mode==='pan' && SEL.x!==null && st.bd>40){
+      /* 点からうんと離れた所をクリック → 選んでいた点を外す */
+      selClear(); redrawAllCharts(); updateReadouts();
     }
     st=null; try{ cv.releasePointerCapture(e.pointerId); }catch(err){}
   }
@@ -3524,7 +3758,7 @@ function renderMode2(){
                                    q==='y'?'y–t':q==='vy'?'vy–t':'ay–t'),
                                   specOne(b.ids,b.obj,q), null, w, h));
       });
-      if(withE) col.appendChild(chartCard('エネルギー–t', specEnergy(b.ids,b.obj), null, w, h));
+      if(withE) col.appendChild(chartCard('エネルギー–t（y を鉛直上向きと仮定）', specEnergy(b.ids,b.obj), null, w, h));
       wrap.appendChild(col); colNodes.push(col); return col;
     }
     if(showX) addCol(['x','vx','ax'], showE);
@@ -3687,6 +3921,8 @@ function updateReadouts(){
   });
   var cg=$('cgReadout'), cv=$('cgCanvas');
   if(cg && cv && cv.__spec) cg.innerHTML=readoutHtml(cv.__spec);
+  /* ②の上の「座標の選択」チェックは、点を選んでいるかどうかをそのまま映す */
+  var cb=$('cbG_sel'); if(cb) cb.checked=(SEL.x!==null);
 }
 /* グラフを大きく表示する */
 function openBigChart(title, spec){
@@ -4455,9 +4691,10 @@ function buildReportPages(){
       '　時刻の原点：'+(exp.t0!==null? nf(exp.t0,3)+' s':'動画の先頭'),
     '手ぶれ補正：'+(exp.useDrift?'ON':'OFF')+'　記録点：'+
       exp.objs.map(function(a,i){return '物体'+(i+1)+' '+a.length;}).join(' / ')+
-      '　軸の表示：'+(useY()? 'x軸とy軸' : 'x軸のみ')
+      '　軸の表示：'+(useY()? 'x軸とy軸' : 'x軸のみ'),
+    '撮影の条件：'+((typeof diagLine==='function')? diagLine() : '-')
   ].forEach(function(t,i){ g.fillText(t, M, 124+i*22); });
-  y=206;
+  y=228;
   /* ---- ストロボ画像 ---- */
   var stro=$('cvStrobe');
   if(UI.stroReady && stro.width>2){
@@ -4902,7 +5139,7 @@ function autoMsgShow(html, ok, shortHtml, onClick){
       m.classList.remove('big'); m.classList.add('faint');
       if(m.__act) m.classList.add('act');       /* 小さくなっても、押せば追跡が始まる */
       if(ok) m.__to=setTimeout(function(){ m.classList.add('hide'); }, 6000);
-    }, 4500);
+    }, 5000);
   } else {
     m.__to=setTimeout(function(){ m.classList.add('hide'); }, 4000);
   }
@@ -5023,6 +5260,7 @@ function askRetrackFrom(tt){
     }, { noLabel:'やめる', onNo:function(){ markTrkPoint(); } });
 }
 function updateCalInfo(){
+  try{ updateDepth(); }catch(e){}
   var exp=EXP();
   $('calInfo').innerHTML='原点：'+(exp.originSet? '<b>設定ずみ</b>':'<span class="ng">未設定</span>')+
     '／スケール：'+(exp.mPerPx? '<b>'+sig(exp.mPerPx*1000,4)+' mm/px</b>':'<span class="ng">未設定</span>')+
@@ -5219,6 +5457,7 @@ function refreshExpUI(){
   updateAxisButtons();
   applyAxisDisp();
   $('selTScale').value=String(EXP().tscale||1);
+  try{ updateFpsLine(); }catch(e){}
   updateRestoreBar();
   if(e.scaleLen>0){                       /* スケール長さの入力欄も実験に合わせる */
     if(e.scaleLen>=1){ $('selScaleUnit').value='1'; $('inScaleLen').value=+(e.scaleLen).toFixed(4); }
@@ -6085,8 +6324,21 @@ function updateStroUI(){
   }
   ['btnStroSave','btnStroClr'].forEach(function(id){ var x=$(id); if(x) x.disabled=!made; });
 }
+/* 作っている最中：スライダーなどを受けつけず、「お待ちください」を出す */
+function stroBusyUI(on){
+  ['stroStep','selStroMode','cbStroPts','btnStroSave','btnStroClr','btnStrobe'].forEach(function(id){
+    var x=$(id); if(x) x.disabled=!!on;
+  });
+  var w=$('stroWait'); if(w){ w.classList.toggle('hide', !on); if(on) w.textContent='お待ちください…'; }
+  var t=$('stroTune'); if(t) t.classList.toggle('busy', !!on);
+  if(!on) updateStroUI();
+}
+function stroWaitUI(left){
+  var w=$('stroWait'); if(!w) return;
+  w.textContent = (left===null)? 'お待ちください…' : 'お待ちください　あと '+left+' 秒';
+}
 function clearStrobe(){
-  UI.stroReady=false;
+  UI.stroReady=false; UI.stroBase=null;
   UI.stroImg=null;
   setStrobeOverlay(false);
   var cv=$('cvStrobe');
@@ -6126,18 +6378,18 @@ function switchExp(i){
 
 /* ---------- 動画の読み込み ---------- */
 /* 解析できる動画の上限（これを超えたら開かない） */
-var VLIM = { bytes:500*1024*1024, dur:180, px:4096 };
+var VLIM = { bytes:500*1024*1024, dur:40, px:4096 };
 var VREC = { bytes:100*1024*1024, dur:30, w:1920, h:1080 };
 function sizeText(b){ return (b>=1024*1024*1024)? (b/1024/1024/1024).toFixed(2)+' GB' : Math.round(b/1024/1024)+' MB'; }
 function overLimitMsg(o){
   var r=[];
   if(o.bytes>VLIM.bytes) r.push('ファイルの大きさが <b>'+sizeText(o.bytes)+'</b>（上限 '+sizeText(VLIM.bytes)+'）');
-  if(o.dur>VLIM.dur) r.push('長さが <b>'+nf(o.dur,1)+' 秒</b>（上限 '+VLIM.dur+' 秒＝3分）');
+  if(o.dur>VLIM.dur) r.push('長さが <b>'+nf(o.dur,1)+' 秒</b>（上限 '+VLIM.dur+' 秒）');
   if(o.w>VLIM.px || o.h>VLIM.px) r.push('画面の大きさが <b>'+o.w+'×'+o.h+' px</b>（上限 '+VLIM.px+' px）');
   if(!r.length) return '';
   return '<b>このファイルは解析できません。</b><br>'+r.join('<br>')+
-    '<br><span class="mini" style="color:inherit">スマートフォンの「トリミング」や「解像度を下げて書き出す」で'+
-    '小さくしてから、もう一度読み込んでください。おすすめは <b>5〜30 秒・フルHD・100 MB 以内</b>です。</span>';
+    '<br><span class="mini" style="color:inherit">スマートフォンの「トリミング」で<b>見たい運動の前後だけ</b>を切り出すか、'+
+    '「解像度を下げて書き出す」で小さくしてから、もう一度読み込んでください。おすすめは <b>5〜30 秒・フルHD・100 MB 以内</b>です。</span>';
 }
 /* 読み込んだあとに、長さと画面の大きさをたしかめる */
 function checkLoadedVideo(name){
@@ -6206,6 +6458,7 @@ function loadVideoFile(file){
     return;
   }
   var url=URL.createObjectURL(file);
+  VID.bytes=file.size;
   setBusy(true, '動画を読み込んでいます…', 'ファイルの大きさによっては少し時間がかかります。');
   var pr=vidLoad(url, file.name), myseq=VID.loadSeq;
   pr.then(function(){
@@ -6224,6 +6477,7 @@ function loadVideoFile(file){
 }
 function loadVideoUrl(url, name){
   $('vidErr').classList.add('hide');
+  VID.bytes=0;
   setBusy(true, '動画を読み込んでいます…', 'ファイルの大きさによっては少し時間がかかります。');
   var pr=vidLoad(url, name), myseq=VID.loadSeq;
   pr.then(function(){
@@ -6274,6 +6528,10 @@ function onVideoReady(name){
   clearStrobe();
   resetCG();                       /* 新しい動画を読んだら、自由選択グラフは既定にもどす */
   selClear(); gvReset();
+  /* 同じ動画を開き直したとき（続きから）だけ、fps の確認は聞かない */
+  var same = !!(exp.fpsOk && exp.video && exp.video.name===name &&
+                exp.video.w===VID.w && exp.video.h===VID.h && Math.abs((exp.video.dur||0)-VID.dur)<0.05);
+  exp.fpsOk = same;
   exp.video={name:name, w:VID.w, h:VID.h, dur:VID.dur, fps:VID.fps};
   $('vph').classList.add('hide');
   $('cvView').classList.remove('hide'); $('cvOv').classList.remove('hide');
@@ -6282,10 +6540,10 @@ function onVideoReady(name){
   VIEW.zoom=1; VIEW.panX=0; VIEW.panY=0;
   vidSeek(0).then(function(){
     render(); afterChange(); updateSteps(); updateBigPlay(); updateCropInfo();
-    if(VID.hasRVFC && VID.dur>0 && VID.dur<=40) buildTableUI(true);
-    else if(VID.hasRVFC) $('ftState').innerHTML='<b>長い動画です</b>（ボタンで測れます）';
+    renderVidDiag(); updateFpsLine();
+    if(VID.hasRVFC && VID.dur>0) buildTableUI(true);
     else if(!VID.hasRVFC) $('ftState').innerHTML='<span class="ng">この端末では測れません</span>';
-    if(!VID.building) setBusy(false);       /* コマ表を作らないときは、ここで解放 */
+    if(!VID.building){ setBusy(false); if(!EXP().fpsOk) askFpsUI(); }   /* コマ表を作らないときは、ここで解放 */
   });
 }
 /* 測る時間の範囲：2 で解析範囲が決まっていれば、その部分だけを測る（長い動画で速く終わる） */
@@ -6317,10 +6575,30 @@ function buildTableUI(auto, seq){
        : '動画を1回だけ最後まで再生して、コマごとの時刻を測っています。')+
     'めやすは <b>'+(mins>=60? nf(mins/60,1)+' 分':Math.round(mins)+' 秒')+'</b>です。');
   busyProg(0);
-  var myseq=VID.loadSeq;
-  vidBuildTable(function(f){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f); },
+  var myseq=VID.loadSeq, settled=false;
+  /* 番犬：何かの理由で測定が終わらなくても、画面を固めたままにしない。
+     （取りこぼしの測り直しが長引く・端末が再生を止める、など） */
+  var guard=setTimeout(function(){
+    if(settled || myseq!==VID.loadSeq) return;
+    VID.cancelBuild=true;
+    setTimeout(function(){
+      if(settled || myseq!==VID.loadSeq) return;
+      settled=true; VID.building=false; VID.needExact=false;
+      p.classList.add('hide'); setBusy(false); busyProg(null);
+      $('btnFrameTable').textContent='コマごとの時刻を測る';
+      if(VID.frames.length>2){ trimTable(); $('ftState').innerHTML='<b>'+VID.frames.length+' コマ</b>（途中で打ち切り）'; }
+      else { VID.frames=[]; $('ftState').innerHTML='<span class="ng">測れませんでした（fps から計算します）</span>'; }
+      toast('時刻の測定に時間がかかりすぎたので、ここまでで進めます');
+      renderVidDiag(); render(); afterChange(); askFpsUI();
+    }, 1500);
+  }, Math.round((mins+25)*1000));
+  vidBuildTable(function(f, msg){ p.querySelector('i').style.width=Math.round(f*100)+'%'; busyProg(f);
+                  if(msg) $('busySub').innerHTML=msg; },
                 sp? sp.a : 0, sp? sp.b : 0)
    .then(function(okk){
+     clearTimeout(guard);
+     if(settled) return;
+     settled=true;
      if(myseq!==VID.loadSeq){ p.classList.add('hide'); return; }   /* 別の動画になった */
      p.classList.add('hide'); setBusy(false); busyProg(null);
      $('btnFrameTable').textContent='コマごとの時刻を測る';
@@ -6339,7 +6617,9 @@ function buildTableUI(auto, seq){
      } else {
        $('ftState').innerHTML='<span class="ng">測れませんでした</span>';
      }
+     renderVidDiag(); updateFpsLine();
      render(); afterChange();
+     if(!EXP().fpsOk) askFpsUI();       /* 撮影 fps・スローの確認（入れ忘れ防止） */
    });
 }
 
@@ -6558,61 +6838,85 @@ function openHelp(){
   '<button class="btn sm cls" id="hpClose">閉じる</button>'+
   '<h2>使い方と時間算出法</h2>'+
   '<p class="mini">動画も測定値も、この端末の中だけで処理します。どこにも送信しません。ネットにつながっていなくても動きます。</p>'+
-  '<div class="note">画面の左（または上）のカードは <b>1 → 2 → 3 → 4 の順</b>に進みます。'+
+  '<div class="note">画面は <b>① 撮影・トラッキング → ② グラフ → ③ 解析</b> の3つのタブ。'+
+  '①の左（または上）のカードは <b>1 → 2 → 3 → 4 の順</b>に進みます。'+
   'いま作業するところが<b>オレンジ色に光り</b>、終わったところは薄くなります。'+
-  '3 まで終わると、4 のトラッキングと 5・6 が使えるようになります。</div>'+
+  '3 まで終わると 4 のトラッキングが、4 で点を記録すると 5・6 が使えるようになります。</div>'+
   '<h3>1. 動画を読みこむ</h3>'+
-  '<p>「<b>動画を選択</b>」から選ぶか、<b>動画エリアをクリック</b>するか、<b>画面にドラッグ＆ドロップ</b>します。サンプル動画も使えます。'+
-  '読み込むと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（いちばん下の「時刻はどうやって求めているか」）。'+
-  'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います。</p>'+
-  '<p>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します。</p>'+
-  '<p>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）。</p>'+
+  '<p>「<b>動画を選択</b>」から選ぶか、<b>動画エリアをクリック</b>するか、<b>画面にドラッグ＆ドロップ</b>します。'+
+  '「カメラ撮影」でその場で撮ることも、サンプル動画を使うこともできます。</p>'+
+  '<ul><li>動画は <b>40 秒まで</b>（おすすめは 5〜30 秒・フルHD・100 MB 以内）。長いときは、見たい運動の前後だけを切り出してから読みこみます</li>'+
+  '<li>読みこむと<b>コマ 1 枚ごとの時刻</b>を自動で測ります（いちばん下の「時刻はどうやって求めているか」）。'+
+  'スマホの動画はコマの間隔が一定でないことがあるので、時刻は 1/30 秒の決め打ちではなく<b>実測値</b>を使います</li>'+
+  '<li>測り終わると <b>「撮影 fps（フレームレート）の確認」</b> が出ます。ふつうの速さで撮った動画なら、そのまま「この設定で進む」。'+
+  'スロー（ハイスピード）で撮った動画は、ここで倍率（1/8 など）を選びます</li>'+
+  '<li>1 のカードに <b>「この動画の撮れぐあい」</b>（長さ・画面の大きさ・コマ数・明るさ・コマのくっきりさ・手ぶれ）が ○△× で出ます。'+
+  '△や×には直し方が書いてあります</li>'+
+  '<li><b>動画をトリミング（端を切る）</b>：使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります</li>'+
+  '<li>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します</li>'+
+  '<li>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）</li></ul>'+
   '<h3>2. 解析する時間範囲の指定</h3>'+
   '<p>動画の真ん中の▶か「再生」で見どころをさがし、コマ送りで合わせてから：</p>'+
   '<ul><li><b>この時刻をt = 0</b>：いま出ているコマを t=0 にします（もう一度押すと解除）</li>'+
   '<li><b>この時刻まで解析</b>：いま出ているコマを、解析の終わりにします</li>'+
   '<li>この2つは<b>シークバーの縦棒</b>（緑＝t=0、赤＝終わり）でも表示され、<b>ドラッグで動かせます</b>。'+
-  '<b>下の時間バー</b>をドラッグして時間を選ぶと楽です</li>'+
-  '<li>fps の表示や［コマごとの時刻を測る］もここにあります</li>'+
-  '<li><b>スロー撮影</b>：ゆっくり再生される形で保存された動画のときだけ変えます。'+
-  '「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します'+
-  '（240fps で撮って 30fps で保存された動画など）</li></ul>'+
+  '<b>上の時間バー</b>をドラッグして時間を選ぶと楽です</li>'+
+  '<li>2 のあいだは、同じボタンが<b>動画の右（下）にも</b>出ます。範囲を決めないなら［このままでよい → 次へ］</li>'+
+  '<li><b>fps とスロー撮影</b>は動画を読みこんだ直後の確認画面で決めます。あとから直すときは、この段の［変更］を押します。'+
+  '「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します（240fps で撮って 30fps で保存された動画など）</li></ul>'+
   '<h3>3. 空間の原点・スケール・軸を決める</h3>'+
   '<ul><li>3 に入ると、動画の真ん中に <b>［原点を指定してください］</b> が出ます。'+
   '押すと「原点を設定」を押したのと同じで、その後、動画の上で原点にしたい所をクリックします</li>'+
-  '<li><b>原点を設定</b>：クリックした所が x=0, y=0。そのまま<b>x軸の向き</b>の設定に進みます（原点からドラッグ）</li>'+
+  '<li><b>原点を設定</b>：クリックした所が x=0, y=0。そのまま<b>x軸の向き</b>の設定に進みます（軸の正の方向をクリック）</li>'+
   '<li>ボタンを押さずに動画をクリックしても、<b>原点 → x軸の向き → スケール</b>の順に自動で進みます</li>'+
-  '<li><b>x軸の向きも決めないと 4 には進めません</b>（水平でよければ、原点の右あたりをクリックするだけ）</li>'+
   '<li><b>スケールを設定</b>：先に「スケール長さ」（例 10 cm）を入れてからボタンを押し、'+
-  'その長さがどこからどこまでかを 2 か所クリックします。'+
-  '後から<b>その点をつまんで動かす</b>こともできます</li>'+
-  '<li><b>ストロボ写真を重ねる</b>：運動の全体を薄く重ねて見ながら、原点や軸を決められます'+
-  '（記録には影響しません。4 に進むと自動で外れます）</li>'+
+  'その長さがどこからどこまでかを 2 か所クリックします。後から<b>その点をつまんで動かす</b>こともできます</li>'+
+  '<li><b>原点・x軸・スケールの3つがそろわないと、4 には進めません</b>。'+
+  '2 をやり直しても 3 の設定は消えません（4 のカードに「設定ずみ」と出ます）</li>'+
+  '<li>スケールを決めると <b>「ものさしの奥行き」</b> の欄が出ます。ものさしが物体より手前や奥にあると、'+
+  '長さが何 % ずれるかを見せます（x も v も a も同じ割合でずれます）</li>'+
   '<li>斜面や斜方投射では x 軸を傾けます。y 軸は自動で直角、必要なら「y軸を反転」</li>'+
   '<li>軸の線には<b>正の向きの矢印</b>がいくつも並びます。どちら向きが正か、画面のどこを見ても分かります</li>'+
   '<li><b>軸の表示</b>は <b>［x軸］</b> と <b>［x軸とy軸］</b> の2つのボタン。'+
-  '［x軸］にすると②③でも y・vy・ay を出さず、x の運動だけを見ます</li>'+
+  '［x軸］にすると②③でも、レポートでも y・vy・ay を出さず、x の運動だけを見ます</li>'+
   '<li>点を記録した後で［x軸］に切りかえると、<b>「y軸のデータを消しますか？」</b>と聞きます。'+
   '「消さない」を選べば、グラフから消えるだけでデータは残ります</li></ul>'+
   '<h3>4. 位置を記録する</h3>'+
-  '<ul><li>まず動画の真ん中の <b>［トラッキングを開始する］</b> を押します。'+
-  '押すまでは、まちがって動画を触っても点は入りません</li>'+
-  '<li>動画の上をタップ（クリック）すると、その位置が記録されます</li>'+
-  '<li>指でタップすると<b>ルーペ</b>が出ます。指をつけたままドラッグして合わせ、離すと確定です</li>'+
+  '<ul><li>まず <b>［手でクリックして記録］</b> を押します（押すまでは、まちがって動画を触っても点は入りません）。'+
+  '右上の <b>［色マーカーの自動追跡］</b> を ON にしていると、となりに <b>［色で自動追跡］</b> も出ます</li>'+
+  '<li><b>物体をクリック（タップ）するたびにコマが進みます</b>（「進むフレーム数 N」ぶん）。'+
+  '「記録したら」で、その場にとどまる／1コマ進む／Nコマ進む を選べます</li>'+
+  '<li><b>N の目安</b>：点と点の間が、画面の横はばの 2〜3 % 以上動くように。ゆっくりな運動ほど N を大きく</li>'+
+  '<li>指でタップすると<b>ルーペ</b>が出ます。長押しするとズームアップして、正確に点が打てます</li>'+
   '<li><kbd>Shift</kbd>＋クリック＝記録して1コマ進む、<kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋クリック＝記録してNコマ進む</li>'+
-  '<li>取消は <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ動かせます</li>'+
-  '<li><b>物体番号</b>を変えると、2つ目・3つ目の物体を追跡できます（衝突の実験など）</li>'+
+  '<li>取消は <b>［1回分トラッキングを取り消す］</b>（動画の左上と下にもあります）か <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。'+
+  '矢印キーで最後の点を1pxずつ動かせます</li>'+
+  '<li><b>色で自動追跡</b>：マーカーを1回クリックすると、始点と色を覚えます。［最後まで自動追跡］で終わりまで追いかけ、'+
+  '見失ったら止まります。手でクリックして見つけ直すと <b>「見つけました！ 最後まで追跡 しますか？」</b> が出るので、'+
+  'その知らせを押せばそのまま続きます</li>'+
+  '<li>右上の <b>［２物体の運動］</b> を ON にすると、物体1 → 物体2 の順に追いかけられます（衝突など）。'+
+  '物体には名前をつけます（同じ名前は不可）</li>'+
   '<li>2本指でピンチすると拡大、2本指で動かすと移動できます</li>'+
-  '<li><b>トラッキングした点をリセット</b>：この実験の点を全部消して、解析範囲の最初にもどります'+
-  '（動画エリアの右上にも同じボタンが出ます。Ctrl＋Z でもどせます）</li>'+
+  '<li><b>トラッキングした点をリセット</b>：この実験の点を全部消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）</li>'+
   '<li><b>動画と表を並べる</b>：4 に入ると<b>最初から並んで</b>います。'+
   '［表を下に表示］でもとの縦ならびに戻せます。同じ表は<b>②グラフの左</b>にも出ます</li>'+
-  '<li>解析範囲の終わりまで記録できると、動画の真ん中に<b>「解析終了。グラフを表示してみよう」</b>が出て、'+
-  '上の <b>②グラフ</b> のタブが光ります。同時に上のバーに <b>［＋新しい実験］</b> が出ます'+
-  '（動画1本の解析が終わったら、次の動画は新しい実験にします）</li></ul>'+
+  '<li>解析範囲の終わりまで記録できると、動画エリアに<b>「解析終了。グラフを表示してみよう」</b>が出て、'+
+  '上の <b>②グラフ</b> のタブが光ります。次の動画を読むときに「ここまでの実験を記録しますか？」と聞くので、'+
+  '「記録する」を選ぶと次の動画は実験2になります</li></ul>'+
   '<h3>5. ストロボ画像</h3>'+
-  '<ul><li>「ストロボ画像を作る」で、記録したコマを1枚に重ねた写真ができます</li>'+
-  '<li><b>画像をリセット</b>でその画像を消せます（重ねて表示していたときも外れます）</li></ul>'+
+  '<ul><li><b>［ストロボ画像を作る］</b>で、解析範囲のコマを 1 枚に重ねた写真ができます（はじめは 1 コマおき）</li>'+
+  '<li>できたら <b>「時間間隔調整」</b>のスライダーが出ます。1・2・5・10・20 コマおきを選ぶと作り直します。'+
+  '作っている間は「お待ちください　あと○秒」と出て、スライダーは動かせません</li>'+
+  '<li><b>トラッキングした点も描く</b>のチェックは、作り直さずにその場で点の表示を切りかえます</li>'+
+  '<li><b>PNG保存</b>で画像を保存、<b>画像をリセット</b>で消します</li></ul>'+
+  '<h3>6. 出力・保存</h3>'+
+  '<ul><li><b>CSV出力</b>／<b>CSVコピー</b>／<b>レポートPNG</b>／<b>レポートPDF</b>（レポートPNG・PDF は ②③にもあります）</li>'+
+  '<li><b>この動画の原点・トラッキングを保存</b>：記録した点と、原点・スケール・x軸・時間範囲を'+
+  '1つのファイルにします（動画は入りません）。解析が終わると出ます</li>'+
+  '<li>上の段の <b>過去測定データを実験○に登録</b>：保存したファイルを、<b>いまの実験を消さずに</b>'+
+  '次の実験番号として足します。前の実験や去年のデータと並べて比べられます（ドロップでも読めます）</li>'+
+  '<li>トラッキングデータ等はこの端末のブラウザに自動保存されます。同じ動画をもう一度開くと、続きからできます。'+
+  'みんなで使う端末では、終わったら上の段の「すべての実験を消してリセット」を押してください</li></ul>'+
   '<h3>測定した値（表）の見かた</h3>'+
   '<p>速さ（v）は「となりあう2点のあいだ」の値なので、<b>行と行のあいだ</b>に書いてあります。'+
   '加速度（a）は「その速さの変わり方」なので、また<b>位置と同じ行</b>にもどります'+
@@ -6621,8 +6925,9 @@ function openHelp(){
   '1コマぶんの差で出しているので、a–t グラフは点がばらつきます。'+
   '加速度は <b>v–t グラフの傾き</b>（③のフィット）で見るほうが確かです。</p>'+
   '<h3>手ぶれ対策</h3>'+
-  '<p>三脚がないときは画面がゆれます。「画面内の固定点を記録」で<b>動かない目印</b>（机の角など）を、はじめ・中ごろ・終わりなど数コマでクリックし、'+
-  '「手ぶれ補正を使う」にチェックを入れると、そのずれの分だけ全部の点を補正します。</p>'+
+  '<p>三脚がないときは画面がゆれます。4 のカードの下の「手ぶれ補正を使う」にチェックを入れ、'+
+  '「画面内の固定点を記録」で<b>動かない目印</b>（机の角など）を、はじめ・中ごろ・終わりなど数コマでクリックすると、'+
+  'そのずれの分だけ全部の点を補正します。直せるのは平行にずれた分だけです。</p>'+
   '<h3>やり直したいとき</h3>'+
   '<p>終わったカードには「<b>済</b>」がつき、自動でたたまれます。'+
   '「<b>もう一度</b>」を押すと、そのカードが開いて<b>また触れるようになります</b>'+
@@ -6636,54 +6941,46 @@ function openHelp(){
   '<h3>グラフ・解析</h3>'+
   '<ul><li>②で x–t, y–t, v–t, a–t とエネルギーのグラフ。速度・加速度は<b>中央差分</b>で出しています（両端は出ません）</li>'+
   '<li>グラフは <b>物体ごと</b>にまとまり、左の列が x・vx・ax、右の列が y・vy・ay です。'+
-  '「グラフを拡大／縮小」で全部の大きさを変えられ、各グラフの「⤢大きく」で 1 枚だけ大きく見られます</li>'+
+  '「グラフを拡大／縮小」で全部の大きさを変えられ、各グラフの「最大化」で 1 枚だけ大きく見られます</li>'+
+  '<li><b>スケールフィット</b>（各グラフの右下）：いま見ている横軸の範囲で、縦軸の目盛りをちょうどよく合わせます（横軸は変えません）。'+
+  '［まとめてスケールフィット］で出ているグラフを全部いっぺんに</li>'+
   '<li><b>データ点をクリック（タップ）</b>すると、その点の座標が点のそばとグラフの上に出ます。'+
   '同時に、その<b>時刻の線が他のグラフにも</b>引かれるので、同じ瞬間の x・v・a を見くらべられます。'+
-  'もう一度押すと消えます</li>'+
+  'もう一度押すか、点から離れた所をクリックするか、上の<b>［座標の選択］</b>のチェックを外すと消えます</li>'+
   '<li>各グラフの右上の <b>［d○/dt を表示］</b> にチェックを入れると、選んだ点での'+
   '<b>時間あたりの変化率</b>（x なら dx/dt＝速さ、v なら dv/dt＝加速度）も出ます。'+
   'これは<b>その点の前後の点</b>から <b>(後の値 − 前の値) ÷ (後の時刻 − 前の時刻)</b> で出しています'+
   '（＝中央差分。端の点だけは、となりの1点との差）。'+
-  '表や v–t グラフの v は<b>前進差分</b>（記録タイマーと同じ）なので、'+
-  '同じ点でも値が少しちがうことがあります</li>'+
-  '<li><b>グラフの中をドラッグ</b>すると左右に動きます。<b>横軸の目盛りの所をドラッグ</b>すると横の拡大縮小、'+
+  '表や v–t グラフの v は<b>前進差分</b>（記録タイマーと同じ）なので、同じ点でも値が少しちがうことがあります</li>'+
+  '<li><b>グラフの中をドラッグ</b>すると上下左右に動きます。<b>横軸の目盛りの所をドラッグ</b>すると横の拡大縮小、'+
   '<b>縦軸の目盛りの所をドラッグ</b>すると縦の拡大縮小。'+
-  '横軸（t）は x–t・v–t・a–t で<b>いっしょに動きます</b>（縦軸はグラフごと）。'+
-  '元に戻すときは <b>［スケールをリセット］</b></li>'+
+  '横軸（t）は x–t・v–t・a–t で<b>いっしょに動きます</b>（縦軸はグラフごと）。元に戻すときは <b>［スケールをリセット］</b></li>'+
+  '<li><b>a の出し方</b>は a–t グラフの下で選べます：「v の差から計算」（離す数 1〜3）か「v–t の傾きから計算」。'+
+  'クリックが 1 px ずれると a がどれだけずれるかの目安も出ます</li>'+
+  '<li><b>動画と一緒にグラフを再生する</b>：動画とグラフを横に並べ、再生に合わせて点が増えていきます</li>'+
   '<li>②の左の「測定した値（表）」は、右はしを<b>ドラッグして幅を変えられます</b></li>'+
-  '<li><b>自由選択グラフ</b>（グラフの右、③でも同じものが使えます）：'+
-  '実験・物体・量を選んで、縦軸と横軸を自由に決められます。<br>'+
+  '<li><b>自由選択グラフ</b>（グラフの下、③でも同じものが使えます）：物体・量を選んで、縦軸と横軸を自由に決められます。<br>'+
   '「正負を反転」でデータ点の符号を入れかえられます（右向きを正にしたいときなど）。<br>'+
   '「縦軸を2つにする（2軸）」にすると、左と右で別々の目盛の縦軸になります。'+
-  '例：〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕で衝突の前後を見る、'+
-  '〔縦軸＝x／縦軸2＝y／横軸＝t〕で x と y を 1 枚で見る、など</li>'+
-  '<li><b>運動量保存則</b>ボタン（右下）で〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕に一発で切りかわります。'+
+  '例：〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕で衝突の前後を見る、〔縦軸＝x／縦軸2＝y／横軸＝t〕で x と y を 1 枚で見る、など</li>'+
+  '<li><b>運動量保存則</b>ボタンで〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕に一発で切りかわります。'+
   '物体2のデータが無いときは切りかわらず、赤字で知らせます</li>'+
-  '<li>縦軸と横軸が<b>同じ単位</b>のとき（x–y など）は、縦横の目盛りを自動でそろえます。'+
-  '円運動が<b>ちゃんと円に見えます</b></li>'+
-  '<li>エネルギーは②の左下の <b>［エネルギーを解析する］</b> を押すと、質量 m や g の入力欄が出ます。'+
+  '<li>縦軸と横軸が<b>同じ単位</b>のとき（x–y など）は、縦横の目盛りを自動でそろえます。円運動が<b>ちゃんと円に見えます</b></li>'+
+  '<li>エネルギーは②の右上の <b>［エネルギーを解析する］</b> を押すと、質量 m や g の入力欄が出ます。'+
+  '<b>y 方向の正の向きを鉛直上向きだと仮定</b>して U = mgy を計算するので、円運動など y が鉛直でない実験には当てはまりません。'+
   '押していないときは Excel 出力にもエネルギーは入りません</li>'+
-  '<li><b>縦軸を2つにする（2軸）</b>の最初の設定は、縦軸1と同じ実験・同じ物体です</li>'+
-  '<li>③では、そのグラフをそのまま<b>フィット</b>できます（係数と R²）</li>'+
+  '<li>実験は10個まで記録でき、「並べて表示」「他の実験を重ねて表示」で比べられます（実験が1つのときは出ません）</li>'+
+  '<li>③で直線・放物線・正弦・指数の最小二乗フィット。<b>係数と R² まで</b>を出します（a・g・T は自分で考えます）</li>'+
   '<li>③のグラフの<b>青い帯</b>（←数式をフィッティングするエリア→）は「フィットに使う範囲」です。'+
   '左右のつまみをドラッグすると変えられます（動き出しの前や、ぶつかった後を外せます）</li>'+
-  '<li>③の <b>［フィッティングとは］</b> ボタンで、最小二乗法と R² の説明が図つきで出ます</li>'+
-  '<li>実験は10個まで記録でき、「並べて表示」「重ねて表示」で比べられます</li>'+
-  '<li>③で直線・放物線・正弦・指数の最小二乗フィット。<b>係数と R² まで</b>を出します</li></ul>'+
-  '<h3>保存・提出</h3>'+
-  '<ul><li><b>CSV</b>／<b>Excel(.xlsx)</b>（グラフつき）／<b>レポートPNG・PDF</b></li>'+
-  '<li><b>この動画の原点・トラッキングを保存</b>：記録した点と、原点・スケール・x軸・時間範囲を'+
-  '1つのファイルにします（動画は入りません）</li>'+
-  '<li><b>過去測定データを実験○に登録</b>：保存したファイルを、<b>いまの実験を消さずに</b>'+
-  '次の実験番号として足します。前の実験や去年のデータと並べて比べられます（ドロップでも読めます）</li>'+
-  '<li>CSV出力・CSVコピー・レポートPNG・レポートPDF は <b>①・②のどちらからでも</b>同じように使えます</li>'+
-  '<li><b>測定データを保存</b>は、解析が終わると<b>上のバー</b>に出ます。'+
-  '<b>過去測定データを実験○に登録</b>も上のバーにあります</li>'+
-  '<li><b>測定データ、グラフをまとめてExcel出力</b>（②）：表とグラフの入った .xlsx になります</li>'+
-  '<li>この端末のブラウザにも自動保存されます。同じ動画をもう一度開くと、続きからできます。'+
-  'みんなで使う端末では、終わったら上の段の「すべての実験を消してリセット」を押してください</li></ul>'+
+  '<li>③のフィット結果の下の <b>［フィット残差のプロット］</b> で、「測った値 − フィットの値」のグラフが右に出ます。'+
+  '0 のまわりにばらばらならよく合っていて、曲がったかたよりがあれば関数の形が合っていません</li>'+
+  '<li>③の <b>［フィッティングとは］</b> ボタンで、最小二乗法と R²・残差の説明が図つきで出ます</li>'+
+  '<li>②③の右上から <b>レポートPNG／レポートPDF／Excel／グラフPNG</b> を出せます。'+
+  'レポートには、フィットしたグラフと残差も載ります</li></ul>'+
   '<h3>精度について</h3>'+
   '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
+  '<li>いちばん大きな誤差は<b>ものさしの奥行き</b>です。カメラから 3 m で、ものさしが 50 cm 手前にあると長さが約 17 % ずれます</li>'+
   '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>'+
   '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
   '<p>動画は<b>コマ（フレーム）</b>がぱらぱらと並んだものです。1 秒あたりのコマ数が <b>fps</b> ですが、'+
@@ -6695,7 +6992,7 @@ function openHelp(){
   '「いま画面に出したコマの時刻」を 1 枚ずつ受け取ります'+
   '（<code>requestVideoFrameCallback</code> という仕組み）。'+
   'こうして「1 枚目＝0.000 秒、2 枚目＝0.033 秒、3 枚目＝0.067 秒…」という<b>時刻の一覧</b>ができます。'+
-  '2 のカードに出る「<b>45 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
+  '動画を読みこんだ直後の確認画面に出る「<b>78 コマ</b>」などは、この一覧に入ったコマの数です</li>'+
   '<li><b>取りこぼしを埋める</b>：再生が速くて受け取れなかったコマは、'+
   'あとでそのコマへシークして測り直し、一覧のすきまを埋めます</li>'+
   '<li><b>使う</b>：点を記録するときは、いま画面に出ているコマが一覧の何番目かを調べ、'+
@@ -6704,13 +7001,13 @@ function openHelp(){
   '</ol>'+
   '<p>コマ送りも、この一覧の<b>となりのコマへ移る</b>形で進みます。'+
   'だから <b>fps は「1 コマがおよそ何秒か」の目安</b>であって、記録される時刻そのものには使っていません。'+
-  'fps 欄の横に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
+  '2 の fps の行に「（実測した時刻から）」と出ていれば、時刻は実測値です。</p>'+
   '<p class="mini">※ この仕組みが使えないブラウザ（Firefox など）では、'+
   '<b>1 コマ＝ 1/fps 秒</b>として計算します。このときだけ fps の値が時刻に効くので、'+
-  '必要なら fps 欄を手で直してください。'+
+  '読みこんだ直後の確認画面で「再生 fps」を入れてください（あとから直すときは 2 の［変更］）。'+
   'また、シークは 1 コマぶんずれることがあるので、<b>毎回いま出ているコマの時刻を読み直して</b>から記録しています。</p>'+
   '<p><b>スロー撮影（ハイスピード撮影）</b>した動画は、動画の中の 1 秒が実際の 1/8 秒などになっています。'+
-  '2 の「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>';
+  '動画を読みこんだ直後の確認画面（または 2 の［変更］）で「スロー撮影」を選ぶと、測った時刻にその倍率をかけて<b>実際の時刻</b>に直します。</p>';
   $('helpModal').classList.remove('hide');
   $('hpClose').onclick=function(){ $('helpModal').classList.add('hide'); };
 }
@@ -7290,12 +7587,19 @@ function askResetPts(go){
       toast('記録した続き（t = '+nf(t-(EXP().t0||0),3)+' s）に来ました'); });
   };
   $('cbBig').onchange=function(){ setBigView(this.checked); saveLocal(); };
+  /* ファイルを選ぶダイアログを開いた時刻（全画面が外れた理由を見分けるため） */
+  ['fileVideo','fileCam','fileJson'].forEach(function(id){
+    var f=$(id); if(f) f.addEventListener('click', function(){ UI.fileClickAt=Date.now(); });
+  });
   document.addEventListener('fullscreenchange', function(){
     if(document.fullscreenElement){ UI.wantFull=false; return; }
-    /* ファイルを選ぶダイアログなどで全画面が外れることがある。
-       そのときは最大表示をやめず、次に画面を触ったときに全画面へもどす。
-       （esc で外したときは、下の keydown が最大表示もやめる） */
-    if(APP.bigView) UI.wantFull=true;
+    if(!APP.bigView) return;
+    /* ファイルを選ぶダイアログで全画面が外れたときは、最大表示をやめず、
+       次に画面を触ったときに全画面へもどす。
+       それ以外（esc など。ブラウザは esc のキー入力をページに渡さない）は、
+       いちばん上の段までふくめて元の表示にもどす。 */
+    if(UI.fileClickAt && Date.now()-UI.fileClickAt < 3000) UI.wantFull=true;
+    else setBigView(false);
   });
   document.addEventListener('pointerdown', function(){
     if(UI.wantFull && APP.bigView && !document.fullscreenElement &&
@@ -7314,7 +7618,7 @@ function askResetPts(go){
     if(APP.tab==='3') setM3Menu(this.checked); else setM2Menu(this.checked);
     saveLocal();
   };
-  bindPanelRsz(); bindVidRsz();
+  bindPanelRsz(); bindVidRsz(); bindDepth();
   /* 1. 動画：動画エリアをクリックしたら「動画を選択」 */
   $('vph').onclick=function(){ if(!VID.ready) $('btnFile').click(); };
   $('selSample').onchange=function(){
@@ -7419,9 +7723,11 @@ function askResetPts(go){
   $('stroStep').oninput=function(){ updateStroUI(); };
   $('stroStep').onchange=function(){
     if(!UI.stroReady){ updateStroUI(); return; }
+    if(UI.stroBusy){ toast('いま作っています。終わるまでお待ちください'); return; }
     $('btnStrobe').disabled=true;
     makeStrobe().then(function(){ $('btnStrobe').disabled=false; updateStroUI(); });
   };
+  $('cbStroPts').onchange=function(){ applyStroPts(); };
   $('btnStroSave').onclick=function(){ askSaveName('ストロボ画像', saveStrobePng); };
   $('btnStroClr').onclick=function(){
     clearStrobe(); toast('ストロボ画像を消しました');
@@ -7495,6 +7801,11 @@ function askResetPts(go){
   });
 
   /* モード2・3 */
+  /* 「座標の選択」：OFF にすると選んでいた点を外す。ON は点をクリックしたときだけ */
+  if($('cbG_sel')) $('cbG_sel').onchange=function(){
+    if(!this.checked){ selClear(); redrawAllCharts(); updateReadouts(); }
+    else if(SEL.x===null){ this.checked=false; toast('グラフの上の点をクリックすると選べます'); }
+  };
   ['selCmp','cbG_x','cbG_y','cbG_v','cbG_a','cbG_e','inM1','inM2','inG'].forEach(function(id){
     $(id).addEventListener('change', function(){ afterChange(); renderMode2(); });
   });
@@ -7560,6 +7871,238 @@ function askResetPts(go){
   });
 }
 var seekBusy=false;
+
+/* =========================================================
+   撮れぐあいのチェック（②）と、ものさしの奥ゆき（③）
+   ========================================================= */
+/* 判定はゆるめにしておく。生徒を止めるためではなく、
+   「なぜグラフが荒れるのか」を自分で見つけられるようにするのが目的。 */
+function diagItems(){
+  var out=[], d=(typeof diagResult==='function')? diagResult() : null;
+  function add(mk, name, val, tip){ out.push({mk:mk, name:name, val:val, tip:tip||''}); }
+  /* --- 測らなくても分かること --- */
+  var dur=VID.dur||0;
+  if(dur>0){
+    if(dur<=VREC.dur) add('o','長さ', nf(dur,1)+' 秒','');
+    else if(dur<=60) add('t','長さ', nf(dur,1)+' 秒','少し長めです。2 で「解析する時間範囲」をみじかくしぼると軽くなります。');
+    else add('x','長さ', nf(dur,1)+' 秒','長すぎます。見たい運動の前後だけを切り出して撮り直すのがおすすめです。');
+  }
+  if(VID.w){
+    if(VID.w<=VREC.w && VID.h<=VREC.h) add('o','画面の大きさ', VID.w+'×'+VID.h+' px','');
+    else add('t','画面の大きさ', VID.w+'×'+VID.h+' px','4K などは重くなるだけで、精度は上がりません。フルHD で十分です。');
+  }
+  if(VID.bytes>0){
+    if(VID.bytes<=VREC.bytes) add('o','ファイル', sizeText(VID.bytes),'');
+    else add('t','ファイル', sizeText(VID.bytes),'大きいと動きが重くなります。');
+  }
+  if(VID.frames.length>2){
+    var f=nf(VID.fps,1);
+    if(VID.fps>=45) add('t','コマ数', f+' コマ/秒','こまかく撮れていますが、そのぶん 1 コマの動きが小さくなります。'+
+      '4 では［進むフレーム数 N］を大きめ（4〜8）にすると、v・a のグラフが落ち着きます。');
+    else add('o','コマ数', f+' コマ/秒','');
+  }
+  /* --- 再生しながら測ったこと --- */
+  if(d){
+    var L=d.lum;
+    if(L>=80) add('o','明るさ','じゅうぶん','');
+    else if(L>=50) add('t','明るさ','やや暗い','暗いと 1 コマ 1 コマがぼやけて、点が打ちにくくなります。');
+    else add('x','明るさ','暗い','照明をつけるか、明るい場所で撮り直すと、ぐっと点が打ちやすくなります。');
+    if(d.sharpMed!==null && d.sharpMax>0){
+      var r=d.sharpMed/d.sharpMax;
+      if(r>=0.6) add('o','コマのくっきりさ','そろっています','');
+      else if(r>=0.4) add('t','コマのくっきりさ','コマによってぼやけます',
+        '物体が速いか、暗いためです。物体をもう少し遠くから撮るか、明るくすると直ります。');
+      else add('x','コマのくっきりさ','ぶれているコマが多い',
+        '物体が速すぎるか、暗すぎます。このままだと点の位置が読み取りにくくなります。');
+    }
+    if(d.shakePct!==null){
+      var p=d.shakePct, px=nf(d.shake,1)+' px';
+      if(p<0.2) add('o','手ぶれ','ほぼ固定','');
+      else if(p<0.6) add('t','手ぶれ','少しゆれています（'+px+'/コマ）',
+        '4 の［手ぶれ補正を使う］にチェックを入れ、［画面内の固定点を記録］で動かない目印を'+
+        'いくつかのコマでクリックすると、そのぶんを差し引けます。');
+      else add('x','手ぶれ','ゆれが大きい（'+px+'/コマ）',
+        'このままだと v・a が実際よりずれます。4 の［手ぶれ補正を使う］で固定点をとるか、'+
+        'カメラを机や壁に固定して撮り直してください。');
+    }
+  }
+  return out;
+}
+function diagWorst(items){
+  var w='o';
+  items.forEach(function(i){ if(i.mk==='x') w='x'; else if(i.mk==='t' && w!=='x') w='t'; });
+  return w;
+}
+var MK={ o:'○', t:'△', x:'×' };
+function renderVidDiag(){
+  var box=$('vidDiag'); if(!box) return;
+  if(!VID.ready){ box.classList.add('hide'); box.innerHTML=''; return; }
+  var items=diagItems();
+  if(!items.length){ box.classList.add('hide'); box.innerHTML=''; return; }
+  var w=diagWorst(items);
+  box.className='diagbox'+(w==='x'?' bad':(w==='t'?' warn':''));
+  var head=(w==='o')? 'この動画の撮れぐあい：よく撮れています'
+         : (w==='t')? 'この動画の撮れぐあい：気になるところがあります'
+                    : 'この動画の撮れぐあい：撮り直したほうがよいところがあります';
+  var h='<span class="dgt">'+head+'</span><ul>';
+  items.forEach(function(i){
+    h+='<li><span class="mk '+i.mk+'">'+MK[i.mk]+'</span><span>'+esc(i.name)+'：<b>'+esc(i.val)+'</b>'+
+       (i.tip? '<br><span class="dgtip">'+i.tip+'</span>' : '')+'</span></li>';
+  });
+  h+='</ul>';
+  if(!(typeof diagResult==='function' && diagResult()))
+    h+='<p class="mini dgtip">明るさ・手ぶれは、コマごとの時刻を測るときに調べます。</p>';
+  box.innerHTML=h;
+}
+/* 撮れぐあいを1行にまとめる（レポートの条件欄に出す） */
+function diagLine(){
+  var d=(typeof diagResult==='function')? diagResult() : null;
+  var s=[];
+  if(d){
+    s.push('明るさ '+(d.lum>=80?'○':(d.lum>=50?'△':'×')));
+    if(d.shakePct!==null) s.push('手ぶれ '+(d.shakePct<0.2? 'ほぼ無し（○）'
+      : nf(d.shake,1)+' px/コマ'+(d.shakePct<0.6?'（△）':'（×）')));
+    if(d.sharpMed!==null && d.sharpMax>0)
+      s.push('コマのくっきりさ '+(d.sharpMed/d.sharpMax>=0.6?'○':(d.sharpMed/d.sharpMax>=0.4?'△':'×')));
+  }
+  var e=EXP(), er=depthErrPct(e);
+  if(er!==null) s.push('ものさしの奥ゆき '+(er===0? '同じ（○）' : '約 '+nf(er,0)+'% ずれ'));
+  return s.length? s.join('　') : '（測っていません）';
+}
+/* ---- ものさしの奥ゆき ---- */
+/* カメラから物体まで L、ものさしが d だけ手前（または奥）なら、
+   写る大きさが L/(L∓d) 倍ちがうので、長さは およそ d/L の割合でずれる。 */
+function depthErrPct(e){
+  e=e||EXP();
+  if(!(e.mPerPx>0)) return null;
+  var L=+e.camDist||3, gp=+e.rulerGap||0;
+  if(!(L>0)) return null;
+  return Math.min(90, gp/L*100);
+}
+function updateDepth(){
+  var e=EXP(), box=$('depthBox'), msg=$('depthMsg');
+  if(!box) return;
+  if(!(e.mPerPx>0)){ box.classList.add('hide'); return; }
+  box.classList.remove('hide');
+  if($('selCamDist')) $('selCamDist').value=String(e.camDist||3);
+  if($('selRulerGap')) $('selRulerGap').value=String(e.rulerGap||0);
+  var p=depthErrPct(e);
+  if(!msg) return;
+  if(!p){ msg.className='mini ok';
+    msg.innerHTML='同じ奥ゆきなら、この心配はありません。'; return; }
+  msg.className='mini ng';
+  msg.innerHTML='長さが <b>約 '+nf(p,0)+' %</b> ずれます'+
+    '（ものさしが手前なら小さく、奥なら大きく出ます）。'+
+    (p>=10? '<br>ものさしを物体と同じ奥ゆきに置いて、撮り直すことをおすすめします。' : '');
+}
+function bindDepth(){
+  ['selCamDist','selRulerGap'].forEach(function(id){
+    var s=$(id); if(!s) return;
+    s.onchange=function(){
+      var e=EXP();
+      if(id==='selCamDist') e.camDist=parseFloat(s.value)||3;
+      else e.rulerGap=parseFloat(s.value)||0;
+      updateDepth(); saveLocal();
+    };
+  });
+}
+
+/* =========================================================
+   動画を読んだ直後の「撮影 fps（フレームレート）の確認」
+   ・fps とスロー撮影の入れ忘れを防ぐため、動画を読んだらかならず1回聞く
+   ・撮影 fps と スロー倍率 は同じことの表と裏：撮影 fps ＝ 再生 fps ÷ 倍率
+   ・同じ動画を開き直したとき（続きから）は聞かない
+   ========================================================= */
+var SLOW_OPTS=[[1,'普通の速さで撮った'],[0.5,'1/2 のスロー'],[0.25,'1/4 のスロー'],
+               [0.125,'1/8 のスロー（240fps→30fps など）'],[0.0625,'1/16 のスロー']];
+function fpsMeasured(){ return VID.frames.length>2; }
+/* 倍率の表示：8 なら「8」、2.5 なら「2.5」 */
+function niceX(v){ return (Math.abs(v-Math.round(v))<0.02)? String(Math.round(v)) : sig(v,3); }
+function askFpsUI(){
+  var e=EXP();
+  if(!VID.ready) return;
+  var play=VID.fps>0? VID.fps : 30;
+  var ts=(e.tscale>0? e.tscale : 1);
+  var st=fpsFromTable();
+  var info = fpsMeasured()
+    ? VID.frames.length+' コマ / '+nf(VID.frames[VID.frames.length-1]-VID.frames[0],3)+' s / 再生 '+nf(play,3)+' fps'+
+      (st&&st.vfr? '（可変フレームレート）':'（固定フレームレート）')
+    : '<span class="ng">コマごとの時刻は測れませんでした。</span>再生 fps を入力してください（ふつうは 30 か 60）';
+  if(window.__noAskFps){ applyFps(play, ts); return; }
+  var old=document.getElementById('fpsDlg'); if(old) old.remove();
+  var m=document.createElement('div'); m.className='modal'; m.id='fpsDlg';
+  m.innerHTML='<div class="box" style="max-width:560px">'+
+    '<h2>撮影 fps（フレームレート）の確認</h2>'+
+    '<p>撮影 fps（<b>1 秒間に何コマ撮ったか</b>）を入力してください。</p>'+
+    '<label class="f" style="font-size:1.05rem">撮影 fps：<input type="number" id="inShotFps" min="1" max="2000" step="0.001" style="width:120px"></label>'+
+    '<p class="mini" style="margin:6px 0 10px">ファイル解析：'+info+'</p>'+
+    (fpsMeasured()? '' :
+      '<label class="f">再生 fps：<input type="number" id="inPlayFps" min="1" max="1000" step="0.001" style="width:110px" value="'+nf(play,3)+'"></label>')+
+    '<label class="f" style="font-size:1.02rem">スロー撮影：<select id="selShotSlow">'+
+      SLOW_OPTS.map(function(o){ return '<option value="'+o[0]+'">'+o[1]+'</option>'; }).join('')+
+      '<option value="x">その他（撮影 fps から計算）</option></select></label>'+
+    '<p class="mini" id="shotNote" style="margin-top:6px"></p>'+
+    '<p class="mini">※ ここで入れるのは<b>時刻の計算に使う値</b>です。コマの数やコマ送りの動きは動画ファイルで決まっているので、変わりません。</p>'+
+    '<div class="row" style="margin-top:12px;justify-content:flex-end">'+
+    '<button class="btn pri" id="btnFpsOk">この設定で進む</button></div></div>';
+  document.body.appendChild(m);
+  var inS=$('inShotFps'), sel=$('selShotSlow'), inP=$('inPlayFps'), note=$('shotNote');
+  function P(){ var v=inP? parseFloat(inP.value) : play; return (v>0)? v : play; }
+  function setSel(t){
+    var hit=null; SLOW_OPTS.forEach(function(o){ if(Math.abs(o[0]-t)/o[0]<0.06) hit=o[0]; });
+    sel.value = hit!==null? String(hit) : 'x';
+  }
+  function showNote(){
+    var t=P()/(parseFloat(inS.value)||P());
+    note.innerHTML = (Math.abs(t-1)<0.02)
+      ? '普通の速さとして計算します（動画の 1 秒 ＝ 実際の 1 秒）。'
+      : '動画の 1 秒 ＝ 実際の <b>'+sig(t,3)+' 秒</b>として計算します（'+niceX(1/t)+' 倍のスロー）。';
+  }
+  inS.value=nf(play/ts,3); setSel(ts); showNote();
+  sel.onchange=function(){
+    if(sel.value==='x'){ showNote(); return; }
+    var v=P()/parseFloat(sel.value);
+    if(Math.abs(v-Math.round(v))<0.25) v=Math.round(v);     /* 29.97fps×8 = 239.8 → 240 と見せる */
+    inS.value=nf(v,3); showNote();
+  };
+  inS.oninput=function(){ var v=parseFloat(inS.value); if(v>0){ setSel(P()/v); showNote(); } };
+  if(inP) inP.oninput=function(){ var v=parseFloat(inP.value); if(v>0){ inS.value=nf(v/(parseFloat(sel.value)||1),3); showNote(); } };
+  $('btnFpsOk').onclick=function(){
+    var shot=parseFloat(inS.value), pl=P();
+    if(!(shot>0) || shot>2000){ toast('撮影 fps は 1 〜 2000 の数を入れてください'); inS.focus(); return; }
+    var t=pl/shot;
+    if(!(t>0.01 && t<=1.5)){ toast('撮影 fps が再生 fps より小さすぎます／大きすぎます'); inS.focus(); return; }
+    if(t>1) t=1;                        /* 撮影 < 再生 はふつう無いので、普通の速さとする */
+    if(sel.value!=='x') t=parseFloat(sel.value);   /* 1/8 などを選んでいれば、その値そのもの */
+    m.remove();
+    applyFps(pl, t, shot);
+  };
+  setTimeout(function(){ try{ inS.focus(); inS.select(); }catch(x){} }, 30);
+}
+function applyFps(play, ts, shot){
+  var e=EXP();
+  if(!fpsMeasured() && play>0){ VID.fps=play; $('fpsSrc').textContent='（手入力）'; }
+  e.video.fps=VID.fps;
+  e.tscale=ts; e.shotFps=shot||(VID.fps/ts); e.fpsOk=true;
+  $('inFps').value=nf(VID.fps,3);
+  $('selTScale').value=String(ts);
+  if(![].some.call($('selTScale').options, function(o){ return o.value===String(ts); })) $('selTScale').value='1';
+  updateFpsLine(); afterChange();
+  if(!$('mode2').classList.contains('hide')) renderMode2();
+  saveLocal();
+}
+/* 2 のカードの fps の行（短く） */
+function updateFpsLine(){
+  var e=EXP(), el0=$('fpsLine'); if(!el0) return;
+  var ts=(e.tscale>0? e.tscale : 1);
+  var src=fpsMeasured()? '実測した時刻から' : ($('fpsSrc').textContent.replace(/[（）]/g,'')||'既定値');
+  el0.innerHTML='fps <b>'+nf(VID.fps,3)+'</b>（'+esc(src)+'）<br>'+
+    (ts===1? '普通の速さで撮影' : '<b>'+niceX(1/ts)+' 倍のスロー</b>で撮影（撮影 '+nf(e.shotFps||VID.fps/ts,1)+' fps）')+
+    '　<button class="btn sm" id="btnFpsDlg">変更</button>';
+  var b=$('btnFpsDlg'); if(b) b.onclick=function(){ askFpsUI(); };
+  /* 測れなかった／一部しか測れなかったときだけ、測り直すボタンを出す */
+  var row=$('ftRow'); if(row) row.classList.toggle('hide', !(VID.ready && VID.hasRVFC && (!fpsMeasured() || VID.tablePartial)));
+}
 
 </script>
 
