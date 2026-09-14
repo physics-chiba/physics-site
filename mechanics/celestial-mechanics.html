@@ -5936,7 +5936,15 @@ function gvNorm(Ms, x, y, u) {
 }
 function gvCam(s, W, oy) {
   var c = s.cam || { az: 0, el: 0, zoom: 1 };
-  return mk3d(c.az * DEG, c.el * DEG, 185 * c.zoom, W / 2, oy);
+  /* ★el の符号を返して mk3d に渡すこと★（先生の指摘・2026-09-14）
+     mk3d の el は「下から見上げる」向きなので、そのまま渡すと
+     上に向かって回すほど 上の図（真上から見た軌道）と ★左右が逆さま★ になり、
+     すりばちの上のボールが 上の図と反対まわりに回って見える。
+     −el にすると、画面の上が ＋y になって、上の図とぴったり同じ向きになる。
+     ★たての向き（すりばちが下に落ちこむこと）は変わらない★
+       ——奥ゆきの項は cos(el) なので、符号を返しても同じ値になるため。
+     （補足：地球と月の太陽まわりの運動 の2段目でも、まったく同じ直し方をした） */
+  return mk3d(c.az * DEG, -c.el * DEG, 185 * c.zoom, W / 2, oy);
 }
 /* 真横から見ているか（＝ふつうの U–r グラフとして読める向きか） */
 function gvSideOn(s) { return !s.cam || Math.abs(s.cam.el) < 6; }
@@ -6621,7 +6629,14 @@ DEFS['m2-2'] = {
       var uu = P.grav.Uwell(v.Ms, rr);
       var pTop = gvPt(cam, v.Ms, q.x, q.y, 0), pBall = gvPt(cam, v.Ms, q.x, q.y, uu);
       if (pBall.y > H - 6 || pBall.x < 6 || pBall.x > W - 6) return;
-      dashLine(ctx, pTop.x, pTop.y, pBall.x, pBall.y, COL.dim, [3, 3], 1);
+      /* ★U = 0 の面までの深さを示す細い線★
+         ★真上に近い向きから見るときは描かない★（先生の指摘・2026-09-14）
+         その向きでは「深さ」が画面のおくゆき方向になって、
+         ボールの上にちょこんと出る意味不明な点線にしか見えないため。
+         線が 12 px より短くなったら、もう深さを表せていないと考える。 */
+      if (Math.hypot(pTop.x - pBall.x, pTop.y - pBall.y) > 12) {
+        dashLine(ctx, pTop.x, pTop.y, pBall.x, pBall.y, COL.dim, [3, 3], 1);
+      }
       /* ★すりばちの上の矢印★ 上の軌道の図とは別のチェックで出す。
          万有引力＝斜面を「下って中心へ向かう」向き、速度＝斜面にそって進む向き。
          どちらも「すりばちの面の上」に貼りついた矢印として描く
