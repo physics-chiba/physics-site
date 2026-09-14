@@ -1383,6 +1383,12 @@ YG.phys = (function () {
     // 「完全には強めあわない」という事実だけを述べる表現にする
     var label = kind === 'strong' ? '強めあう' : (kind === 'weak' ? '弱めあう' : '完全には強めあわない');
 
+    // 「いま暗線のまうえに来ているか」。明線の判定（kind ＝ strong）とまったく同じ考え方で、
+    // 経路差 ÷ λ が「いちばん近い半整数」からどれだけずれているかで決める。
+    // これがあるので、ドラッグで m ＝ 0.5 などに来たときも明線と同じように名札を光らせられる。
+    var mDark = Math.round(ratio - 0.5) + 0.5;      // いちばん近い半整数（… −1.5, −0.5, 0.5, 1.5 …）
+    var atDark = !st.noDark && Math.abs(ratio - mDark) <= TOL;   // ③は明線どうしを比べるモードなので対象外
+
     // 明線の間隔：隣りあう 2 本の実測（厳密な x）と、式の値
     var dxMeasured = null;
     if (orders.length >= 2) {
@@ -1400,6 +1406,7 @@ YG.phys = (function () {
       m: m, sinT: sinT, theta: theta, thetaDeg: theta / DEG,
       delta: delta, ratio: ratio, x: x, I: I,
       kind: kind, label: label,
+      mDark: mDark, atDark: atDark,           // いちばん近い暗線の m と、そのまうえに来ているか
       orders: orders, darks: darks,
       sel: sel,                               // 選んでいる明線・暗線（自由に選んでいるときは null）
       dxApprox: deltaXApprox(lambda, d, L),   // λL/d [m]
@@ -2778,7 +2785,8 @@ YG.modePath = (function () {
     // 目は P と同じ高さに置く（m の名札の列のすぐ右）。向きは傾きだけで示す
     var p = vec(L.SX + L.SCR_W + 90, P.clamp(Pp.y, 30, L.BAND_Y - 40));
     var tag;
-    if (sol.sel && sol.sel.dark) tag = 'm ＝ ' + sol.sel.m + ' の暗線';
+    var darkM = (sol.sel && sol.sel.dark) ? sol.sel.m : (sol.atDark ? sol.mDark : null);
+    if (darkM !== null) tag = 'm ＝ ' + darkM + ' の暗線';
     else if (sol.kind === 'strong') tag = 'm ＝ ' + sol.m + ' の明線';
     else tag = 'いま見ている位置';
     // 名札は、m の名札（明線の位置に並ぶ）とぶつからない高さに置く：
@@ -2786,7 +2794,7 @@ YG.modePath = (function () {
     // 暗線を見ているとき（P がすきまにいる）は、間隔ぶんずらして次のすきまへ。
     var gap = sol.dxApprox * sc.ppm;
     var dy = 30;
-    if (gap >= 30) dy = (sol.sel && sol.sel.dark) ? gap : gap / 2;
+    if (gap >= 30) dy = (darkM !== null) ? gap : gap / 2;
     // 名札は目より少し右に寄せて、暗線の名札の列（x 〜1180）と重ねない
     D.eye(ctx, p, mul(dir, -1), 0.58, tag, Pp.y > L.CY, dy, 36);
   }
@@ -2845,7 +2853,11 @@ YG.modePath = (function () {
       var dy = L.CY - darks[k].x * sc.ppm;
       if (dy < L.CY - L.SH - 1 || dy > L.CY + L.SH + 1) continue;
       if (minGap > 0 && sol.dxApprox * sc.ppm < 26) continue;      // 混みすぎるときは出さない
-      var onD = !!(sol.sel && sol.sel.dark && Math.abs(sol.sel.m - darks[k].m) < 1e-9);
+      // 光らせる条件は明線の名札とそろえる：
+      //   ・「明線・暗線の位置のみ」で暗線を選んでいる（sol.sel）
+      //   ・自由にドラッグしていて、いま暗線のまうえに来ている（sol.atDark）
+      var onD = !!(sol.sel && sol.sel.dark && Math.abs(sol.sel.m - darks[k].m) < 1e-9)
+             || !!(sol.atDark && Math.abs(sol.mDark - darks[k].m) < 1e-9);
       var td = 'm=' + darks[k].m;
       var twd = ctx.measureText(td).width;
       D.roundRect(ctx, x + w + 14, dy - 7, twd + 8, 14, 4);
@@ -2995,10 +3007,19 @@ YG.modePath = (function () {
         '　 　明線：d · x / L ＝ mλ　　暗線：d · x / L ＝ (m + ½)λ'
       ], { bg: '#fff8ef', border: '#e0a24a', fg: '#5b4420' });
     } else if (step === 4) {
+      // 「いまどこを見ているか」は、名札の光り方と言うことをそろえる
+      // （明線のまうえ／暗線のまうえ／そのあいだ、の 3 とおり）
+      var where;
+      if (sol.atDark) where = 'm ＝ ' + sol.mDark + ' の暗線';
+      else if (sol.kind === 'strong') where = 'm ＝ ' + sol.m + ' の明線';
+      else {
+        var lo = Math.floor(sol.ratio);
+        where = 'm ＝ ' + lo + ' と ' + (lo + 1) + ' の明線のあいだ';
+      }
       rect = D.calloutAt(ctx, sc.P, box.x, box.y, [
         '④ ③の式を x について解くと',
         '　 　x ≒ mλL / d　（m に比例して等間隔に並ぶ）',
-        '　 いま x ＝ ' + D.fmtLenM(sol.x) + '（m ＝ ' + sol.m + ' の位置）'
+        '　 いま x ＝ ' + D.fmtLenM(sol.x) + '（' + where + '）'
       ], { bg: '#f2f7fd', border: '#1663b5', fg: '#1a3f68' });
     }
     // 「次へ」で吹き出しが切りかわった直後は、ピコンと光らせて目を引く
@@ -6110,6 +6131,7 @@ YG.probe = (function () {
         I: r(sol.I, 9),
         kind: sol.kind,
         m: sol.m,
+        atDark: sol.atDark, mDark: r(sol.mDark, 6),
         orders: sol.orders.map(function (o) { return o.m; }),
         darks: sol.darks.map(function (o) { return o.m; }),
         sel: sol.sel ? { m: sol.sel.m, dark: sol.sel.dark } : null,
