@@ -595,7 +595,13 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 #cgHost2>#cgCard{max-width:900px}
 /* ③では ③のグラフと同じく、左にグラフ・右にフィッティングの設定と結果 */
 #cgHost3>#cgCard{max-width:none}
-#cgHost3>#cgCard .cgside{flex:1 1 300px;max-width:560px}
+#cgHost3>#cgCard .cgside{flex:1 1 300px;max-width:760px}
+/* 結果｜残差 を横に（③のフィッティング結果と同じ） */
+.cgresrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.cgresrow #cgResult{flex:1 1 260px;min-width:0}
+.cgresrow #cgResidHost{flex:0 0 340px;max-width:100%}
+.cgresrow #cgResidHost:empty{display:none}
+.maxbtn.cgmax{margin-left:6px}
 .cgbody{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
 .cgmain{flex:0 0 auto;min-width:0;max-width:100%}
 .cgside{flex:1 1 240px;min-width:0}
@@ -740,8 +746,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 /* ストロボを作っている最中 */
 .strowait{ color:#c0332e; font-weight:700; margin:4px 0 0 }
-.strotune.busy{ opacity:.75 }
-.strotune.busy input[type=range]{ cursor:not-allowed }
+/* ※ .busy は画面全体をおおう別のクラスなので、ここでは stro-busy を使う（前は .busy を付けていて、作成中に時間間隔調整が画面いっぱいに出ていた） */
+.strotune.stro-busy{ opacity:.75 }
+.strotune.stro-busy input[type=range]{ cursor:not-allowed }
 
 /* ボタンの上に出す吹き出し（↓やり直しはここ） */
 .callout.above{left:0;top:auto;bottom:calc(100% + 4px);transform:none}
@@ -1489,7 +1496,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <label class="f">m₁ <input type="number" id="cgM1" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
       <label class="f">m₂ <input type="number" id="cgM2" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
     </span>
-    <button class="btn sm blue hide" id="cgMomentum">運動量保存則</button></h3>
+    <button class="btn sm blue hide" id="cgMomentum">運動量保存則</button>
+    <button class="maxbtn cgmax" id="cgBig" title="このグラフを大きく表示">最大化</button></h3>
  <div class="cgbody">
   <div class="cgmain">
   <div class="cgrid">
@@ -1538,8 +1546,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <button class="btn pri sm" id="cgFit">このグラフをフィッティング</button>
     <button class="btn sm" id="cgFitClr">フィッティングを消す</button>
   </div>
-  <div id="cgResult" class="mini"></div>
-  <div id="cgResidHost"></div>
+  <div class="cgresrow"><div id="cgResult" class="mini"></div>
+  <div id="cgResidHost"></div></div>
   </div><!-- /cgside -->
  </div><!-- /cgbody -->
 </section>
@@ -2889,8 +2897,10 @@ function onUp(e){
     var cd=UI.cropDrag; UI.cropDrag=null;
     var w=cd? Math.abs(cd.x1-cd.x0) : 0, h=cd? Math.abs(cd.y1-cd.y0) : 0;
     if(w<40 || h<40){ drawOverlay(); toast('小さすぎます。もう少し大きく囲んでください'); return; }
+    var tf=!!UI.trimFlow; if(tf) UI.trimLock=true;                      /* setCrop の中でモードが record にもどっても旗を下ろさせない */
     setCrop({ x:Math.min(cd.x0,cd.x1), y:Math.min(cd.y0,cd.y1), w:w, h:h });
-    toast('トリミングしました（測定した値は変わりません）');
+    if(tf){ UI.trimLock=false; if(typeof askTrimOk==='function') askTrimOk(); }   /* 2 の流れ：「この範囲でいいですか？」 */
+    else toast('トリミングしました（測定した値は変わりません）');
     return;
   }
   if(UI.dragRad){ UI.dragRad=false; UI.pend=null; drawOverlay(); updateGuide(); saveLocal(); return; }
@@ -6094,12 +6104,15 @@ function updateGuide(){
   if(st===1 && !VID.ready) $('btnFile').classList.add('glow');
   /* 4：まず「トラッキングを開始する」、押したら動画そのものを光らせる */
   /* 4 に入った直後：まず「進むフレーム数 N」を動画の真ん中で決めてもらう（決めるまで開始ボタンは出さない） */
-  if(UI.trimAsking && !$('calMsg').classList.contains('trimq')) UI.trimAsking=false;   /* 質問が消えていたら待たない */
+  if(!UI.trimLock){
+    if(UI.trimAsking && !UI.trimFlow && !$('calMsg').classList.contains('trimq')) UI.trimAsking=false;   /* 質問が消えていたら待たない */
+    if(UI.trimFlow && UI.mode!=='crop' && !$('calMsg').classList.contains('trimq')) { UI.trimFlow=false; UI.trimAsking=false; }   /* トリミングをやめた */
+  }
   if(st===4 && VID.ready && !e.nOk){
     if(EXP().objs.reduce(function(a,b){return a+b.length;},0)>0) e.nOk=true;   /* もう点があるなら聞かない（前の版のデータ） */
     else if(!LIVE.on && !UI.trimAsking && !$('calStepN')) { UI.nAsking=false; askStepN(); }      /* 質問が画面に無ければ（3 にもどって消えた等）出し直す */
   }
-  if(st!==4) UI.nAsking=false;
+  if(st!==4){ UI.nAsking=false; if($('calStepN')) calMsg(''); }   /* 4 を離れたら N の質問は消す（もう一度 2 など） */
   var nWait=(st===4 && VID.ready && !e.nOk);
   var start4=(st===4 && VID.ready && needTrackStart() && !nWait);
   $('btnTrkStart').classList.toggle('hide', !start4);
@@ -6129,7 +6142,7 @@ function updateGuide(){
   placeCallouts();
   $('coSeek').classList.toggle('hide', !(wantT0||wantB));   /* シークバーの上の案内 */
   /* 3 に入ったら、動画の真ん中に「原点を指定してください」 */
-  $('btnOriginBig').classList.toggle('hide', !(st===3 && VID.ready && !e.origin && UI.mode!=='origin'));
+  $('btnOriginBig').classList.toggle('hide', !(st===3 && VID.ready && !e.origin && UI.mode!=='origin' && UI.mode!=='crop' && !UI.trimAsking));
   if(st===3){
     /* 押したあと（クリック待ちの間）も光らせ続ける */
     if(!e.originSet || UI.mode==='origin') $('btnOrigin').classList.add('glow');
@@ -6251,6 +6264,12 @@ function updateGuide(){
     els('.videobox').forEach(function(v){ v.classList.remove('glow','topbtn'); });
   }
 }
+/* 進み方が変わるとき（動画を読み直す・測定を消す・範囲を解除する）に、途中の質問の状態をそろえて消す */
+function resetFlowFlags(alsoN){
+  UI.trimFlow=false; UI.trimAsking=false; UI.nAsking=false; UI.autoGuide=null; UI.wasDone=false;
+  var m=$('calMsg'); if(m && (m.classList.contains('trimq') || $('calStepN') || m.classList.contains('autog'))) calMsg('');
+  if(alsoN && EXP()) EXP().nOk=false;
+}
 /* ---------- 2 が終わったとき：動画をトリミングするかを聞く ---------- */
 function askTrim(){
   if(!VID.ready || window.__noAskN) return;
@@ -6258,8 +6277,27 @@ function askTrim(){
   var done=function(){ UI.trimAsking=false; calMsg(''); };
   calAsk('<span class="q">動画をトリミング（端を切る）しますか？</span>'+
     '<span class="mini">使いたい所だけを四角で囲むと、その部分が動画エリアいっぱいに広がります。（後からでも可能です：1 のカードの［動画をトリミング（端を切る）］）</span>', [
-    { label:'はい', cls:'pri', fn:function(){ done(); var b=$('btnCrop'); if(b) b.click(); } },
+    { label:'はい', cls:'pri', fn:function(){ calMsg(''); trimCropStart(); } },
     { label:'いいえ', fn:function(){ done(); afterChange(); } }
+  ]);
+  $('calMsg').classList.add('center','trimq');
+}
+/* 2 の流れの中でトリミングのモードに入る（順番が大事：先にモードを crop にしてから旗を立てる。
+   逆だと途中の updateGuide が「トリミングをやめた」と見なして旗を下ろしてしまう） */
+function trimCropStart(){
+  UI.trimFlow=true; UI.trimAsking=true; UI.trimLock=true;     /* 切りかえの途中は旗を下ろさせない */
+  stopAllPlay(); UI.cropDrag=null;
+  setMode('crop');
+  UI.trimLock=false;
+  updateCropInfo(); render(); updateGuide();
+}
+/* トリミングの四角をひき終わったら「この範囲でいいですか？」（2 の流れの中のときだけ） */
+function askTrimOk(){
+  if(!UI.trimFlow) return;
+  var fin=function(){ UI.trimFlow=false; UI.trimAsking=false; calMsg(''); };
+  calAsk('<span class="q">この範囲でいいですか？</span>', [
+    { label:'はい', cls:'pri', fn:function(){ fin(); afterChange(); } },
+    { label:'いいえ', fn:function(){ calMsg(''); setCrop(null); trimCropStart(); } }
   ]);
   $('calMsg').classList.add('center','trimq');
 }
@@ -6586,6 +6624,7 @@ function setVideoHint(html){
   var cm=$('calMsg');
   if(cm && !cm.classList.contains('hide')){ h.classList.add('hide'); h.__t=''; return; }
   if(!VID.ready){ h.classList.add('hide'); h.__t=''; return; }   /* 動画がまだなら、真ん中の「ここをクリック」だけにする */
+  if(UI.mode==='crop' || UI.trimAsking){ h.classList.add('hide'); h.__t=''; return; }   /* トリミング中は 3 の案内を出さない */
   if(!html){ h.classList.add('hide'); h.__t=''; return; }
   if(h.__t!==html){
     h.__t=html; h.__closed=false; $('vhintTxt').innerHTML=html;
@@ -6772,7 +6811,7 @@ function stroBusyUI(on){
     var x=$(id); if(x) x.disabled=!!on;
   });
   var w=$('stroWait'); if(w){ w.classList.toggle('hide', !on); if(on) w.textContent='お待ちください…'; }
-  var t=$('stroTune'); if(t) t.classList.toggle('busy', !!on);
+  var t=$('stroTune'); if(t) t.classList.toggle('stro-busy', !!on);
   if(!on) updateStroUI();
 }
 function stroWaitUI(left){
@@ -6886,8 +6925,8 @@ function askKeepExp(next){
         for(var i=0;i<NOBJ;i++){ e2.objs[i]=[]; e2.objReady[i]=false; e2.objName[i]=''; }
         e2.trackReady=false; e2.origin=null; e2.originSet=false; e2.axisSet=false; e2.angle=0;
         e2.mPerPx=null; e2.scaleRef=null; e2.t0=null; e2.rangeB=null; e2.rangeA=null;
-        e2.step2ok=false; e2.crop=null; e2.ref=[];
-        UI.undo=[]; UI.lastPt=null; UI.obj=0; APP.editStep=0;
+        e2.step2ok=false; e2.crop=null; e2.ref=[]; e2.nOk=false;
+        UI.undo=[]; UI.lastPt=null; UI.obj=0; APP.editStep=0; resetFlowFlags(true);
         refreshExpUI(); afterChange();
         next();
       } });
@@ -6988,6 +7027,7 @@ function onVideoReady(name){
   var same = !!(exp.fpsOk && exp.video && exp.video.name===name &&
                 exp.video.w===VID.w && exp.video.h===VID.h && Math.abs((exp.video.dur||0)-VID.dur)<0.05);
   exp.fpsOk = same;
+  resetFlowFlags(!same);          /* 別の動画なら、進むフレーム数 N も聞き直す（1 コマの時間が変わるため） */
   exp.video={name:name, w:VID.w, h:VID.h, dur:VID.dur, fps:VID.fps};
   $('vph').classList.add('hide');
   $('cvView').classList.remove('hide'); $('cvOv').classList.remove('hide');
@@ -7330,8 +7370,10 @@ function openHelp(){
   '<li><b>fps とスロー撮影</b>は動画を読みこんだ直後の確認画面で決めます。あとから直すときは、この段の［変更］を押します。'+
   '「1/8 のスロー」なら、動画の 8 秒＝実際の 1 秒として時刻を計算します（240fps で撮って 30fps で保存された動画など）</li></ul>'+
   '<h3>3. 空間の原点・スケール・軸を決める</h3>'+
-  '<ul><li>3 に入ると、動画の真ん中に <b>［原点を指定してください］</b> が出ます。'+
-  '押すと「原点を設定」を押したのと同じで、その後、動画の上で原点にしたい所をクリックします</li>'+
+  '<ul><li>2 で「この時刻まで解析」を決めると、まず <b>「動画をトリミング（端を切る）しますか？」</b> と聞きます。はいなら四角で囲み、「この範囲でいいですか？」に答えてから 3 へ</li>'+
+  '<li>3 に入ると、<b>原点の印が画面の中央</b>に置かれます。正しい位置にドラッグ（またはクリック）すると、動画の上に'+
+  '「原点はこの位置でいいですか？」→「分析する方向（1方向／2方向）」→「x軸の正の方向をクリック」→（2方向なら y軸の向き）→'+
+  '「スケールを設定してください」→「スケールはこれでいいですか？」と <b>はい／いいえ</b> で順に聞きます。はい で 4 へ</li>'+
   '<li><b>原点を設定</b>：クリックした所が x=0, y=0。そのまま<b>x軸の向き</b>の設定に進みます（軸の正の方向をクリック）</li>'+
   '<li>ボタンを押さずに動画をクリックしても、<b>原点 → x軸の向き → スケール</b>の順に自動で進みます</li>'+
   '<li><b>スケールを設定</b>：先に「スケール長さ」（例 10 cm）を入れてからボタンを押し、'+
@@ -7618,6 +7660,7 @@ function bindCG(){
     });
   });
   $('cgFit').onclick=function(){ cgFromUI(); cgDoFit($('cgFitType').value); };
+  if($('cgBig')){ $('cgBig').innerHTML=EXPAND_ICON+' 最大化'; $('cgBig').onclick=function(ev){ ev.preventDefault(); openBigChart('自由選択グラフ', cgSpec()); }; }
   $('cgFitClr').onclick=function(){ APP.cgFit=null; CGRESID=null; $('cgResult').innerHTML=''; if($('cgResidHost')) $('cgResidHost').innerHTML=''; renderCG(); };
   $('cgPng').onclick=function(){
     $('cgCanvas').toBlob(function(b){ dl(b, fnameBase()+'_graph.png'); toast('グラフを保存しました'); },'image/png');
@@ -7863,7 +7906,7 @@ function bindUI(){
     stopAuto(); stopAllPlay(); setKomaMode(false);
     APP.trackColor=null; APP.startPt=null;
     setStrobeOverlay(false); clearStrobe(); selClear(); gvReset();
-    VID.limit=null;
+    VID.limit=null; resetFlowFlags(true);
     setMode('record');
     refreshObjUI(); updateCropInfo(); fitCanvas();
     afterChange(); render();
@@ -7922,14 +7965,15 @@ function bindUI(){
   $('btnRangeClr').onclick=function(){
     askResetPts(function(){
       var e=EXP(); e.t0=null; e.rangeB=null; e.rangeA=null; e.step2ok=false;
-      APP.editStep=0; afterChange();
+      APP.editStep=0; resetFlowFlags(false); afterChange();
       toast('時間範囲を解除しました');
     });
   };
   $('btnStep2Next').onclick=function(){
     if(!VID.ready){ toast('先に動画を読み込んでください'); return; }
+    var was2=currentStep();
     EXP().step2ok=true; afterChange();
-    toast('次は「3. 空間の原点・スケール・軸」です');
+    if(was2===2 && currentStep()>=3) askTrim(); else toast('次は「3. 空間の原点・スケール・軸」です');
   };
   $('btnPlay2').onclick=togglePlay;
   $('btnTimeZero2').onclick=function(){ $('btnTimeZero').click(); };
