@@ -180,7 +180,9 @@ select.selbtn{padding:9px 2px;font-family:inherit;color:inherit;font-size:.88rem
 .seg{display:inline-flex;gap:0}
 .seg .btn{border-radius:0}
 .seg .btn:first-child{border-radius:9px 0 0 9px}
-.seg .btn:last-child{border-radius:0 9px 9px 0;margin-left:-1px}
+.seg .btn:last-child,.seg .btnwrap:last-child .btn{border-radius:0 9px 9px 0;margin-left:-1px}
+.seg .btnwrap{position:relative;display:inline-block}
+@media(max-width:700px){#coLive{display:none}}   /* せまい画面では「← クリックしてみよう」は出さない（横にはみ出すため） */
 .seg .btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .seg.big .btn{font-size:.9rem;font-weight:700;padding:8px 14px}
 /* 消すボタン（赤） */
@@ -394,6 +396,7 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 #calMsg.ask.center{top:50%;transform:translate(-50%,-50%)}
 /* 自動追跡の案内（.big）は、ほかの案内と同じ大きさ（前は 2 倍だった） */
 #calMsg.ask.big{max-width:92%}
+#calMsg.ask.nconf{width:min(560px,90%)}
 #calMsg.ask .btn.big2{font-size:1.15rem;padding:12px 22px}
 #calMsg.ask select.nsel{font-size:1.3rem;padding:6px 10px;border-radius:8px}
 #vph{cursor:pointer}
@@ -401,6 +404,22 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 .videobox.record #cvOv,.videobox.origin #cvOv,.videobox.axis #cvOv,.videobox.scale1 #cvOv,.videobox.scale2 #cvOv,.videobox.color #cvOv,.videobox.ref #cvOv{cursor:crosshair}
 #autoMsg.act,#doneMsg,#btnOriginBig,#vhintX,#calMsg.ask .btn,.tabs button,summary{cursor:pointer}
 @media(prefers-reduced-motion:reduce){#btnTrkStart{animation:none}}
+/* 色マーカーの自動追跡が ON のとき：動画の真ん中で「色で自動追跡（おすすめ）／手でクリック」を選ぶ */
+#trkChoice{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;display:flex;flex-direction:column;align-items:center;gap:12px;
+  background:rgba(20,30,45,.72);padding:16px 22px 18px;border-radius:16px;max-width:92%}
+#trkChoice .tc-q{color:#fff;font-weight:700;font-size:1.08rem;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+#trkChoice .btnwrap{position:relative;display:inline-block;margin-right:92px;margin-left:92px}
+#trkChoice .tc-auto{background:var(--orange);border:2px solid #fff;color:#fff;font-weight:700;font-size:1.06rem;white-space:nowrap;
+  padding:16px 30px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.4);animation:btnglow 1.6s ease-in-out infinite;cursor:pointer}
+#trkChoice .tc-auto:hover{background:#c96c11}
+#trkChoice .tc-auto .l1{display:block;font-size:1.2rem}
+#trkChoice .tc-auto .l2{display:block;font-size:.86rem;font-weight:500;margin-top:5px;opacity:.95}
+#trkChoice .tc-hand{background:#fff;border:1.5px solid #c9d0d8;color:#1b1f24;font-weight:600;font-size:.95rem;padding:8px 16px;border-radius:10px;cursor:pointer}
+#trkChoice .tc-hand:hover{background:#eef3f8}
+.callout.rec{background:var(--orange);color:#fff;border-color:var(--orange);font-weight:700}
+.callout.rec::after,.callout.rec::before{border-right-color:var(--orange)}
+#btnStartAuto.rec{animation:btnglow 1.6s ease-in-out infinite;font-size:1.06rem;padding:11px 18px;background:var(--orange);color:#fff;border-color:#fff}
+@media(prefers-reduced-motion:reduce){#trkChoice .tc-auto,#btnStartAuto.rec{animation:none}}
 
 /* 3 の「原点を指定してください」（動画の真ん中） */
 #btnOriginBig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
@@ -842,7 +861,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみよう！</span>
   <span class="sp"></span>
   <span class="hdtools">
-  <label class="chk" title="2つの物体（衝突など）を続けてトラッキングします"><input type="checkbox" id="cbTwoObj">２物体の運動</label>
+  <label class="chk" title="2〜3 つの物体（衝突など）を続けてトラッキングします"><input type="checkbox" id="cbTwoObj">複数物体の運動</label>
   <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
   <button class="hbtn" id="btnMenuPos">メニュー：左</button>
   <button class="hbtn" id="btnHelp">使い方と時間算出法</button>
@@ -1018,12 +1037,16 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <p class="mini calok" id="calOkNote">原点・x軸・スケールは<b>設定ずみ</b>です（直すときは <b>3</b> の［もう一度］へ）。</p>
       <div id="objBox" class="hide">
         <label class="f" id="labObjNum">物体番号
-          <select id="selObj"><option value="1">1</option><option value="2">2</option></select>
+          <select id="selObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
         </label>
         <label class="f" id="labObjName">物体1の名前
           <input type="text" id="inObjName" placeholder="例：10円玉" style="width:130px">
         </label>
         <p class="mini" id="objNameNote">名前を入れると、下の2つのボタンが押せるようになります。</p>
+        <div class="row hide" id="rowObjEnd">
+          <button class="btn sm" id="btnObjEnd" title="画面の外に出るなど、これ以上追えないときに押します">この物体はここで終わり</button>
+          <span class="mini">いま記録した時刻までで完了にして、次の物体へ進みます。</span>
+        </div>
         <div class="hr"></div>
       </div>
       <div id="startBox">
@@ -1032,7 +1055,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
           <span class="btnwrap"><button class="btn" id="btnStartHand">手でクリックして記録</button>
             <span class="callout hide" id="coHand">← 今こちら</span></span>
           <span class="btnwrap hide" id="wrapStartAuto"><button class="btn" id="btnStartAuto">色で自動追跡</button>
-            <span class="callout hide" id="coAuto">← 今こちら</span></span>
+            <span class="callout hide" id="coAuto">← 今こちら</span><span class="callout rec hide" id="coAutoRec">← おすすめ</span></span>
         </div>
         <div class="hr"></div>
       </div>
@@ -1074,6 +1097,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       </div>
       <div class="row hide" id="rowTrkResetB">
         <button class="btn sm danger" id="btnTrkResetB">物体2のトラッキングした点をリセット</button>
+        <button class="btn sm danger hide" id="btnTrkResetC">物体3のトラッキングした点をリセット</button>
       </div>
       <p class="mini" id="trkResetNote">この実験で記録した点を全部消して、解析範囲の最初に戻ります（Ctrl＋Z で戻せます）。</p>
       <div class="hr"></div>
@@ -1126,6 +1150,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <button id="btnTrkReset2" class="vtopbtn hide">トラッキングした点をリセット</button>
       <button id="doneMsg" class="hide" title="②グラフへ">解析終了。グラフを表示してみよう</button>
       <button id="btnTrkStart" class="hide"><span class="l1">トラッキング（軌跡の追跡）開始</span><span class="l2">物体をクリックすると指定のコマずつ動画が進みます</span></button>
+      <div id="trkChoice" class="hide">
+        <div class="tc-q">どちらで記録しますか？</div>
+        <span class="btnwrap"><button id="btnTrkStartA" class="tc-auto"><span class="l1">色で自動追跡</span><span class="l2">物体の色を覚えて、最後まで自動で追いかけます</span></button>
+          <span class="callout rec">← おすすめ</span></span>
+        <button id="btnTrkStartH" class="tc-hand">手でクリックして記録</button>
+      </div>
       <button id="btnOriginBig" class="hide">原点を指定してください</button>
       <div id="calMsg" class="hide"></div>
       <div id="autoMsg" class="hide"></div>
@@ -1230,7 +1260,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <label class="tabchk" id="labM2Min"><input type="checkbox" id="cbM2Min">このメニューを最小化</label>
         <div class="seg big">
           <button class="btn" id="btnM2Side">グラフを並べる</button>
-          <button class="btn" id="btnM2Live">動画と一緒にグラフを再生する</button>
+          <span class="btnwrap"><button class="btn" id="btnM2Live">動画と一緒にグラフを再生する</button>
+            <span class="callout rec hide" id="coLive">← クリックしてみよう</span></span>
         </div>
       </div>
       <div class="row">
@@ -1249,16 +1280,26 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <span style="width:10px"></span>
         <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
         <label class="cb" id="labGY"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
+        <label class="cb hide" id="labGP" title="全体の運動量 Σ m v（＝重心の運動量）を、物体ごとの運動量と一緒にグラフにします"><input type="checkbox" id="cbG_p">重心の運動量</label>
         <input type="checkbox" id="cbG_v" checked class="hide">
         <input type="checkbox" id="cbG_a" checked class="hide">
       </div>
       <div class="row hide" id="energyRow" style="margin-top:8px">
-        <label class="cb"><input type="checkbox" id="cbG_e">エネルギー</label>
+        <label class="cb eonly"><input type="checkbox" id="cbG_e">エネルギー</label>
         <label class="f">質量 m₁ <input type="number" id="inM1" value="0.1" step="0.001" min="0.0001"> kg</label>
-        <label class="f">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
-        <label class="f">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
-        <span class="mini enote">※ <b>y 方向の正の向きを鉛直上向き</b>だと仮定して計算します（U = mgy）。
-        円運動など、y が鉛直でない実験には当てはまりません。</span>
+        <label class="f" id="labM2">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f hide" id="labM3">m₃ <input type="number" id="inM3" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f eonly">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
+        <label class="f eonly" id="labGDir" title="位置エネルギー U = mgh の高さ h を、どの軸から出すかを決めます">重力の向き（鉛直下向き）
+          <select id="selGDir">
+            <option value="y-">−y 方向（y の正が上）</option>
+            <option value="y+">+y 方向（y の正が下）</option>
+            <option value="x-">−x 方向（x の正が上）</option>
+            <option value="x+">+x 方向（x の正が下）</option>
+          </select>
+        </label>
+        <span class="mini enote eonly" id="eNote">※ 位置エネルギーは U = mgh。<b>重力の向き</b>の設定から高さ h を出します（いまは <b id="eNoteH">h = y</b>）。
+        自由落下を x 軸だけで解析するときは −x／+x を選びます。円運動など、高さが決まらない実験には当てはまりません。</span>
       </div>
     </div>
     <div class="m2out two">
@@ -1364,6 +1405,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <button class="btn pri sm" id="btnFit">フィッティングする</button>
       <button class="btn sm" id="btnFitClr">フィッティングを消す</button>
     </div>
+    <div class="row" id="fitInitRow" style="margin-top:4px"></div>
     <p class="mini">※ 係数と決定係数 R² までを出します。グラフの青い帯（<b>数式をフィッティングするエリア</b>）の
     左右のつまみを<b>ドラッグ</b>すると、フィッティングに使う範囲を変えられます。</p>
     <div class="row nowrap">
@@ -1499,6 +1541,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
     <span class="cgmass hide" id="cgMassRow">
       <label class="f">m₁ <input type="number" id="cgM1" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
       <label class="f">m₂ <input type="number" id="cgM2" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
+      <label class="f hide" id="labCgM3">m₃ <input type="number" id="cgM3" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
     </span>
     <button class="btn sm blue hide" id="cgMomentum">運動量保存則</button>
     <button class="maxbtn cgmax" id="cgBig" title="このグラフを大きく表示">最大化</button></h3>
@@ -1602,9 +1645,9 @@ function newExp(n){
     origin:null, originSet:false, angle:0, yflip:false, xflip:false,
     mPerPx:null, scaleRef:null, scaleLen:0.1,
     t0:null, rangeA:null, rangeB:null, step2ok:false, trackReady:false, axisSet:false, tscale:1,
-    objReady:[false,false,false], crop:null, aStep:1,
+    objReady:[false,false,false], objEnd:[false,false,false], crop:null, aStep:1, gDir:'y-',
     video:{name:'',w:0,h:0,dur:0,fps:30},
-    m1:0.1, m2:0.1, g:9.8, camDist:3, rulerGap:0, shotFps:0, fpsOk:false, nOk:false,
+    m1:0.1, m2:0.1, m3:0.1, g:9.8, camDist:3, rulerGap:0, shotFps:0, fpsOk:false, nOk:false, nObjs:2, nObjOk:false,
     objName:['','',''] };
   for(var i=0;i<NOBJ;i++) o.objs.push([]);
   return o;
@@ -1613,10 +1656,12 @@ var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x'
   bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
-  editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, fitRange:null, tblw:330,
+  editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, momOn:false, fitRange:null, tblw:330,
   tab:'1', m2mode:'side', komaMode:false, cgRange:null, twoObj:false };
-/* 使う物体の数（「２物体の運動」がONなら2、OFFなら1） */
-function nObj(){ return APP.twoObj? 2 : 1; }
+/* 使う物体の数（「複数物体の運動」がONなら 2 か 3（e.nObjs）、OFFなら1） */
+function nObj(){ return APP.twoObj? Math.max(2, Math.min(3, parseInt(EXP().nObjs)||2)) : 1; }
+/* 物体 ob の質量（m1・m2・m3） */
+function massOf(exp, ob){ var m=[exp.m1, exp.m2, exp.m3][ob]; return (m>0)? m : 0.1; }
 /* 表や出力で「x1」のように番号をつけるか（2物体のとき、または2つ以上のデータがあるとき） */
 function useObjIdx(objs){ return APP.twoObj || (objs && objs.length>1); }
 /* 「軸の表示」が x軸のみ のときは、y・vy・ay をグラフや解析に出さない */
@@ -1771,13 +1816,53 @@ function aByFit(s, key){
   }
   return out;
 }
+/* 重力の向き（鉛直下向きが x・y のどちらの正負か）から、高さ h の出し方を決める
+   'y-'：重力は −y 向き → h = y（y の正が上）　'y+'：h = −y　'x-'：h = x　'x+'：h = −x */
+function gDirInfo(exp){
+  var d=(exp && exp.gDir)||'y-';
+  var axis=d.charAt(0), down=d.charAt(1);                 /* 重力（下向き）が向く軸と正負 */
+  var sign=(down==='-')? 1 : -1;                          /* h = sign × (その軸の値) */
+  return { dir:d, axis:axis, sign:sign,
+           h:(sign>0? 'h = '+axis : 'h = −'+axis),
+           label:(down==='-'? '−' : '+')+axis+' 方向',
+           up:(sign>0? axis+' の正の向きが上' : axis+' の負の向きが上') };
+}
 function energy(exp, obj, s){
-  var m = (obj===0? exp.m1 : (obj===1? exp.m2 : exp.m1)), g=exp.g||9.8;
+  var m = massOf(exp, obj), g=exp.g||9.8, gi=gDirInfo(exp);
   return s.map(function(p){
     var K = (p.vc===null)? null : 0.5*m*p.vc*p.vc;
-    var U = m*g*p.y;
+    var U = m*g*gi.sign*(gi.axis==='x'? p.x : p.y);
     return { t:p.t, K:K, U:U, E:(K===null?null:K+U) };
   });
+}
+/* 重心の運動量（＝全体の運動量 Σ mᵢvᵢ）。物体ごとの p と、その和を、時刻ごとに返す。
+   時刻は物体1の v の時刻（tv）にそろえ、他の物体は線形補間で合わせる */
+function momentumSeries(exp, comp){
+  var key=(comp==='y')? 'vy' : 'vx', objs=[], o;
+  for(o=0;o<nObj();o++) if(exp.objs[o] && exp.objs[o].length>1) objs.push(o);
+  if(!objs.length) return { objs:[], per:[], sum:[] };
+  var ss=objs.map(function(k){ return series(exp,k).filter(function(p){ return p.tv!==null && p[key]!==null; }); });
+  var per=ss.map(function(s,i){ var m=massOf(exp,objs[i]);
+    return s.map(function(p){ return { x:p.tv, y:m*p[key] }; }); });
+  function interp(s, t){                                  /* その時刻の v を前後から直線でつなぐ（範囲外は無し） */
+    if(!s.length || t<s[0].tv-1e-9 || t>s[s.length-1].tv+1e-9) return null;
+    for(var i=0;i<s.length-1;i++){
+      var a=s[i], b=s[i+1];
+      if(t>=a.tv-1e-9 && t<=b.tv+1e-9){ var f=(b.tv===a.tv)? 0 : (t-a.tv)/(b.tv-a.tv); return a[key]+(b[key]-a[key])*f; }
+    }
+    return s[s.length-1][key];
+  }
+  var sum=[];
+  ss[0].forEach(function(p){
+    var tot=0, ok=true;
+    objs.forEach(function(k,i){
+      var v=(i===0)? p[key] : interp(ss[i], p.tv);
+      if(v===null){ ok=false; return; }
+      tot+=massOf(exp,k)*v;
+    });
+    if(ok) sum.push({ x:p.tv, y:tot });
+  });
+  return { objs:objs, per:per, sum:sum };
 }
 
 /* ---------- 最小二乗フィット ---------- */
@@ -1874,8 +1959,55 @@ function expFit(xs, ys){
   var A=best.A,k=best.k,C=best.C;
   return { type:'exp', p:{A:A,k:k,C:C}, r2:best.r2, f:function(t){ return A*Math.exp(k*t)+C; } };
 }
-function doFit(kind, xs, ys){
+/* 非線形（正弦・指数）の仕上げ：初期値から Levenberg–Marquardt で最小二乗。
+   init は {A,w,phi,C} / {A,k,C} の一部でもよい（無い項目は自動の値を使う） */
+function lmRefine(kind, xs, ys, p0){
+  var names=(kind==='sin')? ['A','w','phi','C'] : ['A','k','C'];
+  var model=(kind==='sin')? function(p,t){ return p[0]*Math.sin(p[1]*t+p[2])+p[3]; }
+                          : function(p,t){ return p[0]*Math.exp(p[1]*t)+p[2]; };
+  var p=names.map(function(k){ return p0[k]; }), n=xs.length, m=p.length, i, j, k;
+  if(p.some(function(v){ return !isFinite(v); })) return null;
+  function sse(pp){ var s=0; for(i=0;i<n;i++){ var d=ys[i]-model(pp,xs[i]); s+=d*d; } return isFinite(s)? s : Infinity; }
+  var lam=1e-3, cur=sse(p), it;
+  for(it=0; it<200; it++){
+    /* ヤコビアン（数値微分）と正規方程式 */
+    var J=[], r=[];
+    for(i=0;i<n;i++){
+      var row=[], f0=model(p,xs[i]); r.push(ys[i]-f0);
+      for(j=0;j<m;j++){ var h=1e-6*Math.max(1,Math.abs(p[j])), q=p.slice(); q[j]+=h; row.push((model(q,xs[i])-f0)/h); }
+      J.push(row);
+    }
+    var A=[], b=[];
+    for(j=0;j<m;j++){ A.push(new Array(m).fill(0)); b.push(0); }
+    for(i=0;i<n;i++) for(j=0;j<m;j++){ b[j]+=J[i][j]*r[i]; for(k=0;k<m;k++) A[j][k]+=J[i][j]*J[i][k]; }
+    var improved=false, tries;
+    for(tries=0; tries<12; tries++){
+      var Ad=A.map(function(row2,jj){ return row2.map(function(v,kk){ return (jj===kk)? v*(1+lam)+1e-12 : v; }); });
+      var d=solve(Ad,b); if(!d){ lam*=10; continue; }
+      var pn=p.map(function(v,jj){ return v+d[jj]; }), sn=sse(pn);
+      if(sn<cur){ p=pn; var rel=(cur-sn)/Math.max(cur,1e-30); cur=sn; lam=Math.max(lam/10,1e-12); improved=true;
+                  if(rel<1e-12) it=999; break; }
+      lam*=10;
+    }
+    if(!improved) break;
+  }
+  var pr={}; names.forEach(function(k2,jj){ pr[k2]=p[jj]; });
+  if(kind==='sin' && pr.A<0){ pr.A=-pr.A; pr.phi+=Math.PI; }         /* A は正に、φ は −π〜π に */
+  if(kind==='sin'){ while(pr.phi>Math.PI) pr.phi-=2*Math.PI; while(pr.phi<-Math.PI) pr.phi+=2*Math.PI; }
+  var f=(kind==='sin')? function(t){ return pr.A*Math.sin(pr.w*t+pr.phi)+pr.C; } : function(t){ return pr.A*Math.exp(pr.k*t)+pr.C; };
+  return { type:kind, p:pr, r2:r2of(ys, xs.map(f)), f:f, init:true };
+}
+/* init：③で入れた「パラメーターの初期値」（正弦・指数だけ。直線・放物線は一度で決まるので使わない） */
+function doFit(kind, xs, ys, init){
   if(xs.length<2) return null;
+  if(init && (kind==='sin'||kind==='exp') && Object.keys(init).some(function(k){ return isFinite(init[k]); })){
+    var auto=(kind==='sin')? sinFit(xs,ys) : expFit(xs,ys);
+    var p0={}, keys=(kind==='sin')? ['A','w','phi','C'] : ['A','k','C'];
+    keys.forEach(function(k){ p0[k]=isFinite(init[k])? init[k] : (auto? auto.p[k] : (k==='w'? 1 : k==='k'? -1 : 0)); });
+    var r=lmRefine(kind, xs, ys, p0);
+    if(r){ r.auto=auto; return r; }
+    return auto;
+  }
   if(kind==='lin'){
     var c=polyFit(xs,ys,1); if(!c) return null;
     var f=function(t){ return c[1]*t+c[0]; };
@@ -1904,7 +2036,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -1934,6 +2066,8 @@ function normExp(e){
   if(!isFinite(e.angle)) e.angle=0;
   if(!Array.isArray(e.ref)) e.ref=[];
   if(!e.objReady || e.objReady.length<NOBJ) e.objReady=[!!e.trackReady,false,false];
+  if(!Array.isArray(e.objEnd) || e.objEnd.length<NOBJ) e.objEnd=[false,false,false];
+  if(['y-','y+','x-','x+'].indexOf(e.gDir)<0) e.gDir='y-';
   return e;
 }
 function applyState(st){
@@ -1945,6 +2079,7 @@ function applyState(st){
   if(st.cg) for(var k in st.cg) APP.cg[k]=st.cg[k];
   if(st.gsize>0) APP.gsize=st.gsize;
   APP.energyOn=!!st.energyOn;
+  APP.momOn=!!st.momOn;
   if(st.tblw>0) APP.tblw=st.tblw;
   if(st.m2mode) APP.m2mode=st.m2mode;
   APP.twoObj=!!st.twoObj;
@@ -3443,7 +3578,7 @@ function applyStroPts(){
 }
 function drawStrobePoints(g){
   var exp=EXP(), sc=VID.w/900;
-  for(var ob=0;ob<NOBJ;ob++){
+  for(var ob=0;ob<1;ob++){                          /* ストロボ画像に描く点は物体1だけ（複数物体でも） */
     var pts=exp.objs[ob]; if(!pts.length) continue;
     g.save(); g.strokeStyle=OBJCOL[ob]; g.lineWidth=Math.max(1.5,2*sc); g.font='bold '+(13*sc)+'px '+FONT;
     g.fillStyle=OBJCOL[ob];
@@ -3857,10 +3992,11 @@ var QDEF = {
   ay:{lab:'ay [m/s²]', get:function(p){return p.ay;}}
 };
 function expHasObj(exp, ob){ return exp.objs[ob] && exp.objs[ob].length>0; }
-function seriesFor(exp, kind, expIdx, overlay, onlyX){     /* onlyX：v・a で y 成分（vy・ay）を混ぜない（レポートの左の列用） */
+function seriesFor(exp, kind, expIdx, overlay, onlyX, onlyObj){     /* onlyX：v・a で y 成分（vy・ay）を混ぜない（レポートの左の列用）　onlyObj：その物体だけ */
   var out=[], shapes=['dot','sq','tri'];
   for(var ob=0; ob<NOBJ; ob++){
     if(!expHasObj(exp,ob)) continue;
+    if(onlyObj!==undefined && onlyObj!==null && ob!==onlyObj) continue;
     var s=series(exp,ob);
     var base = overlay? EXPCOL[expIdx%EXPCOL.length] : OBJCOL[ob];
     var nm=(overlay? exp.name+' ' : '')+
@@ -3943,6 +4079,15 @@ function specEnergy(ids, obj){
   return { title:'', xlab:'t [s]', ylab:'エネルギー [J]', series:ser,
            xkey:'t', key:'E_o'+obj+'_'+ids.join('-') };
 }
+/* 重心の運動量のグラフ：物体ごとの p = m v（細い）と、全体 Σ m v（太い黒）。横軸は v の時刻 tv */
+function specMomentum(expIdx, comp){
+  var e=APP.exps[expIdx], ms=momentumSeries(e, comp), ser=[];
+  ms.objs.forEach(function(o,i){
+    ser.push({ name:'物体'+(o+1)+(e.objName[o]?'（'+e.objName[o]+'）':'')+' p'+comp, color:OBJCOL[o], shape:'open', pts:ms.per[i] });
+  });
+  ser.push({ name:'重心（全体） Σ m v'+comp, color:'#1b1f24', shape:'sq', pts:ms.sum });
+  return { title:'', xlab:'t [s]', ylab:'p'+comp+' [kg·m/s]', series:ser, xkey:'t', key:'P'+comp+'_'+expIdx };
+}
 function objTitle(e, obj){
   if(!APP.twoObj) return (e&&e.objName[obj])? '（'+e.objName[obj]+'）' : '';
   return '物体'+(obj+1)+(e&&e.objName[obj]?'（'+e.objName[obj]+'）':'');
@@ -4023,7 +4168,7 @@ function renderMode2(){
                                    q==='y'?'y–t':q==='vy'?'vy–t':'ay–t'),
                                   specOne(b.ids,b.obj,q), null, w, h));
       });
-      if(withE) col.appendChild(chartCard('エネルギー–t（y を鉛直上向きと仮定）', specEnergy(b.ids,b.obj), null, w, h));
+      if(withE) col.appendChild(chartCard('エネルギー–t（'+gDirInfo(APP.exps[b.ids[0]]||EXP()).h+'）', specEnergy(b.ids,b.obj), null, w, h));
       wrap.appendChild(col); colNodes.push(col); return col;
     }
     if(showX) addCol(['x','vx','ax'], showE);
@@ -4036,6 +4181,24 @@ function renderMode2(){
     wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
     blk.appendChild(wrap); host.appendChild(blk);
   });
+  /* 「重心の運動量」：物体ごとの運動量 p = m v と、その和（＝重心の運動量）を 1 枚に。x 成分（y があれば y 成分も） */
+  if(typeof momOn==='function' && momOn() && !over){
+    ids.forEach(function(i2){
+      var e=APP.exps[i2]; if(!e) return;
+      var ms=momentumSeries(e,'x'); if(ms.objs.length<2) return;
+      var blk=document.createElement('div'); blk.className='gblock';
+      var t=document.createElement('h3'); t.textContent=(e.name+'　重心の運動量（全体 Σ m v）').replace(/\s+$/,'');
+      var tip=document.createElement('span'); tip.className='mini'; tip.style.fontWeight='400'; tip.style.marginLeft='8px';
+      tip.textContent='物体ごとの p = m v と、その和（＝重心の運動量）。和は、すべての物体のデータがある時刻だけ出ます。';
+      t.appendChild(tip); blk.appendChild(t);
+      var wrap=document.createElement('div'); wrap.className='gwrap';
+      var col=document.createElement('div'); col.className='gcol';
+      col.appendChild(chartCard('px–t', specMomentum(i2,'x'), null, w, h));
+      if(showY) col.appendChild(chartCard('py–t', specMomentum(i2,'y'), null, w, h));
+      wrap.appendChild(col); wrap.style.gridTemplateColumns='max-content';
+      blk.appendChild(wrap); host.appendChild(blk);
+    });
+  }
   /* 「動画と一緒に再生」のときは、自由選択グラフは②ぜんぶの下に置く
      （グラフの列が広がって、動画とのあいだにすき間ができないように） */
   if(live && cgc){ $('cgHostLive').appendChild(cgc); cgc.classList.remove('hide'); }
@@ -4276,7 +4439,7 @@ function renderMode3(doFitNow){
       ss.push({name:e.name, color:col, shape:'dot', line:false,
         pts:d.xs.map(function(t,k){return {x:t,y:d.ys[k]};})});
       if(doFitNow){
-        var dr=inRange(d), f=doFit(kind,dr.xs,dr.ys);
+        var dr=inRange(d), f=doFit(kind,dr.xs,dr.ys,fitInitVals());
         if(f){ cvs.push({color:col, f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs), dash:[6,3]});
                res.push({name:e.name, fit:f, n:dr.xs.length});
                RESID.push({name:e.name, color:col, xs:dr.xs, ys:dr.ys, f:f.f}); }
@@ -4291,7 +4454,7 @@ function renderMode3(doFitNow){
       var col=EXPCOL[i%EXPCOL.length], cvs=[];
       var dr=inRange(d);
       if(doFitNow && dr.xs.length>1){
-        var f=doFit(kind,dr.xs,dr.ys);
+        var f=doFit(kind,dr.xs,dr.ys,fitInitVals());
         if(f){ cvs.push({color:'#e8443a', f:f.f, x0:Math.min.apply(null,dr.xs), x1:Math.max.apply(null,dr.xs)});
                res.push({name:e.name, fit:f, n:dr.xs.length});
                RESID.push({name:e.name, color:col, xs:dr.xs, ys:dr.ys, f:f.f}); }
@@ -4311,7 +4474,8 @@ function renderMode3(doFitNow){
                '（縦軸 '+esc(QDEF[q].lab)+'、横軸 t [s]）<br>'+
                '<span class="val">'+esc(fitLabel(r.fit))+'</span><br>'+
                '<span class="val">R² = '+sig(r.fit.r2,6)+'</span><br>'+
-               '<span class="mini">使った点 '+r.n+' 個'+(FR? '（t = '+nf(Math.min(FR.a,FR.b),3)+' 〜 '+nf(Math.max(FR.a,FR.b),3)+' s）':'')+'</span></div>';
+               '<span class="mini">使った点 '+r.n+' 個'+(FR? '（t = '+nf(Math.min(FR.a,FR.b),3)+' 〜 '+nf(Math.max(FR.a,FR.b),3)+' s）':'')+
+               (r.fit.init? '　入れた初期値から計算しました'+(r.fit.auto? '（自動なら R² = '+sig(r.fit.auto.r2,6)+'）' : '') : '')+'</span></div>';
       }).join('');
       RESID_INFO={ q:q, ob:ob, kind:kind };
       if(RESID.length){
@@ -4327,6 +4491,29 @@ function renderMode3(doFitNow){
     box.innerHTML='<p class="mini">まだフィッティングしていません。上の「フィッティングする」を押してください。</p>';
   }
   if(!host.children.length) host.innerHTML='<div class="card mini">データがありません。</div>';
+}
+/* ③の「パラメーターの初期値」欄：関数ごとに項目を変える。空欄は自動 */
+var FIT_PARAMS={ lin:[], quad:[], sin:[['A','A'],['w','ω'],['phi','φ'],['C','C']], exp:[['A','A'],['k','k'],['C','C']] };
+function fitInitVals(){
+  var kind=($('selFitType')||{}).value, out={}, any=false;
+  (FIT_PARAMS[kind]||[]).forEach(function(pr){
+    var f=$('fitInit_'+pr[0]); if(!f) return;
+    var v=parseFloat(f.value); if(f.value!=='' && isFinite(v)){ out[pr[0]]=v; any=true; }
+  });
+  return any? out : null;
+}
+function updateFitInitUI(){
+  var row=$('fitInitRow'); if(!row) return;
+  var kind=$('selFitType').value, ps=FIT_PARAMS[kind]||[];
+  var keep={}; els('input', row).forEach(function(f){ keep[f.id]=f.value; });
+  if(!ps.length){
+    row.innerHTML='<span class="lb mini" style="margin:0">パラメーターの初期値：直線・放物線は初期値なしで一度に決まります（正弦・指数のときに入れられます）</span>';
+    return;
+  }
+  row.innerHTML='<span class="lb mini" style="margin:0">パラメーターの初期値</span>'+ps.map(function(pr){
+    return '<label class="f">'+pr[1]+' <input type="number" step="any" id="fitInit_'+pr[0]+'" style="width:84px" placeholder="自動"></label>';
+  }).join('')+'<span class="mini" style="margin:0">（未入力ならば自動決定）</span>';
+  els('input', row).forEach(function(f){ if(keep[f.id]!==undefined) f.value=keep[f.id]; });
 }
 /* ---------- フィッティング残差のプロット ---------- */
 /* 残差 ＝ 測った値 − フィッティングの値。0 のまわりに散らばっていれば、その関数でよく合っている。
@@ -4403,7 +4590,7 @@ function cgPoints(ei, ob, q, inv, xq, invX){
   var e=APP.exps[ei]; if(!e||!e.objs[ob]) return [];
   var s=series(e,ob), out=[];
   var isV=(q==='vx'||q==='vy'||q==='px'||q==='py');
-  var mass=(ob===0? e.m1 : (ob===1? e.m2 : e.m1)); if(!(mass>0)) mass=0.1;
+  var mass=massOf(e, ob);
   s.forEach(function(p){
     /* 速さは「点と点のあいだ」の値なので、横軸が t のときは中点の時刻に置く */
     var xv=(xq==='t' && isV)? p.tv : p[xq];
@@ -4874,7 +5061,8 @@ function sheetForExp(exp, idx){
   rows.push(['動画', exp.video.name||'', 'fps(表示用)', Number(nf(exp.video.fps,4))]);
   rows.push(['スケール[m/px]', exp.mPerPx||'', 'x軸[deg]', Number(nf(exp.angle*180/Math.PI,3))]);
   var useE=!!APP.energyOn;                 /* 「力学的エネルギーを解析する」を押したときだけ出す */
-  if(useE) rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, 'g[m/s2]', exp.g]);   /* 質量・g もそのときだけ */
+  if(useE) rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, '質量m3[kg]', exp.m3||0.1, 'g[m/s2]', exp.g,
+                      '重力の向き', gDirInfo(exp).label+'（'+gDirInfo(exp).h+'）']);   /* 質量・g・重力の向き もそのときだけ */
   rows.push([]);
   var wy=useY();                           /* x軸のみのときは y の列とグラフを出さない */
   var QS = wy? ['x','y','vx','vy','ax','ay'] : ['x','vx','ax'];
@@ -4931,7 +5119,7 @@ function sheetForExp(exp, idx){
       {t:'x - t', y:'x [m]', q:'x'},
       {t:'vx - t', y:'vx [m/s]', q:'v'}, {t:'ax - t', y:'ax [m/s2]', q:'a'}
     ];
-    if(useE) chDefs.push({t:'エネルギー - t', y:'E [J]', q:'e'});
+    if(useE) objs.forEach(function(o){ chDefs.push({t:'エネルギー - t 物体'+(o+1), y:'E [J]', q:'e', only:o}); });   /* 物体ごとに 1 枚（縦にならぶ） */
     if(fitCol!==null) chDefs.push({t:'フィッティングしたグラフ', y:'値', q:'fit'},
                                   {t:'フィッティング残差', y:'残差', q:'res'});
     chDefs.forEach(function(d,di){
@@ -4950,6 +5138,7 @@ function sheetForExp(exp, idx){
                  sers.push({name:'フィッティング', col:fitCol, color:'8A241D', symbol:'none', line:true}); } }
         else if(d.q==='res'){ if(k===0)
                  sers.push({name:'残差', col:resCol, color:'0F3F73', symbol:'circle'}); }
+        else if(d.only!==undefined && d.only!==o){ }
         else { sers.push({name:'K物体'+(o+1), col:cols['K'+o], color:c, symbol:'circle'});
                sers.push({name:'U物体'+(o+1), col:cols['U'+o], color:c2, symbol:'square'});
                sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
@@ -5029,28 +5218,47 @@ function buildReportPages(){
     g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(M,y,sw,sh);
     y+=sh+22;
   }
-  /* ---- グラフ：左に x 方向をたてに、右に y 方向をたてに ---- */
+  /* ---- グラフ：左に x 方向をたてに、右に y 方向をたてに。複数物体は物体ごとに段を分ける ---- */
   var wy=useY();
   var cw=(W-2*M-20)/2;
   var chh=Math.round(cw*0.53);
   var colX=['x','v','a'], colY=['y','vy','ay'];
+  var robjs=[]; for(var ro=0;ro<NOBJ;ro++) if(exp.objs[ro] && exp.objs[ro].length) robjs.push(ro);
+  if(!robjs.length) robjs=[0];
   need(46+chh+14);
   head('グラフ');
-  for(var r=0;r<3;r++){
-    need(chh+14);
-    var kx=colX[r];
-    /* 左の列は x 方向だけ（前は v–t・a–t に vy・ay も重なって描かれていた） */
-    var tX={x:'x–t', v:'vx–t', a:'ax–t'}[kx], yX={x:'x [m]', v:'vx [m/s]', a:'ax [m/s²]'}[kx];
-    drawInto(g, M, y, cw, chh, {title:tX, xlab:'t [s]', ylab:yX,
-      series:seriesFor(exp,kx,APP.cur,false,true)});
-    if(wy){
-      var ky=colY[r];
-      var spec = (ky==='y')? {title:KINDLAB.y, xlab:'t [s]', ylab:KINDY.y, series:seriesFor(exp,'y',APP.cur,false)}
-                           : ySpecOf(exp, ky);
-      drawInto(g, M+cw+20, y, cw, chh, spec);
+  robjs.forEach(function(ob){
+    if(robjs.length>1){                                   /* 物体ごとの見出し */
+      need(30+chh+14);
+      g.fillStyle='#1b1f24'; g.font='bold 15px '+FONT;
+      g.fillText('物体'+(ob+1)+(exp.objName[ob]? '（'+exp.objName[ob]+'）' : ''), M, y+12); y+=24;
     }
-    y+=chh+12;
-  }
+    if(!wy && robjs.length>1){                            /* x 軸のみ ＋ 複数物体：1 物体 ＝ 1 段（x–t・vx–t・ax–t を横に） */
+      var cw3=Math.round((W-2*M-2*16)/3), ch3=Math.round(cw3*0.62);
+      need(ch3+14);
+      colX.forEach(function(kx3,c3){
+        var t3={x:'x–t', v:'vx–t', a:'ax–t'}[kx3], y3={x:'x [m]', v:'vx [m/s]', a:'ax [m/s²]'}[kx3];
+        drawInto(g, M+c3*(cw3+16), y, cw3, ch3, {title:t3, xlab:'t [s]', ylab:y3, series:seriesFor(exp,kx3,APP.cur,false,true,ob)});
+      });
+      y+=ch3+12;
+      return;
+    }
+    for(var r=0;r<3;r++){
+      need(chh+14);
+      var kx=colX[r];
+      /* 左の列は x 方向だけ（前は v–t・a–t に vy・ay も重なって描かれていた） */
+      var tX={x:'x–t', v:'vx–t', a:'ax–t'}[kx], yX={x:'x [m]', v:'vx [m/s]', a:'ax [m/s²]'}[kx];
+      drawInto(g, M, y, cw, chh, {title:tX, xlab:'t [s]', ylab:yX,
+        series:seriesFor(exp,kx,APP.cur,false,true,ob)});
+      if(wy){
+        var ky=colY[r];
+        var spec = (ky==='y')? {title:KINDLAB.y, xlab:'t [s]', ylab:KINDY.y, series:seriesFor(exp,'y',APP.cur,false,false,ob)}
+                             : ySpecOf(exp, ky, ob);
+        drawInto(g, M+cw+20, y, cw, chh, spec);
+      }
+      y+=chh+12;
+    }
+  });
   /* ---- フィッティングの結果・グラフ・残差 ---- */
   var box=$('fitResult');
   var hasFit = (typeof RESID!=='undefined') && RESID.length;
@@ -5123,10 +5331,11 @@ function buildReportPages(){
     gg.strokeStyle='#d9dee4'; gg.lineWidth=1; gg.strokeRect(X,Y,w,h);
   }
   /* vy・ay だけのグラフ（右の列） */
-  function ySpecOf(e, kind){
+  function ySpecOf(e, kind, onlyObj){
     var out=[], shapes=['dot','sq','tri'];
     for(var ob=0; ob<NOBJ; ob++){
       if(!expHasObj(e,ob)) continue;
+      if(onlyObj!==undefined && ob!==onlyObj) continue;
       var s=series(e,ob), base=OBJCOL[ob];
       var nm=(APP.twoObj? ('物体'+(ob+1)) : (e.objName[ob]||'物体'));
       if(kind==='vy') out.push({name:nm+' vy', color:base, shape:shapes[ob],
@@ -5434,7 +5643,10 @@ function afterChange(){
      変な値のときは前の値のまま（入力欄も直す） */
   exp.m1=posNum($('inM1'), exp.m1, 0.1);
   exp.m2=posNum($('inM2'), exp.m2, 0.1);
+  if($('inM3')) exp.m3=posNum($('inM3'), exp.m3||0.1, 0.1);
   exp.g =posNum($('inG'),  exp.g,  9.8);
+  if($('selGDir') && ['y-','y+','x-','x+'].indexOf($('selGDir').value)>=0) exp.gDir=$('selGDir').value;
+  if($('eNoteH')) $('eNoteH').textContent=gDirInfo(exp).h;
   updateCalInfo(); updateTimeLine(); updateTable();
   $('refInfo').textContent='固定点 '+exp.ref.length;
   drawOverlay();
@@ -5755,11 +5967,23 @@ function updateTable(){
 function setEnergyOn(on){
   APP.energyOn=!!on;
   var b=$('btnEnergyOn');
-  $('energyRow').classList.toggle('hide', !APP.energyOn);
+  updateMassRow();
   if(b){ b.classList.toggle('on', APP.energyOn);
          b.textContent = APP.energyOn? '力学的エネルギーの解析をやめる' : '力学的エネルギーを解析する'; }
   if(!APP.energyOn) $('cbG_e').checked=false;
   if(!$('mode2').classList.contains('hide')) renderMode2();
+}
+/* 質量の欄は、エネルギーか重心の運動量のどちらかを使うときに出す。g・重力の向き・注はエネルギーのときだけ */
+function momOn(){ return !!(APP.momOn && APP.twoObj); }
+function updateMassRow(){
+  var row=$('energyRow'); if(!row) return;
+  var show=APP.energyOn || momOn();
+  row.classList.toggle('hide', !show);
+  els('.eonly', row).forEach(function(q){ q.classList.toggle('hide', !APP.energyOn); });
+  if($('labGP')) $('labGP').classList.toggle('hide', !APP.twoObj);
+  if($('cbG_p')) $('cbG_p').checked=momOn();
+  if($('selGDir')) $('selGDir').value=EXP().gDir||'y-';
+  if($('eNoteH')) $('eNoteH').textContent=gDirInfo(EXP()).h;
 }
 /* 前回のデータが残っているのに動画がまだ無いとき、はっきり知らせる */
 function updateRestoreBar(){
@@ -5783,7 +6007,9 @@ function refreshExpUI(){
     var o=document.createElement('option'); o.value=i; o.textContent=(i+1)+'. '+e.name; s.appendChild(o);
   });
   s.value=APP.cur;
-  $('inM1').value=EXP().m1; $('inM2').value=EXP().m2; $('inG').value=EXP().g;
+  $('inM1').value=EXP().m1; $('inM2').value=EXP().m2; if($('inM3')) $('inM3').value=EXP().m3||0.1; $('inG').value=EXP().g;
+  if($('selGDir')) $('selGDir').value=EXP().gDir||'y-';
+  if($('labM3')) $('labM3').classList.toggle('hide', nObj()<3);
   ['expChecks','expChecks3'].forEach(function(id){
     var host=$(id); host.innerHTML='';
     APP.exps.forEach(function(e,i){
@@ -6128,7 +6354,7 @@ function rewindToRangeStart(){
 /* いま押してほしいボタンを光らせる（2 の中の順番も案内する） */
 function updateGuide(){
   var e=EXP(), st=(APP.editStep&&APP.editStep<APP.step)?APP.editStep:APP.step;
-  els('.btn.glow').forEach(function(b){ b.classList.remove('glow'); });
+  els('.btn.glow').forEach(function(b){ if(b.id!=='btnM2Live') b.classList.remove('glow'); });   /* ②の「動画と一緒に…」は m2ModeButtons が管理 */
   els('#tabs button.glow').forEach(function(b){ b.classList.remove('glow'); });
   /* 1：動画をえらぶまでは「動画ファイルを選択」を光らせる */
   if(st===1 && !VID.ready) $('btnFile').classList.add('glow');
@@ -6142,13 +6368,18 @@ function updateGuide(){
     if(EXP().objs.reduce(function(a,b){return a+b.length;},0)>0) e.nOk=true;   /* もう点があるなら聞かない（前の版のデータ） */
     else if(!LIVE.on && !UI.trimAsking && !$('calStepN')) { UI.nAsking=false; askStepN(); }      /* 質問が画面に無ければ（3 にもどって消えた等）出し直す */
   }
-  if(st!==4){ UI.nAsking=false; if($('calStepN')) calMsg(''); }   /* 4 を離れたら N の質問は消す（もう一度 2 など） */
-  var nWait=(st===4 && VID.ready && !e.nOk);
+  if(st!==4){ UI.nAsking=false; if($('calStepN') || $('objCntQ') || $('nConfirmQ')) calMsg(''); }   /* 4 を離れたら N・物体の数の質問は消す（もう一度 2 など） */
+  if(APP.twoObj && !e.nObjOk && e.objs[1] && e.objs[1].length) e.nObjOk=true;   /* 前の版のデータ：もう物体2があるなら聞かない */
+  if(st===4 && VID.ready && e.nOk && APP.twoObj && !e.nObjOk && !LIVE.on && !UI.trimAsking && !$('calStepN') && !$('objCntQ')) askObjCount();   /* N のつぎに物体の数（質問が消えていたら出し直す） */
+  var nWait=(st===4 && VID.ready && (!e.nOk || (APP.twoObj && !e.nObjOk) || !!$('nConfirmQ')));   /* 「1 クリックで…」の OK を押すまでも待つ */
   var start4=(st===4 && VID.ready && needTrackStart() && !nWait);
-  $('btnTrkStart').classList.toggle('hide', !start4);
+  /* 色マーカーの自動追跡が ON なら、真ん中で「色で自動追跡（おすすめ）／手でクリック」を選ぶ。OFF なら前どおり開始ボタン */
+  var choice4=start4 && APP.autoTrack;
+  $('btnTrkStart').classList.toggle('hide', !start4 || choice4);
+  if($('trkChoice')) $('trkChoice').classList.toggle('hide', !choice4);
   autoGuideSync(st);
   updateCursor();
-  var need4=(st===4 && VID.ready && !start4 &&
+  var need4=(st===4 && VID.ready && !start4 && !nWait &&
              EXP().objs.reduce(function(a,b){return a+b.length;},0)===0);
   els('.videobox').forEach(function(v){ v.classList.toggle('glow', need4); });
   var show2=(st===2);
@@ -6187,18 +6418,20 @@ function updateGuide(){
     var o=UI.obj, nameOK=!!(e.objName[o]||'').trim();
     $('labObjName').classList.toggle('hot', !nameOK);
     /* 名前がまだのときは、動画の真ん中の開始ボタンも出さない */
-    if(!nameOK) $('btnTrkStart').classList.add('hide');
-    else if(needTrackStart()) $('btnTrkStart').classList.remove('hide');
+    if(!nameOK){ $('btnTrkStart').classList.add('hide'); if($('trkChoice')) $('trkChoice').classList.add('hide'); }
+    else if(needTrackStart()){ if(APP.autoTrack){ if($('trkChoice')) $('trkChoice').classList.remove('hide'); } else $('btnTrkStart').classList.remove('hide'); }
+    if($('trkChoice')) $('trkChoice').querySelector('.tc-q').textContent='物体'+(o+1)+'をどちらで記録しますか？';
     $('btnTrkStart').innerHTML='<span class="l1">物体'+(o+1)+'のトラッキング（軌跡の追跡）開始</span><span class="l2">物体をクリックすると指定のコマずつ動画が進みます</span>';
-    /* 物体1が終わったら、自動で物体2へ */
-    if(o===0 && objDone(0) && !EXP().objs[1].length && !EXP().objReady[1]){
-      UI.obj=1; $('selObj').value='2'; refreshObjUI();
-      toast('物体1のトラッキングが終わりました。つぎは物体2の名前を入れてください');
+    /* 物体1が終わったら自動で物体2へ、物体2が終わったら（3 つなら）物体3へ */
+    if(o+1<nObj() && objDone(o) && !EXP().objs[o+1].length && !EXP().objReady[o+1]){
+      UI.obj=o+1; $('selObj').value=String(o+2); refreshObjUI();
+      toast('物体'+(o+1)+'のトラッキングが終わりました。つぎは物体'+(o+2)+'の名前を入れてください');
       setTimeout(updateGuide, 0);
     }
   } else {
     $('labObjName').classList.remove('hot');
-    if(!APP.twoObj) $('btnTrkStart').innerHTML='<span class="l1">トラッキング（軌跡の追跡）開始</span><span class="l2">物体をクリックすると指定のコマずつ動画が進みます</span>';
+    if(!APP.twoObj){ $('btnTrkStart').innerHTML='<span class="l1">トラッキング（軌跡の追跡）開始</span><span class="l2">物体をクリックすると指定のコマずつ動画が進みます</span>';
+      if($('trkChoice')) $('trkChoice').querySelector('.tc-q').textContent='どちらで記録しますか？'; }
   }
   /* ===== 「どちらで記録するか」の2つのボタン =====
      ・色マーカーの自動追跡が OFF のときは、［色で自動追跡］は<b>出さない</b>
@@ -6215,18 +6448,20 @@ function updateGuide(){
   });
   var chosen = need? '' : (UI.startedAuto? 'auto' : 'hand');
   if(in4 && nameOK2){
-    if(need){                       /* まだ選んでいない：両方を光らせる */
-      $('btnStartHand').classList.add('glow');
-      if(auto) $('btnStartAuto').classList.add('glow');
+    if(need){                       /* まだ選んでいない：自動が使えるなら［色で自動追跡］を大きく光らせて「おすすめ」 */
+      if(auto) $('btnStartAuto').classList.add('glow','rec');
+      else $('btnStartHand').classList.add('glow');
     } else {                        /* 選んだあと：選んだ方だけ光らせる */
       $((chosen==='auto')?'btnStartAuto':'btnStartHand').classList.add('glow');
     }
   }
+  $('btnStartAuto').classList.toggle('rec', in4 && nameOK2 && need && auto);
+  if($('coAutoRec')) $('coAutoRec').classList.toggle('hide', !(in4 && nameOK2 && need && auto));
   $('btnStartAuto').classList.toggle('dim', in4 && chosen==='hand');
   $('coHand').classList.toggle('hide', !(in4 && nameOK2 && chosen==='hand'));
   $('coAuto').classList.toggle('hide', !(in4 && nameOK2 && auto && chosen==='auto'));
   $('startNote').innerHTML = !nameOK2? '<span class="ng">先に上で名前を入れてください。</span>'
-    : need? (auto? 'この物体を<b>どちらで記録するか</b>を選んでください（あとで切りかえられます）。'
+    : need? (auto? 'この物体を<b>どちらで記録するか</b>を選んでください（あとで切りかえられます）。おすすめは<b>［色で自動追跡］</b>です。'
                  : '<b>［手でクリックして記録］</b>で始めます（色で自動追跡を使うときは、右上のチェックを入れてください）。')
     : '記録のしかたは、いつでも切りかえられます。';
   /* 自動追跡のまとまり：OFF のときや、手で記録を選んでいる間は出さない（たたむ） */
@@ -6298,8 +6533,8 @@ function updateGuide(){
 /* 進み方が変わるとき（動画を読み直す・測定を消す・範囲を解除する）に、途中の質問の状態をそろえて消す */
 function resetFlowFlags(alsoN){
   UI.trimFlow=false; UI.trimAsking=false; UI.nAsking=false; UI.autoGuide=null; UI.wasDone=false;
-  var m=$('calMsg'); if(m && (m.classList.contains('trimq') || $('calStepN') || m.classList.contains('autog'))) calMsg('');
-  if(alsoN && EXP()) EXP().nOk=false;
+  var m=$('calMsg'); if(m && (m.classList.contains('trimq') || $('calStepN') || $('objCntQ') || m.classList.contains('autog'))) calMsg('');
+  if(alsoN && EXP()){ EXP().nOk=false; EXP().nObjOk=false; }
 }
 /* ---------- 2 が終わったとき：動画をトリミングするかを聞く ---------- */
 function askTrim(){
@@ -6356,15 +6591,33 @@ function askStepN(){
     { label:'決める', cls:'pri big2', fn:function(){
         var n=parseInt(($('calStepN')||{}).value)||cur;
         $('inStepN').value=n; e.nOk=true; UI.nAsking=false;
-        calAsk('<span class="q">あなたの選択で、'+n+' コマ ＝ '+nf(n*dt,3)+' s ずつ解析します</span>'+
-          '途中で変えることもできます（4 のカードの［進むフレーム数 N］）。'+
+        calAsk('<span class="q" id="nConfirmQ">1 クリックで '+n+' コマ ＝ '+nf(n*dt,3)+' s ずつ解析します。</span>'+
+          '途中で変えることもできます（左の 4. トラッキングの［進むフレーム数 N］）。<br>'+
           '細かく詳しく運動を解析したい部分では、コマ数を減らすことも可能です。', [
-          { label:'OK', cls:'pri', fn:function(){ calMsg(''); afterChange(); } }
+          { label:'OK', cls:'pri', fn:function(){ calMsg(''); afterChange(); if(APP.twoObj && !EXP().nObjOk) askObjCount(); } }
         ]);                                   /* こちらは上に出す（真ん中の開始ボタンをかくさない） */
+        $('calMsg').classList.add('big','nconf');
         afterChange(); saveLocal();
       } }
   ]);
   $('calMsg').classList.add('center');
+}
+/* ---------- 複数物体：4 に入ったら N のつぎに「物体はいくつ？」（2 か 3） ---------- */
+function askObjCount(){
+  var e=EXP(); if(!VID.ready || e.nObjOk) return;
+  if(window.__noAskN){ e.nObjOk=true; e.nObjs=e.nObjs||2; return; }
+  var cur=parseInt(e.nObjs)||2;
+  calAsk('<span class="q" id="objCntQ">追いかける物体はいくつありますか？</span>'+
+    '<span class="mini">物体1 → 物体2 → 物体3 の順に、1 つずつ最後までトラッキングします。名前をつけると、表やグラフに出ます。</span>', [
+    { label:'2 つ', cls:(cur===2?'pri':'ghost'), fn:function(){ setObjCount(2); } },
+    { label:'3 つ', cls:(cur===3?'pri':'ghost'), fn:function(){ setObjCount(3); } }
+  ]);
+  $('calMsg').classList.add('center');
+}
+function setObjCount(n){
+  var e=EXP(); e.nObjs=n; e.nObjOk=true; UI.obj=0;
+  calMsg(''); refreshObjUI(); afterChange(); saveLocal();
+  toast('物体は '+n+' つ。まず物体1の名前を入れてください');
 }
 /* ---------- 色で自動追跡の案内（動画の上に大きく。最小化できる） ---------- */
 function autoGuideSync(st){
@@ -6488,6 +6741,7 @@ function objDone(o){
   var e=EXP();
   if(e.rangeB===null) return false;
   var arr=e.objs[o]; if(!arr || !arr.length) return false;
+  if(e.objEnd && e.objEnd[o]) return true;         /* ［この物体はここで終わり］を押した */
   var last=null;
   arr.forEach(function(p){ if(last===null||p.t>last) last=p.t; });
   return last >= e.rangeB - 0.6/(VID.fps||30);   /* 解析範囲の最後のコマまで来たら「終わり」 */
@@ -6495,7 +6749,7 @@ function objDone(o){
 function trackingDone(){
   var e=EXP();
   if(e.rangeB===null) return false;
-  if(APP.twoObj) return objDone(0) && objDone(1);
+  if(APP.twoObj){ for(var k=0;k<nObj();k++) if(!objDone(k)) return false; return true; }
   var last=null;
   for(var i=0;i<NOBJ;i++) e.objs[i].forEach(function(p){ if(last===null||p.t>last) last=p.t; });
   if(last===null) return false;
@@ -6519,14 +6773,14 @@ function setTwoObj(on, quiet){
 function refreshObjUI(){
   var two=APP.twoObj, e=EXP();
   if($('labFitObj')) $('labFitObj').classList.toggle('hide', !two);      /* ③の「物体」は２物体のときだけ */
+  if($('labM3')) $('labM3').classList.toggle('hide', nObj()<3);           /* m₃ は物体が 3 つのときだけ */
+  if($('labCgM3')) $('labCgM3').classList.toggle('hide', nObj()<3);
   $('objBox').classList.toggle('hide', !two);
   $('rowClearObj').classList.toggle('hide', !two);
-  /* 物体番号は 1・2 だけ */
-  var sel=$('selObj');
-  if(sel.options.length!==2){
-    sel.innerHTML='<option value="1">1</option><option value="2">2</option>';
-  }
-  if(UI.obj>1) UI.obj=two?1:0;
+  /* 物体番号は 1 〜 物体の数（2 か 3） */
+  var sel=$('selObj'), nO=nObj();
+  els('option', sel).forEach(function(op,i){ op.hidden=(i>=nO); });
+  if(UI.obj>=nO) UI.obj=two? nO-1 : 0;
   sel.value=String(UI.obj+1);
   $('labObjName').firstChild.nodeValue='物体'+(UI.obj+1)+'の名前 ';
   $('inObjName').value=e.objName[UI.obj]||'';
@@ -6541,11 +6795,15 @@ function refreshObjUI(){
     }
   }
   updateColorTag();
-  /* 物体2は、物体1が終わってから */
+  /* 物体2は物体1が終わってから、物体3は物体2が終わってから */
   sel.options[1].disabled = two && !objDone(0);
+  if(sel.options[2]) sel.options[2].disabled = two && !objDone(1);
+  /* ［この物体はここで終わり］：複数物体で、点があって、まだ終わっていないときだけ */
+  if($('rowObjEnd')) $('rowObjEnd').classList.toggle('hide', !(two && e.objs[UI.obj].length>0 && !objDone(UI.obj)));
   /* リセットのボタン */
   $('btnTrkReset').textContent = two? '物体1のトラッキングした点をリセット' : 'トラッキングした点をリセット';
   $('rowTrkResetB').classList.toggle('hide', !(two && (objDone(0) || e.objs[1].length)));
+  if($('btnTrkResetC')) $('btnTrkResetC').classList.toggle('hide', !(two && nO>=3 && (objDone(1) || e.objs[2].length)));
   $('trkResetNote').textContent = two?
     'その物体の点を消して、解析範囲の最初に戻ります（Ctrl＋Z で戻せます）。' :
     'この実験で記録した点を全部消して、解析範囲の最初に戻ります（Ctrl＋Z で戻せます）。';
@@ -6565,9 +6823,9 @@ function refreshObjUI(){
   if(oc){
     $('lbObjSel').classList.toggle('hide', !two);
     oc.classList.toggle('hide', !two);
-    if(two && oc.children.length!==2){
+    if(two && oc.children.length!==nObj()){
       oc.innerHTML='';
-      for(var i=0;i<2;i++){
+      for(var i=0;i<nObj();i++){
         var l=document.createElement('label');
         l.innerHTML='<input type="checkbox" data-o="'+i+'" checked>'+
           '<i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+OBJCOL[i]+'"></i>'+
@@ -6870,12 +7128,12 @@ function resetTracking(obj){
     var n=e.objs.reduce(function(a,o){ return a+o.length; },0);
     if(!n){ toast('記録した点はまだありません'); return; }
     pushUndo({t:'bulkAll', prev:e.objs.map(function(o){ return o.slice(); })});
-    for(i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; }
+    for(i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; e.objEnd[i]=false; }
     e.trackReady=false;
   } else {
     if(!e.objs[obj].length){ toast('物体'+(obj+1)+'の点はまだありません'); return; }
     pushUndo({t:'bulk', obj:obj, prev:e.objs[obj].slice()});
-    e.objs[obj]=[]; e.objReady[obj]=false;
+    e.objs[obj]=[]; e.objReady[obj]=false; e.objEnd[obj]=false;
     UI.obj=obj; $('selObj').value=String(obj+1);
   }
   UI.lastPt=null;
@@ -6954,10 +7212,10 @@ function askKeepExp(next){
     },
     { noLabel:'記録しないで進む', onNo:function(){
         var e2=EXP();
-        for(var i=0;i<NOBJ;i++){ e2.objs[i]=[]; e2.objReady[i]=false; e2.objName[i]=''; }
+        for(var i=0;i<NOBJ;i++){ e2.objs[i]=[]; e2.objReady[i]=false; e2.objEnd[i]=false; e2.objName[i]=''; }
         e2.trackReady=false; e2.origin=null; e2.originSet=false; e2.axisSet=false; e2.angle=0;
         e2.mPerPx=null; e2.scaleRef=null; e2.t0=null; e2.rangeB=null; e2.rangeA=null;
-        e2.step2ok=false; e2.crop=null; e2.ref=[]; e2.nOk=false;
+        e2.step2ok=false; e2.crop=null; e2.ref=[]; e2.nOk=false; e2.nObjOk=false;
         UI.undo=[]; UI.lastPt=null; UI.obj=0; APP.editStep=0; resetFlowFlags(true);
         refreshExpUI(); afterChange();
         next();
@@ -7172,7 +7430,8 @@ function openCamera(){
     '<span class="tag" id="camT">0.0 秒</span>'+
     '<button class="btn sm hide" id="camSensor">傾きセンサーを使う</button></div>'+
     '<p class="mini">線が<b style="color:#1c8f4a">緑</b>なら水平です。<b style="color:#e8443a">赤</b>のときは机や壁に立てかけて、'+
-    '線が緑になる向きに直してください。運動する向きに対して<b>真横</b>から、明るい所で撮ります。</p></div>';
+    '線が緑になる向きに直してください。運動する向きに対して<b>真横</b>から、明るい所で撮ります。'+
+    '複数の物体を追いかけるときは、物体ごとに<b>ちがう色</b>のマーカーをつけます。</p></div>';
   document.body.appendChild(m);
   var t0=0, timer=null;
   var guide=camGuideStart(m);          /* 水平の線・中央の十字・三分割の線と、傾きセンサー */
@@ -7423,7 +7682,8 @@ function openHelp(){
   '<h3>4. 位置を記録する</h3>'+
   '<ul><li>4 に入ると、まず動画の真ん中で <b>「何コマごとに位置を記録しますか？」</b>（進むフレーム数 N、1 コマ＝何秒かも表示）を聞きます。決めると先に進めます。あとから 4 のカードの［進むフレーム数 N］で変えられます</li>'+
   '<li>つぎに <b>［手でクリックして記録］</b> を押します（押すまでは、まちがって動画を触っても点は入りません）。'+
-  '右上の <b>［色マーカーの自動追跡］</b> を ON にしていると、となりに <b>［色で自動追跡］</b> も出ます</li>'+
+  '右上の <b>［色マーカーの自動追跡］</b> を ON にしていると、動画の真ん中で「どちらで記録しますか？」と聞き、<b>［色で自動追跡］（おすすめ）</b>か［手でクリックして記録］を選びます</li>'+
+  '<li>URL に <b>?auto=1&amp;multi=1</b> を付けて開くと、［色マーカーの自動追跡］と［複数物体の運動］が最初から ON になります（配るときに便利）</li>'+
   '<li><b>物体をクリック（タップ）するたびにコマが進みます</b>（「進むフレーム数 N」ぶん）。'+
   '「記録したら」で、同じ位置に点を打つ（動画を進めない）／1コマ進む／Nコマ進む を選べます</li>'+
   '<li><b>N の目安</b>：点と点の間が、画面の横はばの 2〜3 % 以上動くように。ゆっくりな運動ほど N を大きく</li>'+
@@ -7434,8 +7694,9 @@ function openHelp(){
   '<li><b>色で自動追跡</b>：動画の上に大きな案内が出ます（［この表示を最小化］でたためます）。マーカーを1回クリックすると、始点と色を覚えます。円をドラッグして探索半径を決め、案内の <b>［自動追跡を開始する］</b>（か［最後まで自動追跡］）で終わりまで追いかけ、'+
   '見失ったら止まります。手でクリックして見つけ直すと <b>「見つけました！ 最後まで追跡 しますか？」</b> が出るので、'+
   'その知らせを押せばそのまま続きます</li>'+
-  '<li>右上の <b>［２物体の運動］</b> を ON にすると、物体1 → 物体2 の順に追いかけられます（衝突など）。'+
-  '物体には名前をつけます（同じ名前は不可）</li>'+
+  '<li>右上の <b>［複数物体の運動］</b> を ON にすると、4 に入ったとき N のつぎに<b>物体の数（2 か 3）</b>を聞き、物体1 → 物体2 → 物体3 の順に追いかけられます（衝突など）。ストロボ画像に描く点は物体1だけです。'+
+  '物体には名前をつけます（同じ名前は不可）。撮るときは<b>物体ごとにちがう色</b>のマーカーをつけておくと、色で自動追跡できます。'+
+  '画面の外に出るなどで最後まで追えない物体は、4 のカードの <b>［この物体はここで終わり］</b> を押すと、そこまでで完了になり次の物体へ進めます</li>'+
   '<li>2本指でピンチすると拡大、2本指で動かすと移動できます</li>'+
   '<li><b>トラッキングした点をリセット</b>：この実験の点を全部消して、解析範囲の最初にもどります（Ctrl＋Z でもどせます）</li>'+
   '<li><b>動画と表を並べる</b>：4 に入ると<b>最初から並んで</b>います。'+
@@ -7503,14 +7764,18 @@ function openHelp(){
   '「正負を反転」でデータ点の符号を入れかえられます（右向きを正にしたいときなど）。<br>'+
   '「縦軸を2つにする（2軸）」にすると、左と右で別々の目盛の縦軸になります。'+
   '例：〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕で衝突の前後を見る、〔縦軸＝x／縦軸2＝y／横軸＝t〕で x と y を 1 枚で見る、など</li>'+
-  '<li><b>運動量保存則</b>ボタン（右上の［２物体の運動］が ON のときだけ出ます）で〔縦軸＝物体1 の運動量 px／縦軸2＝物体2 の px／横軸＝t〕に、'+
+  '<li><b>運動量保存則</b>ボタン（右上の［複数物体の運動］が ON で、物体が 2 つのときだけ出ます）で〔縦軸＝物体1 の運動量 px／縦軸2＝物体2 の px／横軸＝t〕に、'+
   '同じ目盛りで一発で切りかわります。質量 m₁・m₂ はそのとなりの欄で入れます。物体2のデータが無いときは切りかわらず、赤字で知らせます</li>'+
+  '<li>②の <b>「重心の運動量」</b> にチェック（複数物体のとき）を入れると、質量の欄が出て、物体ごとの運動量 p = m v と、'+
+  'その和 Σ m v（＝重心の運動量）を 1 枚のグラフに出します。物体が 3 つでも、衝突の前後で和が変わらないことを確かめられます</li>'+
   '<li>縦軸と横軸が<b>同じ単位</b>のとき（x–y など）は、縦横の目盛りを自動でそろえます。円運動が<b>ちゃんと円に見えます</b></li>'+
-  '<li>エネルギーは②の右上の <b>［力学的エネルギーを解析する］</b>（x と y の両方のデータがあるときだけ出ます）を押すと、質量 m や g の入力欄が出ます。'+
-  '<b>y 方向の正の向きを鉛直上向きだと仮定</b>して U = mgy を計算するので、円運動など y が鉛直でない実験には当てはまりません。'+
+  '<li>エネルギーは②の右上の <b>［力学的エネルギーを解析する］</b>を押すと、質量 m・g・<b>重力の向き</b>の入力欄が出ます。'+
+  '位置エネルギー U = mgh の高さ h は、重力の向き（鉛直下向きが −y／+y／−x／+x のどれか）から出します（−y なら h = y、+x なら h = −x）。'+
+  '自由落下を x 軸だけで解析するときは −x か +x を選びます。円運動など高さが決まらない実験には当てはまりません。'+
   '押していないときは Excel 出力にもエネルギーは入りません</li>'+
   '<li>実験は10個まで記録でき、「並べて表示」「他の実験を重ねて表示」で比べられます（実験が1つのときは出ません）</li>'+
-  '<li>③で直線・放物線・正弦・指数の最小二乗フィッティング。<b>係数と R² まで</b>を出します（a・g・T は自分で考えます）</li>'+
+  '<li>③で直線・放物線・正弦・指数の最小二乗フィッティング。<b>係数と R² まで</b>を出します（a・g・T は自分で考えます）。'+
+  '正弦・指数は「パラメーターの初期値」（A・ω・φ・C／A・k・C）を入れられ、入れた値から最小二乗で合わせます（未入力なら自動）。直線・放物線は初期値なしで一度に決まります</li>'+
   '<li>③のグラフの<b>青い帯</b>（←数式をフィッティングするエリア→）は「フィッティングに使う範囲」です。'+
   '左右のつまみをドラッグすると変えられます（動き出しの前や、ぶつかった後を外せます）</li>'+
   '<li>③のフィッティング結果の下の <b>［フィッティング残差のプロット］</b> で、「測った値 − フィッティングの値」のグラフが右に出ます。'+
@@ -7724,6 +7989,11 @@ function bindTblResize(){
 function m2ModeButtons(){
   $('btnM2Side').classList.toggle('on', APP.m2mode!=='live');
   $('btnM2Live').classList.toggle('on', APP.m2mode==='live');
+  /* まだ一度も押していなければ、光らせて「← クリックしてみよう」 */
+  var seen=false; try{ seen=!!localStorage.getItem('ma_live_seen'); }catch(e){}
+  var tease=!seen && APP.m2mode!=='live';
+  $('btnM2Live').classList.toggle('glow', tease);
+  if($('coLive')) $('coLive').classList.toggle('hide', !tease);
 }
 function setM2Mode(m, quiet){
   APP.m2mode=(m==='live')? 'live' : 'side';
@@ -7965,7 +8235,7 @@ function bindUI(){
     if(!confirm('この実験で決めたことを全部消して、「2. 解析する時間範囲の指定」からやり直します。\n'+
                 '（記録した点・原点・スケール・x軸・時間範囲が消えます。動画はそのままです）\nよろしいですか？')) return;
     var e=EXP(), i;
-    for(i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; e.objName[i]=''; }
+    for(i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; e.objEnd[i]=false; e.objName[i]=''; }
     e.ref=[]; e.origin=null; e.originSet=false; e.angle=0; e.mPerPx=null; e.scaleRef=null;
     e.t0=null; e.rangeA=null; e.rangeB=null; e.step2ok=false; e.trackReady=false; e.axisSet=false;
     e.crop=null;
@@ -8098,7 +8368,7 @@ function askResetPts(go){
     'すべて消えます。よろしいですか？</p>',
     'はい、消してやり直す', function(){
       pushUndo({t:'bulkAll', prev:e.objs.map(function(o){ return o.slice(); })});
-      for(var i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; }
+      for(var i=0;i<NOBJ;i++){ e.objs[i]=[]; e.objReady[i]=false; e.objEnd[i]=false; }
       e.trackReady=false; UI.lastPt=null;
       if(typeof refreshObjUI==='function') refreshObjUI();
       go();
@@ -8160,7 +8430,7 @@ function askResetPts(go){
 
   /* トラッキング */
   $('cbTwoObj').onchange=function(){ setTwoObj(this.checked);
-    toast(this.checked? '２物体の運動：ON（物体1 → 物体2 の順に追いかけます）' : '２物体の運動：OFF'); };
+    toast(this.checked? '複数物体の運動：ON（物体1 → 物体2 → … の順に追いかけます。数は 4 に入ったときに聞きます）' : '複数物体の運動：OFF'); };
   $('selObj').onchange=function(){
     UI.obj=parseInt(this.value)-1; refreshObjUI(); updateGuide(); drawOverlay();
   };
@@ -8228,21 +8498,34 @@ function askResetPts(go){
   $('doneMsg').onclick=function(){ setTab('2'); };
   $('trkDone').onclick=function(){ setTab('2'); };
   $('btnTrkStart').onclick=function(){ startTracking(false); };
+  if($('btnTrkStartA')) $('btnTrkStartA').onclick=function(){ startTracking(true); };
+  if($('btnTrkStartH')) $('btnTrkStartH').onclick=function(){ startTracking(false); };
   $('btnClearObj').onclick=function(){
     var e=EXP();
     if(!e.objs[UI.obj].length){ toast('物体'+(UI.obj+1)+'の点はまだありません'); return; }
     pushUndo({t:'bulk', obj:UI.obj, prev:e.objs[UI.obj].slice()});
-    e.objs[UI.obj]=[]; e.objReady[UI.obj]=false;
+    e.objs[UI.obj]=[]; e.objReady[UI.obj]=false; e.objEnd[UI.obj]=false;
     refreshObjUI(); afterChange(); render();
     rewindToRangeStart();
     toast('物体'+(UI.obj+1)+'の点を消して、解析範囲の最初に戻りました');
   };
+  /* 「この物体はここで終わり」：画面の外に出るなどで最後まで追えないとき、いまの時刻までで完了にする */
+  if($('btnObjEnd')) $('btnObjEnd').onclick=function(){
+    var e=EXP(), o=UI.obj;
+    if(!e.objs[o] || !e.objs[o].length){ toast('物体'+(o+1)+'の点はまだありません'); return; }
+    if(!e.objEnd) e.objEnd=[false,false,false];
+    e.objEnd[o]=true;
+    stopAuto();
+    toast('物体'+(o+1)+'はここまでで完了にしました');
+    refreshObjUI(); afterChange(); render();
+  };
   $('btnTrkReset').onclick=function(){ resetTracking(APP.twoObj? 0 : undefined); };
   $('btnTrkResetB').onclick=function(){ resetTracking(1); };
+  if($('btnTrkResetC')) $('btnTrkResetC').onclick=function(){ resetTracking(2); };
   $('btnTrkReset2').onclick=function(){ resetTracking(APP.twoObj? UI.obj : undefined); };
   /* ②の 2 つの表示モード */
   $('btnM2Side').onclick=function(){ setM2Mode('side'); };
-  $('btnM2Live').onclick=function(){ setM2Mode('live'); };
+  $('btnM2Live').onclick=function(){ try{ localStorage.setItem('ma_live_seen','1'); }catch(e){} setM2Mode('live'); };
   $('btnLivePlay').onclick=livePlay;
   els('.cbKoma').forEach(function(c){
     c.addEventListener('change', function(){ setKomaMode(c.checked); });
@@ -8399,8 +8682,12 @@ function askResetPts(go){
   ['btnSelClr','btnSelClr3'].forEach(function(id){
     var b=$(id); if(b) b.onclick=function(){ selClear(); redrawAllCharts(); updateReadouts(); };
   });
-  ['selCmp','cbG_x','cbG_y','cbG_v','cbG_a','cbG_e','inM1','inM2','inG'].forEach(function(id){
-    $(id).addEventListener('change', function(){ afterChange(); renderMode2(); });
+  ['selCmp','cbG_x','cbG_y','cbG_v','cbG_a','cbG_e','inM1','inM2','inM3','inG','selGDir'].forEach(function(id){
+    if($(id)) $(id).addEventListener('change', function(){ afterChange(); renderMode2(); });
+  });
+  /* ②の「重心の運動量」：ON にすると質量の欄が出て、物体ごとの運動量と全体（重心）の運動量のグラフが増える */
+  if($('cbG_p')) $('cbG_p').addEventListener('change', function(){
+    APP.momOn=$('cbG_p').checked; updateMassRow(); afterChange(); renderMode2();
   });
   function reRender(){
     if(!$('mode2').classList.contains('hide')) renderMode2();
@@ -8435,12 +8722,12 @@ function askResetPts(go){
     toast('縦軸＝物体1 の運動量 px／縦軸2＝物体2 の運動量 px／横軸＝t にしました（同じ目盛り）');
   };
   /* 運動量の質量欄：②のエネルギーの m₁・m₂ と同じ値 */
-  ['cgM1','cgM2'].forEach(function(id, i){
+  ['cgM1','cgM2','cgM3'].forEach(function(id, i){
     var f=$(id); if(!f) return;
     f.onchange=function(){
-      var e=EXP(), v=posNum(f, i? e.m2 : e.m1, 0.1);
-      if(i) e.m2=v; else e.m1=v;
-      if($(i?'inM2':'inM1')) $(i?'inM2':'inM1').value=v;
+      var e=EXP(), v=posNum(f, [e.m1,e.m2,e.m3][i], 0.1);
+      if(i===2) e.m3=v; else if(i===1) e.m2=v; else e.m1=v;
+      var tgt=$(['inM1','inM2','inM3'][i]); if(tgt) tgt.value=v;
       renderCG(); if(!$('mode2').classList.contains('hide')) renderMode2(); saveLocal();
     };
   });
@@ -8448,8 +8735,9 @@ function askResetPts(go){
   if($('btnFitClr')) $('btnFitClr').onclick=function(){ RESID=[]; RESID_INFO={}; $('fitResult').innerHTML=''; if($('residHost')) $('residHost').innerHTML=''; renderMode3(false); };
   $('btnWhatFit').onclick=openWhatFit;
   ['selFitY','selFitType','selFitObj','selCmp3'].forEach(function(id){
-    $(id).addEventListener('change', function(){ renderMode3(false); });
+    $(id).addEventListener('change', function(){ if(id==='selFitType') updateFitInitUI(); renderMode3(false); });
   });
+  updateFitInitUI();
 
 
   /* キーボード */
@@ -9086,22 +9374,23 @@ function axisRangePopup(cv, which){
 /* 運動量の質量欄と ボタンの出し入れ（２物体の運動が ON のときだけ） */
 function syncCgMass(){
   var e=EXP();
-  if($('cgM1')) $('cgM1').value=e.m1; if($('cgM2')) $('cgM2').value=e.m2;
+  if($('cgM1')) $('cgM1').value=e.m1; if($('cgM2')) $('cgM2').value=e.m2; if($('cgM3')) $('cgM3').value=e.m3||0.1;
+  if($('labCgM3')) $('labCgM3').classList.toggle('hide', nObj()<3);
 }
 function updateCgMomentumUI(){
   var two=!!APP.twoObj, c=APP.cg||{};
-  var b=$('cgMomentum'); if(b) b.classList.toggle('hide', !two);
+  var b=$('cgMomentum'); if(b) b.classList.toggle('hide', !(two && nObj()===2));   /* 3 物体では②の「重心の運動量」を使う */
   var usingP=(c.qA==='px'||c.qB==='px'||c.qA==='py'||c.qB==='py');
   var row=$('cgMassRow'); if(row) row.classList.toggle('hide', !(two && usingP));
   if(two && usingP) syncCgMass();
   var n=$('cgMomentumNote'); if(n && !two) n.classList.add('hide');
 }
-/* ［力学的エネルギーを解析する］は x と y の両方があるときだけ */
+/* ［力学的エネルギーを解析する］は、軸の表示にかかわらずいつでも出す
+   （x 軸だけの解析でも、重力の向きを x にすればエネルギーが出せる） */
 function updateEnergyBtn(){
   var b=$('btnEnergyOn'); if(!b) return;
-  var ok=useY();
-  b.classList.toggle('hide', !ok);
-  if(!ok && APP.energyOn) setEnergyOn(false);
+  b.classList.remove('hide');
+  updateMassRow();
 }
 
 </script>
@@ -9131,6 +9420,16 @@ function updateEnergyBtn(){
   setMenuPos(APP.menuPos);
   $('btnMenuPos').textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
   setTwoObj(APP.twoObj, true);
+  /* URL で最初から ON にできる：motion-analysis.html?auto=1&multi=1（# でもよい）
+     auto … 色マーカーの自動追跡、multi（two でも可）… 複数物体の運動。生徒に配るときに使う */
+  try{
+    var qsrc=(location.search||'').replace(/^\?/,'')+'&'+(location.hash||'').replace(/^#/,'');
+    var qp={}; qsrc.split('&').forEach(function(kv){ var m=kv.split('='); if(m[0]) qp[decodeURIComponent(m[0]).toLowerCase()]=decodeURIComponent(m[1]||'1'); });
+    var on=function(v){ return /^(1|on|true|yes)$/i.test(v||''); };
+    if(on(qp.multi)||on(qp.two)) setTwoObj(true, true);
+    if(on(qp.auto)){ APP.autoTrack=true; $('cbAuto').checked=true; $('autoCard').classList.remove('hide'); }
+    APP.urlOpts={ auto:on(qp.auto), multi:on(qp.multi)||on(qp.two) };
+  }catch(e){}
   setMode('record');
   applyNarrowLayout();
   /* はじめから「動画と表を並べる」大きさにしておく（あとで大きく変わらないように） */
