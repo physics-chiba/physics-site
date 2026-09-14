@@ -392,10 +392,8 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 .btn.dim{background:#e6e9ee!important;border-color:#c9d0d8!important;color:#8a94a0!important;box-shadow:none!important}
 /* 4 に入ったときの N の質問、自動追跡の案内：動画の真ん中に大きく */
 #calMsg.ask.center{top:50%;transform:translate(-50%,-50%)}
-#calMsg.ask.big{font-size:1.6rem;line-height:1.35;max-width:94%}
-#calMsg.ask.big .q{font-size:1.9rem;line-height:1.3}
-#calMsg.ask.big .mini{font-size:1.1rem}
-#calMsg.ask.big .btn{font-size:1.05rem;padding:9px 18px}
+/* 自動追跡の案内（.big）は、ほかの案内と同じ大きさ（前は 2 倍だった） */
+#calMsg.ask.big{max-width:92%}
 #calMsg.ask .btn.big2{font-size:1.15rem;padding:12px 22px}
 #calMsg.ask select.nsel{font-size:1.3rem;padding:6px 10px;border-radius:8px}
 #vph{cursor:pointer}
@@ -812,6 +810,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .tabs .tabgap.small{width:14px;flex:0 0 14px}
 .tabs button.sub{font-size:.86rem;padding:8px 12px;color:#4b5a6b}
 .tabs button.lock{opacity:.45;cursor:not-allowed}
+/* 「実験2を開始する」：③まで進んだら光らせる */
+#btnNextExp.glow{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700}
+.nextexp-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 4px}
 /* ②のグラフの上の一言（点の選択・ドラッグ・目盛り） */
 .gblock>h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
 .gtips{flex:1 1 260px;min-width:0;font-size:.74rem;font-weight:400;color:var(--sub);line-height:1.15;display:inline-flex;align-items:center;gap:2px 8px;flex-wrap:wrap}
@@ -861,6 +862,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <label class="chk tabchk" id="labBig" title="上の段まで隠して、実験のエリアを大きく使います"><input type="checkbox" id="cbBig">実験エリア最大表示</label>
   <label class="chk tabchk hide" id="labM2Menu"><input type="checkbox" id="cbM2MenuTop" checked>メニューを開く</label>
   <span class="tabright">
+    <button class="btn sm hide" id="btnNextExp">実験2を開始する</button>
+    <span class="tabgap small hide" id="gapNextExp"></span>
     <button class="btn sm" id="btnExpClear">この実験の測定を消去</button>
     <button class="btn sm" id="btnResetAll">すべての実験を消してリセット</button>
     <button class="btn sm two" id="btnJsonLoadTop">過去測定データを<br>実験2に登録</button>
@@ -1598,7 +1601,7 @@ function newExp(n){
     origin:null, originSet:false, angle:0, yflip:false, xflip:false,
     mPerPx:null, scaleRef:null, scaleLen:0.1,
     t0:null, rangeA:null, rangeB:null, step2ok:false, trackReady:false, axisSet:false, tscale:1,
-    objReady:[false,false,false], crop:null, aStep:3,
+    objReady:[false,false,false], crop:null, aStep:1,
     video:{name:'',w:0,h:0,dur:0,fps:30},
     m1:0.1, m2:0.1, g:9.8, camDist:3, rulerGap:0, shotFps:0, fpsOk:false, nOk:false,
     objName:['','',''] };
@@ -1709,7 +1712,7 @@ function series(exp, obj){
 /* a を出すときに使う v の組（K=1：となりの v、K=2：3Δt はなれた v、K=3：5Δt はなれた v） */
 function aStepOf(exp){
   if(exp && exp.aStep==='auto') return autoAStep(exp);
-  var k=parseInt(exp && exp.aStep)||3;
+  var k=parseInt(exp && exp.aStep)||1;
   return Math.max(1, Math.min(3, k));
 }
 /* 表・Excel の見出し用：a を出すときに使う時間の幅（Δt・3Δt・5Δt）。「離す数」とは言わない */
@@ -1728,7 +1731,7 @@ function autoAStep(exp){
   if(exp.__autoSig===sig && exp.__autoK) return exp.__autoK;
   var dts=[]; for(i=1;i<pts.length;i++) dts.push(pts[i].t-pts[i-1].t);
   dts.sort(function(p,q){return p-q;}); var dt=dts[Math.floor(dts.length/2)]||(1/30);
-  var k, K=3;
+  var k, K=1;
   if(dt>0){
     /* 位置のずれ σ（px）：2 階差分の中央値まわりのばらつき ÷ √6 */
     var med=function(arr){ var b=arr.slice().sort(function(p,q){return p-q;}); return b[Math.floor(b.length/2)]; };
@@ -1741,10 +1744,13 @@ function autoAStep(exp){
     aa.sort(function(p,q){return p-q;});
     /* a の「大きさ」：a の変化幅（10〜90%）と、a そのものの中央値の大きい方（等加速度なら後者が効く） */
     var amp=aa.length>4? Math.max(aa[Math.floor(aa.length*0.9)]-aa[Math.floor(aa.length*0.1)], aa[Math.floor(aa.length/2)]) : 0;
+    K=3;
     for(k=1;k<=3;k++){
       var c=(k===1)? Math.sqrt(6) : 2/(2*k-1);
       if(amp>0 && c*sigma/(dt*dt) <= amp/4){ K=k; break; }
     }
+    /* 点が少ないときは、a の点が 5 個は残る幅まで（幅 (2K−1)Δt で出せる a の数 ＝ 点の数 − 2K） */
+    while(K>1 && pts.length-2*K<5) K--;
   }
   exp.__autoSig=sig; exp.__autoK=K;
   return K;
@@ -3136,15 +3142,35 @@ function afterSeek(){
 }
 
 /* ---------- 色マーカーの自動追跡 ---------- */
-function predictPos(obj){
+/* 次の点の「予測位置」：探索はいまの点ではなく、この予測点を中心に行う。
+   点が 2 つ → 前の点からいまの点への動き（速度）で外挿。
+   点が 3 つ以上 → 速度の変わり方（加速度）も入れて外挿（落下・投射で遅れないように）。
+   ただし加速度のぶんは 1 回の動きの半分までに抑え、クリックのずれで予測が暴れないようにする */
+function predictPos(obj, tNow){
   var exp=EXP(), arr=exp.objs[obj].slice().sort(function(a,b){return a.t-b.t;});
   if(!arr.length) return null;
+  if(tNow===undefined) tNow=VID.cur;
   var last=arr[arr.length-1];
   if(arr.length>=2){
     var p=arr[arr.length-2], dt=last.t-p.t;
-    if(dt>0){ var f=(VID.cur-last.t)/dt;
-      f=Math.max(-3,Math.min(3,f));
-      return { x:last.x+(last.x-p.x)*f, y:last.y+(last.y-p.y)*f };
+    if(dt>0){
+      var tau=Math.max(-3*dt, Math.min(3*dt, tNow-last.t));
+      var vx=(last.x-p.x)/dt, vy=(last.y-p.y)/dt;
+      var ax=0, ay=0;
+      if(arr.length>=3){
+        var q=arr[arr.length-3], dt0=p.t-q.t;
+        if(dt0>0){
+          var vx0=(p.x-q.x)/dt0, vy0=(p.y-q.y)/dt0, dtm=(dt0+dt)/2;
+          ax=(vx-vx0)/dtm; ay=(vy-vy0)/dtm;
+          /* vx・vy は「区間の真ん中」の速さなので、いまの点での速さは a·dt/2 だけ大きい。
+             加速度による補正（a·dt/2·τ ＋ ½a·τ²）は、1 回の動きの半分までに抑える */
+          var step=Math.hypot(last.x-p.x, last.y-p.y), k=dt/2*tau+0.5*tau*tau;
+          var corr=Math.hypot(ax,ay)*Math.abs(k), lim=0.5*step;
+          if(corr>lim && corr>0){ ax*=lim/corr; ay*=lim/corr; }
+          return { x:last.x+vx*tau+ax*k, y:last.y+vy*tau+ay*k };
+        }
+      }
+      return { x:last.x+vx*tau, y:last.y+vy*tau };
     }
   }
   return { x:last.x, y:last.y };
@@ -3830,7 +3856,7 @@ var QDEF = {
   ay:{lab:'ay [m/s²]', get:function(p){return p.ay;}}
 };
 function expHasObj(exp, ob){ return exp.objs[ob] && exp.objs[ob].length>0; }
-function seriesFor(exp, kind, expIdx, overlay){
+function seriesFor(exp, kind, expIdx, overlay, onlyX){     /* onlyX：v・a で y 成分（vy・ay）を混ぜない（レポートの左の列用） */
   var out=[], shapes=['dot','sq','tri'];
   for(var ob=0; ob<NOBJ; ob++){
     if(!expHasObj(exp,ob)) continue;
@@ -3845,13 +3871,13 @@ function seriesFor(exp, kind, expIdx, overlay){
       out.push({name:nm+' vx', color:base, shape:shapes[ob],
         pts:s.filter(function(p){return p.vx!==null;}).map(function(p){return {x:p.t,y:p.vx};})});
       /* 「軸の表示：x軸」にしたら、y 方向はどこにも出さない（レポートにも出さない） */
-      if(useY()) out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
+      if(useY() && !onlyX) out.push({name:nm+' vy', color:shade(base,0.45), shape:'open',
         pts:s.filter(function(p){return p.vy!==null;}).map(function(p){return {x:p.t,y:p.vy};})});
     } else if(kind==='a'){
       out.push({name:nm+' ax', color:base, shape:shapes[ob],
         pts: APP.aFit? aByFit(s,'vx')
            : s.filter(function(p){return p.ax!==null;}).map(function(p){return {x:p.t,y:p.ax};})});
-      if(useY()) out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
+      if(useY() && !onlyX) out.push({name:nm+' ay', color:shade(base,0.45), shape:'open',
         pts: APP.aFit? aByFit(s,'vy')
            : s.filter(function(p){return p.ay!==null;}).map(function(p){return {x:p.t,y:p.ay};})});
     } else if(kind==='e'){
@@ -4110,7 +4136,7 @@ function chartCard(title, spec, curves, w, h){
       var lb=document.createElement('label'); lb.className='f awaysel';
       lb.appendChild(document.createTextNode('a に使う時間の幅 '));
       var sel=document.createElement('select'); sel.className='aStepSel';
-      [['auto','自動（ばらつきを見てえらぶ）'],[1,'Δt（となりの v の差）'],[2,'3Δt'],[3,'5Δt']].forEach(function(o){
+      [[1,'Δt（となりの v との差 ÷ Δt）'],[2,'3Δt'],[3,'5Δt'],['auto','自動（ばらつきを見てえらぶ）']].forEach(function(o){
         var op=document.createElement('option'); op.value=o[0]; op.textContent=o[1]; sel.appendChild(op);
       });
       sel.value=(EXP().aStep==='auto')? 'auto' : String(aStepOf(EXP()));
@@ -4846,9 +4872,9 @@ function sheetForExp(exp, idx){
   rows.push(['実験名', exp.name, 'メモ', exp.memo||'']);
   rows.push(['動画', exp.video.name||'', 'fps(表示用)', Number(nf(exp.video.fps,4))]);
   rows.push(['スケール[m/px]', exp.mPerPx||'', 'x軸[deg]', Number(nf(exp.angle*180/Math.PI,3))]);
-  rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, 'g[m/s2]', exp.g]);
+  var useE=!!APP.energyOn;                 /* 「力学的エネルギーを解析する」を押したときだけ出す */
+  if(useE) rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, 'g[m/s2]', exp.g]);   /* 質量・g もそのときだけ */
   rows.push([]);
-  var useE=!!APP.energyOn;                 /* 「エネルギーを解析する」を押したときだけ出す */
   var wy=useY();                           /* x軸のみのときは y の列とグラフを出さない */
   var QS = wy? ['x','y','vx','vy','ax','ay'] : ['x','vx','ax'];
   if(useE) QS=QS.concat(['K','U','K+U']);
@@ -4898,7 +4924,8 @@ function sheetForExp(exp, idx){
   if(n0>1){
     var anchor=head.length+1, chDefs=wy? [
       {t:'x - t', y:'x [m]', q:'x'}, {t:'y - t', y:'y [m]', q:'y'},
-      {t:'vx, vy - t', y:'v [m/s]', q:'v'}, {t:'ax, ay - t', y:'a [m/s2]', q:'a'}
+      {t:'vx - t', y:'vx [m/s]', q:'v'}, {t:'vy - t', y:'vy [m/s]', q:'vy'},
+      {t:'ax - t', y:'ax [m/s2]', q:'a'}, {t:'ay - t', y:'ay [m/s2]', q:'ay'}
     ] : [
       {t:'x - t', y:'x [m]', q:'x'},
       {t:'vx - t', y:'vx [m/s]', q:'v'}, {t:'ax - t', y:'ax [m/s2]', q:'a'}
@@ -4912,10 +4939,10 @@ function sheetForExp(exp, idx){
         var c=['E8443A','1663B5','1C8F4A'][k%3], c2=['F09A94','7FB2E5','86C7A4'][k%3], c3=['8A241D','0F3F73','0E5A2E'][k%3];
         if(d.q==='x') sers.push({name:'x物体'+(o+1), col:cols['x'+o], color:c, symbol:'circle'});
         else if(d.q==='y') sers.push({name:'y物体'+(o+1), col:cols['y'+o], color:c, symbol:'circle'});
-        else if(d.q==='v'){ sers.push({name:'vx物体'+(o+1), col:cols['vx'+o], color:c, symbol:'circle'});
-                            if(wy) sers.push({name:'vy物体'+(o+1), col:cols['vy'+o], color:c2, symbol:'square'}); }
-        else if(d.q==='a'){ sers.push({name:'ax物体'+(o+1), col:cols['ax'+o], color:c, symbol:'circle'});
-                            if(wy) sers.push({name:'ay物体'+(o+1), col:cols['ay'+o], color:c2, symbol:'square'}); }
+        else if(d.q==='v') sers.push({name:'vx物体'+(o+1), col:cols['vx'+o], color:c, symbol:'circle'});
+        else if(d.q==='vy') sers.push({name:'vy物体'+(o+1), col:cols['vy'+o], color:c, symbol:'circle'});
+        else if(d.q==='a') sers.push({name:'ax物体'+(o+1), col:cols['ax'+o], color:c, symbol:'circle'});
+        else if(d.q==='ay') sers.push({name:'ay物体'+(o+1), col:cols['ay'+o], color:c, symbol:'circle'});
         else if(d.q==='fit'){ if(k===0){
                  var fq2=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
                  sers.push({name:fq2+'（測った値）', col:cols[fq2+o], color:c, symbol:'circle'});
@@ -4927,7 +4954,7 @@ function sheetForExp(exp, idx){
                sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
       });
       charts.push({title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y,
-                   xcol:((d.q==='v'||((d.q==='fit'||d.q==='res') &&
+                   xcol:((d.q==='v'||d.q==='vy'||((d.q==='fit'||d.q==='res') &&
                           typeof RESID_INFO!=='undefined' &&
                           (RESID_INFO.q==='vx'||RESID_INFO.q==='vy')))?1:0), r0:r0, r1:r1,   /* 速さは tv[s] を横軸に */
                    series:sers, anchorCol:anchor, anchorRow:di*19});
@@ -5011,8 +5038,10 @@ function buildReportPages(){
   for(var r=0;r<3;r++){
     need(chh+14);
     var kx=colX[r];
-    drawInto(g, M, y, cw, chh, {title:KINDLAB[kx], xlab:'t [s]', ylab:KINDY[kx],
-      series:seriesFor(exp,kx,APP.cur,false)});
+    /* 左の列は x 方向だけ（前は v–t・a–t に vy・ay も重なって描かれていた） */
+    var tX={x:'x–t', v:'vx–t', a:'ax–t'}[kx], yX={x:'x [m]', v:'vx [m/s]', a:'ax [m/s²]'}[kx];
+    drawInto(g, M, y, cw, chh, {title:tX, xlab:'t [s]', ylab:yX,
+      series:seriesFor(exp,kx,APP.cur,false,true)});
     if(wy){
       var ky=colY[r];
       var spec = (ky==='y')? {title:KINDLAB.y, xlab:'t [s]', ylab:KINDY.y, series:seriesFor(exp,'y',APP.cur,false)}
@@ -6231,6 +6260,7 @@ function updateGuide(){
   /* ②③④ は、①で点を記録してから（補足はいつでも） */
   var anyPts=EXP().objs.reduce(function(a,b2){ return a+b2.length; },0)>0;
   ['2','3','4'].forEach(function(k){ var tb=el('#tabs button[data-mode="'+k+'"]'); if(tb) tb.classList.toggle('lock', !anyPts); });
+  if(typeof updateNextExpBtn==='function') updateNextExpBtn();
   var dm2=$('doneMsg'), showDone=(done && VID.ready);
   dm2.classList.toggle('hide', !showDone);
   if(showDone){
@@ -7463,7 +7493,7 @@ function openHelp(){
   '<li><b>グラフの中をドラッグ</b>すると上下左右に動きます。<b>横軸の目盛りの所をドラッグ</b>すると横の拡大縮小、'+
   '<b>縦軸の目盛りの所をドラッグ</b>すると縦の拡大縮小。'+
   '横軸（t）は x–t・v–t・a–t で<b>いっしょに動きます</b>（縦軸はグラフごと）。元に戻すときは <b>［スケールと表示範囲をデフォルトに戻す］</b></li>'+
-  '<li><b>a の出し方</b>は a–t グラフの下で選べます：「v の差から計算」（a に使う時間の幅 Δt・3Δt・5Δt、はじめは <b>5Δt</b>。「自動」にすると、クリックのずれによる a のばらつきが a の大きさの 1/4 以下になる、いちばん短い幅をえらびます）か「v–t の傾きから計算」。'+
+  '<li><b>a の出し方</b>は a–t グラフの下で選べます：「v の差から計算」（a に使う時間の幅 Δt・3Δt・5Δt、はじめは <b>Δt（となりの v との差 ÷ Δt）</b>。「自動」にすると、クリックのずれによる a のばらつきが a の大きさの 1/4 以下になる、いちばん短い幅をえらびます。点が少ないときは a の点が 5 個は残る幅までにします）か「v–t の傾きから計算」。'+
   'クリックが 1 px ずれると a がどれだけずれるかの目安も出ます</li>'+
   '<li><b>動画と一緒にグラフを再生する</b>：動画とグラフを横に並べ、再生に合わせて点が増えていきます</li>'+
   '<li>②の左の「測定した値（表）」は、右はしを<b>ドラッグして幅を変えられます</b></li>'+
@@ -7811,6 +7841,41 @@ function setTab(m){
   if(m==='2') renderMode2();
   if(m==='3') renderMode3(false);
   if(m==='1') setTimeout(render, 30);
+  if(m==='2'||m==='3'||m==='4') UI.m2Visited=true;      /* ②（③④）を一度でも開いたら「実験2を開始する」を出す */
+  if(m==='3') UI.m3Visited=true;                          /* ③まで進んだら光らせる */
+  updateNextExpBtn();
+}
+/* 右上の「実験○を開始する」：点があって ②を開いたあとに出す。③まで行ったら光る */
+function updateNextExpBtn(){
+  var b=$('btnNextExp'), g=$('gapNextExp'); if(!b) return;
+  var anyPts=EXP().objs.reduce(function(a,o){ return a+o.length; },0)>0;
+  var show=!!(anyPts && UI.m2Visited && VID.ready);
+  b.classList.toggle('hide', !show); if(g) g.classList.toggle('hide', !show);
+  b.textContent='実験'+(APP.exps.length+1)+'を開始する';
+  b.classList.toggle('glow', show && !!UI.m3Visited);
+}
+/* 「実験○を開始する」：グラフを記録するか聞いてから、次の実験を作って動画を選ばせる */
+function startNextExp(){
+  var e=EXP(), cur=APP.cur+1, nxt=APP.exps.length+1;
+  if(APP.exps.length>=MAXEXP){ toast('実験は'+MAXEXP+'個までです。古い実験を消してください'); return; }
+  popup('<h2>'+esc(e.name)+' のグラフを記録しますか？</h2>'+
+    '<p style="font-size:1.02rem">残しておきたければ、ここで保存してから次に進んでください（あとからでも実験'+cur+'を選べば出せます）。</p>'+
+    '<div class="nextexp-row"><button class="btn" id="nxXlsx">測定データ、グラフをまとめてExcel出力</button>'+
+    '<button class="btn" id="nxPng">グラフをPNG保存</button></div>'+
+    '<p class="mini">［次へ］を押すと、いまの測定は <b>実験'+cur+'</b> として残り、新しい動画を選ぶ画面になります（新しい動画は <b>実験'+nxt+'</b>）。</p>',
+    '実験'+nxt+'へ進む（動画を選ぶ）',
+    function(){
+      var ne=newExp(APP.exps.length+1);
+      APP.exps.push(ne); APP.cur=APP.exps.length-1;
+      UI.undo=[]; UI.lastPt=null; UI.obj=0; APP.editStep=0;
+      UI.m2Visited=false; UI.m3Visited=false; resetFlowFlags(false);
+      setTab('1'); refreshExpUI(); afterChange(); updateNextExpBtn();
+      $('fileVideo').click();                     /* ボタンを押した流れの中なので、ファイル選択が開く */
+    },
+    { noLabel:'やめる' });
+  var bx=$('nxXlsx'), bp=$('nxPng');
+  if(bx) bx.onclick=function(){ $('btnXlsx').click(); };
+  if(bp) bp.onclick=function(){ $('btnGraphPng').click(); };
 }
 
 /* ---------- 配線 ---------- */
@@ -7915,6 +7980,7 @@ function bindUI(){
 
   /* 動画 */
   $('btnFile').onclick=function(){ $('fileVideo').click(); };
+  if($('btnNextExp')) $('btnNextExp').onclick=startNextExp;
   $('fileVideo').onchange=function(){
     var f=this.files[0]; this.value='';
     if(f) askKeepExp(function(){ loadVideoFile(f); });
