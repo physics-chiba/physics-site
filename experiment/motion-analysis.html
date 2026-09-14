@@ -827,7 +827,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 /* ---- ③：右にフィッティングの数式・ボタン、その下に結果と残差 ---- */
 .m3res{flex:1 1 560px;position:static;top:auto}
 .m3resrow{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
-.m3resrow>#fitResult{flex:1 1 300px;min-width:0}
+.m3resrow>#fitResult{flex:0 1 auto;min-width:260px;max-width:400px}   /* 中身の幅だけ。右に大きな余白を作らない（自由選択グラフと同じ見え方） */
 .m3resrow>#residHost{flex:0 0 340px;max-width:100%}
 .m3resrow>#residHost:empty{display:none}
 /* ---- 運動量保存則の質量欄 ---- */
@@ -1360,8 +1360,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         <option value="sin">正弦　y = A sin(ωt + φ) + C</option>
         <option value="exp">指数　y = A e^(k t) + C</option>
       </select>
-      <label class="f">物体 <select id="selFitObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+      <label class="f" id="labFitObj">物体 <select id="selFitObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
       <button class="btn pri sm" id="btnFit">フィッティングする</button>
+      <button class="btn sm" id="btnFitClr">フィッティングを消す</button>
     </div>
     <p class="mini">※ 係数と決定係数 R² までを出します。グラフの青い帯（<b>数式をフィッティングするエリア</b>）の
     左右のつまみを<b>ドラッグ</b>すると、フィッティングに使う範囲を変えられます。</p>
@@ -1539,14 +1540,14 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   </div><!-- /cgmain -->
   <div class="cgside">
   <div class="row hide" id="cgFitRow">
-    <span class="lb">フィッティング</span>
+    <b style="color:var(--accent-d)">関数</b>
     <select id="cgFitType">
       <option value="lin">直線　y = a x + b</option>
       <option value="quad">放物線　y = a x² + b x + c</option>
       <option value="sin">正弦　y = A sin(ω x + φ) + C</option>
       <option value="exp">指数　y = A e^(k x) + C</option>
     </select>
-    <button class="btn pri sm" id="cgFit">このグラフをフィッティング</button>
+    <button class="btn pri sm" id="cgFit">フィッティングする</button>
     <button class="btn sm" id="cgFitClr">フィッティングを消す</button>
   </div>
   <div class="cgresrow"><div id="cgResult" class="mini"></div>
@@ -4323,7 +4324,7 @@ function renderMode3(doFitNow){
       if($('residHost') && $('residHost').innerHTML) renderResid();   /* 出ていれば描き直す */
     }
   } else if(!box.innerHTML){
-    box.innerHTML='<p class="mini">まだフィッティングしていません。下の「フィッティングする」を押してください。</p>';
+    box.innerHTML='<p class="mini">まだフィッティングしていません。上の「フィッティングする」を押してください。</p>';
   }
   if(!host.children.length) host.innerHTML='<div class="card mini">データがありません。</div>';
 }
@@ -4518,7 +4519,7 @@ function renderCgResid(){
 function toggleCgResid(){
   var host=$('cgResidHost'); if(!host) return;
   if(host.innerHTML){ host.innerHTML=''; return; }
-  if(!renderCgResid()) toast('先に「このグラフをフィッティング」を押してください');
+  if(!renderCgResid()) toast('先に「フィッティングする」を押してください');
 }
 function renderCG(){
   if(typeof updateCgMomentumUI==='function') updateCgMomentumUI();
@@ -6517,6 +6518,7 @@ function setTwoObj(on, quiet){
 /* 物体えらびの見た目（4.トラッキング／自由選択グラフ／②の対象） */
 function refreshObjUI(){
   var two=APP.twoObj, e=EXP();
+  if($('labFitObj')) $('labFitObj').classList.toggle('hide', !two);      /* ③の「物体」は２物体のときだけ */
   $('objBox').classList.toggle('hide', !two);
   $('rowClearObj').classList.toggle('hide', !two);
   /* 物体番号は 1・2 だけ */
@@ -8443,6 +8445,7 @@ function askResetPts(go){
     };
   });
   $('btnFit').onclick=function(){ renderMode3(true); };
+  if($('btnFitClr')) $('btnFitClr').onclick=function(){ RESID=[]; RESID_INFO={}; $('fitResult').innerHTML=''; if($('residHost')) $('residHost').innerHTML=''; renderMode3(false); };
   $('btnWhatFit').onclick=openWhatFit;
   ['selFitY','selFitType','selFitObj','selCmp3'].forEach(function(id){
     $(id).addEventListener('change', function(){ renderMode3(false); });
