@@ -459,7 +459,7 @@ body.dropping #dropHint{display:flex !important}
 
 /* ===== シークバーの縦棒（t=0 と おわり） ===== */
 /* シークバーのつまみと重ならないように、縦棒は上のほうだけ（短く）にする */
-.smark{position:absolute;top:6px;height:24px;width:22px;margin-left:-11px;z-index:3;
+.smark{position:absolute;top:6px;height:24px;width:22px;margin-left:-11px;z-index:3;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;touch-action:none;
   cursor:ew-resize;touch-action:none;display:flex;justify-content:center}
 /* 指でつかめるように、見た目はそのままで当たり判定だけ広げる（44×44 px くらい） */
 .smark::after{content:"";position:absolute;left:-11px;right:-11px;top:-8px;bottom:-12px}
@@ -852,6 +852,9 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 /* ---- 運動量保存則の質量欄 ---- */
 .cgmass{display:inline-flex;gap:8px;align-items:center;margin-right:6px}
 .cgmass .f{font-size:.82rem;font-weight:400}
+
+/* カードへスクロールするとき、上の固定バーの下にかくれないように */
+#side1 details.card{scroll-margin-top:100px}
 
 </style>
 </head>
@@ -2667,11 +2670,15 @@ function render(){
   if(!VID.ready) return;
   fitCanvas(); calcK(); clampPan();
   var cv=$('cvView'), g=cv.getContext('2d');
-  var full=vidDrawFull();
+  /* 再生中は動画からそのまま描く（毎コマ、画素を読むための別の canvas に写すと重い）。
+     止まっているときは、ルーペや色の取得で画素を読めるように、いったん cvFull に写してから描く */
+  var playing=(VID.el && !VID.el.paused && !VID.el.ended);
+  var full=playing? VID.el : vidDrawFull();
+  if(playing) VID.fullStale=true; else VID.fullStale=false;
   g.save();
   g.fillStyle='#20262e'; g.fillRect(0,0,cv.width,cv.height);
   g.imageSmoothingEnabled = (VIEW.zoom<3);
-  g.drawImage(full, VIEW.panX, VIEW.panY, cv.width/VIEW.K, cv.height/VIEW.K, 0,0, cv.width, cv.height);
+  try{ g.drawImage(full, VIEW.panX, VIEW.panY, cv.width/VIEW.K, cv.height/VIEW.K, 0,0, cv.width, cv.height); }catch(e){}
   if(UI.stroOverlay && UI.stroImg){          /* 3 で「ストロボ写真を重ねる」を押したとき */
     g.globalAlpha=0.6;
     g.drawImage(UI.stroImg, VIEW.panX, VIEW.panY, cv.width/VIEW.K, cv.height/VIEW.K, 0,0, cv.width, cv.height);
@@ -2687,7 +2694,9 @@ function drawOverlay(){
   var LW = Math.max(1.2, 2*sc);
 
   /* --- 軸 --- */
-  if(exp.origin && APP.axisDisp!=='no' && !(LIVE.on && !LIVE.axis)){
+  /* 2（時間範囲・トリミング）の間は、原点や軸は出さない（3 に進んでから） */
+  var calShown=(typeof effStep==='function')? (effStep()>=3 && UI.mode!=='crop') : true;
+  if(exp.origin && calShown && APP.axisDisp!=='no' && !(LIVE.on && !LIVE.axis)){
     var o=v2s(exp.origin.x, exp.origin.y);
     var L=Math.max(ov.width,ov.height)*1.5;
     var c=Math.cos(exp.angle), s=Math.sin(exp.angle);
@@ -2747,7 +2756,7 @@ function drawOverlay(){
     }
   }
   /* --- スケールの線（②の再生中は出さない） --- */
-  if(exp.scaleRef && !LIVE.on){
+  if(exp.scaleRef && !LIVE.on && calShown){
     var a=v2s(exp.scaleRef.x1,exp.scaleRef.y1), b=v2s(exp.scaleRef.x2,exp.scaleRef.y2);
     g.save(); g.strokeStyle='#00e5ff'; g.lineWidth=LW; g.setLineDash([6*sc,4*sc]);
     g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]);
@@ -2885,6 +2894,7 @@ function fmtLen(m){
 /* ---------- ルーペ ---------- */
 function showLoupe(vx,vy){
   var lp=$('loupe'), lc=$('cvLoupe'), g=lc.getContext('2d');
+  if(VID.fullStale) vidDrawFull();
   var full=$('cvFull'), R=lc.width;
   g.fillStyle='#000'; g.fillRect(0,0,R,R);
   /* いまの表示倍率の 3 倍で見せる（拡大しているときは、さらに細かく見える） */
@@ -3131,6 +3141,7 @@ function commitPoint(vx, vy, e){
     if(typeof needTrackStart==='function' && needTrackStart()){
       toast('先に［色で自動追跡］を押してください'); setMode('record'); return;
     }
+    if(VID.fullStale) vidDrawFull();
     var g=$('cvFull').getContext('2d',{willReadFrequently:true});
     var d2=g.getImageData(Math.max(0,Math.round(vx)-2), Math.max(0,Math.round(vy)-2), 5,5).data;
     var r=0,gg=0,b=0,n=0;
@@ -3318,6 +3329,7 @@ function predictPos(obj, tNow){
       （同じ色の物が2つ写っていても、真ん中あたりに引っぱられない） */
 function findColor(cx, cy, R, TH){
   var col=APP.trackColor; if(!col) return null;
+  if(VID.fullStale) vidDrawFull();
   var g=$('cvFull').getContext('2d',{willReadFrequently:true});
   var x0=Math.max(0,Math.round(cx-R)), y0=Math.max(0,Math.round(cy-R));
   var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
@@ -3682,10 +3694,15 @@ function drawChart(cv, spec, opt){
   opt=opt||{};
   var dpr=Math.max(2, Math.min(window.devicePixelRatio||1,3));   /* 文字をくっきり描く */
   var W=opt.w||620, H=opt.h||390;
-  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  /* 大きさが同じなら canvas を作り直さない（毎回 width を入れ直すとメモリを取り直して、
+     「動画と一緒に再生」のように何度も描くときに、だんだん重くなる） */
+  var W2=Math.round(W*dpr), H2=Math.round(H*dpr);
+  if(cv.width!==W2 || cv.height!==H2){ cv.width=W2; cv.height=H2; }
   if(opt.fixed){ cv.style.width=W+'px'; cv.style.height=H+'px'; }
   else { cv.style.width='100%'; cv.style.height='auto'; }
-  var g=cv.getContext('2d'); g.scale(dpr,dpr);
+  var g=cv.getContext('2d');
+  g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W2,H2);
+  g.save(); g.scale(dpr,dpr);
   g.fillStyle='#fff'; g.fillRect(0,0,W,H);
   var has2 = !!(spec.series2 && spec.series2.length && spec.series2.some(function(x){return x.pts.length;}));
   var L=64, R=(has2?66:12), T=(spec.title?26:(spec.range?20:10)), B=44;
@@ -3696,7 +3713,7 @@ function drawChart(cv, spec, opt){
   if(has2) spec.series2.forEach(function(s){ s.pts.forEach(function(p){ if(isFinite(p.x)&&isFinite(p.y)){xs.push(p.x); ys2.push(p.y);} }); });
   cv.__spec=spec; cv.__opt=opt;
   if(!xs.length){ g.fillStyle='#8a95a1'; g.font='13px '+GFONT; g.textAlign='center';
-    g.fillText('データがありません', W/2, H/2); cv.__geo=null; return; }
+    g.fillText('データがありません', W/2, H/2); cv.__geo=null; g.restore(); return; }
   var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
   var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
   if(x1-x0<1e-12){ x0-=0.5; x1+=0.5; }
@@ -3884,6 +3901,7 @@ function drawChart(cv, spec, opt){
   }
   cv.__geo={L:L,T:T,pw:pw,ph:ph,W:W,H:H,x0:x0,x1:x1,y0:y0,y1:y1,xk:xk,yk:yk,range:spec.range||null,hit:hit};
   cv.__spec=spec; cv.__opt=opt;
+  g.restore();
   return {sx:sx, sy:sy, x0:x0, x1:x1};
 }
 /* グラフをドラッグで動かす／軸をドラッグして目盛りを変える */
@@ -4506,10 +4524,8 @@ function updateFitInitUI(){
   var row=$('fitInitRow'); if(!row) return;
   var kind=$('selFitType').value, ps=FIT_PARAMS[kind]||[];
   var keep={}; els('input', row).forEach(function(f){ keep[f.id]=f.value; });
-  if(!ps.length){
-    row.innerHTML='<span class="lb mini" style="margin:0">パラメーターの初期値：直線・放物線は初期値なしで一度に決まります（正弦・指数のときに入れられます）</span>';
-    return;
-  }
+  if(!ps.length){ row.innerHTML=''; row.classList.add('hide'); return; }   /* 直線・放物線では欄そのものを出さない */
+  row.classList.remove('hide');
   row.innerHTML='<span class="lb mini" style="margin:0">パラメーターの初期値</span>'+ps.map(function(pr){
     return '<label class="f">'+pr[1]+' <input type="number" step="any" id="fitInit_'+pr[0]+'" style="width:84px" placeholder="自動"></label>';
   }).join('')+'<span class="mini" style="margin:0">（未入力ならば自動決定）</span>';
@@ -6099,9 +6115,11 @@ function updateSteps(){
     if(howto && st>=2) howto.open=false;        /* 動き出したら操作説明はたたむ */
     var act=el('#side1 details.step-active');
     /* 動画を読みこむ前（開いた直後）はスクロールしない：動画エリアの「ここをクリック」が見えなくなるため */
+    /* カードの「頭」が見えていればスクロールしない（背の高い 4 のカードで、下がはみ出すだけで
+       画面ごと下にずれてしまわないように）。頭が画面の外のときだけ、頭が見える所まで */
     if(act && (VID.ready || st>=2)) setTimeout(function(){
       var r=act.getBoundingClientRect();
-      if(r.top<60 || r.bottom>window.innerHeight) act.scrollIntoView({block:'nearest', behavior:'smooth'});
+      if(r.top<60 || r.top>window.innerHeight-120) act.scrollIntoView({block:'start', behavior:'smooth'});
     }, 60);
   }
   els('#side1 details[data-lock]').forEach(function(d){
@@ -6489,9 +6507,10 @@ function updateGuide(){
   });
   /* トラッキングが範囲の終わりまで進んだら ②グラフ を光らせ、終わりを知らせる */
   var done=(APP.step>=4 && trackingDone());
-  if(done) el('#tabs button[data-mode="2"]').classList.add('glow');
   /* 終わった瞬間（測り直しのあとも）：②③のグラフの目盛り・位置を自動にもどす（前の測定の目盛りが残らないように） */
-  if(done && !UI.wasDone){ gvReset(); APP.fitRange=null; APP.cgRange=null; }
+  if(done && !UI.wasDone){ gvReset(); APP.fitRange=null; APP.cgRange=null; UI.tab2Seen=false; }
+  /* ②のタブが光るのは、①が終わってから、はじめて②を開くまで */
+  if(done && !UI.tab2Seen) el('#tabs button[data-mode="2"]').classList.add('glow');
   UI.wasDone=done;
   /* ②③④ は、①で点を記録してから（補足はいつでも） */
   var anyPts=EXP().objs.reduce(function(a,b2){ return a+b2.length; },0)>0;
@@ -6943,7 +6962,10 @@ function redoStep(n){
   if(n===4) setStrobeOverlay(false);
   updateSteps();
   var d=el('#side1 details[data-step="'+n+'"]');
-  if(d){ d.open=true; setTimeout(function(){ d.scrollIntoView({block:'nearest',behavior:'smooth'}); },60); }
+  if(d){ d.open=true; setTimeout(function(){
+    var r=d.getBoundingClientRect();
+    if(r.top<60 || r.top>window.innerHeight-120) d.scrollIntoView({block:'start',behavior:'smooth'});
+  },60); }
   toast(stepName(n)+' を直せます（決めた内容はそのままです）');
 }
 function endEdit(){
@@ -7045,11 +7067,20 @@ function bindSeekMarks(){
         toast('時間範囲を変えるときは「2. 解析する時間範囲の指定」の［もう一度］を押してください');
         return;
       }
-      el.setPointerCapture(e.pointerId);
+      try{ el.setPointerCapture(e.pointerId); }catch(err){}
       el.__drag=true;
     });
+    /* 文字（t=0・終わり）を選択してドラッグすると、ブラウザの「ドラッグ＆ドロップ」になって pointerup が来ない
+       （pointercancel になる）。すると __drag が立ったままになり、あとでシークバーをいじるたびに縦棒が付いてくる。
+       → 選択・ドラッグを禁止し、pointercancel でも旗をおろし、ボタンが押されていない move では動かさない */
+    el.addEventListener('dragstart', function(e){ e.preventDefault(); });
+    el.addEventListener('selectstart', function(e){ e.preventDefault(); });
+    function cancelDrag(){ if(el.__drag){ el.__drag=false; afterChange(); updateSteps(); } }
+    el.addEventListener('pointercancel', cancelDrag);
+    el.addEventListener('lostpointercapture', function(){ if(el.__drag && !el.__upping) cancelDrag(); });
     el.addEventListener('pointermove', function(e){
       if(!el.__drag||!VID.dur) return;
+      if(e.pointerType==='mouse' && !(e.buttons&1)){ cancelDrag(); return; }   /* ボタンが離れているのに来た move は無視 */
       var sk=$('seek'), r=sk.getBoundingClientRect();
       var f=Math.max(0,Math.min(1,(e.clientX-r.left-8)/(r.width-16)));
       EXP()[key]=f*VID.dur;
@@ -7057,7 +7088,7 @@ function bindSeekMarks(){
     });
     el.addEventListener('pointerup', function(e){
       if(!el.__drag) return;
-      el.__drag=false;
+      el.__drag=false; el.__upping=true; setTimeout(function(){ el.__upping=false; }, 0);
       var e2=EXP(), t=e2[key], one=1/(VID.fps||30);
       /* 縦棒は「範囲そのもの」を決める道具なので、範囲の外へも動かせる。順番だけそろえる */
       if(key==='t0' && e2.rangeB!==null) t=Math.min(t, e2.rangeB-one);
@@ -8034,10 +8065,22 @@ function updateTblFold(){
   if(d.open) box.style.width=APP.tblw+'px';
 }
 function liveTimeNow(){ var e=EXP(), ts=(e.tscale>0?e.tscale:1); return (VID.cur-(e.t0||0))*ts; }
+/* いまの時刻までに「見える点」がいくつあるか（この数が変わったときだけグラフを描き直す） */
+function liveVisibleCount(){
+  var e=EXP(), n=0, t=LIVE.t;
+  if(!isFinite(t)) return t>0? 1e9 : 0;
+  var ts=(e.tscale>0?e.tscale:1), t0=(e.t0||0);
+  for(var o=0;o<NOBJ;o++){ var a=e.objs[o]||[]; for(var i=0;i<a.length;i++) if((a[i].t-t0)*ts<=t+1e-9) n++; }
+  return n;
+}
 function liveTick(force){
   LIVE.t=(force===undefined)? liveTimeNow() : force;
   $('liveT').textContent = isFinite(LIVE.t)? ('t = '+nf(LIVE.t,3)+' s') : 't = -';
-  redrawAllCharts();
+  /* 再生中は 60 ms ごとに呼ばれるが、グラフに点が増える瞬間だけ描き直せばよい
+     （毎回描き直すと、動画の描画と重なって、再生が途中からコマ送りのように重くなる端末がある） */
+  if(force===-Infinity || force===Infinity) LIVE.drawn=false;      /* もどした・やめたときは必ず描き直す */
+  var n=liveVisibleCount();
+  if(n!==LIVE.lastN || !LIVE.drawn){ LIVE.lastN=n; LIVE.drawn=true; redrawAllCharts(); }
 }
 function livePlay(){
   if(!VID.ready){ toast('①で動画を読み込んでください'); return; }
@@ -8092,6 +8135,7 @@ function komaStart(){
 }
 function setTab(m){
   APP.tab=m;
+  if(m==='2' && APP.step>=4 && typeof trackingDone==='function' && trackingDone()) UI.tab2Seen=true;   /* 一度開いたら ②のタブは光らない */
   if(typeof stopAuto==='function') stopAuto();      /* 自動追跡の途中でタブを移したら止める */
   if(typeof stopAllPlay==='function' && VID.ready) stopAllPlay();
   els('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.mode===m); });
