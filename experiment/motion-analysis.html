@@ -1293,8 +1293,7 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
         </div>
       </div>
       <div class="row">
-        <span id="cmpBox"><b style="color:var(--accent-d)">表示</b>
-        <select id="selCmp"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
+        <span id="cmpBox" class="mini" style="color:var(--sub)">実験1 などにチェックを入れると、実験結果を重ねることができます</span>
         <span id="expBox2"><span class="lb mini">対象の実験：</span>
         <span class="explist" id="expChecks"></span></span>
         <span class="lb mini hide" id="lbObjSel">対象の物体：</span>
@@ -3313,7 +3312,9 @@ function stepFrames(n){
 function gotoFrame(i){ return vidGotoFrame(i).then(function(){ afterSeek(); }); }
 function afterSeek(){
   render(); updateTimeLine();
-  if(APP.autoTrack && APP.trackColor) tryAutoPlace();
+  /* コマが変わったときに自動で点を置くのは、「色で自動追跡」を選んでいるあいだだけ。
+     「手でクリックして記録」のときは、右上のチェックが ON で色を取ってあっても、勝手に予測した所へ点を打たない */
+  if(APP.autoTrack && APP.trackColor && UI.startedAuto && !UI.autoLost) tryAutoPlace();
 }
 
 /* ---------- 色マーカーの自動追跡 ---------- */
@@ -3715,6 +3716,20 @@ function fmtVal(v, lab){
   return labName(lab)+' = '+(v*u.k).toFixed(2)+' '+u.u;
 }
 /* いま画面に出ているグラフを、DOM を作り直さずに描き直す */
+/* きりのよい上限：v 以上で一番小さい 1・2・5×10ⁿ */
+function niceCeil(v){
+  if(!(v>0)) return 0;
+  var p=Math.pow(10, Math.floor(Math.log(v)/Math.LN10)), m=v/p;
+  var n=(m<=1+1e-9)? 1 : (m<=2+1e-9)? 2 : (m<=5+1e-9)? 5 : 10;
+  return n*p;
+}
+/* 0 をふくむ、きりのよい縦軸の範囲 [a,b] */
+function zeroRange(lo, hi){
+  if(!isFinite(lo)||!isFinite(hi)) return [-1,1];
+  if(lo>=0){ var b=niceCeil(hi); if(!(b>0)) b=1; return [0,b]; }
+  if(hi<=0){ var a=niceCeil(-lo); if(!(a>0)) a=1; return [-a,0]; }
+  return [-niceCeil(-lo), niceCeil(hi)];
+}
 function redrawAllCharts(){
   els('.chartcard').forEach(function(d){
     var cv=d.querySelector('canvas');
@@ -3753,8 +3768,10 @@ function drawChart(cv, spec, opt){
   var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
   var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
   if(x1-x0<1e-12){ x0-=0.5; x1+=0.5; }
-  if(y1-y0<1e-12){ y0-=0.5; y1+=0.5; }
-  var my=(y1-y0)*0.08; y0-=my; y1+=my;
+  /* 縦軸のはじめの範囲は 0 をふくめ、上（下）はきりのよい数（1・2・5×10ⁿ）まで。
+     4〜6 なら 0〜10、0.12〜0.35 なら 0〜0.5。データだけに寄せて拡大しない（拡大したいときはスケールフィット） */
+  if(spec.equal){ if(y1-y0<1e-12){ y0-=0.5; y1+=0.5; } var my=(y1-y0)*0.08; y0-=my; y1+=my; }
+  else { var zr=zeroRange(y0,y1); y0=zr[0]; y1=zr[1]; }
   var mx=(x1-x0)*0.03; x0-=mx; x1+=mx;
   /* ドラッグで動かした範囲があれば、それを使う */
   var xk=spec.xkey||null, yk=spec.key||null, moved=false;
@@ -3773,8 +3790,7 @@ function drawChart(cv, spec, opt){
   var z0=0, z1=1, sy2=sy;
   if(has2 && ys2.length){
     z0=Math.min.apply(null,ys2); z1=Math.max.apply(null,ys2);
-    if(z1-z0<1e-12){ z0-=0.5; z1+=0.5; }
-    var mz=(z1-z0)*0.08; z0-=mz; z1+=mz;
+    var zr2=zeroRange(z0,z1); z0=zr2[0]; z1=zr2[1];
     if(spec.sameY){            /* 2 つの縦軸を同じ目盛りに（運動量保存則など、同じ単位を比べるとき） */
       if(!moved){ y0=Math.min(y0,z0); y1=Math.max(y1,z1); sy=function(v){ return T+ph-(v-y0)/(y1-y0)*ph; }; }
       z0=y0; z1=y1;
@@ -4091,10 +4107,10 @@ function shade(hex, f){
 var KINDLAB={x:'x–t',y:'y–t',v:'v–t',a:'a–t',e:'エネルギー'};
 var KINDY={x:'x [m]',y:'y [m]',v:'v [m/s]',a:'a [m/s²]',e:'エネルギー [J]'};
 
-function selectedExps(listId){
+function selectedExps(listId, noFallback){
   var ids=[];
   els('#'+listId+' input:checked').forEach(function(c){ ids.push(parseInt(c.dataset.i)); });
-  if(!ids.length) ids=[APP.cur];
+  if(!ids.length && !noFallback) ids=[APP.cur];
   return ids;
 }
 /* 実験（複数可）・物体・量 を指定して 1 枚ぶんのグラフ仕様をつくる */
@@ -4161,15 +4177,18 @@ function renderMode2(){
   var cgc=$('cgCard');
   if(cgc && host.contains(cgc)) $('cgHost2').appendChild(cgc);   /* 消される前に避難させる */
   host.innerHTML='';
-  var over=($('selCmp').value==='over');
-  var sel=selectedExps('expChecks'), ids;
-  if(over) ids=sel;
-  else { ids=[APP.cur]; sel.forEach(function(i){ if(ids.indexOf(i)<0) ids.push(i); }); }
-  /* 「他の実験を重ねて表示」は、実験が2つ以上あるときだけ選べる */
+  /* 「対象の実験」でチェックした実験を重ねる（実験が 1 つなら、その実験）。
+     チェックが 1 つも無いときはグラフを出さない。「表示：並べて／重ねて」の切りかえはやめた */
   var manyExp=(APP.exps.length>1);
+  var ids=manyExp? selectedExps('expChecks', true) : [APP.cur];
+  var over=(ids.length>1);
   $('cmpBox').classList.toggle('hide', !manyExp);
   if($('expBox2')) $('expBox2').classList.toggle('hide', !manyExp);
-  if(!manyExp && $('selCmp').value==='over'){ $('selCmp').value='side'; over=false; }
+  if(!ids.length){
+    host.innerHTML='<div class="card mini">対象の実験にチェックが入っていません。上の「対象の実験」で、グラフにしたい実験にチェックを入れてください。</div>';
+    if(cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); renderCG(); }
+    return;
+  }
   /* x の組は、y のデータがあるときだけ OFF にできる（無いときは常に ON） */
   var hasY=useY();
   $('cbG_x').disabled=!hasY;
@@ -5050,11 +5069,22 @@ function chartXml(ch){
    '</c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>'+
    '<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>';
 }
-function drawingXml(charts){
+function drawingXml(charts, img, imgRel){
   var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
    '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" '+
    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '+
    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+  if(img && imgRel){                     /* ストロボ画像（グラフの下に。列 8 つぶんの幅で、縦横比はそのまま） */
+    var c0=img.anchorCol, r0=img.anchorRow, rows=Math.max(4, Math.ceil(8*64*img.h/img.w/20));
+    x+='<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>'+c0+'</xdr:col><xdr:colOff>0</xdr:colOff>'+
+       '<xdr:row>'+r0+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>'+
+       '<xdr:to><xdr:col>'+(c0+8)+'</xdr:col><xdr:colOff>0</xdr:colOff>'+
+       '<xdr:row>'+(r0+rows)+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'+
+       '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="900" name="ストロボ画像"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>'+
+       '<xdr:blipFill><a:blip r:embed="'+imgRel+'"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'+
+       '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>'+
+       '</xdr:pic><xdr:clientData/></xdr:twoCellAnchor>';
+  }
   charts.forEach(function(ch,i){
     var c0=ch.anchorCol, r0=ch.anchorRow;
     x+='<xdr:twoCellAnchor><xdr:from><xdr:col>'+c0+'</xdr:col><xdr:colOff>0</xdr:colOff>'+
@@ -5071,7 +5101,7 @@ function drawingXml(charts){
   return x+'</xdr:wsDr>';
 }
 function buildXlsx(sheets){
-  var files=[], ct='', wbSheets='', wbRels='', ci=0;
+  var files=[], ct='', wbSheets='', wbRels='', ci=0, hasPng=false;
   files.push({name:'_rels/.rels', data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
@@ -5086,20 +5116,25 @@ function buildXlsx(sheets){
     '</styleSheet>'});
   sheets.forEach(function(sh, si){
     var sn=si+1;
-    files.push({name:'xl/worksheets/sheet'+sn+'.xml', data:sheetXml(sh.rows, !!(sh.charts&&sh.charts.length))});
+    files.push({name:'xl/worksheets/sheet'+sn+'.xml', data:sheetXml(sh.rows, !!((sh.charts&&sh.charts.length)||sh.image))});
     wbSheets+='<sheet name="'+xesc(sh.name)+'" sheetId="'+sn+'" r:id="rIdS'+sn+'"/>';
     wbRels+='<Relationship Id="rIdS'+sn+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+sn+'.xml"/>';
     ct+='<Override PartName="/xl/worksheets/sheet'+sn+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
-    if(sh.charts && sh.charts.length){
-      var rels='', dn=sn;
-      sh.charts.forEach(function(ch){
+    if((sh.charts && sh.charts.length) || sh.image){
+      var rels='', dn=sn, chs=sh.charts||[], imgRel=null;
+      chs.forEach(function(ch){
         ci++;
         ch.n=ci; ch.sheet=sh.name;
         files.push({name:'xl/charts/chart'+ci+'.xml', data:chartXml(ch)});
         ct+='<Override PartName="/xl/charts/chart'+ci+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>';
-        rels+='<Relationship Id="rId'+(sh.charts.indexOf(ch)+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart'+ci+'.xml"/>';
+        rels+='<Relationship Id="rId'+(chs.indexOf(ch)+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart'+ci+'.xml"/>';
       });
-      files.push({name:'xl/drawings/drawing'+dn+'.xml', data:drawingXml(sh.charts)});
+      if(sh.image){                        /* ストロボ画像（PNG）を xl/media に入れて、図として貼る */
+        imgRel='rIdImg'+sn; hasPng=true;
+        files.push({name:'xl/media/image'+sn+'.png', data:sh.image.png});
+        rels+='<Relationship Id="'+imgRel+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image'+sn+'.png"/>';
+      }
+      files.push({name:'xl/drawings/drawing'+dn+'.xml', data:drawingXml(chs, sh.image, imgRel)});
       files.push({name:'xl/drawings/_rels/drawing'+dn+'.xml.rels', data:
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels+'</Relationships>'});
       files.push({name:'xl/worksheets/_rels/sheet'+sn+'.xml.rels', data:
@@ -5120,6 +5155,7 @@ function buildXlsx(sheets){
     '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
     '<Default Extension="xml" ContentType="application/xml"/>'+
+    (hasPng? '<Default Extension="png" ContentType="image/png"/>' : '')+
     '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
     '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
     ct+'</Types>'});
@@ -5226,15 +5262,32 @@ function sheetForExp(exp, idx){
   function num(v){ if(v===null||v===undefined||!isFinite(v)) return ''; return Math.round(v*1e8)/1e8; }
 }
 function exportXlsx(){
-  var ids = ($('selCmp').value==='over')? selectedExps('expChecks') : [APP.cur];
-  var extra=selectedExps('expChecks');
-  extra.forEach(function(i){ if(ids.indexOf(i)<0) ids.push(i); });
+  var ids = selectedExps('expChecks');           /* ②の「対象の実験」でチェックした実験（無ければいまの実験） */
   ids.sort(function(a,b){return a-b;});
   var sheets=ids.map(function(i){ return sheetForExp(APP.exps[i], i); });
   if(!sheets.length){ toast('データがありません'); return; }
-  var blob=buildXlsx(sheets);
-  dl(blob, fnameBase()+'.xlsx');
-  toast('Excelファイルを保存しました');
+  function finish(){
+    var blob=buildXlsx(sheets);
+    dl(blob, fnameBase()+'.xlsx');
+    toast('Excelファイルを保存しました');
+  }
+  /* ストロボ画像（「作成しますか？」で はい）：いまの実験のシートの、グラフの下に貼る */
+  var stro=$('cvStrobe'), cur=sheets[ids.indexOf(APP.cur)];
+  if(UI.stroReady && stro && stro.width>2 && UI.attachStro!==false && cur && stro.toBlob){
+    stro.toBlob(function(b){
+      if(!b){ finish(); return; }
+      var fr=new FileReader();
+      fr.onload=function(){
+        var nCh=(cur.charts||[]).length, anchorCol=(cur.charts&&cur.charts[0])? cur.charts[0].anchorCol : (cur.rows[cur.rows.length-1]||[]).length+1;
+        cur.image={ png:new Uint8Array(fr.result), w:stro.width, h:stro.height, anchorCol:anchorCol, anchorRow:nCh*19+1 };
+        finish();
+      };
+      fr.onerror=function(){ finish(); };
+      fr.readAsArrayBuffer(b);
+    }, 'image/png');
+    return;
+  }
+  finish();
 }
 
 /* =========================================================
@@ -5280,16 +5333,6 @@ function buildReportPages(){
     '撮影の条件：'+((typeof diagLine==='function')? diagLine() : '-')
   ].forEach(function(t,i){ g.fillText(t, M, 124+i*22); });
   y=228;
-  /* ---- ストロボ画像 ---- */
-  var stro=$('cvStrobe');
-  if(UI.stroReady && stro.width>2){
-    var sw=W-2*M, sh=sw*stro.height/stro.width, cap=useY()? 250 : 330;
-    if(sh>cap){ sh=cap; sw=sh*stro.width/stro.height; }
-    need(sh+24);
-    g.drawImage(stro, M, y, sw, sh);
-    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(M,y,sw,sh);
-    y+=sh+22;
-  }
   /* ---- グラフ：左に x 方向をたてに、右に y 方向をたてに。複数物体は物体ごとに段を分ける ---- */
   var wy=useY();
   var cw=(W-2*M-20)/2;
@@ -5388,6 +5431,18 @@ function buildReportPages(){
   /* ---- 測定した値 ---- */
   need(200);
   drawReportTable(g, exp, M, y, W-2*M, H-70-y);
+  /* ---- ストロボ画像：最後のページに大きく（「ストロボ写真を作成しますか？」で はい のとき） ---- */
+  var stro=$('cvStrobe');
+  if(UI.stroReady && stro.width>2 && UI.attachStro!==false){
+    newPage();
+    head('ストロボ画像'+(typeof stroStepVal==='function'? '（'+stroStepVal()+' コマおき）' : ''));
+    var sw=W-2*M, sh=sw*stro.height/stro.width, capH=H-y-90;
+    if(sh>capH){ sh=capH; sw=sh*stro.width/stro.height; }
+    var sx0=M+((W-2*M)-sw)/2;
+    g.drawImage(stro, sx0, y+6, sw, sh);
+    g.strokeStyle='#d9dee4'; g.lineWidth=1; g.strokeRect(sx0,y+6,sw,sh);
+    y+=sh+22;
+  }
   pages.forEach(function(cv,i){
     var gg=cv.getContext('2d');
     gg.fillStyle='#8a95a1'; gg.font='12px '+FONT;
@@ -7178,6 +7233,19 @@ function stroStepVal(){
   var q=$('stroStep'); var i=q? (parseInt(q.value)||0) : 0;
   return STRO_STEPS[Math.max(0, Math.min(STRO_STEPS.length-1, i))];
 }
+/* ふさわしいコマ間隔を自分で決めてストロボ画像を作る（Excel・レポートの「作成しますか？ はい」用）。
+   解析範囲のコマ数が 12〜24 枚くらいになる間隔（1・2・5・10・20 コマおき）をえらぶ。1 コマおきは細かすぎるので 2 以上 */
+function makeStrobeAuto(){
+  if(!VID.ready) return Promise.resolve();
+  var e=EXP(), a=rangeStart(e), b=(e.rangeB!==null? e.rangeB : VID.dur-1e-3);
+  var F=(VID.frames.length>1)? (frameIndexAt(b)-frameIndexAt(a)) : Math.round((b-a)*(VID.fps||30));
+  var idx=1;                                          /* 2 コマおきから */
+  for(var i=1;i<STRO_STEPS.length;i++){ idx=i; if(F/STRO_STEPS[i]<=24) break; }
+  var q=$('stroStep'); if(q) q.value=String(idx);
+  if(typeof updateStroUI==='function') updateStroUI();
+  var p=makeStrobe(false);
+  return (p && p.then)? p.then(function(){ if(typeof updateStroUI==='function') updateStroUI(); }) : Promise.resolve();
+}
 /* ストロボまわりの見た目（どこを光らせるか・いま何コマおきか） */
 function updateStroUI(){
   var made=!!UI.stroReady, n=stroStepVal();
@@ -7887,7 +7955,9 @@ function openHelp(){
   '位置エネルギー U = mgh の高さ h は、重力の向き（鉛直下向きが −y／+y／−x／+x のどれか）から出します（−y なら h = y、+x なら h = −x）。'+
   '自由落下を x 軸だけで解析するときは −x か +x を選びます。円運動など高さが決まらない実験には当てはまりません。'+
   '押していないときは Excel 出力にもエネルギーは入りません</li>'+
-  '<li>実験は10個まで記録でき、「並べて表示」「他の実験を重ねて表示」で比べられます（実験が1つのときは出ません）</li>'+
+  '<li>実験は10個まで記録できます。②の「対象の実験」で実験1 などにチェックを入れると、実験結果を重ねて比べられます（はじめはいまの実験だけにチェック。全部外すとグラフは出ません）</li>'+
+  '<li>②③の Excel 出力・レポートを押すと、先に「ストロボ写真を作成しますか？」と聞きます。はい なら、④で作ってあればその写真を、無ければふさわしいコマ間隔（2 コマおき以上）で自動で作って、Excel・レポートの最後につけます</li>'+
+  '<li>グラフの縦軸のはじめの範囲は 0 をふくみ、上（下）はきりのよい数までです（4〜6 なら 0〜10）。データだけに寄せて見たいときは［スケールフィット］</li>'+
   '<li>③で直線・放物線・正弦・指数の最小二乗フィッティング。<b>係数と R² まで</b>を出します（a・g・T は自分で考えます）。'+
   '正弦・指数は「パラメーターの初期値」（A・ω・φ・C／A・k・C）を入れられ、入れた値から最小二乗で合わせます（未入力なら自動）。直線・放物線は初期値なしで一度に決まります</li>'+
   '<li>③のグラフの<b>青い帯</b>（←数式をフィッティングするエリア→）は「フィッティングに使う範囲」です。'+
@@ -8744,7 +8814,23 @@ function askResetPts(go){
   };
 
   /* 出力 */
-  var askThen=function(what, fn){ return function(){ askSaveName(what, fn); }; };
+  var askThen=function(what, fn){ return function(){ UI.attachStro=undefined; askSaveName(what, fn); }; };
+  /* ②③の Excel・レポート：先に「ストロボ写真を作成しますか？」。はい → ④で作ってあればそれを、無ければふさわしいコマ間隔で自動で作って、最後につける */
+  var askStroThen=function(what, fn){ return function(){
+    var go=function(attach){ UI.attachStro=attach; askSaveName(what, fn); };
+    var anyPts=VID.ready && EXP().objs.some(function(a){ return a.length; });
+    if(!anyPts){ go(false); return; }
+    if(window.__noAskName && window.__askStro===undefined){ go(!!UI.stroReady); return; }   /* テスト用：聞かない */
+    if(window.__askStro!==undefined){ var yes=!!window.__askStro; if(yes && !UI.stroReady){ makeStrobeAuto().then(function(){ go(!!UI.stroReady); }); } else go(yes); return; }
+    popup('<h2>ストロボ写真を作成しますか？</h2>'+
+      '<p>「はい」にすると、'+(UI.stroReady? '④で作ったストロボ画像（'+stroStepVal()+' コマおき）' : 'ふさわしいコマ間隔で自動で作ったストロボ画像')+
+      'を '+esc(what)+' の最後につけます。</p>',
+      'はい', function(){
+        if(UI.stroReady){ go(true); return; }
+        toast('ストロボ画像を作っています…');
+        makeStrobeAuto().then(function(){ go(!!UI.stroReady); });
+      }, { noLabel:'いいえ', onNo:function(){ go(false); } });
+  }; };
   $('btnCsv').onclick=askThen('CSV', exportCsv);
   $('btnCsv2').onclick=askThen('CSV', exportCsv);
   $('btnCopy').onclick=copyCsv;
@@ -8760,14 +8846,14 @@ function askResetPts(go){
   $('btnEnergyOn').onclick=function(){ setEnergyOn(!APP.energyOn); saveLocal(); };
   $('btnReportPng').onclick=askThen('レポート（PNG）', exportReportPng);
   $('btnReportPdf').onclick=askThen('レポート（PDF）', exportReportPdf);
-  $('btnReportPng2').onclick=askThen('レポート（PNG）', exportReportPng);
-  $('btnReportPdf2').onclick=askThen('レポート（PDF）', exportReportPdf);
+  $('btnReportPng2').onclick=askStroThen('レポート（PNG）', exportReportPng);
+  $('btnReportPdf2').onclick=askStroThen('レポート（PDF）', exportReportPdf);
   $('btnKadai').onclick=openKadaiDialog;
-  $('btnXlsx').onclick=askThen('Excel', exportXlsx);
+  $('btnXlsx').onclick=askStroThen('Excel', exportXlsx);
   /* ③にも同じ出力ボタン（CSV は置かない） */
-  $('btnReportPng3').onclick=askThen('レポート（PNG）', exportReportPng);
-  $('btnReportPdf3').onclick=askThen('レポート（PDF）', exportReportPdf);
-  $('btnXlsx3').onclick=askThen('Excel', exportXlsx);
+  $('btnReportPng3').onclick=askStroThen('レポート（PNG）', exportReportPng);
+  $('btnReportPdf3').onclick=askStroThen('レポート（PDF）', exportReportPdf);
+  $('btnXlsx3').onclick=askStroThen('Excel', exportXlsx);
   $('btnGraphPng3').onclick=askThen('グラフの画像', exportGraphsPng);
   $('btnGraphPng').onclick=askThen('グラフの画像', exportGraphsPng);
 
