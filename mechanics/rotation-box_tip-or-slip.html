@@ -727,6 +727,70 @@ canvas.dragcv{touch-action:none}
 .tickslider .tsrow1 .vval{min-width:4.2em}
 .tickslider .tsrow1{gap:4px}
 
+/* チェックボックスの下の小さな摩擦力のグラフ */
+.fgraph{width:100%;max-width:300px}
+.fgraph canvas{border:1px solid var(--line);border-radius:var(--r-m);background:#fff}
+
+/* ＜解答＞：(1) → 別解 → (2) をたてに積み、各ブロックは「左＝図／右＝解説」 */
+.ansblock{border-top:1px dashed var(--line2);padding-top:10px;margin-top:10px}
+.ansblock:first-child{border-top:0;padding-top:0;margin-top:0}
+.ansrow{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.ansfig{flex:0 1 360px;min-width:260px}
+.anstxt{flex:1 1 340px;min-width:260px}
+.anstxt p:first-child{margin-top:0}
+.ansplay{padding:6px 8px;margin-bottom:6px}
+.ansplay .btnrow{margin:0;gap:5px}
+.ansplay button{font-size:.8rem;padding:4px 10px}
+.ansplay .playnote{font-size:.72rem}
+
+/* たて置きのときの「横置きをおすすめします」 */
+.rotnote{display:flex;align-items:center;gap:8px;background:var(--orange-l);border:1px solid #f0d6ac;
+  border-left:4px solid var(--orange);border-radius:var(--r-m);padding:7px 10px;margin:6px 0 2px;
+  font-size:.82rem;color:var(--orange-d);line-height:1.6}
+.rotnote[hidden]{display:none}
+.rotnote button{margin-left:auto;flex:none;background:transparent;border:0;color:var(--orange-d);
+  font-size:1.15rem;line-height:1;padding:2px 6px;cursor:pointer}
+.rotnote button:hover{background:rgba(224,123,24,.12);border-radius:6px}
+
+/* ===== 横置きのスマホ・小さいタブレット（たてが低い画面） =====
+   操作パネルを図の左に置いて、図とズームアップが 1 画面に入るようにする。 */
+@media (max-height:560px) and (orientation:landscape){
+  .wrap{padding:8px 10px 40px}
+  h1{font-size:1.1rem;margin-bottom:2px}
+  h1 + .mini{display:none}
+  .tabs{margin:6px 0 4px}
+  .card{padding:10px;margin:8px 0}
+  #simhost{padding:10px}
+  .simtitle{font-size:.95rem;margin-bottom:2px}
+  .simgrid.one .cv{display:grid;grid-template-columns:minmax(250px,320px) minmax(0,1fr);
+    grid-auto-rows:min-content;column-gap:10px;align-items:start}
+  .cvtop.toprow{grid-column:1;grid-row:1 / span 3;flex-direction:column;flex-wrap:nowrap;margin:0}
+  .cvtop.toprow .cvleft,.cvtop.toprow .cvside{flex:0 0 auto;width:100%}
+  .cvstage{grid-column:2;grid-row:1}
+  .cvbar{grid-column:2;grid-row:2}
+  .resbar{grid-column:2;grid-row:3;margin-top:6px}
+  .cvsub{grid-column:1 / -1}
+  .cvleft .ctrl.playctrl{padding:6px 8px}
+  .cvnote{display:none}          /* 図の上の案内文は、せまい画面ではズームアップの見出しとぶつかるので出さない */
+  .playnote{display:none}
+  .tickslider{padding:4px 9px 2px}
+  .fgraph{max-width:100%}
+  .cvside .opts{font-size:.72rem}
+  .below{margin-top:10px}
+}
+
+/* 「全てデフォルトに戻してリセット」（赤字・2 行・小さめ。リセットから 3 マス空ける） */
+.gap3{white-space:pre;font-size:.8rem}
+button.resetall{background:#fff;border:1px solid var(--ng);color:var(--ng);font-weight:700;
+  font-size:.66rem;line-height:1.25;padding:2px 9px;border-radius:var(--r-m);text-align:center}
+button.resetall:hover{background:#fdeceb;border-color:#9b2418;color:#9b2418}
+
+/* 「比較してみよう」のリンク（＜考え方＞の見出しの右） */
+.bcard h3 .cmplink{margin-left:auto;font-size:.78rem;font-weight:700;color:var(--accent);
+  background:var(--accent-l);border:1px solid #cfe0f0;border-radius:999px;padding:2px 12px;text-decoration:none}
+.bcard h3 .cmplink:hover{background:#dbe9f7;color:var(--accent-d)}
+.bcard h3{flex-wrap:wrap}
+
 </style>
 </head>
 <body>
@@ -737,6 +801,11 @@ canvas.dragcv{touch-action:none}
 どちらが先かは、箱の形（幅 a・高さ b）と静止摩擦係数 μ、そして力の作用点で決まる。自分で動かして、<b>抗力の作用点が動いていくようす</b>と<b>作用線</b>を見よう。</p>
 
 <div class="tabs sub" id="simtabs"></div>
+
+<div id="rotnote" class="rotnote" hidden>
+  <span>スマートフォン・タブレットは <b>横向き（横置き）</b> にすると、図とズームアップが大きく見られます。</span>
+  <button id="rotx" type="button" aria-label="閉じる">×</button>
+</div>
 
 <div class="card" id="simhost"></div>
 
@@ -754,7 +823,7 @@ canvas.dragcv{touch-action:none}
   <h3>使い方のヒント</h3>
   <p class="mini">
   ・<b>θ（F）のスライダー</b>を動かすと、箱にはたらく力と抗力の作用点が変わっていきます。<br>
-  ・<b>a:b のボタン</b>で操作対象の箱の形を変えられます（1 マス = 0.04 m。3:4 が教科書の問題の設定 0.12 m × 0.16 m）。<br>
+  ・<b>a:b のボタン</b>で操作対象の箱の形を変えられます（3:4 が教科書の問題の設定 0.12 m × 0.16 m）。<br>
   ・チェックボックスで<b>力・作用線・分解した力</b>を出し入れできます（最初は「箱の分割線」だけ ON）。<br>
   ・<b>「傾く瞬間」</b>のボタンを押すと、傾く直前 → ちょうど → 直後をスローモーションで見られます。<br>
   <span id="hint3d" style="display:none">・いま見ている<b>3次元の図</b>は、キャンバスを<b>ドラッグすると視点が回り</b>、ホイールで拡大縮小できます。<b>板の上をドラッグ</b>すると θ が変わります。<br></span>
@@ -2197,6 +2266,64 @@ function springShape(ctx, x1, y1, x2, y2, opt) {
   ctx.restore();
 }
 
+/* ===== 値の表（図の下に出す「各箱の a:b …」） =====
+   x0, y0 … 左上、w … 幅、cols … 見出しの列（[{name, sub, hot}]）、
+   rows … [{label, sub, cells:[{t, color, bold}]}]、opt = { labelW, rowH, headH } */
+function valueTable(ctx, x0, y0, w, cols, rows, opt) {
+  opt = opt || {};
+  var labelW = opt.labelW || 150, rowH = opt.rowH || 17, headH = opt.headH || 22;
+  var n = cols.length, cw = (w - labelW) / n, i, j;
+  var totalH = headH + rows.reduce(function (a, r) { return a + (r.sub ? rowH * 1.7 : rowH); }, 0);
+  ctx.save();
+  /* 地 */
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x0, y0, w, totalH);
+  /* 見出しの行 */
+  ctx.fillStyle = '#eef3f8';
+  ctx.fillRect(x0, y0, w, headH);
+  /* 操作対象の列を目立たせる */
+  for (i = 0; i < n; i++) if (cols[i].hot) {
+    ctx.fillStyle = 'rgba(251,234,166,.45)';
+    ctx.fillRect(x0 + labelW + cw * i, y0, cw, totalH);
+  }
+  /* わく線 */
+  ctx.strokeStyle = '#cfd8e0'; ctx.lineWidth = 1;
+  ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, totalH - 1);
+  ctx.beginPath();
+  ctx.moveTo(x0, y0 + headH); ctx.lineTo(x0 + w, y0 + headH);
+  var yy = y0 + headH;
+  for (j = 0; j < rows.length; j++) {
+    yy += rows[j].sub ? rowH * 1.7 : rowH;
+    ctx.moveTo(x0, yy); ctx.lineTo(x0 + w, yy);
+  }
+  for (i = 0; i <= n; i++) { ctx.moveTo(x0 + labelW + cw * i, y0); ctx.lineTo(x0 + labelW + cw * i, y0 + totalH); }
+  ctx.stroke();
+  ctx.restore();
+  /* 見出し */
+  for (i = 0; i < n; i++) {
+    var hx = x0 + labelW + cw * i + cw / 2;
+    label(ctx, cols[i].name, hx, y0 + (cols[i].sub ? 8 : headH / 2), { size: 11.5, bold: true, color: cols[i].hot ? '#8a6d00' : COL.ink });
+    if (cols[i].sub) label(ctx, cols[i].sub, hx, y0 + 17, { size: 9.5, color: cols[i].hot ? '#8a6d00' : COL.sub });
+  }
+  /* 中身 */
+  var y = y0 + headH;
+  rows.forEach(function (r) {
+    var h = r.sub ? rowH * 1.7 : rowH;
+    if (r.sub) {
+      label(ctx, r.label, x0 + 7, y + h / 2 - 7, { size: 10, color: COL.sub, align: 'left' });
+      label(ctx, r.sub, x0 + 7, y + h / 2 + 7, { size: 10, color: COL.sub, align: 'left' });
+    } else {
+      label(ctx, r.label, x0 + 7, y + h / 2, { size: 10.5, color: COL.sub, align: 'left' });
+    }
+    r.cells.forEach(function (c, k) {
+      label(ctx, c.t, x0 + labelW + cw * k + cw / 2, y + h / 2,
+        { size: 11, bold: !!c.bold, color: c.color || COL.ink });
+    });
+    y += h;
+  });
+  return totalH;
+}
+
 /* ===== 50_sims.js ===== */
 /* 3 つのシミュレーションの定義（DEFS['r1'] 〜 DEFS['r3']） */
 'use strict';
@@ -2211,9 +2338,9 @@ var R1 = {
   PL: 1.24, PW: 0.40, PT: 0.03,                   /* 板の長さ・幅・厚み [m] */
   BX0: -0.14, BX1: 1.48, BY: 0.30, BT: 0.05,      /* 下の平面（台）の広さと厚み [m] */
   POS: [0.06, 0.20, 0.42, 0.88],                  /* 操作対象は左の箱から 4:4 の半分ぶん離す */                  /* 各箱の下側の角の位置（板にそって）[m] */
-  FIXED: ['2:8', '4:4', '8:2'],                   /* 左の 3 つ（面積 16 マス） */
+  FIXED: ['2:8', '4:4', '8:2'],                   /* 左の 3 つ（面積は同じ） */
   THMAX: 80,
-  BAND: 56                                        /* 「各箱の a:b」の帯の高さ [px] */
+  BAND: 120                                       /* 「各箱の a:b」の表の高さ [px] */
 };
 
 /* 板の上の箱の一覧（左から 3 つ＋操作対象） */
@@ -2310,6 +2437,35 @@ function drawFaces(ctx, pj, faces, fills, line, grid) {
   });
 }
 function lerpP(p, q, t) { return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t }; }
+
+/* 蝶番（ちょうつがい）：回転軸の辺（奥 a → 手前 b）にそって、筒（ナックル）を並べて描く。
+   軸のまわりに回ることが一目で分かるよう、両はしに丸い軸受けも描く。 */
+function hinge3d(ctx, a, b, n) {
+  var dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+  var w = Math.max(2.4, Math.min(4.2, L * 0.13));                /* 筒の太さ（見た目） */
+  ctx.save();
+  ctx.lineCap = 'butt';
+  for (var i = 0; i < n; i++) {                                  /* 筒を n 個ならべる */
+    var t0 = i / n + 0.06 / n, t1 = (i + 1) / n - 0.06 / n;
+    var p0 = { x: a.x + dx * t0, y: a.y + dy * t0 }, p1 = { x: a.x + dx * t1, y: a.y + dy * t1 };
+    ctx.strokeStyle = (i % 2 === 0) ? '#5b6b7b' : '#93a3b3';     /* 交互の色で「筒の連なり」に見せる */
+    ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 0.9;   /* 上のハイライト */
+  ctx.beginPath();
+  ctx.moveTo(a.x - uy * w * 0.28, a.y + ux * w * 0.28);
+  ctx.lineTo(b.x - uy * w * 0.28, b.y + ux * w * 0.28);
+  ctx.stroke();
+  [a, b].forEach(function (p) {                                   /* 両はしの軸受け */
+    ctx.beginPath(); ctx.arc(p.x, p.y, w * 0.62, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#3b4652'; ctx.lineWidth = 1.2;
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x, p.y, w * 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#3b4652'; ctx.fill();
+  });
+  ctx.restore();
+}
 
 /* 点が多角形の中か、ふちから d px 以内か */
 function nearPoly(x, y, poly, d) {
@@ -2412,12 +2568,14 @@ function drawR1Scene(ctx, s, region) {
   items.forEach(function (it) {
     drawFaces(ctx, pj, it.faces, it.b.target ? tfills : fills, it.b.target ? '#8a6d00' : BOXCOL.line, s.o.showGrid);
     it.faces.forEach(function (f) { s._plateHit.push(f.pts.map(PJ)); });   /* 箱をつかんでも θ が変わる */
-    /* 箱のピン（下側の角・手前の面） */
-    var pp = PJ([it.o[0] + it.Y[0], it.o[1] + it.Y[1], it.o[2] + it.Y[2]]);
-    pinMark(ctx, pp.x, pp.y, 3.6);
+    /* 箱の蝶番：下側の辺（回転軸）にそって、箱の外がわへ少しずらして描く */
+    var uo = 0.013 / Math.max(1e-6, it.b.dm.a);                 /* 辺の長さに対する割合 */
+    var hA = [it.o[0] - it.U[0] * uo, it.o[1], it.o[2] - it.U[2] * uo];
+    var hB = [hA[0] + it.Y[0], hA[1] + it.Y[1], hA[2] + it.Y[2]];
+    hinge3d(ctx, PJ(hA), PJ(hB), 3);
   });
-  /* 板のピン */
-  pinMark(ctx, pv0.x, pv0.y, 4.6);
+  /* 板の蝶番（左端の辺ぜんたい） */
+  hinge3d(ctx, PJ(W2P(-0.012, -yN, 0)), PJ(W2P(-0.012, yN, 0)), 5);
 
   /* --- 力（操作対象の箱は濃く、ほかの箱は薄く。手前の面の上に描く） --- */
   var tgt = items.filter(function (it) { return it.b.target; })[0];
@@ -2465,21 +2623,29 @@ function drawR1Scene(ctx, s, region) {
   });
   placeVerdicts(ctx, vl, 12, region);
 
-  /* --- 各箱の a:b（図の下の帯。左から順） --- */
+  /* --- 各箱の a:b（図の下の表） --- */
   if (s.o.showAB) {
-    var by = region.y0 + region.h + 14, colw = region.w / 4;
+    var tx0 = 6, tw = CVW - 12, tby = region.y0 + region.h + 12;
+    var cols = boxes.map(function (b) {
+      return { name: b.dm.key, sub: b.target ? '操作対象' : null, hot: !!b.target };
+    });
+    var rows = [
+      { label: '幅 a [m]', cells: boxes.map(function (b) { return { t: fmt(b.dm.a, 2) }; }) },
+      { label: '高さ b [m]', cells: boxes.map(function (b) { return { t: fmt(b.dm.b, 2) }; }) },
+      { label: 'a / b', cells: boxes.map(function (b) { return { t: fmt(b.dm.a / b.dm.b, 2), bold: true }; }) },
+      { label: '傾く角 θ₀ = arctan(a/b)', cells: boxes.map(function (b) {
+        return { t: fmt(b.stt.th0, 1) + '°', bold: b.stt.tip, color: b.stt.tip ? '#9b2418' : COL.ink }; }) }
+    ];
+    /* 箱から表の列へ、うすい引き出し線 */
+    var cwid = (tw - 150) / 4;
     boxes.forEach(function (b, j) {
-      var x = region.x0 + colw * j + colw / 2;
       var it = items.filter(function (q) { return q.idx === j; })[0];
       var base = PJ([it.o[0] + it.U[0] / 2, it.o[1] + it.Y[1] / 2, it.o[2] + it.U[2] / 2]);
-      ctx.save(); ctx.strokeStyle = 'rgba(90,100,110,.45)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
-      ctx.beginPath(); ctx.moveTo(base.x, base.y + 4); ctx.lineTo(x, by - 2); ctx.stroke(); ctx.restore();
-      label(ctx, 'a = ' + fmt(b.dm.a, 2) + ' m　b = ' + fmt(b.dm.b, 2) + ' m', x, by + 9, { size: 10.5, color: COL.ink2 || '#3d4c5a' });
-      label(ctx, 'a/b = ' + fmt(b.dm.a / b.dm.b, 2) + (b.target ? '（操作対象）' : ''), x, by + 24, { size: 11, bold: true, color: b.target ? '#8a6d00' : COL.ink });
-      if (s.o.showAB && v.th > 0.5) {
-        label(ctx, 'θ₀ = ' + fmt(b.stt.th0, 1) + '°', x, by + 38, { size: 10.5, color: b.stt.tip ? '#9b2418' : COL.sub });
-      }
+      var x = tx0 + 150 + cwid * j + cwid / 2;
+      ctx.save(); ctx.strokeStyle = 'rgba(90,100,110,.35)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(base.x, base.y + 4); ctx.lineTo(x, tby - 2); ctx.stroke(); ctx.restore();
     });
+    valueTable(ctx, tx0, tby, tw, cols, rows, { labelW: 150, rowH: 17, headH: 24 });
   }
   s._pj = { cx: cx, cy: cy, S: S };
   return { pj: pj, items: items, tgt: tgt, right: cx + S * bx1, left: cx + S * bx0 };
@@ -2523,10 +2689,12 @@ DEFS['r1'] = {
   playRate: 5, playNote: 'スタートを押すと θ が 10° からだんだん大きくなる',
   title: '1　板の角度を変える　～箱の左下は板にピンで固定～',
   sub: '板の左端と、それぞれの箱の左下の角を<b>ピン（○）</b>で板に固定してある（ピンは蝶番のようなもので、その点を軸に回る）。だから箱はすべらず、<b>傾くかどうか</b>だけが問題になる。' +
-    '左の 3 つの箱は面積が同じ（$a\\times b=16$ マス）で形だけがちがう。<b>右端が操作対象の箱</b>（右の枠にズームアップ）。1 マス $=0.04\\ \\mathrm{m}$。',
-  cw: function (v, s) { return (s && s._narrow) ? 480 : 780; },
-  ch: function (v, s) { return (s && s._narrow ? 290 + 290 : 290) + (s && s.o.showAB ? R1.BAND : 0); },
+    '左の 3 つの箱は面積が同じで形だけがちがう。<b>右端が操作対象の箱</b>（右の枠にズームアップ）。',
+  cw: function (v, s) { return (s && s._narrow) ? 480 : ((s && s._short) ? 640 : 780); },
+  ch: function (v, s) { return (s && s._narrow ? 290 + 336 : ((s && s._short) ? 268 : 290)) + (s && s.o.showAB ? R1.BAND : 0); },
   cvNote: 'ドラッグ：視点を回す／板や箱をドラッグ：θ を変える', tick2: false,
+  /* 再生：操作対象が傾きはじめて 5° 進んだところで止める */
+  playStop: function (v) { var dm = P.box.dims(v.ab); return P.tilt.th0(dm.a, dm.b) + 5; },
   moment: { label: '傾く瞬間', dur: 4.0, range: function (v) { var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b); return { k: 'th', from: Math.max(0, th0 - 5), to: Math.min(R1.THMAX, th0 + 5), hold: 0.8 }; } },
   cam3d: { az: -35, el: 25, zoom: 1 },
   drag3d: true,
@@ -2580,11 +2748,13 @@ DEFS['r1'] = {
     var v = V(s);
     var band = s.o.showAB ? R1.BAND : 0;
     var nar = !!s._narrow;
-    var region = nar ? { x0: 6, y0: 8, w: W - 12, h: 290 - 16 } : { x0: 6, y0: 8, w: 470, h: H - 16 - band };
+    var region = nar ? { x0: 6, y0: 8, w: W - 12, h: 290 - 16 }
+      : { x0: 6, y0: 8, w: s._short ? 300 : 470, h: H - 16 - band };
     var sc = drawR1Scene(ctx, s, region);
     /* ---- ズームアップ枠（操作対象の箱）。3 次元の図のすぐ右（あきを詰める）。狭い画面では下 ---- */
-    var fx = clamp(Math.round(sc.right + 14), 300, W - 290);
-    var fr = nar ? { x0: (W - 284) / 2, y0: 290 + band + 26, w: 284, h: 236 } : { x0: fx, y0: 24, w: Math.min(330, W - fx - 6), h: 236 };
+    var fx = clamp(Math.round(sc.right + 14), 240, W - 300);
+    var fr = nar ? { x0: (W - 284) / 2, y0: 290 + band + 26, w: 284, h: 236 }
+      : { x0: fx, y0: s._short ? 18 : 24, w: Math.min(350, W - fx - 6), h: s._short ? 226 : 236 };
     ctx.save();
     ctx.fillStyle = '#fbfcfd'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.2; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.rect(fr.x0, fr.y0, fr.w, fr.h); ctx.fill(); ctx.stroke();
@@ -2601,13 +2771,13 @@ DEFS['r1'] = {
     }
     /* 枠の下：見どころ（動かしてから） */
     var ty = fr.y0 + fr.h + 12;
-    if (hintOn(s)) {
+    if (hintOn(s) && !(s._short && s.o.showAB)) {
       if (b.stt.tip) {
         label(ctx, '重力の作用線が回転軸より左（外）に出ると、', fr.x0 + fr.w / 2, ty, { size: 11, color: '#9b2418' });
-        label(ctx, '重力のモーメントで箱は回転する', fr.x0 + fr.w / 2, ty + 14, { size: 11, color: '#9b2418' });
+        label(ctx, '重力のモーメントで箱は回転する', fr.x0 + fr.w / 2, ty + 18, { size: 11, color: '#9b2418' });
       } else if (v.th > 0.5) {
         label(ctx, 'θ が大きいほど、抗力の作用点は', fr.x0 + fr.w / 2, ty, { size: 11, color: COL.ink2 || '#3d4c5a' });
-        label(ctx, '回転軸のほうへ動いていく', fr.x0 + fr.w / 2, ty + 14, { size: 11, color: COL.ink2 || '#3d4c5a' });
+        label(ctx, '回転軸のほうへ動いていく', fr.x0 + fr.w / 2, ty + 18, { size: 11, color: COL.ink2 || '#3d4c5a' });
       }
     } else {
       label(ctx, 'θ を変えて、力の作用点を見よう', fr.x0 + fr.w / 2, ty, { size: 11, color: COL.sub });
@@ -2617,7 +2787,7 @@ DEFS['r1'] = {
 };
 
 /* ============ r2  板の角度を変える・箱は固定なし（真横から） ============ */
-var R2 = { PL: 1.24, PT: 0.03, POS: [0.06, 0.20, 0.42, 0.88], FIXED: ['2:8', '4:4', '8:2'], THMAX: 80, BAND: 76,
+var R2 = { PL: 1.24, PT: 0.03, POS: [0.06, 0.20, 0.42, 0.88], FIXED: ['2:8', '4:4', '8:2'], THMAX: 80, BAND: 168,
   BX0: -0.14, BX1: 1.48, BT: 0.05 };
 
 function r2Boxes(s) {
@@ -2675,19 +2845,30 @@ function drawR2Scene(ctx, s, region) {
     if (verdictAlive(s, 'b' + j, kind)) vl.push({ kind: kind, x: tp.x, y: tp.y - 4 });
   });
   placeVerdicts(ctx, vl, 12, region);
-  /* 各箱の a:b と μ（図の下の帯） */
+  /* 各箱の a:b と μ（図の下の表） */
   if (s.o.showAB) {
-    var by = region.y0 + region.h + 20, colw = region.w / 4;
-    out.forEach(function (o, j) {
-      var b = o.b, x = region.x0 + colw * j + colw / 2;
-      var base = o.z.g.pt(o.z.g.w / 2, 0);
-      ctx.save(); ctx.strokeStyle = 'rgba(90,100,110,.45)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
-      ctx.beginPath(); ctx.moveTo(base.x, base.y + 3); ctx.lineTo(x, by - 2); ctx.stroke(); ctx.restore();
-      label(ctx, 'a = ' + fmt(b.dm.a, 2) + ' m　b = ' + fmt(b.dm.b, 2) + ' m', x, by + 9, { size: 10.5, color: '#3d4c5a' });
-      label(ctx, 'a/b = ' + fmt(b.dm.a / b.dm.b, 2) + '　μ = ' + fmt(v.mu, 2), x, by + 24, { size: 11, bold: true, color: b.target ? TGT.line : COL.ink });
-      label(ctx, '傾く角 θ₀ = ' + fmt(b.stt.th0, 1) + '°', x, by + 38, { size: 10.5, color: b.stt.tip ? '#9b2418' : COL.sub });
-      label(ctx, 'μ = tanθ の角 θ = ' + fmt(b.stt.thSlip, 1) + '°', x, by + 52, { size: 10.5, color: b.stt.slip ? '#0a5c5c' : COL.sub });
+    var tx0 = 6, tw = CVW - 12, tby = region.y0 + region.h + 16;
+    var cols2 = out.map(function (o) {
+      return { name: o.b.dm.key, sub: o.b.target ? '操作対象' : null, hot: !!o.b.target };
     });
+    var rows2 = [
+      { label: '幅 a [m]', cells: out.map(function (o) { return { t: fmt(o.b.dm.a, 2) }; }) },
+      { label: '高さ b [m]', cells: out.map(function (o) { return { t: fmt(o.b.dm.b, 2) }; }) },
+      { label: 'a / b', cells: out.map(function (o) { return { t: fmt(o.b.dm.a / o.b.dm.b, 2), bold: true }; }) },
+      { label: '静止摩擦係数 μ', cells: out.map(function () { return { t: fmt(v.mu, 2) }; }) },
+      { label: '傾く角 θ₀ = arctan(a/b)', cells: out.map(function (o) {
+        return { t: fmt(o.b.stt.th0, 1) + '°', bold: o.b.stt.tip, color: o.b.stt.tip ? '#9b2418' : COL.ink }; }) },
+      { label: 'μ = tanθ_s を満たす', sub: '摩擦角（滑る角度）θ_s', cells: out.map(function (o) {
+        return { t: fmt(o.b.stt.thSlip, 1) + '°', bold: o.b.stt.slip, color: o.b.stt.slip ? '#0a5c5c' : COL.ink }; }) }
+    ];
+    var cwid2 = (tw - 168) / 4;
+    out.forEach(function (o, j2) {
+      var base = o.z.g.pt(o.z.g.w / 2, 0);
+      var x = tx0 + 168 + cwid2 * j2 + cwid2 / 2;
+      ctx.save(); ctx.strokeStyle = 'rgba(90,100,110,.35)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.moveTo(base.x, base.y + 3); ctx.lineTo(x, tby - 2); ctx.stroke(); ctx.restore();
+    });
+    valueTable(ctx, tx0, tby, tw, cols2, rows2, { labelW: 168, rowH: 17, headH: 24 });
   }
   return { boxes: boxes, out: out, pv: pv, S: S, right: pv.x + R2.BX1 * S };
 }
@@ -2729,47 +2910,59 @@ function drawThinkTilt(cv) {
 }
 
 /* ＜解答＞(1) 作図による解法の図（教科書の図：対角線 AC が鉛直になる瞬間） */
-function drawAnsFig(cv) {
-  var W = 340, H = 250, ctx = prep(cv, W, H);
+function drawAnsFig(cv, thDeg) {
+  var W = 340, H = 258, ctx = prep(cv, W, H);
   var dm = P.box.dims('3:4'), th0 = P.tilt.th0(dm.a, dm.b), S = 620;
-  var pv = { x: 150, y: 196 };
-  var u0 = { x: Math.cos(th0 * DEG), y: -Math.sin(th0 * DEG) };
-  hatchLine(ctx, pv.x - u0.x * 160, pv.y - u0.y * 160, pv.x + u0.x * 200, pv.y + u0.y * 200, 1);
-  var g = boxGeom(pv, th0, 0, dm.a, dm.b, S);
-  drawBoxSide(ctx, g, { grid: true, fill: '#fbf3ea' });
+  var th = (thDeg === undefined || thDeg === null) ? th0 : thDeg;
+  var hit = Math.abs(th - th0) < 0.35;                          /* ちょうど傾く瞬間 */
+  var pv = { x: 150, y: 206 };
+  var u0 = { x: Math.cos(th * DEG), y: -Math.sin(th * DEG) };
+  hatchLine(ctx, pv.x - u0.x * 170, pv.y - u0.y * 170, pv.x + u0.x * 210, pv.y + u0.y * 210, 1);
+  var g = boxGeom(pv, th, 0, dm.a, dm.b, S);
+  drawBoxSide(ctx, g, { grid: true, fill: hit ? '#fdf0d8' : '#fbf3ea' });
   var A = g.c[0], B = g.c[1], C = g.c[2], D = g.c[3];
-  /* 対角線 AC（鉛直）と、直角三角形 ACD */
-  ctx.save(); ctx.strokeStyle = '#3d4c5a'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+  /* 対角線 AC（傾く瞬間に鉛直になる） */
+  ctx.save();
+  ctx.strokeStyle = hit ? '#9b2418' : '#3d4c5a'; ctx.lineWidth = hit ? 2 : 1.2; ctx.setLineDash([5, 4]);
   ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(C.x, C.y); ctx.stroke();
   ctx.restore();
-  thetaMark(ctx, pv.x, pv.y, th0, 40, 'θ₀');
-  /* AD と鉛直（AC）のなす角 θ₀ */
-  angArc(ctx, A.x, A.y, 46, -Math.PI / 2, -Math.PI / 2 - th0 * DEG, 'θ₀', -Math.PI / 2 - th0 * DEG / 2, 58);
+  /* A から下ろした鉛直の線（AC とくらべるための目印） */
+  ctx.save();
+  ctx.strokeStyle = 'rgba(120,132,145,.8)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(A.x, A.y - 150); ctx.stroke();
+  ctx.restore();
+  thetaMark(ctx, pv.x, pv.y, th, 86, 'θ');
+  if (hit) angArc(ctx, A.x, A.y, 42, -Math.PI / 2, -Math.PI / 2 - th * DEG, 'θ₀', -Math.PI / 2 - th * DEG / 2, 56);
   /* 重力 */
-  arrow(ctx, g.cm.x, g.cm.y, g.cm.x, g.cm.y + 52, 'force', 1, COL.force);
-  tipLabel(ctx, '重力 mg', g.cm.x, g.cm.y + 52, 0, 1, { size: 12, color: COL.force, dx: 24 });
-  label(ctx, 'A', A.x - 10, A.y + 6, { size: 13, bold: true });
+  /* 先に A・B・C・D を置いてから重力を描く（重力の文字が自動でよけてくれる） */
+  label(ctx, 'A', A.x - 12, A.y + 8, { size: 13, bold: true });
   label(ctx, 'B', B.x + 10, B.y + 4, { size: 13, bold: true });
   label(ctx, 'C', C.x + 2, C.y - 10, { size: 13, bold: true });
   label(ctx, 'D', D.x - 10, D.y - 2, { size: 13, bold: true });
+  arrow(ctx, g.cm.x, g.cm.y, g.cm.x, g.cm.y + 46, 'force', 1, COL.force);
+  tipLabel(ctx, '重力 mg', g.cm.x, g.cm.y + 46, 0, 1, { size: 12, color: COL.force, dx: -44 });
   /* 寸法 */
   var md = { x: (C.x + D.x) / 2, y: (C.y + D.y) / 2 }, ma = { x: (A.x + D.x) / 2, y: (A.y + D.y) / 2 };
   label(ctx, '0.12 m', md.x + g.n.x * 16, md.y + g.n.y * 16, { size: 11.5, color: COL.dim });
   label(ctx, '0.16 m', ma.x - g.u.x * 22, ma.y - g.u.y * 22, { size: 11.5, color: COL.dim });
-  label(ctx, '対角線 AC が鉛直になったとき傾く', W / 2, 16, { size: 11.5, color: '#3d4c5a' });
+  label(ctx, 'θ = ' + fmt(th, 1) + '°', W - 8, 16, { size: 12, color: COL.sub, align: 'right' });
+  label(ctx, hit ? '対角線 AC が鉛直になった ＝ 傾く瞬間' : '対角線 AC が鉛直になったとき傾く',
+    W / 2 - 24, 16, { size: 11.5, bold: hit, color: hit ? '#9b2418' : '#3d4c5a' });
 }
 
 /* ＜別解＞(1) 力のモーメントのつりあい：A のピン、重力の分解、うでの長さ a/2・b/2 */
-function drawAnsFig2(cv) {
+function drawAnsFig2(cv, thDeg) {
   var W = 340, H = 290, ctx = prep(cv, W, H);
   var dm = P.box.dims('3:4'), th0 = P.tilt.th0(dm.a, dm.b), S = 780;
+  var th = (thDeg === undefined || thDeg === null) ? th0 : thDeg;
+  var hit = Math.abs(th - th0) < 0.35;
   var pv = { x: 168, y: 226 };
-  var u0 = { x: Math.cos(th0 * DEG), y: -Math.sin(th0 * DEG) };
+  var u0 = { x: Math.cos(th * DEG), y: -Math.sin(th * DEG) };
   hatchLine(ctx, pv.x - u0.x * 170, pv.y - u0.y * 170, pv.x + u0.x * 200, pv.y + u0.y * 200, 1);
-  var g = boxGeom(pv, th0, 0, dm.a, dm.b, S);
-  drawBoxSide(ctx, g, { grid: true, fill: '#fbf3ea' });
+  var g = boxGeom(pv, th, 0, dm.a, dm.b, S);
+  drawBoxSide(ctx, g, { grid: true, fill: hit ? '#fdf0d8' : '#fbf3ea' });
   var A = g.c[0], u = g.u, n = g.n, cm = g.cm;
-  thetaMark(ctx, pv.x, pv.y, th0, 44, 'θ₀');
+  thetaMark(ctx, pv.x, pv.y, th, 86, hit ? 'θ₀' : 'θ');
   /* うでの長さ：A から mg cosθ₀ の作用線までの a/2、mg sinθ₀ の作用線までの b/2（破線＋両矢印） */
   var fa = g.pt(g.w / 2, 0), fb = g.pt(0, g.h / 2);
   ctx.save(); ctx.strokeStyle = COL.dim; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
@@ -2783,30 +2976,147 @@ function drawAnsFig2(cv) {
   arrow(ctx, p1.x, p1.y, p2.x, p2.y, 'dim', 1); arrow(ctx, p2.x, p2.y, p1.x, p1.y, 'dim', 1);
   label(ctx, 'b/2', g.pt(-40, g.h / 4).x, g.pt(-40, g.h / 4).y, { size: 11.5, color: COL.dim });
   /* 重力とその分解（矢印は短めにして A の印と重ねない） */
-  var Lg = 46, Lc = Lg * Math.cos(th0 * DEG), Ls = Lg * Math.sin(th0 * DEG);
+  var Lg = 46, Lc = Lg * Math.cos(th * DEG), Ls = Lg * Math.sin(th * DEG);
   arrow(ctx, cm.x, cm.y, cm.x - n.x * Lc, cm.y - n.y * Lc, 'comp', 1, COL.force);
-  tipLabel(ctx, 'mg cosθ₀', cm.x - n.x * Lc, cm.y - n.y * Lc, -n.x, -n.y, { size: 11, color: COL.force, dx: 26, dy: -6 });
-  arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
-  tipLabel(ctx, 'mg sinθ₀', cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -8 });
+  tipLabel(ctx, (hit ? 'mg cosθ₀' : 'mg cosθ'), cm.x - n.x * Lc, cm.y - n.y * Lc, -n.x, -n.y, { size: 11, color: COL.force, dx: 26, dy: -6 });
+  if (Ls > 6) {
+    arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
+    tipLabel(ctx, (hit ? 'mg sinθ₀' : 'mg sinθ'), cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -8 });
+  }
   arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
   tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: 12, color: COL.force, dx: -14 });
   pinMark(ctx, A.x, A.y, 5);
   label(ctx, 'A（回転軸・ピン）', A.x + 4, A.y + 26, { size: 12, bold: true, align: 'left', avoid: true });
-  label(ctx, 'A のまわりのモーメントのつりあい', W / 2, 16, { size: 11.5, color: '#3d4c5a' });
+  label(ctx, hit ? 'A のまわりのモーメントがつりあう ＝ 傾く瞬間' : 'A のまわりのモーメントのつりあい',
+    W / 2 - 22, 16, { size: 11.5, bold: hit, color: hit ? '#9b2418' : '#3d4c5a' });
+  label(ctx, 'θ = ' + fmt(th, 1) + '°', W - 8, 16, { size: 12, color: COL.sub, align: 'right' });
+}
+
+/* 摩擦力のグラフ（r2：横軸 θ、r3：横軸 F）。チェックボックスの下に小さく出す */
+function drawFricGraph(cv, kind, v, s) {
+  var W = 300, H = 164, ctx = prep(cv, W, H);
+  var m = P.box.M, mg = m * G;
+  var pad = { l: 40, r: 14, t: 22, b: 38 };
+  var gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
+  var xmax = kind === 'tilt' ? R2.THMAX : R3.FMAX;
+  /* たて軸は「そのとき使う範囲」に合わせる（線が下のほうに寄って見えないのを防ぐ） */
+  var need = (kind === 'tilt')
+    ? Math.max(v.mu * mg, mg * Math.sin(Math.min(xmax, P.tilt.thSlip(v.mu)) * DEG))
+    : Math.max(v.mu * mg, Math.min(xmax, v.F));
+  var ymax = niceRange(0, Math.max(1, need) * 1.18).hi;
+  function X(x) { return pad.l + gw * x / xmax; }
+  function Y(y) { return pad.t + gh * (1 - y / ymax); }
+  /* 軸 */
+  ctx.save(); ctx.strokeStyle = AX.col; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + gh); ctx.lineTo(pad.l + gw + 4, pad.t + gh); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + gh); ctx.lineTo(pad.l, pad.t - 4); ctx.stroke();
+  ctx.restore();
+  arrowHead(ctx, pad.l + gw + 8, pad.t + gh, 1, 0, AX.col);
+  arrowHead(ctx, pad.l, pad.t - 8, 0, -1, AX.col);
+  label(ctx, kind === 'tilt' ? 'θ [°]' : 'F [N]', pad.l + gw + 10, pad.t + gh + 26, { size: 10.5, color: AX.col, align: 'right' });
+  label(ctx, '摩擦力 [N]', pad.l + 4, pad.t - 12, { size: 10.5, color: AX.col, align: 'left' });
+  var i, xs = [0, xmax / 2, xmax];
+  xs.forEach(function (x) { label(ctx, fmt(x, 0), X(x), pad.t + gh + 11, { size: 9.5, color: AX.col }); });
+  [ymax / 2, ymax].forEach(function (y) { label(ctx, fmt(y, 0), pad.l - 6, Y(y), { size: 9.5, color: AX.col, align: 'right' }); });
+  /* 最大摩擦力 μN と、必要な摩擦力 f */
+  var dm = P.box.dims(v.ab), xs2 = (kind === 'tilt') ? P.tilt.thSlip(v.mu) : P.pull.Fslip(m, v.mu);
+  var xnow = kind === 'tilt' ? v.th : v.F;
+  ctx.save();
+  ctx.strokeStyle = COL.fric; ctx.lineWidth = 1.6; ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  for (i = 0; i <= 60; i++) {
+    var x = xmax * i / 60, y = (kind === 'tilt') ? v.mu * mg * Math.cos(x * DEG) : v.mu * mg;
+    if (i === 0) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+  }
+  ctx.stroke();
+  ctx.setLineDash([]); ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  var xe = Math.min(xmax, xs2);
+  for (i = 0; i <= 60; i++) {
+    var x2 = xe * i / 60, y2 = (kind === 'tilt') ? mg * Math.sin(x2 * DEG) : x2;
+    if (i === 0) ctx.moveTo(X(x2), Y(y2)); else ctx.lineTo(X(x2), Y(y2));
+  }
+  ctx.stroke();
+  /* すべりはじめ */
+  if (xs2 <= xmax) {
+    ctx.strokeStyle = COL.fric; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(X(xs2), pad.t + gh); ctx.lineTo(X(xs2), Y((kind === 'tilt') ? mg * Math.sin(xs2 * DEG) : xs2)); ctx.stroke();
+  }
+  /* いまの点 */
+  var ynow = (xnow < xs2) ? ((kind === 'tilt') ? mg * Math.sin(xnow * DEG) : xnow) : ((kind === 'tilt') ? v.mu * mg * Math.cos(xnow * DEG) : v.mu * mg);
+  var xn = Math.min(xnow, xmax);
+  ctx.strokeStyle = 'rgba(15,138,138,.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(X(xn), pad.t + gh); ctx.lineTo(X(xn), Y(ynow)); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle = COL.fric; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(X(xn), Y(ynow), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  label(ctx, '最大摩擦力 μN', X(xmax * 0.55), Y((kind === 'tilt') ? v.mu * mg * Math.cos(xmax * 0.55 * DEG) : v.mu * mg) - 9, { size: 10, color: COL.fric, bold: true });
+  label(ctx, '静止摩擦力 f', X(xe * 0.5), Y((kind === 'tilt') ? mg * Math.sin(xe * 0.5 * DEG) : xe * 0.5) + 11, { size: 10, color: COL.fric });
+  if (xs2 <= xmax) label(ctx, (kind === 'tilt' ? 'θ_s' : 'F_s'), X(xs2), pad.t + gh + 24, { size: 10, color: COL.fric, bold: true, avoid: true });
+  label(ctx, 'いま', X(xn), Y(ynow) - 12, { size: 9.5, color: COL.fric, avoid: true });
+}
+
+/* ＜解答＞(2) 摩擦角の図（教科書 図63 の形）。
+   斜面の傾きがちょうど θ₀ のとき、重力・垂直抗力・最大摩擦力の 3 力がつりあう。 */
+function drawAnsFig3(cv) {
+  var W = 360, H = 300, ctx = prep(cv, W, H);
+  var dm = P.box.dims('3:4'), th0 = P.tilt.th0(dm.a, dm.b), S = 620;
+  var pv = { x: 116, y: 206 };
+  var u = { x: Math.cos(th0 * DEG), y: -Math.sin(th0 * DEG) };     /* 斜面を上る向き */
+  var n = { x: -Math.sin(th0 * DEG), y: -Math.cos(th0 * DEG) };    /* 斜面から外向き */
+  hatchLine(ctx, pv.x - u.x * 150, pv.y - u.y * 150, pv.x + u.x * 230, pv.y + u.y * 230, 1);
+  var g = boxGeom(pv, th0, 0, dm.a, dm.b, S);
+  drawBoxSide(ctx, g, { grid: false, fill: '#fbf3ea' });
+  var cm = g.cm, cp = g.pt(g.w / 2, 0);                            /* 重心と接触面のまん中 */
+  var mg = P.box.M * G, fs = 62 / mg;                              /* mg を 62 px に */
+  var Lg = mg * fs, Lc = Lg * Math.cos(th0 * DEG), Ls = Lg * Math.sin(th0 * DEG);
+  /* 重力とその分解（分力は破線） */
+  arrow(ctx, cm.x, cm.y, cm.x - n.x * Lc, cm.y - n.y * Lc, 'comp', 1, COL.force);
+  tipLabel(ctx, 'mg cosθ₀', cm.x - n.x * Lc, cm.y - n.y * Lc, -n.x, -n.y, { size: 11, color: COL.force, dx: 34, dy: 10 });
+  arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
+  tipLabel(ctx, 'mg sinθ₀', cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -14 });
+  arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
+  tipLabel(ctx, '重力 mg', cm.x, cm.y + Lg, 0, 1, { size: 11.5, color: COL.force, dx: -40, dy: 4 });
+  /* 垂直抗力 N と 最大摩擦力 F₀（接触面から） */
+  arrow(ctx, cp.x, cp.y, cp.x + n.x * Lc, cp.y + n.y * Lc, 'force', 1, COL.norm);
+  tipLabel(ctx, '垂直抗力 N', cp.x + n.x * Lc, cp.y + n.y * Lc, n.x, n.y, { size: 11.5, color: COL.norm, dx: -26, dy: -6 });
+  arrow(ctx, cp.x, cp.y, cp.x + u.x * Ls, cp.y + u.y * Ls, 'force', 1, COL.fric);
+  tipLabel(ctx, '最大摩擦力 F₀', cp.x + u.x * Ls, cp.y + u.y * Ls, u.x, u.y, { size: 11.5, color: COL.fric, dx: 16, dy: -16 });
+  /* 直角の印（斜面と N） */
+  (function () {
+    var q = 9, p0 = { x: cp.x + n.x * q, y: cp.y + n.y * q };
+    ctx.save(); ctx.strokeStyle = COL.sub; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y); ctx.lineTo(p0.x + u.x * q, p0.y + u.y * q);
+    ctx.moveTo(cp.x + u.x * q, cp.y + u.y * q); ctx.lineTo(p0.x + u.x * q, p0.y + u.y * q);
+    ctx.stroke(); ctx.restore();
+  })();
+  thetaMark(ctx, pv.x, pv.y, th0, 100, 'θ₀');
+  label(ctx, '3 つの力がつりあっている（すべり出す直前）', W / 2, 15, { size: 11, color: '#3d4c5a' });
+  label(ctx, 'μ = F₀ / N = tanθ₀', W / 2, H - 12, { size: 12.5, bold: true, color: '#0a5c5c' });
 }
 
 DEFS['r2'] = {
   id: 'r2', tab: '2　板の角度を変える（箱は固定なし）',
   cvNote: '板をドラッグしても θ を変えられる',
+  graph: 'tilt',
+  /* 再生：先に起こるほうが起きて 5° 進んだところで止める。
+     ★もう片方（すべる／傾く）の条件までは、ぜったいに進めない★ */
+  playStop: function (v) {
+    var dm = P.box.dims(v.ab);
+    var t0 = P.tilt.th0(dm.a, dm.b), ts = P.tilt.thSlip(v.mu);
+    var first = Math.min(t0, ts), second = Math.max(t0, ts);
+    return Math.min(first + 5, Math.max(first + 0.5, second - 0.5));
+  },
   slipFirst: function (v) { var dm = P.box.dims(v.ab); return P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; },
   moment2: { label: '滑る瞬間', dur: 4.0, range: function (v) { var ths = P.tilt.thSlip(v.mu); return { k: 'th', from: Math.max(0, ths - 5), to: Math.min(R2.THMAX, ths + 5), hold: 0.8 }; } },
   playRate: 5, playNote: 'スタートを押すと θ が 20° からだんだん大きくなる',
-  title: '2　板の角度を変える　～箱は固定なし。傾くのが先か、すべるのが先か～',
+  title: '2　板の角度を変える　～箱は固定なし。傾くのが先か、滑るのが先か～',
   sub: '板の左端はピンで固定。箱は固定していないので、θ を上げていくと<b>すべる</b>か<b>傾く</b>かのどちらかが先に起こる。' +
     '傾く角は $\\tan\\theta_0 = a/b$、すべる角は $\\tan\\theta_s = \\mu$。<b>先に来るほうが実際に起こる</b>。' +
-    '4 つの箱の μ はすべて同じ（操作対象の μ）。右端が操作対象の箱（右の枠にズームアップ）。1 マス $=0.04\\ \\mathrm{m}$。',
-  cw: function (v, s) { return (s && s._narrow) ? 480 : 780; },
-  ch: function (v, s) { return (s && s._narrow ? 290 + 290 : 290) + (s && s.o.showAB ? R2.BAND : 0); },
+    '4 つの箱の μ はすべて同じ（操作対象の μ）。右端が操作対象の箱（右の枠にズームアップ）。',
+  cw: function (v, s) { return (s && s._narrow) ? 480 : ((s && s._short) ? 640 : 780); },
+  ch: function (v, s) { return (s && s._narrow ? 290 + 336 : ((s && s._short) ? 268 : 290)) + (s && s.o.showAB ? R2.BAND : 0); },
   drag: true,
   abDef: '4:4',
   vars: [
@@ -2817,10 +3127,11 @@ DEFS['r2'] = {
       } },
     { k: 'mu', label: '静止摩擦係数 $\\mu$', unit: '', min: 0, max: 1.5, step: 0.05, dec: 2, def: 1.20 }
   ],
+  /* 箱の形（a:b）を変えて、先に起こることを入れかえる（μ は既定のまま） */
   presets: [
-    { label: '滑るより先に傾く（デフォルト）', fn: function (s) { s.v.mu = 1.20; s.anim = null; },
+    { label: '滑るより先に傾く', fn: function (s) { s.v.mu = 1.20; s.ab = '4:4'; s.anim = null; },
       is: function (v) { var dm = P.box.dims(v.ab); return !P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; } },
-    { label: '傾くよりも先に滑る', fn: function (s) { s.v.mu = 0.50; s.anim = null; },
+    { label: '傾くよりも先に滑る', fn: function (s) { s.v.mu = 1.20; s.ab = '8:2'; s.anim = null; },
       is: function (v) { var dm = P.box.dims(v.ab); return P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; } }
   ],
   vis: [
@@ -2876,10 +3187,12 @@ DEFS['r2'] = {
     var v = V(s);
     var band = s.o.showAB ? R2.BAND : 0;
     var nar = !!s._narrow;
-    var region = nar ? { x0: 6, y0: 8, w: W - 12, h: 290 - 16 } : { x0: 6, y0: 8, w: 470, h: H - 16 - band };
+    var region = nar ? { x0: 6, y0: 8, w: W - 12, h: 290 - 16 }
+      : { x0: 6, y0: 8, w: s._short ? 300 : 470, h: H - 16 - band };
     var sc = drawR2Scene(ctx, s, region);
-    var fx = clamp(Math.round(sc.right + 14), 300, W - 290);
-    var fr = nar ? { x0: (W - 284) / 2, y0: 290 + band + 26, w: 284, h: 236 } : { x0: fx, y0: 24, w: Math.min(330, W - fx - 6), h: 236 };
+    var fx = clamp(Math.round(sc.right + 14), 240, W - 300);
+    var fr = nar ? { x0: (W - 284) / 2, y0: 290 + band + 26, w: 284, h: 236 }
+      : { x0: fx, y0: s._short ? 18 : 24, w: Math.min(350, W - fx - 6), h: s._short ? 226 : 236 };
     ctx.save();
     ctx.fillStyle = '#fbfcfd'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.2; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.rect(fr.x0, fr.y0, fr.w, fr.h); ctx.fill(); ctx.stroke();
@@ -2895,58 +3208,92 @@ DEFS['r2'] = {
     if (zk && verdictAlive(s, 'zoom', zk)) verdictBubble(ctx, zk, clamp(tp.x, fr.x0 + 54, fr.x0 + fr.w - 54), Math.max(fr.y0 + 34, tp.y - 6), 'down');
     else verdictAlive(s, 'zoom', zk);
     var ty = fr.y0 + fr.h + 12;
-    if (hintOn(s)) {
+    if (hintOn(s) && !(s._short && s.o.showAB)) {
       if (b.stt.tip) {
         label(ctx, '重力の作用線が回転軸より左（外）に出ると、', fr.x0 + fr.w / 2, ty, { size: 11, color: '#9b2418' });
-        label(ctx, '重力のモーメントで箱は回転する', fr.x0 + fr.w / 2, ty + 14, { size: 11, color: '#9b2418' });
+        label(ctx, '重力のモーメントで箱は回転する', fr.x0 + fr.w / 2, ty + 18, { size: 11, color: '#9b2418' });
       } else if (b.stt.slip) {
         label(ctx, 'tanθ ≧ μ：斜面方向の力 mg sinθ が', fr.x0 + fr.w / 2, ty, { size: 11, color: '#0a5c5c' });
-        label(ctx, '最大摩擦力 μN をこえて、すべり出した', fr.x0 + fr.w / 2, ty + 14, { size: 11, color: '#0a5c5c' });
+        label(ctx, '最大摩擦力 μN をこえて、すべり出した', fr.x0 + fr.w / 2, ty + 18, { size: 11, color: '#0a5c5c' });
       } else if (v.th > 0.5) {
         label(ctx, 'θ が大きいほど、抗力の作用点は', fr.x0 + fr.w / 2, ty, { size: 11, color: '#3d4c5a' });
-        label(ctx, '回転軸のほうへ動いていく', fr.x0 + fr.w / 2, ty + 14, { size: 11, color: '#3d4c5a' });
+        label(ctx, '回転軸のほうへ動いていく', fr.x0 + fr.w / 2, ty + 18, { size: 11, color: '#3d4c5a' });
       }
     } else {
       label(ctx, 'θ を変えて、傾くか・すべるかを見よう', fr.x0 + fr.w / 2, ty, { size: 11, color: COL.sub });
     }
   },
   below: function (s) {
-    return '<div class="bcard"><h3>＜考え方＞　① 床を傾けていく場合</h3>' +
+    return '<div class="bcard"><h3>＜考え方＞　板の角度を変える場合' +
+      '<a class="cmplink" href="#r3" data-goto="r3">比較してみよう　床の上の直方体 →</a></h3>' +
       '<canvas id="r2think"></canvas>' +
       '<p>板を傾けていくと、<b>床からの抗力の作用点</b>（重力と抗力の 2 力がつりあうので、重力の作用線が接触面と交わる点）が中央から回転軸のほうへずれていく。' +
       '<b>作用点が回転軸に一致した瞬間</b>（＝重力の作用線が回転軸を通った瞬間）が傾きはじめる角 $\\theta_0$。それを超えると重力のモーメントがつりあわず、回転する。</p></div>' +
       '<div class="bcard"><h3>＜問題＞</h3>' +
-      '<p>幅 $a = 0.12\\ \\mathrm{m}$、高さ $b = 0.16\\ \\mathrm{m}$ の直方体を、板の上に置いて板を傾けていく（右の教科書の図の設定。a:b = 3:4）。</p>' +
+      '<p>幅 $a = 0.12\\ \\mathrm{m}$、高さ $b = 0.16\\ \\mathrm{m}$ の直方体を、板の上に置いて板を傾けていく（教科書の図の設定。a:b = 3:4）。</p>' +
       '<ol class="qlist"><li>直方体が傾きはじめる角度を $\\theta_0$ として、$\\tan\\theta_0$ を求めよ。答えは分数でよい。</li>' +
       '<li>直方体と斜面との間の静止摩擦係数 $\\mu$ がある値 $\\mu_0$ より小さいときは、直方体は (1) の状態になる前に斜面をすべり始める。$\\mu_0$ を求めよ。</li></ol></div>' +
       '<div class="bcard" id="r2ans"><h3>＜解答＞</h3>' +
-      '<p class="mini">まず自分で解いてから開こう。</p><button class="openbtn" data-open="r2ans" data-open-label="解答を見る" data-close-label="解答をとじる">解答を見る</button><div class="anscol">' +
-      '<div class="two"><div><h4>(1)　作図による解法</h4><canvas id="r2ansfig"></canvas>' +
+      '<p class="mini">まず自分で解いてから開こう。</p>' +
+      '<button class="openbtn" data-open="r2ans" data-open-label="解答を見る" data-close-label="解答をとじる">解答を見る</button>' +
+      '<div class="anscol">' +
+      /* ---- (1) 作図による解法：左に動く図、右に解説 ---- */
+      '<div class="ansblock"><h4>(1)　作図による解法</h4><div class="ansrow">' +
+      '<div class="ansfig">' +
+      '<div class="ctrl playctrl ansplay"><div class="btnrow">' +
+      '<button id="bAnsPlay">▶ スタート</button>' +
+      '<button id="bAnsSlow" class="sub">スロー再生</button>' +
+      '<button id="bAnsReset" class="sub">↺ リセット</button>' +
+      '<span class="playnote">押すと θ が大きくなり、<b>傾く瞬間</b>で止まる</span></div></div>' +
+      '<canvas id="r2ansfig"></canvas></div>' +
+      '<div class="anstxt">' +
       '<p>重心 G は直方体の中心、つまり対角線 AC の上にある。傾きはじめる瞬間は、<b>重心から下ろした重力の作用線が回転軸 A を通る</b>ときだから、<b>対角線 AC が鉛直</b>になる。' +
       'このとき辺 AD と鉛直線のなす角は斜面の傾き $\\theta_0$ に等しい（どちらも斜面に垂直な向きから測った角）。直角三角形 ACD で</p>' +
       '<div class="fmlbox"><span class="tex">\\sin\\theta_0 = \\dfrac{\\mathrm{CD}}{\\mathrm{AC}} = \\dfrac{0.12}{\\sqrt{0.12^2+0.16^2}} = \\dfrac{0.12}{0.20} = 0.60</span></div>' +
-      '<div class="fmlbox"><span class="tex">\\tan\\theta_0 = \\dfrac{\\mathrm{CD}}{\\mathrm{AD}} = \\dfrac{0.12}{0.16} = \\dfrac{3}{4}</span></div></div>' +
-      '<div><h4>＜別解＞(1)　力のモーメントのつりあいによる解法</h4><canvas id="r2ansfig2"></canvas>' +
+      '<div class="fmlbox"><span class="tex">\\tan\\theta_0 = \\dfrac{\\mathrm{CD}}{\\mathrm{AD}} = \\dfrac{0.12}{0.16} = \\dfrac{3}{4}</span></div>' +
+      '</div></div></div>' +
+      /* ---- ＜別解＞(1) モーメントのつりあい ---- */
+      '<div class="ansblock"><h4>＜別解＞(1)　力のモーメントのつりあいによる解法</h4><div class="ansrow">' +
+      '<div class="ansfig">' +
+      '<div class="ctrl playctrl ansplay"><div class="btnrow">' +
+      '<button id="bAns2Play">▶ スタート</button>' +
+      '<button id="bAns2Slow" class="sub">スロー再生</button>' +
+      '<button id="bAns2Reset" class="sub">↺ リセット</button>' +
+      '<span class="playnote">押すと θ が大きくなり、<b>傾く瞬間</b>で止まる</span></div></div>' +
+      '<canvas id="r2ansfig2"></canvas></div>' +
+      '<div class="anstxt">' +
       '<p>回転軸 A のまわりの重力のモーメントを考える。重力 $mg$ を斜面に垂直な成分 $mg\\cos\\theta$ と斜面方向の成分 $mg\\sin\\theta$ に分けると、' +
       '$mg\\cos\\theta$ は A から $\\dfrac{a}{2}$ はなれた点で「もどす向き」に、$mg\\sin\\theta$ は A から $\\dfrac{b}{2}$ はなれた点で「倒す向き」にはたらく。' +
       '抗力は A にはたらくのでモーメントは 0。傾きはじめるのは、倒す向きのモーメントがもどす向きのモーメントに等しくなるとき：</p>' +
       '<div class="fmlbox"><span class="tex">mg\\sin\\theta_0\\cdot\\dfrac{b}{2} = mg\\cos\\theta_0\\cdot\\dfrac{a}{2}\\quad\\Longrightarrow\\quad \\tan\\theta_0 = \\dfrac{a}{b} = \\dfrac{0.12}{0.16} = \\dfrac{3}{4}</span></div>' +
-      '<h4>(2)</h4><p>斜面の傾きが $\\theta_0$ をこえるまで直方体がすべらないでいるためには、$\\theta_0$ が摩擦角になっていればよい。' +
-      'このときの静止摩擦係数を $\\mu_0$ とすると $\\mu_0 = \\tan\\theta_0$ の関係があるので</p>' +
-      '<div class="fmlbox"><span class="tex">\\mu_0 = \\tan\\theta_0 = \\dfrac{0.12}{0.16} = 0.75</span></div>' +
+      '</div></div></div>' +
+      /* ---- (2) ---- */
+      '<div class="ansblock"><h4>(2)</h4><div class="ansrow">' +
+      '<div class="ansfig"><canvas id="r2ansfig3"></canvas></div>' +
+      '<div class="anstxt">' +
+      '<p>斜面の傾きが $\\theta_0$ をこえるまで直方体がすべらないでいるためには、ちょうど $\\theta_0$ で<b>すべり出す直前</b>になっていればよい。' +
+      'つまり $\\theta_0$ が<b>摩擦角</b>である。このとき物体にはたらく 3 つの力（重力・垂直抗力・最大摩擦力）はつりあっているので</p>' +
+      '<div class="fmlbox"><span class="tex">\\text{斜面に平行：}\\; mg\\sin\\theta_0 - F_0 = 0</span></div>' +
+      '<div class="fmlbox"><span class="tex">\\text{斜面に垂直：}\\; N - mg\\cos\\theta_0 = 0</span></div>' +
+      '<p>この 2 式と $F_0 = \\mu_0 N$ から</p>' +
+      '<div class="fmlbox"><span class="tex">\\mu_0 = \\dfrac{F_0}{N} = \\dfrac{mg\\sin\\theta_0}{mg\\cos\\theta_0} = \\tan\\theta_0 = \\dfrac{0.12}{0.16} = 0.75</span></div>' +
       '<p>したがって、<b>$\\mu$ が 0.75 より小さいとき、直方体は斜面の傾きが $\\theta_0$ となる前に斜面をすべり始める。</b>' +
-      '（上のシミュレーションで a:b を 3:4 にし、μ を 0.75 より小さくして確かめよう。）</p></div></div>' +
+      '（上のシミュレーションで a:b を 3:4 にし、μ を 0.75 より小さくして確かめよう。）</p>' +
+      '</div></div></div>' +
       '</div></div>';
   },
   drawBelow: function (s) {
     var c1 = document.getElementById('r2think'); if (c1) drawThinkTilt(c1);
-    var c2 = document.getElementById('r2ansfig'); if (c2 && c2.clientWidth > 0) drawAnsFig(c2);
-    var c3 = document.getElementById('r2ansfig2'); if (c3 && c3.clientWidth > 0) drawAnsFig2(c3);
+    var c2 = document.getElementById('r2ansfig');
+    if (c2 && c2.clientWidth > 0) drawAnsFig(c2, s._ans ? s._ans.th : undefined);
+    var c3 = document.getElementById('r2ansfig2');
+    if (c3 && c3.clientWidth > 0) drawAnsFig2(c3, s._ans2 ? s._ans2.th : undefined);
+    var c4 = document.getElementById('r2ansfig3'); if (c4 && c4.clientWidth > 0) drawAnsFig3(c4);
   }
 };
 
 /* ============ r3  床の上の直方体をばねで引く（真横から） ============ */
-var R3 = { K: 40, NAT: 0.26, GY: 236, BX: 470, FMAX: 20 };   /* ばね定数 [N/m]・自然長 [m]・床の y・箱の左下の x */
+var R3 = { K: 40, NAT: 0.26, GY: 236, BX: 470, FMAX: 12 };   /* ばね定数 [N/m]・自然長 [m]・床の y・箱の左下の x */
 
 function drawR3Scene(ctx, s, region) {
   var v = V(s), dm = P.box.dims(s.ab), m = P.box.M;
@@ -2977,7 +3324,7 @@ function drawR3Scene(ctx, s, region) {
   if (ext > 0.01) {
     arrow(ctx, nx0, fp.y - 36, sx, fp.y - 36, 'dim', 1);
     arrow(ctx, sx, fp.y - 36, nx0, fp.y - 36, 'dim', 1);
-    label(ctx, '伸び ' + fmt(ext * 100, 1) + ' cm', (nx0 + sx) / 2, fp.y - 24, { size: 10.5, color: COL.dim });
+    label(ctx, '伸び', (nx0 + sx) / 2, fp.y - 24, { size: 10.5, color: COL.dim });
   }
   /* 箱 */
   drawBoxSide(ctx, g, { grid: s.o.showGrid, fill: TGT.fill, line: TGT.line });
@@ -3011,7 +3358,7 @@ function drawR3Scene(ctx, s, region) {
 function drawThinkPull(cv) {
   var cols = (cv.clientWidth || 760) < 560 ? 2 : 4;
   var PW = 190, PH = 236, W = PW * cols, H = PH * (4 / cols), ctx = prep(cv, W, H);
-  var dm = P.box.dims('2:8'), m = P.box.M, F0 = P.pull.F0(m, dm.a, dm.b);
+  var dm = P.box.dims('3:4'), m = P.box.M, F0 = P.pull.F0(m, dm.a, dm.b);
   var panels = [
     { F: 0, tip: 0, ttl: '引く力がないとき', t1: '力も、力のモーメントも', t2: 'つりあっている' },
     { F: F0 * 0.5, tip: 0, ttl: '少し引くとき', t1: '床からの抗力の作用点は', t2: '中央からずれていく' },
@@ -3024,13 +3371,13 @@ function drawThinkPull(cv) {
     var box = { x0: x0 + 2, y0: y0, x1: x0 + PW - 2, y1: y0 + PH - 42 };
     var v = { F: p.F, mu: 10, bp: dm.b };
     var stt = P.pull.state(m, dm.a, 10, p.F, dm.b);
-    var pv = { x: x0 + 100, y: y0 + 170 };
+    var pv = { x: x0 + 96, y: y0 + 156 };
     ctx.save(); ctx.beginPath(); ctx.rect(box.x0, box.y0, PW - 4, PH); ctx.clip();
     ground(ctx, x0 + 4, x0 + PW - 4, pv.y);
     var g = boxGeom(pv, 0, p.tip, dm.a, dm.b, S);
     drawBoxSide(ctx, g, { grid: false });
-    if (p.F > 0) axisMark(ctx, pv.x, pv.y, '回転軸', { dx: 8, dy: 14, align: 'left' });
-    drawPullForces(ctx, g, v, stt, { F: true, L: true, Fc: false, Sum: i >= 1 }, box, FS * 0.75, { size: 10.5 });
+    if (p.F > 0) axisMark(ctx, pv.x, pv.y, '回転軸', { dx: 12, dy: 20, align: 'left' });
+    drawPullForces(ctx, g, v, stt, { F: true, L: true, Fc: false, Sum: i >= 1 }, box, FS * 0.7, { size: 10 });
     ctx.restore();
     label(ctx, p.ttl, x0 + PW / 2, y0 + 14, { size: 13, bold: true, color: p.hot ? '#9b2418' : COL.ink });
     label(ctx, p.t1, x0 + PW / 2, y0 + PH - 26, { size: 10, color: p.hot ? '#9b2418' : '#3d4c5a' });
@@ -3044,16 +3391,25 @@ function drawThinkPull(cv) {
 
 DEFS['r3'] = {
   id: 'r3', tab: '3　床の上の直方体をばねで引く',
-  title: '3　床の上の直方体をばねで引く',
+  title: '3　床の上の直方体をばねで引く　～傾くのが先か、滑るのが先か～',
   playRate: 1.5, playNote: 'スタートを押すと F が 0 からだんだん大きくなる', noProblemTag: true,
   cvNote: 'ばねをドラッグすると F を変えられます',
+  graph: 'pull',
+  /* 再生：傾くか すべるかが起きて 0.8 N 進んだところで止める */
+  /* 再生：先に起こるほうが起きて 0.8 N 進んだところで止める。もう片方の条件までは進めない */
+  playStop: function (v) {
+    var dm = P.box.dims(v.ab);
+    var f0 = P.pull.F0(P.box.M, dm.a, dm.b * v.bp), fs = P.pull.Fslip(P.box.M, v.mu);
+    var first = Math.min(f0, fs), second = Math.max(f0, fs);
+    return Math.min(first + 0.8, Math.max(first + 0.1, second - 0.1));
+  },
   slipFirst: function (v) { var dm = P.box.dims(v.ab); return P.pull.state(P.box.M, dm.a, v.mu, v.F, dm.b * v.bp).slipFirst; },
   moment2: { label: '滑る瞬間', dur: 4.0, range: function (v) { var Fs = P.pull.Fslip(P.box.M, v.mu); return { k: 'F', from: Math.max(0, Fs - 0.8), to: Math.min(R3.FMAX, Fs + 0.8), hold: 0.8 }; } },
   sub: '床の上の箱を、<b>ばねから受ける力 $F$ で左向きに</b>引く（ばねの左端をドラッグしても伸ばせる）。' +
     '傾く力は $F_0 = \\dfrac{mga}{2b\\prime}$（回転軸のまわりのモーメントのつりあい）、すべる力は $F_s = \\mu mg$。<b>先に来るほうが実際に起こる</b>。' +
-    '箱の質量は $m = 1.0\\ \\mathrm{kg}$（$mg = 9.8\\ \\mathrm{N}$）。1 マス $=0.04\\ \\mathrm{m}$。',
+    '箱の質量は $m = 1.0\\ \\mathrm{kg}$（$mg = 9.8\\ \\mathrm{N}$）。',
   cw: function (v, s) { return (s && s._narrow) ? 480 : 780; },
-  ch: 300,
+  ch: function (v, s) { return (s && s._short) ? 250 : 300; },
   drag: true,
   abDef: '4:4', bpDef: 1,
   abLabel: '箱の a:b',
@@ -3068,10 +3424,11 @@ DEFS['r3'] = {
       } },
     { k: 'mu', label: '静止摩擦係数 $\\mu$', unit: '', min: 0, max: 1.5, step: 0.05, dec: 2, def: 0.60 }
   ],
+  /* 箱の形（a:b）を変えて、先に起こることを入れかえる（μ・b′ は既定のまま） */
   presets: [
-    { label: '滑るより先に傾く（デフォルト）', fn: function (s) { s.v.mu = 0.60; s.anim = null; },
+    { label: '滑るより先に傾く', fn: function (s) { s.v.mu = 0.60; s.ab = '4:4'; s.bp = 1; s.anim = null; },
       is: function (v) { var dm = P.box.dims(v.ab); return !P.pull.state(P.box.M, dm.a, v.mu, v.F, dm.b * v.bp).slipFirst; } },
-    { label: '傾くよりも先に滑る', fn: function (s) { s.v.mu = 0.30; s.anim = null; },
+    { label: '傾くよりも先に滑る', fn: function (s) { s.v.mu = 0.60; s.ab = '8:2'; s.bp = 1; s.anim = null; },
       is: function (v) { var dm = P.box.dims(v.ab); return P.pull.state(P.box.M, dm.a, v.mu, v.F, dm.b * v.bp).slipFirst; } }
   ],
   vis: [
@@ -3133,7 +3490,7 @@ DEFS['r3'] = {
         label(ctx, "F ≧ μmg：引く力が最大摩擦力をこえて、すべり出した", tx, ty, { size: 11, color: '#0a5c5c', align: 'right' });
       } else if (v.F > 0.05) {
         label(ctx, '3 力（重力・引く力・抗力）の作用線は 1 点で交わる', tx, ty, { size: 11, color: '#3d4c5a', align: 'right' });
-        label(ctx, 'F が大きいほど、抗力の作用点は回転軸のほうへ動いていく', tx, ty + 14, { size: 11, color: '#3d4c5a', align: 'right' });
+        label(ctx, 'F が大きいほど、抗力の作用点は回転軸のほうへ動いていく', tx, ty + 18, { size: 11, color: '#3d4c5a', align: 'right' });
       }
     } else {
       label(ctx, "F を変えて、傾くか・すべるかを見よう", region.x0 + region.w - 8, region.y0 + 14, { size: 11, color: COL.sub, align: 'right' });
@@ -3141,7 +3498,8 @@ DEFS['r3'] = {
 
   },
   below: function (s) {
-    return '<div class="bcard"><h3>＜考え方＞　② 平らな床で引く場合</h3>' +
+    return '<div class="bcard"><h3>＜考え方＞　床の上の直方体を引く場合' +
+      '<a class="cmplink" href="#r2" data-goto="r2">比較してみよう　板の角度を変える →</a></h3>' +
       '<canvas id="r3think"></canvas>' +
       '<p>引く力を大きくしていくと、<b>床からの抗力の作用点</b>が中央から回転軸のほうへずれていく。重力と引く力を合成した<b>合力の作用線</b>と、抗力の作用線は同じ直線上にある（3 力の作用線は 1 点で交わる）。' +
       '<b>抗力の作用点が回転軸に一致した瞬間</b>（＝合力の作用線が回転軸を通った瞬間）に傾きはじめる。回転軸のまわりのモーメントのつりあいから $F_0 \\cdot b\\prime = mg\\cdot\\dfrac{a}{2}$、つまり $F_0 = \\dfrac{mga}{2b\\prime}$。' +
@@ -3174,7 +3532,9 @@ function initState() {
   Object.keys(DEFS).forEach(function (id) {
     var d = DEFS[id];
     var s = { v: {}, o: {}, ab: d.abDef || '4:4', bp: d.bpDef || 1, touched: false, anim: null, view: null,
-      playing: false, slow: false, started: false };
+      playing: false, slow: false, started: false,
+      _ans: { th: 0, playing: false, slow: false, max: 36.8699 },
+      _ans2: { th: 0, playing: false, slow: false, max: 36.8699 } };
     d.vars.forEach(function (vd) { s.v[vd.k] = vd.def; });
     (d.vis || []).forEach(function (vd) { s.o['show' + vd.k] = !!vd.def; });
     if (d.cam3d) s.cam = { az: d.cam3d.az, el: d.cam3d.el, zoom: d.cam3d.zoom || 1 };
@@ -3269,6 +3629,8 @@ function buildPanel() {
     '<button id="bPlay">▶ スタート</button>' +
     '<button id="bSlow" class="sub">スロー再生</button>' +
     '<button id="bReset" class="sub">↺ リセット</button>' +
+    '<span class="gap3">　　　</span>' +
+    '<button id="bResetAll" class="resetall">全てデフォルトに<br>戻してリセット</button>' +
     '<span class="playnote" id="playnote">' + (d.playNote || '') + '</span></div></div>');
   var plain = d.vars.filter(function (vd) { return !vd.tick; });
   var ticked = d.vars.filter(function (vd) { return !!vd.tick; });
@@ -3308,6 +3670,7 @@ function buildPanel() {
     });
     h.push('</div>');
   }
+  if (d.graph) h.push('<div class="fgraph"><canvas id="fgraph"></canvas></div>');
   h.push('</div></div>');
   /* 図 */
   h.push('<div class="cvstage' + ((d.actions && d.actions.length) ? '' : ' nobar') + '">');
@@ -3366,6 +3729,7 @@ function buildPanel() {
   $('bPlay').addEventListener('click', onPlay);
   $('bSlow').addEventListener('click', function () { s.slow = !s.slow; setPlayLabel(); });
   $('bReset').addEventListener('click', function () { resetSim(); });
+  $('bResetAll').addEventListener('click', function () { resetAll(); });
   Array.prototype.forEach.call(host.querySelectorAll('[data-bp]'), function (b) {
     b.addEventListener('click', function () { setBP(+b.getAttribute('data-bp')); });
   });
@@ -3393,6 +3757,37 @@ function buildPanel() {
       if (open) { renderMath(box); if (d.drawBelow) d.drawBelow(s); }
     });
   });
+  if ($('bAnsPlay')) {
+    $('bAnsPlay').addEventListener('click', function () {
+      var a = s._ans;
+      if (a.playing) { a.playing = false; setAnsLabel(s); return; }
+      if (a.th >= a.max - 1e-9) a.th = 0;
+      a.playing = true; setAnsLabel(s);
+    });
+    $('bAnsSlow').addEventListener('click', function () { s._ans.slow = !s._ans.slow; setAnsLabel(s); });
+    $('bAnsReset').addEventListener('click', function () {
+      s._ans.playing = false; s._ans.th = 0; setAnsLabel(s);
+      if (d.drawBelow) d.drawBelow(s);
+    });
+    setAnsLabel(s);
+  }
+  if ($('bAns2Play')) {
+    $('bAns2Play').addEventListener('click', function () {
+      var a = s._ans2;
+      if (a.playing) { a.playing = false; setAnsLabel(s); return; }
+      if (a.th >= a.max - 1e-9) a.th = 0;
+      a.playing = true; setAnsLabel(s);
+    });
+    $('bAns2Slow').addEventListener('click', function () { s._ans2.slow = !s._ans2.slow; setAnsLabel(s); });
+    $('bAns2Reset').addEventListener('click', function () {
+      s._ans2.playing = false; s._ans2.th = 0; setAnsLabel(s);
+      if (d.drawBelow) d.drawBelow(s);
+    });
+  }
+  /* 「比較してみよう」のリンクで、もう一方のシミュレーションへ飛ぶ */
+  Array.prototype.forEach.call(host.querySelectorAll('[data-goto]'), function (a) {
+    a.addEventListener('click', function (ev) { ev.preventDefault(); gotoSim(a.getAttribute('data-goto')); });
+  });
   if (d.moment && $('bMoment')) $('bMoment').addEventListener('click', function () { startMoment(d, s, d.moment); });
   if (d.moment2 && $('bMoment2')) $('bMoment2').addEventListener('click', function () { if (!$('bMoment2').disabled) startMoment(d, s, d.moment2); });
   if (d.drag3d) attach3dDrag(d, s); else if (d.drag) attachSimDrag(d, s);
@@ -3410,16 +3805,43 @@ function onPlay() {
   var d = DEFS[st.cur], s = st.sims[st.cur], vd = playVar(d);
   if (s.playing) { s.playing = false; setPlayLabel(); return; }
   s.anim = null;
-  if (!s.started || s.v[vd.k] >= vd.max - 1e-9) { s.v[vd.k] = vd.def; s.started = true; }
+  var stopAt = d.playStop ? Math.min(vd.max, d.playStop(V(s))) : vd.max;
+  if (!s.started || s.v[vd.k] >= stopAt - 1e-9) { s.v[vd.k] = vd.def; s.started = true; }
   s.playing = true; s.touched = true;
   setPlayLabel(); syncVarVals(); refreshActs(); renderActive();
 }
+/* すべてを既定値にもどす（変数・a:b・b′・チェック・視点・解答の図） */
+function resetAll() {
+  var d = DEFS[st.cur], s = st.sims[st.cur];
+  s.playing = false; s.anim = null; s.started = false; s.slow = false; s.touched = false;
+  s._vt = {};
+  d.vars.forEach(function (vd) { s.v[vd.k] = vd.def; });
+  (d.vis || []).forEach(function (vd) { s.o['show' + vd.k] = !!vd.def; });
+  s.ab = d.abDef || '4:4';
+  s.bp = d.bpDef || 1;
+  if (d.cam3d) s.cam = { az: d.cam3d.az, el: d.cam3d.el, zoom: d.cam3d.zoom || 1 };
+  if (s._ans) { s._ans.th = 0; s._ans.playing = false; s._ans.slow = false; }
+  if (s._ans2) { s._ans2.th = 0; s._ans2.playing = false; s._ans2.slow = false; }
+  buildPanel();
+  renderActive();
+}
+
 function resetSim() {
   var d = DEFS[st.cur], s = st.sims[st.cur], vd = playVar(d);
   s.playing = false; s.anim = null; s.started = false;
   s.v[vd.k] = vd.def;
   setPlayLabel(); syncVarVals(); refreshActs(); renderActive();
 }
+/* ＜解答＞の中の図の再生ボタン */
+function setAnsLabel(s) {
+  [['bAnsPlay', 'bAnsSlow', s._ans], ['bAns2Play', 'bAns2Slow', s._ans2]].forEach(function (q) {
+    var b = $(q[0]), bs = $(q[1]), a = q[2];
+    if (!b || !a) return;
+    b.textContent = a.playing ? '❚❚ 一時停止' : (a.th >= a.max - 1e-9 ? '▶ もう一度' : '▶ スタート');
+    if (bs) { bs.className = a.slow ? '' : 'sub'; bs.textContent = a.slow ? 'スロー再生 中' : 'スロー再生'; }
+  });
+}
+
 function setPlayLabel() {
   var s = st.sims[st.cur], b = $('bPlay'), bs = $('bSlow');
   if (!b) return;
@@ -3582,10 +4004,7 @@ function attach3dDrag(d, s) {
   function end() { last = null; mode = null; }
   cv.addEventListener('pointerup', end);
   cv.addEventListener('pointercancel', end);
-  cv.addEventListener('wheel', function (ev) {
-    s.cam.zoom = clamp(s.cam.zoom * Math.exp(-ev.deltaY * 0.0012), 0.6, 2.4);
-    renderActive(); ev.preventDefault();
-  }, { passive: false });
+  /* ★ホイールでの拡大縮小はつけない（授業中にスクロールしただけで図が変わってしまうため）★ */
 }
 
 /* ===== 判定の吹き出しは、出てから 3 秒で消す =====
@@ -3611,12 +4030,28 @@ function narrowOf(cv) {
   var w = cv.clientWidth || (cv.parentNode && cv.parentNode.clientWidth) || 0;
   return w > 0 && w < 600;
 }
+/* 横置きのスマホ・小さいタブレット（画面のたてが低い）。図を小さくし、ズームアップを大きく見せる */
+function shortOf() { return window.innerHeight <= 560 && window.innerWidth > window.innerHeight; }
+/* 図の高さが画面に収まるように、図の列の幅に上限をかける（姉妹ページの fitStageHeight と同じ考え方） */
+function fitStage(d, s) {
+  var stage = document.querySelector('#simhost .cvstage');
+  var cv = $('mainCv');
+  if (!stage || !cv) return;
+  stage.style.maxWidth = '';
+  if (!s._short) return;
+  var top = cv.getBoundingClientRect().top + window.scrollY - (document.querySelector('#simhost').getBoundingClientRect().top + window.scrollY);
+  var avail = window.innerHeight - 150 - top;                 /* タブ・見出しのぶんを空ける */
+  if (avail < 120) avail = 120;
+  var w = Math.round(avail * (cv._cw || 780) / (cv._ch || 290));
+  stage.style.maxWidth = Math.max(320, w) + 'px';
+}
 
 function renderActive() {
   var d = DEFS[st.cur], s = st.sims[st.cur];
   var cv = $('mainCv');
   if (!cv) return;
-  s._narrow = narrowOf(cv);
+  s._short = shortOf();                       /* 横置きで画面が低い → 図の左に操作パネル */
+  s._narrow = !s._short && narrowOf(cv);      /* たて置きの細い画面 → たてに積む */
   var ch = chOf(d, s), cw = cwOf(d, s);
   cv._ch = ch; cv._cw = cw;
   var ctx = prep(cv, cw, ch);
@@ -3626,6 +4061,9 @@ function renderActive() {
   drawEqualTicks(ctx);
   ctx.restore();
   renderResbar(d, s);
+  fitStage(d, s);
+  var gcv = $('fgraph');
+  if (gcv && d.graph) drawFricGraph(gcv, d.graph, V(s), s);
 }
 
 /* 図のすぐ下の「計算結果の帯」 */
@@ -3689,9 +4127,18 @@ function tick(ts) {
   if (s && s.playing && !s.anim) {
     var vd = playVar(d), rate = (d.playRate || 5) * (s.slow ? 0.25 : 1);
     var nv = s.v[vd.k] + rate * dt;
-    if (nv >= vd.max) { nv = vd.max; s.playing = false; setPlayLabel(); }
+    var stopAt = d.playStop ? Math.min(vd.max, d.playStop(V(s))) : vd.max;   /* 動きだしたら、ほどよく止める */
+    if (nv >= stopAt) { nv = stopAt; s.playing = false; setPlayLabel(); }
     s.v[vd.k] = +nv.toFixed(3);
     syncVarVals(); refreshActs(); renderActive();
+  }
+  if (s && ((s._ans && s._ans.playing) || (s._ans2 && s._ans2.playing))) {   /* ＜解答＞の図：θ を上げて傾く瞬間で止める */
+    [s._ans, s._ans2].forEach(function (a2) {
+      if (!a2 || !a2.playing) return;
+      a2.th += (a2.slow ? 2.2 : 8) * dt;
+      if (a2.th >= a2.max) { a2.th = a2.max; a2.playing = false; setAnsLabel(s); }
+    });
+    if (d.drawBelow) d.drawBelow(s);
   }
   if (s && s.anim) {
     var a = s.anim;
@@ -3731,7 +4178,24 @@ function tick(ts) {
     if (!DEFS[q.id]) return;
     if (q.id !== st.cur) gotoSim(q.id);
   });
-  window.addEventListener('resize', function () { renderActive(); });
+  /* たて置きのスマホ・タブレットには「横置きをおすすめします」と出す（×で閉じられる） */
+  var rotHidden = false;
+  function updateRotNote() {
+    var el = document.getElementById('rotnote');
+    if (!el) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    el.hidden = rotHidden || !(h > w && Math.min(w, h) < 900);
+  }
+  var rx = document.getElementById('rotx');
+  if (rx) rx.addEventListener('click', function () { rotHidden = true; updateRotNote(); });
+  updateRotNote();
+  window.addEventListener('orientationchange', function () { setTimeout(updateRotNote, 250); });
+  window.addEventListener('resize', function () {
+    updateRotNote();
+    renderActive();
+    var d = DEFS[st.cur];
+    if (d.drawBelow) d.drawBelow(st.sims[st.cur]);          /* 図の下のカードの canvas も描き直す */
+  });
   requestAnimationFrame(tick);
 
   /* ===== 物理の検算（閉じた式で出す） ===== */
@@ -3807,6 +4271,25 @@ function tick(ts) {
         var bx0 = b.x, bx1 = b.x + b.w, by0 = b.y - b.h / 2, by1 = b.y + b.h / 2;
         var ox = Math.min(ax1, bx1) - Math.max(ax0, bx0), oy = Math.min(ay1, by1) - Math.max(ay0, by0);
         if (ox > 1.5 && oy > 1.5) out.push([a.text, b.text, +ox.toFixed(1), +oy.toFixed(1)]);
+      }
+      window.__labelLog = null;
+      return out;
+    },
+    /* 図の下のカード（考え方・解答）の canvas の文字の重なり */
+    belowOverlap: function () {
+      var d = DEFS[st.cur], s2 = st.sims[st.cur];
+      if (!d.drawBelow) return [];
+      var box = document.getElementById('r2ans');
+      if (box) box.classList.add('open');
+      window.__labelLog = [];
+      d.drawBelow(s2);
+      var L = window.__labelLog, out = [], i, j;
+      for (i = 0; i < L.length; i++) for (j = i + 1; j < L.length; j++) {
+        var a2 = L[i], b2 = L[j];
+        if (a2.cv !== b2.cv) continue;
+        var ox = Math.min(a2.x + a2.w, b2.x + b2.w) - Math.max(a2.x, b2.x);
+        var oy = Math.min(a2.y + a2.h / 2, b2.y + b2.h / 2) - Math.max(a2.y - a2.h / 2, b2.y - b2.h / 2);
+        if (ox > 1.5 && oy > 1.5) out.push([a2.cv, a2.text, b2.text, +ox.toFixed(1), +oy.toFixed(1)]);
       }
       window.__labelLog = null;
       return out;
