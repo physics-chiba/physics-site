@@ -629,9 +629,9 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 /* 図のすぐ下の「計算結果の帯」 */
 .resbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:.8rem;margin:8px 0 0}
 .resbar:empty{display:none}
-.ritem{display:inline-flex;align-items:baseline;gap:6px;background:var(--panel);border:1px solid var(--line);
+.ritem{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
   border-radius:var(--r-m);padding:3px 9px;flex-wrap:wrap}
-.ritem .rk{color:var(--sub)}
+.ritem .rk{color:var(--sub);display:inline-block;line-height:1.45;text-align:left}
 .ritem .rv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink)}
 .ritem.kbox{border:2px solid var(--accent);background:var(--accent-l)}
 .ritem.tip{border-color:#d1352b;background:#fde2dc}
@@ -2198,32 +2198,58 @@ function tipLabel(ctx, text, x2, y2, ux, uy, opt) {
 
 /* 判定の吹き出しをまとめて置く。近い箱どうしで重なるときは、あとのものを上へ積む。
    list = [{ kind, x, y }]（x, y はしっぽの先）、size … 文字の大きさ */
-function placeVerdicts(ctx, list, size, region) {
+function placeVerdicts(ctx, list, size, region, obst) {
   size = size || 14;
+  obst = obst || [];
   var placed = [], i, j;
   var sorted = list.slice().sort(function (a, b) { return a.x - b.x; });
   ctx.save(); ctx.font = 'bold ' + size + 'px ' + FONT;
   for (i = 0; i < sorted.length; i++) {
     var it = sorted[i], txt = it.kind === 'tip' ? '傾いた！' : 'すべった！';
     var w = ctx.measureText(txt).width + 18, h = size + 14, T = 8;
-    var x = it.x, y = it.y;
-    if (region) x = clamp(x, region.x0 + w / 2 + 2, region.x0 + region.w - w / 2 - 2);
-    var guard = 0;
-    while (guard++ < 30) {
-      var bx0 = x - w / 2, bx1 = x + w / 2, by0 = y - T - h, by1 = y - T, hit = false;
-      for (j = 0; j < placed.length; j++) {
-        var q = placed[j];
-        if (bx0 < q.x1 + 2 && bx1 > q.x0 - 2 && by0 < q.y1 + 2 && by1 > q.y0 - 2) { hit = true; break; }
+    var x0lim = region ? region.x0 + w / 2 + 2 : -1e9, x1lim = region ? region.x0 + region.w - w / 2 - 2 : 1e9;
+    var x = region ? clamp(it.x, x0lim, x1lim) : it.x, y = it.y;
+    /* ほかの吹き出しにも、物体（箱）にも重ならない置き場所をさがす。
+       まず真上へ、それでもだめなら左右へずらす。しっぽの先だけは箱を指してよい */
+    var topLim = region ? region.y0 - 20 : 0;      /* これより上へは行かない */
+    function clear(cx, cy) {
+      var bx0 = cx - w / 2, bx1 = cx + w / 2, by0 = cy - h, by1 = cy, k;   /* 吹き出しの枠（しっぽは含めない） */
+      for (k = 0; k < placed.length; k++) {
+        var q = placed[k];
+        if (bx0 < q.x1 + 2 && bx1 > q.x0 - 2 && by0 < q.y1 + 2 && by1 > q.y0 - 2) return false;
       }
-      if (!hit) break;
-      y -= 6;
+      for (k = 0; k < obst.length; k++) {
+        var r2 = obst[k];
+        if (bx0 < r2.x1 + 3 && bx1 > r2.x0 - 3 && by0 < r2.y1 + 3 && by1 > r2.y0 - 3) return false;
+      }
+      return true;
     }
-    if (region && y - T - h < region.y0 + 2) y = region.y0 + 2 + T + h;
-    placed.push({ x0: x - w / 2, x1: x + w / 2, y0: y - T - h, y1: y - T });
+    var found = false, dxs = [0, -24, 24, -48, 48, -72, 72, -96, 96, -130, 130], di, yy;
+    for (di = 0; di < dxs.length && !found; di++) {
+      var cx2 = region ? clamp(it.x + dxs[di], x0lim, x1lim) : it.x + dxs[di];
+      for (yy = it.y; yy - h >= topLim; yy -= 6) {
+        if (clear(cx2, yy)) { x = cx2; y = yy; found = true; break; }
+      }
+    }
+    if (!found && region) y = Math.max(y, topLim + h);
+    placed.push({ x0: x - w / 2, x1: x + w / 2, y0: y - h, y1: y });
+    if (window.__vbLog) window.__vbLog.push({ b: placed[placed.length - 1], o: obst });   /* テスト用 */
     verdictBubble(ctx, it.kind, x, y, 'down', size, it.x);
   }
   ctx.restore();
 }
+
+/* 点の並び（画面座標）を囲む四角。吹き出しをよけさせるのに使う */
+function bboxOf(pts) {
+  var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  pts.forEach(function (p) {
+    if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+  });
+  return { x0: x0, y0: y0, x1: x1, y1: y1 };
+}
+/* 箱（drawTiltBox などが返す g）の 4 すみ */
+function gCorners(g) { return [g.pt(0, 0), g.pt(g.w, 0), g.pt(0, g.h), g.pt(g.w, g.h)]; }
 
 /* 判定の吹き出し（傾いた！／すべった！）。(x, y) はしっぽの先＝箱を指す点 */
 function verdictBubble(ctx, kind, x, y, side, size, tailX) {
@@ -2621,7 +2647,12 @@ function drawR1Scene(ctx, s, region) {
     var top = PJ([it.o[0] + it.U[0] / 2 + it.N[0], it.o[1] + it.Y[1] / 2, it.o[2] + it.U[2] / 2 + it.N[2]]);
     vl.push({ kind: 'tip', x: top.x, y: top.y - 4 });
   });
-  placeVerdicts(ctx, vl, 12, region);
+  var obst1 = items.map(function (it) {
+    var ps = [];
+    it.faces.forEach(function (f) { f.pts.forEach(function (q) { ps.push(PJ(q)); }); });
+    return bboxOf(ps);
+  });
+  placeVerdicts(ctx, vl, 12, region, obst1);
 
   /* --- 各箱の a:b（図の下の表） --- */
   if (s.o.showAB) {
@@ -2633,7 +2664,7 @@ function drawR1Scene(ctx, s, region) {
       { label: '幅 a [m]', cells: boxes.map(function (b) { return { t: fmt(b.dm.a, 2) }; }) },
       { label: '高さ b [m]', cells: boxes.map(function (b) { return { t: fmt(b.dm.b, 2) }; }) },
       { label: 'a / b', cells: boxes.map(function (b) { return { t: fmt(b.dm.a / b.dm.b, 2), bold: true }; }) },
-      { label: '傾く角 θ₀ = arctan(a/b)', cells: boxes.map(function (b) {
+      { label: 'tanθ₀ = a/b を満たす', sub: '傾く角度 θ₀', cells: boxes.map(function (b) {
         return { t: fmt(b.stt.th0, 1) + '°', bold: b.stt.tip, color: b.stt.tip ? '#9b2418' : COL.ink }; }) }
     ];
     /* 箱から表の列へ、うすい引き出し線 */
@@ -2736,7 +2767,7 @@ DEFS['r1'] = {
     var stt = P.tilt.state(dm.a, dm.b, 0, v.th, true);
     var items = [
       { k: '操作対象の箱', v: 'a = ' + fmt(dm.a, 2) + ' m，b = ' + fmt(dm.b, 2) + ' m（a/b = ' + fmt(dm.a / dm.b, 2) + '）' },
-      { k: '傾く角 $\\theta_0=\\arctan(a/b)$', v: fmt(stt.th0, 1) + '°', kbox: true },
+      { k: '$\\tan\\theta_0 = a/b$ を満たす<br>傾く角度 $\\theta_0$', v: fmt(stt.th0, 1) + '°', kbox: true },
       { k: 'いま', v: stt.tip ? '傾いた！（θ ≧ θ₀）' : 'まだ傾かない（θ < θ₀）', cls: stt.tip ? 'tip' : '' }
     ];
     var note = '';
@@ -2767,7 +2798,8 @@ DEFS['r1'] = {
     var zk1 = (b.stt.tip && b.tip > 0.01) ? 'tip' : null;
     if (verdictAlive(s, 'zoom', zk1)) {
       var tp = z.g.pt(z.g.w / 2, z.g.h);
-      verdictBubble(ctx, 'tip', clamp(tp.x, fr.x0 + 50, fr.x0 + fr.w - 50), Math.max(fr.y0 + 34, tp.y - 6), 'down');
+      var zty = bboxOf(gCorners(z.g)).y0;                     /* 箱のいちばん高いところより上に出す */
+      verdictBubble(ctx, 'tip', clamp(tp.x, fr.x0 + 50, fr.x0 + fr.w - 50), Math.max(fr.y0 + 34, Math.min(tp.y, zty) - 6), 'down');
     }
     /* 枠の下：見どころ（動かしてから） */
     var ty = fr.y0 + fr.h + 12;
@@ -2788,7 +2820,8 @@ DEFS['r1'] = {
 
 /* ============ r2  板の角度を変える・箱は固定なし（真横から） ============ */
 var R2 = { PL: 1.24, PT: 0.03, POS: [0.06, 0.20, 0.42, 0.88], FIXED: ['2:8', '4:4', '8:2'], THMAX: 80, BAND: 168,
-  BX0: -0.14, BX1: 1.48, BT: 0.05 };
+  BX0: -0.14, BX1: 1.48, BT: 0.05,
+  PADL: 0.24 };   /* いちばん左の箱が倒れても画面から出ないように、左に余裕をとる [m] */
 
 function r2Boxes(s) {
   var v = V(s);
@@ -2806,8 +2839,8 @@ function drawR2Scene(ctx, s, region) {
   var boxes = r2Boxes(s);
   /* 縮尺：板の長さ＋いちばん高い箱（0.32 m）が、横は 0°、たては 80° で入るように */
   var mg = 12;
-  var S = Math.min((region.w - 2 * mg) / (R2.BX1 - R2.BX0 + 0.1), (region.h - 2 * mg - 10) / (R2.PL * Math.sin(80 * DEG) + 0.32 + R2.PT + R2.BT));
-  var pv = { x: region.x0 + mg + (0 - R2.BX0) * S, y: region.y0 + region.h - mg - (R2.PT + R2.BT) * S - 2 };
+  var S = Math.min((region.w - 2 * mg) / (R2.BX1 - R2.BX0 + 0.1 + R2.PADL), (region.h - 2 * mg - 10) / (R2.PL * Math.sin(80 * DEG) + 0.32 + R2.PT + R2.BT));
+  var pv = { x: region.x0 + mg + (R2.PADL - R2.BX0) * S, y: region.y0 + region.h - mg - (R2.PT + R2.BT) * S - 2 };
   var u = { x: Math.cos(th), y: -Math.sin(th) }, n = { x: -Math.sin(th), y: -Math.cos(th) };
   function pt(su, sn) { return { x: pv.x + u.x * su * S + n.x * sn * S, y: pv.y + u.y * su * S + n.y * sn * S }; }
   /* 下の平面（台） */
@@ -2844,7 +2877,7 @@ function drawR2Scene(ctx, s, region) {
     var kind = (o.b.stt.tip && o.b.tip > 0.01) ? 'tip' : (o.b.stt.slip ? 'slip' : null);
     if (verdictAlive(s, 'b' + j, kind)) vl.push({ kind: kind, x: tp.x, y: tp.y - 4 });
   });
-  placeVerdicts(ctx, vl, 12, region);
+  placeVerdicts(ctx, vl, 12, region, out.map(function (o) { return bboxOf(gCorners(o.z.g)); }));
   /* 各箱の a:b と μ（図の下の表） */
   if (s.o.showAB) {
     var tx0 = 6, tw = CVW - 12, tby = region.y0 + region.h + 16;
@@ -2855,9 +2888,9 @@ function drawR2Scene(ctx, s, region) {
       { label: '幅 a [m]', cells: out.map(function (o) { return { t: fmt(o.b.dm.a, 2) }; }) },
       { label: '高さ b [m]', cells: out.map(function (o) { return { t: fmt(o.b.dm.b, 2) }; }) },
       { label: 'a / b', cells: out.map(function (o) { return { t: fmt(o.b.dm.a / o.b.dm.b, 2), bold: true }; }) },
-      { label: '静止摩擦係数 μ', cells: out.map(function () { return { t: fmt(v.mu, 2) }; }) },
-      { label: '傾く角 θ₀ = arctan(a/b)', cells: out.map(function (o) {
+      { label: 'tanθ₀ = a/b を満たす', sub: '傾く角度 θ₀', cells: out.map(function (o) {
         return { t: fmt(o.b.stt.th0, 1) + '°', bold: o.b.stt.tip, color: o.b.stt.tip ? '#9b2418' : COL.ink }; }) },
+      { label: '静止摩擦係数 μ', cells: out.map(function () { return { t: fmt(v.mu, 2) }; }) },
       { label: 'μ = tanθ_s を満たす', sub: '摩擦角（滑る角度）θ_s', cells: out.map(function (o) {
         return { t: fmt(o.b.stt.thSlip, 1) + '°', bold: o.b.stt.slip, color: o.b.stt.slip ? '#0a5c5c' : COL.ink }; }) }
     ];
@@ -3110,7 +3143,7 @@ DEFS['r2'] = {
   },
   slipFirst: function (v) { var dm = P.box.dims(v.ab); return P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; },
   moment2: { label: '滑る瞬間', dur: 4.0, range: function (v) { var ths = P.tilt.thSlip(v.mu); return { k: 'th', from: Math.max(0, ths - 5), to: Math.min(R2.THMAX, ths + 5), hold: 0.8 }; } },
-  playRate: 5, playNote: 'スタートを押すと θ が 20° からだんだん大きくなる',
+  playRate: 5, playNote: 'スタートを押すと θ が 10° からだんだん大きくなる',
   title: '2　板の角度を変える　～箱は固定なし。傾くのが先か、滑るのが先か～',
   sub: '板の左端はピンで固定。箱は固定していないので、θ を上げていくと<b>すべる</b>か<b>傾く</b>かのどちらかが先に起こる。' +
     '傾く角は $\\tan\\theta_0 = a/b$、すべる角は $\\tan\\theta_s = \\mu$。<b>先に来るほうが実際に起こる</b>。' +
@@ -3120,7 +3153,7 @@ DEFS['r2'] = {
   drag: true,
   abDef: '3:4',
   vars: [
-    { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R2.THMAX, step: 1, dec: 0, def: 20,
+    { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R2.THMAX, step: 1, dec: 0, def: 10,
       tick: function (v) {
         var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b), ths = P.tilt.thSlip(v.mu);
         return { at: th0, label: '傾く角 $\\theta_0 = ' + fmt(th0, 1) + '^\\circ$', at2: ths, label2: 'すべる角 $\\theta_s = ' + fmt(ths, 1) + '^\\circ$' };
@@ -3173,7 +3206,7 @@ DEFS['r2'] = {
     var now = stt.tip ? '傾いた！' : (stt.slip ? 'すべった！' : 'まだ動かない');
     var items = [
       { k: '操作対象の箱', v: 'a = ' + fmt(dm.a, 2) + ' m，b = ' + fmt(dm.b, 2) + ' m（a/b = ' + fmt(dm.a / dm.b, 2) + '）' },
-      { k: '傾く角 $\\theta_0$（$\\tan\\theta_0 = a/b$）', v: fmt(stt.th0, 1) + '°', kbox: !stt.slipFirst },
+      { k: '$\\tan\\theta_0 = a/b$ を満たす<br>傾く角度 $\\theta_0$', v: fmt(stt.th0, 1) + '°', kbox: !stt.slipFirst },
       { k: 'すべる角 $\\theta_s$（$\\tan\\theta_s = \\mu$）', v: fmt(stt.thSlip, 1) + '°', kbox: stt.slipFirst },
       { k: 'いま', v: now, cls: stt.tip ? 'tip' : (stt.slip ? 'slip' : '') }
     ];
@@ -3205,7 +3238,8 @@ DEFS['r2'] = {
     label(ctx, '回転軸', pv.x - 26, pv.y + 26, { size: 11, color: COL.sub, align: 'right', avoid: true });
     var g = z.g, tp = g.pt(g.w / 2, g.h);
     var zk = (b.stt.tip && b.tip > 0.01) ? 'tip' : (b.stt.slip ? 'slip' : null);
-    if (zk && verdictAlive(s, 'zoom', zk)) verdictBubble(ctx, zk, clamp(tp.x, fr.x0 + 54, fr.x0 + fr.w - 54), Math.max(fr.y0 + 34, tp.y - 6), 'down');
+    var zty2 = bboxOf(gCorners(g)).y0;                        /* 箱のいちばん高いところより上に出す */
+    if (zk && verdictAlive(s, 'zoom', zk)) verdictBubble(ctx, zk, clamp(tp.x, fr.x0 + 54, fr.x0 + fr.w - 54), Math.max(fr.y0 + 34, Math.min(tp.y, zty2) - 6), 'down');
     else verdictAlive(s, 'zoom', zk);
     var ty = fr.y0 + fr.h + 12;
     if (hintOn(s) && !(s._short && s.o.showAB)) {
@@ -3293,7 +3327,7 @@ DEFS['r2'] = {
 };
 
 /* ============ r3  床の上の直方体をばねで引く（真横から） ============ */
-var R3 = { K: 40, NAT: 0.26, GY: 236, BX: 470, FMAX: 12 };   /* ばね定数 [N/m]・自然長 [m]・床の y・箱の左下の x */
+var R3 = { K: 40, NAT: 0.26, GY: 236, BX: 393, FMAX: 12 };   /* ばね定数 [N/m]・自然長 [m]・床の y・箱の左下の x */
 
 function drawR3Scene(ctx, s, region) {
   var v = V(s), dm = P.box.dims(s.ab), m = P.box.M;
@@ -3303,7 +3337,7 @@ function drawR3Scene(ctx, s, region) {
   var tip = stt.tip ? P.pull.tipAngle(v.F, stt.F0) : 0;
   var S = ZS;
   var nar = !!s._narrow;
-  var gy = region.y0 + region.h - 46, bx = region.x0 + (nar ? region.w * 0.66 : R3.BX);
+  var gy = region.y0 + region.h - 46, bx = region.x0 + (nar ? region.w * 0.66 - 0.16 * S : R3.BX);
   var slipShift = stt.slip ? clamp((v.F - stt.Fslip) / 2.0, 0, 1) * 0.12 * S : 0;
   var pv = { x: bx - slipShift, y: gy };
   var g = boxGeom(pv, 0, tip, dm.a, dm.b, S);
@@ -3350,7 +3384,7 @@ function drawR3Scene(ctx, s, region) {
   /* 判定 */
   var tp = g.pt(g.w / 2, g.h);
   var vk = (stt.tip && tip > 0.01) ? 'tip' : (stt.slip ? 'slip' : null);
-  if (verdictAlive(s, 'b3', vk)) placeVerdicts(ctx, [{ kind: vk, x: tp.x, y: tp.y - 6 }], 14, region);
+  if (verdictAlive(s, 'b3', vk)) placeVerdicts(ctx, [{ kind: vk, x: tp.x, y: tp.y - 6 }], 14, region, [bboxOf(gCorners(g))]);
   return { g: g, stt: stt, r: r };
 }
 
@@ -3588,7 +3622,7 @@ function tickSliderHtml(d, vd) {
     '<button class="stp" data-var="' + k + '" data-dir="-1">−</button>' +
     '<span class="vval" data-vval="' + k + '"></span>' +
     '<button class="stp" data-var="' + k + '" data-dir="1">＋</button>' +
-    (d.moment ? '<button class="warm mom" id="bMoment">' + d.moment.label + '</button>' : '') +
+    (d.moment ? '<span class="gap3">　　　</span><button class="warm mom" id="bMoment">' + d.moment.label + '</button>' : '') +
     (d.moment2 ? '<button class="warm mom mom2" id="bMoment2">' + d.moment2.label + '</button>' : '') + '</div>' +
     '<div class="tswrap' + (d.tick2 === false ? ' notick2' : '') + '">' +
     '<div class="tsval tsval1" id="tslab_' + k + '"></div>' +
@@ -4285,6 +4319,21 @@ function tick(ts) {
     },
     resbar: function () { var e = document.getElementById('resbar'); return e ? e.textContent : ''; },
     render: function () { renderActive(); return true; },
+    /* 吹き出し（傾いた！／すべった！）が箱に重なっていないか */
+    bubbleOverlap: function () {
+      window.__vbLog = [];
+      renderActive();
+      var L = window.__vbLog, out = [];
+      L.forEach(function (e) {
+        (e.o || []).forEach(function (r) {
+          var ox = Math.min(e.b.x1, r.x1) - Math.max(e.b.x0, r.x0);
+          var oy = Math.min(e.b.y1, r.y1) - Math.max(e.b.y0, r.y0);
+          if (ox > 1 && oy > 1) out.push([+ox.toFixed(1), +oy.toFixed(1)]);
+        });
+      });
+      window.__vbLog = null;
+      return out;
+    },
     /* 図の文字の重なり（sweep 用）。__labelLog を空にしてから描き直し、重なる組を返す */
     labelOverlap: function () {
       window.__labelLog = [];
