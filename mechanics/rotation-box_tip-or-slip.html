@@ -3118,7 +3118,7 @@ DEFS['r2'] = {
   cw: function (v, s) { return (s && s._narrow) ? 480 : ((s && s._short) ? 640 : 780); },
   ch: function (v, s) { return (s && s._narrow ? 290 + 336 : ((s && s._short) ? 268 : 290)) + (s && s.o.showAB ? R2.BAND : 0); },
   drag: true,
-  abDef: '4:4',
+  abDef: '3:4',
   vars: [
     { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R2.THMAX, step: 1, dec: 0, def: 20,
       tick: function (v) {
@@ -3129,7 +3129,7 @@ DEFS['r2'] = {
   ],
   /* 箱の形（a:b）を変えて、先に起こることを入れかえる（μ は既定のまま） */
   presets: [
-    { label: '滑るより先に傾く', fn: function (s) { s.v.mu = 1.20; s.ab = '4:4'; s.anim = null; },
+    { label: '滑るより先に傾く', fn: function (s) { s.v.mu = 1.20; s.ab = '3:4'; s.anim = null; },
       is: function (v) { var dm = P.box.dims(v.ab); return !P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; } },
     { label: '傾くよりも先に滑る', fn: function (s) { s.v.mu = 1.20; s.ab = '8:2'; s.anim = null; },
       is: function (v) { var dm = P.box.dims(v.ab); return P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; } }
@@ -3786,7 +3786,11 @@ function buildPanel() {
   }
   /* 「比較してみよう」のリンクで、もう一方のシミュレーションへ飛ぶ */
   Array.prototype.forEach.call(host.querySelectorAll('[data-goto]'), function (a) {
-    a.addEventListener('click', function (ev) { ev.preventDefault(); gotoSim(a.getAttribute('data-goto')); });
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      gotoSim(a.getAttribute('data-goto'));
+      scrollToThink();     /* 飛んだ先の ＜考え方＞ の見出しを画面の上端にそろえる */
+    });
   });
   if (d.moment && $('bMoment')) $('bMoment').addEventListener('click', function () { startMoment(d, s, d.moment); });
   if (d.moment2 && $('bMoment2')) $('bMoment2').addEventListener('click', function () { if (!$('bMoment2').disabled) startMoment(d, s, d.moment2); });
@@ -3842,10 +3846,17 @@ function setAnsLabel(s) {
   });
 }
 
+/* 再生が最後まで行って止まっているか（＝つぎに押すと「最初から」になる） */
+function playFinished(d, s) {
+  if (!d || !s || s.playing || !s.started) return false;
+  var vd = playVar(d);
+  var stopAt = d.playStop ? Math.min(vd.max, d.playStop(V(s))) : vd.max;
+  return s.v[vd.k] >= stopAt - 1e-9;
+}
 function setPlayLabel() {
-  var s = st.sims[st.cur], b = $('bPlay'), bs = $('bSlow');
+  var d = DEFS[st.cur], s = st.sims[st.cur], b = $('bPlay'), bs = $('bSlow');
   if (!b) return;
-  b.textContent = s.playing ? '❚❚ 一時停止' : '▶ スタート';
+  b.textContent = s.playing ? '❚❚ 一時停止' : (playFinished(d, s) ? '▶ 最初から' : '▶ スタート');
   b.className = '';
   if (bs) { bs.className = s.slow ? '' : 'sub'; bs.textContent = s.slow ? 'スロー再生 中' : 'スロー再生'; }
 }
@@ -4108,6 +4119,19 @@ function syncHash() {
   var want = '#' + hashOf();
   if (location.hash !== want) { st._skipHash = true; location.hash = want; }
 }
+/* ＜考え方＞ のカードを画面のいちばん上へ（リンクで飛んだとき用） */
+function scrollToThink() {
+  var go = function () {
+    var bl = $('below'); if (!bl) return;
+    var card = bl.querySelector('.bcard');
+    if (!card) return;
+    var y = card.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0) - 6;
+    window.scrollTo(0, Math.max(0, y));
+  };
+  go();
+  if (window.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(go); });
+  setTimeout(go, 120);
+}
 function gotoSim(id) {
   if (!DEFS[id]) return;
   st.cur = id;
@@ -4128,8 +4152,10 @@ function tick(ts) {
     var vd = playVar(d), rate = (d.playRate || 5) * (s.slow ? 0.25 : 1);
     var nv = s.v[vd.k] + rate * dt;
     var stopAt = d.playStop ? Math.min(vd.max, d.playStop(V(s))) : vd.max;   /* 動きだしたら、ほどよく止める */
-    if (nv >= stopAt) { nv = stopAt; s.playing = false; setPlayLabel(); }
+    var done = false;
+    if (nv >= stopAt) { nv = stopAt; s.playing = false; done = true; }
     s.v[vd.k] = +nv.toFixed(3);
+    if (done) { s.v[vd.k] = +stopAt.toFixed(3); setPlayLabel(); }   /* 値を入れてから「最初から」に変える */
     syncVarVals(); refreshActs(); renderActive();
   }
   if (s && ((s._ans && s._ans.playing) || (s._ans2 && s._ans2.playing))) {   /* ＜解答＞の図：θ を上げて傾く瞬間で止める */
