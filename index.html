@@ -202,6 +202,19 @@ img.deco-l{border-radius:12px;object-fit:contain;background:transparent}
 }
 .item:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,60,110,.13);border-color:#bcd6ee}
 .item:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+
+/* NEW のカードは、カード全体をオレンジ色にぼんやり光らせる
+   （光らせたくなくなったら、下の .item.is-new の3行を消すだけでOK） */
+@keyframes newGlow{
+  0%,100%{box-shadow:0 0 0 2px rgba(224,123,24,.45), 0 0 15px 2px rgba(224,123,24,.28)}
+  50%    {box-shadow:0 0 0 3px rgba(224,123,24,.90), 0 0 27px 7px rgba(224,123,24,.55)}
+}
+.item.is-new{border-color:#f0ad55;background:linear-gradient(180deg,#fff8ef 0%,#fff 62%);
+  animation:newGlow 2.2s ease-in-out infinite}
+.item.is-new .thumb{border-bottom-color:#f0ad55}
+@media (prefers-reduced-motion:reduce){
+  .item.is-new{animation:none;box-shadow:0 0 0 3px rgba(224,123,24,.75), 0 0 18px 4px rgba(224,123,24,.40)}
+}
 /* カードの上半分：動くサムネイル */
 .item .thumb{
   display:block;width:calc(100% + 30px);margin:-14px -15px 11px;
@@ -577,12 +590,12 @@ const SITE = [
       { t:"一次元と平面の運動　～v-tグラフで理解する～", tag:"sim", course:["kiso","but"], img:"thumbs/basics.gif",
         u:BASE+"mechanics/basics-of-motion-on-plane.html",
         d:"等加速度・平面内の運動・運動方程式を、数値を変えて確かめる。v–t図を答える問題つき。" },
-      { t:"箱の回転　～傾くのが先か滑るのが先か～", tag:"sim", course:["but"], new:true, img:"thumbs/rotation.gif",
-        u:BASE+"mechanics/rotation-box_tip-or-slip.html",
-        d:"板を傾けると、箱は倒れる？　すべる？　どちらが先かは、箱の形（幅a・高さb）と摩擦係数μで決まる。抗力の作用点が動くようすを見よう。" },
       { t:"力学的エネルギーと非保存力の仕事の関係", tag:"sim", course:["kiso"], img:"thumbs/energy.gif",
         u:BASE+"mechanics/mechanical-energy.html",
         d:"E = K + U が保たれるのはどんなとき？　摩擦がはたらくとどうなる？　力を見ながら確かめる。" },
+      { t:"箱の回転　～傾くのが先か滑るのが先か～", tag:"sim", course:["but"], new:true, img:"thumbs/rotation.gif",
+        u:BASE+"mechanics/rotation-box_tip-or-slip.html",
+        d:"板を傾けると、箱は倒れる？　すべる？　どちらが先かは、箱の形（幅a・高さb）と摩擦係数μで決まる。抗力の作用点が動くようすを見よう。" },
       { t:"保存則クイズ　基本編", tag:"quiz", course:["but"], img:"thumbs/quizb.gif",
         u:BASE+"mechanics/conservation-quiz-basic.html",
         d:"2つの保存則が「使える場面・使えない場面」をクイズで判定。" },
@@ -733,7 +746,7 @@ const COMING = [
                (c === "kiso" ? "物理基礎" : "物理") + '</span>';
       }).join('');
       var ckey = cs.map(function(c){ return c === "kiso" ? "物理基礎" : "物理"; }).join(" ");
-      html += '<a class="item" href="' + esc(it.u) + '" data-key="' +
+      html += '<a class="item' + (it["new"] ? ' is-new' : '') + '" href="' + esc(it.u) + '" data-key="' +
               esc((it.t + " " + it.d + " " + sec.name + " " + tag + " " + ckey).toLowerCase()) + '">' +
         (it.img ? '<img class="thumb" src="' + esc(it.img) + '?v=' + IMG_V + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') +
         '<span class="top">' +

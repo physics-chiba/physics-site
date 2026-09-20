@@ -613,7 +613,7 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 .tickslider .tsrow1 .stp{width:24px;height:21px;padding:0;font-size:.95rem}
 .tickslider .tsrow1 .vval{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.86rem;
   font-weight:600;min-width:4.8em;text-align:right}
-.tickslider .tsrow1 .mom{margin-left:auto;font-size:.78rem;padding:3px 12px;border-radius:999px;
+.tickslider .tsrow1 .mom{margin-left:auto;font-size:.70rem;padding:3px 10px;border-radius:999px;
   background:var(--orange);border-color:var(--orange);color:#fff;font-weight:700}
 .tickslider .tsrow1 .mom:hover{background:var(--orange-d);border-color:var(--orange-d)}
 .tickslider .tsrow2{margin-top:2px}
@@ -652,6 +652,25 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 .bcard .two > div{flex:1 1 320px;min-width:0}
 .bcard .two h4{margin:6px 0 4px;font-size:.92rem;color:var(--accent-d)}
 .bcard button.openbtn{font-size:.85rem;border-radius:999px;padding:5px 16px}
+/* 「解答を見る」：押したくなるよう、オレンジで大きく光らせる（開いたら glow を外す） */
+.bcard button.openbtn.glow{background:var(--orange);border-color:var(--orange);color:#fff;
+  font-size:1rem;font-weight:800;padding:9px 30px;box-shadow:0 2px 10px rgba(224,123,24,.45);
+  animation:opglow 1.15s ease-in-out infinite}
+.bcard button.openbtn.glow:hover{background:var(--orange-d);border-color:var(--orange-d)}
+@keyframes opglow{
+  0%,100%{box-shadow:0 0 0 0 rgba(224,123,24,.55)}
+  50%{box-shadow:0 0 0 12px rgba(224,123,24,0)}
+}
+/* ＜解答＞の中の「力を表示／分解した力を表示」 */
+.ansopts{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.82rem;margin:0 0 6px}
+.ansopts label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.ansopts label.vflash{background:var(--orange-l);border:1.5px solid var(--orange);
+  border-radius:999px;padding:2px 9px;font-weight:700;color:var(--orange-d);
+  animation:vflash 1.05s ease-in-out 4}
+.ansopts label.vflash input[type=checkbox]{accent-color:var(--orange);width:17px;height:17px}
+@media (prefers-reduced-motion:reduce){
+  .bcard button.openbtn.glow,.ansopts label.vflash{animation:none}
+}
 
 /* 「別の見方」のボタン（青） */
 .cvbar .acts button.alt{background:#fff;color:var(--accent);border-color:#b9cfe6;margin-left:auto}
@@ -825,7 +844,7 @@ button.resetall:hover{background:#fdeceb;border-color:#9b2418;color:#9b2418}
   ・<b>θ（F）のスライダー</b>を動かすと、箱にはたらく力と抗力の作用点が変わっていきます。<br>
   ・<b>a:b のボタン</b>で操作対象の箱の形を変えられます（3:4 が教科書の問題の設定 0.12 m × 0.16 m）。<br>
   ・チェックボックスで<b>力・作用線・分解した力</b>を出し入れできます（最初は「箱の分割線」だけ ON）。<br>
-  ・<b>「傾く瞬間」</b>のボタンを押すと、傾く直前 → ちょうど → 直後をスローモーションで見られます。<br>
+  ・<b>「傾く瞬間をスローで」</b>のボタンを押すと、傾く直前 → ちょうど → 直後をスローモーションで見られます。<br>
   <span id="hint3d" style="display:none">・いま見ている<b>3次元の図</b>は、キャンバスを<b>ドラッグすると視点が回り</b>、ホイールで拡大縮小できます。<b>板の上をドラッグ</b>すると θ が変わります。<br></span>
   ・このページは1つのファイルで動きます（インターネット不要）。</p>
 </div>
@@ -1004,6 +1023,7 @@ function prep(cv, w, h) {
    キャンバスを描き直すたびに prep() がリセットする。 */
 var _fArrows = [];
 function resetArrowOverlap() { _fArrows.length = 0; }
+var NO_SHIFT = false;     /* true のあいだは「重なった力の矢印を自動でずらす」をやめる */
 function arrowShift(x1, y1, ux, uy, len, k) {
   var step = 5.5 * k, n = 0, i;
   for (i = 0; i < _fArrows.length; i++) {
@@ -1020,7 +1040,7 @@ function arrowShift(x1, y1, ux, uy, len, k) {
   var rec = { x: x1, y: y1, ux: ux, uy: uy, len: len, cat: 'F', color: COL.force };
   _fArrows.push(rec);
   var out = { dx: 0, dy: 0, rec: rec };
-  if (n) {
+  if (n && !NO_SHIFT) {
     var sgn = (n % 2) ? 1 : -1;                           /* 右・左・右…と交互にずらす */
     var mag = step * Math.ceil(n / 2);
     out.dx = -uy * mag * sgn; out.dy = ux * mag * sgn;
@@ -2079,9 +2099,13 @@ function drawTiltForces(ctx, g, v, stt, show, box, fs, opt) {
   var sz = opt.size || 12.5;
   var RL = 2 * Math.max(g.w, g.h);                              /* 作用線の長さ＝箱の 2 倍ほど */
   var still = !tipped && !stt.slip;
+  /* ★重力は重心から、抗力は本当の作用点から描く。2 本が重ならないようにするための
+     「横へのずらし」は、作用点が回転軸からどれだけ離れているかに比例させ、
+     傾く瞬間（作用点が回転軸に一致）にはちょうど 0 にする。         */
+  var offR = 5.5 * clamp(sR / Math.max(1e-6, g.a / 2), 0, 1);
   if (show.L) {                                                  /* 作用線（半直線） */
     rayLine(ctx, cm.x, cm.y, 0, 1, COL.force, box, 1.3, RL);
-    if (still) rayLine(ctx, cp.x + 2.5, cp.y, 0, -1, COL.norm, box, 1.3, RL);
+    if (still) rayLine(ctx, cp.x + offR, cp.y, 0, -1, COL.norm, box, 1.3, RL);
     else rayLine(ctx, cm.x, cm.y, 0, -1, fade(COL.force, .55), box, 1.3, RL);   /* 傾いたら重力の作用線を上にも */
   }
   var mainOn = show.F && !show.Hide;                             /* 重力・抗力そのもの */
@@ -2103,13 +2127,17 @@ function drawTiltForces(ctx, g, v, stt, show, box, fs, opt) {
     }
   }
   if (mainOn) {
+    NO_SHIFT = true;                                 /* ずらしは自分でやる（自動ずらしは切る） */
+    /* 傾く瞬間は 2 本がぴたりと重なる。重力（赤）を上に描いて見えなくならないようにする */
+    if (still) {
+      arrow(ctx, cp.x + offR, cp.y, cp.x + offR, cp.y - Lg, 'force', 1, COL.norm);
+      if (lab) tipLabel(ctx, '抗力', cp.x + offR, cp.y - Lg, 0, -1, { size: sz, color: COL.norm, dx: compOn ? 24 : 0 });
+    }
     arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
     if (lab) tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: sz, color: COL.force, dx: compOn ? 20 : 0 });
-    if (still) {
-      arrow(ctx, cp.x, cp.y, cp.x, cp.y - Lg, 'force', 1, COL.norm);
-      if (lab) tipLabel(ctx, '抗力', cp.x, cp.y - Lg, 0, -1, { size: sz, color: COL.norm, dx: compOn ? 24 : 0 });
-    }
+    NO_SHIFT = false;
   }
+  if (still && (mainOn || compOn)) actPoint(ctx, cp.x, cp.y, COL.norm);   /* 抗力の作用点の● */
   return { cp: cp };
 }
 
@@ -2133,7 +2161,10 @@ function drawPullForces(ctx, g, v, stt, show, box, fs, opt) {
   var ix = { x: cm.x, y: fp.y };                                 /* 重力の作用線と F の作用線の交点 */
   var Rx = F * fs, Ry = -mg * fs;                                /* 抗力（画面の向き） */
   var Rl = Math.hypot(Rx, Ry) || 1;
-  var ox = -Ry / Rl * 4, oy = Rx / Rl * 4;                       /* 抗力と合力が重ならないよう、抗力を 4 px 横へ */
+  /* 抗力と合力が重ならないよう、抗力を横へずらす。ずらし量は作用点が回転軸から
+     どれだけ離れているかに比例させ、★傾く瞬間（作用点が回転軸）には 0★ にする */
+  var offP = 4 * clamp(xR / Math.max(1e-6, g.a / 2), 0, 1);
+  var ox = -Ry / Rl * offP, oy = Rx / Rl * offP;
   var RL = 2 * Math.max(g.w, g.h);
   if (show.L || show.Sum) {
     rayLine(ctx, cm.x, cm.y, 0, 1, COL.force, box, 1.3, RL);
@@ -2172,13 +2203,16 @@ function drawPullForces(ctx, g, v, stt, show, box, fs, opt) {
     }
   }
   if (mainOn) {
+    NO_SHIFT = true;                                             /* ずらしは offP で自分でやる */
     arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
     if (lab) tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: sz, color: COL.force });
     if (still) {
       arrow(ctx, cp.x + ox, cp.y + oy, cp.x + ox + Rx, cp.y + oy + Ry, 'force', 1, COL.norm);
       if (lab) label(ctx, '抗力', cp.x + Rx + 6, cp.y + Ry - 10, { size: sz, color: COL.norm, align: 'left' });
     }
+    NO_SHIFT = false;
   }
+  if (still && (mainOn || compOn)) actPoint(ctx, cp.x, cp.y, COL.norm);   /* 抗力の作用点の● */
   return { cp: cp, fp: fp, ix: ix };
 }
 
@@ -2194,6 +2228,15 @@ function tipLabel(ctx, text, x2, y2, ux, uy, opt) {
   ctx.restore();
   var off = (opt.gap || 6) + Math.abs(ux) * tw / 2 + Math.abs(uy) * size * 0.6;
   label(ctx, text, x2 + ux * off + (opt.dx || 0), y2 + uy * off + (opt.dy || 0), { size: size, color: opt.color, bold: opt.bold });
+}
+
+/* 力の作用点の印（小さな●）。矢印を横へずらしても、作用点そのものは正しく見える */
+function actPoint(ctx, x, y, col) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+  ctx.fillStyle = col || COL.norm; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.9; ctx.stroke();
+  ctx.restore();
 }
 
 /* 判定の吹き出しをまとめて置く。近い箱どうしで重なるときは、あとのものを上へ積む。
@@ -2259,12 +2302,25 @@ function verdictBubble(ctx, kind, x, y, side, size, tailX) {
   else if (kind === 'slip') { o.bg = '#dff2ee'; o.border = '#0f8a8a'; o.color = '#0a5c5c'; bubble(ctx, 'すべった！', x, y, o); }
 }
 
-/* 角 θ の印（水平の破線＋弧）。(x,y) は板の回転軸 */
-function thetaMark(ctx, x, y, thDeg, r, text) {
+/* 角 θ の印（水平の破線＋弧）。(x,y) は板の回転軸
+   opt.fixed … θ が小さくても読めるように、文字を弧の外の決まった場所に置く */
+function thetaMark(ctx, x, y, thDeg, r, text, opt) {
+  opt = opt || {};
   ctx.save();
   ctx.strokeStyle = COL.sub; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
   ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + r + 26, y); ctx.stroke();
   ctx.restore();
+  if (opt.fixed) {
+    if (thDeg > 0.3) {
+      ctx.save();
+      ctx.strokeStyle = opt.color || '#3d4c5a'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(x, y, r, -thDeg * DEG, 0); ctx.stroke();
+      ctx.restore();
+    }
+    if (text) label(ctx, text, x + r + 10, y + 15, { size: opt.size || 13, bold: true,
+      color: opt.color || '#3d4c5a', align: 'left', avoid: false });
+    return;
+  }
   if (thDeg > 0.5) angArc(ctx, x, y, r, 0, -thDeg * DEG, text, -(thDeg / 2 + 14) * DEG, r + 18);
   else if (text) label(ctx, text, x + r + 16, y - 10, { size: 12.5, color: COL.sub });
 }
@@ -2609,12 +2665,16 @@ function drawR1Scene(ctx, s, region) {
     var rbox = { x0: region.x0, y0: region.y0, x1: region.x0 + region.w, y1: region.y0 + region.h };
     var Wb = plateToWorld(th);
     items.forEach(function (it) {
-      var b = it.b, yF = P.box.DEPTH / 2 + 0.001;
+      /* 力は「箱の中心を通るたて線」の上に描く（手前の面ではなく、奥ゆきのまん中 y = 0） */
+      var b = it.b, yF = 0;
       var cmW = [it.o[0] + it.U[0] / 2 + it.N[0] / 2, yF, it.o[2] + it.U[2] / 2 + it.N[2] / 2];
       var cmP = PJ(cmW);
       var Lg = P.box.M * G * FS * 0.62;                       /* 3 次元の図では少し短く（ズーム側が本番） */
       var sR = P.tilt.contact(b.dm.a, b.dm.b, v.th);
       var cpP = PJ(Wb(b.s + sR, yF, 0));
+      /* 重力と抗力を横へずらす量は、作用点が回転軸からどれだけ離れているかに比例。
+         傾く瞬間（作用点が回転軸に一致）には 0 になり、2 本がぴたりと重なる */
+      var offR = 5.5 * clamp(sR / Math.max(1e-6, b.dm.a / 2), 0, 1);
       var tipped = b.stt.tip && b.tip > 0.01;
       var downP = PJ([cmW[0], cmW[1], cmW[2] - 1]);           /* 鉛直下向きの画面での向き */
       var ddx = downP.x - cmP.x, ddy = downP.y - cmP.y, dL = Math.hypot(ddx, ddy) || 1;
@@ -2624,17 +2684,20 @@ function drawR1Scene(ctx, s, region) {
       if (!b.target) ctx.globalAlpha = 0.35;
       if (s.o.showL) {
         rayLine(ctx, cmP.x, cmP.y, ddx, ddy, COL.force, rbox, 1.3, RL);
-        if (!tipped) rayLine(ctx, cpP.x + 2, cpP.y, -ddx, -ddy, COL.norm, rbox, 1.3, RL);
+        if (!tipped) rayLine(ctx, cpP.x + offR, cpP.y, -ddx, -ddy, COL.norm, rbox, 1.3, RL);
         else rayLine(ctx, cmP.x, cmP.y, -ddx, -ddy, fade(COL.force, .55), rbox, 1.3, RL);
       }
       if (s.o.showF && !s.o.showHide) {
+        NO_SHIFT = true;                 /* ずらしは上の offR で自分でやる */
         arrow(ctx, cmP.x, cmP.y, cmP.x + ddx * Lg, cmP.y + ddy * Lg, 'force', 0.85, COL.force);
         if (b.target) label(ctx, 'mg', cmP.x + ddx * (Lg + 9), cmP.y + ddy * (Lg + 9), { size: 11, color: COL.force });
         if (!tipped) {
-          arrow(ctx, cpP.x, cpP.y, cpP.x - ddx * Lg, cpP.y - ddy * Lg, 'force', 0.85, COL.norm);
-          if (b.target) label(ctx, '抗力', cpP.x - ddx * (Lg + 10), cpP.y - ddy * (Lg + 10), { size: 11, color: COL.norm });
+          arrow(ctx, cpP.x + offR, cpP.y, cpP.x + offR - ddx * Lg, cpP.y - ddy * Lg, 'force', 0.85, COL.norm);
+          if (b.target) label(ctx, '抗力', cpP.x + offR - ddx * (Lg + 10), cpP.y - ddy * (Lg + 10), { size: 11, color: COL.norm });
         }
+        NO_SHIFT = false;
       }
+      if (!tipped && (s.o.showF || s.o.showL)) actPoint(ctx, cpP.x, cpP.y, COL.norm);
       ctx.restore();
     });
   }
@@ -2698,7 +2761,7 @@ function drawTiltBox(ctx, s, v, dm, stt, tipDeg, pv, fr, pinned, opt) {
     /* 面（板）：回転軸を通る直線。左→右に渡して側=1（ハッチは面の下） */
     var L1 = { x: pv.x - u0.x * 600, y: pv.y - u0.y * 600 }, L2 = { x: pv.x + u0.x * 600, y: pv.y + u0.y * 600 };
     hatchLine(ctx, L1.x, L1.y, L2.x, L2.y, 1);
-    thetaMark(ctx, pv.x, pv.y, v.th, 30, 'θ');
+    thetaMark(ctx, pv.x, pv.y, v.th, 52, 'θ = ' + fmt(v.th, 0) + '°', { fixed: true });
   }
   drawBoxSide(ctx, g, { grid: s.o.showGrid, fill: opt.fill, line: opt.line });
   if (pinned) pinMark(ctx, pv.x, pv.y, opt.pinR || 4.4);
@@ -2726,7 +2789,7 @@ DEFS['r1'] = {
   cvNote: 'ドラッグ：視点を回す／板や箱をドラッグ：θ を変える', tick2: false,
   /* 再生：操作対象が傾きはじめて 5° 進んだところで止める */
   playStop: function (v) { var dm = P.box.dims(v.ab); return P.tilt.th0(dm.a, dm.b) + 5; },
-  moment: { label: '傾く瞬間', dur: 4.0, range: function (v) { var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b); return { k: 'th', from: Math.max(0, th0 - 5), to: Math.min(R1.THMAX, th0 + 5), hold: 0.8 }; } },
+  moment: { label: '傾く瞬間をスローで', dur: 4.0, range: function (v) { var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b); return { k: 'th', from: Math.max(0, th0 - 5), to: Math.min(R1.THMAX, th0 + 5), hold: 0.8 }; } },
   cam3d: { az: -35, el: 25, zoom: 1 },
   drag3d: true,
   abDef: '4:4',
@@ -2736,7 +2799,7 @@ DEFS['r1'] = {
   ],
   vis: [
     { k: 'F', label: '力を表示', def: false },
-    { k: 'L', label: '作用線を表示', def: false },
+    { k: 'L', label: '重力の作用線を表示', def: false },
     { k: 'Fc', label: '分解した力を表示', def: false },
     { k: 'Hide', label: '重力と抗力のベクトルを消す', def: false },
     { k: 'AB', label: '各箱の $a{:}b$ を表示', def: false },
@@ -2943,7 +3006,8 @@ function drawThinkTilt(cv) {
 }
 
 /* ＜解答＞(1) 作図による解法の図（教科書の図：対角線 AC が鉛直になる瞬間） */
-function drawAnsFig(cv, thDeg) {
+function drawAnsFig(cv, thDeg, vis) {
+  vis = vis || { F: true, Fc: false };
   var W = 340, H = 258, ctx = prep(cv, W, H);
   var dm = P.box.dims('3:4'), th0 = P.tilt.th0(dm.a, dm.b), S = 620;
   var th = (thDeg === undefined || thDeg === null) ? th0 : thDeg;
@@ -2964,7 +3028,9 @@ function drawAnsFig(cv, thDeg) {
   ctx.strokeStyle = 'rgba(120,132,145,.8)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(A.x, A.y - 150); ctx.stroke();
   ctx.restore();
+  label(ctx, '鉛直線', A.x, A.y - 158, { size: 11, color: COL.sub, avoid: false });
   thetaMark(ctx, pv.x, pv.y, th, 86, 'θ');
+  label(ctx, '水平線', pv.x + 116, pv.y + 12, { size: 11, color: COL.sub, align: 'left', avoid: false });
   if (hit) angArc(ctx, A.x, A.y, 42, -Math.PI / 2, -Math.PI / 2 - th * DEG, 'θ₀', -Math.PI / 2 - th * DEG / 2, 56);
   /* 重力 */
   /* 先に A・B・C・D を置いてから重力を描く（重力の文字が自動でよけてくれる） */
@@ -2972,8 +3038,20 @@ function drawAnsFig(cv, thDeg) {
   label(ctx, 'B', B.x + 10, B.y + 4, { size: 13, bold: true });
   label(ctx, 'C', C.x + 2, C.y - 10, { size: 13, bold: true });
   label(ctx, 'D', D.x - 10, D.y - 2, { size: 13, bold: true });
-  arrow(ctx, g.cm.x, g.cm.y, g.cm.x, g.cm.y + 46, 'force', 1, COL.force);
-  tipLabel(ctx, '重力 mg', g.cm.x, g.cm.y + 46, 0, 1, { size: 12, color: COL.force, dx: -44 });
+  if (vis.Fc) {                                  /* 分解した力（斜面に垂直・平行） */
+    var uu = g.u, nn = g.n, Lg1 = 46;
+    var Lc1 = Lg1 * Math.cos(th * DEG), Ls1 = Lg1 * Math.sin(th * DEG);
+    arrow(ctx, g.cm.x, g.cm.y, g.cm.x - nn.x * Lc1, g.cm.y - nn.y * Lc1, 'comp', 1, COL.force);
+    tipLabel(ctx, 'mg cosθ', g.cm.x - nn.x * Lc1, g.cm.y - nn.y * Lc1, -nn.x, -nn.y, { size: 11, color: COL.force, dx: 26, dy: -4 });
+    if (Ls1 > 6) {
+      arrow(ctx, g.cm.x, g.cm.y, g.cm.x - uu.x * Ls1, g.cm.y - uu.y * Ls1, 'comp', 1, COL.force);
+      tipLabel(ctx, 'mg sinθ', g.cm.x - uu.x * Ls1, g.cm.y - uu.y * Ls1, -uu.x, -uu.y, { size: 11, color: COL.force, dy: -8 });
+    }
+  }
+  if (vis.F) {
+    arrow(ctx, g.cm.x, g.cm.y, g.cm.x, g.cm.y + 46, 'force', 1, COL.force);
+    tipLabel(ctx, '重力 mg', g.cm.x, g.cm.y + 46, 0, 1, { size: 12, color: COL.force, dx: -44 });
+  }
   /* 寸法 */
   var md = { x: (C.x + D.x) / 2, y: (C.y + D.y) / 2 }, ma = { x: (A.x + D.x) / 2, y: (A.y + D.y) / 2 };
   label(ctx, '0.12 m', md.x + g.n.x * 16, md.y + g.n.y * 16, { size: 11.5, color: COL.dim });
@@ -2984,7 +3062,8 @@ function drawAnsFig(cv, thDeg) {
 }
 
 /* ＜別解＞(1) 力のモーメントのつりあい：A のピン、重力の分解、うでの長さ a/2・b/2 */
-function drawAnsFig2(cv, thDeg) {
+function drawAnsFig2(cv, thDeg, vis) {
+  vis = vis || { F: true, Fc: false };
   var W = 340, H = 290, ctx = prep(cv, W, H);
   var dm = P.box.dims('3:4'), th0 = P.tilt.th0(dm.a, dm.b), S = 780;
   var th = (thDeg === undefined || thDeg === null) ? th0 : thDeg;
@@ -2996,30 +3075,43 @@ function drawAnsFig2(cv, thDeg) {
   drawBoxSide(ctx, g, { grid: true, fill: hit ? '#fdf0d8' : '#fbf3ea' });
   var A = g.c[0], u = g.u, n = g.n, cm = g.cm;
   thetaMark(ctx, pv.x, pv.y, th, 86, hit ? 'θ₀' : 'θ');
-  /* うでの長さ：A から mg cosθ₀ の作用線までの a/2、mg sinθ₀ の作用線までの b/2（破線＋両矢印） */
-  var fa = g.pt(g.w / 2, 0), fb = g.pt(0, g.h / 2);
-  ctx.save(); ctx.strokeStyle = COL.dim; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-  ctx.beginPath(); ctx.moveTo(fa.x, fa.y); ctx.lineTo(cm.x, cm.y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(fb.x, fb.y); ctx.lineTo(cm.x, cm.y); ctx.stroke();
-  ctx.restore();
-  var o1 = g.pt(0, -22), o2 = g.pt(g.w / 2, -22);           /* a/2：面の下がわ */
-  arrow(ctx, o1.x, o1.y, o2.x, o2.y, 'dim', 1); arrow(ctx, o2.x, o2.y, o1.x, o1.y, 'dim', 1);
-  label(ctx, 'a/2', g.pt(g.w / 4, -36).x, g.pt(g.w / 4, -36).y, { size: 11.5, color: COL.dim });
-  var p1 = g.pt(-24, 0), p2 = g.pt(-24, g.h / 2);           /* b/2：箱の左（下側の面の外） */
-  arrow(ctx, p1.x, p1.y, p2.x, p2.y, 'dim', 1); arrow(ctx, p2.x, p2.y, p1.x, p1.y, 'dim', 1);
-  label(ctx, 'b/2', g.pt(-40, g.h / 4).x, g.pt(-40, g.h / 4).y, { size: 11.5, color: COL.dim });
-  /* 重力とその分解（矢印は短めにして A の印と重ねない） */
   var Lg = 46, Lc = Lg * Math.cos(th * DEG), Ls = Lg * Math.sin(th * DEG);
-  arrow(ctx, cm.x, cm.y, cm.x - n.x * Lc, cm.y - n.y * Lc, 'comp', 1, COL.force);
-  tipLabel(ctx, (hit ? 'mg cosθ₀' : 'mg cosθ'), cm.x - n.x * Lc, cm.y - n.y * Lc, -n.x, -n.y, { size: 11, color: COL.force, dx: 26, dy: -6 });
-  if (Ls > 6) {
-    arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
-    tipLabel(ctx, (hit ? 'mg sinθ₀' : 'mg sinθ'), cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -8 });
+  if (vis.Fc) {
+    /* うでの長さ：A から mg cosθ の作用線までの a/2、mg sinθ の作用線までの b/2（破線＋両矢印） */
+    var fa = g.pt(g.w / 2, 0), fb = g.pt(0, g.h / 2);
+    ctx.save(); ctx.strokeStyle = COL.dim; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(fa.x, fa.y); ctx.lineTo(cm.x, cm.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fb.x, fb.y); ctx.lineTo(cm.x, cm.y); ctx.stroke();
+    ctx.restore();
+    var o1 = g.pt(0, -22), o2 = g.pt(g.w / 2, -22);           /* a/2：面の下がわ */
+    arrow(ctx, o1.x, o1.y, o2.x, o2.y, 'dim', 1); arrow(ctx, o2.x, o2.y, o1.x, o1.y, 'dim', 1);
+    label(ctx, 'a/2', g.pt(g.w / 4, -36).x, g.pt(g.w / 4, -36).y, { size: 11.5, color: COL.dim });
+    var p1 = g.pt(-24, 0), p2 = g.pt(-24, g.h / 2);           /* b/2：箱の左（下側の面の外） */
+    arrow(ctx, p1.x, p1.y, p2.x, p2.y, 'dim', 1); arrow(ctx, p2.x, p2.y, p1.x, p1.y, 'dim', 1);
+    label(ctx, 'b/2', g.pt(-40, g.h / 4).x, g.pt(-40, g.h / 4).y, { size: 11.5, color: COL.dim });
+    /* 重力の分解（矢印は短めにして A の印と重ねない） */
+    arrow(ctx, cm.x, cm.y, cm.x - n.x * Lc, cm.y - n.y * Lc, 'comp', 1, COL.force);
+    tipLabel(ctx, (hit ? 'mg cosθ₀' : 'mg cosθ'), cm.x - n.x * Lc, cm.y - n.y * Lc, -n.x, -n.y, { size: 11, color: COL.force, dx: 26, dy: -6 });
+    if (Ls > 6) {
+      arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
+      tipLabel(ctx, (hit ? 'mg sinθ₀' : 'mg sinθ'), cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -8 });
+    }
   }
-  arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
-  tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: 12, color: COL.force, dx: -14 });
-  pinMark(ctx, A.x, A.y, 5);
-  label(ctx, 'A（回転軸・ピン）', A.x + 4, A.y + 26, { size: 12, bold: true, align: 'left', avoid: true });
+  if (vis.F) {
+    /* 抗力（垂直抗力と摩擦力の合力）の作用点は、上のシミュレーションと同じで
+       A から s = a/2 − (b/2)tanθ のところ。θ が大きくなるほど A に近づき、
+       ★傾く瞬間（θ = θ₀）にちょうど A に一致する★ */
+    var sR = P.tilt.contact(dm.a, dm.b, th);
+    var cp = g.pt(sR * S, 0);
+    arrow(ctx, cp.x, cp.y, cp.x, cp.y - Lg, 'force', 1, COL.norm);
+    actPoint(ctx, cp.x, cp.y, COL.norm);
+    tipLabel(ctx, hit ? '抗力（作用点が A に一致）' : '抗力', cp.x, cp.y - Lg, 0, -1,
+      { size: 11.5, color: COL.norm, dx: hit ? 44 : 16, dy: -2 });
+    arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
+    tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: 12, color: COL.force, dx: -14 });
+  }
+  axisMark(ctx, A.x, A.y, null);
+  label(ctx, hit ? 'A（回転軸）' : 'A（回転軸になる点）', A.x + 4, A.y + 26, { size: 12, bold: true, align: 'left', avoid: true });
   label(ctx, hit ? 'A のまわりのモーメントがつりあう ＝ 傾く瞬間' : 'A のまわりのモーメントのつりあい',
     W / 2 - 22, 16, { size: 11.5, bold: hit, color: hit ? '#9b2418' : '#3d4c5a' });
   label(ctx, 'θ = ' + fmt(th, 1) + '°', W - 8, 16, { size: 12, color: COL.sub, align: 'right' });
@@ -3091,8 +3183,9 @@ function drawFricGraph(cv, kind, v, s) {
 
 /* ＜解答＞(2) 摩擦角の図（教科書 図63 の形）。
    斜面の傾きがちょうど θ₀ のとき、重力・垂直抗力・最大摩擦力の 3 力がつりあう。 */
-function drawAnsFig3(cv) {
-  var W = 360, H = 300, ctx = prep(cv, W, H);
+function drawAnsFig3(cv, vis) {
+  vis = vis || { F: true, Fc: false };
+  var W = 400, H = 300, ctx = prep(cv, W, H);
   var dm = P.box.dims('3:4'), th0 = P.tilt.th0(dm.a, dm.b), S = 620;
   var pv = { x: 116, y: 206 };
   var u = { x: Math.cos(th0 * DEG), y: -Math.sin(th0 * DEG) };     /* 斜面を上る向き */
@@ -3100,21 +3193,34 @@ function drawAnsFig3(cv) {
   hatchLine(ctx, pv.x - u.x * 150, pv.y - u.y * 150, pv.x + u.x * 230, pv.y + u.y * 230, 1);
   var g = boxGeom(pv, th0, 0, dm.a, dm.b, S);
   drawBoxSide(ctx, g, { grid: false, fill: '#fbf3ea' });
-  var cm = g.cm, cp = g.pt(g.w / 2, 0);                            /* 重心と接触面のまん中 */
+  /* 抗力の作用点は、上のシミュレーションと同じ式 s = a/2 − (b/2)tanθ。
+     θ = θ₀ ではちょうど回転軸 A（左下の角）に一致する */
+  var cm = g.cm, cp = g.pt(P.tilt.contact(dm.a, dm.b, th0) * S, 0);
   var mg = P.box.M * G, fs = 62 / mg;                              /* mg を 62 px に */
   var Lg = mg * fs, Lc = Lg * Math.cos(th0 * DEG), Ls = Lg * Math.sin(th0 * DEG);
-  /* 重力とその分解（分力は破線） */
-  arrow(ctx, cm.x, cm.y, cm.x - n.x * Lc, cm.y - n.y * Lc, 'comp', 1, COL.force);
-  tipLabel(ctx, 'mg cosθ₀', cm.x - n.x * Lc, cm.y - n.y * Lc, -n.x, -n.y, { size: 11, color: COL.force, dx: 34, dy: 10 });
-  arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
-  tipLabel(ctx, 'mg sinθ₀', cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -14 });
-  arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
-  tipLabel(ctx, '重力 mg', cm.x, cm.y + Lg, 0, 1, { size: 11.5, color: COL.force, dx: -40, dy: 4 });
-  /* 垂直抗力 N と 最大摩擦力 F₀（接触面から） */
-  arrow(ctx, cp.x, cp.y, cp.x + n.x * Lc, cp.y + n.y * Lc, 'force', 1, COL.norm);
-  tipLabel(ctx, '垂直抗力 N', cp.x + n.x * Lc, cp.y + n.y * Lc, n.x, n.y, { size: 11.5, color: COL.norm, dx: -26, dy: -6 });
-  arrow(ctx, cp.x, cp.y, cp.x + u.x * Ls, cp.y + u.y * Ls, 'force', 1, COL.fric);
-  tipLabel(ctx, '最大摩擦力 F₀', cp.x + u.x * Ls, cp.y + u.y * Ls, u.x, u.y, { size: 11.5, color: COL.fric, dx: 16, dy: -16 });
+  var swapLab = null;
+  /* 上のシミュレーションと同じ描き分け：
+     「力を表示」＝ 重力（赤の実線）と抗力（紫の実線）、
+     「分解した力を表示」＝ 重力の分力・垂直抗力 N・最大摩擦力 F₀（分力の矢印） */
+  if (vis.Fc) {
+    arrow(ctx, cm.x, cm.y, cm.x - n.x * Lc, cm.y - n.y * Lc, 'comp', 1, COL.force);
+    arrow(ctx, cm.x, cm.y, cm.x - u.x * Ls, cm.y - u.y * Ls, 'comp', 1, COL.force);
+    tipLabel(ctx, 'mg sinθ₀', cm.x - u.x * Ls, cm.y - u.y * Ls, -u.x, -u.y, { size: 11, color: COL.force, dy: -14 });
+    arrow(ctx, cp.x, cp.y, cp.x + n.x * Lc, cp.y + n.y * Lc, 'comp', 1, COL.norm);
+    tipLabel(ctx, '垂直抗力 N', cp.x + n.x * Lc, cp.y + n.y * Lc, n.x, n.y, { size: 11.5, color: COL.norm, dx: -30, dy: -6 });
+    arrow(ctx, cp.x, cp.y, cp.x + u.x * Ls, cp.y + u.y * Ls, 'comp', 1, COL.fric);
+    /* 「mg cosθ₀」と「最大摩擦力 F₀」は場所を入れかえて置く（矢印の近くで読みやすいほうへ） */
+    swapLab = {
+      f0: { x: cm.x - n.x * Lc + (-n.x) * (6 + Math.abs(n.x) * 26) + 34, y: cm.y - n.y * Lc + (-n.y) * (6 + Math.abs(n.y) * 7) + 10 },
+      mg: { x: cp.x + u.x * Ls + u.x * (6 + Math.abs(u.x) * 34) + 28, y: cp.y + u.y * Ls + u.y * (6 + Math.abs(u.y) * 7) - 30 }
+    };
+  }
+  if (vis.F) {
+    arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
+    tipLabel(ctx, '重力 mg', cm.x, cm.y + Lg, 0, 1, { size: 11.5, color: COL.force, dx: -40, dy: 4 });
+    arrow(ctx, cp.x + 2.5, cp.y, cp.x + 2.5, cp.y - Lg, 'force', 1, COL.norm);
+    tipLabel(ctx, '抗力', cp.x + 2.5, cp.y - Lg, 0, -1, { size: 11.5, color: COL.norm, dx: -16, dy: -2 });
+  }
   /* 直角の印（斜面と N） */
   (function () {
     var q = 9, p0 = { x: cp.x + n.x * q, y: cp.y + n.y * q };
@@ -3124,9 +3230,25 @@ function drawAnsFig3(cv) {
     ctx.moveTo(cp.x + u.x * q, cp.y + u.y * q); ctx.lineTo(p0.x + u.x * q, p0.y + u.y * q);
     ctx.stroke(); ctx.restore();
   })();
-  thetaMark(ctx, pv.x, pv.y, th0, 100, 'θ₀');
+  drawEqualTicks(ctx);        /* 同じ大きさの力には同じ「｜」の印（上のシミュレーションと同じ） */
+  thetaMark(ctx, pv.x, pv.y, th0, 74, 'θ₀');
+  if (swapLab) {              /* θ₀ のあとに描く → ぶつかったら自動でよける */
+    label(ctx, '最大摩擦力 F₀', swapLab.f0.x, swapLab.f0.y, { size: 11.5, color: COL.fric, avoid: true });
+    label(ctx, 'mg cosθ₀', swapLab.mg.x, swapLab.mg.y, { size: 11, color: COL.force, avoid: true });
+  }
+  axisMark(ctx, g.c[0].x, g.c[0].y, null);
+  label(ctx, 'A', g.c[0].x - 13, g.c[0].y + 9, { size: 12, bold: true, avoid: false });
   label(ctx, '3 つの力がつりあっている（すべり出す直前）', W / 2, 15, { size: 11, color: '#3d4c5a' });
   label(ctx, 'μ = F₀ / N = tanθ₀', W / 2, H - 12, { size: 12.5, bold: true, color: '#0a5c5c' });
+}
+
+/* ＜解答＞の図の「力を表示／分解した力を表示」チェックボックス（ブロックごと） */
+function ansOpts(s, blk) {
+  var a = (s._av && s._av[blk]) || { F: true, Fc: false };
+  return '<div class="opts ansopts">' +
+    '<label' + (a.F ? '' : ' class="vflash"') + '><input type="checkbox" data-ansv="' + blk + 'F"' + (a.F ? ' checked' : '') + '> 力を表示</label>' +
+    '<label' + (a.Fc ? '' : ' class="vflash"') + '><input type="checkbox" data-ansv="' + blk + 'Fc"' + (a.Fc ? ' checked' : '') + '> 分解した力を表示</label>' +
+    '</div>';
 }
 
 DEFS['r2'] = {
@@ -3142,7 +3264,7 @@ DEFS['r2'] = {
     return Math.min(first + 5, Math.max(first + 0.5, second - 0.5));
   },
   slipFirst: function (v) { var dm = P.box.dims(v.ab); return P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; },
-  moment2: { label: '滑る瞬間', dur: 4.0, range: function (v) { var ths = P.tilt.thSlip(v.mu); return { k: 'th', from: Math.max(0, ths - 5), to: Math.min(R2.THMAX, ths + 5), hold: 0.8 }; } },
+  moment2: { label: '滑る瞬間をスローで', dur: 4.0, range: function (v) { var ths = P.tilt.thSlip(v.mu); return { k: 'th', from: Math.max(0, ths - 5), to: Math.min(R2.THMAX, ths + 5), hold: 0.8 }; } },
   playRate: 5, playNote: 'スタートを押すと θ が 10° からだんだん大きくなる',
   title: '2　板の角度を変える　～箱は固定なし。傾くのが先か、滑るのが先か～',
   sub: '板の左端はピンで固定。箱は固定していないので、θ を上げていくと<b>すべる</b>か<b>傾く</b>かのどちらかが先に起こる。' +
@@ -3169,14 +3291,14 @@ DEFS['r2'] = {
   ],
   vis: [
     { k: 'F', label: '力を表示', def: false },
-    { k: 'L', label: '作用線を表示', def: false },
+    { k: 'L', label: '重力の作用線を表示', def: false },
     { k: 'Fc', label: '分解した力を表示', def: false },
     { k: 'Hide', label: '重力と抗力のベクトルを消す', def: false },
     { k: 'AB', label: '各箱の $a{:}b$ と $\\mu$ を表示', def: false },
     { k: 'Grid', label: '箱の分割線を表示', def: true }
   ],
   moment: {
-    label: '傾く瞬間',
+    label: '傾く瞬間をスローで',
     dur: 4.0,
     range: function (v) {
       var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b);
@@ -3269,7 +3391,7 @@ DEFS['r2'] = {
       '<li>直方体と斜面との間の静止摩擦係数 $\\mu$ がある値 $\\mu_0$ より小さいときは、直方体は (1) の状態になる前に斜面をすべり始める。$\\mu_0$ を求めよ。</li></ol></div>' +
       '<div class="bcard" id="r2ans"><h3>＜解答＞</h3>' +
       '<p class="mini">まず自分で解いてから開こう。</p>' +
-      '<button class="openbtn" data-open="r2ans" data-open-label="解答を見る" data-close-label="解答をとじる">解答を見る</button>' +
+      '<button class="openbtn glow" data-open="r2ans" data-open-label="解答を見る" data-close-label="解答をとじる">解答を見る</button>' +
       '<div class="anscol">' +
       /* ---- (1) 作図による解法：左に動く図、右に解説 ---- */
       '<div class="ansblock"><h4>(1)　作図による解法</h4><div class="ansrow">' +
@@ -3280,7 +3402,7 @@ DEFS['r2'] = {
       '<button id="bAnsReset" class="sub">↺ リセット</button>' +
       '<span class="playnote">押すと θ が大きくなり、<b>傾く瞬間</b>で止まる</span></div></div>' +
       '<canvas id="r2ansfig"></canvas></div>' +
-      '<div class="anstxt">' +
+      '<div class="anstxt">' + ansOpts(s, 'a1') +
       '<p>重心 G は直方体の中心、つまり対角線 AC の上にある。傾きはじめる瞬間は、<b>重心から下ろした重力の作用線が回転軸 A を通る</b>ときだから、<b>対角線 AC が鉛直</b>になる。' +
       'このとき辺 AD と鉛直線のなす角は斜面の傾き $\\theta_0$ に等しい（どちらも斜面に垂直な向きから測った角）。直角三角形 ACD で</p>' +
       '<div class="fmlbox"><span class="tex">\\sin\\theta_0 = \\dfrac{\\mathrm{CD}}{\\mathrm{AC}} = \\dfrac{0.12}{\\sqrt{0.12^2+0.16^2}} = \\dfrac{0.12}{0.20} = 0.60</span></div>' +
@@ -3295,16 +3417,19 @@ DEFS['r2'] = {
       '<button id="bAns2Reset" class="sub">↺ リセット</button>' +
       '<span class="playnote">押すと θ が大きくなり、<b>傾く瞬間</b>で止まる</span></div></div>' +
       '<canvas id="r2ansfig2"></canvas></div>' +
-      '<div class="anstxt">' +
+      '<div class="anstxt">' + ansOpts(s, 'a2') +
       '<p>回転軸 A のまわりの重力のモーメントを考える。重力 $mg$ を斜面に垂直な成分 $mg\\cos\\theta$ と斜面方向の成分 $mg\\sin\\theta$ に分けると、' +
       '$mg\\cos\\theta$ は A から $\\dfrac{a}{2}$ はなれた点で「もどす向き」に、$mg\\sin\\theta$ は A から $\\dfrac{b}{2}$ はなれた点で「倒す向き」にはたらく。' +
-      '抗力は A にはたらくのでモーメントは 0。傾きはじめるのは、倒す向きのモーメントがもどす向きのモーメントに等しくなるとき：</p>' +
+      '傾きはじめるのは、倒す向きのモーメントがもどす向きのモーメントに等しくなるとき：</p>' +
       '<div class="fmlbox"><span class="tex">mg\\sin\\theta_0\\cdot\\dfrac{b}{2} = mg\\cos\\theta_0\\cdot\\dfrac{a}{2}\\quad\\Longrightarrow\\quad \\tan\\theta_0 = \\dfrac{a}{b} = \\dfrac{0.12}{0.16} = \\dfrac{3}{4}</span></div>' +
+      '<p>なお箱には<b>抗力（垂直抗力と摩擦力）</b>がはたらいているが、傾く瞬間は左下の回転軸 A が抗力の作用点であり、' +
+      '<b>左下の端点を力のモーメントの軸に選べば、抗力のモーメントは 0 である</b>。' +
+      'すなわち、回転軸 A のまわりの重力のモーメントを考えるだけでよい。</p>' +
       '</div></div></div>' +
       /* ---- (2) ---- */
       '<div class="ansblock"><h4>(2)</h4><div class="ansrow">' +
       '<div class="ansfig"><canvas id="r2ansfig3"></canvas></div>' +
-      '<div class="anstxt">' +
+      '<div class="anstxt">' + ansOpts(s, 'a3') +
       '<p>斜面の傾きが $\\theta_0$ をこえるまで直方体がすべらないでいるためには、ちょうど $\\theta_0$ で<b>すべり出す直前</b>になっていればよい。' +
       'つまり $\\theta_0$ が<b>摩擦角</b>である。このとき物体にはたらく 3 つの力（重力・垂直抗力・最大摩擦力）はつりあっているので</p>' +
       '<div class="fmlbox"><span class="tex">\\text{斜面に平行：}\\; mg\\sin\\theta_0 - F_0 = 0</span></div>' +
@@ -3319,10 +3444,11 @@ DEFS['r2'] = {
   drawBelow: function (s) {
     var c1 = document.getElementById('r2think'); if (c1) drawThinkTilt(c1);
     var c2 = document.getElementById('r2ansfig');
-    if (c2 && c2.clientWidth > 0) drawAnsFig(c2, s._ans ? s._ans.th : undefined);
+    var av = s._av || { a1: { F: true }, a2: { F: true }, a3: { F: true } };
+    if (c2 && c2.clientWidth > 0) drawAnsFig(c2, s._ans ? s._ans.th : undefined, av.a1);
     var c3 = document.getElementById('r2ansfig2');
-    if (c3 && c3.clientWidth > 0) drawAnsFig2(c3, s._ans2 ? s._ans2.th : undefined);
-    var c4 = document.getElementById('r2ansfig3'); if (c4 && c4.clientWidth > 0) drawAnsFig3(c4);
+    if (c3 && c3.clientWidth > 0) drawAnsFig2(c3, s._ans2 ? s._ans2.th : undefined, av.a2);
+    var c4 = document.getElementById('r2ansfig3'); if (c4 && c4.clientWidth > 0) drawAnsFig3(c4, av.a3);
   }
 };
 
@@ -3438,7 +3564,7 @@ DEFS['r3'] = {
     return Math.min(first + 0.8, Math.max(first + 0.1, second - 0.1));
   },
   slipFirst: function (v) { var dm = P.box.dims(v.ab); return P.pull.state(P.box.M, dm.a, v.mu, v.F, dm.b * v.bp).slipFirst; },
-  moment2: { label: '滑る瞬間', dur: 4.0, range: function (v) { var Fs = P.pull.Fslip(P.box.M, v.mu); return { k: 'F', from: Math.max(0, Fs - 0.8), to: Math.min(R3.FMAX, Fs + 0.8), hold: 0.8 }; } },
+  moment2: { label: '滑る瞬間をスローで', dur: 4.0, range: function (v) { var Fs = P.pull.Fslip(P.box.M, v.mu); return { k: 'F', from: Math.max(0, Fs - 0.8), to: Math.min(R3.FMAX, Fs + 0.8), hold: 0.8 }; } },
   sub: '床の上の箱を、<b>ばねから受ける力 $F$ で左向きに</b>引く（ばねの左端をドラッグしても伸ばせる）。' +
     '傾く力は $F_0 = \\dfrac{mga}{2b\\prime}$（回転軸のまわりのモーメントのつりあい）、すべる力は $F_s = \\mu mg$。<b>先に来るほうが実際に起こる</b>。' +
     '箱の質量は $m = 1.0\\ \\mathrm{kg}$（$mg = 9.8\\ \\mathrm{N}$）。',
@@ -3474,7 +3600,7 @@ DEFS['r3'] = {
     { k: 'Grid', label: '箱の分割線を表示', def: true }
   ],
   moment: {
-    label: '傾く瞬間', dur: 4.0,
+    label: '傾く瞬間をスローで', dur: 4.0,
     range: function (v) {
       var dm = P.box.dims(v.ab), F0 = P.pull.F0(P.box.M, dm.a, dm.b * v.bp);
       return { k: 'F', from: Math.max(0, F0 - 0.8), to: Math.min(R3.FMAX, F0 + 0.8), hold: 0.8 };
@@ -3568,7 +3694,9 @@ function initState() {
     var s = { v: {}, o: {}, ab: d.abDef || '4:4', bp: d.bpDef || 1, touched: false, anim: null, view: null,
       playing: false, slow: false, started: false,
       _ans: { th: 0, playing: false, slow: false, max: 36.8699 },
-      _ans2: { th: 0, playing: false, slow: false, max: 36.8699 } };
+      _ans2: { th: 0, playing: false, slow: false, max: 36.8699 },
+      /* ＜解答＞の図の「力を表示／分解した力を表示」（ブロックごと） */
+      _av: { a1: { F: true, Fc: false }, a2: { F: true, Fc: false }, a3: { F: true, Fc: false } } };
     d.vars.forEach(function (vd) { s.v[vd.k] = vd.def; });
     (d.vis || []).forEach(function (vd) { s.o['show' + vd.k] = !!vd.def; });
     if (d.cam3d) s.cam = { az: d.cam3d.az, el: d.cam3d.el, zoom: d.cam3d.zoom || 1 };
@@ -3782,10 +3910,20 @@ function buildPanel() {
   Array.prototype.forEach.call(host.querySelectorAll('[data-var]'), function (b) {
     b.addEventListener('click', function () { stepVar(b.getAttribute('data-var'), +b.getAttribute('data-dir')); });
   });
+  /* ＜解答＞の図の力のチェックボックス（data-ansv="a1F" のように、ブロック名＋F/Fc） */
+  Array.prototype.forEach.call(host.querySelectorAll('[data-ansv]'), function (cb) {
+    cb.addEventListener('change', function () {
+      var k = cb.getAttribute('data-ansv'), blk = k.slice(0, 2), which = k.slice(2);
+      s._av[blk][which] = cb.checked;
+      var lab = cb.parentNode; if (lab && lab.classList) lab.classList.remove('vflash');
+      if (d.drawBelow) d.drawBelow(s);
+    });
+  });
   Array.prototype.forEach.call(host.querySelectorAll('[data-open]'), function (b) {
     b.addEventListener('click', function () {
       var box = $(b.getAttribute('data-open'));
       if (!box) return;
+      b.classList.remove('glow');
       var open = box.classList.toggle('open');
       b.textContent = open ? (b.getAttribute('data-close-label') || '解答をとじる') : (b.getAttribute('data-open-label') || '解答を見る');
       if (open) { renderMath(box); if (d.drawBelow) d.drawBelow(s); }
@@ -3858,6 +3996,7 @@ function resetAll() {
   s.ab = d.abDef || '4:4';
   s.bp = d.bpDef || 1;
   if (d.cam3d) s.cam = { az: d.cam3d.az, el: d.cam3d.el, zoom: d.cam3d.zoom || 1 };
+  s._av = { a1: { F: true, Fc: false }, a2: { F: true, Fc: false }, a3: { F: true, Fc: false } };
   if (s._ans) { s._ans.th = 0; s._ans.playing = false; s._ans.slow = false; }
   if (s._ans2) { s._ans2.th = 0; s._ans2.playing = false; s._ans2.slow = false; }
   buildPanel();
@@ -4292,7 +4431,8 @@ function tick(ts) {
     state: function () {
       var s = st.sims[st.cur];
       return { sim: st.cur, v: JSON.parse(JSON.stringify(s.v)), o: JSON.parse(JSON.stringify(s.o)), ab: s.ab, bp: s.bp,
-        cam: s.cam ? { az: +s.cam.az.toFixed(2), el: +s.cam.el.toFixed(2), zoom: +s.cam.zoom.toFixed(2) } : null };
+        cam: s.cam ? { az: +s.cam.az.toFixed(2), el: +s.cam.el.toFixed(2), zoom: +s.cam.zoom.toFixed(2) } : null,
+        av: JSON.parse(JSON.stringify(s._av || {})) };
     },
     goto: function (id) { gotoSim(id); return st.cur; },
     set: function (k, val) { setVar(k, val); return st.sims[st.cur].v[k]; },
