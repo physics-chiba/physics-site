@@ -27,6 +27,11 @@ h1{font-size:1.42rem;line-height:1.5;margin:.2em 0 .2em}
 .titlerow h1{margin:.2em 0;flex:1 1 420px;min-width:0}
 .lead2{margin:.1em 0 .4em;font-size:.9rem;color:#31465e}
 .quizlink{margin:.5em 0 0;font-size:.92rem;color:#31465e}
+.proof{margin:.6em 0 .2em;padding:.6em .9em;background:#f4f8f4;border:1px solid #cfe3d3;border-radius:10px;font-size:.9rem;color:#1b1f24;line-height:1.7}
+.proof .ttl{font-weight:700;color:#1c6b3a;margin:0 0 .3em}
+.proof .katex-display{margin:.3em 0}
+.gnote{margin:0 0 14px;padding:.5em .9em;font-size:.8rem;color:#5b6672;background:#fbfcfd;border:1px solid var(--line);border-radius:10px}
+.gnote b{color:#31465e}
 .secdesc.descrow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:.3em 1em}
 .secdesc.descrow>div:first-child{flex:1 1 320px;min-width:0}
 .deschint{flex:0 1 auto;font-size:.84rem;color:#8a5a12;background:#fff4e3;border:1px solid #f0cf9c;border-radius:8px;padding:.25em .8em;margin-left:auto}
@@ -87,7 +92,7 @@ h2{font-size:1.12rem;margin:0 0 .5em}
 
 /* ---- 図と操作 ---- */
 .cvwrap{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e0e6ec;border-radius:10px;background:#fff}
-.cvwrap canvas{display:block}
+.cvwrap canvas{display:block;margin:0 auto}
 .cvwrap button.viewbtn{position:absolute;right:8px;top:6px;z-index:2;background:#ffd9a6;border-color:#e59a3c;color:#5e3a08;font-weight:700;font-size:.8rem}
 .cvwrap button.viewbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
 /* アニメが終わったあとの一言（中央） */
@@ -157,6 +162,17 @@ button.tiny.pt.on{background:#f5b56a;border-color:#e59a3c;color:#3b2405}
 .tbox .vl{font-weight:700;color:#8a5a12;white-space:nowrap}
 .tbox input[type=range]{flex:1 1 90px;min-width:70px;accent-color:#e07b18}
 .tbox .vv{min-width:3.6em;text-align:right;font-variant-numeric:tabular-nums;color:#8a5a12;font-weight:700}
+.stepbox{min-width:0}
+.stepbox .steprow{display:inline-flex;align-items:center;gap:.3em}
+.stepbox .vv{min-width:2.6em;text-align:center}
+.stepbox button.tiny.st{font-size:.8rem;padding:.1em .5em;background:#fff;border-color:#e59a3c;color:#8a5a12;font-weight:700}
+.vrow.choices{flex-wrap:wrap;gap:.3em .5em;margin:.35em 0 0;padding:.3em .7em;border:1px solid #e0e6ec;border-radius:10px;background:#fbfcfd}
+.vrow.choices .vl{min-width:0}
+.vrow.choices .chgrp{display:inline-flex;gap:.2em;margin-right:.6em}
+.vrow.choices button.tiny.ch{font-size:.76rem;padding:.1em .42em}
+.vrow.choices .vl{font-size:.8rem}
+.vrow.choices .chgrp{margin-right:.4em}
+.vrow.choices button.tiny.ch.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .row1{align-items:center}
 /* 右上の緑のボタン（式・考え方／K–t 図） */
 .topbtns{display:flex;flex-wrap:wrap;gap:.4em;margin-left:auto;align-items:center;flex:0 1 auto;min-width:0}
@@ -236,9 +252,9 @@ button.tiny .katex{font-size:1.05em}
 .note.wait{background:#fafbfc;border-color:#e6eaef;border-left-color:#c3ccd6;color:#b9c2cc}
 
 /* ---- 穴うめの確認（斜めの衝突） ---- */
-.fill{margin:.8em 0 .2em;padding:.6em .9em;background:#fffdf5;border:1px solid #efe1b5;border-radius:10px;font-size:1rem}
+.fill{margin:.35em 0 .1em;padding:.2em .8em;background:#fffdf5;border:1px solid #efe1b5;border-radius:10px;font-size:1rem}
 .fill .ft{font-weight:700;font-size:.9rem;color:#8a6100;margin:0 0 .3em}
-.fill .fl{margin:.35em 0;display:flex;align-items:center;flex-wrap:wrap;gap:.3em}
+.fill .fl{margin:.1em 0;display:flex;align-items:center;flex-wrap:wrap;gap:.3em;line-height:1.5}
 .fill .blank{display:inline-block;min-width:3.2em;text-align:center;font:inherit;border:1.5px solid #e0b64a;background:#fff8dc;border-radius:6px;padding:.05em .5em;cursor:pointer;color:#8a6100;font-weight:700}
 .fill .blank.open{background:#eaf7ef;border-color:#5fb886;color:#14683a}
 .fill .blank .katex{font-size:1.05em}
@@ -303,6 +319,10 @@ TICKG[COL.iA]="inner"; TICKG[COL.iB]="inner"; TICKG[COL.inner]="inner";
 TICKG[COL.J]="imp"; TICKG[COL.Jb]="imp";
 
 function clamp(a,b,c){return a<b?b:(a>c?c:a);}
+/* 記号と実際の値をいっしょに書く：symVal(2,"m",1.0,"kg") → "$2m=2.0$ kg"（最初の説明文で使う） */
+function symVal(k,sym,base,unit,dec){ k=(k===undefined?1:k);
+  const s=(k===1?"":(k===-1?"-":String(k)))+sym;
+  return "$"+s+"="+fmt(k*base,(dec===undefined?1:dec))+"$ "+unit; }
 function fmt(x,n){ if(!isFinite(x)) x=0; let s=x.toFixed(n); if(s==="-"+(0).toFixed(n)) s=(0).toFixed(n); return s; }
 function lerp(a,b,t){return a+(b-a)*t;}
 
@@ -311,10 +331,13 @@ function K(tex, display){
   try{ return katex.renderToString(tex, {displayMode:!!display, throwOnError:false, output:"html"}); }
   catch(e){ return tex; }
 }
-/* $...$ / $$...$$ を含む HTML 文字列を KaTeX 展開 */
+/* $...$ / $$...$$ を含む HTML 文字列を KaTeX 展開。
+   ★DOM に入れたあと innerHTML から読み直すと "<" ">" "&" が実体参照になっているので、
+     数式の中だけ元にもどしてから KaTeX に渡す（$M&gt;m$ が生のまま出る文字化けの原因） */
+function unesc(t){ return String(t).replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"'); }
 function mathify(html){
-  html = html.replace(/\$\$([^$]+)\$\$/g, (m,a)=>K(a.trim(), true));
-  html = html.replace(/\$([^$]+)\$/g,   (m,a)=>K(a.trim(), false));
+  html = html.replace(/\$\$([^$]+)\$\$/g, (m,a)=>K(unesc(a).trim(), true));
+  html = html.replace(/\$([^$]+)\$/g,   (m,a)=>K(unesc(a).trim(), false));
   return html;
 }
 
@@ -521,11 +544,16 @@ class Painter{
   }
   /* 日本語ラベル。"m@v"・"m_A@v_A'"・"#F" のような記号の部分は数式の書体（矢印・上線つき）で描く
      （日本語の書体には合成用の矢印がなく □ になるため） */
-  _jsegs(str){                                    // → [{t, math}] 交互の配列
-    const re=/((?:[A-Za-z](?:_[A-Za-z0-9])?)?[@#][A-Za-z](?:_[A-Za-z0-9])?'?)/g, out=[]; let last=0, m;
+  _jsegs(str){                                    // → [{t, math}] 交互の配列。"$v_A'$" のように $ で囲んだ部分も数式（添え字・ダッシュ・矢印 @）
+    const re=/((?:[A-Za-z](?:_[A-Za-z0-9])?)?[@#][A-Za-z](?:_[A-Za-z0-9])?'?)/g, out=[];
     str=String(str);
-    while((m=re.exec(str))){ if(m.index>last) out.push({t:str.slice(last,m.index),math:false}); out.push({t:m[1],math:true}); last=m.index+m[1].length; }
-    if(last<str.length) out.push({t:str.slice(last),math:false});
+    const parts=str.split("$");                     // 奇数番目が $…$ の中
+    parts.forEach((pt,pi)=>{
+      if(pi%2===1){ if(pt) out.push({t:pt,math:true}); return; }
+      let last=0, m; re.lastIndex=0;
+      while((m=re.exec(pt))){ if(m.index>last) out.push({t:pt.slice(last,m.index),math:false}); out.push({t:m[1],math:true}); last=m.index+m[1].length; }
+      if(last<pt.length) out.push({t:pt.slice(last),math:false});
+    });
     return out;
   }
   jtext(Xpx,Ypx,str,o){
@@ -534,7 +562,7 @@ class Painter{
     const font=(o.bold?"700 ":"")+(o.size||12)+'px "Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif';
     c.font=font; c.fillStyle=o.col||COL.grey; c.textBaseline="middle";
     str=String(str);
-    if(str.indexOf("@")<0 && str.indexOf("#")<0){ c.textAlign=o.align||"left"; c.fillText(str,Xpx,Ypx); c.restore(); return; }
+    if(str.indexOf("@")<0 && str.indexOf("#")<0 && str.indexOf("$")<0){ c.textAlign=o.align||"left"; c.fillText(str,Xpx,Ypx); c.restore(); return; }
     const segs=this._jsegs(str), sz=(o.size||12)*1.08;
     const ws=segs.map(sg=>{ if(sg.math){ c.save(); const w=this.mtext(-9999,-9999,sg.t.replace("#",""),{size:sz}); c.restore(); return w+2; } c.font=font; return c.measureText(sg.t).width; });
     const W=ws.reduce((a,b)=>a+b,0);
@@ -643,8 +671,8 @@ class Painter{
   bubble(Xpx,Ypx,text,col,sub,below){
     const c=this.c; c.save();
     c.font='600 12.5px "Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif';
-    const lines=String(text).split("\n"), isM=(l)=>l.charAt(0)==="$";
-    let w=0; lines.forEach(l=>{ w=Math.max(w, isM(l)? this.mwidth(l.slice(1),{size:14}) : c.measureText(l).width); });
+    const lines=String(text).split("\n"), isM=(l)=>(l.indexOf("$")>=0||l.indexOf("@")>=0), JO={size:12.5,bold:true};
+    let w=0; lines.forEach(l=>{ w=Math.max(w, isM(l)? this.jwidth(l,JO) : c.measureText(l).width); });
     const padX=9, padY=6, lh=16, W=w+padX*2, H=lines.length*lh+padY*2;
     let X=Xpx-W/2, Y=below? Ypx+10 : Ypx-H-10;
     c.fillStyle="rgba(255,255,255,.96)"; c.strokeStyle=col||COL.v; c.lineWidth=1.6;
@@ -656,7 +684,7 @@ class Painter{
     c.fillStyle="rgba(255,255,255,.96)"; c.fill();
     c.beginPath(); c.moveTo(Xpx-6,ty); c.lineTo(Xpx,ty+td); c.lineTo(Xpx+6,ty); c.strokeStyle=col||COL.v; c.stroke();
     c.fillStyle=col||COL.v; c.textBaseline="middle"; c.textAlign="center";
-    lines.forEach((l,i)=>{ if(isM(l)) this.mtext(X+W/2-this.mwidth(l.slice(1),{size:14})/2, Y+padY+lh*i+lh/2, l.slice(1), {size:14,col:col||COL.v});
+    lines.forEach((l,i)=>{ if(isM(l)) this.jtext(X+W/2, Y+padY+lh*i+lh/2, l, Object.assign({col:col||COL.v,align:"center"},JO));
       else c.fillText(l, X+W/2, Y+padY+lh*i+lh/2); });
     c.restore();
   }
@@ -770,6 +798,86 @@ function regZoom(el){
 /* =========================================================================
    運動量ベクトルの和（衝突前 → 衝突後）の図
    ========================================================================= */
+/* =========================================================================
+   かんたんな3次元（正射影）。az＝方位角[°]、el＝仰角[°]（90 で真上から）。
+   basics-of-motion-on-plane.html の mk3d と同じ考え方だが、el は「上から見る」向きを正にしてある。
+   ========================================================================= */
+function mkCam(azDeg, elDeg, S, cx, cy){
+  const a=azDeg*Math.PI/180, e=elDeg*Math.PI/180;
+  const ca=Math.cos(a), sa=Math.sin(a), ce=Math.cos(e), se=Math.sin(e);
+  return { az:azDeg, el:elDeg, S:S,
+    p(x,y,z){ z=z||0;
+      const x1= x*ca + y*sa, y1=-x*sa + y*ca;          // x1＝画面の右向き、y1＝奥ゆき
+      return { x: cx + x1*S, y: cy - (y1*se + z*ce)*S, d: y1*ce - z*se };
+    } };
+}
+/* 面（rect）がキャンバス（W×H）にちょうど入るカメラを作る */
+function fitCam(az, el, rect, W, H, pad, topPad){
+  pad=(pad===undefined?26:pad); topPad=(topPad===undefined?34:topPad);
+  const t=mkCam(az,el,1,0,0);
+  const pts=[[rect.x0,rect.y0],[rect.x1,rect.y0],[rect.x1,rect.y1],[rect.x0,rect.y1]].map(p=>t.p(p[0],p[1],0));
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs), y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
+  const w=Math.max(x1-x0,1e-6), h=Math.max(y1-y0,1e-6);
+  const S=Math.max(8, Math.min((W-2*pad)/w, (H-pad-topPad)/h));
+  return mkCam(az, el, S, W/2-((x0+x1)/2)*S, (H+topPad-pad)/2-((y0+y1)/2)*S);
+}
+/* 3次元：水平な板と方眼 */
+function draw3dGround(P,cam,rect,o){
+  o=o||{}; const c=P.c, q=(x,y,z)=>cam.p(x,y,z||0), TH=(o.thick===undefined?11:o.thick);
+  const A=q(rect.x0,rect.y0), B=q(rect.x1,rect.y0), C=q(rect.x1,rect.y1), D=q(rect.x0,rect.y1);
+  c.save();
+  c.fillStyle="#e3ebf3"; c.strokeStyle="#c3ccd6"; c.lineWidth=1;        // 板の厚み（手前の 2 辺）
+  [[A,B],[B,C],[D,A]].forEach(pr=>{ const p=pr[0], q2=pr[1];
+    c.beginPath(); c.moveTo(p.x,p.y); c.lineTo(q2.x,q2.y); c.lineTo(q2.x,q2.y+TH); c.lineTo(p.x,p.y+TH); c.closePath(); c.fill(); c.stroke(); });
+  c.beginPath(); c.moveTo(A.x,A.y); c.lineTo(B.x,B.y); c.lineTo(C.x,C.y); c.lineTo(D.x,D.y); c.closePath();
+  c.fillStyle=o.fill||"#fbfdff"; c.fill(); c.strokeStyle="#9fb3c6"; c.lineWidth=1.4; c.stroke();
+  c.save(); c.beginPath(); c.moveTo(A.x,A.y); c.lineTo(B.x,B.y); c.lineTo(C.x,C.y); c.lineTo(D.x,D.y); c.closePath(); c.clip();
+  c.strokeStyle="#dde8f2"; c.lineWidth=1; const st=o.step||1;
+  for(let x=Math.ceil(rect.x0/st)*st; x<=rect.x1+1e-9; x+=st){ const p1=q(x,rect.y0), p2=q(x,rect.y1); c.beginPath(); c.moveTo(p1.x,p1.y); c.lineTo(p2.x,p2.y); c.stroke(); }
+  for(let y=Math.ceil(rect.y0/st)*st; y<=rect.y1+1e-9; y+=st){ const p1=q(rect.x0,y), p2=q(rect.x1,y); c.beginPath(); c.moveTo(p1.x,p1.y); c.lineTo(p2.x,p2.y); c.stroke(); }
+  c.restore();
+  /* 面の上の x・y 軸（正の向き） */
+  if(o.axes!==false){ const ax=(o.axAt? o.axAt[0] : rect.x0+0.30), ay=(o.axAt? o.axAt[1] : rect.y0+0.30), LN=Math.min(1.1,(rect.x1-rect.x0)*0.16);
+    const sk=P._skipTick; P._skipTick=true;
+    const o0=cam.p(ax,ay,0), ox2=cam.p(ax+LN,ay,0), oy2=cam.p(ax,ay+LN,0);
+    P.arrowRaw(o0.x,o0.y,ox2.x-o0.x,ox2.y-o0.y,"#111",1.8,9);
+    P.arrowRaw(o0.x,o0.y,oy2.x-o0.x,oy2.y-o0.y,"#111",1.8,9);
+    P._skipTick=sk;
+    P.jtext(ox2.x+6,ox2.y+4,(o.xl||"$x$"),{size:11,col:"#111",bold:true});
+    P.jtext(oy2.x+6,oy2.y-2,(o.yl||"$y$"),{size:11,col:"#111",bold:true});
+    P.jtext(o0.x-6,o0.y+14,"正の向き",{size:10,col:"#111",bold:true,align:"right"});
+  }
+  c.restore();
+}
+/* 3次元：面の上の矢印（p0→p1、world の [x,y,z]） */
+function arr3(P,cam,p0,p1,col,lab,o){
+  o=o||{}; const a=cam.p(p0[0],p0[1],p0[2]||0), b=cam.p(p1[0],p1[1],p1[2]||0);
+  const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy); if(L<2) return;
+  const sk=P._skipTick, db=P._dbl; P._skipTick=true; P._dbl=!!o.dbl;
+  P.arrowRaw(a.x,a.y,dx,dy,col,o.lw||2.4,o.head||11); P._skipTick=sk; P._dbl=db;
+  if(lab) P.mtext(b.x+dx/L*(o.off||13)+(o.lx||0), b.y+dy/L*(o.off||13)+(o.ly||0), lab, {col:col, size:o.size||13, align:"center"});
+}
+/* 3次元：板の上の球（影つき） */
+function ball3(P,cam,x,y,r,fill,stroke,lw){
+  const c=P.c, p=cam.p(x,y,r), sh=cam.p(x,y,0), R=Math.max(3,r*cam.S), se=Math.abs(Math.sin(cam.el*Math.PI/180));
+  c.save(); c.fillStyle="rgba(30,50,70,.13)"; c.beginPath(); c.ellipse(sh.x,sh.y,R,Math.max(1.5,R*se),0,0,7); c.fill(); c.restore();
+  c.save(); c.beginPath(); c.arc(p.x,p.y,R,0,7); c.fillStyle=fill||"#fff"; c.fill();
+  c.strokeStyle=stroke||COL.ink; c.lineWidth=lw||2.2; c.stroke(); c.restore();
+  return p;
+}
+/* 3次元：板の上の多角形（バットなど。pts＝[[x,y],…]、h＝厚み[m]） */
+function poly3(P,cam,pts,h,fill,stroke,lw){
+  const c=P.c, top=pts.map(p=>cam.p(p[0],p[1],h||0));
+  if(h){ const bot=pts.map(p=>cam.p(p[0],p[1],0));
+    c.save(); c.fillStyle=fill||"#fff"; c.strokeStyle=stroke||COL.ink; c.lineWidth=1;
+    for(let i=0;i<pts.length;i++){ const j=(i+1)%pts.length;
+      c.beginPath(); c.moveTo(bot[i].x,bot[i].y); c.lineTo(bot[j].x,bot[j].y); c.lineTo(top[j].x,top[j].y); c.lineTo(top[i].x,top[i].y); c.closePath();
+      c.globalAlpha=0.75; c.fill(); c.globalAlpha=1; c.stroke(); }
+    c.restore(); }
+  c.save(); c.beginPath(); top.forEach((p,i)=>i?c.lineTo(p.x,p.y):c.moveTo(p.x,p.y)); c.closePath();
+  c.fillStyle=fill||"#fff"; c.fill(); c.strokeStyle=stroke||COL.ink; c.lineWidth=lw||2; c.stroke(); c.restore();
+}
 /* 正の向きの印（アニメの右上・黒・全シーン共通）：1 次元は「正の向き →」、平面は小さな x・y 軸（pd.ydown で y は下向き） */
 function drawPosDir(P, W, pd, yOff){
   pd=pd||{type:"1d"}; const col="#111", right=W-10, top=10+(yOff||0), k=P.k; P.k=1; const sk=P._skipTick; P._skipTick=true;
@@ -791,19 +899,21 @@ function drawMomSum(ctx, W, cfg, noClear){
   if(!noClear) ctx.clearRect(0,0,W,H);
   const P=new Painter(ctx); P.k=1; P.setView(1,0,0);
   const gap=26, pw=(W-gap)/2, SC=cfg.sc||40;
-  const panels=[{ttl:cfg.t1, vs:cfg.before, sum:cfg.sum1, sumT:cfg.sumT1, sumOff:cfg.sumOff1, x0:0},
-                {ttl:cfg.t2, vs:cfg.after,  sum:cfg.sum2, sumT:cfg.sumT2, sumOff:cfg.sumOff2, x0:pw+gap}];
+  const panels=[{ttl:cfg.t1, vs:cfg.before, lvs:cfg.beforeL, sum:cfg.sum1, sumT:cfg.sumT1, sumOff:cfg.sumOff1, x0:0},
+                {ttl:cfg.t2, vs:cfg.after,  lvs:cfg.afterL,  sum:cfg.sum2, sumT:cfg.sumT2, sumOff:cfg.sumOff2, x0:pw+gap}];
   panels.forEach(pn=>{
     let x=0,y=0,minx=0,maxx=0,miny=0,maxy=0;
-    pn.vs.forEach(v=>{ x+=v.p[0]*SC; y+=-v.p[1]*SC;
+    const lv=pn.lvs||pn.vs;                                              // 位置決めは最終の値で（リアルタイムに描くとき図が動かないように）
+    lv.forEach(v=>{ x+=v.p[0]*SC; y+=-v.p[1]*SC;
       minx=Math.min(minx,x); maxx=Math.max(maxx,x); miny=Math.min(miny,y); maxy=Math.max(maxy,y); });
-    if(cfg.para) pn.vs.forEach(v=>{ const px=v.p[0]*SC, py=-v.p[1]*SC; minx=Math.min(minx,px); maxx=Math.max(maxx,px); miny=Math.min(miny,py); maxy=Math.max(maxy,py); });
+    if(cfg.para) lv.forEach(v=>{ const px=v.p[0]*SC, py=-v.p[1]*SC; minx=Math.min(minx,px); maxx=Math.max(maxx,px); miny=Math.min(miny,py); maxy=Math.max(maxy,py); });
     const bw=maxx-minx, bh=maxy-miny;
     const ox=pn.x0+(pw-bw)/2-minx;
     const oy=32+(H-70-bh)/2-miny;
     P.jtext(pn.x0+pw/2, 15, pn.ttl, {size:12.5, align:"center", col:"#31465e", bold:true});
     let ex=ox, ey=oy;
     pn.vs.forEach(v=>{ ex+=v.p[0]*SC; ey+=-v.p[1]*SC; });
+    if(pn.vs.length===0){ P.jtext(pn.x0+pw/2, 32+(H-70)/2, "（衝突後に出ます）", {size:11, align:"center", col:"#aab3bd"}); return; }
     if(cfg.para && pn.vs.length===2){
       /* 平行四辺形：A と B の運動量を同じ点から描き、対角線が和（大きさも向きも変わらない） */
       const va=pn.vs[0], vb=pn.vs[1], ax=va.p[0]*SC, ay=-va.p[1]*SC, bx=vb.p[0]*SC, by=-vb.p[1]*SC;
@@ -933,11 +1043,12 @@ function drawHand(P,cx,cy,r,dir){
    ========================================================================= */
 let _AC=null;
 function sfxWarm(){ try{ if(!_AC) _AC=new (window.AudioContext||window.webkitAudioContext)(); if(_AC.state==="suspended") _AC.resume(); }catch(e){} }
-function sfx(kind){
+function sfx(kind,vol){
   try{
     if(!_AC) _AC=new (window.AudioContext||window.webkitAudioContext)();
     if(_AC.state==="suspended") _AC.resume();
     const ac=_AC, t0=ac.currentTime, g=ac.createGain(); g.connect(ac.destination);
+    const vg=ac.createGain(); vg.gain.value=Math.max(0.02,Math.min(1,(vol===undefined?1:vol))); g.disconnect(); g.connect(vg); vg.connect(ac.destination);   // 音量（衝突が弱くなるほど小さく）
     if(kind==="pico"){                       // ピコッ！（高い短い音が下がる）
       const o=ac.createOscillator(); o.type="square"; o.connect(g);
       o.frequency.setValueAtTime(1500,t0); o.frequency.exponentialRampToValueAtTime(600,t0+0.09);
@@ -1083,6 +1194,8 @@ class Sim{
     this.def=def; this.hostL=hostL; this.hostR=hostR;
     this.v={};
     (def.vars||[]).forEach(vd=>{ this.v[vd.k]=vd.def; });
+    (def.steppers||[]).forEach(sp=>{ this.v[sp.k]=sp.def; });
+    (def.choices||[]).forEach(ch=>{ this.v[ch.k]=ch.def; });
     if(def.masses) this.v[def.masses.k]=def.masses.def;
     if(def.adj){ (def.adj.masses||[]).concat(def.adj.speeds||[]).forEach(a=>{ this.v[a.k]=(a.def===undefined?1:a.def); }); }
     (def.toggles||[]).forEach(tg=>{ this.v[tg.k]=!!tg.def; });
@@ -1116,14 +1229,14 @@ class Sim{
     const ct=document.createElement("div"); ct.className="ctrls"; h.appendChild(ct);
     const r1=document.createElement("div"); r1.className="row1"; ct.appendChild(r1);
     const bt=document.createElement("div"); bt.className="btns"; r1.appendChild(bt);
-    this.bPlay=this.mkBtn("▶ スタート","b play",()=>this.togglePlay()); bt.appendChild(this.bPlay);
+    this.bPlay=this.mkBtn("▶ スタート","b play",()=>this.togglePlay()); bt.appendChild(this.bPlay); if(!document.getElementById("bPlay")) this.bPlay.id="bPlay";
     this.bSlow=this.mkBtn("🐢 スロー","b",()=>{ this.slow=!this.slow; this.bSlow.classList.toggle("on",this.slow); }); bt.appendChild(this.bSlow);
     bt.appendChild(this.mkBtn("リセット","b",()=>this.reset()));
     this.bSM=this.mkBtn("","b sm",()=>this.slowmoRun()); bt.appendChild(this.bSM);
     this.syncSM();
 
     /* スライドバーの箱（ボタン列の右） */
-    if((def.vars&&def.vars.length)||def.masses){
+    if((def.vars&&def.vars.length)||def.masses||def.choices){
       const vb=document.createElement("div"); vb.className="varbox"; r1.appendChild(vb);
       this.sliders={}; this.slVals={};
       (def.vars||[]).forEach(vd=>{
@@ -1139,6 +1252,17 @@ class Sim{
           tr.innerHTML=vd.ticks.map(tk=>'<span>'+mathify(tk)+'</span>').join(""); vb.appendChild(tr);
         }
       });
+      /* 選択のボタン列（def.choices=[{k,label,opts:[…],unit}]）：スライドバーの行の下に 1 行で横にならべる */
+      if(def.choices){
+        const cr=document.createElement("div"); cr.className="vrow choices"; ct.appendChild(cr); this.chBtns=this.chBtns||[];
+        def.choices.forEach(ch=>{
+          const lab=document.createElement("span"); lab.className="vl"; lab.innerHTML=mathify(ch.label); cr.appendChild(lab);
+          const grp=document.createElement("span"); grp.className="chgrp"; cr.appendChild(grp);
+          ch.opts.forEach(o=>{ const b=this.mkBtn(String(o)+(ch.unit||""),"tiny ch",()=>{ this.v[ch.k]=o; if(ch.onSet) ch.onSet(this.v); this.syncChoices(); this.rebuild(); });
+            b._k=ch.k; b._v=o; grp.appendChild(b); this.chBtns.push(b); });
+        });
+        this.syncChoices();
+      }
       if(def.masses){
         const mr=document.createElement("div"); mr.className="mrow";
         const ml=document.createElement("span"); ml.className="ml"; ml.innerHTML=mathify(def.masses.label||"質量"); mr.appendChild(ml);
@@ -1151,6 +1275,21 @@ class Sim{
       this.syncVals();
     }
 
+    /* 上下ボタンの箱（def.steppers=[{k,label,min,max,step,unit,dec}]）：時間 t の箱と同じ場所（varbox の左） */
+    if(def.steppers){
+      const sb=document.createElement("div"); sb.className="tbox stepbox"; this.stepEls={};
+      def.steppers.forEach(sp=>{
+        const row=document.createElement("span"); row.className="steprow";
+        const lab=document.createElement("span"); lab.className="vl"; lab.innerHTML=mathify(sp.label); row.appendChild(lab);
+        const dn=this.mkBtn("▼","tiny st",()=>{ this.v[sp.k]=Math.max(sp.min,+(this.v[sp.k]-sp.step).toFixed(6)); this.syncSteppers(); this.rebuild(); });
+        const val=document.createElement("span"); val.className="vv";
+        const up=this.mkBtn("▲","tiny st",()=>{ this.v[sp.k]=Math.min(sp.max,+(this.v[sp.k]+sp.step).toFixed(6)); this.syncSteppers(); this.rebuild(); });
+        row.appendChild(dn); row.appendChild(val); row.appendChild(up); sb.appendChild(row); this.stepEls[sp.k]=val;
+      });
+      const vbox=r1.querySelector(".varbox"), grp=document.createElement("div"); grp.className="sliders";
+      grp.appendChild(sb); if(vbox){ r1.insertBefore(grp,vbox); grp.appendChild(vbox); } else r1.appendChild(grp);
+      this.syncSteppers();
+    }
     /* 時間 t のバー：スタートボタンと同じ行、スライドバーの箱の左どなりに、別の箱（他のスライドバーと区別）で置く */
     const r2=document.createElement("div"); r2.className="row2"; ct.appendChild(r2);
     this.tsl=document.createElement("input"); this.tsl.type="range"; this.tsl.min="0"; this.tsl.max=String(sc.tEnd); this.tsl.step=String(sc.tEnd/1000); this.tsl.value="0";
@@ -1158,8 +1297,10 @@ class Sim{
     { const tb=document.createElement("div"); tb.className="tbox";
       const lab=document.createElement("span"); lab.className="vl"; lab.innerHTML='時間 <i style="font-family:KaTeX_Math,serif">t</i>'; tb.appendChild(lab);
       tb.appendChild(this.tsl); this.tval=document.createElement("span"); this.tval.className="vv"; this.tval.textContent="0.00 s"; tb.appendChild(this.tval);
-      const vbox=r1.querySelector(".varbox"), grp=document.createElement("div"); grp.className="sliders";   // 時間 t の箱＋スライドバーの箱はいっしょに折り返す
-      grp.appendChild(tb); if(vbox){ r1.insertBefore(grp,vbox); grp.appendChild(vbox); } else if(!def.noTbar) r1.appendChild(grp); }   // noTbar：時間のバーを置かない（3-2 のコマ）
+      const vbox=r1.querySelector(".varbox"), grp=(r1.querySelector(".sliders")||document.createElement("div")); grp.className="sliders";   // 時間 t の箱＋スライドバーの箱はいっしょに折り返す
+      if(def.noTbar){ tb.style.display="none"; }                                                  // noTbar：時間のバーを置かない（3-2 のコマ・ゆりかご）
+      if(grp.firstChild) grp.insertBefore(tb,grp.firstChild); else grp.appendChild(tb);
+      if(vbox && !grp.contains(vbox)){ r1.insertBefore(grp,vbox); grp.appendChild(vbox); } else if(!grp.parentNode && !def.noTbar) r1.appendChild(grp); }
     (def.toggles||[]).forEach(tg=>{
       const b=this.mkBtn("","tiny",()=>{ this.v[tg.k]=!this.v[tg.k]; b.textContent=this.v[tg.k]?tg.on:tg.label; b.classList.toggle("on",!!this.v[tg.k]); this.draw(); });
       b.textContent=this.v[tg.k]?tg.on:tg.label; b.classList.toggle("on",!!this.v[tg.k]); r2.appendChild(b);
@@ -1173,19 +1314,21 @@ class Sim{
     }
 
     this.wrap=document.createElement("div"); this.wrap.className="cvwrap";
-    if(def.viewBtn){                                          // アニメの右上の「○○から見た立場」ボタン（オレンジ）。ON で opt.view=true
-      this.viewOn=false;
-      this.bView=this.mkBtn(def.viewBtn.label,"tiny viewbtn",()=>{ this.viewOn=!this.viewOn;
-        this.bView.textContent=(this.viewOn? def.viewBtn.on : def.viewBtn.label); this.bView.classList.toggle("on",this.viewOn); this.draw(); });
+    if(def.viewBtn){                                          // アニメの右上のボタン（オレンジ）。ON で opt.view=true（3 次元のときは opt.v3d）
+      this.viewOn=!!def.viewBtn.v3d;                          // 3 次元は最初から斜め上の視点
+      if(def.viewBtn.v3d) this.cam3={az:-24, el:26};
+      this.bView=this.mkBtn("","tiny viewbtn",()=>{ this.viewOn=!this.viewOn; this.syncView(); this.draw(); });
       this.wrap.appendChild(this.bView);
     }
     this.cv=document.createElement("canvas"); this.wrap.appendChild(this.cv); h.appendChild(this.wrap);
+    if(def.viewBtn){ this.syncView(); if(def.viewBtn.v3d) this.bindCamDrag(); }
     this.fin=document.createElement("div"); this.fin.className="finale hidden"; this.wrap.appendChild(this.fin);   // アニメの終わりに中央に出す一言
     this.ctx=this.cv.getContext("2d"); this.P=new Painter(this.ctx);
     this.fnote=document.createElement("div"); this.fnote.className="fnote"; h.appendChild(this.fnote);
 
     this.msg=document.createElement("div"); this.msg.className="msgbox empty"; this.msg.innerHTML=EMPTY_MSG; h.appendChild(this.msg);
     this.eqz=document.createElement("div"); this.eqz.className="eqzone wait"; this.eqz.textContent=EMPTY_EQ; h.appendChild(this.eqz);
+    if(def.proof){ this.prf=document.createElement("div"); this.prf.className="proof"; this.prf.innerHTML=mathify(typeof def.proof==="function"? def.proof() : def.proof); h.appendChild(this.prf); }   // 式の下の「証明」
     this.ro=document.createElement("div"); this.ro.className="readout"; h.appendChild(this.ro);
     this.asm=document.createElement("div"); this.asm.className="assume"; h.appendChild(this.asm);
     if(def.hideAssume){ this.asm.style.display="none"; this.fnote.style.display="none"; }
@@ -1247,7 +1390,7 @@ class Sim{
   syncSM(){ const sm=this.sc.slowmo; if(!sm){ this.bSM.classList.add("hidden"); return; } this.bSM.classList.remove("hidden");
     this.bSM.innerHTML="🔍 "+(sm.label||"衝突の瞬間")+"を<br>ｽﾛｰﾓｰｼｮﾝ"; }
   /* 「式・考え方エリアを閉じる」：立式と＜考え方＞をたたむ */
-  applyHide(){ const h=!!GLOBAL.hideEq; if(this.eqz) this.eqz.style.display=h?"none":""; if(this.note) this.note.style.display=h?"none":""; if(this.ro&&!this.def.cellMini) this.ro.style.display=h?"none":""; }
+  applyHide(){ const h=!!GLOBAL.hideEq; if(this.eqz) this.eqz.style.display=h?"none":""; if(this.prf) this.prf.style.display=h?"none":""; if(this.note) this.note.style.display=h?"none":""; if(this.ro&&!this.def.cellMini) this.ro.style.display=h?"none":""; }
   applyGlobal(){ this.applyHide(); if(!this.noR){ this.resize(); this.draw(); } }
   syncFb(){ this.bFb.innerHTML=K("\\bar{F}")+(this.showFbar?" を隠す":" を表示"); this.bFb.classList.toggle("on",this.showFbar); }
   syncG(){ this.bG.textContent=(this.gMode==="v"? "p–t 図に切りかえ" : "v–t 図にもどす"); this.bG.classList.toggle("on",this.gMode==="p"); }
@@ -1288,18 +1431,19 @@ class Sim{
     probe.style.width=(this.hostL.clientWidth||600)+"px"; probe.style.left="-9999px";
     document.body.appendChild(probe);
     let maxH=0;
-    const cands=(sc.events||[]).map(e=>e.text).concat(["静止 $v=0$"]);
+    const cands=(sc.events||[]).map(e=>e.text).filter(x=>x!==undefined).concat(["静止 $v=0$"]);
     cands.forEach(tx=>{ probe.innerHTML=mathify(tx); maxH=Math.max(maxH,probe.offsetHeight); });
     document.body.removeChild(probe);
     this.msg.style.height=Math.max(maxH,34)+"px";
-    if(this.gcap) this.gcap.innerHTML=mathify(sc.gcap||"左上＝力 $F$、右上＝平均の力 $\\bar{F}$（同じ面積の長方形）、左下＝速度 $v$（右上のボタンで運動量 $p$ に切りかえ）、右下＝運動エネルギー $K$。")+"　図の中をドラッグすると動き、左の目盛りを上下にドラッグすると縦に、下の目盛りを左右にドラッグすると横に拡大縮小できます。";
+    if(this.gcap) this.gcap.innerHTML=mathify(sc.gcap||"左上＝力 $F$、右上＝平均の力 $\\bar{F}$（同じ面積の長方形）、左下＝速度 $v$（右上のボタンで運動量 $p$ に切りかえ）、右下＝運動エネルギー $K$。");
     this.asm.innerHTML=sc.assume? mathify(sc.assume) : "";
   }
 
   /* ---------------- レイアウト ---------------- */
   resize(){
     const sc=this.sc, dpr=Math.min(2,window.devicePixelRatio||1);
-    const availW=Math.max(240,this.wrap.clientWidth||this.hostL.clientWidth||600);
+    let availW=Math.max(240,this.wrap.clientWidth||this.hostL.clientWidth||600);
+    if(this.def.maxW) availW=Math.min(availW,this.def.maxW);                     // 小さく見せたいシム（3-1・3-2）
     const wW=sc.world.x1-sc.world.x0, wH=sc.world.y1-sc.world.y0;
     const cs=(this.def.cellScale||this.def.scale||1), maxH=(sc.maxH||330)*cs;
     let s=Math.min(availW/wW, maxH/wH);
@@ -1354,14 +1498,32 @@ class Sim{
   }
 
   /* ---------------- 操作 ---------------- */
+  /* 視点ボタンの文字（3 次元のときは「▶ スタートで真上から」の約束に合わせる） */
+  syncView(){ const d=this.def.viewBtn; if(!d||!this.bView) return;
+    this.bView.textContent=(this.viewOn? d.on : d.label); this.bView.classList.toggle("on",this.viewOn); }
+  /* 3 次元のときだけ：図の上をドラッグして視点を回す */
+  bindCamDrag(){
+    const cv=this.cv; let d=null;
+    cv.addEventListener("pointerdown",(ev)=>{ if(!this.viewOn) return;
+      d={x:ev.clientX,y:ev.clientY,az:this.cam3.az,el:this.cam3.el}; cv.setPointerCapture(ev.pointerId); cv.style.cursor="grabbing"; ev.preventDefault(); });
+    cv.addEventListener("pointermove",(ev)=>{
+      if(!d){ cv.style.cursor=(this.viewOn?"grab":""); return; }
+      this.cam3.az=d.az+(ev.clientX-d.x)*0.35;
+      this.cam3.el=Math.max(6,Math.min(88, d.el+(ev.clientY-d.y)*0.25));
+      this.draw(); });
+    const up=()=>{ d=null; cv.style.cursor=(this.viewOn?"grab":""); };
+    cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
+  }
   togglePlay(){
+    if(this.def.viewBtn && this.def.viewBtn.v3d && this.viewOn && !this.playing){ this.viewOn=false; this.syncView(); }   // スタートしたら真上からの図に
     if(this.t>=this.sc.tEnd-1e-9){ this.t=0; this._snd={}; }
+    if(this.t<1e-9) this._looped=false;
     this.playing=!this.playing; this.started=true; this.smEnd=undefined; this.bSM.classList.remove("on");
     this.syncPlayLabel();
     sfxWarm();
     if(this.playing){ this.last=performance.now(); this.loop(); } else this.draw();
   }
-  reset(){ this.playing=false; this.t=0; this.started=false; this.smEnd=undefined; this._snd={}; this.tMax=0;
+  reset(){ this.playing=false; this.t=0; this.started=false; this.smEnd=undefined; this._snd={}; this.tMax=0; this._looped=false;
     this.bSM.classList.remove("on"); this.syncPlayLabel(); this.tsl.value="0"; this.draw(); }
   slowmoRun(){
     const sm=this.sc.slowmo; if(!sm) return;
@@ -1377,7 +1539,7 @@ class Sim{
     if(this.smEnd!==undefined && this.t>=this.smEnd){
       this.smEnd=undefined; this.bSM.classList.remove("on"); this.playing=false;
     }
-    if(this.t>=this.sc.tEnd){ this.t=this.sc.tEnd; this.playing=false; }
+    if(this.t>=this.sc.tEnd){ if(this.sc.loop){ this.t-=this.sc.tEnd; this._snd={}; this._looped=true; } else { this.t=this.sc.tEnd; this.playing=false; } }   // loop：止めるまでくり返す
     this.tsl.value=String(this.t);
     this.draw();
     this.syncPlayLabel();
@@ -1390,23 +1552,25 @@ class Sim{
     if(this.tval) this.tval.textContent=fmt(t,2)+" s";
     c.clearRect(0,0,this.cssW,this.cssH);
     if(this.started) this.tMax=Math.max(this.tMax||0,t); else this.tMax=0;
+    if(sc.loop && this._looped) this.tMax=sc.tEnd;
     const st=sc.st(t);
     const ms=this.ms;
-    const opt={forces:ms.showF, allForces:ms.showF, inner:true, obs:false, labels:ms.showLab, showV:ms.showV, started:this.started, cm:!!this.cmOn, view:!!this.viewOn, t:t, v:this.v, gMode:this.gMode};
+    const v3d=!!(this.viewOn && this.def.viewBtn && this.def.viewBtn.v3d);
+    const opt={forces:ms.showF, allForces:ms.showF, inner:true, obs:false, labels:ms.showLab, showV:ms.showV, started:this.started, cm:(!!this.cmOn || (!!this.viewOn && !!(this.def.viewBtn&&this.def.viewBtn.cm))), view:!!this.viewOn, v3d:v3d, cam:(v3d? fitCam(this.cam3.az,this.cam3.el,sc.plane3d||{x0:sc.world.x0,x1:sc.world.x1,y0:0,y1:sc.world.y1},this.cssW,this.cssH) : null), t:t, v:this.v, gMode:this.gMode};
     P.hideVel=!ms.showV;
     P.ticksOn(); sc.draw(P,st,t,opt); P.ticksDraw();
-    drawPosDir(P, this.cssW, sc.posDir, (this.bView? 30 : 0));   // 正の向き（右上・黒・全シーン共通）
+    if(!v3d) drawPosDir(P, this.cssW, sc.posDir, (this.bView? 30 : 0));   // 3 次元のときは板の上に軸を描く   // 正の向き（右上・黒・全シーン共通）
     this.forceNote();
     if(!this.started && sc.preBubbles){
-      sc.preBubbles(st).forEach(b=>{ P.bubble(P.X(b.x),P.Y(b.y),b.text,b.col||COL.v,null,!!b.below); });
+      sc.preBubbles(st).forEach(b=>{ const q=(v3d? opt.cam.p(b.x,b.y,0.9) : {x:P.X(b.x),y:P.Y(b.y)}); P.bubble(q.x,q.y,b.text,b.col||COL.v,null,!!b.below); });
     }
     let shown=null;
     (sc.events||[]).forEach((e,i)=>{
       if(this.started && t>=e.t0 && t<=e.t1){
-        shown=e;
+        if(!e.silent) shown=e;
         const bT=e.t1;                                       // 吹き出しは区間の終わりまで出しっぱなし（千葉さんの指示）
-        if(e.at && t<=bT && e.bub!==null){ const p=e.at(st); P.bubble(P.X(p[0]-(sc._dx||0)),P.Y(p[1]),e.bub||e.short||"", e.col||COL.v, null, !!e.below); }
-        if(e.sound && this.playing && !this._snd[i]){ this._snd[i]=1; sfx(e.sound); }
+        if(e.at && t<=bT && e.bub!==null){ const p=e.at(st), q=(v3d? opt.cam.p(p[0],p[1],0.9) : {x:P.X(p[0]-(sc._dx||0)),y:P.Y(p[1])}); P.bubble(q.x,q.y,e.bub||e.short||"", e.col||COL.v, null, !!e.below); }
+        if(e.sound && this.playing && !this._snd[i]){ this._snd[i]=1; sfx(e.sound, e.vol); }
       }
       if(t<e.t0-0.02) this._snd[i]=0;
     });
@@ -1479,15 +1643,17 @@ class Sim{
         if(a.name){ const n=document.createElement("span"); n.className="an"; n.innerHTML=mathify(a.name); r.appendChild(n); }
         a.opts.forEach(mult=>{
           const b=document.createElement("button"); b.className="tiny aj";
-          b.innerHTML=mathify(mult===0? "$0$" : (mult===1? "$"+a.sym+"$" : "$"+mult+a.sym+"$"));
+          b.innerHTML=mathify(mult===0? "$0$" : (mult===1? "$"+a.sym+"$" : (mult===-1? "$-"+a.sym+"$" : "$"+mult+a.sym+"$")));
           b._k=a.k; b._v=mult; b.addEventListener("click",()=>{ this.v[a.k]=mult; this.syncAdj(); this.rebuild(); });
           r.appendChild(b); this.adjBtns.push(b); });
       }); };
-    row("質量", def.adj.masses); row(def.adj.speedLabel||"初速の速さ", def.adj.speeds);
+    row("質量", def.adj.masses); row(def.adj.speedLabel||"初速", def.adj.speeds);
     if(def.adj.note){ const n=document.createElement("div"); n.className="anote"; n.innerHTML=mathify(def.adj.note); box.appendChild(n); }
     this.syncAdj();
   }
   syncAdj(){ (this.adjBtns||[]).forEach(b=>b.classList.toggle("on",this.v[b._k]===b._v)); }
+  syncChoices(){ (this.chBtns||[]).forEach(b=>b.classList.toggle("on",this.v[b._k]===b._v)); }
+  syncSteppers(){ (this.def.steppers||[]).forEach(sp=>{ const el=this.stepEls&&this.stepEls[sp.k]; if(el) el.textContent=fmt(this.v[sp.k],sp.dec||0)+(sp.unit||""); }); }
   notes(st,t){
     const sc=this.sc;
     const html=(this.started && sc.note)? (typeof sc.note==="function"? sc.note(st,t) : sc.note) : null;
@@ -1502,6 +1668,11 @@ class Sim{
     c.clearRect(0,0,W,H);
     const vs=this.vspec(), iAlt=vs.findIndex(g=>g&&g.alt);
     this.gmaps=[];
+    /* F–t 図と F̄–t 図は縦軸のスケールをそろえる（両方の系列の範囲の和集合を両方に使う） */
+    { const g0=vs[0], g1=vs[1]; if(g0&&g1){ let lo=Infinity, hi=-Infinity;
+        [g0,g1].forEach(gg=>(gg.series||[]).forEach(se=>(se.vals||[]).forEach(v=>{ if(isFinite(v)){ lo=Math.min(lo,v); hi=Math.max(hi,v); } })));
+        [g0,g1].forEach(gg=>{ if(gg.ymin!==undefined) lo=Math.min(lo,gg.ymin); if(gg.ymax!==undefined) hi=Math.max(hi,gg.ymax); });
+        if(isFinite(lo)&&isFinite(hi)){ g0.ylink=[lo,hi]; g1.ylink=[lo,hi]; } } }
     vs.forEach((g,i)=>{
       if(!g) return;                                          // 空の枠（図なし）
       const r=this.panelRect(i);
@@ -1568,6 +1739,7 @@ class Sim{
     series.concat(bg).concat(ov).forEach(s=>s.vals.forEach(v=>{ if(isFinite(v)){ mn=Math.min(mn,v); mx=Math.max(mx,v);} }));
     if(g.ymax!==undefined) mx=Math.max(mx,g.ymax);
     if(g.ymin!==undefined) mn=Math.min(mn,g.ymin);
+    if(g.ylink){ mn=Math.min(mn,g.ylink[0]); mx=Math.max(mx,g.ylink[1]); }      // となりの図と同じスケール
     if(!isFinite(mn)){mn=0;mx=1;}
     /* 縦軸：必ず 0 をふくみ、きりのよい目盛り（1・2・5×10^k）に合わせて範囲を決める */
     mn=Math.min(mn,0); mx=Math.max(mx,0);
@@ -1684,9 +1856,9 @@ function gDt(c,m,t0,t1,label,yFrac){
   const gap=X1-X0;
   if(gap>=14){ P.arrowRaw(X0,Y,gap,0,"#c2700f",1.3,6); P.arrowRaw(X1,Y,-gap,0,"#c2700f",1.3,6); }
   else { P.arrowRaw(X0-14,Y,14,0,"#c2700f",1.3,6); P.arrowRaw(X1+14,Y,-14,0,"#c2700f",1.3,6); }
-  { const lab=label||"Δt", w=P.mtext(-9999,-9999,lab,{size:12.5});                       // 白い下地（山の上でも読めるように）
+  { const lab=label||"$Δt$", w=P.jwidth(lab,{size:11.5,bold:true});                     // 白い下地（山の上でも読めるように）。記号は $…$ で数式に
     c.save(); c.fillStyle="rgba(255,255,255,.85)"; c.fillRect((X0+X1)/2-w/2-3, Y-11-7, w+6, 14); c.restore();
-    P.mtext((X0+X1)/2, Y-11, lab, {col:"#c2700f", size:12.5, align:"center"}); }
+    P.jtext((X0+X1)/2, Y-11, lab, {col:"#c2700f", size:11.5, bold:true, align:"center"}); }
 }
 /* 段差の高さ（縦の両矢印＋ラベル） */
 function gStep(c,m,tx,y0,y1,label,col,dx){
@@ -1696,7 +1868,7 @@ function gStep(c,m,tx,y0,y1,label,col,dx){
   P.arrowRaw(X,Y0,0,Y1-Y0,col||COL.J,1.5,7); P.arrowRaw(X,Y1,0,Y0-Y1,col||COL.J,1.5,7);
   c.save(); c.strokeStyle=col||COL.J; c.setLineDash([2,3]); c.lineWidth=1;
   c.beginPath(); c.moveTo(m.XX(tx),Y0); c.lineTo(X,Y0); c.moveTo(m.XX(tx),Y1); c.lineTo(X,Y1); c.stroke(); c.restore();
-  P.mtext(X+6,(Y0+Y1)/2,label,{col:col||COL.J,size:12.5,align:"left"});
+  P.jtext(X+6,(Y0+Y1)/2,label,{col:col||COL.J,size:11.5,bold:true,align:"left"});
 }
 /* グラフの中の文（右下 or 指定位置） */
 function gNote(c,m,lines,col,where){
@@ -1742,27 +1914,27 @@ const T1_MV = TC(COL.p, 'mv'), T1_MVp = TC(COL.p, "mv'"), T1_J = TC(COL.J, 'F\\D
          同じ質量の弾性衝突（e=1）＝速度の交換を、落ち着くまでくり返す（1 ステップの中で連鎖する）。
          時間に対して決まった動きにするため、make() のときに表を作っておき st(t) は補間で返す。
    ========================================================================= */
-DEFS.m0s1 = {
-  id:"m0s1", num:"1", title:"ニュートンのゆりかご（同じ質量の球の弾性衝突）",
-  desc:"<p>同じ質量 $m$ の小球 5 個を糸でつるして並べる。左から 1 個を角 $35^\\circ$ まで持ち上げて、同時に静かに放す。</p>",
-  descFn:(v)=>{ const nL=v.nL|0, nR=Math.min(v.nR|0, 5-(v.nL|0));
-    return "<p>同じ質量 $m$ の小球 5 個を糸でつるして並べる。"+(nL>0? "左から "+nL+" 個":"")+(nL>0&&nR>0? "と":"")+(nR>0? "右から "+nR+" 個":"")+(nL+nR>0? "を角 $"+v.th+"^\\circ$ まで持ち上げて、同時に静かに放す。":"（持ち上げる球の数を下のスライドバーで選ぶ）")+"</p>"; },
-  vars:[{k:"nL", label:"左から持ち上げる数", min:0, max:4, step:1, def:1, unit:"個", dec:0},
-        {k:"nR", label:"右から持ち上げる数", min:0, max:4, step:1, def:0, unit:"個", dec:0},
-        {k:"th", label:"持ち上げる角 $\\theta_0$", min:10, max:50, step:5, def:35, unit:"°", dec:0}],
-  noForceBtn:true,
+/* ゆりかごの共通部分。C = {id, num, title, desc, N, masses:[…], nLR:(v)=>[nL,nR], proof, choices, extraNote} */
+function cradleDef(C){ return {
+  id:C.id, num:C.num, title:C.title, desc:C.desc, proof:C.proof,
+  vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:1, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
+  steppers:[{k:"th", label:"持ち上げる角 $\\theta_0$", min:10, max:50, step:5, def:35, unit:"°", dec:0}],
+  choices:C.choices,
+  noForceBtn:true, noTbar:true,
   make(v){
-    const N=5, m=1.0, L=1.50, r=0.22, g=G;
-    const nL=Math.max(0,Math.min(4,v.nL|0)), nR=Math.max(0,Math.min(4,Math.min(v.nR|0, N-nL)));
+    const N=C.N, MS=C.masses, L=1.50, g=G, RS=MS.map(mm=>0.22*Math.sqrt(mm));   // 球の大きさは面積が質量に比例
+    const [nL,nR]=C.nLR(v);
+    const e=(v.e===undefined? 1 : v.e), elastic=(e>=1-1e-9);
     const th0=(v.th||35)*Math.PI/180, v0=Math.sqrt(2*g*L*(1-Math.cos(th0)));   // 最下点での速さ
-    const TMAX=5.2, dt=1/1200, NF=Math.ceil(TMAX/dt)+2;
-    const xp=(i)=>(i-(N-1)/2)*2*r;                                              // つり下げ点の x
+    const TMAX=(elastic? 5.2 : 14), dt=1/1200, NF=Math.ceil(TMAX/dt)+2;         // e<1 は周期にならないので長めに
+    const XP=[]; { let x=0; for(let i=0;i<N;i++){ XP.push(x+RS[i]); x+=2*RS[i]; } const cx=x/2; for(let i=0;i<N;i++) XP[i]-=cx; }   // つり下げ点の x（球の大きさぶんずつ並べる）
+    const xp=(i)=>XP[i];
     /* ---- 表を作る ---- */
     const TH=new Float32Array(NF*N), OM=new Float32Array(NF*N);
     const th=new Array(N).fill(0), om=new Array(N).fill(0);
     for(let i=0;i<nL;i++) th[i]=-th0;
     for(let i=N-nR;i<N;i++) th[i]=th0;
-    let tFirst=-1; const hits=[];                                                // 衝突（速度の交換）が起きた時刻
+    let tFirst=-1; const hits=[], hitV=[];                                       // 衝突（速度の交換）が起きた時刻と、そのときの相対速度（音の大きさに使う）
     for(let k=0;k<NF;k++){
       for(let i=0;i<N;i++){ TH[k*N+i]=th[i]; OM[k*N+i]=om[i]; }
       for(let i=0;i<N;i++){ om[i]+=-(g/L)*Math.sin(th[i])*dt; th[i]+=om[i]*dt; }
@@ -1771,40 +1943,42 @@ DEFS.m0s1 = {
         let done=true;
         for(let i=0;i<N-1;i++){
           const xi=xp(i)+L*Math.sin(th[i]), xj=xp(i+1)+L*Math.sin(th[i+1]);
-          if(xj-xi<=2*r+1e-6 && om[i+1]<om[i]){
-            const t_=om[i]; om[i]=om[i+1]; om[i+1]=t_; done=false; swapped=true;    // 同じ質量の弾性衝突 ＝ 速度の交換
-            if(xj-xi<2*r-1e-9){ const mid=(th[i]+th[i+1])/2; th[i]=mid-1e-7; th[i+1]=mid+1e-7; }
+          if(xj-xi<=RS[i]+RS[i+1]+1e-6 && om[i+1]<om[i]){
+            const wa=om[i], wb=om[i+1], ma=MS[i], mb=MS[i+1]; if(wa-wb>0.12){ swapped=Math.max(swapped||0, (wa-wb)*L); }   // 衝突（反発係数 e）：同じ質量・e=1 なら速度の交換（音は本当の衝突だけ・相対速度を覚える）
+            om[i]=(ma*wa+mb*wb-e*mb*(wa-wb))/(ma+mb); om[i+1]=(ma*wa+mb*wb+e*ma*(wa-wb))/(ma+mb); done=false;
+            if(xj-xi<RS[i]+RS[i+1]-1e-9){ const d=(RS[i]+RS[i+1]-(xj-xi))/2/L; th[i]-=d; th[i+1]+=d; }
           }
         }
         if(done) break;
       }
-      if(swapped){ const t=k*dt; if(tFirst<0) tFirst=t; if(!hits.length || t-hits[hits.length-1]>0.3) hits.push(t); }
+      if(swapped){ const t=k*dt; if(tFirst<0) tFirst=t; if(!hits.length || t-hits[hits.length-1]>0.3){ hits.push(t); hitV.push(swapped); } }
     }
     const st=(t)=>{
       const f=Math.max(0,Math.min(NF-2,t/dt)), k=Math.floor(f), a=f-k;
       const ths=[], oms=[], xs=[], ys=[], vxs=[], vys=[]; let px=0, K=0, moving=0;
       for(let i=0;i<N;i++){
         const T=TH[k*N+i]*(1-a)+TH[(k+1)*N+i]*a, W=OM[k*N+i]*(1-a)+OM[(k+1)*N+i]*a;
-        ths.push(T); oms.push(W); xs.push(xp(i)+L*Math.sin(T)); ys.push(L-L*Math.cos(T)+r);
+        ths.push(T); oms.push(W); xs.push(xp(i)+L*Math.sin(T)); ys.push(L-L*Math.cos(T)+RS[i]);
         const vx=L*W*Math.cos(T), vy=L*W*Math.sin(T); vxs.push(vx); vys.push(vy);
-        px+=m*vx; K+=0.5*m*(vx*vx+vy*vy); if(Math.abs(L*W)>0.05) moving++;
+        px+=MS[i]*vx; K+=0.5*MS[i]*(vx*vx+vy*vy); if(Math.abs(L*W)>0.05) moving++;
       }
       return {ths,oms,xs,ys,vxs,vys,px,K,moving};
     };
-    /* 終わりの時刻：3 回目の衝突のあと、飛び出した球が最高点に達したとき（放してから最初の衝突までの時間ぶん） */
+    /* 1 周期（はじめの配置にもどる時刻）を表から探し、止めるまでそこでつないでくり返す（sc.loop） */
     let tEnd=2.0;
-    if(hits.length){ const tH=(hits.length>=3? hits[2] : hits[hits.length-1]);        // その衝突のあと、動いている球が止まる（最高点）時刻を表から探す
-      let best=Infinity, kb=Math.round(tH/dt);
-      for(let k=Math.round((tH+0.15)/dt); k<Math.min(NF-2,Math.round((tH+1.2)/dt)); k++){ let s=0; for(let i=0;i<N;i++) s+=Math.abs(OM[k*N+i]); if(s<best){ best=s; kb=k; } }
+    if(elastic){ const T0=2*Math.PI*Math.sqrt(L/g); let best=Infinity, kb=Math.round(T0/dt);
+      for(let k=Math.round(0.85*T0/dt); k<Math.min(NF-2,Math.round(1.35*T0/dt)); k++){ let s=0; for(let i=0;i<N;i++) s+=Math.abs(TH[k*N+i]-TH[i])+0.3*Math.abs(OM[k*N+i]); if(s<best){ best=s; kb=k; } }
       tEnd=Math.min(TMAX-0.05, kb*dt); }
-    const yP=L+r, VSC=Math.min(22, 60/Math.max(v0,1e-6));
-    const nMove=(nL+nR), tc=(tFirst>0? tFirst : 0.5);
+    else tEnd=TMAX-0.05;                                                        // e<1：長く見せて終わる（くり返しはしない）
+    const r=Math.max.apply(null,RS), yP=L+r, VSC=Math.min(22, 60/Math.max(v0,1e-6));
+    const nMove=(nL+nR), tc=(tFirst>0? tFirst : 0.5), anyHit=(tFirst>0);
+    const same=MS.every(x=>Math.abs(x-MS[0])<1e-9), NM=(C.labels||["A","B","C","D","E"]);   // 全部同じ質量か（ちがえば言い回しを変える）
     const kOut=(nL>0&&nR>0)? "左から放した "+nL+" 個ぶんは右へ、右から放した "+nR+" 個ぶんは左へ" : (nL>0? "反対側（右）から "+nL+" 個" : (nR>0? "反対側（左）から "+nR+" 個" : ""));
     return {
-      id:"m0s1", world:{x0:-2.45,x1:2.45,y0:-0.30,y1:yP+0.55}, minPxPerM:70, maxH:420, tEnd, noFbar:true,
+      id:C.id, world:{x0:-2.45,x1:2.45,y0:-0.30,y1:yP+0.55}, minPxPerM:70, maxH:420, tEnd, noFbar:true, loop:elastic,
       gcap:"左＝各球の速度の $x$ 成分、右＝全部の球の運動量の $x$ 成分、下＝運動エネルギーの合計（「K–t グラフを閉じる」を OFF にすると出る）。衝突の瞬間に速度がとなりの球へ移り、運動量と運動エネルギーは衝突の前後で変わらない。",
       slowmo:{label:"最初の衝突の瞬間", t0:Math.max(0,tc-0.06), t1:tc+0.16, k:0.08},
-      assume:'右向きを正の向きとする。$m=1.0$ kg、糸の長さ $L='+fmt(L,1)+'$ m、5 個の球は同じ大きさ。放した球が最下点に来たときの速さは $v_0=\\sqrt{2gL(1-\\cos\\theta_0)}='+fmt(v0,2)+'$ m/s。球どうしの衝突は弾性衝突（$e=1$）で、となり合う球の衝突を順にくり返している。糸の張力は運動の向きに垂直で仕事をしない。',
+      assume:'右向きを正の向きとする。放した球が最下点に来たときの速さは $v_0=\\sqrt{2gL(1-\\cos\\theta_0)}='+fmt(v0,2)+'$ m/s。球どうしの衝突は反発係数 $e='+fmt(e,1)+'$（同じ質量なので $v_1\'=\\tfrac{(1-e)v_1+(1+e)v_2}{2}$、$v_2\'=\\tfrac{(1+e)v_1+(1-e)v_2}{2}$）で、となり合う球の衝突を順にくり返している。糸の張力は運動の向きに垂直で仕事をしない。',
       fnote:"※ 糸の張力と重力の矢印は省略しています",
       st,
       preBubbles(s){ return nMove? [{x:0,y:yP+0.30,text:"同時に静かに放す",col:COL.v}] : [{x:0,y:yP+0.30,text:"スライドバーで持ち上げる球の数を選ぶ",col:COL.grey}]; },
@@ -1815,72 +1989,108 @@ DEFS.m0s1 = {
         c.beginPath(); c.moveTo(P.X(-2.2),P.Y(yP)); c.lineTo(P.X(2.2),P.Y(yP)); c.stroke(); c.restore();
         /* 最下点の目印（うすい破線） */
         c.save(); c.strokeStyle="#dfe5ea"; c.setLineDash([4,4]); c.lineWidth=1;
-        c.beginPath(); c.moveTo(P.X(-2.2),P.Y(r)); c.lineTo(P.X(2.2),P.Y(r)); c.stroke(); c.restore();
+        c.beginPath(); c.moveTo(P.X(-2.2),P.Y(0)); c.lineTo(P.X(2.2),P.Y(0)); c.stroke(); c.restore();
         for(let i=0;i<N;i++){
           const x=s.xs[i], y=s.ys[i];
           c.save(); c.strokeStyle="#8b96a2"; c.lineWidth=1.2; c.beginPath(); c.moveTo(P.X(xp(i)),P.Y(yP)); c.lineTo(P.X(x),P.Y(y)); c.stroke(); c.restore();
         }
         for(let i=0;i<N;i++){
-          const x=s.xs[i], y=s.ys[i], col=(i<nL? COL.A : (i>=N-nR? COL.B : COL.ink));
-          P.ball(x,y,r,"#fff",col,2.2);
-          if(o.labels) P.mtextW(x,y,String(i+1),{size:13,align:"center",col});
+          const x=s.xs[i], y=s.ys[i], col=(i<nL? COL.A : (i>=N-nR? COL.B : COL.ink)), ri=RS[i];
+          P.ball(x,y,ri,"#fff",col,2.2);
+          if(o.labels) P.mtextW(x,y,(C.labels? C.labels[i] : String(i+1)),{size:13,align:"center",col});
           const sp=Math.hypot(s.vxs[i],s.vys[i]);
           if(sp>0.06){ const ux=s.vxs[i]/sp, uy=s.vys[i]/sp;          // 速度は球の外側（進む向きの先）から出す
-            vArrow2(P, x+ux*(r+0.05), y+uy*(r+0.05), s.vxs[i], s.vys[i], VSC, "@v", col); }
+            vArrow2(P, x+ux*(ri+0.05), y+uy*(ri+0.05), s.vxs[i], s.vys[i], VSC, "@v", col); }
         }
         /* 高さの目印（持ち上げた高さ） */
         if(nMove){ const hL=L*(1-Math.cos(th0));
           c.save(); c.strokeStyle="#9ad7b6"; c.setLineDash([4,4]); c.lineWidth=1.2;
-          c.beginPath(); c.moveTo(P.X(-2.2),P.Y(r+hL)); c.lineTo(P.X(2.2),P.Y(r+hL)); c.stroke(); c.restore();
-          P.jtextW(0,r+hL+0.14,"放した高さ",{size:10,col:"#1c8f4a",align:"center"}); }
+          c.beginPath(); c.moveTo(P.X(-2.2),P.Y(hL)); c.lineTo(P.X(2.2),P.Y(hL)); c.stroke(); c.restore();
+          P.jtextW(-2.15,hL+0.14,"放した高さ（球の下端）",{size:10,col:"#1c8f4a"}); }
       },
       readout(s,t){ return [
         {k:"動いている球",v:String(s.moving),u:"個"},{k:"運動量 "+MV("p","x")+" の合計",v:fmt(s.px,2),u:"kg·m/s",wide:1},
         {k:"運動エネルギーの合計",v:fmt(s.K,2),u:"J",wide:1}]; },
       graphs(){
-        const cols=[COL.A,"#e07b18","#1b1f24","#7a5aa8",COL.B];
+        const cols=[COL.A,"#e07b18","#1b1f24","#7a5aa8",COL.B]; this.noKsum=!elastic;
         return [
-          {title:"v–t 図（各球の速度の x 成分）", unit:"m/s", sym:true,
+          {title:"v–t 図（各球の速度の $x$ 成分）", unit:"m/s", sym:true,
            series:Array.from({length:N},(_,i)=>({label:"球 "+(i+1), col:cols[i], fn:(t)=>st(t).vxs[i]})),
            annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["衝突のたびに速度が","となりの球に移る（交換）"],COL.v,"tr"); }},
-          {title:"p–t 図（全部の球の運動量の x 成分）", unit:"kg·m/s", sym:true,
-           series:[{label:"運動量 px（全部の球）", col:COL.p, fn:(t)=>st(t).px}],
+          {title:"p–t 図（全部の球の運動量の $x$ 成分）", unit:"kg·m/s", sym:true,
+           series:[{label:"運動量 $p_x$（全部の球）", col:COL.p, fn:(t)=>st(t).px}],
            annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["衝突の前後で運動量は同じ","（ふれ合う球の間の力は内力）"],COL.J,"tr"); }},
           {title:"K–t 図（運動エネルギー）", kind:"K", unit:"J", ymin:0,
-           series:[{label:"運動エネルギー K（全部の球）", col:COL.T, fn:(t)=>st(t).K}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["衝突の前後で K も同じ","（弾性衝突）"],COL.T,"tr"); }}
+           series:[{label:"運動エネルギー $K$（全部の球）", col:COL.T, fn:(t)=>st(t).K}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(elastic? ["衝突の前後で $K$ も同じ","（弾性衝突）"] : ["$e\\lt 1$：衝突のたびに $K$ が減る","（運動量は変わらない）"]),COL.T,"tr"); }}
         ];
       },
       eqs(s,t){
         if(!nMove) return [];
+        if(C.eqs) return C.eqs(s,t,{e,elastic,v0});
         const k=Math.max(nL,nR);
         return [
           {title:"運動量保存の法則（衝突の前後）", badge:"ok",
-           lines:[TC(COL.p,"k\\,mv")+"="+TC(COL.p,"k'\\,mv'")+(s.moving? "\\qquad "+TC(COL.p,k+"\\times "+fmt(m,1)+"\\times "+fmt(v0,2))+"="+TC(COL.p,"k'\\times "+fmt(m,1)+"\\times v'") : "")],
+           lines:[TC(COL.p,"k\\,mv")+"="+TC(COL.p,"k'\\,mv'")+(s.moving? "\\qquad "+TC(COL.p,k+"\\times "+fmt(MS[0],1)+"\\times "+fmt(v0,2))+"="+TC(COL.p,"k'\\times "+fmt(MS[0],1)+"\\times v'") : "")],
            note:"$k$ 個が速さ $v$ で当たり、$k'$ 個が速さ $v'$ で飛び出すとする。"},
-          {title:"運動エネルギー保存（弾性衝突）", badge:"ok",
+          (elastic? {title:"運動エネルギー保存（弾性衝突）", badge:"ok",
            lines:["\\tfrac12 k\\,mv^2=\\tfrac12 k'\\,mv'^2"],
            note:"2 本の式を連立すると $k'=k$、$v'=v$：<b>当てた数と同じ数の球が、同じ速さで飛び出す</b>（3 個当てて 1 個が 3 倍の速さで飛び出すのでは、運動エネルギーが合わない）。"}
+           : {title:"反発係数 $e\\lt 1$ のとき", badge:"ng",
+           lines:["e=-\\frac{v_1'-v_2'}{v_1-v_2}\\;("+fmt(e,1)+")"],
+           note:"となり合う球の衝突のたびに相対速度が $e$ 倍になり、速度は完全には移らない。運動量の和は変わらないが、運動エネルギーは衝突のたびに減り、やがて全部の球がいっしょに揺れる。"})
         ];
       },
-      note(s,t){ return `<div class="ttl">＜考え方＞</div>
+      note(s,t){ if(C.note) return C.note(s,t,{e,elastic,nL,nR}); return `<div class="ttl">＜考え方＞</div>
         <ol><li>同じ質量の 2 球の弾性衝突では<b>速度が交換される</b>（②-1・④-1）。となり合う球にこれが順に伝わる。</li>
         <li>運動量だけなら「1 個が ${nMove} 倍の速さで飛び出す」でもよいが、運動エネルギーも保存するので<b>同じ数が同じ速さで</b>飛び出す。</li>
         <li>両側から放したときは、左右それぞれの運動量が伝わって、${kOut||"…"} が飛び出す（運動量の和は打ち消し合っても、球ごとの運動量は別々に伝わる）。</li></ol>`; },
-      events: nMove? [
+      events: (nMove && !anyHit)? [
+        {t0:0.02,t1:tEnd,col:COL.mg,bub:"全部いっしょに揺れる（衝突しない）",
+         text:"持ち上げた球どうしはいっしょに動くので衝突は起きない。振り子として揺れるだけ。",
+         at:(s)=>[0, yP+0.30]}
+      ] : nMove? hits.map((h,i)=>({t0:h,t1:h+0.06,sound:"pon",silent:true,vol:Math.min(1,hitV[i]/Math.max(hitV[0],1e-6))})).filter(ev=>ev.t0<tEnd).concat([   // ぶつかるたびに音（弱い衝突ほど小さく）
         {t0:0.02,t1:tc,col:COL.mg,bub:"持ち上げた球が落ちてくる",
          text:"放した球は振り子の運動で最下点に向かう（糸の張力は仕事をしないので、速さは $v_0=\\sqrt{2gL(1-\\cos\\theta_0)}="+fmt(v0,2)+"$ m/s になる）。",
          at:(s)=>[0, yP+0.30]},
-        {t0:tc,t1:tc+0.22,col:COL.inner,bub:"衝突！速度が順に交換される",sound:"pon",
-         text:"ふれ合う球の間の力は<b>内力</b>。同じ質量の弾性衝突なので、となりの球に<b>速度がそのまま移る</b>。これが列の中を順に伝わる。",
+        {t0:tc,t1:tc+0.22,col:COL.inner,bub:(same? "衝突！速度が順に交換される" : "衝突！"),sound:"pon",
+         text:(same? "ふれ合う球の間の力は<b>内力</b>。同じ質量の弾性衝突なので、となりの球に<b>速度がそのまま移る</b>。これが列の中を順に伝わる。"
+                   : "ふれ合う球の間の力は<b>内力</b>なので、運動量の和は変わらない。質量がちがうので速度はそのまま移らず、運動量保存と反発係数の 2 式を連立して決まる。"),
          at:(s)=>[0, yP+0.30]},
-        {t0:tc+0.22,t1:tEnd,bubT1:tc+1.2,col:COL.C,bub:(nL>0&&nR>0? "左右それぞれ同じ数が飛び出す" : "同じ数の球が同じ速さで飛び出す"),
-         text:"運動量保存と運動エネルギー保存の両方を満たすのは「当てた数と同じ数の球が、同じ速さで飛び出す」ときだけ。"+(nL>0&&nR>0? "両側から放すと、"+kOut+" が飛び出す。" : "")+"その後もくり返す。",
+        {t0:tc+0.22,t1:tEnd,bubT1:tc+1.2,col:COL.C,bub:(same? (nL>0&&nR>0? "左右それぞれ同じ数が飛び出す" : "同じ数の球が同じ速さで飛び出す")
+                  : (nL>0&&nR>0? "同じ速さでぶつかると、重い "+NM[1]+" が止まる" : (nL>0? "軽い "+NM[0]+" ははね返り、重い "+NM[1]+" が動き出す" : "重い "+NM[1]+" が当たると、軽い "+NM[0]+" は速く飛び出す"))),
+         text:(!same? "質量がちがうので速度はそのまま移らない。運動量保存と反発係数の 2 式を連立して求めた速度になる（左下の証明）。" :
+               "運動量保存と運動エネルギー保存の両方を満たすのは「当てた数と同じ数の球が、同じ速さで飛び出す」ときだけ。"+(nL>0&&nR>0? "両側から放すと、"+kOut+" が飛び出す。" : "")+"止めるまでくり返す（時間は 1 往復ぶんで、その先は同じ動き）。"),
          at:(s)=>[0, yP+0.30]}
-      ] : []
+      ]) : []
     };
   }
-};
+}; }
+
+DEFS.m2s3 = cradleDef({ id:"m2s3", num:"3", title:"補足：ニュートンのゆりかごで遊ぼう　～同質量～",
+  desc:"<p>同じ質量 $m=1.0$ kg の小球 5 個を、糸（長さ $L=1.5$ m）でつるして並べる。</p>",
+  N:5, masses:[1,1,1,1,1], massNote:"$m=1.0$ kg、5 個の球は同じ大きさ。",
+  choices:[{k:"nL", label:"持ち上げる数　左から", opts:[0,1,2,3,4,5], def:1, onSet:(v)=>{ if((v.nL|0)+(v.nR|0)>5) v.nR=5-(v.nL|0); }},
+           {k:"nR", label:"右から", opts:[0,1,2,3,4,5], def:0, onSet:(v)=>{ if((v.nL|0)+(v.nR|0)>5) v.nL=5-(v.nR|0); }}],
+  nLR:(v)=>{ const nL=Math.max(0,Math.min(5,v.nL|0)); return [nL, Math.max(0,Math.min(5,Math.min(v.nR|0, 5-nL)))]; }
+});
+
+/* 2-4：2 個・質量 1:3（左＝m、右＝3m） */
+DEFS.m2s4 = cradleDef({ id:"m2s4", num:"4", title:"補足：ニュートンのゆりかごで遊ぼう　～1:3～",
+  desc:"<p>質量 $m=1.0$ kg の小球 A と質量 $3m=3.0$ kg の小球 B を、糸（長さ $L=1.5$ m）でつるして並べる（$m_B \\gt m_A$）。</p>",
+  N:2, masses:[1,3], labels:["A","B"], massNote:"A：$m=1.0$ kg、B：$3m=3.0$ kg（大きさは面積が質量に比例）。",
+  choices:[{k:"lift", label:"持ち上げる", opts:["左（A）","右（B）","両方"], def:"左（A）"}],
+  nLR:(v)=>{ const c=v.lift||"左（A）"; return [(c==="左（A）"||c==="両方")?1:0, (c==="右（B）"||c==="両方")?1:0]; },
+  proof:()=>PROOF13,
+  eqs:(s,t,q)=>[
+    {title:"運動量保存の法則（衝突の前後）", badge:"ok", lines:["mv_A+3mv_B=mv_A'+3mv_B'"]},
+    {title:"反発係数の式", badge:(q.elastic?"ok":"ng"), lines:["e=-\\frac{v_A'-v_B'}{v_A-v_B}\\;("+fmt(q.e,1)+")"],
+     note:(q.elastic? "2 式を連立すると $v_A'=\\dfrac{-v_A+3v_B}{2}$、$v_B'=\\dfrac{v_A+v_B}{2}$（下の証明）。" : "$e\\lt 1$ なので衝突のたびに運動エネルギーが減る。")}],
+  note:(s,t,q)=>`<div class="ttl">＜考え方＞</div><ol>
+    <li>左（$m$）だけ持ち上げると、静止している $3m$ に $m$ がぶつかる。$e=1$ なら <b>2 つは同じ速さ $v/2$ で逆向きに進む</b>（$m$ は跳ね返る）。</li>
+    <li>両方を同じ角まで持ち上げると、同じ速さで正面衝突する。$e=1$ なら <b>$3m$ は静止し、$m$ は $2v$ で跳ね返る</b>（そのあと $m$ は高く上がり、次の衝突でまた…とくり返す）。</li>
+    <li>右（$3m$）だけ持ち上げると、$m$ は $\\tfrac{3}{2}v$ で飛び出し、$3m$ は $\\tfrac{1}{2}v$ で同じ向きに進み続ける。</li></ol>`
+});
 
 /* ===== 50_mode1.js ===== */
 /* =========================================================================
@@ -1896,17 +2106,17 @@ const FSC1 = 2.0;           // 力の矢印の縮尺 [px / N]（接触中の力�
    ------------------------------------------------------------------------- */
 DEFS.m1s1 = {
   id:"m1s1", num:"1", title:"直線上で動く物体に力積を加える（ハンマーでたたく）", short:"運動量変化と力積の関係（直線上）",
-  desc:"<p>なめらかな水平面を物体（質量 $m$）が速さ $v$ で等速で動いている。そこをハンマーで 1 回たたく。</p>",
-  descFn:(v)=>"<p>なめらかな水平面を物体（質量 "+mWord(v.mk||1)+"）が"+(v.kv===0?"静止している":"速さ $"+(v.kv===1?"":v.kv)+"v$ で等速で動いている")+"。そこをハンマーで 1 回たたく。</p>",
+  desc:"<p>なめらかな水平面を物体（質量 $m=2.0$ kg）が速さ $v=2.0$ m/s で等速で動いている。そこをハンマーで 1 回たたく。</p>",
+  descFn:(v)=>"<p>なめらかな水平面を物体（質量 "+symVal(v.mk||1,"m",2.0,"kg")+"）が"+(v.kv===0?"静止している":"速さ "+symVal(v.kv,"v",2.0,"m/s")+" で等速で動いている")+"。そこをハンマーで 1 回たたく。</p>",
   vars:[{k:"J", label:"$|\\vec{F}\\Delta t|$", min:0, max:6, step:0.5, def:2.0, unit:"N·s", dec:1}],
   adj:{masses:[{k:"mk",sym:"m",opts:[1,2,3],def:1}], speeds:[{k:"kv",sym:"v",opts:[0,1,2,3],def:1}]},
   make(v){
-    const m=1.0*v.mk, v0=2.0*(v.kv===undefined?1:v.kv), J=v.J, DT=DT_C;
+    const m=2.0*v.mk, v0=2.0*(v.kv===undefined?1:v.kv), J=v.J, DT=DT_C;
     const psc=pScale(m*(v0+6/m)), vsc=vScale(v0+6/m);          // 矢印の縮尺（大きな質量・速さでもはみ出さない）
     const sz=Math.sqrt(v.mk);                            // 物体の大きさ：面積が質量に比例（辺は √m 倍）
     const w=0.64*sz, h=0.50*sz, xb0=0.90, tC=1.00, xHit=xb0+v0*tC, v1=v0+J/m;
     /* 終わりの時刻：運動量の矢印（物体の上に中央そろえ）とラベルが右端からはみ出さない所まで */
-    const tEnd=tC+DT_C+clamp((8.0-xHit-(m*v1*psc/2)/60-0.55)/Math.max(v1,0.5), 0.45, 1.10);
+    const tEnd=tC+DT_C+0.6*clamp((8.0-xHit-(m*v1*psc/2)/60-0.55)/Math.max(v1,0.5), 0.45, 1.10);   // 衝突後は短め（60%）
     const Lh=0.95, alpha=75*Math.PI/180;               // 柄の長さ・当たる瞬間の柄の傾き（つけ根が上、頭が下）
     const headOff=0.32;                                  // 頭の半分の長さ（頭の軸＝当たる向き。drawHammer の HL0/2 = 20/64 m）
     const Tx=xHit-w/2-headOff, Ty=h*0.70;                // 当たる瞬間の頭の中心
@@ -1934,7 +2144,7 @@ DEFS.m1s1 = {
     return {
       id:"m1s1", world:{x0:-0.10,x1:8.10,y0:-1.95,y1:2.40}, minPxPerM:60, maxH:330, tEnd,
       slowmo:{label:"たたく瞬間", t0:Math.max(0,tC-0.05), t1:tC+DT+0.10, k:0.10},
-      assume:'右向きを正の向きとする。$m='+mtex+'$ kg、$v='+fmt(v0,1)+'$ m/s、接触時間 $\\Delta t=0.20$ s。接触中の力は山の形で変わり、平均の力は $\\bar{F}=|\\vec{F}\\Delta t|/\\Delta t$（山の面積 ＝ 長方形の面積）。',
+      assume:'右向きを正の向きとする。接触時間 $\\Delta t=0.20$ s。接触中の力は山の形で変わり、平均の力は $\\bar{F}=|\\vec{F}\\Delta t|/\\Delta t$（山の面積 ＝ 長方形の面積）。',
       st,
       draw(P,s,t,o){
         const c=P.c;
@@ -1980,22 +2190,22 @@ DEFS.m1s1 = {
         const Fb=(J>0? J/DT : 0);
         return [
           {title:"F–t 図（物体が受ける力）", unit:"N", dec:0, ymax:Math.max(1,(6/DT)*(Math.PI/2)*0.42),
-           series:[{label:"物体が受ける力 F", col:COL.iA, fn:(t)=>bumpF(J,DT,t-tC), fill:true}],
-           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt");
+           series:[{label:"物体が受ける力 $F$", col:COL.iA, fn:(t)=>bumpF(J,DT,t-tC), fill:true}],
+           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$");
              if(started) gNote(c,mp,["山の面積 ＝ 力積","|@FΔt| = "+Jtex+" N·s"],COL.J,"tr"); }},
           {title:"#F–t 図（平均の力）", unit:"N", dec:0, ymax:Math.max(1,(6/DT)*(Math.PI/2)*0.42),
            series:[{label:"平均の力 #F = |@FΔt|/Δt", col:COL.iA, fn:(t)=>((t>=tC&&t<=tC+DT)?Fb:0), fill:true, avg:true, dash:[5,4]}],
-           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt");
+           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$");
              if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積 "+Jtex+" N·s"],COL.J,"tr"); }},
           {title:"v–t 図（速度）", unit:"m/s", ymin:0, ymax:v0+6.4,
-           series:[{label:"速度 v", col:COL.v, fn:(t)=>st(t).v}],
-           annot:(c,mp,t,started)=>{ if(started&&J>0){ gStep(c,mp,tC+DT,v0,v1,"Δv = "+fmt(J/m,1),COL.v,12); gNote(c,mp,["Δv = |@FΔt|/m"],COL.v,"tl"); } },
+           series:[{label:"速度 $v$", col:COL.v, fn:(t)=>st(t).v}],
+           annot:(c,mp,t,started)=>{ if(started&&J>0){ gStep(c,mp,tC+DT,v0,v1,"$Δv$ = "+fmt(J/m,1),COL.v,12); gNote(c,mp,["$Δv$ = |@FΔt|/$m$"],COL.v,"tl"); } },
            alt:{title:"p–t 図（運動量）", unit:"kg·m/s", ymin:0, ymax:(v0+6.4)*m,     // v–t 図の m 倍（m=1.0 kg なら同じ目盛り）
-             series:[{label:"運動量 p = mv", col:COL.p, fn:(t)=>st(t).p}],
-             annot:(c,mp,t,started)=>{ if(started&&J>0){ gStep(c,mp,tC+DT,m*v0,m*v1,"Δp = "+Jtex,COL.J,12); gNote(c,mp,["段差 Δp = |@FΔt|"],COL.J,"tl"); } }}},
+             series:[{label:"運動量 $p$ = $mv$", col:COL.p, fn:(t)=>st(t).p}],
+             annot:(c,mp,t,started)=>{ if(started&&J>0){ gStep(c,mp,tC+DT,m*v0,m*v1,"$Δp$ = "+Jtex,COL.J,12); gNote(c,mp,["段差 $Δp$ = |@FΔt|"],COL.J,"tl"); } }}},
           {title:"K–t 図（運動エネルギー）", kind:"K", unit:"J", ymin:0, ymax:Math.max(4,0.5*m*(v0+6/m)**2*1.02),
-           series:[{label:"運動エネルギー K = ½mv²", col:COL.T, fn:(t)=>st(t).K}],
-           annot:(c,mp,t,started)=>{ if(started&&J>0) gNote(c,mp,["K は v² に比例するので","段差は |@FΔt| に比例しない"],COL.T,"tr"); }}
+           series:[{label:"運動エネルギー $K$ = ½$mv^2$", col:COL.T, fn:(t)=>st(t).K}],
+           annot:(c,mp,t,started)=>{ if(started&&J>0) gNote(c,mp,["$K$ は $v^2$ に比例するので","段差は |@FΔt| に比例しない"],COL.T,"tr"); }}
         ];
       },
       eqs(s,t){
@@ -2013,6 +2223,9 @@ DEFS.m1s1 = {
         <li>力積の分だけ<b>運動量 $p=mv$ が変わる</b>（p–t 図の段差 ＝ $|\\vec{F}\\Delta t|$）。</li>
         <li>同じ力積でも<b>質量が大きいほど速さの変化 $\\Delta v=|\\vec{F}\\Delta t|/m$ は小さい</b>。$m$・$2m$・$3m$ で見くらべよう。</li></ol>`; },
       events:[
+        {t0:0.02,t1:tC,col:COL.v,bub:"等速で動いている（"+(v0>0? "$v$ = "+fmt(v0,1)+" m/s" : "静止")+"）",
+         text:"力がはたらいていないので<b>等速</b>で動いている（"+(v0>0? "速さ $v="+fmt(v0,1)+"$ m/s、質量 $m="+fmt(m,1)+"$ kg" : "静止、質量 $m="+fmt(m,1)+"$ kg")+"）。運動量は $p=mv="+fmt(m*v0,1)+"$ kg·m/s。",
+         at:(s)=>[s.x, h+1.30]},
         {t0:tC,t1:tC+DT,col:COL.J,bub:"ピコッ！",sound:"pico",
          text:"ハンマーが当たっている間（$\\Delta t$）だけ、物体は力 $\\vec{F}$ を受ける。この間に受ける<b>力積 $\\vec{F}\\Delta t$</b> の分だけ運動量が変わる。ハンマーも同じ大きさで逆向きの力を受ける（作用・反作用）。",
          at:(s)=>[s.x, h+1.30]},
@@ -2034,8 +2247,9 @@ function dirWord(ang){                    // ang：東から反時計回り [deg
 }
 DEFS.m1s2 = {
   id:"m1s2", num:"2", title:"平面上を動く物体に力積を加える（バットで向きを変える）", short:"運動量変化と力積の関係（平面上）",
-  desc:"<p><b>真上から見た図</b>。なめらかな水平面上をボール（質量 $m$）が速さ $2v$ で等速で動いている。そこへバットを当てて、進む向きを変える。</p>",
-  descFn:(v)=>"<p><b>真上から見た図</b>。なめらかな水平面上をボール（質量 "+mWord(v.km||1)+"）が"+(v.kv===0?"静止している":"速さ $"+(v.kv===1?"":v.kv)+"v$ で等速で動いている")+"。そこへバットを当てて、進む向きを変える。</p>",
+  viewBtn:{label:"🧊 3次元に戻る", on:"真上から見る", v3d:true},
+  desc:"<p><b>真上から見た図</b>。なめらかな水平面上をボール（質量 $m=0.50$ kg）が速さ $2v=8.0$ m/s で等速で動いている。そこへバットを当てて、進む向きを変える。</p>",
+  descFn:(v)=>"<p><b>真上から見た図</b>。なめらかな水平面上をボール（質量 "+symVal(v.km||1,"m",0.50,"kg",2)+"）が"+(v.kv===0?"静止している":"速さ "+symVal(v.kv,"v",4.0,"m/s")+" で等速で動いている")+"。そこへバットを当てて、進む向きを変える。</p>",
   noForceBtn:true,
   vars:[{k:"J", label:"$|\\vec{F}\\Delta t|$", min:0, max:6, step:0.5, def:5.5, unit:"N·s", dec:1},
         {k:"th", label:"$\\theta$", min:15, max:90, step:15, def:45, unit:"°", dec:0}],
@@ -2049,7 +2263,7 @@ DEFS.m1s2 = {
     const ang1=Math.atan2(v1y,v1x)*180/Math.PI;
     /* 終わりの時刻：はね返ったボールが図の外に出る前まで */
     let dEx=9; [[v1x,0.35,7.35,xH],[v1y,0.35,4.45,yH]].forEach(([vv,lo,hi,c0])=>{ if(vv>1e-6) dEx=Math.min(dEx,(hi-c0)/vv); else if(vv<-1e-6) dEx=Math.min(dEx,(lo-c0)/vv); });
-    const tEnd=tC+DT+clamp(0.92*dEx,0.15,0.70);
+    const tEnd=tC+DT+0.6*clamp(0.92*dEx,0.15,0.70);
     const A=0.28+0.42*J/6, Tsw=0.40, Trb=0.45;                 // バットの振り（|FΔt| が大きいほど大きい）
     const BL=1.65, bcx0=xH-nx*r-ux*0.38, bcy0=yH-ny*r-uy*0.38;  // 当たる瞬間のバットの中心
     const st=(t)=>{
@@ -2063,11 +2277,34 @@ DEFS.m1s2 = {
     const Jtex=fmt(J,2), thd=v.th;
     return {
       id:"m1s2", world:{x0:-0.10,x1:7.70,y0:-0.95,y1:4.75}, minPxPerM:58, maxH:360, tEnd, posDir:{type:"2d",xl:"x",xn:"東",yl:"y",yn:"北"},
+      plane3d:{x0:0.10,x1:7.55,y0:0.10,y1:4.55},                       // 斜め上から見るときの「なめらかな水平面」の範囲
       slowmo:{label:"当たる瞬間", t0:Math.max(0,tC-0.05), t1:tC+DT+0.10, k:0.10},
-      assume:'東向きを $x$、北向きを $y$ とする。$m='+fmt(m,2)+'$ kg、$v='+fmt(v0,1)+'$ m/s（東向き）、接触時間 $\\Delta t=0.20$ s。バットは進む向きと角 $\\theta$ をなし、力積 $\\vec{F}\\Delta t$ はバットに垂直。真上から見た図なので重力・垂直抗力は考えない。既定（$\\theta=45^\\circ$、$|\\vec{F}\\Delta t|=5.5$ N·s、$m=0.50$ kg、$v=8.0$ m/s）では、ほぼ直角に向きが変わる。',
+      assume:'東向きを $x$、北向きを $y$ とする。接触時間 $\\Delta t=0.20$ s。バットは進む向きと角 $\\theta$ をなし、力積 $\\vec{F}\\Delta t$ はバットに垂直。真上から見た図なので重力・垂直抗力は考えない。既定（$\\theta=45^\\circ$、$|\\vec{F}\\Delta t|=5.5$ N·s）では、ほぼ直角に向きが変わる。',
       st,
       draw(P,s,t,o){
         const c=P.c;
+        /* ===== 斜め上から見た 3 次元の図（スタート前・「3 次元で見る」のとき） ===== */
+        if(o.v3d && o.cam){
+          const cam=o.cam, rect=this.plane3d;
+          draw3dGround(P,cam,rect,{step:1,xl:"$x$（東）",yl:"$y$（北）",axAt:[rect.x1-1.5,rect.y0+0.30]});
+          /* バット（板の上の長方形。進む向きと角 θ） */
+          { const bx=s.bx, by=s.by, hw=0.115, hl=BL/2, cs=Math.cos(th), sn=Math.sin(th);
+            const pts=[[-hl,-hw],[hl,-hw],[hl,hw],[-hl,hw]].map(q=>[bx+q[0]*cs-q[1]*sn, by+q[0]*sn+q[1]*cs]);
+            poly3(P,cam,pts,0.26,"#c49a5e","#8a6529",1.6); }
+          /* ボールと速度・運動量 */
+          ball3(P,cam,s.x,s.y,r,"#fff",COL.ink,2.2);
+          { const sp=Math.hypot(s.vx,s.vy);
+            if(sp>0.05){ const k=1.0/Math.max(1,v0/1.6);
+              arr3(P,cam,[s.x,s.y,r],[s.x+s.vx*k,s.y+s.vy*k,r],COL.v,(s.after?"@v'":"@v"),{dbl:true,lw:2.2});
+              const kp=k/Math.max(m,0.25)*0.7;
+              arr3(P,cam,[s.x,s.y,r*1.9],[s.x+s.px*kp,s.y+s.py*kp,r*1.9],COL.p,(s.after?"m@v'":"m@v"),{lw:2.6}); } }
+          /* 接触中の力積の向き */
+          if(s.contact && s.F>0 && o.inner!==false)
+            arr3(P,cam,[s.x,s.y,r],[s.x+nx*0.9,s.y+ny*0.9,r],COL.iA,"F",{lw:3.0,head:12});
+          P.jtext(10,16,"■ 斜め上から見た図（図の中をドラッグすると視点が回ります）",{size:11.5,col:"#31465e",bold:true});
+          P.jtext(10,33,"▶ スタートを押すと、真上から見た図になります",{size:11,col:"#c2700f",bold:true});
+          return;
+        }
         /* うすい方眼と方位 */
         c.save(); c.strokeStyle="#eef1f4"; c.lineWidth=1;
         for(let gx=0;gx<=7.7;gx+=1){ c.beginPath(); c.moveTo(P.X(gx),P.Y(-0.85)); c.lineTo(P.X(gx),P.Y(4.75)); c.stroke(); }
@@ -2132,15 +2369,15 @@ DEFS.m1s2 = {
         const Fb=(J>0? J/DT : 0);
         return [
           {title:"F–t 図（ボールが受ける力）", unit:"N", dec:0, ymax:Math.max(1,(6/DT)*(Math.PI/2)*0.42),
-           series:[{label:"ボールが受ける力の大きさ F", col:COL.iA, fn:(t)=>bumpF(J,DT,t-tC), fill:true}],
-           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt"); if(started) gNote(c,mp,["山の面積 ＝ 力積","|@FΔt| = "+Jtex+" N·s"],COL.J,"tr"); }},
+           series:[{label:"ボールが受ける力の大きさ $F$", col:COL.iA, fn:(t)=>bumpF(J,DT,t-tC), fill:true}],
+           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$"); if(started) gNote(c,mp,["山の面積 ＝ 力積","|@FΔt| = "+Jtex+" N·s"],COL.J,"tr"); }},
           {title:"#F–t 図（平均の力）", unit:"N", dec:0, ymax:Math.max(1,(6/DT)*(Math.PI/2)*0.42),
            series:[{label:"平均の力 #F = |@FΔt|/Δt", col:COL.iA, fn:(t)=>((t>=tC&&t<=tC+DT)?Fb:0), fill:true, avg:true, dash:[5,4]}],
-           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt"); if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積 "+Jtex+" N·s"],COL.J,"tr"); }},
+           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$"); if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積 "+Jtex+" N·s"],COL.J,"tr"); }},
           null,                                                   // v–t／p–t 図はなし（平面上の運動は左上のベクトル図で見る）
           {title:"K–t 図（運動エネルギー）", kind:"K", unit:"J", ymin:0, ymax:Math.max(6,0.5*m*(v0+6/m)**2*0.5),
-           series:[{label:"運動エネルギー K = ½m|v|²", col:COL.T, fn:(t)=>st(t).K}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(Math.abs(v1-v0)<0.02?["速さが同じなので K も同じ","（運動量は向きが変わった）"]:["K は速さ |v| で決まる"]),COL.T,"tr"); }}
+           series:[{label:"運動エネルギー $K$ = ½$m$|$v$|²", col:COL.T, fn:(t)=>st(t).K}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(Math.abs(v1-v0)<0.02?["速さが同じなので $K$ も同じ","（運動量は向きが変わった）"]:["$K$ は速さ |$v$| で決まる"]),COL.T,"tr"); }}
         ];
       },
       eqs(s,t){
@@ -2162,10 +2399,13 @@ DEFS.m1s2 = {
         <li>運動量の変化 $m\\vec{v}'-m\\vec{v}$ が力積。<b>向きが変わるだけでも運動量は変わる</b>（既定では速さは同じで、向きだけ北に変わる）。</li>
         <li>1 の一直線の図と、この三角形は同じことをしている。</li></ol>`; },
       events:[
+        {t0:0.02,t1:tC,col:COL.v,bub:"東向きに等速（$v$ = "+fmt(v0,1)+" m/s）",
+         text:"ボールは東向きに<b>等速</b>で動いている（速さ $v="+fmt(v0,1)+"$ m/s、質量 $m="+fmt(m,2)+"$ kg）。運動量は $mv="+fmt(m*v0,2)+"$ kg·m/s。",
+         at:(s)=>[s.x, s.y+0.95]},
         {t0:tC,t1:tC+DT,col:COL.J,bub:"コン！",sound:"pon",
          text:"バットが当たっている間（$\\Delta t$）だけ、ボールはバットに垂直な向きの力 $\\vec{F}$ を受ける。その力積 $\\vec{F}\\Delta t$ の分だけ運動量ベクトルが変わる。",
          at:(s)=>[s.x, s.y+0.95]},
-        {t0:tC+DT,t1:tEnd,bubT1:tC+DT+0.6,col:COL.p,bub:(J>0? dirWord(ang1)+"にはね返った" : "力積 0：向きも速さも変わらない"),
+        {t0:tC+DT,t1:tEnd,bubT1:tC+DT+0.6,col:COL.p,bub:(J>0? ((Math.abs(ang1)<22.5 && v1<v0-1e-6)? "勢いが弱まって東に進んだ" : dirWord(ang1)+"にはね返った") : "力積 0：向きも速さも変わらない"),
          text:"当たる前は東向きに速さ $"+fmt(v0,1)+"$ m/s。はね返ったあとは "+dirWord(ang1)+"に速さ $"+fmt(v1,2)+"$ m/s"+(Math.abs(v1-v0)<0.02?"（速さは同じで向きだけ変わった）":"")+"。運動量 $m\\vec{v}'$ は $m\\vec{v}$ と $\\vec{F}\\Delta t$ のベクトルの和。図の左上の三角形と立式で確かめよう。",
          at:(s)=>[s.x, s.y+0.95]}
       ]
@@ -2182,9 +2422,9 @@ DEFS.m1s2 = {
    3-1 1 物体の反発係数（高さ h から落として床ではね返る：鉛直方向の衝突）
    ------------------------------------------------------------------------- */
 DEFS.m3s1 = {
-  id:"m3s1", num:"1", title:"1物体の反発係数",
-  desc:"<p>小球（質量 $m$）を高さ $h$ から静かに放す。床に当たってはね返り、高さ $e^2h$ まで上がる。</p>",
-  descFn:(v)=>"<p>小球（質量 "+mWord(v.km||1)+"）を高さ $"+(v.kh===1?"":v.kh)+"h$ から静かに放す。床に当たってはね返る（反発係数 $e="+fmt(v.e,1)+"$）。</p>",
+  id:"m3s1", num:"1", title:"1物体の反発係数", maxW:430,
+  desc:"<p>小球（質量 $m=1.0$ kg）を高さ $h=2.0$ m から静かに放す。床に当たってはね返り、高さ $e^2h$ まで上がる。</p>",
+  descFn:(v)=>"<p>小球（質量 "+symVal(v.km||1,"m",1.0,"kg")+"）を高さ "+symVal(v.kh||1,"h",2.0,"m")+" から静かに放す。床に当たってはね返る（反発係数 $e="+fmt(v.e,1)+"$）。</p>",
   vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:0.5, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
   adj:{masses:[{k:"km",sym:"m",opts:[1,2,3],def:1}], speeds:[{k:"kh",sym:"h",opts:[1,1.5,2],def:1}], speedLabel:"落とす高さ"},
   noForceBtn:true,
@@ -2203,45 +2443,48 @@ DEFS.m3s1 = {
     };
     const etex=fmt(e,2), E0=m*G*h, E1=m*G*hUp;
     return {
-      id:"m3s1", world:{x0:-0.10,x1:6.60,y0:-0.95,y1:h+2.05}, minPxPerM:60, maxH:500, tEnd, posDir:{type:"2d",xl:"x",yl:"y"},
+      id:"m3s1", world:{x0:-0.10,x1:6.20,y0:-0.95,y1:h+2.35}, minPxPerM:40, maxH:350, tEnd, posDir:{type:"2d",xl:"x",yl:"y"},
       slowmo:{label:"床に当たる瞬間", t0:Math.max(0,t1-0.05), t1:t1+DT+0.10, k:0.10},
-      assume:'上向きを正の向きとする。$m='+fmt(m,1)+'$ kg、$h='+fmt(h,1)+'$ m、接触時間 $\\Delta t=0.20$ s、空気の抵抗はない。衝突直前の速さ $v_1=\\sqrt{2gh}='+fmt(v1,2)+'$ m/s、直後の速さ $v_2=ev_1='+fmt(v2,2)+'$ m/s、はね上がる高さ $e^2h='+fmt(hUp,2)+'$ m。接触中の力は山の形で変わる。',
+      assume:'上向きを正の向きとする。接触時間 $\\Delta t=0.20$ s、空気の抵抗はない。衝突直前の速さ $v_1=\\sqrt{2gh}='+fmt(v1,2)+'$ m/s、直後の速さ $v_2=ev_1='+fmt(v2,2)+'$ m/s、はね上がる高さ $e^2h='+fmt(hUp,2)+'$ m。接触中の力は山の形で変わる。',
       fnote:"※ 床からの力だけ表示しています（重力の矢印は省略）",
       st,
       preBubbles(s){ return [{x:X+0.95,y:r+h+0.30,text:"静かに放す",col:COL.v}]; },
       draw(P,s,t,o){
         const c=P.c;
-        P.ground(0,-0.10,6.60);
+        P.ground(0,-0.10,6.20);
         /* 高さ h（落とす高さ）と e²h（はね返って上がる高さ）の矢印 */
-        c.save(); c.strokeStyle="#c9d6e4"; c.setLineDash([4,4]); c.lineWidth=1.1;
-        c.beginPath(); c.moveTo(P.X(X),P.Y(0)); c.lineTo(P.X(X),P.Y(r+h)); c.stroke();
-        c.beginPath(); c.moveTo(P.X(0.95),P.Y(r+h)); c.lineTo(P.X(X+0.12),P.Y(r+h)); c.stroke();
-        c.restore();
+        c.save(); c.strokeStyle="#d9dee4"; c.setLineDash([1.5,4]); c.lineWidth=1.1; c.lineCap="round";       // 落ちる道すじ：うすい点線
+        c.beginPath(); c.moveTo(P.X(X),P.Y(0)); c.lineTo(P.X(X),P.Y(r+h)); c.stroke(); c.restore();
+        c.save(); c.strokeStyle="#31465e"; c.setLineDash([6,3]); c.lineWidth=1.2;                            // 高さ h の基準線：濃い破線
+        c.beginPath(); c.moveTo(P.X(0.95),P.Y(r+h)); c.lineTo(P.X(X+0.12),P.Y(r+h)); c.stroke(); c.restore();
         const showUp=(o.started && s.after && hUp>0.02);
         if(showUp){ c.save(); c.strokeStyle="#9ad7b6"; c.setLineDash([4,4]); c.lineWidth=1.2;
-          c.beginPath(); c.moveTo(P.X(X-0.12),P.Y(r+hUp)); c.lineTo(P.X(3.60),P.Y(r+hUp)); c.stroke(); c.restore(); }
+          c.beginPath(); c.moveTo(P.X(X-0.12),P.Y(r+hUp)); c.lineTo(P.X(3.25),P.Y(r+hUp)); c.stroke(); c.restore(); }
         P._skipTick=true;
         P.arrowPx(0.95,0,0,-P.L(r+h)/P.k,"#31465e",1.8,9); P.arrowPx(0.95,r+h,0,P.L(r+h)/P.k,"#31465e",1.8,9);
-        if(showUp){ P.arrowPx(3.60,0,0,-P.L(r+hUp)/P.k,"#1c8f4a",1.8,9); P.arrowPx(3.60,r+hUp,0,P.L(r+hUp)/P.k,"#1c8f4a",1.8,9); }
+        if(showUp){ P.arrowPx(3.25,0,0,-P.L(r+hUp)/P.k,"#1c8f4a",1.8,9); P.arrowPx(3.25,r+hUp,0,P.L(r+hUp)/P.k,"#1c8f4a",1.8,9); }
         P._skipTick=false;
         P.mtextW(0.70,(r+h)/2,"h",{size:16,col:"#31465e",align:"center"});
-        if(showUp) P.mtextW(3.92,(r+hUp)/2,"e^2h",{size:15,col:"#1c8f4a",align:"center"});
+        if(showUp) P.mtextW(3.52,(r+hUp)/2,"e^2h",{size:15,col:"#1c8f4a",align:"center"});
         /* ---- アニメが終わったら：衝突直前・直後の速度をならべて比べる図と、反発係数の式（大きく） ---- */
         if(o.started && t>=tEnd-1e-9){
-          const bx0=4.15, bx1=6.50, by0=0.20, by1=h+0.85, cxL=4.75, cxR=5.90, yb=by1-1.15, rr=0.20;
+          /* 中の配置は px で決める（アニメを小さくしても文字が重ならないように） */
+          const bx0=3.75, bx1=6.10, by0=0.10, by1=h+1.30, cxL=4.35, cxR=5.50, rr=0.20;
+          const Yt=P.Y(by1), Yb=P.Y(by0), Xm=(P.X(bx0)+P.X(bx1))/2, w2y=(Y)=>(P.oy-Y)/P.s;
           c.save(); c.fillStyle="rgba(255,255,255,.94)"; c.strokeStyle="#c9d1d9"; c.lineWidth=1;
-          c.beginPath(); c.rect(P.X(bx0),P.Y(by1),P.L(bx1-bx0),P.L(by1-by0)); c.fill(); c.stroke(); c.restore();
+          c.beginPath(); c.rect(P.X(bx0),Yt,P.L(bx1-bx0),Yb-Yt); c.fill(); c.stroke(); c.restore();
+          const yLine=Yb-84, yb=w2y(yLine)+rr, Lmax=Math.max(10, yLine-(Yt+42));     // 下から：式 2 行・ラベル・小球の線
           const sk=P._skipTick; P._skipTick=true;
-          [[cxL,"衝突直前",-v1,"速度 v₁（<0）"],[cxR,"衝突直後",v2,"速度 v₂（>0）"]].forEach(([cx,ttl,u,txt])=>{
-            P.jtextW(cx,by1-0.18,ttl,{size:11,bold:true,col:"#31465e",align:"center"});
-            c.save(); c.strokeStyle="#8b96a2"; c.lineWidth=1.2; c.beginPath(); c.moveTo(P.X(cx-0.45),P.Y(yb-rr)); c.lineTo(P.X(cx+0.45),P.Y(yb-rr)); c.stroke(); c.restore();
+          [[cxL,"衝突直前",-v1,"速度 $v_1$（<0）"],[cxR,"衝突直後",v2,"速度 $v_2$（>0）"]].forEach(([cx,ttl,u,txt])=>{
+            P.jtext(P.X(cx),Yt+12,ttl,{size:11,bold:true,col:"#31465e",align:"center"});
+            c.save(); c.strokeStyle="#8b96a2"; c.lineWidth=1.2; c.beginPath(); c.moveTo(P.X(cx-0.45),yLine); c.lineTo(P.X(cx+0.45),yLine); c.stroke(); c.restore();
             P.ball(cx,yb,rr,"#f6f7f9","#8b96a2",1.4);
-            const L=Math.abs(u)*VSC1*0.75;
-            if(L>3){ if(u<0) P.vec(cx,yb+rr+L/P.s,0,L,COL.v,null,{lw:2.2,head:10,dbl:true,noTick:true}); else P.vec(cx,yb+rr,0,-L,COL.v,null,{lw:2.2,head:10,dbl:true,noTick:true}); }
-            P.jtextW(cx,yb-rr-0.30,txt,{size:10.5,col:COL.v,bold:true,align:"center"}); });
+            const L=Math.min(Lmax, Math.abs(u)*VSC1*0.75);
+            if(L>3){ if(u<0) P.vec(cx+0.34,w2y(yLine-L),0,L,COL.v,null,{lw:2.2,head:10,dbl:true,noTick:true}); else P.vec(cx+0.34,w2y(yLine),0,-L,COL.v,null,{lw:2.2,head:10,dbl:true,noTick:true}); }   // 矢印は小球の横
+            P.jtext(P.X(cx),yLine+13,txt,{size:10.5,col:COL.v,bold:true,align:"center"}); });
           P._skipTick=sk;
-          P.mline(P.X((bx0+bx1)/2), P.Y(by0+0.75), ["e = −", {num:"v₂",den:"v₁"}, " = "+fmt(e,2)], {size:17,align:"center",col:"#1b1f24"});
-          P.mline(P.X((bx0+bx1)/2), P.Y(by0+0.30), ["= −", {num:fmt(v2,2),den:"−"+fmt(v1,2)}, ""], {size:14,align:"center",col:"#5b6672"});
+          P.mline(Xm, Yb-46, ["e = −", {num:"v_2",den:"v_1"}, " = "+fmt(e,2)], {size:15,align:"center",col:"#1b1f24"});
+          P.mline(Xm, Yb-16, ["= −", {num:fmt(v2,2),den:"−"+fmt(v1,2)}, ""], {size:12.5,align:"center",col:"#5b6672"});
         }
         /* ---- 小球・速度・運動量 ---- */
         P.ball(X,s.y,r,"#fff",COL.ink,2.2);
@@ -2267,21 +2510,21 @@ DEFS.m3s1 = {
         const Fb=J/DT, Fpk=(m*2*v1/DT)*(Math.PI/2);
         return [
           {title:"F–t 図（床から受ける力）", unit:"N", dec:0, ymin:0, ymax:Fpk*0.5,
-           series:[{label:"床から受ける垂直抗力 N（上向き＝正）", col:COL.iA, fn:(t)=>bumpF(J,DT,t-t1), fill:true}],
-           annot:(c,mp,t,started)=>{ gDt(c,mp,t1,t1+DT,"Δt"); if(started) gNote(c,mp,["山の面積 ＝ 力積","NΔt = m(v₂+v₁) = "+fmt(J,2)+" N·s"],COL.J,"tr"); }},
+           series:[{label:"床から受ける垂直抗力 $N$（上向き＝正）", col:COL.iA, fn:(t)=>bumpF(J,DT,t-t1), fill:true}],
+           annot:(c,mp,t,started)=>{ gDt(c,mp,t1,t1+DT,"$Δt$"); if(started) gNote(c,mp,["山の面積 ＝ 力積","$NΔt$ = $m$($v_2$+$v_1$) = "+fmt(J,2)+" N·s"],COL.J,"tr"); }},
           {title:"#F–t 図（平均の力）", unit:"N", dec:0, ymin:0, ymax:Fpk*0.5,
            series:[{label:"平均の力 #N", col:COL.iA, fn:(t)=>((t>=t1&&t<=t1+DT)?Fb:0), fill:true, avg:true, dash:[5,4]}],
-           annot:(c,mp,t,started)=>{ gDt(c,mp,t1,t1+DT,"Δt"); if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積 "+fmt(J,2)],COL.J,"tr"); }},
+           annot:(c,mp,t,started)=>{ gDt(c,mp,t1,t1+DT,"$Δt$"); if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積 "+fmt(J,2)],COL.J,"tr"); }},
           {title:"v–t 図（速度：上向きが正）", unit:"m/s", ymin:-v1*1.1, ymax:Math.max(v2*1.1,1),
-           series:[{label:"速度 v", col:COL.v, fn:(t)=>st(t).v}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["直前 v₁ = −"+fmt(v1,2),"直後 v₂ = e v₁ = "+fmt(v2,2)],COL.v,"br"); },
+           series:[{label:"速度 $v$", col:COL.v, fn:(t)=>st(t).v}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["直前 $v_1$ = −"+fmt(v1,2),"直後 $v_2$ = $ev_1$ = "+fmt(v2,2)],COL.v,"br"); },
            alt:{title:"p–t 図（運動量）", unit:"kg·m/s", ymin:-m*v1*1.1, ymax:Math.max(m*v2*1.1,1),
-             series:[{label:"運動量 p = mv", col:COL.p, fn:(t)=>st(t).p}],
-             annot:(c,mp,t,started)=>{ if(started){ gStep(c,mp,t1+DT,-m*v1,m*v2,"Δp = "+fmt(J,2),COL.J,12); gNote(c,mp,["段差 Δp ＝ 床からの力積","= m(1+e)v₁"],COL.J,"tr"); } }}},
+             series:[{label:"運動量 $p$ = $mv$", col:COL.p, fn:(t)=>st(t).p}],
+             annot:(c,mp,t,started)=>{ if(started){ gStep(c,mp,t1+DT,-m*v1,m*v2,"$Δp$ = "+fmt(J,2),COL.J,12); gNote(c,mp,["段差 $Δp$ ＝ 床からの力積","= $m$(1+$e$)$v_1$"],COL.J,"tr"); } }}},
           {title:"E–t 図（エネルギー）", kind:"K", unit:"J", ymin:0, ymax:E0*1.15,
-           series:[{label:"運動エネルギー K", col:COL.T, fn:(t)=>st(t).K},{label:"位置エネルギー U", col:COL.U, fn:(t)=>st(t).U},
-                   {label:"力学的エネルギー K+U", col:"#1b1f24", thick:true, fn:(t)=>{ const q=st(t); return q.K+q.U+(q.contact? Math.max(0,(E0+(E1-E0)*q.u)-q.K-q.U):0); }}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["衝突で K+U は e² 倍に","= "+fmt(E1,2)+" J（はじめ "+fmt(E0,2)+" J）"],COL.T,"tr"); }}
+           series:[{label:"運動エネルギー $K$", col:COL.T, fn:(t)=>st(t).K},{label:"位置エネルギー $U$", col:COL.U, fn:(t)=>st(t).U},
+                   {label:"力学的エネルギー $K$+$U$", col:"#1b1f24", thick:true, fn:(t)=>{ const q=st(t); return q.K+q.U+(q.contact? Math.max(0,(E0+(E1-E0)*q.u)-q.K-q.U):0); }}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["衝突で $K$+$U$ は $e^2$ 倍に","= "+fmt(E1,2)+" J（はじめ "+fmt(E0,2)+" J）"],COL.T,"tr"); }}
         ];
       },
       eqs(s,t){
@@ -2296,19 +2539,19 @@ DEFS.m3s1 = {
         return list;
       },
       note(s,t){ return `<div class="ttl">＜考え方＞</div>
-        <ol><li>反発係数 $e$ は「はね返った直後の速さ ÷ 当たる直前の速さ」。速度の<b>符号は逆</b>になるので $v_2=-ev_1$（下向きを負とすると $v_1<0$、$v_2>0$）。</li>
+        <ol><li>反発係数 $e$ は「はね返った直後の速さ ÷ 当たる直前の速さ」。速度の<b>符号は逆</b>になるので $v_2=-ev_1$（下向きを負とすると $v_1\\lt 0$、$v_2\\gt 0$）。</li>
         <li>落ちるあいだと上がるあいだは重力だけがはたらき、力学的エネルギーは保存する：$v_1=\\sqrt{2gh}$、上がる高さ $h'=v_2^2/2g=e^2h$。</li>
-        <li>床から受ける力積は<b>上向き</b>で、大きさは $m(1+e)v_1$。運動エネルギーは衝突で $e^2$ 倍になる（$e<1$ なら減る）。</li></ol>`; },
+        <li>床から受ける力積は<b>上向き</b>で、大きさは $m(1+e)v_1$。運動エネルギーは衝突で $e^2$ 倍になる（$e\\lt 1$ なら減る）。</li></ol>`; },
       events:[
-        {t0:0.02,t1:t1,col:COL.mg,bub:"落ちているあいだは重力だけ",
+        {t0:0.02,t1:t1,col:COL.mg,bub:"落ちているあいだは重力だけ\n（$v$ = 0 から増える）",
          text:"落ちているあいだ、はたらくのは<b>重力</b>だけ。速さは $v=gt$ で増え、床に当たる直前の速さは $v_1=\\sqrt{2gh}="+fmt(v1,2)+"$ m/s。",
          at:(s)=>[X, s.y+r+0.42+(s.v<0? Math.abs(s.v)*VSC1/60 : 0)]},
         {t0:t1,t1:t1+DT,col:COL.J,bub:"床から力積！",sound:"pon",
          text:"床に当たっている間（$\\Delta t$）、小球は床から<b>上向きの大きな力（撃力）</b>を受ける。この力積で運動量が下向きから上向きに変わる。",
-         at:(s)=>[X, r+h+0.42]},
-        {t0:t1+DT,t1:tEnd,col:COL.p,bub:(e>0? "e = "+etex+"：高さは e²h = "+fmt(hUp,2)+" m まで" : "e = 0：跳ね返らない"),
+         at:(s)=>[X-0.55, r+h+0.42]},
+        {t0:t1+DT,t1:tEnd,col:COL.p,bub:(e>0? "$e$ = "+etex+"：高さは $e^2h$ = "+fmt(hUp,2)+" m まで" : "$e$ = 0：跳ね返らない"),
          text:"当たる直前の速さは $"+fmt(v1,2)+"$ m/s。反発係数 $e="+etex+"$ なので、はね返った直後の速さはその $e$ 倍の $"+fmt(v2,2)+"$ m/s（向きは逆）。上がる高さは $e^2h="+fmt(hUp,2)+"$ m。運動エネルギーは $e^2$ 倍の $"+fmt(e*e*0.5*m*v1*v1,2)+"$ J になった（当たる前は $"+fmt(0.5*m*v1*v1,2)+"$ J）。",
-         at:(s)=>[X, r+h+0.42]}
+         at:(s)=>[X-0.55, r+h+0.42]}
       ]
     };
   }
@@ -2319,12 +2562,12 @@ DEFS.m3s1 = {
    3-2 床との斜めの衝突（4 パターン：e＝1.0／0.5 × 摩擦なし／あり）
    ------------------------------------------------------------------------- */
 DEFS.m3s2 = {
-  id:"m3s2", num:"2", title:"床との斜めの衝突", deschint:"穴うめの確認：□ をクリックすると答えが出ます", noTbar:true,
-  desc:`<p>小球（質量 $m$）が斜め下向きに速さ $v$ で飛んできて、床に当たって跳ね返る。</p>`,
+  id:"m3s2", num:"2", title:"1物体の床との斜め衝突", maxW:380, deschint:"穴うめの確認：□ をクリックすると答えが出ます", noTbar:true,
+  desc:`<p>小球（質量 $m=1.0$ kg）が斜め下向きに速さ $v=5.0$ m/s（床と 60°）で飛んできて、床に当たって跳ね返る。</p>`,
   grid:true,                                            // 2×2 のコマ（パターンごとにスタートボタンつき・グラフなし）
   patterns:[{label:"$e=1.0$　摩擦がないとき", set:{e:1.0, mu:0}},{label:"$e=0.5$　摩擦がないとき", set:{e:0.5, mu:0}},
             {label:"$e=1.0$　摩擦があるとき", set:{e:1.0, mu:0.3}},{label:"$e=0.5$　摩擦があるとき", set:{e:0.5, mu:0.3}}],
-  cellMini:true, cellScale:0.7,                         // コマは 70% の大きさ・説明文や立式は出さず穴うめだけ（質量・初速のボタンもなし）
+  cellMini:true, cellScale:0.49,                         // コマは 70% の大きさ・説明文や立式は出さず穴うめだけ（質量・初速のボタンもなし）
   extra(el,sim){
     const v=sim.v, fr=v.mu>0;
     const ans=[fr? K("\\lt") : K("="), K("-e\\,v_y")];                 // 答え（属性に入れると KaTeX の引用符でこわれるので配列で持つ）
@@ -2336,12 +2579,14 @@ DEFS.m3s2 = {
     el.querySelectorAll(".blank").forEach(b=>{ b.addEventListener("click",()=>{ b.innerHTML=ans[+b.dataset.i]; b.classList.add("open"); }); });
   },
   make(v){
-    const m=1.0*(v.km||1), e=v.e, mu=v.mu, DT=DT_C, r=0.25*Math.sqrt(v.km||1);
+    const m=1.0*(v.km||1), e=v.e, DT=DT_C, r=0.25*Math.sqrt(v.km||1);
+    /* 摩擦がある 2 つのコマは、衝突後の水平成分がどちらも同じ値（vx の 1/3）になるように μ を決める（e がちがっても見た目の比べやすさを優先） */
+    const VXR=1/3, mu=(v.mu>0? (1-VXR)/((1+e)*Math.sqrt(3)) : 0);   // vx′ = vx − μ(1+e)|vy| = VXR·vx（入射 60°：|vy| = √3 vx）
     const sp=5.0*(v.kv||1), vx0=sp*0.5, vy0=sp*Math.sqrt(3)/2;                 // 入射：床と 60°（x 成分と y 成分の大きさがちがうように）・下向きを y 正
     const VSC1=vScale(sp)*1.1;                                                  // この場面だけの速度の縮尺
     const vy1=-e*vy0, vx1=Math.max(0, vx0-mu*(1+e)*vy0);
     const JN=m*(vy1-vy0), JF=m*(vx1-vx0);                             // 垂直抗力の力積（負＝上向き）、摩擦力の力積（負＝左向き）
-    const x0=1.0, y0=3.35, tC=(y0-r)/vy0, xC=x0+vx0*tC, tEnd=tC+DT+0.72*5.0/sp;
+    const x0=1.0, y0=3.35, tC=(y0-r)/vy0, xC=x0+vx0*tC, tEnd=tC+DT+0.43*5.0/sp;
     const st=(t)=>{
       let x,y,vx,vy,FN=0,FF=0,tau=-1,contact=false;
       if(t<tC){ x=x0+vx0*t; y=y0-vy0*t; vx=vx0; vy=vy0; }
@@ -2359,14 +2604,26 @@ DEFS.m3s2 = {
       P.vec(cx,cy,dx,dy,COL.v,lab,{lw:2.2,off:12,tick:"vel",noTick:true});   // 二重線・しるしなし（向きがちがうので等しくない）
     };
     return {
-      id:"m3s2", world:{x0:-0.10,x1:8.30,y0:-0.70,y1:5.95}, minPxPerM:60, maxH:410, tEnd, posDir:{type:"2d",xl:"x",yl:"y",ydown:true},
+      id:"m3s2", world:{x0:0.20,x1:5.60,y0:-0.95,y1:5.95}, minPxPerM:30, maxH:420, tEnd, posDir:{type:"2d",xl:"x",yl:"y",ydown:true},
       slowmo:{label:"床に当たる瞬間", t0:Math.max(0,tC-0.05), t1:tC+DT+0.10, k:0.10},
       fnote:"※ 2 物体間（床と小球）の力だけ表示しています（重力は無視）",
-      assume:'床に平行な向きを $x$、床に垂直で下向きを $y$ とする。床との反発係数は $e=-v_y\'/v_y$（床に垂直な成分だけで決まる）。$m='+fmt(m,1)+'$ kg、入射の速さ $'+fmt(sp,1)+'$ m/s（床と 60°）、接触時間 $\\Delta t=0.20$ s、摩擦があるときは $\\mu=0.3$（$v_x\'=v_x-\\mu(1+e)|v_y|$）。重力は無視。「速度成分」ボタンで $\\vec{v}$・$\\vec{v}\'$ を成分に分けて見られる。',
+      assume:'床に平行な向きを $x$、床に垂直で下向きを $y$ とする。床との反発係数は $e=-v_y\'/v_y$（床に垂直な成分だけで決まる）。接触時間 $\\Delta t=0.20$ s、摩擦があるときは $v_x\'=v_x-\\mu(1+e)|v_y|$（$\\mu$ は $e$ ごとに、$v_x\'$ が $v_x$ の 1/3 になる値：'+(mu>0? '$\\mu='+fmt(mu,2)+'$' : '')+'）。重力は無視。アニメが終わると $\\vec{v}$・$\\vec{v}\'$ を成分に分けた図が出る。',
       st,
       draw(P,s,t,o){
         const c=P.c;
-        P.ground(0,-0.10,8.30);
+        /* 床のようす：摩擦なし＝つるつる（水色の帯・光沢）、摩擦あり＝ざらざら（茶色の帯・砂粒）。帯の上に地面の線と斜線を重ねる */
+        { const X0=P.X(0.20), X1=P.X(5.60), Y=P.Y(0), H=14;
+          c.save(); c.beginPath(); c.rect(X0,Y+1,X1-X0,H); c.clip();
+          if(mu>0){ c.fillStyle="#d9b48a"; c.fillRect(X0,Y+1,X1-X0,H);
+            c.fillStyle="#7a4a1a"; let sd=7;                             // 決まった並びの砂粒（毎回同じ見た目）
+            for(let k=0;k<420;k++){ sd=(sd*1103515245+12345)%2147483648; const gx=X0+(sd/2147483648)*(X1-X0); sd=(sd*1103515245+12345)%2147483648; const gy=Y+2+(sd/2147483648)*(H-3);
+              c.beginPath(); c.arc(gx,gy,1.5,0,7); c.fill(); }
+          } else { const gr=c.createLinearGradient(0,Y+1,0,Y+1+H); gr.addColorStop(0,"#bfe4fa"); gr.addColorStop(0.45,"#ffffff"); gr.addColorStop(1,"#8ecdf0");
+            c.fillStyle=gr; c.fillRect(X0,Y+1,X1-X0,H); }
+          c.restore();
+          P.jtextW(5.50,-0.58,(mu>0? "ざらざらした床（摩擦あり）" : "つるつるの床（摩擦なし）"),{size:11,bold:true,col:(mu>0? "#8a5a12" : "#1663b5"),align:"right"});
+        }
+        P.ground(0,0.20,5.60);
         /* x・y の軸（y は下向き） */
         /* 入射・反射の道すじ（うすい破線） */
         c.save(); c.strokeStyle="#dfe5ea"; c.setLineDash([4,4]); c.lineWidth=1;
@@ -2405,25 +2662,25 @@ DEFS.m3s2 = {
         {k:"垂直抗力 "+MV("N"),v:fmt(-s.FN,1),u:"N"},{k:"摩擦力 "+MV("f"),v:fmt(-s.FF,1),u:"N"},{k:MV("K"),v:fmt(s.K,2),u:"J"}];},
       graphs(){
         const FNb=-JN/DT, FFb=-JF/DT, pk=(m*2*vy0/DT)*(Math.PI/2);
-        const ser=[{label:"垂直抗力 N（上向き）", col:COL.iA, fn:(t)=>-bumpF(JN,DT,t-tC), fill:true}];
+        const ser=[{label:"垂直抗力 $N$（上向き）", col:COL.iA, fn:(t)=>-bumpF(JN,DT,t-tC), fill:true}];
         const serB=[{label:"平均の垂直抗力", col:COL.iA, fn:(t)=>((t>=tC&&t<=tC+DT)?FNb:0), fill:true, avg:true, dash:[5,4]}];
-        if(mu>0){ ser.push({label:"摩擦力 f（左向き）", col:COL.U, fn:(t)=>-bumpF(JF,DT,t-tC)});
+        if(mu>0){ ser.push({label:"摩擦力 $f$（左向き）", col:COL.U, fn:(t)=>-bumpF(JF,DT,t-tC)});
                   serB.push({label:"平均の摩擦力", col:COL.U, fn:(t)=>((t>=tC&&t<=tC+DT)?FFb:0)}); }
         return [
           {title:"F–t 図（床から受ける力）", unit:"N", dec:0, ymin:0, ymax:pk*0.45, series:ser,
-           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt"); if(started) gNote(c,mp,["N の山の面積","= m(1+e)|vy| = "+fmt(-JN,2)].concat(mu>0?["f の山の面積 = "+fmt(-JF,2)]:[]),COL.J,"tr"); }},
+           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$"); if(started) gNote(c,mp,["$N$ の山の面積","= $m$(1+$e$)|$v_y$| = "+fmt(-JN,2)].concat(mu>0?["f の山の面積 = "+fmt(-JF,2)]:[]),COL.J,"tr"); }},
           {title:"#F–t 図（平均の力）", unit:"N", dec:0, ymin:0, ymax:pk*0.45, series:serB,
-           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt"); if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積"],COL.J,"tr"); }},
+           annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$"); if(started) gNote(c,mp,["山の面積","＝ 長方形の面積","＝ 力積"],COL.J,"tr"); }},
           {title:"v–t 図（速度の成分）", unit:"m/s", ymin:-3.8, ymax:3.8,
-           series:[{label:"床に平行 vx", col:COL.v, fn:(t)=>st(t).vx},{label:"床に垂直 vy（下向き正）", col:"#0d8f7a", dash:[6,3], fn:(t)=>st(t).vy}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["vx′ "+(mu>0?"<":"=")+" vx", "vy′ = −e vy = "+fmt(vy1,2)],COL.v,"mr"); },
+           series:[{label:"床に平行 $v_x$", col:COL.v, fn:(t)=>st(t).vx},{label:"床に垂直 $v_y$（下向き正）", col:"#0d8f7a", dash:[6,3], fn:(t)=>st(t).vy}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["$v_x'$ "+(mu>0?"<":"=")+" $v_x$", "$v_y'$ = −$ev_y$ = "+fmt(vy1,2)],COL.v,"mr"); },
            alt:{title:"p–t 図（運動量の成分）", unit:"kg·m/s", ymin:-3.8, ymax:3.8,
-             series:[{label:"px = m vx", col:COL.p, fn:(t)=>m*st(t).vx},{label:"py = m vy", col:"#4aa37a", dash:[6,3], fn:(t)=>m*st(t).vy}],
-             annot:(c,mp,t,started)=>{ if(started){ gStep(c,mp,tC+DT,m*vy0,m*vy1,"Δpy = "+fmt(JN,2),COL.J,12);
-               gNote(c,mp,["Δpy ＝ N の力積"].concat(mu>0?["Δpx = "+fmt(JF,2)+" ＝ f の力積"]:[]),COL.J,"tr"); } }}},
+             series:[{label:"$p_x$ = $mv_x$", col:COL.p, fn:(t)=>m*st(t).vx},{label:"$p_y$ = $mv_y$", col:"#4aa37a", dash:[6,3], fn:(t)=>m*st(t).vy}],
+             annot:(c,mp,t,started)=>{ if(started){ gStep(c,mp,tC+DT,m*vy0,m*vy1,"$Δp_y$ = "+fmt(JN,2),COL.J,12);
+               gNote(c,mp,["$Δp_y$ ＝ $N$ の力積"].concat(mu>0?["$Δp_x$ = "+fmt(JF,2)+" ＝ $f$ の力積"]:[]),COL.J,"tr"); } }}},
           {title:"K–t 図（運動エネルギー）", kind:"K", unit:"J", ymin:0, ymax:0.5*m*sp*sp*1.05,
-           series:[{label:"運動エネルギー K", col:COL.T, fn:(t)=>st(t).K}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,[(e<1||mu>0)?"K は減る":"K は変わらない（e=1・摩擦なし）"],COL.T,"tr"); }}
+           series:[{label:"運動エネルギー $K$", col:COL.T, fn:(t)=>st(t).K}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,[(e<1||mu>0)?"$K$ は減る":"$K$ は変わらない（$e$=1・摩擦なし）"],COL.T,"tr"); }}
         ];
       },
       eqs(s,t){
@@ -2437,15 +2694,18 @@ DEFS.m3s2 = {
       note(s,t){ return `<div class="ttl">＜考え方＞</div>
         <ol><li>速度を<b>床に平行な成分 $v_x$</b> と<b>床に垂直な成分 $v_y$</b> に分けて考える。</li>
         <li>床に垂直な成分は、反発係数で $v_y'=-e\\,v_y$（$e=1$ なら同じ大きさで向きが逆、$e=0.5$ なら大きさが半分）。</li>
-        <li>床に平行な成分は、<b>摩擦がなければ変わらない</b>（$v_x'=v_x$）。<b>摩擦があると摩擦力の力積で減る</b>（$v_x'<v_x$）。</li></ol>`; },
+        <li>床に平行な成分は、<b>摩擦がなければ変わらない</b>（$v_x'=v_x$）。<b>摩擦があると摩擦力の力積で減る</b>（$v_x'\\lt v_x$）。</li></ol>`; },
       events:[
+        {t0:0.02,t1:tC,col:COL.v,bub:"斜め下向きに等速（$v$ = "+fmt(sp,1)+" m/s）",
+         text:"小球は斜め下向きに速さ $v="+fmt(sp,1)+"$ m/s（床と 60°）で飛んでくる。成分は $v_x="+fmt(vx0,2)+"$ m/s、$v_y="+fmt(vy0,2)+"$ m/s（下向きが正）。",
+         at:(s)=>[s.x+1.2, s.y+r+0.55]},
         {t0:tC,t1:tC+DT,col:COL.J,bub:(mu>0?"垂直抗力と摩擦力！":"床から垂直抗力！"),sound:"pon",
          text:(mu>0? "床に当たっている間、小球は<b>上向きの垂直抗力</b>と<b>左向きの摩擦力</b>を受ける。垂直抗力の力積で $v_y$ が、摩擦力の力積で $v_x$ が変わる。"
                    : "床に当たっている間、小球は<b>上向きの垂直抗力</b>だけを受ける（摩擦なし）。だから床に平行な成分 $v_x$ は変わらず、垂直な成分 $v_y$ だけが変わる。"),
          at:(s)=>[xC, r+1.25]},
-        {t0:tC+DT,t1:tEnd,bubT1:tC+DT+0.55,col:COL.p,bub:"$v_y' = −e v_y\n$v_x' "+(mu>0?"< v_x":"= v_x"),
+        {t0:tC+DT,t1:tEnd,bubT1:tC+DT+0.55,col:COL.p,bub:"$v_y' = −ev_y$\n$v_x'$ "+(mu>0?"< $v_x$":"= $v_x$"),
          text:"当たる前：$v_x="+fmt(vx0,2)+"$ m/s、$v_y="+fmt(vy0,2)+"$ m/s → 跳ね返ったあと：$v_x'="+fmt(vx1,2)+"$ m/s、$v_y'="+fmt(vy1,2)+"$ m/s。下の穴うめで確かめよう。",
-         at:(s)=>[s.x, s.y+r+0.95]}
+         at:(s)=>[Math.min(s.x+1.6,4.4), s.y+r+0.45]}
       ]
     };
   }
@@ -2459,9 +2719,15 @@ const COL_PA = COL.A, COL_PB = COL.B;      // 運動量の矢印：A は赤、B 
 /* 説明文に入れる質量の書き方："$m$"・"$2m$"（倍率から） */
 function mWord(k,sym){ sym=sym||"m"; return "$"+(k===1?"":k)+sym+"$"; }
 /* 2 物体の説明文：質量が同じなら「（質量同じ、…）」、ちがえば A（質量 m）B（質量 2m）と書く */
-function desc2(v,tail){ const kA=v.kmA||1, kB=v.kmB||1;
-  return (kA===kB? "<p>なめらかな水平面上で A が B の後ろから衝突する（質量同じ"+(tail?"、"+tail:"")+"）。</p>"
-                 : "<p>なめらかな水平面上で A（質量 "+mWord(kA)+"）が B（質量 "+mWord(kB)+"）の後ろから衝突する"+(tail?"（"+tail+"）":"")+"。</p>"); }
+function desc2(v,tail,base){ const kA=v.kmA||1, kB=v.kmB||1, head=((v.kvB||0)<0);
+  const bm=(base&&base.m)||1.0, bv=(base&&base.v)||2.0, kvA=(v.kvA===undefined?1:v.kvA);
+  let kvB=(v.kvB===undefined?0:v.kvB); if(kvB>=0 && kvB>=kvA) kvB=kvA-1;               // icOf と同じそろえ方
+  const how=(head? "と正面衝突する" : "の後ろから衝突する");
+  const sp="A の速さ "+symVal(kvA,"v",bv,"m/s")+"、B は"+(kvB===0? "静止" : "速さ "+symVal(kvB,"v",bv,"m/s")+(kvB<0?"（左向き）":""));
+  return (kA===kB? "<p>なめらかな水平面上で A が B "+how+"（質量同じ "+symVal(kA,"m",bm,"kg")+"、"+sp+(tail?"、"+tail:"")+"）。</p>"
+                 : "<p>なめらかな水平面上で A（質量 "+symVal(kA,"m",bm,"kg")+"）が B（質量 "+symVal(kB,"m",bm,"kg")+"）"+how+"（"+relWord(kB,kA,"m_B","m_A").replace(" とする","")+"、"+sp+(tail?"、"+tail:"")+"）。</p>"); }
+/* 質量の大小関係の一言：M と m の実際の値から「M > m」などを作る */
+function relWord(big,small,bs,ss){ return (big>small+1e-9? "$"+bs+"\\gt "+ss+"$" : (Math.abs(big-small)<1e-9? "$"+bs+"="+ss+"$" : "$"+bs+"\\lt "+ss+"$"))+" とする"; }
 function eWord(e){ return "反発係数 $e="+fmt(e,1)+"$"+(e===1?"、弾性衝突":(e===0?"、完全非弾性衝突":"、非弾性衝突")); }
 /* 矢印のラベルの置き方：tail=根もと側（A 用）、tip=先端側（B 用）。矢印の向き（L の符号）で左右を切りかえる */
 function labTail(L,extra){ return Object.assign(L>=0? {off:0,lx:-L-8,lalign:"right"} : {off:0,lx:-L+8,lalign:"left"}, extra||{}); }
@@ -2474,16 +2740,17 @@ function vScale(vmax){ return Math.min(VSC1, 100/Math.max(vmax,1e-6)); }
    o = {ox, y1, y2, pA0, pB0, pA, pB, show2, lab2, after, psc, labA, labB, sumNote} */
 function drawMomChain(P,o){
   const c=P.c, LO={size:11.5,bold:true,align:"left"}, psc=o.psc||PSC, labA=o.labA||"m_A@v_A", labB=o.labB||"m_B@v_B", COL_PA=o.colA||COL.A, COL_PB=o.colB||COL.B;
+  /* 矢印は「B → A」の順につなぐ（B の矢印は根もとが固定で、衝突中に左から右へのびる。A は先端が和の位置に固定されて縮む） */
   const chain=(y,pa,pb,head,showLab,prime,note)=>{
     c.save(); c.fillStyle="#1b1f24"; c.beginPath(); c.arc(P.X(o.ox),P.Y(y),2.6,0,7); c.fill(); c.restore();
-    let x=o.ox, aEnd=P.X(o.ox);
-    if(Math.abs(pa)*psc>1){ P.vec(x,y,pa*psc,0,COL_PA,null,{lw:2.6,head:11,noTick:true}); x+=pa*psc/P.s; }
-    if(showLab){ const sA=head+labA+(prime?"'":"")+(Math.abs(pa)<1e-6?" = 0":""); P.jtextW(o.ox,y+0.24,sA,Object.assign({col:COL_PA},LO)); aEnd=P.X(o.ox)+P.jwidth(sA,LO)+6; }
-    if(Math.abs(pb)*psc>1){ P.vec(x,y+0.10,pb*psc,0,COL_PB,null,{lw:2.6,head:11,noTick:true});
-      if(showLab){ const sB=labB+(prime?"'":""), wB=P.jwidth(sB,LO), tip=P.X(x)+pb*psc;
-        const lx=(pb>=0? Math.max(tip-wB, aEnd) : Math.max(P.X(x)-wB, aEnd));      // A のラベルと重なるなら右にずらす
-        P.jtext(lx,P.Y(y+0.10)-15,sB,Object.assign({col:COL_PB},LO)); }
-      x+=pb*psc/P.s; }
+    let x=o.ox, bEnd=P.X(o.ox);
+    if(Math.abs(pb)*psc>1){ P.vec(x,y+0.10,pb*psc,0,COL_PB,null,{lw:2.6,head:11,noTick:true}); x+=pb*psc/P.s; }
+    if(showLab){ const sB=head+labB+(prime?"'":"")+(Math.abs(pb)<1e-6?" = 0":""); P.jtextW(o.ox,y+0.24,sB,Object.assign({col:COL_PB},LO)); bEnd=P.X(o.ox)+P.jwidth(sB,LO)+6; }
+    if(Math.abs(pa)*psc>1){ P.vec(x,y,pa*psc,0,COL_PA,null,{lw:2.6,head:11,noTick:true});
+      if(showLab){ const sA=labA+(prime?"'":""), wA=P.jwidth(sA,LO), tip=P.X(x)+pa*psc;
+        const lx=(pa>=0? Math.max(tip-wA, bEnd) : Math.max(P.X(x)-wA, bEnd));      // B のラベルと重なるなら右にずらす
+        P.jtext(lx,P.Y(y+0.10)-15,sA,Object.assign({col:COL_PA},LO)); }
+      x+=pa*psc/P.s; }
     const tot=(pa+pb)*psc;
     P.vec(o.ox,y-0.11,tot,0,"#1b1f24",null,{lw:1.4,head:8,tick:"ptot"});
     if(note && o.sumNote!==false) P.jtext(P.X(o.ox)+Math.max(tot,0)+10, P.Y(y-0.11)+1, "← 黒の細い矢印＝全運動量（A＋B の和）", {size:9.5,col:"#5b6672"});
@@ -2506,7 +2773,7 @@ function drawImpulseRows(P,o){
   if(Math.abs(o.p0)*psc>1) P.vec(o.ox,y1,o.p0*psc,0,o.col,null,{lw:2.4,head:10,noTick:true});
   const Jn=o.Jn;
   if(Math.abs(Jn)*psc>1){
-    P.vec(o.ox+o.p0*psc/P.s,y2,Jn*psc,0,o.jcol,(Math.abs(Jn)>=Math.abs(o.J)-1e-9?(o.jlab||"@F_"+nm+"Δt"):null),{off:0,lx:-Jn*psc/2,ly:-13,size:12,lw:2.4,head:10,noTick:true});
+    P.vec(o.ox+o.p0*psc/P.s,y2,Jn*psc,0,o.jcol,(Math.abs(Jn)>=Math.abs(o.J)-1e-9?(o.jlab||"@F_"+nm+"$Δt$"):null),{off:0,lx:-Jn*psc/2,ly:-13,size:12,lw:2.4,head:10,noTick:true});
     c.save(); c.strokeStyle="#9aa4ae"; c.setLineDash([3,3]); c.lineWidth=1;
     c.beginPath(); c.moveTo(P.X(o.ox)+o.p0*psc,P.Y(y1)+5); c.lineTo(P.X(o.ox)+o.p0*psc,P.Y(y2)-4); c.stroke(); c.restore();
   }
@@ -2561,10 +2828,10 @@ function drawRelFig(P,o){
 
 /* ---- 2 物体の「運動量パネル」：見出し＋｜全体（A＋B）｜の下に｜A｜B｜（薄い色の領域で分ける） ----
    o = {x0,x1,yTop, pA0,pB0,pA,pB, JA,JB,JAn,JBn, phase, psc, labA,labB, nameA,nameB, colA,colB, jcolA,jcolB, started, after} */
-const PANEL_H = 3.28;                                   // パネルの高さ [world]（見出し 0.28＋全体 1.32＋すき間 0.06＋A/B 1.62）
+const PANEL_H = 3.63;                                   // パネルの高さ [world]（見出し 0.28＋全体 1.47＋すき間 0.06＋A/B 1.82。題名の行のぶんだけ矢印を下げる）
 function drawMomPanel(P,o){
   const c=P.c, x0=o.x0, x1=o.x1, yT=o.yTop, W=x1-x0, gap=0.06;
-  const hHead=0.28, hAll=1.32, hAB=1.62, colA=o.colA||COL.A, colB=o.colB||COL.B, nA=o.nameA||"A", nB=o.nameB||"B";
+  const hHead=0.28, hAll=1.47, hAB=1.82, colA=o.colA||COL.A, colB=o.colB||COL.B, nA=o.nameA||"A", nB=o.nameB||"B";
   const yA0=yT-hHead, yA1=yA0-hAll, yB0=yA1-gap, yB1=yB0-hAB, xm=x0+W/2;
   const box=(x,y,w,h,fill)=>{ c.save(); c.fillStyle=fill; c.strokeStyle="#dfe5ea"; c.lineWidth=1;
     c.beginPath(); c.rect(P.X(x),P.Y(y+h),P.L(w),P.L(h)); c.fill(); c.stroke(); c.restore(); };
@@ -2578,13 +2845,18 @@ function drawMomPanel(P,o){
     P.jtextW(xm-gap/2-0.08, yB0-0.13, nA+" の運動量変化 ＝ 力積", {size:10,col:colA,bold:true,align:"right"});
     P.jtextW(x1-0.08, yB0-0.13, nB+" の運動量変化 ＝ 力積", {size:10,col:colB,bold:true,align:"right"});
   }
-  /* 全体：運動量の和の 2 段 */
-  drawMomChain(P,{ox:x0+0.15, y1:yA0-0.42, y2:yA0-0.97, pA0:o.pA0, pB0:o.pB0, pA:o.pA, pB:o.pB, show2:(o.phase!=="before"), lab2:(o.phase==="after"), after:(o.phase==="after"), psc:o.psc, labA:o.labA, labB:o.labB, colA, colB, sumNote:false});
+  /* 全体：運動量の和の 2 段（領域の中でセンタリング。位置は「前」と最終の「後」の矢印の広がりから決めるので途中で動かない） */
+  const pAf=(o.pAf!==undefined? o.pAf : o.pA), pBf=(o.pBf!==undefined? o.pBf : o.pB), psc=o.psc||PSC, LABW=118;
+  const extent=(rows)=>{ let mn=0, mx=0; rows.forEach(([a,b])=>{ [0,b*psc,(a+b)*psc].forEach(q=>{ mn=Math.min(mn,q); mx=Math.max(mx,q); }); }); return [mn,Math.max(mx,mn+LABW)]; };
+  const cen=(xa,xb,rows)=>{ const [mn,mx]=extent(rows); return xa+((xb-xa)*P.s-(mx-mn))/2/P.s-mn/P.s; };
+  drawMomChain(P,{ox:cen(x0,x1,[[o.pA0,o.pB0],[pAf,pBf]]), y1:yA0-0.57, y2:yA0-1.12, pA0:o.pA0, pB0:o.pB0, pA:o.pA, pB:o.pB, show2:(o.phase!=="before"), lab2:(o.phase==="after"), after:(o.phase==="after"), psc:o.psc, labA:o.labA, labB:o.labB, colA, colB, sumNote:false});
   if(o.started&&o.phase==="after") P.jtextW(x1-0.08, yA1+0.12, "運動量の和は変わらない", {size:10.5,col:"#c2700f",bold:true,align:"right"});
   /* A・B：運動量変化＝力積の 3 段 */
   const jl=(nm)=>(/^[A-Za-z]$/.test(nm)? "@F_"+nm+"Δt" : "@FΔt");
-  drawImpulseRows(P,{ox:x0+0.15, y:yB0-0.30, p0:o.pA0, J:o.JA, Jn:o.JAn, p1:o.pA, col:colA, jcol:(o.jcolA||COL.J), name:nA, jlab:jl(nA), lab0:o.labA, psc:o.psc, phase:o.phase});
-  drawImpulseRows(P,{ox:xm+gap/2+0.15, y:yB0-0.30, p0:o.pB0, J:o.JB, Jn:o.JBn, p1:o.pB, col:colB, jcol:(o.jcolB||COL.Jb), name:nB, jlab:jl(nB), lab0:o.labB, psc:o.psc, phase:o.phase});
+  const ext1=(p0,J,p1)=>{ let mn=0,mx=0; [0,p0*psc,(p0+J)*psc,p1*psc].forEach(q=>{ mn=Math.min(mn,q); mx=Math.max(mx,q); }); return [mn,Math.max(mx,mn+LABW)]; };
+  const cen1=(xa,xb,p0,J,p1)=>{ const [mn,mx]=ext1(p0,J,p1); return xa+((xb-xa)*P.s-(mx-mn))/2/P.s-mn/P.s; };
+  drawImpulseRows(P,{ox:cen1(x0,xm-gap/2,o.pA0,o.JA,pAf), y:yB0-0.50, p0:o.pA0, J:o.JA, Jn:o.JAn, p1:o.pA, col:colA, jcol:(o.jcolA||COL.J), name:nA, jlab:jl(nA), lab0:o.labA, psc:o.psc, phase:o.phase});
+  drawImpulseRows(P,{ox:cen1(xm+gap/2,x1,o.pB0,o.JB,pBf), y:yB0-0.50, p0:o.pB0, J:o.JB, Jn:o.JBn, p1:o.pB, col:colB, jcol:(o.jcolB||COL.Jb), name:nB, jlab:jl(nB), lab0:o.labB, psc:o.psc, phase:o.phase});
   if(o.started&&o.phase==="after") P.jtextW(x1-0.08, yB1-0.14, nA+" と "+nB+" が受けた力積は、大きさが同じで逆向き", {size:10.5,col:"#c2700f",bold:true,align:"right"});
 }
 
@@ -2599,8 +2871,9 @@ function twoBody1D(cfg, v){
   const xA0=0.55, xB0=xA0+rA+rB+(vA-vB)*tC, xAc=xA0+vA*tC, xBc=xB0+vB*tC;
   /* 終わりの時刻：B の矢印（速度・運動量のうち長い方の半分＋ラベル）が右端からはみ出さない所まで */
   const halfArrow=Math.max(vB1*vsc, mB*vB1*psc)/2/62+0.45;
-  const tail=Math.max(0.45, Math.min(1.35, (7.90-halfArrow-xBc-rB)/Math.max(vB1,0.8)));
-  const tEnd=tC+DT+tail;
+  let tail=Math.max(0.45, Math.min(1.35, (7.90-halfArrow-xBc-rB)/Math.max(vB1,0.8)));
+  if(vA1<-0.05){ const halfA=Math.max(Math.abs(vA1)*vsc, Math.abs(mA*vA1)*psc)/2/62+0.45; tail=Math.max(0.3, Math.min(tail, (xAc-rA-halfA+0.10)/(-vA1))); }   // A が左端から出ない所まで
+  const tEnd=tC+DT+0.6*tail;                                              // 衝突後は短め（60%）
   const K0=0.5*mA*vA*vA+0.5*mB*vB*vB, K1=0.5*mA*vA1*vA1+0.5*mB*vB1*vB1, dK=K0-K1;
   const st=(t)=>{
     let xA,xB,uA,uB,F=0,tau=-1,contact=false;
@@ -2619,6 +2892,8 @@ function twoBody1D(cfg, v){
   let finale=null;
   if(cfg.quiz){
     if(e===1 && Math.abs(mA-mB)<1e-9) finale={text:"m が同じ、e=1 なら ", hidden:"速度は交換"};
+    else if(e===1 && Math.abs(mB-3*mA)<1e-9 && Math.abs(vB+vA)<1e-9) finale={text:"m と 3m が同じ速さで正面衝突、e=1 なら ", hidden:"3m は静止し、m は 2v で跳ね返る"};
+    else if(e===1 && Math.abs(mB-3*mA)<1e-9 && Math.abs(vB)<1e-9) finale={text:"止まっている 3m に m がぶつかる、e=1 なら ", hidden:"2 つは同じ速さ v/2 で逆向きに進む"};
     else if(e===1) finale={text:"m がちがう、e=1 なら ", hidden:"速度は交換しない（運動エネルギーの和は同じ）"};
     else if(e===0) finale={text:"e=0 なら ", hidden:"衝突後一体となる（相対速度が 0 になる）"};
     if(finale) finale.y=3.25;                                              // 吹き出しより上（小球の上あたり）
@@ -2626,7 +2901,7 @@ function twoBody1D(cfg, v){
   return {
     id:cfg.id, world:{x0:-0.10,x1:7.90,y0:yTop-PANEL_H-0.34,y1:((cfg.quiz||cfg.relFig)? 3.62 : 2.95)}, minPxPerM:62, maxH:((cfg.quiz||cfg.relFig)? 440 : 400), tEnd, finale,
     slowmo:{label:"衝突の瞬間", t0:Math.max(0,tC-0.05), t1:tC+DT+0.10, k:0.10},
-    assume:'右向きを正の向きとする。'+cfg.numNote+'、接触時間 $\\Delta t=0.20$ s。'+(cfg.assumeExtra||'')+'接触中の力は山の形で変わり、2 球が変形して運動エネルギーの一部が「変形のエネルギー」になる（K–t 図のオレンジ）。',
+    assume:'右向きを正の向きとする。接触時間 $\\Delta t=0.20$ s。'+(cfg.assumeExtra||'')+'接触中の力は山の形で変わり、2 球が変形して運動エネルギーの一部が「変形のエネルギー」になる（K–t 図のオレンジ）。',
     st,
     draw(P,s,t,o){
       const c=P.c;
@@ -2642,7 +2917,7 @@ function twoBody1D(cfg, v){
       }
       /* ---- 運動量パネル（全体の和／A の変化＝力積／B の変化＝力積）。3-3 は代わりに「衝突前後の速度と相対速度」の図 ---- */
       if(cfg.relFig) drawRelFig(P,{x0:0.20, x1:7.80, yTop:yTop, vA, vB, vA1, vB1, rA, rB, e, vsc, done:(o.started && t>=tEnd-1e-9)});
-      else drawMomPanel(P,{x0:0.20, x1:7.80, yTop:yTop, pA0:mA*vA, pB0:mB*vB, pA:s.pA, pB:s.pB, JA, JB, JAn:s.JAn, JBn:s.JBn,
+      else drawMomPanel(P,{x0:0.20, x1:7.80, yTop:yTop, pA0:mA*vA, pB0:mB*vB, pA:s.pA, pB:s.pB, pAf:mA*vA1, pBf:mB*vB1, JA, JB, JAn:s.JAn, JBn:s.JBn,
         phase:(s.after?"after":(s.contact?"contact":"before")), psc, started:o.started});
       /* ---- 2 球・速度（二重線）・運動量（A は赤、B は青） ---- */
       [["A",s.xA-DX,s.vA-vRef,rA,COL.A,lA,s.pA,COL_PA,"m_A@v_A"],["B",s.xB-DX,s.vB-vRef,rB,COL.B,lB,s.pB,COL_PB,"m_B@v_B"]].forEach(([nm,x,u,r,col,lab,p,pc,plab])=>{
@@ -2677,24 +2952,24 @@ function twoBody1D(cfg, v){
         {title:"F–t 図（A・B が受けた力）", unit:"N", dec:0, sym:true,
          series:[{label:"A が受けた力", col:COL.iA, fn:(t)=>-bumpF(JB,DT,t-tC), fill:true, fillCol:"rgba(224,17,95,.13)"},
                  {label:"B が受けた力", col:COL.iB, fn:(t)=>bumpF(JB,DT,t-tC), fill:true, fillCol:"rgba(142,47,208,.13)"}],
-         annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt",0.16); if(started) gNote(c,mp,["上下対称","（作用・反作用）"],COL.J,"tr"); }},
+         annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$",0.16); if(started) gNote(c,mp,["上下対称","（作用・反作用）"],COL.J,"tr"); }},
         {title:"#F–t 図（平均の力）", unit:"N", dec:0, sym:true,
          series:[{label:"A が受けた平均の力", col:COL.iA, fn:(t)=>((t>=tC&&t<=tC+DT)?-Fb:0), fill:true, avg:true, dash:[5,4], fillCol:"rgba(224,17,95,.13)"},
                  {label:"B が受けた平均の力", col:COL.iB, fn:(t)=>((t>=tC&&t<=tC+DT)?Fb:0), fill:true, avg:true, dash:[5,4], fillCol:"rgba(142,47,208,.13)"}],
-         annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"Δt",0.16); if(started) gNote(c,mp,["面積＝長方形","A "+f1(JA)+"・B +"+f1(JB),"和は 0"],COL.J,"tr"); }},
+         annot:(c,mp,t,started)=>{ gDt(c,mp,tC,tC+DT,"$Δt$",0.16); if(started) gNote(c,mp,["面積＝長方形","A "+f1(JA)+"・B +"+f1(JB),"和は 0"],COL.J,"tr"); }},
         {title:"v–t 図（A と B の速度）", unit:"m/s", ymin:Math.min(0,vA1*1.05), ymax:Math.max(vA,vB1)*1.05,
-         series:[{label:"A の速度 vA", col:COL.A, fn:(t)=>st(t).vA},{label:"B の速度 vB", col:COL.B, fn:(t)=>st(t).vB}],
-         annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,cfg.vNote(vA1,vB1),COL.v,"br"); },
+         series:[{label:"A の速度 $v_A$", col:COL.A, fn:(t)=>st(t).vA},{label:"B の速度 $v_B$", col:COL.B, fn:(t)=>st(t).vB}],
+         annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,cfg.vNote(vA1,vB1),COL.v,cfg.vWhere||"br"); },
          alt:{title:"p–t 図（運動量：A・B・和）", unit:"kg·m/s", ymin:Math.min(0,mA*vA1*1.05),
-           series:[{label:"A の運動量 pA", col:COL_PA, fn:(t)=>st(t).pA},{label:"B の運動量 pB", col:COL_PB, fn:(t)=>st(t).pB},
-                   {label:"和 pA + pB", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return s.pA+s.pB; }}],
+           series:[{label:"A の運動量 $p_A$", col:COL_PA, fn:(t)=>st(t).pA},{label:"B の運動量 $p_B$", col:COL_PB, fn:(t)=>st(t).pB},
+                   {label:"和 $p_A$ + $p_B$", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return s.pA+s.pB; }}],
            annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["A が減った分だけ B が増える","和（太い黒線）は一定"],"#1b1f24","br"); }}},
         {title:"K–t 図（運動エネルギー：A・B・和）", kind:"K", unit:"J", ymin:0, ymax:K0*1.28,
-         series:[{label:"A の K", col:COL.A, fn:(t)=>st(t).KA},{label:"B の K", col:COL.B, fn:(t)=>st(t).KB},
+         series:[{label:"A の $K$", col:COL.A, fn:(t)=>st(t).KA},{label:"B の $K$", col:COL.B, fn:(t)=>st(t).KB},
                  {label:"変形のエネルギー", col:COL.U, fn:(t)=>st(t).D},
                  {label:"和", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return s.KA+s.KB+s.D; }},
                  {label:"はじめの値", col:COL.lost, dash:[5,4], fn:(t)=>K0}],
-         annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(dK>1e-6? ["失われた K = "+f1(dK)+" J（e = "+etex+"）"] : ["和は変わらない（e = 1）"]),COL.T,"tr"); }}
+         annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(dK>1e-6? ["失われた $K$ = "+f1(dK)+" J（$e$ = "+etex+"）"] : ["和は変わらない（$e$ = 1）"]),COL.T,"tr"); }}
       ];
       return g;
     },
@@ -2710,12 +2985,15 @@ function twoBody1D(cfg, v){
       }
       if(!cfg.noE) list.push({title:"反発係数の式"+(e===1?"（弾性衝突 $e=1$）":""),
         lines:['e=-\\frac{v_A\'-v_B\'}{v_A-v_B}'+(s.after? '\\qquad '+etex+'=-\\frac{'+f1(vA1)+'-'+f1(vB1)+'}{'+f1(vA)+'-'+f1(vB)+'}':'')],
-        note:(s.after? (e===1? "$e=1$：衝突後の相対的速さ ＝ 衝突前の相対的速さ。運動エネルギーの和も変わらない。" : (e===0? "$e=0$：衝突後の相対的速さが 0 ＝ くっついて同じ速度になる（完全非弾性衝突）。" : "$0<e<1$：衝突後の相対的速さは衝突前の相対的速さの $e$ 倍。運動エネルギーの和は減る。")) : "")});
+        note:(s.after? (e===1? "$e=1$：衝突後の相対的速さ ＝ 衝突前の相対的速さ。運動エネルギーの和も変わらない。" : (e===0? "$e=0$：衝突後の相対的速さが 0 ＝ くっついて同じ速度になる（完全非弾性衝突）。" : "$0\\lt e\\lt 1$：衝突後の相対的速さは衝突前の相対的速さの $e$ 倍。運動エネルギーの和は減る。")) : "")});
       if(cfg.relFig && list.length>1){ const last=list.pop(); list.unshift(last); }   // 3-3 は反発係数の式を最初に
       return list;
     },
     note(s,t){ return cfg.note(vA1,vB1,dK,e); },
     events:[
+      {t0:0.02,t1:tC,col:COL.v,bub:"A：$v_A$ = "+f1(vA).replace("-","−")+" m/s／B："+(Math.abs(vB)<1e-9? "静止" : "$v_B$ = "+f1(vB).replace("-","−")+" m/s"),
+       text:"衝突の前、A は速さ $v_A="+f1(vA)+"$ m/s（質量 $m_A="+f1(mA)+"$ kg）、B は"+(Math.abs(vB)<1e-9? "静止している" : "速さ $v_B="+f1(vB)+"$ m/s（質量 $m_B="+f1(mB)+"$ kg）")+"。運動量の和は $"+f1(mA*vA+mB*vB)+"$ kg·m/s。",
+       at:(s)=>[(s.xA+s.xB)/2, 2*Math.max(rA,rB)+1.25]},
       {t0:tC,t1:tC+DT,col:COL.inner,bub:"ドンッ！",sound:"don",
        text:"衝突の間（$\\Delta t$）、A と B は<b>大きさが同じで向きが逆の力</b>を受ける（作用・反作用）。だから受ける力積も打ち消し合い、<b>運動量の和は変わらない</b>。",
        at:(s)=>[(s.xA+s.xB)/2, 2*Math.max(rA,rB)+1.25]},
@@ -2727,17 +3005,17 @@ function twoBody1D(cfg, v){
 }
 
 /* ---- 質量・初速の調整（グラフの下の 2 行）。倍率で持ち、make(v) で実際の値にする ---- */
-const ADJ2 = (mAdef,mBdef,vAdef,vBdef)=>({
+const ADJ2 = (mAdef,mBdef,vAdef,vBdef,vBopts)=>({
   masses:[{k:"kmA",name:"A",sym:"m",opts:[1,2,3],def:mAdef},{k:"kmB",name:"B",sym:"m",opts:[1,2,3],def:mBdef}],
-  speeds:[{k:"kvA",name:"A",sym:"v",opts:[1,2,3],def:vAdef},{k:"kvB",name:"B",sym:"v",opts:[0,1,2],def:vBdef}],
-  note:"（B の速さが A 以上だと追いつかないので、B は A より小さい値にそろえます）"
+  speeds:[{k:"kvA",name:"A",sym:"v",opts:[1,2,3],def:vAdef},{k:"kvB",name:"B",sym:"v",opts:(vBopts||[0,1,2]),def:vBdef}],
+  note:(vBopts&&vBopts[0]<0? "（B は左向き（負）の速度。正面衝突）" : "（B の速さが A 以上だと追いつかないので、B は A より小さい値にそろえます）")
 });
 /* v（倍率）→ 実際の質量と速度。m=1.0 kg、v=2.0 m/s が基準。B が A に追いつけない組み合わせは B を A より 1 段おそくする */
 function icOf(v,base){
   const bm=(base&&base.m)||1.0, bv=(base&&base.v)||2.0;
-  let kvB=v.kvB; if(kvB>=v.kvA) kvB=v.kvA-1;
+  let kvB=v.kvB; if(kvB>=0 && kvB>=v.kvA) kvB=v.kvA-1;                        // 追いつけない組（B が同じ向きに速い）だけ B を遅くする
   return {mA:bm*v.kmA, mB:bm*v.kmB, vA:bv*v.kvA, vB:bv*kvB,
-    numNote:"A：$m_A="+fmt(bm*v.kmA,1)+"$ kg、$v_A="+fmt(bv*v.kvA,1)+"$ m/s ／ B：$m_B="+fmt(bm*v.kmB,1)+"$ kg、"+(kvB===0? "静止" : "$v_B="+fmt(bv*kvB,1)+"$ m/s"),
+    numNote:"A：$m_A="+fmt(bm*v.kmA,1)+"$ kg、$v_A="+fmt(bv*v.kvA,1)+"$ m/s ／ B：$m_B="+fmt(bm*v.kmB,1)+"$ kg、"+(kvB===0? "静止" : "$v_B="+fmt(bv*kvB,1)+"$ m/s"+(kvB<0?"（左向き）":"")),
     lab:{A:(v.kmA===1?"m":v.kmA+"m"), B:(v.kmB===1?"m":v.kmB+"m")}};
 }
 
@@ -2746,7 +3024,7 @@ const NOTE3 = (vA1,vB1,dK,e)=>`<div class="ttl">＜考え方＞</div>
   <li>だから 2 物体が受ける<b>力積も大きさが同じで向きが逆</b>。A の運動量が減った分だけ B の運動量が増える。</li>
   <li>したがって<b>運動量の和は変わらない</b>（運動量保存の法則）。②＋③ ＝ ① がそのしくみ。</li>
   <li>${e===1? "弾性衝突（$e=1$）では運動エネルギーの和も変わらない。同じ質量なら速度がそっくり入れかわり、質量がちがうとそうはならない。" : (dK>1e-6? "$e<1$ なので運動エネルギーの和は "+fmt(dK,2)+" J だけ減る（熱や変形に変わる）。運動量の和は減らない。" : "$e=1$ なので運動エネルギーの和も変わらない。")}</li></ol>`;
-const VNOTE3 = (vA1,vB1)=>["衝突後：vA′ = "+fmt(vA1,2)+"、vB′ = "+fmt(vB1,2)];
+const VNOTE3 = (vA1,vB1)=>["衝突後：$v_A'$ = "+fmt(vA1,2)+"、$v_B'$ = "+fmt(vB1,2)];
 const BUB3 = (vA1,vB1,e,mA,mB,vA,vB)=>(e===1? (Math.abs(vA1)<1e-6? "A は止まり、B が動き出す" : (Math.abs(mA-mB)<1e-9? "速度が入れかわった（同じ質量の弾性衝突）" : "質量がちがうので速度は入れかわらない")) : (e===0? "くっついて同じ速度に" : "e = "+fmt(e,2)+"：衝突後の相対的速さは衝突前の "+fmt(e,2)+" 倍"));
 const AFTER3 = (vA1,vB1,dK,e,vA,vB)=>{ const bef="衝突前は $v_A="+fmt(vA,2)+"$ m/s、$v_B="+fmt(vB,2)+"$ m/s → ";
   return (e===1? "弾性衝突（$e=1$）。"+bef+"衝突後は $v_A'="+fmt(vA1,2)+"$ m/s、$v_B'="+fmt(vB1,2)+"$ m/s。運動量の和も運動エネルギーの和も変わらない。"
@@ -2755,7 +3033,7 @@ const AFTER3 = (vA1,vB1,dK,e,vA,vB)=>{ const bef="衝突前は $v_A="+fmt(vA,2)+
 
 /* ---- 2-1 運動量の保存（直線上の衝突・弾性 e=1）：A・B それぞれの「運動量変化＝力積」の図つき ---- */
 DEFS.m2s1 = { id:"m2s1", num:"1", title:"直線上の衝突",
-  desc:desc2({kmA:1,kmB:1},"弾性衝突 $e=1$"), descFn:(v)=>desc2(v,"弾性衝突 $e=1$"),
+  desc:desc2({kmA:1,kmB:1,kvA:1,kvB:0},"弾性衝突 $e=1$"), descFn:(v)=>desc2(v,"弾性衝突 $e=1$"),
   adj:ADJ2(1,1,1,0),
   make(v){ const ic=icOf(v);
     return twoBody1D(Object.assign({id:"m2s1", e:1, eqs:"4", noE:true, vNote:VNOTE3, note:NOTE3, bub:BUB3, after:AFTER3,
@@ -2763,14 +3041,22 @@ DEFS.m2s1 = { id:"m2s1", num:"1", title:"直線上の衝突",
 
 /* ---- 4 2 物体の衝突（いろんな e）：3 つの初期条件。e はタブの見出しの下で共有（既定 e=1） ---- */
 const IC3 = [
-  {s:"s1", title:"A（$m$, $v$）→ B（$m$, 静止）",    def:[1,1,1,0]},
-  {s:"s2", title:"A（$m$, $2v$）→ B（$m$, $v$）",    def:[1,1,2,1]},
-  {s:"s3", title:"A（$m$, $2v$）→ B（$2m$, $v$）",   def:[1,2,2,1]}
+  {s:"s1", title:"A（$m$, $v$）と B（$m$, 静止）、静止している物体への衝突",  def:[1,1,1,0]},
+  {s:"s2", title:"A（$m$, $2v$）と B（$m$, $-v$）、正面衝突",                 def:[1,1,2,-1], vBopts:[-3,-2,-1,0]},
+  {s:"s3", title:"A（$m$, $2v$）と B（$2m$, $v$）、違う質量の衝突",           def:[1,2,2,1]},
+  {s:"s4", title:"A（$m$, $v$）と B（$3m$, $-v$）、違う質量の正面衝突",       def:[1,3,1,-1], vBopts:[-3,-2,-1,0], proof:true}
 ];
+/* 質量 1:3・e=1 の 2 つの結果（4-4 と 2-4 で使う証明） */
+const PROOF13 = `<div class="ttl">■ 質量が 1:3 で反発係数 $e=1$ のとき（証明）</div>
+<p>A（質量 $m$、速度 $v_A$）と B（質量 $3m$、速度 $v_B$）の衝突後の速度を $v_A'$、$v_B'$ とする。運動量保存の式と反発係数の式を連立する：</p>
+$$mv_A+3mv_B=mv_A'+3mv_B'\\qquad 1=-\\frac{v_A'-v_B'}{v_A-v_B}$$
+<p>2 式から $v_A'=\\dfrac{-2v_A+6v_B}{4}=\\dfrac{-v_A+3v_B}{2}$、$v_B'=\\dfrac{2v_A+2v_B}{4}=\\dfrac{v_A+v_B}{2}$。</p>
+<p><b>①「止まっている物体（$3m$）に質量が小さいもの（$m$）がぶつかる」</b>：$v_A=v$、$v_B=0$ を入れると $v_A'=-\\dfrac{v}{2}$、$v_B'=\\dfrac{v}{2}$。<b>2 つは同じ速さ $\\dfrac{v}{2}$ で逆向きに進む</b>（$m$ は跳ね返る）。</p>
+<p><b>②「同じ速さで正面からぶつかる」</b>：$v_A=v$、$v_B=-v$ を入れると $v_A'=-2v$、$v_B'=0$。<b>質量が大きい $3m$ は静止し、$m$ は $2v$ で跳ね返る</b>。</p>`;
 IC3.forEach((ic,i)=>{
-  DEFS["m4"+ic.s] = { id:"m4"+ic.s, num:String(i+1), title:ic.title,
-    desc:desc2({kmA:ic.def[0],kmB:ic.def[1]},eWord(1)), descFn:(v)=>desc2(v,eWord(v.e===undefined?1:v.e)),
-    adj:ADJ2.apply(null,ic.def),
+  DEFS["m4"+ic.s] = { id:"m4"+ic.s, num:String(i+1), title:ic.title, proof:(ic.proof? PROOF13 : undefined),
+    desc:desc2({kmA:ic.def[0],kmB:ic.def[1],kvA:ic.def[2],kvB:ic.def[3]},eWord(1)), descFn:(v)=>desc2(v,eWord(v.e===undefined?1:v.e)),
+    adj:ADJ2.apply(null,ic.def.concat([ic.vBopts])),
     make(v){ const e=(v.e===undefined? 1 : v.e), icv=icOf(v);
       return twoBody1D(Object.assign({id:"m4"+ic.s, e:e, eqs:"4", quiz:true, foldImp:true, vNote:VNOTE3, note:NOTE3, bub:BUB3, after:AFTER3,
         assumeExtra:"反発係数 $e$ は上のボタンとスライドバーで変える（4 の全体で共通。$e=0$ はくっつく完全非弾性衝突、$e=1$ は完全弾性衝突）。"}, icv), v); } };
@@ -2778,18 +3064,18 @@ IC3.forEach((ic,i)=>{
 
 /* ---- 3-3 2 物体の反発係数（直線上で衝突する 2 物体） ---- */
 DEFS.m3s3 = { id:"m3s3", num:"3", title:"2物体の反発係数", viewBtn:{label:"👁 B から見た立場", on:"👁 地面から見た運動にもどす"},
-  desc:"<p>なめらかな水平面上で A（質量 $m$）が静止している B（質量 $2m$）に衝突する。</p>",
-  descFn:(v)=>"<p>なめらかな水平面上で A（質量 "+mWord(v.kmA||1)+"）が"+((v.kvB||0)===0?"静止している ":"")+"B（質量 "+mWord(v.kmB||1)+"）に衝突する（反発係数 $e="+fmt(v.e,1)+"$）。</p>",
-  vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:0.5, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
+  desc:"<p>なめらかな水平面上で A（質量 $m=1.0$ kg、速さ $v=3.0$ m/s）が静止している B（質量 $2m=2.0$ kg）に衝突する（$m_B\\gt m_A$、反発係数 $e=0.8$）。</p>",
+  descFn:(v)=>"<p>なめらかな水平面上で A（質量 "+symVal(v.kmA||1,"m",1.0,"kg")+"、速さ "+symVal(v.kvA===undefined?1:v.kvA,"v",3.0,"m/s")+"）が"+((v.kvB||0)===0?"静止している ":"")+"B（質量 "+symVal(v.kmB||1,"m",1.0,"kg")+"）に衝突する（"+relWord(v.kmB||1,v.kmA||1,"m_B","m_A").replace(" とする","")+"、反発係数 $e="+fmt(v.e,1)+"$）。</p>",
+  vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:0.8, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
   adj:ADJ2(1,2,1,0),
   make(v){ const ic=icOf(v,{m:1.0,v:3.0});
-    return twoBody1D(Object.assign({id:"m3s3", e:v.e, eqs:"4", foldImp:true, relFig:true, viewB:true,
+    return twoBody1D(Object.assign({id:"m3s3", e:v.e, eqs:"4", foldImp:true, relFig:true, viewB:true, vWhere:"tr",
     assumeExtra:"2 物体の反発係数は $e=-(v_A'-v_B')/(v_A-v_B)$（衝突後の相対的速さ ÷ 衝突前の相対的速さ）。スライドバーで $e$ を変えられる。",
-    vNote:(a,b)=>["衝突後：vA′ = "+fmt(a,2)+"、vB′ = "+fmt(b,2),"衝突後の相対的速さ = e × 衝突前の相対的速さ"],
+    vNote:(a,b)=>["衝突後：$v_A'$ = "+fmt(a,2)+"、$v_B'$ = "+fmt(b,2),"衝突後の相対的速さ = e × 衝突前の相対的速さ"],
     note:(vA1,vB1,dK,e)=>`<div class="ttl">＜考え方＞</div>
       <ol><li>2 物体の反発係数は「衝突後の相対的速さ ÷ 衝突前の相対的速さ」：$e=-\\dfrac{v_A'-v_B'}{v_A-v_B}$。</li>
       <li>衝突後の 2 つの速度は、<b>運動量保存の式と反発係数の式を連立</b>して求める（未知数 2 つ・式 2 本）。</li>
-      <li>$e$ を変えても運動量の和は変わらない。運動エネルギーの和は $e=1$ のときだけ変わらず、$e<1$ なら減る（今は ${fmt(dK,2)} J 減る）。</li></ol>`,
+      <li>$e$ を変えても運動量の和は変わらない。運動エネルギーの和は $e=1$ のときだけ変わらず、$e\\lt 1$ なら減る（今は ${fmt(dK,2)} J 減る）。</li></ol>`,
     bub:BUB3, after:AFTER3}, ic), v); } };
 
 /* ===== 65_mode5.js ===== */
@@ -2803,7 +3089,7 @@ function SC3(kk){
   kk=kk||{}; const km=kk.kmA||1, kM=kk.kmB||1, kv=kk.kv||1;
   const m=1*km,M=3*kM,mu=0.3,v0=3*kv;
   const am=-mu*G, aM=mu*m*G/M, t1=v0/(mu*G+mu*m*G/M), vf=m*v0/(m+M);
-  const bw=3.2*kv*kv,bh=0.30, mw=0.55*Math.sqrt(km),mh=0.45*Math.sqrt(km), X0=0.55,x0=1.10, tEnd=t1+0.48;
+  const bw=3.2*kv*kv,bh=0.30, mw=0.55*Math.sqrt(km),mh=0.45*Math.sqrt(km), X0=0.55,x0=1.10, tEnd=t1+0.29;
   const N1=m*G, fr=mu*N1, E0=0.5*m*v0*v0;
   const VS3=vScale(v0);
   return {
@@ -2811,7 +3097,7 @@ function SC3(kk){
     fx(s,t){ return (t<t1 && t>0)? [-fr, fr] : [0,0]; }, fwin:[0,t1],
     massAB:[m,M], vAB:(s)=>[s.vm,s.vM],
     slowmo:{label:'動き出しの瞬間', t0:0, t1:0.30, k:0.10},
-    assume:'右向きを正の向きとする。小物体 $m='+fmt(m,1)+'$ kg、板 $M='+fmt(M,1)+'$ kg、動摩擦係数 $\\mu=0.30$、$v_0='+fmt(v0,1)+'$ m/s（板と床の間は摩擦なし）。やがて小物体は板に対して静止する。',
+    assume:'右向きを正の向きとする。動摩擦係数 $\\mu=0.30$（板と床の間は摩擦なし）。やがて小物体は板に対して静止する。',
     panelAt:{x0:0.30,x1:Math.min(4.95,0.55+bw+1.0),yTop:-1.40}, chainLab:["m@v","M@V"],
     snaps:[{label:"(a) 運動開始の瞬間",t:0},{label:"すべっている途中（摩擦力がはたらく）",t:t1*0.5},{label:"(b) 板に対して静止",t:t1}],
     st(t){ let xm,XM,vm,vM;
@@ -2820,14 +3106,15 @@ function SC3(kk){
       return {xm,XM,vm,vM,slip:t<t1};
     },
     follow(s){ return s.XM+bw/2; },
+    pAt(s,t){ return [{x:s.xm,y:bh+mh+0.54,p:m*s.vm,lab:(t<0.05?"m@v_0":"m@v"),col:COL.A},{x:s.XM+bw*0.80,y:bh+0.50,p:M*s.vM,lab:"M@V",col:COL.B}]; },
     draw(P,s,t,o){
       P.ground(0,0.15,Math.max(5.05,0.55+bw+1.2));
       P.jtextW(0.25,2.45,"板と床の間の摩擦は無視（なめらか）",{size:11,col:"#aab3bd",cap:1});
       P.vec(0.3,2.05,32,0,"#c3ccd6","x",{off:9,lw:1.2,size:12,noTick:true});
       P.rectW(s.XM,0,bw,bh,"#fff",COL.ink,2.2,2);
       P.rectW(s.xm-mw/2,bh,mw,mh,"#fff",COL.ink,2.2,2);
-      if(o.labels){ P.mtextW(s.xm,bh+mh+0.55,"m",{size:15,align:"center",col:COL.A});
-        P.mtextW(s.XM+bw*0.80,bh/2,"M",{size:15,align:"center",col:COL.B}); }
+      if(o.labels){ P.mtextW(s.xm,bh+mh+0.92,"A:m",{size:15,align:"center",col:COL.A});
+        P.mtextW(s.XM+bw*0.30,bh/2,"B:M",{size:15,align:"center",col:COL.B}); }
       vArrow(P,s.xm,bh+mh+0.18,s.vm,VS3,t<0.05?"v_0":"v",COL.A);
       vArrow(P,s.XM+bw*0.80,bh+0.12,s.vM,VS3,"V",COL.B);
       if(s.slip && t>0.0001 && o.inner!==false){   // すべっている間だけ動摩擦力（内力）がはたらく
@@ -2846,8 +3133,8 @@ function SC3(kk){
       {k:"運動量 "+MV("p")+" の和",v:fmt(m*s.vm+M*s.vM,2),u:"kg·m/s",wide:1},
       {k:"力学的 "+MV("E")+" の和",v:fmt(.5*m*s.vm*s.vm+.5*M*s.vM*s.vM,2),u:"J",wide:1}];},
     q(s){ const pm=m*s.vm,pM=M*s.vM,Km=.5*m*s.vm*s.vm,KM=.5*M*s.vM*s.vM;
-      return {p:{parts:[{label:"小物体 m",col:COL.A,val:pm,mass:m},{label:"板 M",col:COL.B,val:pM,mass:M}],total:pm+pM},
-              e:{parts:[{label:"m の K",col:COL.A,val:Km},{label:"M の K",col:COL.B,val:KM},
+      return {p:{parts:[{label:"小物体 $m$",col:COL.A,val:pm,mass:m},{label:"板 $M$",col:COL.B,val:pM,mass:M}],total:pm+pM},
+              e:{parts:[{label:"m の $K$",col:COL.A,val:Km},{label:"M の $K$",col:COL.B,val:KM},
                         {label:"はじめの値",col:COL.lost,val:E0,dash:[5,4]}],total:Km+KM}};},
     events:[
       {t0:0.04,t1:t1,col:COL.inner,bub:"内力！\n（お互いにはたらく力）",
@@ -2871,14 +3158,14 @@ function SC4(kk){
   const mu=mA*mB/(mA+mB), om=Math.sqrt(k/mu), amp=(vA0-vB0)/om, tHalf=Math.PI/om, tQ=tHalf/2;
   const Vc=(mA*vA0+mB*vB0)/(mA+mB), Xc1=(mA*(xA0+vA0*t1)+mB*(xB0+vB0*t1))/(mA+mB);
   const vA1=(mA*vA0+mB*vB0-mB*(vA0-vB0))/(mA+mB), vB1=(mA*vA0+mB*vB0+mA*(vA0-vB0))/(mA+mB);   // 弾性衝突と同じ結果
-  const tEnd=t1+tHalf+0.55/Math.max(1,vB1/2);
+  const tEnd=t1+tHalf+0.33/Math.max(1,vB1/2);
   const VS4=vScale(Math.max(vA0,vB1));
   const wA=w*Math.sqrt(kA), wB=w*Math.sqrt(kB), hA=h*Math.sqrt(kA), hB=h*Math.sqrt(kB);
   return {
     id:"q4", world:{x0:1.7,x1:8.0,y0:-1.05-PANEL_H-0.34,y1:2.5}, minPxPerM:58, maxH:430, tEnd, springE:true,
     fx(s,t){ const F=(s.contact? k*s.u : 0); return [-F, F]; }, fwin:[t1,t1+tHalf],
     massAB:[mA,mB], vAB:(s)=>[s.vA,s.vB],
-    assume:'右向きを正の向きとする。A $m_A='+fmt(mA,1)+'$ kg、B $m_B='+fmt(mB,1)+'$ kg、A の速さ $'+fmt(vA0,1)+'$ m/s、B の速さ $'+fmt(vB0,1)+'$ m/s、ばね定数 $k=50$ N/m。ばねが縮んで相対速度が 0 になったあと、ばねがもどって 2 物体は離れる。',
+    assume:'右向きを正の向きとする。ばね定数 $k=50$ N/m。ばねが縮んで相対速度が 0 になったあと、ばねがもどって 2 物体は離れる。',
     panelAt:{x0:1.85,x1:7.85,yTop:-1.05}, chainLab:["m_A@v_A","m_B@v_B"], vals:{vA1,vB1,Vc,vA0,vB0},
     slowmo:{label:'ばねが縮む瞬間', t0:Math.max(0,t1-0.05), t1:t1+tHalf+0.12, k:0.10},
     snaps:[{label:"(a) ばねが触れる前",t:0.35},{label:"ばねが縮んでいる途中",t:t1+tQ*0.5},{label:"(b) 相対速度が 0",t:t1+tQ}],
@@ -2902,11 +3189,12 @@ function SC4(kk){
       P.rectW(s.xB-w/2,0,wB,hB,"#fff",COL.ink,2.2,2);
       if(!o.started) P.jtextW(sEnd+0.10,h*0.55,"ばね",{size:11.5,col:"#0f7a5a",bold:true});
       const lA=(kA===1?"m":kA+"m"), lB=(kB===1?"m":kB+"m");
-      if(o.labels){ P.mtextW(s.xA,Math.max(hA,hB)+0.55,"A:"+lA,{size:15,align:"center",col:COL.A});
-        P.mtextW(s.xB,Math.max(hA,hB)+0.55,"B:"+lB,{size:15,align:"center",col:COL.B}); }
+      if(o.labels){ P.mtextW(s.xA,Math.max(hA,hB)+0.95,"A:"+lA,{size:15,align:"center",col:COL.A});
+        P.mtextW(s.xB,Math.max(hA,hB)+0.95,"B:"+lB,{size:15,align:"center",col:COL.B}); }
       const ph4=(t<t1)?0:((t<t1+tHalf)?1:2), hh=Math.max(hA,hB);
-      vArrow(P,s.xA,hh+0.20,s.vA,VS4,(ph4===0?"v_A":(ph4===1?"v_1":"v_A'")),COL.A);
-      vArrow(P,s.xB,hh+0.20,s.vB,VS4,(ph4===0?"v_B":(ph4===1?"v_2":"v_B'")),COL.B);
+      this._pAt=[{x:s.xA,y:hh+0.56,p:mA*s.vA,lab:(ph4===0?"m_A@v_A":(ph4===1?"m_A@v_1":"m_A@v_A'")),col:COL.A},{x:s.xB,y:hh+0.56,p:mB*s.vB,lab:(ph4===0?"m_B@v_B":(ph4===1?"m_B@v_2":"m_B@v_B'")),col:COL.B}];
+      vArrow(P,s.xA,hh+0.20,s.vA,VS4,(ph4===0?"v_A":(ph4===1?"v_1":"v_A'")),COL.A,0,!!o.snap);   // コマ図ではラベルを矢印の上（F と重ねない）
+      vArrow(P,s.xB,hh+0.20,s.vB,VS4,(ph4===0?"v_B":(ph4===1?"v_2":"v_B'")),COL.B,0,!!o.snap);
       if(s.contact && o.inner!==false){ const F=k*s.u, L=Math.max(30,Math.min(64,F*4.5));
         P.vec(sx,h*0.55,-L,0,COL.iA,"F",{off:11,lw:2.8,head:9});
         P.vec(ex,h*0.55, L,0,COL.iB,"F",{off:11,lw:2.8,head:9});
@@ -2922,7 +3210,7 @@ function SC4(kk){
       {k:"力学的 "+MV("E")+" の和",v:fmt(.5*mA*s.vA*s.vA+.5*mB*s.vB*s.vB+.5*k*s.u*s.u,2),u:"J",wide:1}];},
     q(s){ const pA=mA*s.vA,pB=mB*s.vB,KA=.5*mA*s.vA*s.vA,KB=.5*mB*s.vB*s.vB,U=.5*k*s.u*s.u;
       return {p:{parts:[{label:"A",col:COL.A,val:pA,mass:mA},{label:"B",col:COL.B,val:pB,mass:mB}],total:pA+pB},
-              e:{parts:[{label:"A の K",col:COL.A,val:KA},{label:"B の K",col:COL.B,val:KB},
+              e:{parts:[{label:"A の $K$",col:COL.A,val:KA},{label:"B の $K$",col:COL.B,val:KB},
                         {label:"ばねの弾性エネルギー",col:COL.U,val:U}],total:KA+KB+U}};},
     events:[
       {t0:t1,t1:t1+tQ,col:COL.inner,bub:"内力！\n（ばねの弾性力）",
@@ -2942,18 +3230,18 @@ function SC4(kk){
    問5 : ばねを内蔵した物体 A から物体 B を打ち出す
    ======================================================================= */
 function SC5(kk){
-  kk=kk||{}; const M=3*(kk.kmB||1),m=1*(kk.kmA||1),vB=3*(kk.kv||1),vA=-m*vB/M,tRel=0,tExp=0.15;
+  kk=kk||{}; const M=3*(kk.kmA||1),m=1*(kk.kmB||1),vB=3*(kk.kv||1),vA=-m*vB/M,tRel=0,tExp=0.15;   // A＝M（打ち出す側・コの字）、B＝m（打ち出される小球）
   const amp0=()=>(vB-vA)/(Math.PI/(2*tExp));
-  const om=Math.PI/(2*tExp), amp=(vB-vA)/om, dNat=0.40+amp0(), Xc=3.6, tEnd=0.95;
+  const om=Math.PI/(2*tExp), amp=(vB-vA)/om, dNat=0.40+amp0(), Xc=3.6, tEnd=0.63;
   const kSp=(om*om)*(M*m/(M+m)), U0=0.5*kSp*amp*amp;
   const wA=1.40,hA=1.35,r=0.30*Math.sqrt(kk.kmA||1),nd=1.05,ny0=0.40,ny1=1.02,yB=(ny0+ny1)/2;
   const VS5=vScale(Math.max(vB,-vA));
   return {
     id:"q5", world:{x0:1.15,x1:7.85,y0:-1.05-PANEL_H-0.34,y1:3.0}, minPxPerM:58, maxH:440, tEnd, springE:true,
     fx(s,t){ const F=(s.push? kSp*s.u : 0); return [F, -F]; }, fwin:[tRel,tRel+tExp],
-    massAB:[m,M], vAB:(s)=>[s.vb,s.va],
-    assume:'右向きを正の向きとする。A $m='+fmt(m,1)+'$ kg、B $M='+fmt(M,1)+'$ kg。B に固定した軽いばねを縮めてとめてあり、解放すると A が速さ $v='+fmt(vB,1)+'$ m/s で打ち出される（ばねに蓄えられていたエネルギー '+fmt(U0,1)+' J）。',
-    panelAt:{x0:1.30,x1:7.70,yTop:-1.05}, chainLab:["m@v","M@V"], vals:{U0,M,m,vA,vB},
+    massAB:[M,m], vAB:(s)=>[s.va,s.vb],
+    assume:'右向きを正の向きとする。ばねに蓄えられていたエネルギーは '+fmt(U0,1)+' J。',
+    panelAt:{x0:1.30,x1:7.70,yTop:-1.05}, chainLab:["M@V","m@v"], vals:{U0,M,m,vA,vB},
     slowmo:{label:'打ち出しの瞬間', t0:Math.max(0,tRel-0.05), t1:tRel+tExp+0.12, k:0.10},
     snaps:[{label:"(a) 打ち出す前",t:0},{label:"ばねが伸びている途中",t:tRel+tExp*0.5},{label:"(b) 打ち出した直後",t:0.45}],
     st(t){ let d,va,vb,u;
@@ -2974,10 +3262,11 @@ function SC5(kk){
       if(!s.fly) P.spring(xn+0.02,yB,s.xB-r,yB,4,4.0,"#0f7a5a",1.8);
       if(!s.fly && !o.started) P.jtextW((xn+0.02+s.xB-r)/2,ny0-0.22,"ばね",{size:11.5,col:"#0f7a5a",align:"center",bold:true});
       P.ball(s.xB,yB,r,"#fff",COL.ink,2.2);
-      if(o.labels){ P.mtextW(s.xA-0.55,hA+0.62,"B:M",{size:15,align:"center",col:COL.B});
-        P.mtextW(s.xB+0.80,yB+0.55,"A:m",{size:15,align:"center",col:COL.A}); }
-      vArrow(P,s.xA,hA+0.30,s.va,VS5,"V",COL.B);
-      vArrow(P,s.xB,hA+0.30,s.vb,VS5,"v",COL.A);
+      if(o.labels){ P.mtextW(s.xA-0.55,hA+1.05,"A:M",{size:15,align:"center",col:COL.A});
+        P.mtextW(s.xB+0.85,yB+0.75,"B:m",{size:15,align:"center",col:COL.B}); }
+      this._pAt=[{x:s.xA,y:hA+0.66,p:M*s.va,lab:"M@V",col:COL.A},{x:s.xB,y:hA+0.66,p:m*s.vb,lab:"m@v",col:COL.B}];
+      vArrow(P,s.xA,hA+0.30,s.va,VS5,"V",COL.A);
+      vArrow(P,s.xB,hA+0.30,s.vb,VS5,"v",COL.B);
       if(s.push && o.inner!==false){ const F=kSp*s.u, L=Math.max(30,Math.min(60,F*1.1));
         P.vec(xn+0.02,yB,-L,0,COL.iB,"F",{off:11,lw:2.8,head:9});
         P.vec(s.xB-r,yB, L,0,COL.iA,"F",{off:11,lw:2.8,head:9});
@@ -2988,12 +3277,12 @@ function SC5(kk){
         mgArrow(P,s.xB+3/P.s,yB,m,2.2,"mg");
       }
     },
-    readout(s,t){ return [{k:MV("V")+"（B）",v:fmt(s.va,2),u:"m/s",wide:1},{k:MV("v")+"（A）",v:fmt(s.vb,2),u:"m/s",wide:1},
+    readout(s,t){ return [{k:MV("V")+"（A）",v:fmt(s.va,2),u:"m/s",wide:1},{k:MV("v")+"（B）",v:fmt(s.vb,2),u:"m/s",wide:1},
       {k:"運動量 "+MV("p")+" の和",v:fmt(M*s.va+m*s.vb,2),u:"kg·m/s",wide:1},
       {k:"力学的 "+MV("E")+" の和",v:fmt(.5*M*s.va*s.va+.5*m*s.vb*s.vb+.5*kSp*s.u*s.u,2),u:"J",wide:1}];},
     q(s){ const pA=M*s.va,pB=m*s.vb,KA=.5*M*s.va*s.va,KB=.5*m*s.vb*s.vb,U=.5*kSp*s.u*s.u;
-      return {p:{parts:[{label:"B（M）",col:COL.B,val:pA,mass:M},{label:"A（m）",col:COL.A,val:pB,mass:m}],total:pA+pB},
-              e:{parts:[{label:"B の K",col:COL.B,val:KA},{label:"A の K",col:COL.A,val:KB},
+      return {p:{parts:[{label:"A（$M$）",col:COL.A,val:pA,mass:M},{label:"B（$m$）",col:COL.B,val:pB,mass:m}],total:pA+pB},
+              e:{parts:[{label:"A の $K$",col:COL.A,val:KA},{label:"B の $K$",col:COL.B,val:KB},
                         {label:"ばねの弾性エネルギー",col:COL.U,val:U}],total:KA+KB+U}};},
     events:[
       {t0:tRel,t1:tRel+tExp,col:COL.inner,bub:"内力！\n（ばねの弾性力）",
@@ -3017,12 +3306,12 @@ function SC7(kk){
   const Nf=m*G*M*Math.cos(th)/(M+m*Math.sin(th)*Math.sin(th));
   const nx=Math.sin(th), ny=Math.cos(th);
   return {
-    totalOffset:false, showVG:true, cmFrame:true, id:"q7", posDir:{type:"2d",xl:"x",yl:"y"}, world:{x0:1.30,x1:6.35,y0:-1.90-PANEL_H-0.34,y1:2.80}, minPxPerM:60, maxH:450, tEnd:t1,
-    panelAt:{x0:1.45,x1:6.20,yTop:-1.90}, chainLab:["m@v_x","M@V"],
+    totalOffset:false, showVG:true, cmFrame:true, id:"q7", posDir:{type:"2d",xl:"x",yl:"y"}, world:{x0:1.30,x1:6.35,y0:-2.12-PANEL_H-0.34,y1:2.80}, minPxPerM:60, maxH:450, tEnd:t1,
+    panelAt:{x0:1.45,x1:6.20,yTop:-2.12}, chainLab:["m@v_x","M@V"],
     fx(s,t){ return [nx*Nf, -nx*Nf]; }, fwin:[0,t1],
     massAB:[m,M], vAB:(s)=>[s.vbx,s.Vw],
     slowmo:{label:'すべり出しの瞬間', t0:0, t1:0.28, k:0.10},
-    assume:'右向きを正の向きとする。小物体 $m='+fmt(m,1)+'$ kg、台 $M='+fmt(M,1)+'$ kg、傾角 $\\theta=30^\\circ$、高さ $h=1.4$ m（床も斜面もなめらか）。小物体がすべり降りると台は逆向きに動く（はじめは静止しているので初速はない）。',
+    assume:'右向きを正の向きとする。傾角 $\\theta=30^\\circ$（床も斜面もなめらか）。小物体がすべり降りると台は逆向きに動く（はじめは静止しているので初速はない）。',
     snaps:[{label:"(a) 運動開始直後",t:0.02},{label:"すべり降りている途中",t:t1*0.55},{label:"(b) 地面についたとき",t:t1}],
     st(t){ const Xw=Xw0+0.5*Aw*t*t, Vw=Aw*t, s=0.5*aRel*t*t, vs=aRel*t, sp=s+bs/2;
       return {Xw,Vw,bx:Xw+sp*Math.cos(th),by:h-sp*Math.sin(th),
@@ -3031,11 +3320,10 @@ function SC7(kk){
     preBubbles(s){ return [{x:s.bx+0.35,y:s.by+0.62,text:"静止 v=0",col:COL.A}]; },
     draw(P,s,t,o){
       P.ground(0,1.30,6.35);
-      if(o.cm && !o.figure && !o.snap) P.jtextW(1.36,2.66,"■ 重心とともに動く観測者から見た運動（重心は水平方向に動かないので見え方は同じ）",{size:10,col:"#7a5aa8",bold:true});
-      else P.jtextW(1.40,2.66,"床も斜面もなめらか",{size:11,col:"#aab3bd",cap:1});
+      P.jtextW(1.40,2.66,"床も斜面もなめらか",{size:11,col:"#aab3bd",cap:1});
       P.poly([[s.Xw,0],[s.Xw,h],[s.Xw+base,0]],"#f4f7fa",COL.ink,2.2);
-      if(o.labels){ P.mtextW(s.Xw+base*0.45,h*0.28,"M",{size:15,col:COL.B,align:"center"});
-        P.mtextW(s.bx-0.40,s.by+0.40,"m",{size:15,align:"center",col:COL.A}); }
+      if(o.labels){ P.mtextW(s.Xw+base*0.55,h*0.20,"B:M",{size:15,col:COL.B,align:"center"});
+        P.mtextW(s.bx-0.40,s.by+0.40,"A:m",{size:15,align:"center",col:COL.A}); }
       P.mtextW(s.Xw-0.10,-0.32,"A",{size:12,col:"#c3ccd6",align:"center"});
       const c=P.c; c.save(); c.translate(P.X(s.bx),P.Y(s.by)); c.rotate(th);
       c.beginPath(); c.rect(-P.L(bs)/2,-P.L(bs),P.L(bs),P.L(bs));
@@ -3044,6 +3332,7 @@ function SC7(kk){
       const VS=16, vdx=s.vbx*VS, vdy=-s.vby*VS;
       if(Math.hypot(vdx,vdy)>6) P.vec(cxB,cyB,vdx,vdy,COL.A,"v",{off:12,lw:2.6,head:13,tick:"vel"});
       vArrow(P,s.Xw+base*0.62,0.16,s.Vw,22,"V",COL.B);
+      this._pAt=[{x:s.bx+0.30*Math.cos(th)+0.80*Math.sin(th),y:s.by-0.30*Math.sin(th)+0.80*Math.cos(th),px:m*s.vbx,py:m*s.vby,lab:"m@v",col:COL.A},{x:s.Xw+base*0.30,y:0.74,p:M*s.Vw,lab:"M@V",col:COL.B}];
       if(o.inner!==false){   // 2物体の間の力＝垂直抗力（作用・反作用）
         const SC=6.0, Nx=nx*Nf*SC, Ny=-ny*Nf*SC;
         decomp(P,s.bx,s.by, Nx, Ny,"#f9a3d3","N_x","N_y",11.5);
@@ -3065,25 +3354,31 @@ function SC7(kk){
       }
       /* 重心（水平方向には動かない）と観測者 */
       if(!o.figure && !o.snap){
-        const Xc=(m*s.bx+M*(s.Xw+base/3))/(m+M);
+        const Xc=(m*s.bx+M*(s.Xw+base/3))/(m+M), Yc=(m*s.by+M*h/3)/(m+M);
         c.save(); c.strokeStyle="#e6b0b0"; c.setLineDash([3,3]); c.lineWidth=1;
         c.beginPath(); c.moveTo(P.X(Xc),P.Y(0)); c.lineTo(P.X(Xc),P.Y(-0.22)); c.stroke(); c.restore();
         P.jtextW(Xc+0.14,-0.20,"重心",{size:10,col:"#c0392b"});
-        P.observer(Xc,-1.44,"重心系の観測者","#7a5aa8");
+        if(o.cm){                                                        // 重心系の観測者（ON のときはオレンジで目立たせ、重心の印も出す）
+          c.save(); c.fillStyle="#c0392b"; c.beginPath(); c.arc(P.X(Xc),P.Y(Yc),4,0,7); c.fill(); c.restore();
+          c.save(); c.strokeStyle="#e6b0b0"; c.setLineDash([3,3]); c.lineWidth=1; c.beginPath(); c.moveTo(P.X(Xc),P.Y(Yc)); c.lineTo(P.X(Xc),P.Y(0)); c.stroke(); c.restore();
+          P.jtextW(Xc+0.12,Yc+0.02,"重心 G",{size:10,col:"#c0392b",bold:true});
+          P.observer(Xc,-1.44,"重心系の観測者","#e07b18");
+          P.jtextW(1.36,-1.90,"■ 重心系の観測者：x は動かない（運動量の x 成分の和が 0）→ 左右の見え方は地面と同じ。重心は真下に下がる",{size:9.5,col:"#c2700f",bold:true});
+        } else P.observer(Xc,-1.44,"重心系の観測者","#7a5aa8");
       }
     },
     readout(s,t){ return [{k:MV("v","x")+"（m）",v:fmt(s.vbx,2),u:"m/s",wide:1},{k:MV("v","y")+"（m）",v:fmt(s.vby,2),u:"m/s",wide:1},
       {k:MV("V")+"（台）",v:fmt(s.Vw,2),u:"m/s",wide:1},
       {k:"力学的 "+MV("E")+" の和",v:fmt(.5*m*(s.vbx**2+s.vby**2)+.5*M*s.Vw*s.Vw+m*G*s.by,2),u:"J",wide:1}];},
     q(s){ const p1=m*s.vbx,p2=M*s.Vw, K1=.5*m*(s.vbx**2+s.vby**2), K2=.5*M*s.Vw*s.Vw, U=m*G*s.by;
-      return {p:{parts:[{label:"m の p_x",col:COL.A,val:p1,mass:m},{label:"M の p_x",col:COL.B,val:p2,mass:M}],
-                 total:p1+p2, ylabel:"合計 p_y（鉛直）", ytotal:m*s.vby},
-              e:{parts:[{label:"m の K",col:COL.A,val:K1},{label:"M の K",col:COL.B,val:K2},
+      return {p:{parts:[{label:"m の $p_x$",col:COL.A,val:p1,mass:m},{label:"M の $p_x$",col:COL.B,val:p2,mass:M}],
+                 total:p1+p2, ylabel:"合計 $p_y$（鉛直）", ytotal:m*s.vby},
+              e:{parts:[{label:"m の $K$",col:COL.A,val:K1},{label:"M の $K$",col:COL.B,val:K2},
                         {label:"重力の位置エネルギー",col:COL.U,val:U}],total:K1+K2+U}};},
     events:[
       {t0:0.15,t1:t1*0.72,col:COL.inner,bub:"内力！\n（お互いにはたらく力）",
        text:"小物体と台がおよぼし合う垂直抗力は<b>内力</b>。斜面に垂直なので<b>水平成分 $N_x=N\\sin\\theta$ と鉛直成分 $N_y=N\\cos\\theta$</b> に分けて考える。水平成分は大きさが同じで逆向きなので打ち消し合い、<b>水平方向の運動量の和は 0 のまま</b>。",
-       at:(s)=>[s.bx+1.35,s.by+0.95]},
+       at:(s)=>[s.bx+1.35,s.by+0.45]},
       {t0:t1*0.72,t1:t1,col:COL.U,bub:"鉛直方向は保存しない",
        text:"鉛直方向には<b>重力</b>と<b>床からの垂直抗力</b>という外力があるので、運動量の鉛直成分は保存されない（グラフの赤い破線）。いっぽう、はたらく力は重力（保存力）と仕事の和が 0 の抗力だけなので、力学的エネルギーは保存される。",
        at:(s)=>[s.bx+0.2,s.by+0.85]}
@@ -3106,19 +3401,24 @@ function portScene(sc, ext){
   /* 力積の途中までの値（時刻 t までの積分）：パネルの「力積」の矢印がのびていくのに使う */
   const cumA=[0], cumB=[0]; for(let i=0;i<N;i++){ const tt=sc.tEnd*(i+0.5)/N, f=sc.fx(sc.st(tt),tt); cumA.push(cumA[i]+f[0]*sc.tEnd/N); cumB.push(cumB[i]+f[1]*sc.tEnd/N); }
   const Jat=(arr,t)=>arr[Math.max(0,Math.min(N,Math.round(t/sc.tEnd*N)))];
-  const mAB=sc.massAB, vv0=sc.vAB(sc.st(0));
+  const mAB=sc.massAB, vv0=sc.vAB(sc.st(0)), vvE=sc.vAB(sc.st(sc.tEnd));
+  if(!sc.snapWorld) sc.snapWorld={x0:sc.world.x0, x1:sc.world.x1, y0:-1.25, y1:sc.world.y1};   // 3 コマ図はパネルの分を除いた範囲で大きく描く
   const pmax=Math.max(1e-6, ...[0,sc.tEnd].map(tt=>{ const v=sc.vAB(sc.st(tt)); return Math.abs(mAB[0]*v[0])+Math.abs(mAB[1]*v[1]); }));
   sc.draw=function(P,s,t,o){ P.hideCap=true; origDraw.call(sc,P,s,t,o);
+    /* 運動量ベクトル（速度の上に、物体の色の一本線で。他のタブと同じ） */
+    if(!o.figure && !o.snap){ const pts=(sc.pAt? sc.pAt(s,t) : (sc._pAt||[])), psc=Math.min(pScale(pmax), 3.2*P.s/pmax);
+      pts.forEach(q=>{ if(q.px!==undefined){ const dx=q.px*psc, dy=-q.py*psc; if(Math.hypot(dx,dy)>4) P.vec(q.x,q.y,dx,dy,q.col,q.lab,{off:12,lw:2.6,head:11,noTick:true}); }
+        else { const L=q.p*psc; if(Math.abs(L)>4) P.vec(q.x-(L/2)/P.s,q.y,L,0,q.col,q.lab,{off:8,lalign:(L>=0?"left":"right"),lw:2.6,head:11,noTick:true}); } }); }
     /* 左上：運動量パネル（全体の和／A の変化＝力積／B の変化＝力積）。他のタブと同じ見せ方。「前」＝t=0、「後」＝内力がはたらき終わったあと */
     if(sc.panelAt && !o.figure && !o.snap){ const pa=sc.panelAt, lab=sc.chainLab||["m_A@v_A","m_B@v_B"], v=sc.vAB(s);
       const psc=Math.min(pScale(pmax), ((pa.x1-pa.x0)/2-0.55)*P.s/pmax);
-      drawMomPanel(P,{x0:pa.x0, x1:pa.x1, yTop:pa.yTop, pA0:mAB[0]*vv0[0], pB0:mAB[1]*vv0[1], pA:mAB[0]*v[0], pB:mAB[1]*v[1],
+      drawMomPanel(P,{x0:pa.x0, x1:pa.x1, yTop:pa.yTop, pA0:mAB[0]*vv0[0], pB0:mAB[1]*vv0[1], pA:mAB[0]*v[0], pB:mAB[1]*v[1], pAf:mAB[0]*vvE[0], pBf:mAB[1]*vvE[1],
         JA, JB, JAn:Jat(cumA,t), JBn:Jat(cumB,t), phase:(t>=t1-1e-9?"after":(t>t0+1e-9?"contact":"before")), psc, labA:lab[0], labB:lab[1],
         nameA:(ext.syms&&ext.syms.nameA)||"A", nameB:(ext.syms&&ext.syms.nameB)||"B", started:o.started}); }
   };
   sc.graphs=function(){
     const sym=Math.abs(JA+JB)<1e-6;
-    const vser=parts.map((pp,k)=>({label:String(pp.label).split("p_x").join("v_x").split("p_y").join("v_y").replace(/ の v_x$/,"").replace(/^(.*)$/,"$1 の速度"), col:pp.col, fn:(t)=>{ const q=sc.q(sc.st(t)); return q.p.parts[k].val/(q.p.parts[k].mass||1); }}));
+    const vser=parts.map((pp,k)=>({label:String(pp.label).split("$p_x$").join("$v_x$").split("$p_y$").join("$v_y$").replace(/ の \$v_x\$$/,"").replace(/^(.*)$/,"$1 の速度"), col:pp.col, fn:(t)=>{ const q=sc.q(sc.st(t)); return q.p.parts[k].val/(q.p.parts[k].mass||1); }}));
     if(sc.showVG){ const mtot=parts.reduce((a,pp)=>a+(pp.mass||0),0)||1; vser.push({label:"重心の速度", col:COL.tot, thick:true, fn:(t)=>sc.q(sc.st(t)).p.total/mtot}); }
     const pser=parts.map((pp,k)=>({label:pp.label, col:pp.col, dash:pp.dash, fn:(t)=>sc.q(sc.st(t)).p.parts[k].val}));
     pser.push({label:"合計", col:COL.tot, thick:true, fn:(t)=>sc.q(sc.st(t)).p.total});
@@ -3126,17 +3426,17 @@ function portScene(sc, ext){
     const eser=q0.e.parts.map((pp,k)=>({label:pp.label, col:pp.col, dash:pp.dash, fn:(t)=>sc.q(sc.st(t)).e.parts[k].val}));
     eser.push({label:"合計", col:COL.tot, thick:true, fn:(t)=>sc.q(sc.st(t)).e.total});
     return [
-      {title:"F–t 図（2 物体間の内力の x 成分）", unit:"N", dec:0, sym:sym,
+      {title:"F–t 図（2 物体間の内力の $x$ 成分）", unit:"N", dec:0, sym:sym,
        series:[{label:(ext.fA||"A が受けた内力"), col:COL.iA, fn:(t)=>sc.fx(sc.st(t),t)[0], fill:true, fillCol:"rgba(224,17,95,.13)"},
                {label:(ext.fB||"B が受けた内力"), col:COL.iB, fn:(t)=>sc.fx(sc.st(t),t)[1], fill:true, fillCol:"rgba(142,47,208,.13)"}],
-       annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,(t1-t0>0.3?"力がはたらく時間":"Δt"),(t1-t0>0.3?0.5:0.16)); if(started) gNote(c,mp,["大きさが同じで向きが逆","→ 力積も打ち消し合う"],COL.J,"tr"); }},
+       annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,(t1-t0>0.3?"力がはたらく時間":"$Δt$"),(t1-t0>0.3?0.5:0.16)); if(started) gNote(c,mp,["大きさが同じで向きが逆","→ 力積も打ち消し合う"],COL.J,"tr"); }},
       {title:"#F–t 図（平均の内力）", unit:"N", dec:0, sym:sym,
        series:[{label:(ext.fA||"A が受けた内力")+"の平均", col:COL.iA, fn:(t)=>((t>=t0&&t<=t1)?FbA:0), fill:true, avg:true, dash:[5,4], fillCol:"rgba(224,17,95,.13)"},
                {label:(ext.fB||"B が受けた内力")+"の平均", col:COL.iB, fn:(t)=>((t>=t0&&t<=t1)?FbB:0), fill:true, avg:true, dash:[5,4], fillCol:"rgba(142,47,208,.13)"}],
-       annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,(t1-t0>0.3?"力がはたらく時間":"Δt"),(t1-t0>0.3?0.5:0.16)); if(started) gNote(c,mp,["力積 "+fmt(JA,2)+" と +"+fmt(JB,2),"和は 0"],COL.J,"tr"); }},
-      {title:"v–t 図（速度の x 成分）", unit:"m/s", series:vser,
+       annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,(t1-t0>0.3?"力がはたらく時間":"$Δt$"),(t1-t0>0.3?0.5:0.16)); if(started) gNote(c,mp,["力積 "+fmt(JA,2)+" と +"+fmt(JB,2),"和は 0"],COL.J,"tr"); }},
+      {title:"v–t 図（速度の $x$ 成分）", unit:"m/s", series:vser,
        annot:(c,mp,t,started)=>{ if(started&&ext.vNote) gNote(c,mp,ext.vNote,COL.v,ext.vWhere||"br"); },
-       alt:{title:"p–t 図（運動量の x 成分と合計）", unit:"kg·m/s", series:pser,
+       alt:{title:"p–t 図（運動量の $x$ 成分と合計）", unit:"kg·m/s", series:pser,
          annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["合計（太い黒線）は一定"],"#1b1f24","br"); }}},
       {title:"E–t 図（エネルギー）", kind:"K", unit:"J", ymin:0, ymax:ext.eYmax, series:eser,
        annot:(c,mp,t,started)=>{ if(started&&ext.eNote) gNote(c,mp,ext.eNote,COL.T,ext.eWhere||"br"); }}
@@ -3146,7 +3446,7 @@ function portScene(sc, ext){
     const done=(t>=sc.tEnd-1e-9), S=ext.syms, m=sc.massAB, vv=sc.vAB, v0=vv(sc.st(0)), v1=vv(sc.st(sc.tEnd));
     const f2=(x)=>fmt(x,2);
     const cA=TC(COL_PA,S.mA+'\\,'+S.vA), cB=TC(COL_PB,S.mB+'\\,'+S.vB), cA1=TC(COL_PA,S.mA+'\\,'+S.vA1), cB1=TC(COL_PB,S.mB+'\\,'+S.vB1);
-    const list=[{title:"運動量保存の法則（"+(ext.comp||"x 成分")+"：はじめ ＝ あと）", badge:"ok",
+    const list=[{title:"運動量保存の法則（"+(ext.comp||"$x$ 成分")+"：はじめ ＝ あと）", badge:"ok",
       lines:[cA+'+'+cB+'='+cA1+'+'+cB1+(done? '\\qquad '+TC(COL_PA,f2(m[0])+'\\times'+f2(v0[0]))+'+'+TC(COL_PB,f2(m[1])+'\\times'+f2(v0[1]))+'='+TC(COL_PA,f2(m[0])+'\\times'+f2(v1[0]))+'+'+TC(COL_PB,f2(m[1])+'\\times'+f2(v1[1]))+'\\;('+f2(m[0]*v0[0]+m[1]*v0[1])+')':'')]}];
     if(done){
       list.push({title:S.nameA+" の運動量変化と力積の関係", fold:true, lines:[cA1+'-'+cA+'='+TC(COL.J,'F_A\\Delta t')+'\\qquad '+TC(COL_PA,f2(m[0]*v1[0]))+'-'+TC(COL_PA,f2(m[0]*v0[0]))+'='+TC(COL.J,f2(JA))+'\\ \\text{N·s}']});
@@ -3164,21 +3464,21 @@ function portScene(sc, ext){
 
 /* ---- 5-1 分裂（問 5） ---- */
 DEFS.m5s1 = { id:"m5s1", num:"1", title:"分裂（出題元：センター試験 2016）",
-  desc:"<p>なめらかな水平面上で、一体となって静止している A（質量 $m$）と B（質量 $M$）が、縮めたばねを解放して分かれる。</p>",
-  descFn:(v)=>"<p>なめらかな水平面上で、一体となって静止している A（質量 "+mWord(v.kmA||1)+"）と B（質量 "+mWord(v.kmB||1,"M")+"）が、縮めたばねを解放して分かれる。</p>",
+  desc:"<p>なめらかな水平面上で、一体となって静止している A（質量 $M=3.0$ kg）と B（質量 $m=1.0$ kg）が、縮めたばねを解放して分かれる（$M\\gt m$・はじめは静止）。A がばねで B を速さ $3.0$ m/s で打ち出す。</p>",
+  descFn:(v)=>"<p>なめらかな水平面上で、一体となって静止している A（質量 "+symVal(v.kmA||1,"M",3.0,"kg")+"）と B（質量 "+symVal(v.kmB||1,"m",1.0,"kg")+"）が、縮めたばねを解放して分かれる（"+relWord(3*(v.kmA||1),1*(v.kmB||1),"M","m").replace(" とする","")+"・はじめは静止）。A がばねで B を速さ "+symVal(v.kv||1,"v",3.0,"m/s")+" で打ち出す。</p>",
   showF:false,
-  adj:{masses:[{k:"kmA",name:"A",sym:"m",opts:[1,2,3],def:1},{k:"kmB",name:"B",sym:"M",opts:[1,2,3],def:1}], speeds:[{k:"kv",name:"打ち出し",sym:"v",opts:[1,2,3],def:1}]},
-  make(v){ return portScene(SC5(v), {syms:{mA:"m",mB:"M",vA:"\\cdot 0",vB:"\\cdot 0",vA1:"v",vB1:"V",nameA:"A",nameB:"B"},
-    fA:"A が受けたばねの力", fB:"B が受けたばねの力", vNote:["A は右へ、B は左へ"], vWhere:"mr", eNote:["ばねのエネルギーが K に変わる","（力学的エネルギーは保存）"], eWhere:"mr",
+  adj:{masses:[{k:"kmA",name:"A",sym:"M",opts:[1,2,3],def:1},{k:"kmB",name:"B",sym:"m",opts:[1,2,3],def:1}], speeds:[{k:"kv",name:"打ち出し",sym:"v",opts:[1,2,3],def:1}]},
+  make(v){ return portScene(SC5(v), {syms:{mA:"M",mB:"m",vA:"\\cdot 0",vB:"\\cdot 0",vA1:"V",vB1:"v",nameA:"A",nameB:"B"},
+    fA:"A が受けたばねの力", fB:"B が受けたばねの力", vNote:["B は右へ、A は左へ"], vWhere:"mr", eNote:["ばねのエネルギーが K に変わる","（力学的エネルギーは保存）"], eWhere:"mr",
     eqExtra:(s0,s1,sc)=>{ const V=sc.vals; return [{title:"力学的エネルギー（ばねの弾性エネルギーをふくむ）", badge:"ok", lines:["U=\\tfrac12 MV^2+\\tfrac12 mv^2\\qquad "+fmt(V.U0,1)+"=\\tfrac12\\times"+fmt(V.M,1)+"\\times"+fmt(-V.vA,2)+"^2+\\tfrac12\\times"+fmt(V.m,1)+"\\times"+fmt(V.vB,1)+"^2"]}]; },
     note:`<div class="ttl">＜考え方＞</div><ol><li>ばねが 2 物体を押し合う力は<b>内力</b>。大きさが同じで向きが逆なので、力積も打ち消し合う。</li>
-      <li>はじめ静止しているので<b>運動量の和は 0 のまま</b>：$0=MV+mv$。だから B は A と逆向きに動く。</li>
+      <li>はじめ静止しているので<b>運動量の和は 0 のまま</b>：$0=MV+mv$。だから A（$M$）は B（$m$）と逆向きに、質量の逆比の速さで動く。</li>
       <li>ばねの弾性力は保存力なので、弾性エネルギーが 2 物体の運動エネルギーに変わるだけで、力学的エネルギーの和は変わらない。</li></ol>`}); } };
 
 /* ---- 5-2 摩擦のある板の上をすべる物体（問 3） ---- */
 DEFS.m5s2 = { id:"m5s2", num:"2", title:"摩擦のある板の上をすべる物体",
-  desc:"<p>なめらかな水平面上の板（質量 $M$）の上で、小物体（質量 $m$）が速さ $v_0$ ですべり出す。小物体と板の間には摩擦がある。</p>",
-  descFn:(v)=>"<p>なめらかな水平面上の板（質量 "+mWord(v.kmB||1,"M")+"）の上で、小物体（質量 "+mWord(v.kmA||1)+"）が速さ $"+(v.kv===1||!v.kv?"":v.kv)+"v_0$ ですべり出す。小物体と板の間には摩擦がある。</p>",
+  desc:"<p>なめらかな水平面上の板 B（質量 $M=3.0$ kg）の上で、小物体 A（質量 $m=1.0$ kg）が速さ $v_0=3.0$ m/s ですべり出す（$M\\gt m$）。小物体と板の間には摩擦がある。</p>",
+  descFn:(v)=>"<p>なめらかな水平面上の板 B（質量 "+symVal(v.kmB||1,"M",3.0,"kg")+"）の上で、小物体 A（質量 "+symVal(v.kmA||1,"m",1.0,"kg")+"）が速さ "+symVal(v.kv||1,"v_0",3.0,"m/s")+" ですべり出す（"+relWord(3*(v.kmB||1),1*(v.kmA||1),"M","m").replace(" とする","")+"）。小物体と板の間には摩擦がある。</p>",
   showF:false,
   adj:{masses:[{k:"kmA",name:"小物体",sym:"m",opts:[1,2,3],def:1},{k:"kmB",name:"板",sym:"M",opts:[1,2,3],def:1}], speeds:[{k:"kv",name:"小物体",sym:"v_0",opts:[1,2],def:1}], note:"（速さを 2 倍にすると、すべる距離が 4 倍になるので板も長くなります）"},
   make(v){ return portScene(SC3(v), {syms:{mA:"m",mB:"M",vA:"v_0",vB:"\\cdot 0",vA1:"v'",vB1:"v'",nameA:"小物体",nameB:"板"},
@@ -3190,8 +3490,8 @@ DEFS.m5s2 = { id:"m5s2", num:"2", title:"摩擦のある板の上をすべる物
 
 /* ---- 5-3 ばね付き物体の衝突（問 4） ---- */
 DEFS.m5s3 = { id:"m5s3", num:"3", title:"ばね付き物体の衝突",
-  desc:"<p>なめらかな水平面上で、ばねのついた A（質量 $m$）が B（質量 $m$）の後ろから衝突する。</p>",
-  descFn:(v)=>"<p>なめらかな水平面上で、ばねのついた A（質量 "+mWord(v.kmA||1)+"）が B（質量 "+mWord(v.kmB||1)+"）の後ろから衝突する。</p>",
+  desc:"<p>なめらかな水平面上で、ばねのついた A（質量 $m=1.0$ kg、速さ $2v=2.0$ m/s）が B（質量 $m=1.0$ kg、速さ $v=1.0$ m/s）の後ろから衝突する。</p>",
+  descFn:(v)=>"<p>なめらかな水平面上で、ばねのついた A（質量 "+symVal(v.kmA||1,"m",1.0,"kg")+"、速さ "+symVal(v.kvA===undefined?2:v.kvA,"v",1.0,"m/s")+"）が B（質量 "+symVal(v.kmB||1,"m",1.0,"kg")+"、速さ "+symVal(v.kvB===undefined?1:v.kvB,"v",1.0,"m/s")+"）の後ろから衝突する。</p>",
   showF:false,
   adj:{masses:[{k:"kmA",name:"A",sym:"m",opts:[1,2,3],def:1},{k:"kmB",name:"B",sym:"m",opts:[1,2,3],def:1}], speeds:[{k:"kvA",name:"A",sym:"v",opts:[1,2,3],def:2},{k:"kvB",name:"B",sym:"v",opts:[0,1,2],def:1}], note:"（B の速さが A 以上だと追いつかないので、B は A より小さい値にそろえます）"},
   make(v){ return portScene(SC4(v), {syms:{mA:"m_A",mB:"m_B",vA:"v_A",vB:"v_B",vA1:"v_A'",vB1:"v_B'",nameA:"A",nameB:"B"},
@@ -3203,13 +3503,13 @@ DEFS.m5s3 = { id:"m5s3", num:"3", title:"ばね付き物体の衝突",
 
 /* ---- 5-4 斜め台をすべる物体（固定なし）（問 7） ---- */
 DEFS.m5s4 = { id:"m5s4", num:"4", title:"斜め台をすべる物体（台は固定していない）",
-  desc:"<p>なめらかな水平面上に置いた三角台（質量 $M$・固定していない）の斜面の頂点に、小物体（質量 $m$）をそっと置く。</p>",
-  descFn:(v)=>"<p>なめらかな水平面上に置いた三角台（質量 "+mWord(v.kmB||1,"M")+"・固定していない）の斜面の頂点に、小物体（質量 "+mWord(v.kmA||1)+"）をそっと置く。</p>",
-  showF:false, cmFrame:false,
+  desc:"<p>なめらかな水平面上に置いた三角台 B（質量 $M=3.0$ kg・固定していない）の斜面の頂点（高さ $h=1.4$ m）に、小物体 A（質量 $m=1.0$ kg）をそっと置く（$M\\gt m$・はじめは両方とも静止）。</p>",
+  descFn:(v)=>"<p>なめらかな水平面上に置いた三角台 B（質量 "+symVal(v.kmB||1,"M",3.0,"kg")+"・固定していない）の斜面の頂点（高さ $h=1.4$ m）に、小物体 A（質量 "+symVal(v.kmA||1,"m",1.0,"kg")+"）をそっと置く（"+relWord(3*(v.kmB||1),1*(v.kmA||1),"M","m").replace(" とする","")+"・はじめは両方とも静止）。</p>",
+  showF:false, cmFrame:false, viewBtn:{label:"👁 重心系の観測者から見た運動", on:"👁 地面から見た運動にもどす", cm:true},
   adj:{masses:[{k:"kmA",name:"小物体",sym:"m",opts:[1,2,3],def:1},{k:"kmB",name:"台",sym:"M",opts:[1,2,3],def:1}], note:"（はじめは静止しているので、初速の調整はありません）"},
   make(v){ return portScene(SC7(v), {syms:{mA:"m",mB:"M",vA:"\\cdot 0",vB:"\\cdot 0",vA1:"v_x",vB1:"V",nameA:"小物体",nameB:"台"}, comp:"水平方向（x 成分）",
     fA:"小物体が受けた垂直抗力の x 成分", fB:"台が受けた垂直抗力の x 成分", vNote:["小物体は右へ、台は左へ","重心の x は動かない"], vWhere:"mr", eNote:["力学的エネルギーは保存"], eWhere:"bl",
-    eqExtra:(s0,s1)=>[{title:"鉛直方向（y 成分）", badge:"ng", lines:["\\text{重力と床からの垂直抗力（外力）があるので、}p_y\\text{ の和は保存しない}"]},
+    eqExtra:(s0,s1)=>[{title:"鉛直方向（$y$ 成分）", badge:"ng", lines:["\\text{重力と床からの垂直抗力（外力）があるので、}p_y\\text{ の和は保存しない}"]},
                       {title:"力学的エネルギー", badge:"ok", lines:["mgh=\\tfrac12 mv^2+\\tfrac12 MV^2"]}],
     note:`<div class="ttl">＜考え方＞</div><ol><li>小物体と台がおよぼし合う垂直抗力は<b>内力</b>。斜面に垂直なので、<b>水平成分と鉛直成分に分けて</b>考える。</li>
       <li>水平成分は大きさが同じで向きが逆なので打ち消し合い、床もなめらかなので<b>水平方向の運動量の和は 0 のまま</b>。</li>
@@ -3237,15 +3537,16 @@ function SC6(kk){
   const E2=[C2[0]+(v2[0]+v2p[0])*DT/2, C2[1]+(v2[1]+v2p[1])*DT/2];
   const E0=.5*m1*(v1[0]**2+v1[1]**2)+.5*m2*(v2[0]**2+v2[1]**2);
   const Jn=m2*((v2p[0]-v2[0])*n[0]+(v2p[1]-v2[1])*n[1]);      // M が受けた力積の n 方向成分
-  const tEnd=t1+DT+0.73/kt;
+  const tEnd=t1+DT+0.44/kt;
   const hyp=(a)=>Math.hypot(a[0],a[1]);
   const vmax=Math.max(hyp(v1),hyp(v2),hyp(v1p),hyp(v2p),1e-6), pmax=Math.max(m1*hyp(v1),m2*hyp(v2),m1*hyp(v1p),m2*hyp(v2p),1e-6);
   const VS6=Math.min(26,60/vmax), PS6=Math.min(26,90/pmax), MS6=Math.min(40,120/pmax);   // 矢印の縮尺（はみ出さないように頭打ち）
   return {
-    id:"q6", world:{x0:0.2,x1:9.3,y0:0.55-3.3,y1:5.40}, minPxPerM:66, maxH:560, tEnd, snapsLeft:true, posDir:{type:"2d",xl:"x",yl:"y"}, snapWorld:{x0:2.3,x1:7.2,y0:0.55,y1:4.6},
+    id:"q6", world:{x0:0.2,x1:9.3,y0:0.55-3.6,y1:5.40}, minPxPerM:66, maxH:560, tEnd, snapsLeft:true, posDir:{type:"2d",xl:"x",yl:"y"}, snapWorld:{x0:2.3,x1:7.2,y0:0.55,y1:4.6},
+    plane3d:{x0:2.35,x1:7.15,y0:0.60,y1:4.95},                       // 斜め上から見るときの水平面
     impBox:{ L:{x0:0.30,x1:2.25,y0:2.55,y1:4.95}, R:{x0:7.25,x1:9.20,y0:1.55,y1:3.95}, sc:PS6 },
     fx(s,t){ const F=(s.contact? bumpF(1,DT,t-t1)*Jn : 0); return [-F, F]; }, fwin:[t1,t1+DT], nvec:n, Jn:Jn, m12:[m1,m2], v12:[v1,v2,v1p,v2p], e:1,
-    assume:'真上から見た図。$m='+fmt(m1,1)+'$ kg、$M='+fmt(m2,1)+'$ kg、$|\\vec{v}|='+fmt(Math.hypot(v1[0],v1[1]),2)+'$ m/s、$|\\vec{V}|='+fmt(Math.hypot(v2[0],v2[1]),2)+'$ m/s、弾性衝突（$e=1$）。衝突の力は 2 球の中心を結ぶ向き（法線方向 $\\vec{n}$）にはたらく。',
+    assume:'真上から見た図。弾性衝突（$e=1$）。衝突の力は 2 球の中心を結ぶ向き（法線方向 $\\vec{n}$）にはたらく。',
     slowmo:{t0:Math.max(0,t1-0.05), t1:t1+DT+0.10, k:0.10},
     snaps:[{label:"(a) 衝突前",t:0.35},{label:"衝突中",t:t1+DT*0.5,forces:false,onlyInner:true},{label:"(b) 衝突後",t:1.35}],
     momFig:{ title:"■ 運動量ベクトルの和（衝突前 → 衝突後）：平行四辺形の対角線", H:206, sc:MS6, para:true,
@@ -3267,6 +3568,25 @@ function SC6(kk){
       return {p1,p2,u1,u2,contact};
     },
     draw(P,s,t,o){
+      /* ===== 斜め上から見た 3 次元の図（スタート前・「3 次元に戻る」のとき） ===== */
+      if(o.v3d && o.cam && !o.figure && !o.snap){
+        const cam=o.cam, kv=1.0;
+        draw3dGround(P,cam,this.plane3d,{step:1});
+        [[s.p1,s.u1,r1,COL.A,(t<t1?"@v":"@v'"),(t<t1?"m@v":"m@v'"),m1],
+         [s.p2,s.u2,r2,COL.B,(t<t1?"@V":"@V'"),(t<t1?"M@V":"M@V'"),m2]].forEach(a=>{
+          const p=a[0], u=a[1], rr=a[2], col=a[3];
+          ball3(P,cam,p[0],p[1],rr,"#fff",col,2.4);
+          if(Math.hypot(u[0],u[1])>0.05){
+            arr3(P,cam,[p[0],p[1],rr],[p[0]+u[0]*kv,p[1]+u[1]*kv,rr],col,a[4],{dbl:true,lw:2.2});
+            arr3(P,cam,[p[0],p[1],rr*2.0],[p[0]+a[6]*u[0]*kv*0.55,p[1]+a[6]*u[1]*kv*0.55,rr*2.0],col,a[5],{lw:2.6}); } });
+        if(s.contact && o.inner!==false){
+          const cx=(s.p1[0]*r2+s.p2[0]*r1)/(r1+r2), cy=(s.p1[1]*r2+s.p2[1]*r1)/(r1+r2), rr=Math.min(r1,r2);
+          arr3(P,cam,[cx,cy,rr],[cx-n[0]*0.8,cy-n[1]*0.8,rr],COL.iA,"F",{lw:3.0,head:12});
+          arr3(P,cam,[cx,cy,rr],[cx+n[0]*0.8,cy+n[1]*0.8,rr],COL.iB,"F",{lw:3.0,head:12}); }
+        P.jtext(10,16,"■ 斜め上から見た図（図の中をドラッグすると視点が回ります）",{size:11.5,col:"#31465e",bold:true});
+        P.jtext(10,33,"▶ スタートを押すと、真上から見た図になります",{size:11,col:"#c2700f",bold:true});
+        return;
+      }
       P.c.save(); P.c.strokeStyle="#eef1f4"; P.c.lineWidth=1;
       for(let x=3;x<7.2;x+=1){ P.c.beginPath(); P.c.moveTo(P.X(x),P.Y(0.65)); P.c.lineTo(P.X(x),P.Y(4.1)); P.c.stroke(); }
       for(let y=1;y<4.1;y+=1){ P.c.beginPath(); P.c.moveTo(P.X(2.4),P.Y(y)); P.c.lineTo(P.X(7.1),P.Y(y)); P.c.stroke(); }
@@ -3279,6 +3599,12 @@ function SC6(kk){
       if(!o.onlyInner){
         vArrow2(P,s.p1[0],s.p1[1]+r1+0.14,s.u1[0],s.u1[1],VS6,t<t1?"@v":"@v'",COL.A);
         vArrow2(P,s.p2[0],s.p2[1]-r2-0.14,s.u2[0],s.u2[1],VS6,t<t1?"@V":"@V'",COL.B);
+        /* 運動量ベクトル（他のタブと同じく、速度とは別に。球の中心から） */
+        if(!o.snap){
+          const pa=[m1*s.u1[0],m1*s.u1[1]], pb=[m2*s.u2[0],m2*s.u2[1]];
+          if(Math.hypot(pa[0],pa[1])*PS6>4) P.vec(s.p1[0],s.p1[1],pa[0]*PS6,-pa[1]*PS6,COL.A,(t<t1?"m@v":"m@v'"),{off:12,lw:2.8,head:11,noTick:true});
+          if(Math.hypot(pb[0],pb[1])*PS6>4) P.vec(s.p2[0],s.p2[1],pb[0]*PS6,-pb[1]*PS6,COL.B,(t<t1?"M@V":"M@V'"),{off:12,lw:2.8,head:11,noTick:true});
+        }
       }
       if(s.contact && o.inner!==false){
         const cx=(s.p1[0]*r2+s.p2[0]*r1)/(r1+r2), cy=(s.p1[1]*r2+s.p2[1]*r1)/(r1+r2);
@@ -3288,11 +3614,14 @@ function SC6(kk){
       }
       if(!o.figure && !o.onlyInner && !o.snap){     // 左上・右上：運動量と力積の関係（m@v + F⃗Δt = m@v'）の三角形
         const ib=this.impBox, u=(s.contact? bumpJ(1,DT,t-t1) : (t>=t1+DT? 1 : 0));
-        drawImpTri(P, ib.L, "m が受ける力積 −@FΔt", [m1*v1[0],m1*v1[1]], [-Jn*n[0]*u,-Jn*n[1]*u], u>0, COL.A, COL.iA, ["m@v","−@FΔt","m@v'"], ib.sc, "m@v − @FΔt = m@v'");
-        drawImpTri(P, ib.R, "M が受ける力積 @FΔt",  [m2*v2[0],m2*v2[1]], [ Jn*n[0]*u, Jn*n[1]*u], u>0, COL.B, COL.iB, ["M@V","@FΔt","M@V'"], ib.sc, "M@V + @FΔt = M@V'");
+        drawImpTri(P, ib.L, "m が受ける力積 −@FΔt", [m1*v1[0],m1*v1[1]], [-Jn*n[0]*u,-Jn*n[1]*u], u>0, COL.A, COL.iA, ["m@v","−@FΔt","m@v'"], ib.sc, "m@v − @FΔt = m@v'", [-Jn*n[0],-Jn*n[1]]);
+        drawImpTri(P, ib.R, "M が受ける力積 @FΔt",  [m2*v2[0],m2*v2[1]], [ Jn*n[0]*u, Jn*n[1]*u], u>0, COL.B, COL.iB, ["M@V","@FΔt","M@V'"], ib.sc, "M@V + @FΔt = M@V'", [Jn*n[0],Jn*n[1]]);
       }
       if(!o.figure && !o.onlyInner && !o.snap){     // 下：運動量ベクトルの和（衝突前 → 衝突後）を平行四辺形で
-        const cfg=this.momFig, k=0.80, W=P.L(9.1)/k, X=P.X(0.2), Y=P.Y(0.55)+8;      // アニメの下
+        const cfg=Object.assign({}, this.momFig, {t2:(s.contact? "衝突中の運動量" : "衝突後の運動量"),
+          after:(t<t1? [] : [{p:[m1*s.u1[0],m1*s.u1[1]],col:COL.A,lab:"m@v'",side:-1},{p:[m2*s.u2[0],m2*s.u2[1]],col:COL.B,lab:"M@V'",side:1}]),   // ぶつかってから描く
+          sum2:"m@v'+M@V'", afterL:this.momFig.after}),
+          k=0.80, W=P.L(9.1)/k, X=P.X(0.2), Y=P.Y(0.55)+8;      // アニメの下（右の平行四辺形は今の運動量でリアルタイムに描く）
         const c=P.c; c.save(); c.translate(X,Y); c.scale(k,k);
         c.fillStyle="#f7f9fb"; c.strokeStyle="#dfe5ea"; c.lineWidth=1; c.beginPath(); c.rect(0,0,W,cfg.H+22); c.fill(); c.stroke();
         c.translate(0,22); drawMomSum(c,W,cfg,true); c.restore();
@@ -3305,11 +3634,14 @@ function SC6(kk){
     q(s){ const p1=m1*s.u1[0],p2=m2*s.u2[0];
       const K1=.5*m1*(s.u1[0]**2+s.u1[1]**2), K2=.5*m2*(s.u2[0]**2+s.u2[1]**2);
       const U=Math.max(0,E0-K1-K2);
-      return {p:{parts:[{label:"m の p_x",col:COL.A,val:p1,mass:m1},{label:"M の p_x",col:COL.B,val:p2,mass:m2}],
+      return {p:{parts:[{label:"m の $p_x$",col:COL.A,val:p1,mass:m1},{label:"M の $p_x$",col:COL.B,val:p2,mass:m2}],
                  total:p1+p2, ylabel:"合計 p_y", ytotal:m1*s.u1[1]+m2*s.u2[1]},
-              e:{parts:[{label:"m の K",col:COL.A,val:K1},{label:"M の K",col:COL.B,val:K2},
+              e:{parts:[{label:"m の $K$",col:COL.A,val:K1},{label:"M の $K$",col:COL.B,val:K2},
                         {label:"変形の弾性エネルギー",col:COL.U,val:U}],total:K1+K2+U}};},
     events:[
+      {t0:0.02,t1:t1,col:COL.v,bub:"m：$v$ = "+fmt(Math.hypot(v1[0],v1[1]),2)+" m/s／M：$V$ = "+fmt(Math.hypot(v2[0],v2[1]),2)+" m/s",
+       text:"衝突の前、m は速さ $"+fmt(Math.hypot(v1[0],v1[1]),2)+"$ m/s、M は速さ $"+fmt(Math.hypot(v2[0],v2[1]),2)+"$ m/s で動いている。運動量はベクトルなので、$x$ 成分と $y$ 成分に分けて考える。",
+       at:(s)=>[(s.p1[0]+s.p2[0])/2, Math.max(s.p1[1],s.p2[1])+1.20]},
       {t0:t1,t1:t1+DT,col:COL.inner,bub:"内力！\n（お互いにはたらく力）",
        text:"衝突の力は 2 球を結ぶ方向（法線方向）にはたらく<b>内力</b>。向きが逆で大きさが等しいので、運動量は $x$ 成分も $y$ 成分も保存される。",
        at:(s)=>[(s.p1[0]+s.p2[0])/2, Math.max(s.p1[1],s.p2[1])+1.20]},
@@ -3321,22 +3653,23 @@ function SC6(kk){
 }
 
 /* 運動量と力積の関係の三角形（アニメの中の小箱）：p0 → その先に J、原点から p1=p0+J。show=false なら p0 だけ */
-function drawImpTri(P, box, title, p0, J, show, col, jcol, labs, SC, eq){
+function drawImpTri(P, box, title, p0, J, show, col, jcol, labs, SC, eq, Jfin){
   const c=P.c, X0=P.X(box.x0), X1=P.X(box.x1), Y0=P.Y(box.y1), Y1=P.Y(box.y0), W=X1-X0, H=Y1-Y0;
   c.save(); c.fillStyle="rgba(255,255,255,.92)"; c.strokeStyle="#c9d1d9"; c.lineWidth=1; c.beginPath(); c.rect(X0,Y0,W,H); c.fill(); c.stroke(); c.restore();
   P.jtext(X0+W/2, Y0+11, title, {size:10.5,bold:true,col:"#31465e",align:"center"});
   const a=[p0[0]*SC,-p0[1]*SC], j=[J[0]*SC,-J[1]*SC], b=[a[0]+j[0],a[1]+j[1]];
-  const pts=[[0,0],a,b]; let mnx=0,mxx=0,mny=0,mxy=0; pts.forEach(q=>{ mnx=Math.min(mnx,q[0]); mxx=Math.max(mxx,q[0]); mny=Math.min(mny,q[1]); mxy=Math.max(mxy,q[1]); });
+  const jf=(Jfin? [Jfin[0]*SC,-Jfin[1]*SC] : j), bf=[a[0]+jf[0],a[1]+jf[1]];       // 最終の三角形で位置を決める（m@v は動かない）
+  const pts=[[0,0],a,bf]; let mnx=0,mxx=0,mny=0,mxy=0; pts.forEach(q=>{ mnx=Math.min(mnx,q[0]); mxx=Math.max(mxx,q[0]); mny=Math.min(mny,q[1]); mxy=Math.max(mxy,q[1]); });
   const ox=X0+(W-(mxx-mnx))/2-mnx, oy=Y0+22+(H-(eq?42:30)-(mxy-mny))/2-mny;
   if(eq&&show) P.jtext(X0+W/2, Y1-10, eq, {size:10.5,bold:true,col:"#31465e",align:"center"});
-  const gx=(a[0]+b[0])/3, gy=(a[1]+b[1])/3;                                   // 重心（ラベルは外側へ）
+  const gx=(a[0]+bf[0])/3, gy=(a[1]+bf[1])/3;                                 // 最終の三角形の重心（ラベルは外側へ・動かない）
   const lab=(x1,y1,x2,y2,txt,cc)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2; let nx=mx-gx, ny=my-gy; const L=Math.hypot(nx,ny)||1; nx/=L; ny/=L;
     P.mtext(ox+mx+nx*13, oy+my+ny*13, txt, {col:cc,size:12,align:"center"}); };
   const sk=P._skipTick; P._skipTick=true;
   P.arrowRaw(ox,oy,a[0],a[1],col,2.4,10); lab(0,0,a[0],a[1],labs[0],col);
   if(show){
-    P.arrowRaw(ox+a[0],oy+a[1],j[0],j[1],jcol,2.6,10); lab(a[0],a[1],b[0],b[1],labs[1],jcol);
-    P.arrowRaw(ox,oy,b[0],b[1],col,2.4,10); lab(0,0,b[0],b[1],labs[2],col);
+    P.arrowRaw(ox+a[0],oy+a[1],j[0],j[1],jcol,2.6,10); lab(a[0],a[1],bf[0],bf[1],labs[1],jcol);
+    P.arrowRaw(ox,oy,b[0],b[1],col,2.4,10); lab(0,0,bf[0],bf[1],labs[2],col);
   }
   P._skipTick=sk;
   c.save(); c.fillStyle="#1b1f24"; c.beginPath(); c.arc(ox,oy,2.4,0,7); c.fill(); c.restore();
@@ -3344,8 +3677,10 @@ function drawImpTri(P, box, title, p0, J, show, col, jcol, labs, SC, eq){
 
 /* ---- 2-2 平面上の衝突（問 6） ---- */
 DEFS.m2s2 = { id:"m2s2", num:"2", title:"平面上の衝突（真上から見た図）",
-  desc:`<p>なめらかな水平面上を動く 2 つの小球が、斜めに弾性衝突（$e=1$）する。</p>`,
-  showF:false, scale:0.8,
+  desc:`<p>なめらかな水平面上を動く 2 つの小球 m（質量 $m=1.0$ kg、速さ $2.01$ m/s）と M（質量 $M=2.0$ kg、速さ $1.17$ m/s、$M\\gt m$ とする）が、斜めに弾性衝突（$e=1$）する。</p>`,
+  descFn:(v)=>{ const sc=SC6(v), hy=(a)=>fmt(Math.hypot(a[0],a[1]),2);
+    return "<p>なめらかな水平面上を動く 2 つの小球 m（質量 "+symVal(v.kmA||1,"m",1.0,"kg")+"、速さ $"+hy(sc.v12[0])+"$ m/s）と M（質量 "+symVal(v.kmB||1,"M",2.0,"kg")+"、速さ $"+hy(sc.v12[1])+"$ m/s、"+relWord(2*(v.kmB||1),1*(v.kmA||1),"M","m")+"）が、斜めに弾性衝突（$e=1$）する。</p>"; },
+  showF:false, scale:0.8, viewBtn:{label:"🧊 3次元に戻る", on:"真上から見る", v3d:true},
   adj:{masses:[{k:"kmA",name:"m",sym:"m",opts:[1,2,3],def:1},{k:"kmB",name:"M",sym:"M",opts:[1,2,3],def:1}],
        speeds:[{k:"kvA",name:"m",sym:"v",opts:[0,1,2,3],def:1},{k:"kvB",name:"M",sym:"V",opts:[0,1,2,3],def:1}]},
   make(v){
@@ -3359,36 +3694,36 @@ DEFS.m2s2 = { id:"m2s2", num:"2", title:"平面上の衝突（真上から見た
     sc.graphs=function(){
       return [
         {title:"F–t 図（衝突の力：法線方向の成分）", unit:"N", dec:0, sym:true,
-         series:[{label:"m が受けた力（−n 向き）", col:COL.iA, fn:(t)=>sc.fx(st(t),t)[0], fill:true, fillCol:"rgba(224,17,95,.13)"},
-                 {label:"M が受けた力（+n 向き）", col:COL.iB, fn:(t)=>sc.fx(st(t),t)[1], fill:true, fillCol:"rgba(142,47,208,.13)"}],
-         annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,"Δt",0.16); if(started) gNote(c,mp,["大きさが同じで向きが逆","（作用・反作用）"],COL.J,"tr"); }},
+         series:[{label:"m が受けた力（−$n$ 向き）", col:COL.iA, fn:(t)=>sc.fx(st(t),t)[0], fill:true, fillCol:"rgba(224,17,95,.13)"},
+                 {label:"M が受けた力（+$n$ 向き）", col:COL.iB, fn:(t)=>sc.fx(st(t),t)[1], fill:true, fillCol:"rgba(142,47,208,.13)"}],
+         annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,"$Δt$",0.16); if(started) gNote(c,mp,["大きさが同じで向きが逆","（作用・反作用）"],COL.J,"tr"); }},
         {title:"#F–t 図（平均の力）", unit:"N", dec:0, sym:true,
          series:[{label:"m が受けた平均の力", col:COL.iA, fn:(t)=>((t>=t0&&t<=t1)?-Jn/DT:0), fill:true, avg:true, dash:[5,4], fillCol:"rgba(224,17,95,.13)"},
                  {label:"M が受けた平均の力", col:COL.iB, fn:(t)=>((t>=t0&&t<=t1)?Jn/DT:0), fill:true, avg:true, dash:[5,4], fillCol:"rgba(142,47,208,.13)"}],
-         annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,"Δt",0.16); if(started) gNote(c,mp,["力積の大きさ "+f2(Jn)+" N·s","向きは逆で和は 0"],COL.J,"tr"); }},
-        {title:"v–t 図（x 成分）", unit:"m/s",
-         series:[{label:"m の vx", col:COL.A, fn:(t)=>st(t).u1[0]},{label:"M の vx", col:COL.B, fn:(t)=>st(t).u2[0]}],
-         alt:{title:"p–t 図（x 成分と合計）", unit:"kg·m/s",
-           series:[{label:"m の px", col:COL_PA, fn:(t)=>m1*st(t).u1[0]},{label:"M の px", col:COL_PB, fn:(t)=>m2*st(t).u2[0]},
-                   {label:"合計 px", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return m1*s.u1[0]+m2*s.u2[0]; }}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["x 成分の合計は一定"],"#1b1f24","br"); }}},
-        {title:"v–t 図（y 成分）", unit:"m/s",
-         series:[{label:"m の vy", col:COL.A, fn:(t)=>st(t).u1[1]},{label:"M の vy", col:COL.B, fn:(t)=>st(t).u2[1]}],
-         alt:{title:"p–t 図（y 成分と合計）", unit:"kg·m/s",
-           series:[{label:"m の py", col:COL_PA, fn:(t)=>m1*st(t).u1[1]},{label:"M の py", col:COL_PB, fn:(t)=>m2*st(t).u2[1]},
-                   {label:"合計 py", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return m1*s.u1[1]+m2*s.u2[1]; }}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["y 成分の合計も一定"],"#1b1f24","br"); }}},
+         annot:(c,mp,t,started)=>{ gDt(c,mp,t0,t1,"$Δt$",0.16); if(started) gNote(c,mp,["力積の大きさ "+f2(Jn)+" N·s","向きは逆で和は 0"],COL.J,"tr"); }},
+        {title:"v–t 図（$x$ 成分）", unit:"m/s",
+         series:[{label:"m の $v_x$", col:COL.A, fn:(t)=>st(t).u1[0]},{label:"M の $v_x$", col:COL.B, fn:(t)=>st(t).u2[0]}],
+         alt:{title:"p–t 図（$x$ 成分と合計）", unit:"kg·m/s",
+           series:[{label:"m の $p_x$", col:COL_PA, fn:(t)=>m1*st(t).u1[0]},{label:"M の $p_x$", col:COL_PB, fn:(t)=>m2*st(t).u2[0]},
+                   {label:"合計 $p_x$", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return m1*s.u1[0]+m2*s.u2[0]; }}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["$x$ 成分の合計は一定"],"#1b1f24","br"); }}},
+        {title:"v–t 図（$y$ 成分）", unit:"m/s",
+         series:[{label:"m の $v_y$", col:COL.A, fn:(t)=>st(t).u1[1]},{label:"M の $v_y$", col:COL.B, fn:(t)=>st(t).u2[1]}],
+         alt:{title:"p–t 図（$y$ 成分と合計）", unit:"kg·m/s",
+           series:[{label:"m の $p_y$", col:COL_PA, fn:(t)=>m1*st(t).u1[1]},{label:"M の $p_y$", col:COL_PB, fn:(t)=>m2*st(t).u2[1]},
+                   {label:"合計 $p_y$", col:COL.tot, thick:true, fn:(t)=>{ const s=st(t); return m1*s.u1[1]+m2*s.u2[1]; }}],
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["$y$ 成分の合計も一定"],"#1b1f24","br"); }}},
         {title:"E–t 図（運動エネルギー）", kind:"K", unit:"J", ymin:0, ymax:5.0,
-         series:[{label:"m の K", col:COL.A, fn:(t)=>{ const s=st(t); return .5*m1*(s.u1[0]**2+s.u1[1]**2); }},
-                 {label:"M の K", col:COL.B, fn:(t)=>{ const s=st(t); return .5*m2*(s.u2[0]**2+s.u2[1]**2); }},
+         series:[{label:"m の $K$", col:COL.A, fn:(t)=>{ const s=st(t); return .5*m1*(s.u1[0]**2+s.u1[1]**2); }},
+                 {label:"M の $K$", col:COL.B, fn:(t)=>{ const s=st(t); return .5*m2*(s.u2[0]**2+s.u2[1]**2); }},
                  {label:"変形のエネルギー", col:COL.U, fn:(t)=>sc.q(st(t)).e.parts[2].val},
                  {label:"合計", col:COL.tot, thick:true, fn:(t)=>sc.q(st(t)).e.total}],
-         annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["弾性衝突：K の和は変わらない"],COL.T,"tr"); }}
+         annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["弾性衝突：$K$ の和は変わらない"],COL.T,"tr"); }}
       ];
     };
     sc.eqs=function(s,t){
       const done=(t>=sc.tEnd-1e-9);
-      const list=[{title:"運動量保存の法則（ベクトル：x 成分・y 成分のそれぞれで成り立つ）", badge:"ok",
+      const list=[{title:"運動量保存の法則（ベクトル：$x$ 成分・$y$ 成分のそれぞれで成り立つ）", badge:"ok",
         lines:[TC(COL_PA,"m\\vec{v}")+"+"+TC(COL_PB,"M\\vec{V}")+"="+TC(COL_PA,"m\\vec{v}'")+"+"+TC(COL_PB,"M\\vec{V}'")+(done?
           "\\qquad x:\\;"+f2(m1*v1[0])+"+"+f2(m2*v2[0])+"="+f2(m1*v1p[0])+"+"+f2(m2*v2p[0])+"\\quad y:\\;"+f2(m1*v1[1])+"+("+f2(m2*v2[1])+")="+f2(m1*v1p[1])+"+("+f2(m2*v2p[1])+")":"")]}];
       return list;
@@ -3404,19 +3739,17 @@ DEFS.m2s2 = { id:"m2s2", num:"2", title:"平面上の衝突（真上から見た
    Part 4 : ページ組み立て（タブ・セクション・アンカー・矢印の定義・検算）
    ========================================================================= */
 MODES.push(
-  {id:"m0", name:"ニュートンのゆりかご",   secs:["m0s1"], noForceBtn:true,
-   lead:"同じ質量の球の弾性衝突では速度が交換される → 持ち上げた数だけ、反対側から同じ速さで飛び出す（運動量と運動エネルギーの両方が保存）"},
   {id:"m1", name:"運動量と力積の関係",   secs:["m1s1","m1s2"],
    lead:"物体が力積 $\\vec{F}\\Delta t$ を受けると、運動量 $m\\vec{v}$ がその分だけ変わる：$m\\vec{v}+\\vec{F}\\Delta t=m\\vec{v}'$"},
-  {id:"m2", name:"運動量の保存",         secs:["m2s1","m2s2"],
-   lead:"2 物体が受ける力積は大きさが同じで向きが逆（作用・反作用）→ だから運動量の和は変わらない。直線上でも平面上でも同じ"},
+  {id:"m2", name:"運動量の保存",         secs:["m2s1","m2s2","m2s3","m2s4"],
+   lead:"$m_Av_A+m_Bv_B=m_Av_A'+m_Bv_B'$。2 物体が受ける力積は大きさが同じで向きが逆（作用・反作用）。よって、運動量の和は変わらない。これを直線上、平面上で確かめる。運動量変化と力積の関係から運動量保存則が導かれることを理解しよう"},
   {id:"m3", name:"反発係数",             secs:["m3s1","m3s2","m3s3"],
-   lead:"反発係数 $e$ ＝（衝突後の相対的速さ）÷（衝突前の相対的速さ）。壁・床・2 物体のそれぞれで確かめる"},
-  {id:"m4", name:"2物体の衝突（色んなe）", secs:["m4s1","m4s2","m4s3"],
+   lead:"反発係数 $e$ ＝（衝突後の相対的速さ）÷（衝突前の相対的速さ）。1 物体、斜め衝突、2 物体のそれぞれで定義を確認する"},
+  {id:"m4", name:"2物体の衝突（様々なe）", secs:["m4s1","m4s2","m4s3","m4s4"],
    modeVars:[{k:"e", label:"反発係数 $e$", min:0, max:1, step:0.1, def:1, dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"],
      presets:[{label:"$e=0$（完全非弾性衝突）",v:0},{label:"$e=0.5$（非弾性衝突）",v:0.5},{label:"$e=1$（完全弾性衝突）",v:1}]}],
-   lead:"同じ初期条件のまま、下のボタンとスライドバーで $e$ だけを変える（$e=0$ はくっつく完全非弾性衝突、$e=1$ は完全弾性衝突）。運動量の和は変わらないが、運動エネルギーは $e$ が小さいほど減る"},
-  {id:"m5", name:"2物体のいろいろな衝突", secs:["m5s1","m5s2","m5s3","m5s4"],
+   lead:"同じ初期条件のまま $e$ だけを変える。運動量の和は変わらないが、運動エネルギーは $e$ が小さいほど減る。"},
+  {id:"m5", name:"2物体の衝突 ～入試レベル～", secs:["m5s1","m5s2","m5s3","m5s4"],
    lead:"分裂・摩擦のある板・ばね付き物体・動く斜め台。どれも「内力だけ」なら運動量の和は保存する"}
 );
 
@@ -3427,7 +3760,7 @@ const QUIZ_HTML='<p class="quizlink">このページを最後まで理解した�
 function buildPage(){
   const wrap=document.getElementById("wrap");
   let h="";
-  const CIRC="⓪①②③④⑤⑥⑦⑧⑨";
+  const CIRC="①②③④⑤⑥⑦⑧⑨";
   h+=`<div class="titlerow"><h1>運動量変化と力積の関係～「衝突」を理解するために～</h1>
        <div class="topbtns"><button id="btnEq"></button><button id="btnKt"></button></div></div>
        <p class="lead2">運動量（運動の勢い）は、どうやれば変わるか？　衝突の際に保存されるものは何か？　キーワードは「お互いに内力を及ぼすとき」です。</p>`;
@@ -3458,7 +3791,8 @@ function buildPage(){
     });
     h+=`</section>`;
   });
-  h+=`<div class="card purpose" style="margin-top:22px">
+  h+=`<div class="gnote"><b>グラフの操作：</b>グラフは、中をドラッグすると動き、左の目盛りを上下にドラッグすると縦に、下の目盛りを左右にドラッグすると横に拡大縮小できます（横軸は同じセクションの図で共通、縦軸は図ごと）。「スケールをリセット」でもとにもどります。「$\\bar{F}$ を表示」で平均の力の図、「p–t 図に切りかえ」で運動量の図に切りかわり、K–t 図は右上の「K–t グラフを閉じる」で出し入れできます。曲線は再生した時刻まで描かれ、オレンジの縦線が今の時刻です。</div>`;
+  h+=`<div class="card purpose" style="margin-top:6px">
     <p class="lead">【目的】</p>
     <ol>
       <li>物体が力積 $\\vec{F}\\Delta t$ を受けると、運動量 $m\\vec{v}$ がその分だけ変わる（$m\\vec{v}+\\vec{F}\\Delta t=m\\vec{v}'$）ことを、F–t 図の山の面積とベクトル図で理解する。</li>
@@ -3473,7 +3807,7 @@ function buildPage(){
   wrap.innerHTML=h;
   document.title="運動量変化と力積の関係～「衝突」を理解するために～";
   setupGlobalButtons();
-  wrap.querySelectorAll(".purpose,.modehead,.secdesc,.sechead h2,.seclinks a,.cellhead").forEach(el=>{ el.innerHTML=mathify(el.innerHTML); });
+  wrap.querySelectorAll(".purpose,.modehead,.secdesc,.sechead h2,.seclinks a,.cellhead,.gnote").forEach(el=>{ el.innerHTML=mathify(el.innerHTML); });
   MODES.forEach(m=>{ m.secs.forEach(sid=>{ if(DEFS[sid]) DEFS[sid].mode=m.id; }); buildModeBar(m); });
 
   document.querySelectorAll("#tabs .tab").forEach(b=>{
@@ -3566,6 +3900,7 @@ function activateMode(id){
   const m=MODES.find(x=>x.id===id); if(!m) return;
   document.querySelectorAll("#tabs .tab").forEach(b=>b.classList.toggle("on",b.dataset.mode===id));
   document.querySelectorAll(".mode").forEach(s=>s.classList.toggle("on",s.id===id));
+  SIMS.forEach(s=>{ if(s.def.mode!==id && s.playing){ s.playing=false; s.smEnd=undefined; s.syncPlayLabel(); } });   // 他のタブへ行ったら動いているシムは止める
   { let ch=false;
     if((id==="m4"||id==="m5") && GLOBAL.hideK){ GLOBAL.hideK=false; ch=true; }          // 4・5 では K–t 図を開く（以後は開いたまま）
     if((id==="m3"||id==="m5") && !GLOBAL.hideEq){ GLOBAL.hideEq=true; ch=true; }        // 3・5 では式・考え方エリアを閉じる
@@ -3618,7 +3953,7 @@ function check(){
   /* 3-1：v' = −e v、|FΔt| = m(1+e)|v| */
   { let w=0; [0,0.3,0.5,1].forEach(e=>{ const sc=DEFS.m3s1.make({e,km:1,kh:1}); const t1=Math.sqrt(2*2.0/G), sb=sc.st(t1-1e-6), sa=sc.st(t1+0.2+1e-6), se=sc.st(t1+0.2+e*Math.sqrt(2*G*2.0)/G);
       w=Math.max(w, Math.abs(sa.v+e*sb.v), Math.abs((se.y-0.22)-e*e*2.0)); }); out.m3s1_err=w; }                       // 直後の速度 v2=−e v1、最高点の高さ e²h
-  { let w=0; [[1,0],[2,0],[1,1],[2,1],[3,0]].forEach(([nL,nR])=>{ const sc=DEFS.m0s1.make({nL,nR,th:35}); const s0=sc.st(0.02), s1=sc.st(sc.tEnd);
+  { let w=0; [[1,0],[2,0],[1,1],[2,1],[3,0]].forEach(([nL,nR])=>{ const sc=DEFS.m2s3.make({nL,nR,th:35}); const s0=sc.st(0.02), s1=sc.st(sc.tEnd);
       const E=(q)=>q.K+q.ys.reduce((a,y)=>a+1.0*G*(y-0.22),0), E0=E(s0); w=Math.max(w, Math.abs(E(s1)-E0)/Math.max(E0,1e-9)>0.05?1:0); }); out.m0_ok=1-w; }   // ゆりかご：終わりでもエネルギーがほぼ保たれる
   /* 3-2：vy' = −e vy、摩擦なし vx' = vx、摩擦あり vx' < vx */
   { let w=0, ok=1; [[1,0],[0.5,0],[1,0.3],[0.5,0.3]].forEach(([e,mu])=>{ const sc=DEFS.m3s2.make({e,mu,comp:false,km:1,kv:1}); const s0=sc.st(0), s1=sc.st(sc.tEnd);
@@ -3645,7 +3980,7 @@ window.TEST = {
   activate:(id)=>{ activateMode(id); },
   sim:(id)=>SIM_BY_ID[id],
   setVar:(id,k,val)=>{ const s=SIM_BY_ID[id]; if(s.ms.vars[k]!==undefined){ s.ms.vars[k]=val; if(s.ms._inputs&&s.ms._inputs[k]) s.ms._inputs[k].value=String(val); }
-    s.v[k]=val; if(s.sliders&&s.sliders[k]) s.sliders[k].value=String(val); s.syncMass&&s.syncMass(); s.syncPat&&s.syncPat(); s.syncAdj&&s.syncAdj(); s.rebuild(); },
+    s.v[k]=val; if(s.sliders&&s.sliders[k]) s.sliders[k].value=String(val); s.syncMass&&s.syncMass(); s.syncPat&&s.syncPat(); s.syncAdj&&s.syncAdj(); s.syncChoices&&s.syncChoices(); s.syncSteppers&&s.syncSteppers(); s.rebuild(); },
   mode:(id)=>modeState(id),
   toEnd:(id)=>{ const s=SIM_BY_ID[id]; s.started=true; s.t=s.sc.tEnd; s.tsl.value=String(s.t); s.syncPlayLabel(); s.draw(); },
   setT:(id,t)=>{ const s=SIM_BY_ID[id]; s.started=t>0; s.t=t; s.tsl.value=String(t); s.syncPlayLabel(); s.draw(); },
@@ -3660,5 +3995,105 @@ window.TEST = {
 document.addEventListener("DOMContentLoaded", ()=>{ readUrlState(); buildPage(); });
 
 </script>
+<!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
+
+<!-- ① アクセス数のカウント（GoatCounter・Cookie を使わない）
+     file:// で開いたとき（オフライン利用・自動テスト）は読みこまない。
+     GitHub Pages（https）で開いたときだけ動く。 -->
+<script>
+(function () {
+  if (location.protocol.indexOf('http') !== 0) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://physics-chiba.goatcounter.com/count');
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ② ▶スタートを光らせて「ここを押す」と知らせる
+     ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+     ・光り終わり … そのボタンを押したとき／動きはじめたとき
+     ページ本体のしくみにはさわらず、外から付け外しするだけ。 -->
+<style>
+@keyframes sgPulse{
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
+  60%{box-shadow:0 0 0 17px rgba(224,123,24,0)}
+  100%{box-shadow:0 0 0 0 rgba(224,123,24,0)}
+}
+@keyframes sgBlink{
+  0%,100%{background:#e07b18;border-color:#e07b18}
+  50%{background:#f7a13f;border-color:#f7a13f}
+}
+.sg-glow{color:#fff !important;font-weight:700 !important;
+  animation:sgPulse 1.35s ease-out infinite, sgBlink 1.35s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .sg-glow{animation:none !important;background:#e07b18 !important;border-color:#e07b18 !important;
+    box-shadow:0 0 0 4px rgba(224,123,24,.55) !important}
+}
+</style>
+<script>
+(function () {
+  'use strict';
+  /* 主役の再生ボタンは id="bPlay"。古いページのための予備もいくつか見る */
+  var SEL  = '#bPlay, #playBtn, #btn-play, #btn-convert, #btn-convert2, button.b.play';
+  var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
+  var RUN  = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+
+  function btns()    { return [].slice.call(document.querySelectorAll(SEL)); }
+  function shown(e)  { return e.offsetParent !== null && !e.disabled; }
+  function running(e){ return RUN.test(e.textContent || ''); }
+
+  function arm() {                              /* 光らせるのは、いつも1つだけ */
+    var all = btns(), first = null;
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (!first && shown(e) && !running(e) && !e.__sgDone) first = e;
+      else e.classList.remove('sg-glow');
+    }
+    if (first) first.classList.add('sg-glow');
+  }
+  function disarm(e) {
+    if (e) e.classList.remove('sg-glow');
+    else btns().forEach(function (x) { x.classList.remove('sg-glow'); });
+  }
+
+  /* 押されたら消す／タブ・プリセットが押されたら光らせ直す */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    var b = t.closest('button');
+    if (b && btns().indexOf(b) >= 0) {                     /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });    /* 同じ働きの予備ボタンもまとめて */
+      disarm(); return;
+    }
+    if (t.closest(TABS)) {                     /* タブ・プリセットを開いたら光らせ直す */
+      btns().forEach(function (x) { x.__sgDone = 0; });
+      setTimeout(arm, 90);
+    }
+  }, true);
+
+  /* 見張り役：ボタンが作り直された／隠れていたのが出てきたら光らせる。
+     動きはじめたら消す。（タブを切り替えるとボタンが作り直されるページがあるため） */
+  function tick() {
+    var need = false;
+    btns().forEach(function (e) {
+      var v = shown(e);
+      if (v && !e.__sgDone && (!e.__sgKnown || e.__sgVisible === false)) need = true;
+      e.__sgKnown = 1; e.__sgVisible = v;
+      if (running(e)) e.classList.remove('sg-glow');
+    });
+    if (need) arm();
+  }
+  setInterval(tick, 400);
+
+  function boot() { setTimeout(arm, 500); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+<!-- ============ 公開用の共通フッター（ここまで） ============ -->
+
 </body>
 </html>

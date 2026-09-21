@@ -169,6 +169,12 @@ button.b.sm.on{background:#7a5aa8;border-color:#7a5aa8;color:#fff}
 .abbtns .lbl{font-size:.85rem;color:var(--sub);margin-right:.2em}
 button.tiny{font:inherit;font-size:.78rem;padding:.2em .6em;border:1px solid #dde3e9;background:#fafbfc;color:#8b96a2;border-radius:7px;cursor:pointer}
 button.tiny.on{background:#eef2f6;color:#3d4753;border-color:#c3ccd6}
+/* 重心系の観測者ボタン（オレンジ／まだ押していないうちだけ光る） */
+button.tiny.cm{background:linear-gradient(#ffd9a6,#f5b56a);border-color:#e59a3c;color:#5e3a08;font-weight:700;box-shadow:0 0 0 3px rgba(224,123,24,.22);animation:cmglow 1.6s ease-in-out infinite}
+button.tiny.cm.used{animation:none;box-shadow:none}
+button.tiny.cm.on{background:linear-gradient(#f5a03c,#e07b18);border-color:#c96a0d;color:#fff;box-shadow:0 2px 0 #b45f09,0 2px 8px rgba(224,123,24,.35)}
+@keyframes cmglow{0%,100%{box-shadow:0 0 0 2px rgba(224,123,24,.20),0 0 10px rgba(224,123,24,.30)}50%{box-shadow:0 0 0 6px rgba(224,123,24,.34),0 0 22px rgba(224,123,24,.62)}}
+@media(prefers-reduced-motion:reduce){button.tiny.cm{animation:none}}
 .sl{display:flex;align-items:center;gap:.3em;font-size:.78rem;color:#9aa4ae}
 .sl input[type=range]{width:88px;height:14px;accent-color:#b9c2cc}
 .row2.mini2{gap:.45em .8em;margin-top:.45em}
@@ -319,15 +325,6 @@ footer{color:var(--sub);font-size:.85rem;text-align:center;margin-top:30px}
   /* 数式が長いときは、そこだけ横スクロール */
   .katex-display{overflow-x:auto; overflow-y:hidden; padding-bottom:.2em}
   .abline span{margin-right:.7em}
-
-  /* 操作ボタンの列：スマホでは横スクロールではなく折り返す（ボタンを見落とさないように） */
-  .row1{flex-wrap:wrap; overflow-x:visible; row-gap:.35em}
-  .row1 button{flex:0 1 auto}
-  .row1 button.b.sm{white-space:normal; text-align:left; line-height:1.35; padding:.34em .6em}
-  /* iOS で入力欄をタップしたときに画面が勝手に拡大しないよう 16px 以上にする */
-  .sfl input, .sfarea textarea{font-size:16px}
-  /* 小さなボタンは指で押しやすく */
-  button.tiny{font-size:.82rem; padding:.35em .8em}
 }
 </style>
 </head>
@@ -959,9 +956,11 @@ class Sim{
     r2.appendChild(this.bF); r2.appendChild(this.bLab);
     if(sc.cmFrame){
       this.cmOn=false;
-      this.bCM=this.mkBtn("👁 重心系の観測者から見た運動","tiny",()=>{ this.cmOn=!this.cmOn;
+      this.bCM=this.mkBtn("👁 重心系の観測者から見た運動","tiny cm",()=>{ this.cmOn=!this.cmOn;
         this.bCM.textContent=this.cmOn?"👁 地面から見た運動にもどす":"👁 重心系の観測者から見た運動";
+        this.cmUsed=true; this.bCM.classList.add("used");
         this.bCM.classList.toggle("on",this.cmOn); this.draw(); });
+      if(this.cmUsed) this.bCM.classList.add("used");
       r2.appendChild(this.bCM);
     }
 
@@ -3555,8 +3554,104 @@ const BRIEF = {1:`<div class="bl"><b>＜慣性系から見た運動の様子＞<
 };
 PROBS.forEach(p=>{ if(BRIEF[p.n]) p.brief=BRIEF[p.n]; });
 </script>
-<!-- アクセス数のカウント（GoatCounter・Cookieなし） -->
-<script data-goatcounter="https://physics-chiba.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
+<!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
+
+<!-- ① アクセス数のカウント（GoatCounter・Cookie を使わない）
+     file:// で開いたとき（オフライン利用・自動テスト）は読みこまない。
+     GitHub Pages（https）で開いたときだけ動く。 -->
+<script>
+(function () {
+  if (location.protocol.indexOf('http') !== 0) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://physics-chiba.goatcounter.com/count');
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ② ▶スタートを光らせて「ここを押す」と知らせる
+     ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+     ・光り終わり … そのボタンを押したとき／動きはじめたとき
+     ページ本体のしくみにはさわらず、外から付け外しするだけ。 -->
+<style>
+@keyframes sgPulse{
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
+  60%{box-shadow:0 0 0 17px rgba(224,123,24,0)}
+  100%{box-shadow:0 0 0 0 rgba(224,123,24,0)}
+}
+@keyframes sgBlink{
+  0%,100%{background:#e07b18;border-color:#e07b18}
+  50%{background:#f7a13f;border-color:#f7a13f}
+}
+.sg-glow{color:#fff !important;font-weight:700 !important;
+  animation:sgPulse 1.35s ease-out infinite, sgBlink 1.35s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .sg-glow{animation:none !important;background:#e07b18 !important;border-color:#e07b18 !important;
+    box-shadow:0 0 0 4px rgba(224,123,24,.55) !important}
+}
+</style>
+<script>
+(function () {
+  'use strict';
+  /* 主役の再生ボタンは id="bPlay"。古いページのための予備もいくつか見る */
+  var SEL  = '#bPlay, #playBtn, #btn-play, #btn-convert, #btn-convert2, button.b.play';
+  var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
+  var RUN  = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+
+  function btns()    { return [].slice.call(document.querySelectorAll(SEL)); }
+  function shown(e)  { return e.offsetParent !== null && !e.disabled; }
+  function running(e){ return RUN.test(e.textContent || ''); }
+
+  function arm() {                              /* 光らせるのは、いつも1つだけ */
+    var all = btns(), first = null;
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (!first && shown(e) && !running(e) && !e.__sgDone) first = e;
+      else e.classList.remove('sg-glow');
+    }
+    if (first) first.classList.add('sg-glow');
+  }
+  function disarm(e) {
+    if (e) e.classList.remove('sg-glow');
+    else btns().forEach(function (x) { x.classList.remove('sg-glow'); });
+  }
+
+  /* 押されたら消す／タブ・プリセットが押されたら光らせ直す */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    var b = t.closest('button');
+    if (b && btns().indexOf(b) >= 0) {                     /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });    /* 同じ働きの予備ボタンもまとめて */
+      disarm(); return;
+    }
+    if (t.closest(TABS)) {                     /* タブ・プリセットを開いたら光らせ直す */
+      btns().forEach(function (x) { x.__sgDone = 0; });
+      setTimeout(arm, 90);
+    }
+  }, true);
+
+  /* 見張り役：ボタンが作り直された／隠れていたのが出てきたら光らせる。
+     動きはじめたら消す。（タブを切り替えるとボタンが作り直されるページがあるため） */
+  function tick() {
+    var need = false;
+    btns().forEach(function (e) {
+      var v = shown(e);
+      if (v && !e.__sgDone && (!e.__sgKnown || e.__sgVisible === false)) need = true;
+      e.__sgKnown = 1; e.__sgVisible = v;
+      if (running(e)) e.classList.remove('sg-glow');
+    });
+    if (need) arm();
+  }
+  setInterval(tick, 400);
+
+  function boot() { setTimeout(arm, 500); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+<!-- ============ 公開用の共通フッター（ここまで） ============ -->
 </body>
 </html>
