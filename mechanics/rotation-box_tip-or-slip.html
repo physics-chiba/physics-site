@@ -114,6 +114,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 
 /* ===== タブ ===== */
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 6px;align-items:center}
+/* ★タブは画面の上に残す（長いページでも「いまどれを見ているか」が always 見える） */
+.tabs.sub{position:sticky;top:0;z-index:30;background:var(--bg);
+  margin:14px 0 6px;padding:7px 0 6px;box-shadow:0 6px 10px -8px rgba(22,32,43,.28)}
 .tabs button{font-size:.9rem;border-radius:999px;background:#fff;color:var(--accent);
   border-color:var(--line2);padding:6px 16px;font-weight:600;box-shadow:var(--sh-1)}
 .tabs button:hover{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d)}
@@ -2148,6 +2151,7 @@ function drawTiltForces(ctx, g, v, stt, show, box, fs, opt) {
    ・「合成」は、重力と F′ の作用線の交点に 2 力を集めて合成したベクトル              */
 function drawPullForces(ctx, g, v, stt, show, box, fs, opt) {
   opt = opt || {};
+  var _sumOn = false, _normOn = false;      /* 「合力」「抗力」の文字を出すか */
   var m = P.box.M, mg = m * G, F = v.F;
   var Lg = mg * fs, Lf = F * fs;
   var tipped = stt.tip && g.tip > 0.01;
@@ -2182,12 +2186,16 @@ function drawPullForces(ctx, g, v, stt, show, box, fs, opt) {
     ctx.save(); ctx.strokeStyle = 'rgba(138,90,43,.55)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(ix.x - Lf, ix.y); ctx.lineTo(ix.x - Lf, ix.y + Lg); ctx.lineTo(ix.x, ix.y + Lg); ctx.stroke();
     ctx.restore();
-    if (lab) label(ctx, '合力', ix.x - Lf - 4, ix.y + Lg + 10, { size: sz, color: '#8a5a2b', align: 'right' });
+    if (lab) _sumOn = true;
     rayLine(ctx, ix.x, ix.y, -Lf, Lg, '#8a5a2b', box, 1.6, RL);
     rayLine(ctx, ix.x, ix.y, Lf, -Lg, 'rgba(138,90,43,.5)', box, 1.2, RL * 0.5);
   }
-  var mainOn = show.F && !show.Hide;
-  var compOn = show.Fc && still;
+  /* 「引く力と重力を合成」を出しているときは、もとの引く力 F と重力 mg は描かない
+     （交点に集めた 2 本（破線）と合力だけにする）。
+     「抗力のベクトルを消す」は抗力だけを消す（重力は消さない）。 */
+  var baseOn = show.F && !show.Sum;                              /* もとの引く力 F と重力 mg */
+  var mainOn = show.F && !show.Hide;                             /* 抗力 */
+  var compOn = show.Fc && still;                                 /* 抗力を分解（N と f） */
   if (compOn) {
     arrow(ctx, cp.x, cp.y, cp.x, cp.y - Lg, 'comp', 1, COL.norm);
     if (Lf > 3) arrow(ctx, cp.x, cp.y, cp.x + Lf, cp.y, 'comp', 1, COL.fric);
@@ -2196,23 +2204,31 @@ function drawPullForces(ctx, g, v, stt, show, box, fs, opt) {
       if (Lf > 8) label(ctx, 'f', cp.x + Lf + 8, cp.y - 9, { size: sz, color: COL.fric });
     }
   }
-  if (show.F) {                                                  /* 引く力は「消す」の対象にしない */
+  if (baseOn) {                                                  /* 引く力（合成を出したら消える） */
     if (Lf > 2) {
       arrow(ctx, fp.x, fp.y, fp.x - Lf, fp.y, 'force', 1, COL.hand);
       if (lab) label(ctx, 'F', fp.x - Lf - 10, fp.y - 9, { size: sz, color: COL.hand });
     }
   }
-  if (mainOn) {
+  if (baseOn || mainOn) {
     NO_SHIFT = true;                                             /* ずらしは offP で自分でやる */
-    arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
-    if (lab) tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: sz, color: COL.force });
-    if (still) {
+    if (baseOn) {
+      arrow(ctx, cm.x, cm.y, cm.x, cm.y + Lg, 'force', 1, COL.force);
+      if (lab) tipLabel(ctx, 'mg', cm.x, cm.y + Lg, 0, 1, { size: sz, color: COL.force });
+    }
+    if (mainOn && still) {
       arrow(ctx, cp.x + ox, cp.y + oy, cp.x + ox + Rx, cp.y + oy + Ry, 'force', 1, COL.norm);
-      if (lab) label(ctx, '抗力', cp.x + Rx + 6, cp.y + Ry - 10, { size: sz, color: COL.norm, align: 'left' });
+      if (lab) _normOn = true;
     }
     NO_SHIFT = false;
   }
-  if (still && (mainOn || compOn)) actPoint(ctx, cp.x, cp.y, COL.norm);   /* 抗力の作用点の● */
+  /* ★「合力」と「抗力」の文字は、置く場所だけを入れかえる★
+     （出す・出さないの条件と色は、それぞれの言葉のまま） */
+  var pSum = { x: ix.x - Lf - 4, y: ix.y + Lg + 10 };      /* もとは「合力」を置いていた場所 */
+  var pNorm = { x: cp.x + Rx + 6, y: cp.y + Ry - 10 };     /* もとは「抗力」を置いていた場所 */
+  if (_normOn) label(ctx, '抗力', pSum.x, pSum.y, { size: sz, color: COL.norm, align: 'right' });
+  if (_sumOn) label(ctx, '合力', pNorm.x, pNorm.y, { size: sz, color: '#8a5a2b', align: 'left' });
+  if (still && (mainOn || compOn) && show.F) actPoint(ctx, cp.x, cp.y, COL.norm);   /* 抗力の作用点の● */
   return { cp: cp, fp: fp, ix: ix };
 }
 
@@ -3488,7 +3504,7 @@ function drawR3Scene(ctx, s, region) {
   }
   /* 箱 */
   drawBoxSide(ctx, g, { grid: s.o.showGrid, fill: TGT.fill, line: TGT.line });
-  axisMark(ctx, pv.x, pv.y, '回転軸', { dx: 8, dy: 14, align: 'left' });
+  axisMark(ctx, pv.x, pv.y, '回転軸', { dx: -47, dy: 14, align: 'left' });   /* 5 文字分 左へ */
   /* 寸法（チェック） */
   if (s.o.showAB) {
     var rx = g.pt(g.w, 0).x + 16;
@@ -3594,8 +3610,8 @@ DEFS['r3'] = {
   vis: [
     { k: 'F', label: '力を表示', def: false },
     { k: 'Sum', label: '引く力と重力を合成（＝作用線を表示）', def: false },
-    { k: 'Fc', label: '分解した力を表示', def: false },
-    { k: 'Hide', label: '重力と抗力のベクトルを消す', def: false },
+    { k: 'Fc', label: '抗力を分解', def: false },
+    { k: 'Hide', label: '抗力のベクトルを消す', def: false },
     { k: 'AB', label: '箱の $a$・$b$・$b\\prime$ と $\\mu$ を表示', def: false },
     { k: 'Grid', label: '箱の分割線を表示', def: true }
   ],
@@ -3723,7 +3739,10 @@ function buildTabs() {
     var b = document.createElement('button');
     b.textContent = DEFS[id].tab;
     b.className = (id === st.cur ? 'on' : '');
-    b.addEventListener('click', function () { gotoSim(id); });
+    b.addEventListener('click', function () {
+      gotoSim(id);
+      window.scrollTo({ top: 0, behavior: 'auto' });   /* タブを押したら一気に上へ（smooth は使わない） */
+    });
     stb.appendChild(b);
   });
 }
@@ -4514,10 +4533,26 @@ function tick(ts) {
 })();
 
 </script>
-<!-- アクセス数のカウント（GoatCounter・Cookieなし） -->
-<script data-goatcounter="https://physics-chiba.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
-<!-- ▶スタートを光らせて「ここを押す」と知らせる（共通パーツ・2026-09-02 追加） -->
+<!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
+
+<!-- ① アクセス数のカウント（GoatCounter・Cookie を使わない）
+     file:// で開いたとき（オフライン利用・自動テスト）は読みこまない。
+     GitHub Pages（https）で開いたときだけ動く。 -->
+<script>
+(function () {
+  if (location.protocol.indexOf('http') !== 0) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://physics-chiba.goatcounter.com/count');
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ② ▶スタートを光らせて「ここを押す」と知らせる
+     ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+     ・光り終わり … そのボタンを押したとき／動きはじめたとき
+     ページ本体のしくみにはさわらず、外から付け外しするだけ。 -->
 <style>
 @keyframes sgPulse{
   0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
@@ -4536,26 +4571,16 @@ function tick(ts) {
 }
 </style>
 <script>
-/* スタートボタンの光らせ方
-   ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
-   ・光り終わり … そのボタンを押したとき／動きはじめたとき
-   ページ本体のしくみには一切さわらず、外から見て付け外しするだけ。 */
 (function () {
   'use strict';
-  var IDS = ['bPlay', 'playBtn', 'btn-play', 'btn-convert', 'btn-convert2'];
+  /* 主役の再生ボタンは id="bPlay"。古いページのための予備もいくつか見る */
+  var SEL  = '#bPlay, #playBtn, #btn-play, #btn-convert, #btn-convert2, button.b.play';
   var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
-  var RUN = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+  var RUN  = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
 
-  function btns() {
-    var a = [];
-    for (var i = 0; i < IDS.length; i++) {
-      var e = document.getElementById(IDS[i]);
-      if (e) a.push(e);
-    }
-    return a;
-  }
-  function shown(e) { return e.offsetParent !== null && !e.disabled; }
-  function running(e) { return RUN.test(e.textContent || ''); }
+  function btns()    { return [].slice.call(document.querySelectorAll(SEL)); }
+  function shown(e)  { return e.offsetParent !== null && !e.disabled; }
+  function running(e){ return RUN.test(e.textContent || ''); }
 
   function arm() {                              /* 光らせるのは、いつも1つだけ */
     var all = btns(), first = null;
@@ -4576,11 +4601,11 @@ function tick(ts) {
     var t = ev.target;
     if (!t || !t.closest) return;
     var b = t.closest('button');
-    if (b && IDS.indexOf(b.id) >= 0) {                       /* 押したら、もう光らせない */
-      btns().forEach(function (x) { x.__sgDone = 1; });      /* 同じ働きの予備ボタンもまとめて */
+    if (b && btns().indexOf(b) >= 0) {                     /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });    /* 同じ働きの予備ボタンもまとめて */
       disarm(); return;
     }
-    if (t.closest(TABS)) {                       /* タブ・プリセットを開いたら光らせ直す */
+    if (t.closest(TABS)) {                     /* タブ・プリセットを開いたら光らせ直す */
       btns().forEach(function (x) { x.__sgDone = 0; });
       setTimeout(arm, 90);
     }
@@ -4606,6 +4631,7 @@ function tick(ts) {
 })();
 </script>
 
+<!-- ============ 公開用の共通フッター（ここまで） ============ -->
 
 </body>
 </html>
