@@ -111,6 +111,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .btnrow{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;align-items:center}
 
 /* ===== タブ ===== */
+/* ★第26回★ タブの帯は画面の上に貼りつける（physics-sim-page スキル §1）。
+   body の overflow-x:hidden は html が visible なのでビューポートへ伝わるだけで、
+   body 自身はスクロール容器にならない → position:sticky はちゃんと効く。 */
+#tabbar{position:sticky;top:0;z-index:40;background:var(--bg);
+  padding:9px 0 5px;margin-bottom:6px;
+  box-shadow:0 7px 10px -9px rgba(22,32,43,.45)}
+/* ★帯の高さは「2行ぶん」で固定する★ 折り返しを許すと、せまい画面で帯が画面の 1/4 を
+   ふさいで図が見えなくなる。入りきらないタブは【横スクロール】で見せる。 */
+#tabbar .tabs{margin:0 0 4px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  padding-bottom:2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+#tabbar .tabs.sub{margin:0}
+#tabbar .tabs button{flex:none}
+#tabbar .tabs::-webkit-scrollbar{height:5px}
+#tabbar .tabs::-webkit-scrollbar-thumb{background:#c7d2dc;border-radius:3px}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 6px;align-items:center}
 .tabs button{font-size:.9rem;border-radius:999px;background:#fff;color:var(--accent);
   border-color:var(--line2);padding:6px 16px;font-weight:600;box-shadow:var(--sh-1)}
@@ -726,8 +740,13 @@ table.ptab.wide td.ce .num{font-size:.8rem}
 <h1>力学的エネルギーと非保存力の仕事の関係</h1>
 <p class="mini">それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、3つのグラフと式がなぜそうなるかを納得いくまで考えよう。</p>
 
-<div class="tabs" id="modetabs"></div>
-<div class="tabs sub" id="simtabs"></div>
+<!-- ★第26回★ タブは画面の上に残す（physics-sim-page スキル §1）。
+     長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
+     モードのひとこと（#modetip）は帯が高くなるので、この外（下）に置く。 -->
+<div id="tabbar">
+  <div class="tabs" id="modetabs"></div>
+  <div class="tabs sub" id="simtabs"></div>
+</div>
 
 <div class="card stepcard">
   <div class="stephead">立式のステップ　<span class="mini">— いま見ているシミュレーションに合わせて変わります</span></div>
@@ -9331,7 +9350,10 @@ function buildTabs() {
   if (!tip) {
     tip = document.createElement('div');
     tip.id = 'modetip';
-    mt.parentNode.insertBefore(tip, mt.nextSibling);
+    /* ★第26回★ ひとことは、上に貼りつくタブの帯（#tabbar）の【外】に出す。
+       中に入れると、せまい画面で帯が高くなって図が見えなくなる。 */
+    var bar = $('tabbar') || mt;
+    bar.parentNode.insertBefore(tip, bar.nextSibling);
   }
   /* ★#modetip は flex なので、中身は必ず1つの span に包む★
      包まないと KaTeX の span が1つずつ flex の子になって、文がバラバラに折り返される */
@@ -9340,16 +9362,24 @@ function buildTabs() {
   st._tipBtn = curBtn;
   placeModeTip();
   stb.innerHTML = '';
+  var curSim = null;
   MODES.forEach(function (M) {
     if (M.n !== cur.mode) return;
     M.ids.forEach(function (id) {
       var b = document.createElement('button');
       b.textContent = DEFS[id].tab;
       b.className = (id === st.cur ? 'on' : '');
+      if (id === st.cur) curSim = b;
       b.addEventListener('click', function () { gotoSim(id); });
       stb.appendChild(b);
     });
   });
+  /* ★第26回★ タブの帯は1行の横スクロールなので、いま選んでいるタブが帯の外に
+     かくれることがある。まん中あたりに来るように、帯だけを横へ送る
+     （scrollIntoView はページごと動いてしまうので使わない）。 */
+  if (curSim && stb.scrollWidth > stb.clientWidth + 1) {
+    stb.scrollLeft = Math.max(0, curSim.offsetLeft - (stb.clientWidth - curSim.offsetWidth) / 2);
+  }
 }
 
 function updateUrlBar() {
@@ -10560,6 +10590,11 @@ function syncHash() {
 
 function gotoSim(id) {
   if (!DEFS[id]) return;
+  /* ★第26回★ タブや「1-9 を見る →」で別のシミュレーションへ移ったら、画面のいちばん上へ。
+     （physics-sim-page スキル §3.5。smooth にすると画面が流れて目が回るので auto） */
+  if (typeof window !== 'undefined' && window.scrollTo && st.cur !== id) {
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) { window.scrollTo(0, 0); }
+  }
   st.cur = id;
   st._fSel = null; st._fHover = null;    /* 力の選択はシムごとにリセット */
   buildTabs();

@@ -65,6 +65,8 @@ body{
   margin:0; background:var(--bg); color:var(--ink);
   font-family:var(--jp); font-size:16px; line-height:1.7;
   overflow-x:hidden;
+  overflow-x:clip;            /* clip を解さないブラウザは hidden のまま。
+                                 hidden だけだと position:sticky が効かない */
   -webkit-font-smoothing:antialiased;
 }
 .wrap{max-width:1320px;margin:0 auto;padding:20px 14px 72px}
@@ -125,6 +127,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .tabs.sub button.game{border-color:#e6bb85;color:var(--orange-d);background:var(--orange-l)}
 .tabs.sub button.game:hover{border-color:var(--orange)}
 .tabs.sub button.game.on{background:var(--orange);border-color:var(--orange);color:#fff}
+
+/* ===== タブ列は画面の上に残す（position:sticky） =====
+   長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
+   中に入るのは モードのタブ → ひとこと → シミュレーションのタブ の3つ。 */
+.tabbar{position:sticky;top:0;z-index:40;background:var(--bg);
+  padding:10px 0 6px;margin:0 0 6px;
+  box-shadow:0 10px 14px -12px rgba(22,32,43,.45)}
+.tabbar .tabs{margin:0 0 6px}
+.tabbar .tabs.sub{margin:0}
+.tabbar #modetip{margin:2px 0 6px}
+/* せまい画面ではタブ列が何段にも折り返して帯が画面の半分を占めてしまうので、
+   上に残すのは広い画面だけにする（帯の高さは下の自動テストで測っている）。 */
+@media (max-width:900px){
+  .tabbar{position:static;padding:0;margin:0;box-shadow:none}
+  .tabbar .tabs{margin:18px 0 6px}
+  .tabbar .tabs.sub{margin:0 0 4px}
+}
 
 /* 選んでいるモードのひとこと（ボタンの真下に ▲） */
 #modetip{font-size:.8rem;color:var(--accent-d);margin:2px 0 8px;line-height:1.5;
@@ -498,6 +517,10 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   .simtitle{font-size:.98rem}
   #modetip{display:none}
   .tabs.sub{margin-bottom:2px}
+  /* 縦が短い画面（横置きのスマホなど）では、帯が図の場所を取るので上に残さない */
+  .tabbar{position:static;padding:0;margin:0;box-shadow:none}
+  .tabbar .tabs{margin:8px 0 4px}
+  .tabbar .tabs.sub{margin:0 0 2px}
   /* 図を細くしたぶん、グラフを右どなりに並べる（横向きの画面を横に使う） */
   .simgrid{gap:12px;flex-wrap:nowrap}
   .simgrid .cv{flex:0 1 auto;min-width:0}
@@ -580,8 +603,11 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 <p class="mini">物理の基本中の基本「等加速度直線運動・運動方程式・平面内の運動」を、自分で数値を変えながら動かして確かめるページ。<br>
 それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、グラフがなぜそうなるかを納得いくまで考えよう。</p>
 
+<!-- タブ列は position:sticky で画面の上に残す（#modetip はこの中に差しこまれる） -->
+<div class="tabbar" id="tabbar">
 <div class="tabs" id="modetabs"></div>
 <div class="tabs sub" id="simtabs"></div>
+</div>
 
 <div class="card" id="simhost"></div>
 
@@ -6835,7 +6861,9 @@ function fitStageHeight() {
   if (vh > 620 || vw < 600) return;          /* 縦長の画面・狭い画面はそのまま */
   var r = cv.getBoundingClientRect();
   if (r.width < 1 || r.height < 1) return;
-  var avail = vh - 196;                      /* 再生ボタン・帯・見出しのぶんを空ける */
+  var tb = $('tabbar');
+  var tbH = tb ? tb.offsetHeight : 0;        /* 上に残るタブの帯のぶん */
+  var avail = vh - 196 - tbH;                /* 再生ボタン・帯・見出しのぶんを空ける */
   /* 高さから決まる幅。ただし小さくしすぎると図が読めなくなるので 420px は確保し、
      右のグラフ列を残すための横の上限（画面幅 − 268px）を超えないようにする。 */
   var byH = avail * (r.width / r.height);
@@ -7981,6 +8009,19 @@ function syncHash() {
   }
 }
 
+/* タブは画面の上に残るので、下のほうまでスクロールしたままタブを押すと、
+   新しいシミュレーションの「とちゅう」が見えてしまう。
+   図の頭がタブの帯のすぐ下に来るまでスクロールする（すでに見えているときは動かさない）。 */
+function scrollSimIntoView() {
+  var host = $('simhost');
+  if (!host) return;
+  var tb = $('tabbar');
+  var band = (tb && getComputedStyle(tb).position === 'sticky') ? tb.offsetHeight : 0;
+  var top = host.getBoundingClientRect().top;
+  if (top >= band - 2) return;
+  window.scrollTo({ top: window.scrollY + top - band - 8, behavior: 'auto' });
+}
+
 function gotoSim(id) {
   if (!DEFS[id]) return;
   st.cur = id;
@@ -7989,6 +8030,7 @@ function gotoSim(id) {
   renderActive();
   syncHash();
   updateUrlBar();
+  requestAnimationFrame(function () { requestAnimationFrame(scrollSimIntoView); });
 }
 
 /* ===== アニメーション ===== */
