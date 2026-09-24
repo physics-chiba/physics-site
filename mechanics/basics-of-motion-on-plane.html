@@ -130,20 +130,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 
 /* ===== タブ列は画面の上に残す（position:sticky） =====
    長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
-   中に入るのは モードのタブ → ひとこと → シミュレーションのタブ の3つ。 */
+   ★帯の高さは「2行ぶん」で固定する★ 折り返しを許すと、せまい画面で帯が画面の半分を
+   ふさいで図が見えなくなる。入りきらないタブは【横スクロール】で見せる
+   （mechanical-energy.html と同じ作り）。
+   モードのひとこと（#modetip）は帯が高くなるので、この帯の【外】（下）に置く。 */
 .tabbar{position:sticky;top:0;z-index:40;background:var(--bg);
-  padding:10px 0 6px;margin:0 0 6px;
-  box-shadow:0 10px 14px -12px rgba(22,32,43,.45)}
-.tabbar .tabs{margin:0 0 6px}
+  padding:9px 0 5px;margin:0 0 6px;
+  box-shadow:0 7px 10px -9px rgba(22,32,43,.45)}
+.tabbar .tabs{margin:0 0 4px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  padding-bottom:2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .tabbar .tabs.sub{margin:0}
-.tabbar #modetip{margin:2px 0 6px}
-/* せまい画面ではタブ列が何段にも折り返して帯が画面の半分を占めてしまうので、
-   上に残すのは広い画面だけにする（帯の高さは下の自動テストで測っている）。 */
-@media (max-width:900px){
-  .tabbar{position:static;padding:0;margin:0;box-shadow:none}
-  .tabbar .tabs{margin:18px 0 6px}
-  .tabbar .tabs.sub{margin:0 0 4px}
+.tabbar .tabs button{flex:none}
+/* 問題モードのスイッチは【横スクロールの外】に置く。
+   中に入れると、せまい画面でスクロールの右はしに隠れて生徒が見つけられない。 */
+.tabbar .moderow{display:flex;align-items:center;gap:8px;min-width:0}
+.tabbar .moderow > .tabs{flex:1 1 auto;min-width:0}
+.tabbar .moderow > .qswitch{margin-left:0}
+/* とてもせまい画面では、スイッチと並べるとタブ列の窓が1つぶんも取れない。
+   スイッチだけ下の行に落として、タブ列には横はばをぜんぶ使わせる。 */
+@media (max-width:480px){
+  .tabbar .moderow{flex-wrap:wrap;gap:5px}
+  .tabbar .moderow > .tabs{flex:1 1 100%;min-width:100%}
+  .tabbar .moderow > .qswitch{margin-left:auto}
 }
+.tabbar .tabs::-webkit-scrollbar{height:5px}
+.tabbar .tabs::-webkit-scrollbar-thumb{background:#c7d2dc;border-radius:3px}
 
 /* 選んでいるモードのひとこと（ボタンの真下に ▲） */
 #modetip{font-size:.8rem;color:var(--accent-d);margin:2px 0 8px;line-height:1.5;
@@ -490,6 +501,10 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   .card{padding:12px;border-radius:12px}
   #simhost{padding:12px}
   .tabs button{padding:5px 12px;font-size:.85rem}
+  /* せまい画面では、上に残る帯が高くなりすぎないよう問題モードのスイッチを少し小さく
+     （それでも他のボタンよりはっきり大きい） */
+  .qswitch{font-size:1.05rem;padding:8px 20px;gap:10px}
+  .qswitch input{width:19px;height:19px}
   .simgrid{gap:14px}
   .simgrid .cv{max-width:100%}
   .cvtop{position:static;margin:8px 0 0;gap:8px}
@@ -517,10 +532,11 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   .simtitle{font-size:.98rem}
   #modetip{display:none}
   .tabs.sub{margin-bottom:2px}
-  /* 縦が短い画面（横置きのスマホなど）では、帯が図の場所を取るので上に残さない */
-  .tabbar{position:static;padding:0;margin:0;box-shadow:none}
-  .tabbar .tabs{margin:8px 0 4px}
-  .tabbar .tabs.sub{margin:0 0 2px}
+  /* 縦が短い画面（横置きのスマホなど）でも帯は上に残す。
+     1行ずつの横スクロールなので低いが、すき間だけはさらに詰める */
+  .tabbar{padding:5px 0 3px;margin:0 0 4px}
+  .tabbar .tabs{margin:0 0 3px}
+  .tabbar .tabs.sub{margin:0}
   /* 図を細くしたぶん、グラフを右どなりに並べる（横向きの画面を横に使う） */
   .simgrid{gap:12px;flex-wrap:nowrap}
   .simgrid .cv{flex:0 1 auto;min-width:0}
@@ -605,7 +621,7 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 
 <!-- タブ列は position:sticky で画面の上に残す（#modetip はこの中に差しこまれる） -->
 <div class="tabbar" id="tabbar">
-<div class="tabs" id="modetabs"></div>
+<div class="moderow" id="moderow"><div class="tabs" id="modetabs"></div></div>
 <div class="tabs sub" id="simtabs"></div>
 </div>
 
@@ -6795,7 +6811,7 @@ function drawLegend() {
 function buildTabs() {
   var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[st.cur];
   mt.innerHTML = '';
-  var curBtn = null, curMode = null;
+  var curBtn = null, curMode = null, curSim = null;
   MODES.forEach(function (M) {
     var b = document.createElement('button');
     b.textContent = M.label;
@@ -6809,13 +6825,19 @@ function buildTabs() {
   sw.id = 'qswitch';
   sw.innerHTML = '<input type="checkbox" id="qmodeChk"' + (st.qmode ? ' checked' : '') + '> 問題モード';
   sw.querySelector('input').addEventListener('change', function (e) { setQmode(e.target.checked); });
-  mt.appendChild(sw);
+  /* スイッチは横スクロールの外（モードのタブ列の右どなり）。せまい画面でも必ず見える */
+  var mrow = $('moderow') || mt;
+  var old = $('qswitch'); if (old && old.parentNode) old.parentNode.removeChild(old);
+  mrow.appendChild(sw);
   /* 選んでいるモードのひとこと（青いボタンの真下に表示する） */
   var tip = $('modetip');
   if (!tip) {
     tip = document.createElement('div');
     tip.id = 'modetip';
-    mt.parentNode.insertBefore(tip, mt.nextSibling);
+    /* ひとことは、上に貼りつくタブの帯（#tabbar）の【外】に出す。
+       中に入れると、せまい画面で帯が高くなって図が見えなくなる。 */
+    var bar = $('tabbar') || mt;
+    bar.parentNode.insertBefore(tip, bar.nextSibling);
   }
   tip.innerHTML = (curMode && curMode.tip) ? curMode.tip : '';
   st._tipBtn = curBtn;
@@ -6829,9 +6851,23 @@ function buildTabs() {
       b.textContent = DEFS[id].tab;
       b.className = (DEFS[id].game ? 'game' : '') + (id === st.cur ? ' on' : '');
       b.addEventListener('click', function () { gotoSim(id); });
+      if (id === st.cur) curSim = b;
       stb.appendChild(b);
     });
   });
+  /* タブの列は1行の横スクロールなので、いま選んでいるタブが列の外にかくれることがある。
+     まん中あたりに来るように、その列だけを横へ送る
+     （scrollIntoView はページごと動いてしまうので使わない）。 */
+  centerTab(mt, curBtn);
+  centerTab(stb, curSim);
+  placeModeTip();          /* 横に送ったあとの位置で ▲ を置きなおす */
+}
+
+function centerTab(box, b) {
+  if (!box || !b) return;
+  if (box.scrollWidth <= box.clientWidth + 1) { box.scrollLeft = 0; return; }
+  var r = b.getBoundingClientRect(), br = box.getBoundingClientRect();
+  box.scrollLeft += (r.left - br.left) - (box.clientWidth - r.width) / 2;
 }
 
 /* ページ下の「このシミュレーションのURL」欄は外した（ハッシュ自体は今までどおり働く）。
@@ -6878,7 +6914,9 @@ function placeModeTip() {
   if (!tip || !b || !mt) return;
   /* タブ列の左端を基準にして、選んでいるボタンの真下に ▲ が来るようにする */
   var off = b.getBoundingClientRect().left - mt.getBoundingClientRect().left;
-  tip.style.paddingLeft = Math.max(0, off + b.offsetWidth / 2 - 7) + 'px';
+  var pad = Math.max(0, off + b.offsetWidth / 2 - 7);
+  /* せまい画面ではボタンが横いっぱいになるので、真下に置こうとすると文が右端に寄って読めない */
+  tip.style.paddingLeft = Math.min(pad, Math.max(0, mt.clientWidth - 260)) + 'px';
 }
 
 /* ===== パネルの組み立て ===== */
