@@ -598,6 +598,18 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 .topacts button.warm.on,.abbtns button.ab.on{background:var(--orange-l);border-color:var(--orange);
   color:var(--orange-d);font-weight:700;box-shadow:0 0 0 3px rgba(224,123,24,.14)}
 .topacts button.warm.prim{background:var(--orange);border-color:var(--orange);color:#fff}
+/* ★押してほしいボタン（1 の「横から」）は、押されるまで大きく光らせる */
+.topacts button.warm.glow{background:var(--orange);border-color:var(--orange);color:#fff;
+  font-size:.92rem;font-weight:800;padding:6px 16px;
+  animation:tactGlow 1.2s ease-in-out infinite}
+.topacts button.warm.glow::after{content:' 👆'}
+.topacts button.warm.glow:hover{background:var(--orange-d);border-color:var(--orange-d)}
+@keyframes tactGlow{        /* 動かすと押しにくいので、光の輪だけを広げる */
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.8);background:#e07b18}
+  55%{box-shadow:0 0 0 11px rgba(224,123,24,0);background:#f7a13f}
+  100%{box-shadow:0 0 0 0 rgba(224,123,24,0);background:#e07b18}
+}
+@media (prefers-reduced-motion:reduce){ .topacts button.warm.glow{animation:none} }
 
 /* a:b のボタン列 */
 .cvopts.abrow{gap:4px 8px;padding:5px 9px}
@@ -894,7 +906,7 @@ P.box = {
   CELL: 0.04,                     /* [m] 1 マス */
   M: 1.0,                         /* [kg] 箱の質量（どの箱も同じにしておく） */
   DEPTH: 0.16,                    /* [m] 奥行き（絵のためだけ。物理には効かない） */
-  KEYS: ['2:8', '3:4', '4:4', '8:2'],
+  KEYS: ['1:16', '2:8', '3:4', '4:4', '8:2', '16:1'],   /* 左ほど細長く、右ほど平たい（面積はどれも 16 マス） */
   /* 'a:b' → { na, nb, a, b }（na・nb はマス数、a・b は m） */
   dims: function (key) {
     var p = String(key).split(':');
@@ -2270,7 +2282,7 @@ function placeVerdicts(ctx, list, size, region, obst) {
     var x = region ? clamp(it.x, x0lim, x1lim) : it.x, y = it.y;
     /* ほかの吹き出しにも、物体（箱）にも重ならない置き場所をさがす。
        まず真上へ、それでもだめなら左右へずらす。しっぽの先だけは箱を指してよい */
-    var topLim = region ? region.y0 - 20 : 0;      /* これより上へは行かない */
+    var topLim = region ? Math.max(region.y0 - 20, 3) : 3;   /* これより上（キャンバスの外）へは行かない */
     function clear(cx, cy) {
       var bx0 = cx - w / 2, bx1 = cx + w / 2, by0 = cy - h, by1 = cy, k;   /* 吹き出しの枠（しっぽは含めない） */
       for (k = 0; k < placed.length; k++) {
@@ -2437,9 +2449,23 @@ var R1 = {
   BX0: -0.14, BX1: 1.48, BY: 0.30, BT: 0.05,      /* 下の平面（台）の広さと厚み [m] */
   POS: [0.06, 0.20, 0.42, 0.88],                  /* 操作対象は左の箱から 4:4 の半分ぶん離す */                  /* 各箱の下側の角の位置（板にそって）[m] */
   FIXED: ['2:8', '4:4', '8:2'],                   /* 左の 3 つ（面積は同じ） */
-  THMAX: 80,
+  THMAX: 90,
   BAND: 120                                       /* 「各箱の a:b」の表の高さ [px] */
 };
+
+/* 操作対象が大きい箱（1:16・16:1）のときは、板と台をのばして、箱がはみ出さないようにする。
+   板の長さが変わるので図の大きさも変わるが、θ を動かしても変わらないことは保たれる。 */
+/* ズームアップ枠の縮尺。大きい箱（1:16・16:1）でも枠に入るように小さくする */
+function zoomScale(dm, fr) {
+  var d = Math.hypot(dm.a, dm.b);
+  return Math.min(ZS, (fr.h - 70) / Math.max(1e-6, d), (fr.w - 90) / Math.max(1e-6, d));
+}
+
+function plateGeom(R, s) {
+  var dmT = P.box.dims(s.ab);
+  var PL = Math.max(R.PL, R.POS[3] + dmT.a + 0.04);
+  return { PL: PL, BX1: Math.max(R.BX1, PL + 0.24), hMax: Math.max(0.32, dmT.b), dmT: dmT };
+}
 
 /* 板の上の箱の一覧（左から 3 つ＋操作対象） */
 function r1Boxes(s) {
@@ -2592,21 +2618,23 @@ function drawR1Scene(ctx, s, region) {
   var boxes = r1Boxes(s);
   var az = s.cam.az * DEG, el = s.cam.el * DEG;
   var W2P = plateToWorld(th);
-  /* --- 縮尺：θ を 0〜80° まで振っても入るように決める（θ を変えても図の大きさが変わらない） --- */
+  /* --- 縮尺：θ を 0〜90° まで振っても入るように決める（θ を変えても図の大きさが変わらない） --- */
   var pj0 = mkProj(az, el, 1, 0, 0);
   var bx0 = Infinity, bx1 = -Infinity, by0 = Infinity, by1 = -Infinity;
   function take(q) { var p = pj0.p(q); bx0 = Math.min(bx0, p.x); bx1 = Math.max(bx1, p.x); by0 = Math.min(by0, p.y); by1 = Math.max(by1, p.y); }
   var k, i;
+  var PG = plateGeom(R1, s), yD = P.box.DEPTH / 2;
   for (k = 0; k <= R1.THMAX; k += 10) {
     var W2 = plateToWorld(k * DEG);
-    [[0, -R1.PW / 2, -R1.PT], [0, R1.PW / 2, -R1.PT], [R1.PL, -R1.PW / 2, -R1.PT], [R1.PL, R1.PW / 2, -R1.PT],
-      [0, -R1.PW / 2, 0], [0, R1.PW / 2, 0], [R1.PL, -R1.PW / 2, 0], [R1.PL, R1.PW / 2, 0]].forEach(function (q) { take(W2(q[0], q[1], q[2])); });
-    R1.POS.forEach(function (sp) {
-      [[sp, -0.08, 0.32], [sp, 0.08, 0.32], [sp + 0.32, -0.08, 0.32], [sp + 0.32, 0.08, 0.32]].forEach(function (q) { take(W2(q[0], q[1], q[2])); });
+    [[0, -R1.PW / 2, -R1.PT], [0, R1.PW / 2, -R1.PT], [PG.PL, -R1.PW / 2, -R1.PT], [PG.PL, R1.PW / 2, -R1.PT],
+      [0, -R1.PW / 2, 0], [0, R1.PW / 2, 0], [PG.PL, -R1.PW / 2, 0], [PG.PL, R1.PW / 2, 0]].forEach(function (q) { take(W2(q[0], q[1], q[2])); });
+    boxes.forEach(function (b, bi) {           /* 箱は、それぞれの本当の大きさで振る */
+      var sp = R1.POS[bi], aa = b.dm.a, bb = b.dm.b;
+      [[sp, -yD, bb], [sp, yD, bb], [sp + aa, -yD, bb], [sp + aa, yD, bb]].forEach(function (q) { take(W2(q[0], q[1], q[2])); });
     });
   }
-  [[R1.BX0, -R1.BY, -R1.PT - R1.BT], [R1.BX1, -R1.BY, -R1.PT - R1.BT], [R1.BX0, R1.BY, -R1.PT - R1.BT], [R1.BX1, R1.BY, -R1.PT - R1.BT],
-    [R1.BX0, -R1.BY, -R1.PT], [R1.BX1, -R1.BY, -R1.PT], [R1.BX0, R1.BY, -R1.PT], [R1.BX1, R1.BY, -R1.PT]].forEach(take);   /* 下の平面（台） */
+  [[R1.BX0, -R1.BY, -R1.PT - R1.BT], [PG.BX1, -R1.BY, -R1.PT - R1.BT], [R1.BX0, R1.BY, -R1.PT - R1.BT], [PG.BX1, R1.BY, -R1.PT - R1.BT],
+    [R1.BX0, -R1.BY, -R1.PT], [PG.BX1, -R1.BY, -R1.PT], [R1.BX0, R1.BY, -R1.PT], [PG.BX1, R1.BY, -R1.PT]].forEach(take);   /* 下の平面（台） */
   var mg = 14;
   var S = Math.min((region.w - 2 * mg) / Math.max(1e-6, bx1 - bx0), (region.h - 2 * mg) / Math.max(1e-6, by1 - by0)) * s.cam.zoom;
   /* 横は左づめ（右のズームアップ枠を、図のすぐ右に置けるように）。狭い画面では中央 */
@@ -2618,19 +2646,19 @@ function drawR1Scene(ctx, s, region) {
   /* --- 下の平面（水平な台）。板は θ=0 のときこの上にぴったり乗る --- */
   var yN = R1.PW / 2;
   var pv0 = PJ([0, yN, 0]);
-  var baseFaces = boxFaces([R1.BX0, -R1.BY, -R1.PT - R1.BT], [R1.BX1 - R1.BX0, 0, 0], [0, 0, R1.BT], [0, 2 * R1.BY, 0]);
+  var baseFaces = boxFaces([R1.BX0, -R1.BY, -R1.PT - R1.BT], [PG.BX1 - R1.BX0, 0, 0], [0, 0, R1.BT], [0, 2 * R1.BY, 0]);
   drawFaces(ctx, pj, baseFaces, { top: '#e4e8ec', near: '#c9d0d7', far: '#c9d0d7', left: '#c9d0d7', right: '#c9d0d7', bottom: '#c9d0d7' }, '#8b949e', false);
 
   /* --- 板（厚みのある直方体） --- */
   var plateFaces = boxFaces(W2P(0, -yN, -R1.PT),
-    W2P(R1.PL, 0, 0).map(function (c, j) { return c - W2P(0, 0, 0)[j]; }),
+    W2P(PG.PL, 0, 0).map(function (c, j) { return c - W2P(0, 0, 0)[j]; }),
     W2P(0, 0, R1.PT).map(function (c, j) { return c - W2P(0, 0, 0)[j]; }),
     [0, R1.PW, 0]);
   drawFaces(ctx, pj, plateFaces, { top: BOXCOL.plate, near: BOXCOL.plate2, far: BOXCOL.plate2, left: '#cfc4a3', right: '#cfc4a3', bottom: '#cfc4a3' }, BOXCOL.plateLine, false);
   /* 板の上の面（ドラッグの当たり判定用に覚えておく） */
-  s._plate = [W2P(0, -yN, 0), W2P(R1.PL, -yN, 0), W2P(R1.PL, yN, 0), W2P(0, yN, 0)].map(PJ);
+  s._plate = [W2P(0, -yN, 0), W2P(PG.PL, -yN, 0), W2P(PG.PL, yN, 0), W2P(0, yN, 0)].map(PJ);
   /* ドラッグの当たり判定：板の上の面・手前の面・（あとで）箱の面もまとめて */
-  s._plateHit = [s._plate, [W2P(0, yN, 0), W2P(R1.PL, yN, 0), W2P(R1.PL, yN, -R1.PT), W2P(0, yN, -R1.PT)].map(PJ)];
+  s._plateHit = [s._plate, [W2P(0, yN, 0), W2P(PG.PL, yN, 0), W2P(PG.PL, yN, -R1.PT), W2P(0, yN, -R1.PT)].map(PJ)];
 
   /* --- θ の印（板の手前のはし、回転軸のまわり） --- */
   (function () {
@@ -2796,7 +2824,7 @@ function drawTiltBox(ctx, s, v, dm, stt, tipDeg, pv, fr, pinned, opt) {
 
 DEFS['r1'] = {
   id: 'r1', tab: '1　板の角度を変える（箱の左下は板に固定）',
-  playRate: 5, playNote: 'スタートを押すと θ が 10° からだんだん大きくなる',
+  playRate: 5, playNote: 'スタートを押すと θ が 0° からだんだん大きくなる',
   title: '1　板の角度を変える　～箱の左下は板にピンで固定～',
   sub: '板の左端と、それぞれの箱の左下の角を<b>ピン（○）</b>で板に固定してある（ピンは蝶番のようなもので、その点を軸に回る）。だから箱はすべらず、<b>傾くかどうか</b>だけが問題になる。' +
     '左の 3 つの箱は面積が同じで形だけがちがう。<b>右端が操作対象の箱</b>（右の枠にズームアップ）。',
@@ -2810,7 +2838,7 @@ DEFS['r1'] = {
   drag3d: true,
   abDef: '4:4',
   vars: [
-    { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R1.THMAX, step: 1, dec: 0, def: 10,
+    { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R1.THMAX, step: 1, dec: 0, def: 0,
       tick: function (v) { var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b); return { at: th0, label: '傾く角 $\\theta_0 = ' + fmt(th0, 1) + '^\\circ$' }; } }
   ],
   vis: [
@@ -2823,7 +2851,8 @@ DEFS['r1'] = {
   ],
   topActions: [
     { label: '斜め上から', fn: function (s) { s.cam.az = -35; s.cam.el = 25; s.cam.zoom = 1; }, is: function (v, s) { return camIs(s, -35, 25, 1); } },
-    { label: '横から', fn: function (s) { s.cam.az = 0; s.cam.el = 0; s.cam.zoom = 1; }, is: function (v, s) { return camIs(s, 0, 0, 1); } }
+    { label: '横から', glow: true,      /* 押してほしいので、押されるまで光らせる */
+      fn: function (s) { s.cam.az = 0; s.cam.el = 0; s.cam.zoom = 1; }, is: function (v, s) { return camIs(s, 0, 0, 1); } }
   ],
   /* 板の上でドラッグ → θ を変える（それ以外は視点が回る） */
   dragDown: function (s, lx, ly) {                       /* 板や箱の上（と、そのふち 14px 以内）なら θ のドラッグ */
@@ -2872,7 +2901,8 @@ DEFS['r1'] = {
     label(ctx, 'ズームアップ（操作対象の箱 a:b = ' + s.ab + '）', fr.x0 + fr.w / 2, fr.y0 - 11, { size: 12, bold: true, color: COL.ink2 || '#3d4c5a' });
     var b = sc.tgt.b;
     var pv = { x: fr.x0 + 104, y: fr.y0 + fr.h - 62 };
-    var z = drawTiltBox(ctx, s, v, b.dm, b.stt, b.tip, pv, fr, true, { fill: TGT.fill, line: TGT.line });
+    var zS = zoomScale(b.dm, fr);
+    var z = drawTiltBox(ctx, s, v, b.dm, b.stt, b.tip, pv, fr, true, { S: zS, fill: TGT.fill, line: TGT.line });
     label(ctx, '回転軸', pv.x - 26, pv.y + 26, { size: 11, color: COL.sub, align: 'right', avoid: true });
     var zk1 = (b.stt.tip && b.tip > 0.01) ? 'tip' : null;
     if (verdictAlive(s, 'zoom', zk1)) {
@@ -2898,7 +2928,7 @@ DEFS['r1'] = {
 };
 
 /* ============ r2  板の角度を変える・箱は固定なし（真横から） ============ */
-var R2 = { PL: 1.24, PT: 0.03, POS: [0.06, 0.20, 0.42, 0.88], FIXED: ['2:8', '4:4', '8:2'], THMAX: 80, BAND: 168,
+var R2 = { PL: 1.24, PT: 0.03, POS: [0.06, 0.20, 0.42, 0.88], FIXED: ['2:8', '4:4', '8:2'], THMAX: 90, BAND: 168,
   BX0: -0.14, BX1: 1.48, BT: 0.05,
   PADL: 0.24 };   /* いちばん左の箱が倒れても画面から出ないように、左に余裕をとる [m] */
 
@@ -2912,23 +2942,25 @@ function r2Boxes(s) {
   });
 }
 
-/* 真横から見た板と 4 つの箱。region の中に、θ を 0〜80° まで振っても入る縮尺で描く */
+/* 真横から見た板と 4 つの箱。region の中に、θ を 0〜90° まで振っても入る縮尺で描く */
 function drawR2Scene(ctx, s, region) {
   var v = V(s), th = v.th * DEG;
   var boxes = r2Boxes(s);
   /* 縮尺：板の長さ＋いちばん高い箱（0.32 m）が、横は 0°、たては 80° で入るように */
   var mg = 12;
-  var S = Math.min((region.w - 2 * mg) / (R2.BX1 - R2.BX0 + 0.1 + R2.PADL), (region.h - 2 * mg - 10) / (R2.PL * Math.sin(80 * DEG) + 0.32 + R2.PT + R2.BT));
+  var PG = plateGeom(R2, s);
+  var S = Math.min((region.w - 2 * mg) / (PG.BX1 - R2.BX0 + 0.1 + R2.PADL),
+    (region.h - 2 * mg - 10) / (PG.PL * Math.sin(R2.THMAX * DEG) + PG.hMax + R2.PT + R2.BT));
   var pv = { x: region.x0 + mg + (R2.PADL - R2.BX0) * S, y: region.y0 + region.h - mg - (R2.PT + R2.BT) * S - 2 };
   var u = { x: Math.cos(th), y: -Math.sin(th) }, n = { x: -Math.sin(th), y: -Math.cos(th) };
   function pt(su, sn) { return { x: pv.x + u.x * su * S + n.x * sn * S, y: pv.y + u.y * su * S + n.y * sn * S }; }
   /* 下の平面（台） */
   ctx.save();
   ctx.fillStyle = '#e4e8ec'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.rect(pv.x + R2.BX0 * S, pv.y + R2.PT * S, (R2.BX1 - R2.BX0) * S, R2.BT * S); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.rect(pv.x + R2.BX0 * S, pv.y + R2.PT * S, (PG.BX1 - R2.BX0) * S, R2.BT * S); ctx.fill(); ctx.stroke();
   ctx.restore();
   /* 板（厚みのある棒） */
-  var c0 = pt(0, 0), c1 = pt(R2.PL, 0), c2 = pt(R2.PL, -R2.PT), c3 = pt(0, -R2.PT);
+  var c0 = pt(0, 0), c1 = pt(PG.PL, 0), c2 = pt(PG.PL, -R2.PT), c3 = pt(0, -R2.PT);
   ctx.save();
   ctx.fillStyle = BOXCOL.plate2; ctx.strokeStyle = BOXCOL.plateLine; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(c0.x, c0.y); ctx.lineTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.lineTo(c3.x, c3.y); ctx.closePath();
@@ -2982,7 +3014,7 @@ function drawR2Scene(ctx, s, region) {
     });
     valueTable(ctx, tx0, tby, tw, cols2, rows2, { labelW: 168, rowH: 17, headH: 24 });
   }
-  return { boxes: boxes, out: out, pv: pv, S: S, right: pv.x + R2.BX1 * S };
+  return { boxes: boxes, out: out, pv: pv, S: S, right: pv.x + PG.BX1 * S };
 }
 
 /* ＜考え方＞ ①床を傾けていく場合（4 コマ）。canvas に描き起こす */
@@ -3281,7 +3313,7 @@ DEFS['r2'] = {
   },
   slipFirst: function (v) { var dm = P.box.dims(v.ab); return P.tilt.state(dm.a, dm.b, v.mu, v.th, false).slipFirst; },
   moment2: { label: '滑る瞬間をスローで', dur: 4.0, range: function (v) { var ths = P.tilt.thSlip(v.mu); return { k: 'th', from: Math.max(0, ths - 5), to: Math.min(R2.THMAX, ths + 5), hold: 0.8 }; } },
-  playRate: 5, playNote: 'スタートを押すと θ が 10° からだんだん大きくなる',
+  playRate: 5, playNote: 'スタートを押すと θ が 0° からだんだん大きくなる',
   title: '2　板の角度を変える　～箱は固定なし。傾くのが先か、滑るのが先か～',
   sub: '板の左端はピンで固定。箱は固定していないので、θ を上げていくと<b>すべる</b>か<b>傾く</b>かのどちらかが先に起こる。' +
     '傾く角は $\\tan\\theta_0 = a/b$、すべる角は $\\tan\\theta_s = \\mu$。<b>先に来るほうが実際に起こる</b>。' +
@@ -3291,7 +3323,7 @@ DEFS['r2'] = {
   drag: true,
   abDef: '3:4',
   vars: [
-    { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R2.THMAX, step: 1, dec: 0, def: 10,
+    { k: 'th', label: '板の角度 $\\theta$', unit: '°', min: 0, max: R2.THMAX, step: 1, dec: 0, def: 0,
       tick: function (v) {
         var dm = P.box.dims(v.ab), th0 = P.tilt.th0(dm.a, dm.b), ths = P.tilt.thSlip(v.mu);
         return { at: th0, label: '傾く角 $\\theta_0 = ' + fmt(th0, 1) + '^\\circ$', at2: ths, label2: 'すべる角 $\\theta_s = ' + fmt(ths, 1) + '^\\circ$' };
@@ -3371,7 +3403,8 @@ DEFS['r2'] = {
     label(ctx, 'ズームアップ（操作対象の箱 a:b = ' + s.ab + '）', fr.x0 + fr.w / 2, fr.y0 - 11, { size: 12, bold: true, color: '#3d4c5a' });
     var b = sc.boxes[3];
     var pv = { x: fr.x0 + 104, y: fr.y0 + fr.h - 62 };
-    var z = drawTiltBox(ctx, s, v, b.dm, b.stt, b.tip, pv, fr, false, { fill: TGT.fill, line: TGT.line });
+    var zS = zoomScale(b.dm, fr);
+    var z = drawTiltBox(ctx, s, v, b.dm, b.stt, b.tip, pv, fr, false, { S: zS, fill: TGT.fill, line: TGT.line });
     axisMark(ctx, z.pvb.x, z.pvb.y, null);
     label(ctx, '回転軸', pv.x - 26, pv.y + 26, { size: 11, color: COL.sub, align: 'right', avoid: true });
     var g = z.g, tp = g.pt(g.w / 2, g.h);
@@ -3477,7 +3510,10 @@ function drawR3Scene(ctx, s, region) {
   v.bp = bp;                                        /* 以下の力の描画には m で渡す */
   var stt = P.pull.state(m, dm.a, v.mu, v.F, bp);
   var tip = stt.tip ? P.pull.tipAngle(v.F, stt.F0) : 0;
-  var S = ZS;
+  /* 大きい箱（1:16・16:1）でも枠に入る縮尺。倒れると最大 40° 回るので、その高さで見る */
+  var c40 = Math.cos(40 * DEG), s40 = Math.sin(40 * DEG);
+  var hEff = Math.max(dm.b, dm.a * s40 + dm.b * c40), wEff = Math.max(dm.a, dm.a * c40 + dm.b * s40);
+  var S = Math.min(ZS, (region.h - 96) / hEff, (region.w * 0.42) / wEff);
   var nar = !!s._narrow;
   var gy = region.y0 + region.h - 46, bx = region.x0 + (nar ? region.w * 0.66 - 0.16 * S : R3.BX);
   var slipShift = stt.slip ? clamp((v.F - stt.Fslip) / 2.0, 0, 1) * 0.12 * S : 0;
@@ -3831,8 +3867,7 @@ function buildPanel() {
   /* a:b のボタン（＋ r3 の b′） */
   h.push('<div class="cvopts abrow"><span class="ablab">' + (d.abLabel || '操作対象の箱の a:b') + '</span><span class="abbtns">');
   P.box.KEYS.forEach(function (k) {
-    h.push('<button class="ab' + (s.ab === k ? ' on' : '') + '" data-ab="' + k + '">' + k +
-      ((P.box.isProblem(k) && !d.noProblemTag) ? '<small>問題の設定</small>' : '') + '</button>');
+    h.push('<button class="ab' + (s.ab === k ? ' on' : '') + '" data-ab="' + k + '">' + k + '</button>');
   });
   h.push('</span></div>');
   if (d.bpKeys) {
@@ -3863,7 +3898,7 @@ function buildPanel() {
     if (d.topActions && d.topActions.length) {
       h.push('<div class="topacts">');
       d.topActions.forEach(function (a, i) {
-        h.push('<button class="warm" data-tact="' + i + '" id="tact_' + i + '">' + a.label + '</button>');
+        h.push('<button class="' + tactCls(d, s, a, i) + '" data-tact="' + i + '" id="tact_' + i + '">' + a.label + '</button>');
       });
       h.push('</div>');
     }
@@ -3888,7 +3923,10 @@ function buildPanel() {
   var host = $('simhost');
   Array.prototype.forEach.call(host.querySelectorAll('[data-tact]'), function (b) {
     b.addEventListener('click', function () {
-      d.topActions[+b.getAttribute('data-tact')].fn(s);
+      var ti = +b.getAttribute('data-tact');
+      d.topActions[ti].fn(s);
+      if (!s._tactDone) s._tactDone = {};
+      s._tactDone[ti] = true;                 /* 一度押したら、もう光らせない */
       s.touched = true; refreshActs(); renderActive();
     });
   });
@@ -4016,6 +4054,7 @@ function resetAll() {
   s.bp = d.bpDef || 1;
   if (d.cam3d) s.cam = { az: d.cam3d.az, el: d.cam3d.el, zoom: d.cam3d.zoom || 1 };
   s._av = { a1: { F: true, Fc: false }, a2: { F: true, Fc: false }, a3: { F: true, Fc: false } };
+  s._tactDone = {};
   if (s._ans) { s._ans.th = 0; s._ans.playing = false; s._ans.slow = false; }
   if (s._ans2) { s._ans2.th = 0; s._ans2.playing = false; s._ans2.slow = false; }
   buildPanel();
@@ -4111,11 +4150,18 @@ function syncVarVals() {
 }
 
 /* オレンジのボタン：いまの状態がその条件なら濃く */
+/* 図の左上のボタンの見た目。glow＝まだ押されていないので光らせる */
+function tactCls(d, s, a, i) {
+  var v = V(s);
+  var on = !!(a.is && a.is(v, s));
+  var glow = !!a.glow && !on && !(s._tactDone && s._tactDone[i]);
+  return 'warm' + (a.prim ? ' prim' : '') + (on ? ' on' : '') + (glow ? ' glow' : '');
+}
 function refreshActs() {
   var d = DEFS[st.cur], s = st.sims[st.cur], v = V(s);
   (d.topActions || []).forEach(function (a, i) {
     var b = $('tact_' + i); if (!b) return;
-    b.className = 'warm' + (a.prim ? ' prim' : '') + ((a.is && a.is(v, s)) ? ' on' : '');
+    b.className = tactCls(d, s, a, i);
   });
   /* 傾く瞬間／滑る瞬間：先に来るほうを濃く、あとのほうは薄く×（押せない） */
   if (d.moment2 && $('bMoment') && $('bMoment2')) {
