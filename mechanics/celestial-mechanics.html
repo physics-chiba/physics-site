@@ -60,11 +60,15 @@
        system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+/* ★横スクロール止めは html に書くこと★（2026-09-25）
+   body に overflow-x:hidden を書くと、その値がビューポートに伝わるしくみのせいで
+   position:sticky（タブの帯）が効かなくなる。html に書けば両方とも成り立つ。
+   clip を知らない古いブラウザのために hidden も先に書いておく。 */
+html{-webkit-text-size-adjust:100%;overflow-x:hidden;overflow-x:clip}
 body{
   margin:0; background:var(--bg); color:var(--ink);
   font-family:var(--jp); font-size:16px; line-height:1.7;
-  overflow-x:hidden;
+  /* 横スクロール止めは html のほうに書いてある（sticky と両立させるため） */
   -webkit-font-smoothing:antialiased;
 }
 .wrap{max-width:1320px;margin:0 auto;padding:20px 14px 72px}
@@ -112,6 +116,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 
 /* ===== タブ ===== */
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 6px;align-items:center}
+/* ===== タブの帯（画面の上に貼りつける）=====
+   ★タブの列は折り返さず、1行の横スクロールにする★（先生の指示・2026-09-25）
+   折り返しを許すと、せまい画面で帯が画面の 1/4〜3/4 をふさいで図が見えなくなる。
+   スクロールバーは細く色をつけて「横に続きがある」と分からせる。
+   ※ 帯の外のボタン列（.cvbar のオレンジのボタンなど）は、これまでどおり折り返す。 */
+#tabbar{position:sticky;top:0;z-index:40;background:var(--bg);
+  padding:9px 0 5px;margin:0 0 6px;
+  box-shadow:0 7px 10px -9px rgba(22,32,43,.45)}
+#tabbar .tabs{margin:0 0 4px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+  padding-bottom:2px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+#tabbar .tabs.sub{margin:0}
+#tabbar .tabs button{flex:none}          /* これが無いとボタンがつぶれる */
+#tabbar .tabs::-webkit-scrollbar{height:5px}
+#tabbar .tabs::-webkit-scrollbar-thumb{background:#c7d2dc;border-radius:3px}
 .tabs button{font-size:.9rem;border-radius:999px;background:#fff;color:var(--accent);
   border-color:var(--line2);padding:6px 16px;font-weight:600;box-shadow:var(--sh-1)}
 .tabs button:hover{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d)}
@@ -132,9 +150,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .tabs.sub button.intro.on{background:#5b7189;border-color:#5b7189;color:#fff}
 
 /* 選んでいるモードのひとこと（ボタンの真下に ▲） */
-#modetip{font-size:.8rem;color:var(--accent-d);margin:2px 0 8px;line-height:1.5;
-  display:flex;align-items:center;gap:6px}
-#modetip:not(:empty)::before{content:'▲';font-size:.62rem;color:var(--accent);transform:translateY(-1px)}
+/* ★flex にしてはいけない★（2026-09-25）
+   文が1つの flex アイテムになるので、せまい画面でも折り返せず、
+   下に書いた paddingLeft と合わせて帯より横に長くなり、ページが横スクロールした。
+   ふつうのブロックにしておけば、文は自然に折り返す。 */
+#modetip{font-size:.8rem;color:var(--accent-d);margin:2px 0 8px;line-height:1.5}
+#modetip:not(:empty)::before{content:'▲';font-size:.62rem;color:var(--accent);
+  margin-right:6px;display:inline-block;transform:translateY(-1px)}
 
 /* 問題モードのスイッチ（モードのタブ列の右端） */
 .qswitch{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:7px;font-size:.85rem;
@@ -1014,8 +1036,15 @@ table.ktab tr.on td.kcol{background:#f7e2c4;color:var(--orange-d)}
 <p class="mini">惑星や人工衛星がどう動くかを、自分で数値を変えながら動かして確かめるページ。<br>
 それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、なぜその形になるのかを納得いくまで考えよう。</p>
 
-<div class="tabs" id="modetabs"></div>
-<div class="tabs sub" id="simtabs"></div>
+<!-- ★タブの帯は画面の上に貼りつける（position:sticky）★
+     長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
+     ★帯に入れるのはタブの列だけ★——モードのひとこと（#modetip）を中に入れると、
+     文が2〜3行になったときに帯が急に高くなって、図の場所がなくなる。 -->
+<div class="tabbar" id="tabbar">
+  <div class="tabs" id="modetabs"></div>
+  <div class="tabs sub" id="simtabs"></div>
+</div>
+<div id="modetip"></div>
 
 <div class="card" id="simhost"></div>
 
@@ -12692,11 +12721,43 @@ function buildTabs() {
         setCls(bs[i0], (d0.read ? 'game' : (d0.intro ? 'intro' : '')) +
           (id0 === st.cur ? ' on' : ''));
       }
+      centerTabs();
       return;
     }
   }
   st._tabMode = cur0.mode;
   buildTabsFull();
+}
+
+/* ===== いま選んでいるタブを、列の中のまん中あたりへ送る =====
+   ★scrollIntoView は使わない★——ページごと動いてしまい、
+   タブを押しただけで画面が上下に飛ぶ。列の scrollLeft だけを動かすこと。 */
+function centerTab(box, b) {
+  if (!box || !b) return;
+  if (box.scrollWidth <= box.clientWidth + 1) { box.scrollLeft = 0; return; }
+  var r = b.getBoundingClientRect(), br = box.getBoundingClientRect();
+  box.scrollLeft += (r.left - br.left) - (box.clientWidth - r.width) / 2;
+}
+function centerTabs() {
+  [['modetabs'], ['simtabs']].forEach(function (k) {
+    var box = $(k[0]);
+    if (box) centerTab(box, box.querySelector('button.on'));
+  });
+}
+
+/* ===== タブを押したあと、図が帯の下にもぐらないようにする =====
+   帯は画面に貼りついているので、下のほうまでスクロールしたままタブを押すと、
+   新しい図が帯の上（画面の外）に隠れてしまう。
+   ★なめらかスクロール（behavior:'smooth'）は使わない★——
+   下のほうから押すと画面がゆっくり流れてきて目が回る（スキルの決めごと）。 */
+function scrollSimIntoView(force) {
+  var host = $('simhost'), bar = $('tabbar');
+  if (!host) return;
+  var barH = bar ? bar.offsetHeight : 0;
+  var top = host.getBoundingClientRect().top + window.pageYOffset - barH - 10;
+  /* force … ページの中のリンク（「→ 2-2 を見てください」など）で飛んできたとき。
+     どこから来ても、飛んだ先の図が画面のいちばん上（帯のすぐ下）に来るようにする。 */
+  if (force || window.pageYOffset > top) window.scrollTo(0, Math.max(0, top));
 }
 
 function buildTabsFull() {
@@ -12707,15 +12768,21 @@ function buildTabsFull() {
     var b = document.createElement('button');
     b.textContent = M.label;
     if (M.n === cur.mode) { b.className = 'on'; curBtn = b; curMode = M; }
-    b.addEventListener('click', function () { if (M.n !== DEFS[st.cur].mode) gotoSim(M.ids[0]); });
+    b.addEventListener('click', function () {
+      if (M.n !== DEFS[st.cur].mode) gotoSim(M.ids[0]);
+      scrollSimIntoView();
+    });
     mt.appendChild(b);
   });
-  /* 選んでいるモードのひとこと（青いボタンの真下に表示する） */
+  /* 選んでいるモードのひとこと（青いボタンの真下に表示する）。
+     ★#modetip は 20_body.html に、タブの帯（#tabbar）の「外」に置いてある★
+     帯の中に入れると、文が2〜3行になったときに帯が急に高くなるため。 */
   var tip = $('modetip');
   if (!tip) {
     tip = document.createElement('div');
     tip.id = 'modetip';
-    mt.parentNode.insertBefore(tip, mt.nextSibling);
+    var bar = $('tabbar') || mt;
+    bar.parentNode.insertBefore(tip, bar.nextSibling);
   }
   tip.innerHTML = (curMode && curMode.tip) ? curMode.tip : '';
   st._tipBtn = curBtn;
@@ -12731,10 +12798,11 @@ function buildTabsFull() {
          どちらでもないシムはふつうの青。色でグループが分かるようにしている。 */
       b.className = (DEFS[id].read ? 'game' : (DEFS[id].intro ? 'intro' : '')) +
         (id === st.cur ? ' on' : '');
-      b.addEventListener('click', function () { gotoSim(id); });
+      b.addEventListener('click', function () { gotoSim(id); scrollSimIntoView(); });
       stb.appendChild(b);
     });
   });
+  centerTabs();
 }
 
 /* 矢印・色の説明（#legend）は、いまのシミュレーションで実際に出てくるものだけを出す。
@@ -12753,7 +12821,17 @@ function placeModeTip() {
   var tip = $('modetip'), b = st._tipBtn, mt = $('modetabs');
   if (!tip || !b || !mt) return;
   var off = b.getBoundingClientRect().left - mt.getBoundingClientRect().left;
-  tip.style.paddingLeft = Math.max(0, off + b.offsetWidth / 2 - 7) + 'px';
+  /* ★左にあける幅は、かならず頭を打たせること★（2026-09-25）
+     タブの列を1行の横スクロールにしたので、モード3・4を選ぶとボタンが右のほうにあり、
+     そのまま真下に ▲ を置こうとすると paddingLeft が 394 px になって、
+     320 px の画面ではページごと横にスクロールしてしまった。
+     文を出す場所を 220 px は残す（▲ の位置は多少ずれてよい）。
+     ★せまい画面（560 px 未満）では、そもそも左にあけない★——
+     文を出せる幅が 160 px しか残らず、5〜6行の細長い柱になって読みにくい。
+     タブの列は横スクロールするので、▲ で指すことにこだわらなくてよい。 */
+  var box = tip.parentNode ? tip.parentNode.clientWidth : 0;
+  var maxPad = (box < 560) ? 0 : Math.max(0, box - 220);
+  tip.style.paddingLeft = clamp(off + b.offsetWidth / 2 - 7, 0, maxPad) + 'px';
 }
 
 /* ===== 「入試問題の読み解き」の文の中に置く、動かせる部品 =====
@@ -14391,7 +14469,15 @@ function tick(ts) {
     if (st._skipHash) { st._skipHash = false; return; }
     var q = parseHash(location.hash);
     if (!DEFS[q.id]) return;
-    if (q.id !== st.cur) gotoSim(q.id);
+    if (q.id !== st.cur) {
+      gotoSim(q.id);
+      /* ページの中のリンクで飛んできたとき、図が帯の下にもぐらないようにする。
+         ★描き直すと高さが変わるので、もう一度そろえ直す★ */
+      scrollSimIntoView(true);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { scrollSimIntoView(true); });
+      });
+    }
   });
 
 
@@ -14402,7 +14488,7 @@ function tick(ts) {
     /* ★画面のはばを覚え直してから描き直す★
        4-5 は、このはばで「3つの図を よこ一列 か たて一列 か」を決めている。 */
     noteWinW();
-    refitFormulas(); placeModeTip(); renderActive();
+    refitFormulas(); placeModeTip(); centerTabs(); renderActive();
   });
   requestAnimationFrame(tick);
 
