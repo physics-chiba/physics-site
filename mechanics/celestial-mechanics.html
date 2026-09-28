@@ -116,6 +116,43 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 
 /* ===== タブ ===== */
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 6px;align-items:center}
+/* =========================================================
+   コンテンツ一覧（目次ボタンとパネル）
+   ---------------------------------------------------------
+   ★rigid-body-dynamics.html と同じ見た目・動きにそろえてある★
+   （プロジェクトの「コンテンツ一覧の作り方_指示プロンプト.md」のとおり）
+   ・ボタンはイントロの文の右横。文の2行ぶんの高さ（min-height:3.2em）
+   ・パネルは画面のまん中・上寄せ。はみ出すぶんはパネルの中でスクロール
+   ・640px 以下では、文の下にボタンを置き、高さはふつうに戻す
+   ★.wrap に position:relative が要る★（パネルを絶対配置で中央に置くため）
+   ========================================================= */
+.introrow{display:flex;align-items:stretch;gap:14px}
+.introrow > .mini{flex:0 1 auto;margin:0}
+.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;padding:6px 16px;border-radius:12px;
+  font-size:.9rem;font-weight:700;
+  background:#fff;color:var(--accent);border:1.5px solid var(--accent);box-shadow:var(--sh-2)}
+.tocbtn:hover{background:var(--accent-l)}
+.tocpanel{position:absolute;z-index:60;left:50%;transform:translateX(-50%);top:70px;
+  width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 100px);overflow:auto;
+  background:#fff;border:1px solid var(--line2);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.22);padding:10px 16px 14px}
+.tocpanel[hidden]{display:none}
+.tochead{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px;font-size:1rem}
+.tocx{background:none;border:none;color:var(--sub);font-size:1.3rem;line-height:1;
+  padding:2px 8px;cursor:pointer}
+.tocmode{font-weight:800;color:#1f3b57;margin:10px 0 2px;font-size:.95rem}
+.tocpanel ul{margin:0;padding-left:1.1em}
+.tocpanel li{margin:2px 0;font-size:.88rem}
+.tocpanel li.tocsub{margin-left:1.2em;font-size:.82rem;list-style:circle}
+.tocpanel a{color:var(--accent-d);text-decoration:none}
+.tocpanel a:hover{text-decoration:underline}
+.wrap{position:relative}
+@media (max-width:640px){
+  .introrow{flex-direction:column;gap:6px}
+  .tocbtn{min-height:0;align-self:flex-start}
+}
+
 /* ===== タブの帯（画面の上に貼りつける）=====
    ★タブの列は折り返さず、1行の横スクロールにする★（先生の指示・2026-09-25）
    折り返しを許すと、せまい画面で帯が画面の 1/4〜3/4 をふさいで図が見えなくなる。
@@ -1033,8 +1070,14 @@ table.ktab tr.on td.kcol{background:#f7e2c4;color:var(--orange-d)}
 <div class="wrap">
 
 <h1>万有引力とケプラーの法則のシミュレーション</h1>
+<!-- ★イントロの文と「コンテンツ一覧」ボタンを横に並べる★
+     （rigid-body-dynamics.html と同じ見た目・動き。640px 以下では たてに積む） -->
+<div class="introrow">
 <p class="mini">惑星や人工衛星がどう動くかを、自分で数値を変えながら動かして確かめるページ。<br>
 それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、なぜその形になるのかを納得いくまで考えよう。</p>
+<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false">コンテンツ一覧</button>
+</div>
+<div id="tocpanel" class="tocpanel" hidden></div>
 
 <!-- ★タブの帯は画面の上に貼りつける（position:sticky）★
      長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
@@ -12729,6 +12772,84 @@ function buildTabs() {
   buildTabsFull();
 }
 
+/* ===== コンテンツ一覧（目次のパネル）=====
+   ★文字列は手で書かない★ MODES（モード）と DEFS（シミュレーション）から自動で作る。
+   タブを足したり題名を直したりしても、目次はひとりでについてくる。
+   小項目だけは、ページの中に「見出しの並び」が無いので配列で持つ（TOC_SUBS）。
+   ★アドレスはこれまでどおり #m1-1 のような id のまま★（先生の指示・2026-09-28）。 */
+var TOC_SUBS = {
+  /* 4-3 の3つの話題。オレンジのボタンで切りかえているものを、目次からも選べるようにする */
+  'm4-4': [
+    { t: '① ブラックホールの境界線', v: { topic: 1 } },
+    { t: '② 目に見えない「ダークマター」の質量をあばく', v: { topic: 2 } },
+    { t: '③ 宇宙の終わりを、高校の式で計算する', v: { topic: 3 } }
+  ]
+};
+/* 題名から HTML のタグと改行を取りのぞく（数式は mathHtml が KaTeX にする） */
+function tocTitle(d) {
+  var t = (typeof d.title === 'function') ? d.title(d.consts || {}) : d.title;
+  return mathHtml(String(t).replace(/<br>/g, '　').replace(/<[^>]+>/g, ''));
+}
+function buildToc() {
+  var p = $('tocpanel'), b = $('bToc');
+  if (!p || !b) return;
+  var h = '<div class="tochead"><b>コンテンツ一覧</b>' +
+    '<button type="button" class="tocx" aria-label="閉じる">×</button></div>';
+  MODES.forEach(function (m) {
+    h += '<div class="tocmode">' + m.label + '</div><ul>';
+    m.ids.forEach(function (id) {
+      var d = DEFS[id];
+      if (!d) return;
+      h += '<li><a href="#' + id + '" data-toc="' + id + '">' + tocTitle(d) + '</a></li>';
+      (TOC_SUBS[id] || []).forEach(function (sb, j) {
+        h += '<li class="tocsub"><a href="#' + id + '" data-toc="' + id +
+          '" data-tocsub="' + j + '">' + mathHtml(sb.t) + '</a></li>';
+      });
+    });
+    h += '</ul>';
+  });
+  p.innerHTML = h;
+  renderMath(p);
+
+  function close() { p.hidden = true; b.setAttribute('aria-expanded', 'false'); }
+  b.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    p.hidden = !p.hidden;
+    b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true');
+  });
+  p.querySelector('.tocx').addEventListener('click', close);
+  /* パネルの外を押しても、Esc でも閉じる */
+  document.addEventListener('click', function (ev) {
+    if (!p.hidden && !p.contains(ev.target) && ev.target !== b) close();
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') close(); });
+
+  Array.prototype.forEach.call(p.querySelectorAll('[data-toc]'), function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      close();
+      var id = a.getAttribute('data-toc');
+      gotoSim(id);
+      /* 小項目なら、その話題に切りかえてから描き直す */
+      var js = a.getAttribute('data-tocsub');
+      if (js !== null && TOC_SUBS[id]) {
+        var sb = TOC_SUBS[id][+js], s2 = st.sims[id];
+        if (sb && s2) {
+          Object.keys(sb.v).forEach(function (k) { s2.v[k] = sb.v[k]; });
+          buildPanel(); renderActive();
+        }
+      }
+      /* 図が、上に貼りついたタブの帯の下にもぐらないようにする */
+      scrollSimIntoView(true);
+      if (window.requestAnimationFrame) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { scrollSimIntoView(true); });
+        });
+      }
+    });
+  });
+}
+
 /* ===== いま選んでいるタブを、列の中のまん中あたりへ送る =====
    ★scrollIntoView は使わない★——ページごと動いてしまい、
    タブを押しただけで画面が上下に飛ぶ。列の scrollLeft だけを動かすこと。 */
@@ -14461,6 +14582,7 @@ function tick(ts) {
   autoPlayOn(st.cur);          /* ★開いた瞬間に動きだすシム（autoplay: true）★ */
   initProbOverlay();           /* 入試問題の問題文（画像）の重ね窓 */
   buildTabs();
+  buildToc();
   buildPanel();
   renderActive();
   renderLegend(DEFS[st.cur]);
