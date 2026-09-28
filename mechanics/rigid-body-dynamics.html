@@ -673,6 +673,11 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 
 /* 図の下のカード（考え方／問題／解答） */
 .below{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+.below.busy .bcard:first-child{position:relative}
+.below.busy .bcard:first-child > *:not(h3){opacity:.35;transition:opacity .1s}
+.below.busy .bcard:first-child::after{content:'計算中…';position:absolute;left:50%;top:84px;transform:translateX(-50%);
+  background:#fff7e8;color:#a85c0c;border:2px solid #e8a04a;border-radius:10px;padding:8px 22px;font-weight:700;font-size:17px;
+  box-shadow:0 4px 14px rgba(0,0,0,.12);z-index:3;pointer-events:none}
 .bcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-l);padding:12px 14px}
 .bcard h3{margin:0 0 8px}
 .bcard p{margin:6px 0;font-size:.9rem;line-height:1.85}
@@ -4759,9 +4764,9 @@ function drawSameLine(ctx, s, W, H) {
   actPoint(ctx, ap.x, ap.y, '#1b1f24');
   if (!run) label(ctx, '作用点', ap.x + 10, ap.y + 22, { size: 13.5, color: COL.sub, align: 'left', avoid: true });
   /* 左下：まとめ／右下：いまの動きの結果 */
-  label(ctx, '・ア と イ … 同じはたらき（同一作用線）', 22, H - 44, { size: 14, bold: true, color: '#3d4c5a', align: 'left' });
-  label(ctx, '・ア と ウ … ちがうはたらき（同一作用点）', 22, H - 20, { size: 14, bold: true, color: '#3d4c5a', align: 'left' });
-  if (s._m1msg) label(ctx, s._m1msg, W - 18, H - 32, { size: 14, bold: true, color: '#9b2418', align: 'right' });
+  label(ctx, '・ア と イ … 同じはたらき（同一作用線）', 22, H - 40, { size: 12, bold: true, color: '#3d4c5a', align: 'left' });
+  label(ctx, '・ア と ウ … ちがうはたらき（同一作用点）', 22, H - 20, { size: 12, bold: true, color: '#3d4c5a', align: 'left' });
+  if (s._m1msg) label(ctx, s._m1msg, W - 18, H - 30, { size: 12, bold: true, color: '#9b2418', align: 'right' });
 }
 
 /* --- ②③ 円盤（3 次元）＋ ドラッグできる力 --- */
@@ -4971,7 +4976,7 @@ function discCard(no, title, body) {
     '<p class="mini dsign">モーメントは、上から見て<b>反時計回りを正</b>とする。</p></div>' +
     '<div class="discans"><button class="ansbtn" data-dans="' + no + '">' + ansLabel(no, false) + '</button>' +
     '<div class="discansbody" id="m1ansb' + no + '" hidden>' +
-    (no === 4 ? '<p class="mini anslink">1 の例は <a class="cmplink" href="#2-2" data-goto="m2s2:top">2-2　糸でつるした棒 →</a> と同じ</p>' : '') +
+    (no === 4 ? '<p class="mini anslink">1 の例は <a class="cmplink" href="#2-2" data-goto="m2s2:top">2-2　糸でつるした棒</a> なので、見てみてください</p>' : '') +
     '<canvas id="m1ans' + no + '"></canvas></div></div></div>' + body + '</div>';
 }
 function ansLabel(no, open) { return '回転しない置き方の例（' + DISC_ANS[no].length + ' 通り）　' + (open ? '▲' : '▼'); }
@@ -4989,6 +4994,7 @@ DEFS['m1s2'] = {
     '逆に<b>作用線が同じなら、作用点を作用線上のどこに移してもはたらきは同じ</b>。',
   cw: function (v, s) { return (s && s._narrow) ? 470 : 780; },
   ch: function (v, s) { return 380; },
+  stageW: 0.7,
   vars: [],
   cvTitle: '① 剛体では、「作用線」がちがえば力のはたらきがちがう。',
   subs: 4,                 /* ①〜④ にもアドレス（#1-2-1 〜 #1-2-4） */
@@ -5320,22 +5326,28 @@ function wireDiscDrag(s, no, key, rkey) {
       if (X && Math.hypot(X.x, X.y) < 1.2) goals.push(X.x * q.uy - X.y * q.ux);
     }
     if (mode === 'move') {
-      var px = m.x + off.x, py = m.y + off.y, ux = q.ux, uy = q.uy;
+      var px = m.x + off.x, py = m.y + off.y, ux = q.ux, uy = q.uy, RM = M2.DR * 0.97;
+      /* ① 円板の外に出たら、いちばん近い縁の点へ（連続的に動くように、先に行う） */
+      var r0 = Math.hypot(px, py);
+      if (r0 > RM) { px *= RM / r0; py *= RM / r0; }
+      var fx0 = px, fy0 = py;
+      /* ② 吸いつき：作用線に垂直な向きに少しだけずらす */
       var arm = px * uy - py * ux, snapped = false;
       goals.forEach(function (gv) {
         if (snapped) return;
-        var sn = snapTo(arm, gv, f.snapped ? 0.085 : 0.055);
+        var sn = snapTo(arm, gv, f.snapped ? 0.04 : 0.028);
         if (sn.on) { px += uy * (gv - arm); py -= ux * (gv - arm); snapped = true; }
       });
-      f.snapped = snapped;
-      /* 円盤の外に出るときは、作用線にそって内がわへもどす（うでの長さは変えない） */
-      if (Math.hypot(px, py) > M2.DR * 0.97) {
-        var tt = px * ux + py * uy, fx = px - tt * ux, fy = py - tt * uy, d0 = Math.hypot(fx, fy);
-        if (d0 < M2.DR * 0.95) {
-          var rr = Math.sqrt(M2.DR * M2.DR * 0.94 - d0 * d0);
-          px = fx + ux * rr * (tt >= 0 ? 1 : -1); py = fy + uy * rr * (tt >= 0 ? 1 : -1);
-        } else { var k = M2.DR * 0.97 / Math.hypot(px, py); px *= k; py *= k; f.snapped = false; }
+      /* ③ 吸いついた結果が縁の外なら、作用線にそって内がわへ（うでの長さは変えない） */
+      if (snapped && Math.hypot(px, py) > RM) {
+        var tt = px * ux + py * uy, gx = px - tt * ux, gy = py - tt * uy, d0 = Math.hypot(gx, gy);
+        if (d0 < RM * 0.98) {
+          var rr = Math.sqrt(RM * RM - d0 * d0) * 0.995;
+          px = gx + ux * rr * (tt >= 0 ? 1 : -1); py = gy + uy * rr * (tt >= 0 ? 1 : -1);
+          if (Math.hypot(px - fx0, py - fy0) > 0.12 * M2.DR) { px = fx0; py = fy0; snapped = false; }   /* 大きくとぶなら吸いつかない */
+        } else { px = fx0; py = fy0; snapped = false; }
       }
+      f.snapped = snapped;
       store(f, px, py);
     } else {
       var aw = Math.atan2(m.y - q.py, m.x - q.px) + offA;
@@ -5352,7 +5364,7 @@ function wireDiscDrag(s, no, key, rkey) {
           [phi + as, phi + Math.PI - as].forEach(function (cand) {
             if (snappedA) return;
             var dd = Math.atan2(Math.sin(aw - cand), Math.cos(aw - cand));
-            if (Math.abs(dd) < (f.snappedA ? 10 : 6.5) * DEG) { aw = cand; snappedA = true; }
+            if (Math.abs(dd) < (f.snappedA ? 6 : 4) * DEG) { aw = cand; snappedA = true; }
           });
         });
       }
@@ -6295,7 +6307,14 @@ DEFS['m3s2'] = {
     return '<div class="bcard"><h3>＜考え方＞　質点の重心</h3>' +
       '<p>重心 G を支えると回転しない。つまり <b>G のまわりのモーメントの和が 0</b>。A は G の左 $x_G$、B は G の右 $(x_B - x_G)$ の位置にあるので</p>' +
       '<div class="fmlbox"><span class="tex">m_A g \\cdot x_G = m_B g \\cdot (x_B - x_G) \\quad\\Longrightarrow\\quad x_G = \\dfrac{m_A x_A + m_B x_B}{m_A + m_B}\\quad (x_A = 0)</span></div>' +
-      '<p>重心は<b>重いほうに近い</b>。距離の比は質量の逆比 $\\;x_G : (x_B - x_G) = m_B : m_A$ になる。</p></div>';
+      '<p>重心は<b>重いほうに近い</b>。距離の比は質量の逆比 $\\;x_G : (x_B - x_G) = m_B : m_A$ になる。</p>' +
+      '<p class="mini" id="m3ex1"></p></div>';
+  },
+  drawBelow: function (s) {
+    var ex = document.getElementById('m3ex1'); if (!ex) return;
+    var v = V(s), a = fmt(v.mA, 1), b = fmt(v.mB, 1);
+    var h = 'いまの $m_A = ' + a + '$ kg、$m_B = ' + b + '$ kg のとき：$x_G = \\dfrac{' + a + '\\times 0 + ' + b + '\\times 40}{' + a + ' + ' + b + '} = ' + fmt(m3s2xG(v) * 100, 1) + '$ cm。';
+    if (ex._h !== h) { ex._h = h; ex.innerHTML = mathHtml(h); renderMath(ex); }
   }
 };
 
@@ -6314,6 +6333,7 @@ function plateScene(ctx, s, W, H, shape, opt) {
   var size = shape.xmax - shape.xmin;
   var S = Math.min((W - 300) / size, (H - 210) / (shape.ydep * Math.sin(P3.EL * DEG) + 0.04));
   if (shape.two2d) S = Math.min(S, (H - 200) / shape.ydep);          /* 平面上の板：上から見ても入る大きさ */
+  if (shape.dims) S = Math.min(S, Math.max(W - 390, W * 0.62) / size, (H - 150) / shape.ydep);   /* 3-2：右上の「元の図形」・寸法線とかさならない大きさ */
   var yc0 = shape.yc || 0;                                           /* 奥行き方向のまん中（平面上の板） */
   var cx = W / 2 - (shape.xmin + shape.xmax) / 2 * S * Math.cos(P3.AZ * DEG), cy = H * 0.62;
   var top = s._view === 'top';
@@ -6455,6 +6475,22 @@ function plateScene(ctx, s, W, H, shape, opt) {
     dimSeg(wp(0, 0, 0.001), wp(0, -shape.R, 0.001), 'R', '#1b1f24');
     if (shape.rh > 0) dimSeg(wp(shape.ch, 0, 0.001), wp(shape.ch, -shape.rh, 0.001), 'r', '#0b3c7a');
   }
+  if (shape.dims && !s._dragging && !bal) {           /* 3-2：正方形の 1 辺を ↔ で（板の奥がわ。ドラッグ中・つりあい時は出さない） */
+    var dOff = 0.03, sg = top ? -1 : 1;                /* 上からの図では手前（下）がわ、斜めの図では奥がわ */
+    var yD = sg * (Math.min.apply(null, shape.dims.map(function (d) { return d.ye; })) - dOff);
+    shape.dims.forEach(function (d) {
+      var P0 = wp(d.x0, yD, 0.001), P1 = wp(d.x1, yD, 0.001);
+      ctx.save(); ctx.strokeStyle = 'rgba(27,31,36,.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      [[d.x0, d.ye0 !== undefined ? d.ye0 : d.ye], [d.x1, d.ye]].forEach(function (e) {
+        var E0 = wp(e[0], sg * (e[1] - 0.004), 0.001), E1 = wp(e[0], yD - sg * 0.008, 0.001);
+        ctx.beginPath(); ctx.moveTo(E0.x, E0.y); ctx.lineTo(E1.x, E1.y); ctx.stroke();
+      });
+      ctx.restore();
+      var mx = (P0.x + P1.x) / 2, my = (P0.y + P1.y) / 2;
+      arrow(ctx, mx, my, P0.x, P0.y, 'dim', 1); arrow(ctx, mx, my, P1.x, P1.y, 'dim', 1);
+      label(ctx, d.t, mx, my + (top ? 15 : -13), { size: 14, bold: true, color: d.col || '#1b1f24' });
+    });
+  }
   if (s._snap) snapGlow(ctx, St.x, St.y, 18, '#e07b18', 1);
   /* 右上：色分けする前の「元の図形」（白と黒） */
   var inset = !opt.noInset;
@@ -6529,8 +6565,16 @@ function sqPoly(x0, x1, y0, y1) { return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]
 function circPoly(cx, cy, r, n) { var a = [], i; n = n || 64; for (i = 0; i < n; i++) { var t = i / n * Math.PI * 2; a.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return a; }
 
 /* ============ m3s3　2 つの正方形をつないだ板 ============ */
+var M3S3_A = [5, 8, 10, 15, 20];                         /* 小さい正方形の 1 辺 a［cm］の選べる値 */
+/* 質量の比 m1 : m2 = a² : 20² を整数の比 p : q に。m2 = (q/p) m1 の係数の書き方も */
+function m3k(sh) {
+  var A = Math.round(sh.a * 100), x = A * A, y = 400;
+  function g(u, w) { return w ? g(w, u % w) : u; }
+  var d = g(x, y), p = x / d, q = y / d;
+  return { p: p, q: q, tex: p === 1 ? (q === 1 ? '' : String(q)) : '\\tfrac{' + q + '}{' + p + '}', txt: p === 1 ? (q === 1 ? '' : String(q)) : q + '/' + p };
+}
 function m3s3shape(v) {
-  var a = v.a / 100, B = 0.20;
+  var a = M3S3_A[Math.round(v.ai)] / 100, B = 0.20;
   var m1 = a * a, m2 = B * B, x1 = a / 2, x2 = a + B / 2;
   var xG = (m1 * x1 + m2 * x2) / (m1 + m2);
   return {
@@ -6540,6 +6584,7 @@ function m3s3shape(v) {
     parts: [{ polys: [sqPoly(0, a, -a / 2, a / 2)], col: '#ffd9a8', line: '#8a5a2b' },
             { polys: [sqPoly(a, a + B, -B / 2, B / 2)], col: '#b9dcf5', line: '#1f4f86' }],
     seam: [[a, -a / 2], [a, a / 2]], side: '#9aa7b3', oDx: -16, gDx: 0,
+    dims: [{ x0: 0, x1: a, ye: -a / 2, t: fmt(a * 100, 0) + ' cm', col: '#8a5a2b' }, { x0: a, x1: a + B, ye: -B / 2, ye0: -Math.max(a, B) / 2, t: '20 cm', col: '#1f4f86' }],
     forces: [{ x: x1, k: m1 / (m1 + m2), name: 'm_1 g' }, { x: x2, k: m2 / (m1 + m2), name: 'm_2 g' }],
     pm: [{ x: x1, r: 6 + 4 * Math.sqrt(m1 / m2), c: '#ffb45e', d: '#8a5a2b', lab: 'm_1', ldx: -18, ldy: 16 }, { x: x2, r: 10, c: '#6fb1e8', d: '#1f4f86', lab: 'm_2', ldx: 22, ldy: 18 }],   /* 名前は球の右下（上の「重心 G」とかさならない） */
     pmF: [{ x: x1, k: m1 / (m1 + m2), name: 'm_1 g' }, { x: x2, k: m2 / (m1 + m2), name: 'm_2 g' }],
@@ -6562,7 +6607,7 @@ DEFS['m3s3'] = {
     '図の下には、それぞれの正方形を<b>中心に全質量が集まった質点</b>におきかえた図をかいた。',
   cw: function (v, s) { return (s && s._narrow) ? 470 : 780; },
   ch: function () { return 420; },
-  vars: [{ k: 'a', label: '小さい正方形の 1 辺 $a$', unit: ' cm', min: 4, max: 20, step: 1, dec: 0, def: 10 }],
+  vars: [{ k: 'ai', label: '小さい正方形の 1 辺 $a$', unit: '', min: 0, max: 4, step: 1, dec: 0, def: 2, fmtv: M3S3_A.map(function (x) { return x + ' cm'; }) }],
   vis: [{ k: 'F', label: '力を表示', def: false }, { k: 'L', label: '力と作用線を表示', def: false },
     { k: 'P', label: '常に質点を表示', def: false }, { k: 'R', label: '質点にはたらく重力の合力を表示', def: false }],
   ctrlCompact: true,
@@ -6581,7 +6626,7 @@ DEFS['m3s3'] = {
     if (!s || !s._snap) return { items: [{ k: 'O から重心までの距離', v: '？（指で支えられる場所をさがそう）' }], note: '' };
     return { items: [
       { k: 'O から重心まで　$x_G = \\dfrac{m_1 x_1 + m_2 x_2}{m_1 + m_2}$', v: fmt(sh.xG * 100, 1) + ' cm', kbox: true, stack: true },
-      { k: '質量の比　$m_1 : m_2$（面積の比）', v: fmt(sh.m1 / sh.m1, 0) + ' : ' + fmt(sh.m2 / sh.m1, 2) }
+      { k: '質量の比　$m_1 : m_2$（面積の比）', v: m3k(sh).p + ' : ' + m3k(sh).q }
     ], note: '' };
   },
   below: function (s) {
@@ -6589,11 +6634,18 @@ DEFS['m3s3'] = {
       '<p>一様な厚さの板なので、<b>質量は面積に比例</b>する。それぞれの正方形の重心は中心。' +
       '小さい正方形を質量 $m_1$（中心 $x_1 = a/2$）、大きい正方形を質量 $m_2$（中心 $x_2 = a + 10$ cm）の<b>質点</b>とみなすと、2 つの質点の重心を求める問題になる。</p>' +
       '<div class="fmlbox"><span class="tex">x_G = \\dfrac{m_1 x_1 + m_2 x_2}{m_1 + m_2}</span></div>' +
-      '<p class="mini">$a = 10$ cm のとき：$m_1 : m_2 = 1 : 4$、$x_1 = 5$ cm、$x_2 = 20$ cm より $x_G = \\dfrac{1\\times 5 + 4\\times 20}{1 + 4} = 17$ cm。</p></div>';
+      '<p class="mini" id="m3ex"></p></div>';
   },
   drawBelow: function (s) {
     var cv = document.getElementById('m3pm');
     if (cv && cv.clientWidth > 0) drawPointMassFig(cv, 'sq', m3s3shape(V(s)));
+    var ex = document.getElementById('m3ex'), sh = m3s3shape(V(s));
+    if (ex) {
+      var tr = function (x) { return String(+x.toFixed(2)); }, A = tr(sh.a * 100), K = m3k(sh), P = K.p, Q = K.q;
+      var h = 'いまの $a = ' + A + '$ cm のとき：$m_1 : m_2 = ' + A + '^2 : 20^2 = ' + P + ' : ' + Q + '$、$x_1 = ' + tr(sh.x1 * 100) + '$ cm、$x_2 = ' + tr(sh.x2 * 100) + '$ cm より ' +
+        '$x_G = \\dfrac{' + P + '\\times ' + tr(sh.x1 * 100) + ' + ' + Q + '\\times ' + tr(sh.x2 * 100) + '}{' + P + ' + ' + Q + '} = ' + fmt(sh.xG * 100, 1) + '$ cm。';
+      if (ex._h !== h) { ex._h = h; ex.innerHTML = mathHtml(h); renderMath(ex); }
+    }
   }
 };
 
@@ -6839,9 +6891,9 @@ function pmTex(kind, sh) {
   var h;
   if (kind === 'sq') {
     /* まずそれぞれの質量（面積の比）→ 左の正方形の質点と右の正方形の質点の重心 */
-    var k = sh.m2 / sh.m1, ks = tr(k), aa = tr(sh.a * 100);
+    var ks = m3k(sh).tex, aa = tr(sh.a * 100);
     h = '<span class="pmcap">① それぞれの質量（質量は面積に比例）</span><br>' +
-      '<span class="tex">m_1 : m_2 = ' + aa + '^2 : 20^2 \\quad\\Rightarrow\\quad m_2 = ' + ks + '\\,m_1</span><br>' +
+      '<span class="tex">m_1 : m_2 = ' + aa + '^2 : 20^2 \\quad\\Rightarrow\\quad m_2 = ' + ks + (ks ? '\\,' : '') + 'm_1</span><br>' +
       '<span class="pmcap">② 左の正方形の質点と右の正方形の質点の重心</span><br>' +
       '<span class="tex">x_G = \\dfrac{m_1 x_1 + m_2 x_2}{m_1 + m_2} = \\dfrac{m_1 \\times ' + tr(sh.x1 * 100) + ' + ' + ks + 'm_1 \\times ' + tr(sh.x2 * 100) + '}{m_1 + ' + ks + 'm_1}</span><br>= ' + fmt(sh.xG * 100, 1) + ' cm';
   } else {
@@ -6930,17 +6982,19 @@ function drawPointMassFig(cv, kind, sh) {
     ball3d(ctx, Rp(sh.x1), yb, r1, '#ffb45e', '#8a5a2b');
     ball3d(ctx, Rp(sh.x2), yb, r2, '#6fb1e8', '#1f4f86');
     label(ctx, 'm_1', Rp(sh.x1), yb - r1 - 12, { size: 14, bold: true, color: '#8a5a2b' });
-    label(ctx, 'm_2 = ' + String(+(sh.m2 / sh.m1).toFixed(2)) + 'm_1', Rp(sh.x2), yb - r2 - 12, { size: 14, bold: true, color: '#1f4f86' });
+    label(ctx, 'm_2 = ' + m3k(sh).txt + (m3k(sh).p > 1 ? ' ' : '') + 'm_1', Rp(sh.x2) + r2 + 8, yb - r2 - 6, { size: 14, bold: true, color: '#1f4f86', align: 'left' });   /* 球の右上（右上の式とかさならない） */
     /* 支点（重心） */
     var gx = Rp(sh.xG);
-    ctx.save(); ctx.fillStyle = '#e07b18'; ctx.beginPath(); ctx.moveTo(gx, yb + 3); ctx.lineTo(gx - 9, yb + 18); ctx.lineTo(gx + 9, yb + 18); ctx.closePath(); ctx.fill(); ctx.restore();
-    label(ctx, 'G', gx, yb + 30, { size: 14, bold: true, color: '#a85c0c' });
+    var gt = Math.abs(gx - Rp(sh.x2)) < r2 + 9 ? yb + r2 + 1 : yb + 3;    /* a が小さく G が球に近いときは、球の下に */
+    ctx.save(); ctx.fillStyle = '#e07b18'; ctx.beginPath(); ctx.moveTo(gx, gt); ctx.lineTo(gx - 9, gt + 15); ctx.lineTo(gx + 9, gt + 15); ctx.closePath(); ctx.fill(); ctx.restore();
+    label(ctx, 'G', gx - (gt > yb + 3 ? 14 : 0), gt + 27, { size: 14, bold: true, color: '#a85c0c' });
     /* x 軸と距離 */
     var ay = yb + 104;
     ctx.save(); ctx.strokeStyle = '#1b1f24'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(Rp(0) - 10, ay); ctx.lineTo(Rp(sh.a + sh.B) + 20, ay); ctx.stroke(); ctx.restore();
-    [[0, 'O'], [sh.x1, 'x_1'], [sh.xG, 'x_G'], [sh.x2, 'x_2']].forEach(function (q) {
+    var cl2 = Rp(sh.x2) - Rp(sh.xG) < 28;                  /* x_G と x_2 が近いときは文字を左右にずらす */
+    [[0, 'O', 0], [sh.x1, 'x_1', 0], [sh.xG, 'x_G', cl2 ? -11 : 0], [sh.x2, 'x_2', cl2 ? 10 : 0]].forEach(function (q) {
       ctx.save(); ctx.strokeStyle = '#1b1f24'; ctx.beginPath(); ctx.moveTo(Rp(q[0]), ay - 5); ctx.lineTo(Rp(q[0]), ay + 5); ctx.stroke(); ctx.restore();
-      label(ctx, q[1], Rp(q[0]), ay + 17, { size: 13, bold: true, color: q[1] === 'x_G' ? '#a85c0c' : '#1b1f24' });
+      label(ctx, q[1], Rp(q[0]) + q[2], ay + 17, { size: 13, bold: true, color: q[1] === 'x_G' ? '#a85c0c' : '#1b1f24' });
     });
     /* O からの距離（↔ と cm） */
     dimH(ctx, Rp(0), Rp(sh.x1), ay + 44, fmt(sh.x1 * 100, 1) + ' cm');
@@ -7535,6 +7589,18 @@ function setVar(k, val, quiet) {
   s.v[k] = +nv.toFixed(6);
   if (!quiet) { s.touched = true; s.anim = null; s.playing = false; setPlayLabel(); }
   syncVarVals(); refreshActs(); renderActive();
+  if (d.drawBelow) belowSoon(d, s);
+}
+/* スライダーを変えたら ＜解答＞ も作り直す。少し待ってから（動かしている間は「計算中…」） */
+var _belowT = 0;
+function belowSoon(d, s) {
+  var box = $('below');
+  if (box && /^m3/.test(d.id)) box.classList.add('busy');   /* 重心（モード 3）の ＜解答＞ に「計算中…」 */
+  clearTimeout(_belowT);
+  _belowT = setTimeout(function () {
+    if (DEFS[st.cur] === d) d.drawBelow(s);
+    var b2 = $('below'); if (b2) b2.classList.remove('busy');
+  }, 350);
 }
 function stepVar(k, dir) {
   var d = DEFS[st.cur], s = st.sims[st.cur], vd = null;
@@ -7707,7 +7773,10 @@ function fitStage(d, s) {
   var stage = document.querySelector('#simhost .cvstage');
   var cv = $('mainCv');
   if (!stage || !cv) return;
-  stage.style.maxWidth = '';
+  stage.style.maxWidth = ''; stage.style.marginLeft = stage.style.marginRight = '';
+  if (d.stageW && !s._short && !s._narrow) {           /* stageW … 図の横幅を小さく（1-2 ① は 70 %） */
+    stage.style.maxWidth = Math.round(d.stageW * 100) + '%'; stage.style.marginLeft = stage.style.marginRight = 'auto';
+  }
   if (!s._short) return;
   var top = cv.getBoundingClientRect().top + window.scrollY - (document.querySelector('#simhost').getBoundingClientRect().top + window.scrollY);
   var avail = window.innerHeight - 150 - top;                 /* タブ・見出しのぶんを空ける */
