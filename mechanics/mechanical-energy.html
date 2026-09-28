@@ -110,6 +110,33 @@ button:focus-visible,input:focus-visible,select:focus-visible,
 .gqopt:focus-visible{outline:3px solid rgba(22,99,181,.45);outline-offset:2px}
 .btnrow{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;align-items:center}
 
+/* ===== コンテンツ一覧（目次）★第27回★ rigid-body-dynamics.html と同じ見た目 ===== */
+.introrow{display:flex;align-items:stretch;gap:14px}
+.introrow > .mini{flex:0 1 auto;margin:0}
+.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;padding:6px 16px;border-radius:12px;
+  font-size:.9rem;font-weight:700;
+  background:#fff;color:var(--accent);border:1.5px solid var(--accent);box-shadow:var(--sh-2)}
+.tocbtn:hover{background:var(--accent-l)}
+.tocpanel{position:absolute;z-index:60;left:50%;transform:translateX(-50%);top:70px;
+  width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 100px);overflow:auto;
+  background:#fff;border:1px solid var(--line2);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.22);padding:10px 16px 14px}
+.tocpanel[hidden]{display:none}
+.tochead{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px;font-size:1rem}
+.tocx{background:none;border:none;color:var(--sub);font-size:1.3rem;line-height:1;padding:2px 8px;cursor:pointer}
+.tocmode{font-weight:800;color:#1f3b57;margin:10px 0 2px;font-size:.95rem}
+.tocpanel ul{margin:0;padding-left:1.1em}
+.tocpanel li{margin:2px 0;font-size:.88rem}
+.tocpanel li.tocsub{margin-left:1.2em;font-size:.82rem;list-style:circle}
+.tocpanel a{color:var(--accent-d);text-decoration:none}
+.tocpanel a:hover{text-decoration:underline}
+.wrap{position:relative}          /* パネルの position:absolute のよりどころ */
+@media (max-width:640px){
+  .introrow{flex-direction:column;gap:6px}
+  .tocbtn{min-height:0;align-self:flex-start}
+}
+
 /* ===== タブ ===== */
 /* ★第26回★ タブの帯は画面の上に貼りつける（physics-sim-page スキル §1）。
    body の overflow-x:hidden は html が visible なのでビューポートへ伝わるだけで、
@@ -738,7 +765,12 @@ table.ptab.wide td.ce .num{font-size:.8rem}
 <div class="wrap">
 
 <h1>力学的エネルギーと非保存力の仕事の関係</h1>
+<!-- ★第27回★ コンテンツ一覧（目次）。ボタンは説明文の右どなり、パネルは下に開く -->
+<div class="introrow">
 <p class="mini">それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、3つのグラフと式がなぜそうなるかを納得いくまで考えよう。</p>
+<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false">コンテンツ一覧</button>
+</div>
+<div id="tocpanel" class="tocpanel" hidden></div>
 
 <!-- ★第26回★ タブは画面の上に残す（physics-sim-page スキル §1）。
      長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
@@ -6803,8 +6835,8 @@ DEFS['m2-1'] = {
       ctx.restore();
       arrow(ctx, X(0), gy - 120, X(L), gy - 120, 'dim');
       arrow(ctx, X(L), gy - 120, X(0), gy - 120, 'dim');
-      label(ctx, "L = v₀²/(2μ'g) = " + fmt(L, 2) + ' m', (X(0) + X(L)) / 2, gy - 130,
-        { size: 11.5, color: COL.dim });
+      /* ★第28回★ 寸法線には「L」とだけ書く（式 v₀²/(2μ'g) は図に書かない。千葉さんの指示） */
+      label(ctx, 'L', (X(0) + X(L)) / 2, gy - 130, { size: 11.5, color: COL.dim });
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
@@ -10571,14 +10603,32 @@ function renderMath(root) {
   });
 }
 
-/* ===== 画面の切りかえ（ハッシュ #m1-3） ===== */
-function hashOf() { return st.cur; }
+/* ===== 画面の切りかえ（ハッシュ #1-3）★第27回★ =====
+   アドレスは「#モード番号-セクション番号」（#1-1・#2-3・#3-6）。
+   前の書き方（#m1-1）で配ったリンクも、そのまま開けるようにしてある。 */
+function prettyOf(id) {
+  for (var i = 0; i < MODES.length; i++) {
+    var k = MODES[i].ids.indexOf(id);
+    if (k >= 0) return MODES[i].n + '-' + (k + 1);
+  }
+  return id;
+}
+function hashOf() { return prettyOf(st.cur); }
 function parseHash(h) {
   h = (h || '').replace('#', '');
-  var i = h.indexOf('!');
-  if (i < 0) i = h.indexOf('?');
+  var i = h.search(/[!?]/);
   if (i >= 0) h = h.slice(0, i);
-  return { id: h };
+  var m = /^(\d+)-(\d+)$/.exec(h);
+  if (m) {
+    for (var j = 0; j < MODES.length; j++) {
+      if (MODES[j].n === +m[1]) {
+        var id = MODES[j].ids[+m[2] - 1];
+        if (id) return { id: id };
+      }
+    }
+  }
+  /* 古い書き方（#m1-1）。DEFS 自身のキーだけを通す（#constructor などで止まらないように） */
+  return { id: Object.prototype.hasOwnProperty.call(DEFS, h) ? h : '' };
 }
 function syncHash() {
   var want = '#' + hashOf();
@@ -10586,6 +10636,65 @@ function syncHash() {
     st._skipHash = true;
     location.hash = want;
   }
+}
+
+/* ★第27回★ 図（アニメーション）の所まで運ぶ。上に貼りついたタブの帯に隠れないよう、
+   帯の高さぶん下げた位置で止める。描き直すと高さが変わるので、rAF 2 回＋少し遅れてもう一度そろえる。 */
+function scrollSimIntoView() {
+  var go = function () {
+    var el = $('simhost');
+    if (!el) return;
+    var tb = $('tabbar'), hh = tb ? tb.getBoundingClientRect().height : 0;
+    var y = el.getBoundingClientRect().top +
+      (window.pageYOffset || document.documentElement.scrollTop || 0) - hh - 6;
+    window.scrollTo(0, Math.max(0, y));
+  };
+  go();
+  if (window.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(go); });
+  setTimeout(go, 120);
+}
+
+/* ===== コンテンツ一覧（モードとセクションの題名・リンク）★第27回★ =====
+   ★目次の文字列は手で書かない★ MODES と DEFS[].title からそのまま作る。
+   ページを増やしても、ここを直す必要がないようにしておく。 */
+function buildToc() {
+  var p = $('tocpanel'), b = $('bToc');
+  if (!p || !b) return;
+  var h = '<div class="tochead"><b>コンテンツ一覧</b>' +
+    '<button type="button" class="tocx" aria-label="閉じる">×</button></div>';
+  MODES.forEach(function (M) {
+    h += '<div class="tocmode">' + mathHtml(M.label) + '</div><ul>';
+    M.ids.forEach(function (id, k) {
+      var d = DEFS[id];
+      if (!d) return;
+      var adr = M.n + '-' + (k + 1);
+      var ttl = String(d.title).replace(/<br>/g, '　').replace(/<[^>]+>/g, '');
+      h += '<li><a href="#' + adr + '" data-toc="' + id + '">' + mathHtml(ttl) + '</a></li>';
+    });
+    h += '</ul>';
+  });
+  p.innerHTML = h;
+  renderMath(p);
+  function close() { p.hidden = true; b.setAttribute('aria-expanded', 'false'); }
+  b.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    p.hidden = !p.hidden;
+    b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true');
+  });
+  p.querySelector('.tocx').addEventListener('click', close);
+  /* パネルの外をクリック／Esc でも閉じる */
+  document.addEventListener('click', function (ev) {
+    if (!p.hidden && !p.contains(ev.target) && ev.target !== b) close();
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') close(); });
+  Array.prototype.forEach.call(p.querySelectorAll('[data-toc]'), function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      close();                                  /* ① 閉じる */
+      gotoSim(a.getAttribute('data-toc'));      /* ② 切りかえ ③ アドレス（syncHash） */
+      scrollSimIntoView();                      /* ④ 図の所へ */
+    });
+  });
 }
 
 function gotoSim(id) {
@@ -10639,6 +10748,13 @@ function tick(ts) {
   buildPanel();
   renderActive();
   updateUrlBar();
+  buildToc();
+  /* ★第27回★ 古い書き方（#m1-1）で開かれたら、アドレス欄だけ #1-1 の形に直す
+     （履歴を増やさないよう replaceState。開いている画面は変えない） */
+  if (location.hash && location.hash !== '#' + hashOf() &&
+      window.history && history.replaceState) {
+    history.replaceState(null, '', '#' + hashOf());
+  }
 
   window.addEventListener('hashchange', function () {
     if (st._skipHash) { st._skipHash = false; return; }
@@ -10648,7 +10764,7 @@ function tick(ts) {
   });
 
   $('urlcopy').addEventListener('click', function () {
-    var txt = location.href.indexOf('#') >= 0 ? location.href : location.href + '#' + st.cur;
+    var txt = location.href.indexOf('#') >= 0 ? location.href : location.href + '#' + hashOf();
     var done = function () { $('urlmsg').textContent = 'コピーしました'; };
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -11330,10 +11446,104 @@ function tick(ts) {
 })();
 
 </script>
-<!-- アクセス数のカウント（GoatCounter・Cookieなし） -->
-<!-- ★先生が第18回に手で足したもの。ビルドで消えないよう、ここに入れてある。
-     このページで唯一の外部通信。test/run_test.py はこのホストだけ通す。 -->
-<script data-goatcounter="https://physics-chiba.goatcounter.com/count"
-        async src="https://gc.zgo.at/count.js"></script>
+<!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
+
+<!-- ① アクセス数のカウント（GoatCounter・Cookie を使わない）
+     file:// で開いたとき（オフライン利用・自動テスト）は読みこまない。
+     GitHub Pages（https）で開いたときだけ動く。 -->
+<script>
+(function () {
+  if (location.protocol.indexOf('http') !== 0) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://physics-chiba.goatcounter.com/count');
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ② ▶スタートを光らせて「ここを押す」と知らせる
+     ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+     ・光り終わり … そのボタンを押したとき／動きはじめたとき
+     ページ本体のしくみにはさわらず、外から付け外しするだけ。 -->
+<style>
+@keyframes sgPulse{
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
+  60%{box-shadow:0 0 0 17px rgba(224,123,24,0)}
+  100%{box-shadow:0 0 0 0 rgba(224,123,24,0)}
+}
+@keyframes sgBlink{
+  0%,100%{background:#e07b18;border-color:#e07b18}
+  50%{background:#f7a13f;border-color:#f7a13f}
+}
+.sg-glow{color:#fff !important;font-weight:700 !important;
+  animation:sgPulse 1.35s ease-out infinite, sgBlink 1.35s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .sg-glow{animation:none !important;background:#e07b18 !important;border-color:#e07b18 !important;
+    box-shadow:0 0 0 4px rgba(224,123,24,.55) !important}
+}
+</style>
+<script>
+(function () {
+  'use strict';
+  /* 主役の再生ボタンは id="bPlay"。古いページのための予備もいくつか見る */
+  var SEL  = '#bPlay, #playBtn, #btn-play, #btn-convert, #btn-convert2, button.b.play';
+  var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
+  var RUN  = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+
+  function btns()    { return [].slice.call(document.querySelectorAll(SEL)); }
+  function shown(e)  { return e.offsetParent !== null && !e.disabled; }
+  function running(e){ return RUN.test(e.textContent || ''); }
+
+  function arm() {                              /* 光らせるのは、いつも1つだけ */
+    var all = btns(), first = null;
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (!first && shown(e) && !running(e) && !e.__sgDone) first = e;
+      else e.classList.remove('sg-glow');
+    }
+    if (first) first.classList.add('sg-glow');
+  }
+  function disarm(e) {
+    if (e) e.classList.remove('sg-glow');
+    else btns().forEach(function (x) { x.classList.remove('sg-glow'); });
+  }
+
+  /* 押されたら消す／タブ・プリセットが押されたら光らせ直す */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    var b = t.closest('button');
+    if (b && btns().indexOf(b) >= 0) {                     /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });    /* 同じ働きの予備ボタンもまとめて */
+      disarm(); return;
+    }
+    if (t.closest(TABS)) {                     /* タブ・プリセットを開いたら光らせ直す */
+      btns().forEach(function (x) { x.__sgDone = 0; });
+      setTimeout(arm, 90);
+    }
+  }, true);
+
+  /* 見張り役：ボタンが作り直された／隠れていたのが出てきたら光らせる。
+     動きはじめたら消す。（タブを切り替えるとボタンが作り直されるページがあるため） */
+  function tick() {
+    var need = false;
+    btns().forEach(function (e) {
+      var v = shown(e);
+      if (v && !e.__sgDone && (!e.__sgKnown || e.__sgVisible === false)) need = true;
+      e.__sgKnown = 1; e.__sgVisible = v;
+      if (running(e)) e.classList.remove('sg-glow');
+    });
+    if (need) arm();
+  }
+  setInterval(tick, 400);
+
+  function boot() { setTimeout(arm, 500); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+<!-- ============ 公開用の共通フッター（ここまで） ============ -->
 </body>
 </html>

@@ -345,6 +345,30 @@ footer{color:var(--sub);font-size:.85rem;text-align:center;margin-top:30px}
   button.tiny{font-size:.82rem; padding:.35em .8em}
 }
 
+/* ===== コンテンツ一覧（第 24 回・rigid-body-dynamics と同じ見た目） ===== */
+.wrap{position:relative}
+.introrow{display:flex;align-items:stretch;gap:14px}
+.introrow > .lead2{flex:0 1 auto;margin:.1em 0 .4em}
+.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;padding:6px 16px;border-radius:12px;font:inherit;font-size:.9rem;font-weight:700;
+  cursor:pointer;background:#fff;color:var(--accent);border:1.5px solid var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.tocbtn:hover{background:#fff3e3}
+.tocpanel{position:absolute;z-index:60;left:50%;transform:translateX(-50%);top:70px;width:min(640px,calc(100vw - 24px));
+  max-height:calc(100vh - 100px);overflow:auto;background:#fff;border:1px solid #c3ccd6;border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.22);padding:10px 16px 14px}
+.tocpanel[hidden]{display:none}
+.tochead{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px;font-size:1rem}
+.tocx{font:inherit;background:none;border:none;color:var(--sub);font-size:1.3rem;line-height:1;padding:2px 8px;cursor:pointer}
+.tocmode{font-weight:800;color:#1f3b57;margin:10px 0 2px;font-size:.95rem}
+.tocpanel ul{margin:0;padding-left:1.1em}
+.tocpanel li{margin:2px 0;font-size:.88rem}
+.tocpanel li.tocsub{margin-left:1.2em;font-size:.82rem;list-style:circle}
+.tocpanel a{color:#0f4c8f;text-decoration:none}
+.tocpanel a:hover{text-decoration:underline}
+@media(max-width:640px){
+  .introrow{flex-direction:column;gap:6px}
+  .tocbtn{min-height:0;align-self:flex-start}
+}
+
 </style>
 </head>
 <body>
@@ -4627,12 +4651,16 @@ function buildPage(){
   const CIRC="①②③④⑤⑥⑦⑧⑨";
   h+=`<div class="titlerow"><h1>運動量変化と力積の関係～「衝突」を理解するために～</h1>
        <div class="topbtns"><button id="btnEq"></button><button id="btnKt"></button></div></div>
-       <p class="lead2">運動量（運動の勢い）は、どうやれば変わるか？　衝突の際に保存されるものは何か？　キーワードは「お互いに内力を及ぼすとき」です。</p>`;
+       <div class="introrow">
+         <p class="lead2">運動量（運動の勢い）は、どうやれば変わるか？　衝突の際に保存されるものは何か？　キーワードは「お互いに内力を及ぼすとき」です。</p>
+         <button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false">コンテンツ一覧</button>
+       </div>
+       <div id="tocpanel" class="tocpanel" hidden></div>`;
   h+=`<div class="tabs" id="tabs">`+MODES.map((m,i)=>`<button class="tab" data-mode="${m.id}">${CIRC[i]} ${m.name}</button>`).join("")+`</div>`;
   MODES.forEach((m,i)=>{
     h+=`<section class="mode" id="${m.id}">
       <div class="modehead"><h2>${CIRC[i]} ${m.name}</h2><p>${m.lead}</p>${(m.id==="m4"||m.id==="m6")? QUIZ_HTML : ""}</div>
-      <div class="seclinks">`+m.secs.filter(s=>DEFS[s]).map(s=>`<a href="#${s}">${DEFS[s].num}　${DEFS[s].short||DEFS[s].title}</a>`).join("")+`</div>
+      <div class="seclinks">`+m.secs.filter(s=>DEFS[s]).map(s=>`<a href="#${(i+1)+"-"+DEFS[s].num}">${DEFS[s].num}　${DEFS[s].short||DEFS[s].title}</a>`).join("")+`</div>
       <div class="modebar" id="mbar_${m.id}"></div>`;
     m.secs.forEach(sid=>{
       const d=DEFS[sid]; if(!d) return;
@@ -4685,6 +4713,7 @@ function buildPage(){
   setupGlobalButtons();
   wrap.querySelectorAll(".purpose,.modehead,.secdesc,.sechead h2,.seclinks a,.cellhead,.gnote").forEach(el=>{ el.innerHTML=mathify(el.innerHTML); });
   MODES.forEach(m=>{ m.secs.forEach(sid=>{ if(DEFS[sid]) DEFS[sid].mode=m.id; }); buildModeBar(m); });
+  buildToc();
 
   document.querySelectorAll("#tabs .tab").forEach(b=>{
     /* タブを押したら一気に上へ（ゆっくりスクロールすると、下から画面が流れてきて目が回る：第 20 回） */
@@ -4801,17 +4830,80 @@ function activateMode(id){
     SIMS.filter(s=>s.def.mode===id).forEach(s=>{ s.resize(); s.draw(); });
   }
 }
+/* =========================================================================
+   アドレス（第 24 回）
+   ・セクション ＝ 「#モード番号-セクション番号」。セクション番号は画面に出ている番号
+     （⑤の 4-1・4-2 はそのまま `#5-4-1`・`#5-4-2`）。
+   ・モードだけなら `#m1`（前からの書き方）。古い `#m1s1` の形も読める。
+   ========================================================================= */
+const hasDef=(k)=>Object.prototype.hasOwnProperty.call(DEFS,k);
+function modeNoOf(mid){ return MODES.findIndex(m=>m.id===mid)+1; }
+function addrOf(sid){                                   // "m5s41" → "5-4-1"
+  const m=MODES.find(x=>x.secs.indexOf(sid)>=0); if(!m||!hasDef(sid)) return sid;
+  return modeNoOf(m.id)+"-"+DEFS[sid].num;
+}
+function parseHash(h){
+  h=String(h||"").replace("#","");
+  const cut=h.search(/[!?]/); if(cut>=0) h=h.slice(0,cut);
+  const m=/^(\d+)-(.+)$/.exec(h);                       // 新しい書き方 #1-1・#5-4-1
+  if(m){
+    const mo=MODES[+m[1]-1];
+    if(mo){ const sid=mo.secs.find(s=>hasDef(s)&&String(DEFS[s].num)===m[2]);
+      if(sid) return {mode:mo, sec:sid}; }
+    return {};
+  }
+  const mo=MODES.find(x=>x.id===h); if(mo) return {mode:mo};                  // #m1（モードだけ）
+  if(hasDef(h)){ const mm=MODES.find(x=>x.secs.indexOf(h)>=0);                // 古い書き方 #m1s1
+    if(mm) return {mode:mm, sec:h}; }
+  return {};
+}
+/* 上に固定したタブ列の高さ（スマホでは固定していないので 0） */
+function tabbarH(){
+  const tb=document.getElementById("tabs"); if(!tb) return 0;
+  return (getComputedStyle(tb).position==="sticky")? tb.getBoundingClientRect().height : 0;
+}
+function scrollToSec(sid){
+  const go=()=>{ const el=document.getElementById(sid); if(!el) return;
+    const y=el.getBoundingClientRect().top+window.pageYOffset-tabbarH()-8;
+    window.scrollTo({top:Math.max(0,y),behavior:"auto"}); };
+  go(); requestAnimationFrame(()=>requestAnimationFrame(go)); setTimeout(go,180);
+}
+/* ===== コンテンツ一覧（モードとセクションの題名から自動で作る） ===== */
+function buildToc(){
+  const p=document.getElementById("tocpanel"), b=document.getElementById("bToc"); if(!p||!b) return;
+  let h='<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>';
+  MODES.forEach((m,i)=>{
+    h+='<div class="tocmode">'+"①②③④⑤⑥⑦⑧⑨"[i]+" "+m.name+'</div><ul>';
+    m.secs.forEach(sid=>{ const d=DEFS[sid]; if(!d) return;
+      const t=String(d.title).replace(/<br>/g,"　").replace(/<[^>]+>/g,"");
+      h+='<li><a href="#'+addrOf(sid)+'" data-toc="'+sid+'">'+d.num+'　'+mathify(t)+'</a></li>'; });
+    h+='</ul>';
+  });
+  p.innerHTML=h;
+  const close=()=>{ p.hidden=true; b.setAttribute("aria-expanded","false"); };
+  b.addEventListener("click",(ev)=>{ ev.stopPropagation(); p.hidden=!p.hidden; b.setAttribute("aria-expanded",p.hidden?"false":"true"); });
+  p.querySelector(".tocx").addEventListener("click",close);
+  document.addEventListener("click",(ev)=>{ if(!p.hidden && !p.contains(ev.target) && ev.target!==b) close(); });
+  document.addEventListener("keydown",(ev)=>{ if(ev.key==="Escape") close(); });
+  p.querySelectorAll("[data-toc]").forEach(a=>{
+    a.addEventListener("click",(ev)=>{
+      ev.preventDefault(); close();
+      const sid=a.getAttribute("data-toc"), mo=MODES.find(x=>x.secs.indexOf(sid)>=0); if(!mo) return;
+      activateMode(mo.id);
+      history.replaceState(null,"","#"+addrOf(sid));
+      scrollToSec(sid);
+    });
+  });
+}
 function gotoHash(first){
-  let id=(location.hash||"").replace("#","");
-  let mode=null, sec=null;
-  if(DEFS[id]){ sec=id; mode=MODES.find(m=>m.secs.indexOf(id)>=0); }
-  else if(MODES.find(m=>m.id===id)) mode=MODES.find(m=>m.id===id);
-  if(!mode){ if(first) activateMode(MODES[0].id); return; }
-  activateMode(mode.id);
-  if(sec){
-    const el=document.getElementById(sec);
-    const go=()=>{ if(el) window.scrollTo({top:el.getBoundingClientRect().top+window.pageYOffset-60,behavior:"auto"}); };
-    requestAnimationFrame(()=>requestAnimationFrame(go)); setTimeout(go,180);
+  const q=parseHash(location.hash);
+  if(!q.mode){ if(first) activateMode(MODES[0].id); return; }
+  activateMode(q.mode.id);
+  if(q.sec){
+    /* 古い書き方で開いたときは #1-1 の形に直しておく */
+    const want="#"+addrOf(q.sec);
+    if(first && location.hash!==want && history.replaceState) history.replaceState(null,"",want);
+    scrollToSec(q.sec);
   }
 }
 
