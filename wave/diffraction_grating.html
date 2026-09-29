@@ -612,6 +612,7 @@ label.pushme:not(.on){animation:pushpulse 1.8s ease-out infinite}
       <button class="ctl primary nextcta" id="btn-play">▶ スタート</button>
       <button class="ctl" id="btn-slow" aria-pressed="false">🐢 スロー</button>
       <button class="ctl" id="btn-reset">リセット</button>
+      <button class="ctl" id="btn-circ" aria-pressed="false" hidden>〰 波面（同心円）も重ねる</button>
     </span>
 
     <span class="grp" id="grp-scale" hidden>
@@ -3825,6 +3826,12 @@ DG.modePath = (function () {
     ctx.fillText('← 筋と筋の間がスリット', L.LX + 24, s2.y + 18);
     ctx.restore();
 
+    /* ---- 素元波（同心円）。②で「〰 波面（同心円）も重ねる」を押したときだけ ----
+       光線や入射光の下じきになるように、板を描いたすぐあとに重ねる。 */
+    if (st.mode === 'wave' && st.showCirc && DG.modeWave) {
+      DG.modeWave.wavelets(ctx, st, sc);
+    }
+
     /* ---- 入射光：スリットに当たるぶんだけ描く ----
      * スリットのないところに矢印を描くと、格子を通ったあとに
      * 何も出ていない光を描くことになるので、描かない。 */
@@ -4313,6 +4320,11 @@ DG.modePath = (function () {
     ctx.fillStyle = '#6f6754';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     ctx.fillText('※ 波長は見やすく拡大しています', 322, 496);
+    /* 同心円を出しているときは、なぜ右の全体図に円が出ないのかを書いておく
+       （右の図は格子〜スクリーンの横を省略して描いてあるため） */
+    if (wave && st.showCirc) {
+      ctx.fillText('※ 同心円は、縮尺の正しい左の拡大図に描いています', 322, 512);
+    }
     ctx.restore();
     drawNotes(ctx);
   }
@@ -4334,6 +4346,7 @@ DG.modePath = (function () {
  *   2. スクリーンに、干渉パターンそのもの（＝スクリーンの見え方）を描く
  *   3. 合成波（すべてのスリットからの波の和）のカードを足す
  * 図そのものは 50_mode_path.js の render() を opt.wave 付きで呼んで描く。
+ * 「〰 波面（同心円）も重ねる」ボタンを押すと、左の拡大図に素元波の同心円を重ねる。
  */
 window.DG = window.DG || {};
 DG.modeWave = (function () {
@@ -4581,6 +4594,87 @@ DG.modeWave = (function () {
     ctx.restore();
   }
 
+  /* ================= 素元波（同心円）＝ ホイヘンスの作図 =================
+   * 「〰 波面（同心円）も重ねる」ボタンで出す。
+   *
+   * ★描くのは左の拡大図の中だけ★
+   *   左の拡大図は「角も長さも波長も正しい縮尺」なので、同心円の重なり方が
+   *   そのまま本当の重なり方になる（山どうしが重なる向き ＝ 明線の向き）。
+   *   右の全体図は、格子からスクリーンまでの横を省略して描いてある。
+   *   そこに円を描くと、円が重なる向き（本当の θ）と、図に描いた光線の向き
+   *   （見かけの θ）が食いちがってしまうので、描かない。
+   *
+   * 円は「波の山」の位置。図の中の sin カーブとまったく同じ式から出している。
+   *   変位 ＝ sin(2π(s − V t)/λ)（P.waveAt）
+   *   山 ＝ 2π(s − V t)/λ ＝ π/2 ＋ 2πk　→　s ＝ V t ＋ λ(1/4 ＋ k) [nm]
+   * だから、円と、光線にそって描いてある sin カーブの山は必ず一致する。
+   */
+  var CIRC = { X1: 296, Y0: 134, Y1: 500 };      // 拡大図のうち、円を描いてよい範囲
+
+  function wavelets(ctx, st, sc) {
+    var nmToPx = L.LD / st.d;                    // 拡大図の縮尺（1 nm が何 px か）
+    var lamPx = st.lambda * nmToPx;              // 画面上の波長 [px]
+    if (!(lamPx > 3)) return;                    // 細かすぎて図にならないときは描かない
+    var t = st.t || 0;
+    // いちばん内側の山の半径（0 〜 lamPx）。あとは lamPx ごとに外へ。
+    var r0 = (((P.V_NM_PER_S * t + st.lambda * 0.25) * nmToPx) % lamPx + lamPx) % lamPx;
+    var x0 = L.LX + 10;                          // 板の右の面
+    var rMax = Math.hypot(CIRC.X1 - L.LX,
+      Math.max(sc.s1.y - CIRC.Y0, CIRC.Y1 - sc.s2.y)) + lamPx;
+    var k, r;
+
+    ctx.save();
+    ctx.lineWidth = 1.1;
+    /* 色は光線と同じ（波長で変わる）。うすく重ねるので globalAlpha でおとす */
+    ctx.strokeStyle = COL.ray;
+    ctx.globalAlpha = 0.42;
+
+    // ---- 板の右：スリットから広がる素元波（前向きの半円だけ）----
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x0, CIRC.Y0, CIRC.X1 - x0, CIRC.Y1 - CIRC.Y0);
+    ctx.clip();
+    for (k = 0; k < 2; k++) {
+      var S = k ? sc.s2 : sc.s1;
+      for (r = r0; r < rMax; r += lamPx) {
+        if (r < 2) continue;
+        ctx.beginPath();
+        ctx.arc(S.x, S.y, r, -Math.PI / 2.05, Math.PI / 2.05);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // ---- 板の左：入射する平面波の山（たての線）----
+    ctx.save();
+    ctx.strokeStyle = COL.rayDim;
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.rect(14, sc.s1.y - 34, L.LX - 12 - 14, (sc.s2.y + 34) - (sc.s1.y - 34));
+    ctx.clip();
+    for (var xf = L.LX + r0 - lamPx; xf > 10; xf -= lamPx) {
+      ctx.beginPath();
+      ctx.moveTo(xf, sc.s1.y - 30); ctx.lineTo(xf, sc.s2.y + 30);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.restore();
+
+    // ---- 説明（円が何を表しているか）。図の上、小見出しのすぐ下に 1 行で ----
+    ctx.save();
+    ctx.font = D.font(10.5);
+    ctx.fillStyle = '#8a6a3a';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('同心円 ＝ 波の山（素元波）。重なる向きが明線', L.DIV / 2, 117);
+    /* 右の全体図に円が出ない理由は、右の図の欄外（50_mode_path.js）にも書いてある */
+    ctx.font = D.font(10);
+    ctx.fillStyle = '#9aa3ac';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('右の全体図は横を省略しているので、', L.DIV / 2, 508);
+    ctx.fillText('円では描けません', L.DIV / 2, 522);
+    ctx.restore();
+  }
+
   /* ================= 左上の見出し ================= */
   function title(ctx) {
     var t = '実際の波の動きを見る';
@@ -4602,6 +4696,7 @@ DG.modeWave = (function () {
 
   return {
     render: render, screenPattern: screenPattern, sumCard: sumCard, title: title,
+    wavelets: wavelets, CIRC: CIRC,
     amplitudeOf: amplitudeOf, NSUM: NSUM, SUM: SUM
   };
 })();
@@ -6536,6 +6631,7 @@ DG.ui = (function () {
     playing: false, slow: false, t: 0,
     showLabels: true, showSum: true, showWave: true, gammaOn: true,
     showMaxima: true, showMinima: true, fy: null, scrX: null,
+    showCirc: false,               // ②「〰 波面（同心円）も重ねる」
     pulse: null, hoverBtn: null,
     figFull: false,
     /* 「🔍 実寸」オーバーレイ。開いていないときは null */
@@ -7150,6 +7246,7 @@ DG.ui = (function () {
     $('sl-Lrow').hidden = (m === 'slit');      // 距離はスクリーンのドラッグで変える
     $('sl-Krow').hidden = (m !== 'slit');
     $('sl-arow').hidden = (m !== 'slit');
+    $('btn-circ').hidden = (m !== 'wave');
     $('lb-sum').hidden = (m !== 'wave');
     $('lb-gamma').hidden = (m !== 'wave');
     $('lb-mx').hidden = (m !== 'field');
@@ -7367,6 +7464,11 @@ DG.ui = (function () {
       this.setAttribute('aria-pressed', st.slow ? 'true' : 'false');
     });
     $('btn-reset').addEventListener('click', function () { st.t = 0; st.playing = false; updatePlayBtn(); });
+    /* 「〰 波面（同心円）も重ねる」：左の拡大図に素元波の同心円を重ねる */
+    $('btn-circ').addEventListener('click', function () {
+      st.showCirc = !st.showCirc;
+      this.setAttribute('aria-pressed', st.showCirc ? 'true' : 'false');
+    });
 
     function setOnlyBright(on) {
       st.onlyBright = on;
