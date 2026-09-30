@@ -1065,6 +1065,19 @@ canvas.lens[hidden]{display:none}
 .st2pctl .vval{min-width:9.5em;text-align:center;white-space:nowrap}
 .st2pctl .vval{min-width:12.5em}
 .st2pctl{max-width:600px}
+.st2prow{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin:0 0 8px}
+.st2prow .st2pctl{margin:0}
+.st2thc{font-size:.8rem;color:var(--sub);line-height:1.6;padding-bottom:4px}
+/* もっと知りたい人へ（参考サイト） */
+.advlinks{margin-top:4px}
+.advhd2{font-weight:800;margin-bottom:.4em;color:#1f3b57}
+.lnk{border-left:4px solid #c3ccd6;padding:.1em 0 .1em .8em;margin:.9em 0}
+.lnkt{font-weight:700;margin-bottom:.15em}
+.lnkt .tag{display:inline-block;font-size:.72rem;font-weight:700;color:#fff;background:var(--accent);border-radius:6px;padding:.12em .55em;margin-right:.6em;vertical-align:.12em}
+.lnk p{margin:.2em 0 .3em;font-size:.9rem;line-height:1.75}
+.lnk a{font-size:.84rem;color:var(--accent);word-break:break-all}
+@media (max-width:640px){ .st2pctl{max-width:100%;box-sizing:border-box} .st2pctl .vval{min-width:6.5em;white-space:normal;font-size:.8rem} .st2pctl .vsl{min-width:0;width:100%} }
+@media (max-width:640px){ .st2pctl .vrow{flex-wrap:wrap} .st2pctl .vrow .vlab{flex:1 1 100%;overflow:visible;white-space:normal} }
 
 </style>
 </head>
@@ -7319,7 +7332,7 @@ DEFS['st1'] = {
       '<p>重心が支点（箱の角・つま先）の<b>真上</b>にあるとき、重力の作用線は支点を通るので、支点のまわりの重力のモーメントは 0。だから<b>つりあってはいる</b>。</p>' +
       '<p>しかし、ほんの少しでも傾くと、重力の作用線は支点からずれる。すると支点のまわりの重力のモーメントは、<b>傾きをさらに大きくする向き</b>にはたらき、そのまま倒れてしまう。' +
       'このように、少しずれるとずれがどんどん大きくなるつりあいを<b>不安定なつりあい</b>という。</p>' +
-      '<p class="mini">ずれたとき、もとにもどそうとするはたらきがあるつりあいは「安定なつりあい」（となりのタブ）。</p></div>';
+      '<p class="mini">ずれたとき、もとにもどそうとするはたらきがあるつりあいは「安定なつりあい」（となりのタブ）。</p></div>' + stLinks();
   }
 };
 DEFS['st1'].wire = stWire(DEFS['st1']);
@@ -7513,7 +7526,8 @@ DEFS['st2'] = {
     { k: 'Mi', label: '両はしのおもりの質量', unit: '', min: 0, max: 5, step: 1, dec: 0, def: 3, fmtv: ST2.MLIST.map(function (m) { return m + ' g'; }) },
     { k: 'thY', label: 'はなすときの傾き', unit: '°', min: 0, max: 40, step: 5, dec: 0, def: 30 },
     { k: 'Gi', label: '足幅と重心の低さ', unit: '', min: 0, max: 3, step: 1, dec: 0, def: 1, noCtl: true, fmtv: POSES.map(function (q) { return q.name; }) },
-    { k: 'Qi', label: '揺れの大きさ', unit: '', min: 0, max: 3, step: 1, dec: 0, def: 2, noCtl: true, fmtv: ['震度 1', '震度 3', '震度 5', '震度 7'] }
+    { k: 'Qi', label: '揺れの大きさ', unit: '', min: 0, max: 3, step: 1, dec: 0, def: 2, noCtl: true, fmtv: ['震度 1', '震度 3', '震度 5', '震度 7'] },
+    { k: 'mu', label: '静止摩擦係数 $\\mu$', unit: '', min: 0, max: 1, step: 0.2, dec: 1, def: 0.8, noCtl: true }
   ],
   varGroups: [
     { label: '', keys: ['Mi', 'thY'], note: '※ おもり以外の質量：人形（頭と体）4 g、腕の針金 2 g × 2 本（合計 8 g）' }
@@ -7530,7 +7544,7 @@ DEFS['st2'] = {
       s._fL = stFinger();
     } else {
       st2Pose(v);                                          /* 人は最初から立っている（手ではなさない） */
-      s._fp = { ph: 'stand', h: 0, vy: 0, f: 0, w: 0, pv: 1, fell: false, pend: false, yo: 0 };
+      s._fp = { ph: 'stand', h: 0, vy: 0, f: 0, w: 0, pv: 1, fell: false, pend: false, yo: 0, u: 0, vr: 0, slip: false, aeff: 0 };
       s._fR = stFinger();
     }
   },
@@ -7570,6 +7584,19 @@ DEFS['st2'] = {
     st2Pose(v);
     stFingerStep(fR, h, 0.8, quakeSp(v));
     var I = ST2.HG * ST2.HG + ST2.FW * ST2.FW + ST2.K2, ap = fR.a;
+    /* 足と地面の摩擦（静止摩擦係数 μ）：地面の加速度が μg をこえると足がすべる。すべっているときの足の加速度は ±μg */
+    if (p.ph !== 'off') {
+      var mg = v.mu * G, ab;
+      if (!p.slip && Math.abs(ap) > mg + 1e-9) p.slip = true;
+      if (p.slip) {
+        ab = Math.abs(p.vr) > 1e-6 ? -mg * Math.sign(p.vr) : mg * Math.sign(ap);
+        var vr0 = p.vr; p.vr += (ab - ap) * h;
+        if ((vr0 * p.vr <= 0 || Math.abs(p.vr) < 1e-4) && Math.abs(ap) <= mg) { p.vr = 0; p.slip = false; ab = ap; }
+        p.u += p.vr * h;
+        ap = ab;
+      }
+    }
+    p.aeff = ap;                                            /* 足（支点）の実際の加速度 */
     if (p.ph === 'drop') {
       p.vy += G * h; p.h -= p.vy * h;
       var low = p.h - ST2.FW * Math.abs(Math.sin(p.f));     /* 低いほうの足の高さ */
@@ -7632,9 +7659,9 @@ DEFS['st2'] = {
   draw: function (ctx, s, W, H) {
     if (!s._rn) DEFS['st2'].reset(s);
     var v = V(s), nar = !!s._narrow, RR = stRegions(W, H, nar);
-    var vk = v.Mi + ',' + v.thY + ',' + v.Qi + ',' + v.Gi;
+    var vk = v.Mi + ',' + v.thY + ',' + v.Qi + ',' + v.Gi + ',' + v.mu;
     if (s._vk !== undefined && s._vk !== vk) {                /* スライダーを動かしたら、その側をつまんだ状態にもどす */
-      var ok = s._vk.split(','), L = ok[0] != v.Mi || ok[1] != v.thY, Rr = ok[2] != v.Qi || ok[3] != v.Gi;
+      var ok = s._vk.split(','), L = ok[0] != v.Mi || ok[1] != v.thY, Rr = ok[2] != v.Qi || ok[3] != v.Gi || ok[4] != v.mu;
       if (L && s._rn.L) { DEFS['st2'].resetSide(s, 'L'); s._rn.L = null; }
       if (Rr) { DEFS['st2'].resetSide(s, 'R'); s._rn.R = null; }
       stSync(s);
@@ -7655,20 +7682,20 @@ DEFS['st2'] = {
     ], note: '' };
   },
   below: function () {
-    var vs = DEFS['st2'].vars, vG = vs.filter(function (x) { return x.k === 'Gi'; })[0], vP = vs.filter(function (x) { return x.k === 'Qi'; })[0];
+    var vs = DEFS['st2'].vars, vG = vs.filter(function (x) { return x.k === 'Gi'; })[0], vP = vs.filter(function (x) { return x.k === 'Qi'; })[0], vM = vs.filter(function (x) { return x.k === 'mu'; })[0];
     return '<div class="bcard st2pcard"><div class="areattl">足を開いて立つ人</div>' +
-      '<div class="ctrl grp st2pctl">' + varRowHtml(vG) + varRowHtml(vP) + '<div class="gnote" id="st2thc"></div></div>' +
+      '<div class="st2prow"><div class="ctrl grp st2pctl">' + varRowHtml(vP) + varRowHtml(vG) + varRowHtml(vM) + '</div><div class="st2thc" id="st2thc"></div></div>' +
       '<div class="cvstage nobar st2pwrap"><canvas id="st2p"></canvas>' +
       '<div class="guide" style="left:10px">' + guideHtml('st2.right') + '</div>' + stBtns('R', false, '足を開いて立つ人', 'L', '▶ スタート（地面を揺らす）') + '</div>' +
       '<div class="cvsub split2" style="grid-template-columns:50% 1fr">' +
       '<p>地面が揺れると、人は傾いて、低いほうの足を支点にして回ろうとする。<b>重心の作用線が両足の間</b>を通っていれば、その足のまわりの重力のモーメントは<b>もとにもどす向き</b>。作用線が足の外に出ると倒れる。' +
-      '<b>足を大きく開いて腰を落とす</b>と、支える面が広く重心が低くなるので、倒れはじめる傾きが大きい（倒れにくい）。<b>足を閉じて背伸び</b>すると倒れやすい。揺れの大きさを変えたり、<b>地面をドラッグ</b>したりして確かめよう。</p>' +
+      '<b>足を大きく開いて腰を落とす</b>と、支える面が広く重心が低くなるので、倒れはじめる傾きが大きい（倒れにくい）。<b>足を閉じて背伸び</b>すると倒れやすい。静止摩擦係数 μ を小さくすると、倒れる前に<b>足がすべる</b>（4 章の「傾くのが先か、すべるのが先か」と同じ考え方）。揺れの大きさを変えたり、<b>地面をドラッグ</b>したりして確かめよう。</p>' +
       '<p><b>ズームアップ</b>：地面が急に右へ動くと、足には<b>右向きの摩擦力</b>がはたらく。重心は高い所にあるので、体は足だけが先に進んだ形に傾き、左足を支点にして回ろうとする。' +
       'このとき<b>重心の作用線が両足の間</b>を通っていれば、左足のまわりの重力のモーメントがもとにもどす向きにはたらく。揺れが大きくて作用線が足の外に出ると倒れる。</p></div></div>' +
       '<div class="bcard"><h3>＜考え方＞　安定なつりあい</h3>' +
       '<p>ずれたとき、<b>もとにもどそうとするはたらき</b>があるつりあいを<b>安定なつりあい</b>という。やじろべえは重心が支点の下にあるから、足を開いて立つ人は重心の作用線が両足の間を通るから、' +
       '傾いても支点のまわりの重力のモーメントがもとにもどす向きにはたらく。</p>' +
-      '<p class="mini">逆に、少しずれるとずれがどんどん大きくなるつりあいが「不安定なつりあい」（となりのタブ）。</p></div>';
+      '<p class="mini">逆に、少しずれるとずれがどんどん大きくなるつりあいが「不安定なつりあい」（となりのタブ）。</p></div>' + stLinks();
   },
   drawBelow: function (s) {                                  /* 2 段目：足を開いて立つ人 と そのズームアップ */
     var cv = document.getElementById('st2p'); if (!cv || !s._rn || !cv.clientWidth) return;
@@ -7676,7 +7703,7 @@ DEFS['st2'] = {
     cv._cw = W; cv._ch = H; s._g5 = s._g5 || {};
     st2Pose(v);
     var ro = document.getElementById('st2thc');
-    if (ro) ro.textContent = '重心の高さ ' + fmt(ST2.HG * 100, 0) + ' cm ／ 倒れはじめる傾き ' + fmt(ST2.THC, 1) + '°';
+    if (ro) ro.innerHTML = '重心の高さ ' + fmt(ST2.HG * 100, 0) + ' cm<br>倒れはじめる傾き ' + fmt(ST2.THC, 1) + '°<br>足がすべりはじめる地面の加速度 ' + fmt(v.mu * G, 1) + ' m/s²';
     stDivider(ctx, W, H, nar);
     stClip(ctx, RR[0], function () { st2DrawPerson(ctx, s, v, RR[0], stRel(s._rn.R)); });
     stClip(ctx, RR[1], function () { st2ZoomR(ctx, s, RR[1]); });
@@ -7834,7 +7861,7 @@ function st2PersonArrows(ctx, p, fR, pm, gy, FL, fs, big) {
   arrow(ctx, Gp.x, Gp.y, Gp.x, Gp.y + FL, 'force', 1, COL.force);
   label(ctx, '重力', Gp.x + 10, Gp.y + FL - 4, { size: fs, bold: true, color: COL.force, align: 'left' });
   if (p.ph === 'stand') {                             /* 両足で立っている：垂直抗力は半分ずつ、摩擦力も半分ずつ */
-    var ff = fR.a / G;
+    var ff = (p.aeff !== undefined ? p.aeff : fR.a) / G;
     [-1, 1].forEach(function (k) {
       var q = mp(k * ST2.FW, 0);
       arrow(ctx, q.x, q.y, q.x, q.y - FL / 2, 'force', 1, COL.norm);
@@ -7858,7 +7885,7 @@ function st2PersonArrows(ctx, p, fR, pm, gy, FL, fs, big) {
 }
 function st2DrawPerson(ctx, s, v, R, rel) {
   var S = 118, p = s._fp, fR = s._fR, gy = R.y0 + R.h - 70;
-  var base = { x: R.x0 + R.w * 0.46 + fR.x * S };             /* 両足のまん中（地面といっしょに動く） */
+  var base = { x: R.x0 + R.w * 0.46 + (fR.x + (p.u || 0)) * S };   /* 足がすべると、地面からずれる */             /* 両足のまん中（地面といっしょに動く） */
   shakeGround(ctx, R.x0 + 2, R.x0 + R.w - 2, gy, fR.x, S);
   s._g5.R = { x1: R.x0, x2: R.x0 + R.w, y1: gy - 6, y2: gy + 30, S: S, lim: 0.8 };
   /* 支える面（両足の間） */
@@ -7882,7 +7909,7 @@ function st2DrawPerson(ctx, s, v, R, rel) {
       var sg2 = p.f > 0 ? 1 : -1;                        /* 時計回りに傾いたら、反時計回りにもどる */
       stTurn(ctx, base.x, gy - 150, 90, -Math.PI / 2 + sg2 * 0.75, -Math.PI / 2 + sg2 * 0.2, '#2e8b57', 'もどる', base.x + sg2 * 112, gy - 228);
     }
-    stMsg(ctx, R, outside ? '重心の作用線が足の外 → 倒れる' : '傾いても、重力のモーメントがもとにもどす', outside ? '#9b2418' : '#0a5c5c');
+    stMsg(ctx, R, outside ? '重心の作用線が足の外 → 倒れる' : (p.slip ? '足がすべっている（摩擦力が足りない）' : '傾いても、重力のモーメントがもとにもどす'), outside ? '#9b2418' : '#0a5c5c');
   } else stMsg(ctx, R, '安定！　もとにもどった', '#0a5c5c');
 }
 function st2PForce(p, fR) {
@@ -7890,7 +7917,7 @@ function st2PForce(p, fR) {
   /* 支点の足から見た重心：時計回り φ で (−sgFW cosφ + HG sinφ, sgFW sinφ + HG cosφ) */
   var rx = -sg * ST2.FW * Math.cos(f) + ST2.HG * Math.sin(f), ry = sg * ST2.FW * Math.sin(f) + ST2.HG * Math.cos(f);
   /* 時計回りの角速度 w、角加速度 al：a = 支点の加速度 ＋ al × r（時計回り） − w² r */
-  var ax = (fR ? fR.a : 0) + al * ry - w * w * rx, ay = -al * rx - w * w * ry;
+  var ax = (p.aeff !== undefined ? p.aeff : (fR ? fR.a : 0)) + al * ry - w * w * rx, ay = -al * rx - w * w * ry;
   return { N: Math.max(0, 1 + ay / G), f: ax / G };
 }
 /* 支点（指・地面）の加速度の矢印（青） */
@@ -7948,6 +7975,7 @@ function st2ZoomR(ctx0, s, R) {
   var dir = function (x) { return x > 0 ? '右' : '左'; };
   var cap;
   if (p.fell) cap = '重心の作用線が足の外に出て、倒れた。';
+  else if (p.slip) cap = '足がすべっている → 摩擦力は μ × 垂直抗力 までしか出ないので、体は地面についていけない。';
   else if (Math.abs(fR.a) > 0.3) cap = '地面が' + dir(fR.a) + 'へ加速 → 足に' + dir(fR.a) + '向きの摩擦力。' + (p.ph === 'rock' ? '体は傾き、' + (pm.sgn > 0 ? '右' : '左') + '足を支点に回る。' : '重心は遅れようとする。');
   else if (p.ph === 'rock') cap = (Math.abs(p.f) > ST2.THC * DEG ? '重心の作用線が足の外 → 倒れる向きのモーメント。' : '重心の作用線は両足の間 → 支点の足のまわりの重力のモーメントが、もとにもどす向き。');
   else cap = '地面を動かすと、足に摩擦力がはたらく。';
@@ -7982,6 +8010,32 @@ function st2ZoomOutL(ctx, s, R) {
   var cap = Math.abs(fL.a) > 0.3 ? '指が' + dir(fL.a) + 'へ加速 → 支点 O に' + dir(fr.f) + '向きの摩擦力。重心 G は遅れて、やじろべえが傾く。'
     : (Math.abs(y.th) > 0.02 ? '傾いている → O のまわりの重力のモーメントが、もとにもどす向きにはたらく。' : '重力の作用線が支点 O を通る → モーメントは 0（つりあい）。');
   stCap(ctx, R, cap);
+}
+
+/* ◎ もっと知りたい人へ（モード 5 の一番下。5-1・5-2 共通） */
+function stLinks() {
+  function L(tag, title, body, url) {
+    return '<div class="lnk"><div class="lnkt"><span class="tag">' + tag + '</span>' + title + '</div><p>' + body + '</p>' +
+      '<a href="' + url + '" target="_blank" rel="noopener">' + url.replace(/^https?:\/\/(www\.)?/, '') + '</a></div>';
+  }
+  return '<div class="bcard advlinks"><div class="advhd2">◎ もっと知りたい人へ ― 重心のおもしろさが分かるサイト</div>' +
+    L('スポーツ', '相撲健康体操（日本相撲協会）',
+      '四股・腰割り・すり足など、相撲の基本動作を健康体操として紹介している公式ページ。「重心を下腹部（臍下丹田）に導き、体の中心軸である背骨を強く安定させる」工夫があると書かれている。' +
+      '足を大きく開いて腰を落とす相撲の構えは、このページの「大きく開いて腰を落とす」そのもの。支える面が広く重心が低いので、押されても倒れにくい。',
+      'https://www.sumo.or.jp/IrohaKnowledge/sumo_kenko_taiso/') +
+    L('スポーツ', '理系のお父さん・お母さんのためのかけっこ講座②（REAL SPORTS）',
+      '速く走るための体の使い方を、重心と力のベクトルで説明する記事（ランニングコーチ 細野史晃さん）。「つりあった中心にあるうちは物体は動かない」、動き出すには重心を支えの外の<b>不安定な位置</b>へ動かす必要がある、という話。' +
+      '安定なつりあいは「倒れにくい」けれど「動き出しにくい」。スポーツでは、わざと不安定にして素早く動く場面もあることが分かる。',
+      'https://real-sports.jp/page/articles/263563043525362523/') +
+    L('介護', '介護技術の基本　第１回：重力と姿勢（WAM NET・福祉医療機構）',
+      '理学療法士による介護技術の連載。人がバランスを保つしくみを「重心」「支持基底面（両足で囲まれた面）」「圧中心点（重心の真下の点）」の 3 つで説明している。' +
+      '押されたときに手や頭を動かしたり、足を一歩ふみ出したりするのは、重心の真下の点を支持基底面の中にもどすため。介護で人を支えたり起こしたりするときの考え方の土台になっている。',
+      'https://www.wam.go.jp/content/wamnet/sppub/top/column/kaigogijyutu/kaigogijyutu001.html') +
+    L('人体・介護・ロボット', '転倒防止ロボット歩行車を開発（産業技術総合研究所）',
+      '人が転ぶのは「重心を床に下ろした点が、足で支えている範囲（支持基底面）からはみ出すとき」だという、重心そのものを土台にした研究。開発した歩行車と、ふつうの歩行車との<b>重心移動の軌跡の比較図</b>が載っている。' +
+      '重心の物理が、そのまま介護の現場の技術になっている例。',
+      'https://www.aist.go.jp/aist_j/press_release/pr2019/pr20191209/pr20191209.html') +
+    '<p class="mini">※ リンク先のサイトには著作権がありますので、画像は引用せずリンクのみにしてあります。図や写真は、ぜひリンク先で見てください。</p></div>';
 }
 
 /* ===== 58_mode5.js ===== */
