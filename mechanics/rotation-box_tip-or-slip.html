@@ -1041,6 +1041,30 @@ canvas.lens[hidden]{display:none}
 @media (max-width:700px){ .m5card{flex-direction:column} .m5thumb{flex-basis:auto;width:100%} }
 .linkonly #hintcard,.linkonly #pagepurpose{display:none}
 .haspurpose #pagepurpose{display:none}
+/* モード 5：左右それぞれの図の右上に重ねるボタン */
+.stov{position:absolute;top:8px;z-index:4;display:flex;flex-direction:column;align-items:stretch;gap:5px;pointer-events:auto}
+.stov.sL{right:calc(50% + 10px)} .stov.sR{right:10px}
+.stov button{font-size:.8rem;padding:4px 12px;border-radius:999px;white-space:nowrap}
+.stov button.stplay{min-width:10.5em}
+.stov button.stslow.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.stovl{display:none}
+@media (max-width:640px){
+  .stov{position:static;flex-direction:row;flex-wrap:wrap;align-items:center;margin:6px 0 0}
+  .stovl{display:inline;font-weight:800;font-size:.8rem;color:#1f3b57;margin-right:2px}
+  .stov button{font-size:.72rem;padding:3px 9px} .stov button.stplay{min-width:0}
+}
+.stzoom{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stzoom canvas{width:100%;display:block;border:1px solid var(--line);border-radius:10px;background:#fff}
+.stzoom .stzcap{font-weight:700;font-size:.9rem;color:#0a5c5c;min-height:2.6em;margin:4px 2px}
+@media (max-width:640px){ .stzoom{grid-template-columns:1fr} }
+#st2p{width:100%;display:block;border:1px solid var(--line);border-radius:var(--r-l);background:#fff;touch-action:none}
+.st2pcard .cvsub{margin-top:8px}
+.areattl{font-size:1rem;font-weight:800;color:#1f3b57;border-left:5px solid #2f7fd0;padding:2px 10px;margin:4px 0 8px;background:#eef4fb;border-radius:4px}
+.st2pcard > h3{font-size:1rem;font-weight:800;color:#1f3b57;border-left:5px solid #2f7fd0;padding:2px 10px;background:#eef4fb;border-radius:4px}
+.st2pctl{display:inline-block;max-width:520px;margin:0 0 8px}
+.st2pctl .vval{min-width:9.5em;text-align:center;white-space:nowrap}
+.st2pctl .vval{min-width:12.5em}
+.st2pctl{max-width:600px}
 
 </style>
 </head>
@@ -1124,7 +1148,12 @@ var GUIDES = {
   'm3s2':       '質点 2 つが両端についた軽い棒を、1 本の指で\n支えられる場所（重心）はどこか？　指をドラッグしよう',
   'm3s3':       '板を 1 本の指で支えられる場所（重心）はどこか？\n指をドラッグしよう',
   'm3s5':       '板を 1 本の指で支えられる場所（重心）はどこか？\n指をドラッグしよう（前後左右に動かせる）',
-  'm3s4':       '板を 1 本の指で支えられる場所（重心）はどこか？\n指をドラッグしよう'
+  'm3s4':       '板を 1 本の指で支えられる場所（重心）はどこか？\n指をドラッグしよう',
+  /* ---- モード 5 ---- */
+  'st1.left':   '角で立てた箱\nスタートで手をはなすと？',
+  'st1.right':  'つま先で片足立ち\nスタートで手をはなすと？',
+  'st2.left':   'やじろべえ\n傾けたまま、上からはなすと？',
+  'st2.right':  '地面が揺れても立っていられるか？\n足幅と重心の低さを変えて確かめよう'
 };
 /* 説明文を HTML にする（改行 → <br>） */
 function guideHtml(key) {
@@ -1170,7 +1199,7 @@ P.box = {
 };
 
 /* ===== r1・r2：板を θ だけ傾ける =====
-   板の左端がピン。箱の「下側（左）の角」が回転軸。
+   板の左端が蝶つがい。箱の「下側（左）の角」が回転軸。
    ・傾く（回転する）条件 … tanθ ≧ a/b   → θ₀ = arctan(a/b)
    ・すべる条件         … tanθ ≧ μ     → θ_s = arctan μ
    先に起こるほうが実際に起こる。 */
@@ -2255,7 +2284,9 @@ var MODES = [
       '「傾く」と「すべる」のどちらが先かは、<b>箱の形（a/b）</b>と<b>静止摩擦係数 μ</b>で決まることを理解する。',
       '床の上の箱を引くときは、<b>3 力の作用線が 1 点で交わる</b>こと、<b>引く力の作用点が高いほど傾きやすい</b>ことを体感する。'],
     ids: ['r1', 'r2', 'r3'] },
-  { n: 5, name: '5　（超上級編）剛体の重心の運動', tip: '重心の運動から見ると、すべては 2 つの法則に行きつく。別のページ（読みもの＋アニメーション）で学ぼう。',
+  { n: 5, name: '5　安定なつりあいと不安定なつりあい', tip: '重心と支点の位置関係で、つりあいが「安定」か「不安定」かが決まる。指でつまんだ状態から、手をはなしてみよう。',
+    ids: ['st1', 'st2'] },
+  { n: 6, name: '6　（超上級編）剛体の重心の運動', tip: '重心の運動から見ると、すべては 2 つの法則に行きつく。別のページ（読みもの＋アニメーション）で学ぼう。',
     ids: ['m5s1'] }
 ];
 /* モード 4 だけの版（rotation-box_tip-or-slip.html）：ほかのモードは出さない */
@@ -2370,7 +2401,7 @@ function drawBoxSide(ctx, g, opt) {
   }
 }
 
-/* ピン（蝶番のようなもの）。その点を軸に回る */
+/* 蝶つがい。その点を軸に回る */
 function pinMark(ctx, x, y, r) {
   r = r || 4.2;
   ctx.save();
@@ -2726,6 +2757,7 @@ function valueTable(ctx, x0, y0, w, cols, rows, opt) {
     label(ctx, cols[i].name, hx, y0 + (cols[i].sub ? 8 : headH / 2), { size: 11.5, bold: true, color: cols[i].hot ? '#8a6d00' : COL.ink });
     if (cols[i].sub) label(ctx, cols[i].sub, hx, y0 + 17, { size: 9.5, color: cols[i].hot ? '#8a6d00' : COL.sub });
   }
+  if (opt.corner) label(ctx, opt.corner, x0 + 7, y0 + headH / 2, { size: 11, bold: true, color: COL.ink, align: 'left' });   /* 左上：「各箱の 幅a:高さb」 */
   /* 中身 */
   var y = y0 + headH;
   rows.forEach(function (r) {
@@ -2873,7 +2905,7 @@ function drawFaces(ctx, pj, faces, fills, line, grid) {
 }
 function lerpP(p, q, t) { return { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t }; }
 
-/* 蝶番（ちょうつがい）：回転軸の辺（奥 a → 手前 b）にそって、筒（ナックル）を並べて描く。
+/* 蝶つがい（ちょうつがい）：回転軸の辺（奥 a → 手前 b）にそって、筒（ナックル）を並べて描く。
    軸のまわりに回ることが一目で分かるよう、両はしに丸い軸受けも描く。 */
 function hinge3d(ctx, a, b, n) {
   var dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
@@ -2984,7 +3016,7 @@ function drawR1Scene(ctx, s, region) {
       if (i === 0) ctx.moveTo(q.x, q.y); else ctx.lineTo(q.x, q.y);
     }
     ctx.stroke(); ctx.restore();
-    var ql = PJ([0.42, yN, -R1.PT - R1.BT - 0.02]);          /* 台の手前の下（箱やピンとぶつからない） */
+    var ql = PJ([0.42, yN, -R1.PT - R1.BT - 0.02]);          /* 台の手前の下（箱や蝶つがいとぶつからない） */
     label(ctx, 'θ = ' + fmt(v.th, 0) + '°', ql.x, ql.y + 10, { size: 12, color: COL.sub, align: 'left', avoid: true });
   })();
 
@@ -3005,13 +3037,13 @@ function drawR1Scene(ctx, s, region) {
   items.forEach(function (it) {
     drawFaces(ctx, pj, it.faces, it.b.target ? tfills : fills, it.b.target ? '#8a6d00' : BOXCOL.line, s.o.showGrid);
     it.faces.forEach(function (f) { s._plateHit.push(f.pts.map(PJ)); });   /* 箱をつかんでも θ が変わる */
-    /* 箱の蝶番：下側の辺（回転軸）にそって、箱の外がわへ少しずらして描く */
+    /* 箱の蝶つがい：下側の辺（回転軸）にそって、箱の外がわへ少しずらして描く */
     var uo = 0.013 / Math.max(1e-6, it.b.dm.a);                 /* 辺の長さに対する割合 */
     var hA = [it.o[0] - it.U[0] * uo, it.o[1], it.o[2] - it.U[2] * uo];
     var hB = [hA[0] + it.Y[0], hA[1] + it.Y[1], hA[2] + it.Y[2]];
     hinge3d(ctx, PJ(hA), PJ(hB), 3);
   });
-  /* 板の蝶番（左端の辺ぜんたい） */
+  /* 板の蝶つがい（左端の辺ぜんたい） */
   hinge3d(ctx, PJ(W2P(-0.012, -yN, 0)), PJ(W2P(-0.012, yN, 0)), 5);
 
   /* --- 力（操作対象の箱は濃く、ほかの箱は薄く。手前の面の上に描く） --- */
@@ -3094,14 +3126,14 @@ function drawR1Scene(ctx, s, region) {
       ctx.save(); ctx.strokeStyle = 'rgba(90,100,110,.35)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
       ctx.beginPath(); ctx.moveTo(base.x, base.y + 4); ctx.lineTo(x, tby - 2); ctx.stroke(); ctx.restore();
     });
-    valueTable(ctx, tx0, tby, tw, cols, rows, { labelW: 150, rowH: 17, headH: 24 });
+    valueTable(ctx, tx0, tby, tw, cols, rows, { labelW: 150, rowH: 17, headH: 24, corner: '各箱の 幅a:高さb' });
   }
   s._pj = { cx: cx, cy: cy, S: S };
   return { pj: pj, items: items, tgt: tgt, right: cx + S * bx1, left: cx + S * bx0 };
 }
 
 /* 側面図のズームアップ（r1）／本体（r2）で使う「板の上の箱」を描く。
-   fr … 枠 { x0, y0, w, h }、pv … 回転軸の画面座標。pinned … r1（ピン留め）  */
+   fr … 枠 { x0, y0, w, h }、pv … 回転軸の画面座標。pinned … r1（蝶つがいで固定）  */
 function drawTiltBox(ctx, s, v, dm, stt, tipDeg, pv, fr, pinned, opt) {
   opt = opt || {};
   var S = opt.S || ZS, fs = opt.fs || FS;
@@ -3136,8 +3168,8 @@ function drawTiltBox(ctx, s, v, dm, stt, tipDeg, pv, fr, pinned, opt) {
 DEFS['r1'] = {
   id: 'r1', tab: '1　板の角度を変える（箱の左下は板に固定）',
   playRate: 5, playNote: 'スタートを押すと θ が 0° からだんだん大きくなる',
-  title: '1　板の角度を変える　～箱の左下は板にピンで固定～',
-  sub: '板の左端と、それぞれの箱の左下の角を<b>ピン（○）</b>で板に固定してある（ピンは蝶番のようなもので、その点を軸に回る）。だから箱はすべらず、<b>傾くかどうか</b>だけが問題になる。' +
+  title: '1　板の角度を変える　～箱の左下は板に蝶つがいで固定～',
+  sub: '板の左端と、それぞれの箱の左下の角を<b>蝶つがい（○）</b>で板に固定してある（蝶つがいの点を軸に回る）。だから箱はすべらず、<b>傾くかどうか</b>だけが問題になる。' +
     '左の 3 つの箱は面積が同じで形だけがちがう。<b>右端が操作対象の箱</b>（右の枠にズームアップ）。',
   cw: function (v, s) { return (s && s._narrow) ? 480 : ((s && s._short) ? 640 : 780); },
   ch: function (v, s) { return (s && s._narrow ? 290 + 336 : ((s && s._short) ? 268 : 290)) + (s && s.o.showAB ? R1.BAND : 0); },
@@ -3157,7 +3189,7 @@ DEFS['r1'] = {
     { k: 'L', label: '重力の作用線を表示', def: false },
     { k: 'Fc', label: '分解した力を表示', def: false },
     { k: 'Hide', label: '重力と抗力のベクトルを消す', def: false },
-    { k: 'AB', label: '各箱の $a{:}b$ を表示', def: false },
+    { k: 'AB', label: '各箱の 幅a:高さb を表示', def: false },
     { k: 'Grid', label: '箱の分割線を表示', def: true }
   ],
   topActions: [
@@ -3190,7 +3222,7 @@ DEFS['r1'] = {
       { k: 'いま', v: stt.tip ? '傾いた！（θ ≧ θ₀）' : 'まだ傾かない（θ < θ₀）', cls: stt.tip ? 'tip' : '' }
     ];
     var note = '';
-    if (hintOn(s)) note = 'ピンで固定しているので、すべらない。' +
+    if (hintOn(s)) note = '蝶つがいで固定しているので、すべらない。' +
       (v.th > 0.5 && !stt.tip ? '抗力の作用点は回転軸から ' + fmt(P.tilt.contact(dm.a, dm.b, v.th) * 100, 1) + ' cm のところ。' : '');
     return { items: items, note: note };
   },
@@ -3209,7 +3241,7 @@ DEFS['r1'] = {
     ctx.fillStyle = '#fbfcfd'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.2; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.rect(fr.x0, fr.y0, fr.w, fr.h); ctx.fill(); ctx.stroke();
     ctx.restore();
-    label(ctx, 'ズームアップ（操作対象の箱 a:b = ' + s.ab + '）', fr.x0 + fr.w / 2, fr.y0 - 11, { size: 12, bold: true, color: COL.ink2 || '#3d4c5a' });
+    label(ctx, 'ズームアップ（操作対象の箱 幅a:高さb = ' + s.ab + '）', fr.x0 + fr.w / 2, fr.y0 - 11, { size: 12, bold: true, color: COL.ink2 || '#3d4c5a' });
     var b = sc.tgt.b;
     var pv = { x: fr.x0 + 104, y: fr.y0 + fr.h - 62 };
     var zS = zoomScale(b.dm, fr);
@@ -3323,7 +3355,7 @@ function drawR2Scene(ctx, s, region) {
       ctx.save(); ctx.strokeStyle = 'rgba(90,100,110,.35)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
       ctx.beginPath(); ctx.moveTo(base.x, base.y + 3); ctx.lineTo(x, tby - 2); ctx.stroke(); ctx.restore();
     });
-    valueTable(ctx, tx0, tby, tw, cols2, rows2, { labelW: 168, rowH: 17, headH: 24 });
+    valueTable(ctx, tx0, tby, tw, cols2, rows2, { labelW: 168, rowH: 17, headH: 24, corner: '各箱の 幅a:高さb' });
   }
   return { boxes: boxes, out: out, pv: pv, S: S, right: pv.x + PG.BX1 * S };
 }
@@ -3420,7 +3452,7 @@ function drawAnsFig(cv, thDeg, vis) {
     W / 2 - 24, 16, { size: 11.5, bold: hit, color: hit ? '#9b2418' : '#3d4c5a' });
 }
 
-/* ＜別解＞(1) 力のモーメントのつりあい：A のピン、重力の分解、うでの長さ a/2・b/2 */
+/* ＜別解＞(1) 力のモーメントのつりあい：A の蝶つがい、重力の分解、うでの長さ a/2・b/2 */
 function drawAnsFig2(cv, thDeg, vis) {
   vis = vis || { F: true, Fc: false };
   var W = 340, H = 290, ctx = prep(cv, W, H);
@@ -3626,7 +3658,7 @@ DEFS['r2'] = {
   moment2: { label: 'すべる瞬間をスローで', dur: 4.0, range: function (v) { var ths = P.tilt.thSlip(v.mu); return { k: 'th', from: Math.max(0, ths - 5), to: Math.min(R2.THMAX, ths + 5), hold: 0.8 }; } },
   playRate: 5, playNote: 'スタートを押すと θ が 0° からだんだん大きくなる',
   title: '2　板の角度を変える　～箱は固定なし。傾くのが先か、すべるのが先か～',
-  sub: '板の左端はピンで固定。箱は固定していないので、θ を上げていくと<b>すべる</b>か<b>傾く</b>かのどちらかが先に起こる。' +
+  sub: '板の左端は蝶つがいで固定。箱は固定していないので、θ を上げていくと<b>すべる</b>か<b>傾く</b>かのどちらかが先に起こる。' +
     '傾く角は $\\tan\\theta_0 = a/b$、すべる角は $\\tan\\theta_s = \\mu$。<b>先に来るほうが実際に起こる</b>。' +
     '4 つの箱の μ はすべて同じ（操作対象の μ）。右端が操作対象の箱（右の枠にズームアップ）。',
   cw: function (v, s) { return (s && s._narrow) ? 480 : ((s && s._short) ? 640 : 780); },
@@ -3653,7 +3685,7 @@ DEFS['r2'] = {
     { k: 'L', label: '重力の作用線を表示', def: false },
     { k: 'Fc', label: '分解した力を表示', def: false },
     { k: 'Hide', label: '重力と抗力のベクトルを消す', def: false },
-    { k: 'AB', label: '各箱の $a{:}b$ と $\\mu$ を表示', def: false },
+    { k: 'AB', label: '各箱の 幅a:高さb と $\\mu$ を表示', def: false },
     { k: 'Grid', label: '箱の分割線を表示', def: true }
   ],
   moment: {
@@ -3711,7 +3743,7 @@ DEFS['r2'] = {
     ctx.fillStyle = '#fbfcfd'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.2; ctx.setLineDash([6, 4]);
     ctx.beginPath(); ctx.rect(fr.x0, fr.y0, fr.w, fr.h); ctx.fill(); ctx.stroke();
     ctx.restore();
-    label(ctx, 'ズームアップ（操作対象の箱 a:b = ' + s.ab + '）', fr.x0 + fr.w / 2, fr.y0 - 11, { size: 12, bold: true, color: '#3d4c5a' });
+    label(ctx, 'ズームアップ（操作対象の箱 幅a:高さb = ' + s.ab + '）', fr.x0 + fr.w / 2, fr.y0 - 11, { size: 12, bold: true, color: '#3d4c5a' });
     var b = sc.boxes[3];
     var pv = { x: fr.x0 + 104, y: fr.y0 + fr.h - 62 };
     var zS = zoomScale(b.dm, fr);
@@ -3940,7 +3972,7 @@ DEFS['r3'] = {
   ch: function (v, s) { return (s && s._short) ? 250 : 300; },
   drag: true,
   abDef: '4:4', bpDef: 1,
-  abLabel: '箱の a:b',
+  abLabel: '箱の 幅a:高さb',
   bpLabel: '$F$ の作用点の高さ $b\\prime$',
   bpKeys: [{ v: 1, label: '$b\\prime = b$' }, { v: 0.75, label: '$b\\prime = \\tfrac{3}{4}b$' }, { v: 0.5, label: '$b\\prime = \\tfrac{1}{2}b$' }, { v: 0.25, label: '$b\\prime = \\tfrac{1}{4}b$' }],
   vars: [
@@ -4139,7 +4171,7 @@ function pointHand(ctx, x, y, ang, sc) {
 }
 
 /* ============ m1s1　力のモーメント ============ */
-/* 箱：幅 10 cm・高さ 20 cm・質量 0.50 kg。右下のピンのまわりに回れる。指で押す力は F = 3.0 N（一定） */
+/* 箱：幅 10 cm・高さ 20 cm・質量 0.50 kg。右下の蝶つがいのまわりに回れる。指で押す力は F = 3.0 N（一定） */
 var M1 = { MU: 0.80, BW: 0.10, BH: 0.20, MASS: 0.50, FN: 3.0, BEAM: 0.60, NPOS: 6, TSCALE: 0.28, PUSH: 0.6, GAP: 7 };
 M1.I = M1.MASS * (M1.BW * M1.BW + M1.BH * M1.BH) / 3;          /* 右下の角のまわりの慣性モーメント */
 M1.H0 = M1.MASS * G * M1.BW / (2 * M1.FN);                      /* これより高く押すと傾く [m]（≒ 8.2 cm） */
@@ -4147,7 +4179,7 @@ M1.THC = Math.atan(M1.BW / M1.BH);                              /* 重心が右�
 
 function balanceGoal(v) { return v.nL * 1 / Math.max(1, v.kR); }
 
-/* ★1-1 の箱はピンで止めていない（4-3 と同じ、床の上に置いただけ）★
+/* ★1-1 の箱は蝶つがいで止めていない（4-3 と同じ、床の上に置いただけ）★
    ・すべる：指の力 F が最大摩擦力 μmg をこえると、床の上をすべる（すべっている間は動摩擦 μ'mg、μ' = 0.8μ）
    ・傾く　：右下の角のまわりのモーメント F·h が mg·w/2 をこえると、右下の角を軸に傾く
              （摩擦力は床の面にそってはたらくので、右下の角のまわりのモーメントは 0。傾く条件はすべっていても同じ）
@@ -4316,7 +4348,7 @@ function drawBalancePane(ctx, s, v, R) {
   }
   var tn = bp(-half * 0.72);                                       /* 「天秤」の字（棒の左の上） */
   label(ctx, '天秤', tn.x + u.y * 22, tn.y - u.x * 22, { size: 14, bold: true, color: '#4e5a66' });
-  pinMark(ctx, cx, cy, 5.5);                      /* 支点のピン（ここで傾くだけ） */
+  pinMark(ctx, cx, cy, 5.5);                      /* 支点の蝶つがい（ここで傾くだけ） */
   label(ctx, '回転軸', cx, cy - 18, { size: 13, bold: true, color: COL.sub });   /* 回転軸の真上 */
   /* おもり */
   var w_sp = 25;
@@ -7055,6 +7087,904 @@ function drawPointMassFig(cv, kind, sh) {
     W / 2, H - 14, { size: 13.5, bold: true, color: '#3d4c5a' });
 }
 
+/* ===== 57_mode5.js ===== */
+/* ============================================================
+   モード 5　安定なつりあいと不安定なつりあい
+     st1 … 不安定なつりあい（左：角で立てた箱／右：つま先で片足立ちの人）
+     st2 … 安定なつりあい　（左：やじろべえ　／右：足を開いて立つ人）
+   ★どれも「指で上からつまんでいる」状態から始まり、スタートで手をはなす★
+   ★図は左右 2 分割（1-1 の箱と天秤と同じ）。細い画面では上下に積む★
+   ============================================================ */
+'use strict';
+
+/* ---- 共通の部品 ---- */
+/* 左右（細い画面では上下）の 2 つの区画 */
+function stRegions(W, H, narrow) {
+  if (narrow) return [{ x0: 0, y0: 0, w: W, h: H / 2 }, { x0: 0, y0: H / 2, w: W, h: H / 2 }];
+  return [{ x0: 0, y0: 0, w: W / 2, h: H }, { x0: W / 2, y0: 0, w: W / 2, h: H }];
+}
+function stDivider(ctx, W, H, narrow) {
+  ctx.save(); ctx.strokeStyle = '#d5dde5'; ctx.lineWidth = 1.2; ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  if (narrow) { ctx.moveTo(10, H / 2); ctx.lineTo(W - 10, H / 2); } else { ctx.moveTo(W / 2, 12); ctx.lineTo(W / 2, H - 12); }
+  ctx.stroke(); ctx.restore();
+}
+/* 体に固定した座標（m、y は上向き）→ 画面。P0 … 回転の中心の画面位置、ang … 反時計回りを正、S … px/m */
+function stMap(P0, ang, S) {
+  var c = Math.cos(ang), sn = Math.sin(ang);
+  return function (x, y) { return { x: P0.x + (x * c - y * sn) * S, y: P0.y - (x * sn + y * c) * S }; };
+}
+/* 体の点の、いちばん低い高さ（m）。倒れて床についたかを調べる */
+function stMinY(pts, ang) {
+  var c = Math.cos(ang), sn = Math.sin(ang), m = 1e9;
+  pts.forEach(function (q) { var y = q[0] * sn + q[1] * c; if (y < m) m = y; });
+  return m;
+}
+/* 上からつまむ手（親指と人さし指）。(x, y) ＝ 指先、open … 0（つまむ）〜1（はなす）、up … 上へ引き上げる量 [px] */
+function pinchHand(ctx, x, y, open, up, alpha) {
+  if (alpha <= 0.01) return;
+  var INK = '#2a3036', SKIN = '#ffffff';
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x, y - (up || 0));
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  function limb(x0, y0, cx2, cy2, x1, y1, w) {
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx2, cy2, x1, y1);
+    ctx.lineWidth = w + 3; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.lineWidth = w; ctx.strokeStyle = SKIN; ctx.stroke();
+  }
+  var o = (open || 0) * 9;
+  /* 腕（上から） */
+  ctx.fillStyle = SKIN; ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(4, -200); ctx.lineTo(4, -70); ctx.lineTo(34, -70); ctx.lineTo(34, -200); ctx.fill(); ctx.stroke();
+  /* にぎった指（中指・薬指） */
+  limb(26, -52, 30, -38, 22, -30, 9);
+  limb(32, -54, 38, -42, 31, -34, 8);
+  /* 人さし指（右から指先へ） */
+  limb(20, -50, 18 + o * 0.4, -20, 4 + o, -2, 8.5);
+  /* 手のひら */
+  ctx.beginPath();
+  ctx.moveTo(0, -80); ctx.quadraticCurveTo(-8, -60, -6, -46); ctx.lineTo(10, -40); ctx.lineTo(38, -48); ctx.lineTo(38, -80); ctx.closePath();
+  ctx.fillStyle = SKIN; ctx.fill(); ctx.lineWidth = 2.4; ctx.strokeStyle = INK; ctx.stroke();
+  /* 親指（左から指先へ） */
+  limb(-4, -50, -12 - o * 0.4, -24, -4 - o, -2, 9.5);
+  ctx.restore();
+}
+/* 重心の印 */
+function stGMark(ctx, x, y, name, dx, dy) {
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = '#1b1f24'; ctx.fill();
+  ctx.lineWidth = 1.6; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore();
+  if (name) label(ctx, name, x + (dx || 12), y + (dy || -12), { size: 13, bold: true, color: '#1b1f24', align: (dx || 12) < 0 ? 'right' : 'left' });
+}
+/* 支点（回転の中心）の印 */
+function stPivot(ctx, x, y, name, dx, dy) {
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = '#1b1f24'; ctx.stroke(); ctx.restore();
+  if (name) label(ctx, name, x + (dx || 10), y + (dy || 14), { size: 12.5, bold: true, color: '#3d4c5a', align: (dx || 10) < 0 ? 'right' : 'left' });
+}
+/* 回転の向きの曲がった矢印（cx, cy 中心、半径 r、a1→a2 はキャンバスの角度） */
+function stTurn(ctx, cx, cy, r, a1, a2, col, text, tx, ty) {
+  col = col || '#2e8b57';
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(cx, cy, r, a1, a2, a2 < a1); ctx.stroke();
+  var ex = cx + r * Math.cos(a2), ey = cy + r * Math.sin(a2), s = a2 < a1 ? -1 : 1;
+  var tx0 = -Math.sin(a2) * s, ty0 = Math.cos(a2) * s;           /* 進む向き */
+  ctx.fillStyle = col; ctx.beginPath();
+  ctx.moveTo(ex + tx0 * 11, ey + ty0 * 11);
+  ctx.lineTo(ex - ty0 * 7, ey + tx0 * 7); ctx.lineTo(ex + ty0 * 7, ey - tx0 * 7); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  if (text) label(ctx, text, tx, ty, { size: 14, bold: true, color: col });
+}
+/* 区画の中だけに描く（上からの手がとなりの区画にはみ出さないように） */
+function stClip(ctx, R, fn) {
+  ctx.save(); ctx.beginPath(); ctx.rect(R.x0 + 1, R.y0 + 1, R.w - 2, R.h - 2); ctx.clip();
+  fn(); ctx.restore();
+}
+/* 床 */
+function stGround(ctx, x1, x2, y) { ground(ctx, x1, x2, y); }
+/* 状態の文（区画の下） */
+function stMsg(ctx, R, text, col) {
+  if (text) label(ctx, text, R.x0 + R.w / 2, R.y0 + R.h - 16, { size: 14, bold: true, color: col || '#3d4c5a' });
+}
+/* 手をはなすアニメーション（0〜0.45 秒）の開き具合と透明度。run … その側の再生の状態 */
+function stRel(run) {
+  if (!run) return { open: 0, up: 0, a: 1 };
+  var k = clamp(run.t / 0.45, 0, 1);
+  return { open: Math.min(1, k * 2), up: 60 * k, a: 1 - k };
+}
+/* ★左右それぞれにスタート（手をはなす）・リセット（st2 は「揺らす」も）★ s._rn = { L: run, R: run } */
+function stBtns(side, shake, name, pos, l0) {      /* 図の右上に重ねる（左の図・右の図それぞれ）。細い画面では図の下に */
+  l0 = l0 || '▶ スタート（手をはなす）';
+  return '<div class="stov s' + (pos || side) + '"><span class="stovl">' + (name || '') + '</span>' +
+    '<button class="stplay pulse" data-stplay="' + side + '" data-l0="' + l0 + '">' + l0 + '</button>' +
+    (shake ? '<button class="warm stshake" data-stshake="' + side + '">〰 揺らす</button>' : '') +
+    '<button class="sub stslow" data-stslow="' + side + '">スロー再生</button>' +
+    '<button class="sub" data-streset="' + side + '">↺ リセット</button></div>';
+}
+function stLabel(run) {
+  if (!run) return '▶ スタート（手をはなす）';
+  if (run.done) return '▶ もう一度';
+  return run.paused ? '▶ 再開' : '❚❚ 一時停止';
+}
+function stSync(s) {                                 /* ボタンの文字と光り方を、いまの状態にそろえる */
+  var host = document.getElementById('simhost'); if (!host) return;
+  Array.prototype.forEach.call(host.querySelectorAll('[data-stplay]'), function (bt) {
+    var run = s._rn[bt.getAttribute('data-stplay')];
+    bt.textContent = run ? stLabel(run) : (bt.getAttribute('data-l0') || stLabel(run));
+    bt.classList.toggle('pulse', !run || run.done);   /* まだ押していない・終わった → 光らせる */
+  });
+  Array.prototype.forEach.call(host.querySelectorAll('[data-stslow]'), function (bt) {
+    bt.textContent = s.slow ? 'スロー再生中' : 'スロー再生';
+    bt.classList.toggle('on', !!s.slow);
+  });
+}
+function stWire(d) {
+  return function (s, host) {
+    function on(sel, fn) {
+      Array.prototype.forEach.call(host.querySelectorAll('[' + sel + ']'), function (bt) {
+        bt.addEventListener('click', function () { fn(bt.getAttribute(sel)); stSync(s); renderActive(); if (d.drawBelow) d.drawBelow(s); });   /* 下のカードの図（人）も描き直す */
+      });
+    }
+    on('data-stplay', function (side) {
+      var run = s._rn[side];
+      if (!run || run.done) { d.resetSide(s, side); s._rn[side] = { t: 0, paused: false, done: false }; d.startSide(s, side); }
+      else run.paused = !run.paused;
+    });
+    on('data-streset', function (side) { d.resetSide(s, side); s._rn[side] = null; });
+    on('data-stshake', function (side) { d.shake(s, side); });
+    on('data-stslow', function () { s.slow = !s.slow; });
+    stSync(s);
+  };
+}
+function stTick(d, s, dt) {
+  var any = false;
+  dt = Math.min(dt, 0.05) * (s.slow ? 0.25 : 1);
+  ['L', 'R'].forEach(function (side) {
+    var r = s._rn[side];
+    if (!r || r.paused || r.done) return;
+    r.t += dt; any = true;
+    var n = 20, h = dt / n, i;
+    for (i = 0; i < n; i++) d.stepSide(s, side, h);
+    if (d.sideDone(s, side)) { r.done = true; stSync(s); }
+  });
+  return any;
+}
+
+/* ============ st1　不安定なつりあい ============ */
+var ST1 = {
+  BA: 0.30, BB: 0.40,                    /* 箱の幅・高さ [m] */
+  EPS: 0.006,                            /* 手をはなすときの、ほんのわずかなずれ [rad] */
+  /* つま先立ちの人（横から見た図、体の座標：つま先 = 原点、y 上向き [m]） */
+  HG: 1.12, K2: 0.09                    /* 重心の高さ：おへそのあたり（胴体のまん中に近い） */
+};
+ST1.D = Math.hypot(ST1.BA, ST1.BB);
+ST1.D0 = Math.atan(ST1.BA / ST1.BB);    /* 重心が角の真上に来る傾き */
+ST1.K = 3 * G / (2 * ST1.D);            /* 角のまわりの回転：γ'' = K sin(γ − D0) */
+ST1.KP = G * ST1.HG / (ST1.HG * ST1.HG + ST1.K2);   /* 人：φ'' = KP sin φ */
+/* 人の形（横向き・右を向く。片足のつま先で立ち、もう片方の足は後ろに曲げて上げる） */
+var TIP = {
+  head: [0.03, 1.62], hr: 0.11,
+  neck: [0.0, 1.49], hip: [0.0, 0.92], sh: [0.0, 1.42],
+  armF: [[0.0, 1.42], [0.20, 1.26], [0.36, 1.30]],   /* 前の腕（肩 → ひじ → 手） */
+  armB: [[0.0, 1.42], [-0.16, 1.24], [-0.30, 1.20]],
+  legS: [[0.0, 0.92], [0.0, 0.50], [0.0, 0.10], [0.0, 0.0]],   /* 立っている足（つま先 = 原点） */
+  heel: [-0.07, 0.07],
+  legF: [[0.0, 0.92], [0.04, 0.50], [-0.30, 0.58], [-0.36, 0.52]]   /* 後ろに曲げて上げた足 */
+};
+TIP.pts = [TIP.head.map(function (v, i) { return v + (i ? TIP.hr : 0); }), [TIP.head[0] + TIP.hr, TIP.head[1]], [TIP.head[0] - TIP.hr, TIP.head[1]],
+  TIP.armF[2], TIP.armB[2], TIP.legF[3], TIP.legF[2], [0, 0]];
+
+function st1Box() {                        /* 箱の角（体の座標。左下の角 = 支点） */
+  return [[0, 0], [ST1.BA, 0], [ST1.BA, ST1.BB], [0, ST1.BB]];
+}
+DEFS['st1'] = {
+  id: 'st1', tab: '1　不安定なつりあい', noAB: true, noPlay: true, noResetAll: true,
+  title: '1　不安定なつりあい　～少しでもずれると倒れる～',
+  subSplit: ['箱の角を下にして、<b>重心が角の真上</b>に来るように立てた。重力の作用線が支点（角）を通るので、つりあってはいる。',
+    'つま先で片足立ち。<b>重心がつま先の真上</b>にあればつりあうが、支えている所がとても小さい。'],
+  split: 0.5,
+  cw: function (v, s) { return (s && s._narrow) ? 470 : 860; },
+  ch: function (v, s) { return (s && s._narrow) ? 760 : 380; },
+  vars: [],
+  cvHtml: function () { return stBtns('L', false, '角で立てた箱') + stBtns('R', false, 'つま先で片足立ち'); },
+  vis: [{ k: 'F', label: '力を表示', def: true }, { k: 'L', label: '重力の作用線を表示', def: true }],
+  guides: [{ key: 'st1.left', x: 0 }, { key: 'st1.right', x: 0.5, cls: 'g2' }],
+  resetSide: function (s, side) {
+    if (side === 'L') s._bx = { g: ST1.D0, w: 0, done: false };
+    else s._pp = { f: 0, w: 0, done: false };
+  },
+  reset: function (s) { s._rn = { L: null, R: null }; DEFS['st1'].resetSide(s, 'L'); DEFS['st1'].resetSide(s, 'R'); },
+  startSide: function (s, side) { if (side === 'L') s._bx.g = ST1.D0 + ST1.EPS; else s._pp.f = ST1.EPS; },
+  stepSide: function (s, side, h) {
+    var b = s._bx, p = s._pp;
+    if (side === 'L' && !b.done) {
+      b.w += ST1.K * Math.sin(b.g - ST1.D0) * h; b.g += b.w * h;
+      if (stMinY(st1Box(), b.g) < -1e-4 || b.g >= Math.PI / 2) { b.g = Math.min(b.g, Math.PI / 2); b.w = 0; b.done = true; }
+    }
+    if (side === 'R' && !p.done) {
+      p.w += ST1.KP * Math.sin(p.f) * h; p.f += p.w * h;
+      if (stMinY(TIP.pts, -p.f) < 0) { p.w = 0; p.done = true; }
+    }
+  },
+  sideDone: function (s, side) { return side === 'L' ? s._bx.done : s._pp.done; },
+  tickMain: function (s, dt) { return stTick(DEFS['st1'], s, dt); },
+  draw: function (ctx, s, W, H) {
+    if (!s._rn) DEFS['st1'].reset(s);
+    var v = V(s), nar = !!s._narrow, RR = stRegions(W, H, nar);
+    stDivider(ctx, W, H, nar);
+    stClip(ctx, RR[0], function () { st1DrawBox(ctx, s, v, RR[0], stRel(s._rn.L)); });
+    stClip(ctx, RR[1], function () { st1DrawTip(ctx, s, v, RR[1], stRel(s._rn.R)); });
+  },
+  below: function () {
+    return '<div class="bcard"><h3>＜考え方＞　不安定なつりあい</h3>' +
+      '<p>重心が支点（箱の角・つま先）の<b>真上</b>にあるとき、重力の作用線は支点を通るので、支点のまわりの重力のモーメントは 0。だから<b>つりあってはいる</b>。</p>' +
+      '<p>しかし、ほんの少しでも傾くと、重力の作用線は支点からずれる。すると支点のまわりの重力のモーメントは、<b>傾きをさらに大きくする向き</b>にはたらき、そのまま倒れてしまう。' +
+      'このように、少しずれるとずれがどんどん大きくなるつりあいを<b>不安定なつりあい</b>という。</p>' +
+      '<p class="mini">ずれたとき、もとにもどそうとするはたらきがあるつりあいは「安定なつりあい」（となりのタブ）。</p></div>';
+  }
+};
+DEFS['st1'].wire = stWire(DEFS['st1']);
+function st1DrawBox(ctx, s, v, R, rel) {
+  var S = 280, gy = R.y0 + R.h - 56, P0 = { x: R.x0 + R.w * 0.62, y: gy };
+  var b = s._bx, mp = stMap(P0, b.g, S);
+  stGround(ctx, R.x0 + 14, R.x0 + R.w - 14, gy);
+  /* 箱 */
+  var cs = st1Box().map(function (q) { return mp(q[0], q[1]); });
+  ctx.save(); ctx.beginPath(); cs.forEach(function (p, i) { i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }); ctx.closePath();
+  ctx.fillStyle = BOXCOL.fill; ctx.fill(); ctx.strokeStyle = BOXCOL.line; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+  label(ctx, '箱', mp(ST1.BA * 0.5, ST1.BB * 0.78).x, mp(ST1.BA * 0.5, ST1.BB * 0.78).y, { size: 14, bold: true, color: '#6b4a2e' });
+  var Gp = mp(ST1.BA / 2, ST1.BB / 2);
+  /* 重力の作用線（鉛直な点線） */
+  if (v.showL && !b.done) {
+    dotLine(ctx, Gp.x, Gp.y - 150, Gp.x, gy, 'rgba(209,53,43,.55)', 1.4, [6, 5]);
+    if (Math.abs(Gp.x - P0.x) > 3) dotLine(ctx, P0.x, P0.y - 170, P0.x, P0.y, 'rgba(90,100,110,.45)', 1.2, [3, 4]);
+  }
+  /* 力：重力・垂直抗力（＋ 倒れている間は摩擦力） */
+  if (v.showF && !b.done) {
+    var FL = 62, fr = st1BoxForce(b);
+    arrow(ctx, Gp.x, Gp.y, Gp.x, Gp.y + FL, 'force', 1, COL.force);
+    label(ctx, '重力', Gp.x - 10, Gp.y + FL - 6, { size: 13, bold: true, color: COL.force, align: 'right' });
+    if (!b.done) {
+      arrow(ctx, P0.x, P0.y, P0.x, P0.y - FL * fr.N, 'force', 1, COL.norm);
+      label(ctx, '垂直抗力', P0.x + 12, P0.y - 8, { size: 13, bold: true, color: COL.norm, align: 'left' });
+      if (Math.abs(fr.f) > 0.04) arrow(ctx, P0.x, P0.y, P0.x + FL * fr.f, P0.y, 'force', 1, COL.fric);
+    }
+  }
+  stGMark(ctx, Gp.x, Gp.y, '重心', 10, -12);
+  if (!b.done) stPivot(ctx, P0.x, P0.y, '支点', 10, 16);
+  /* 上からつまむ手（右上の角） */
+  var top = mp(ST1.BA, ST1.BB);
+  pinchHand(ctx, top.x, top.y, rel.open, rel.up, rel.a);
+  /* 吹き出し・矢印・状態 */
+  if (!s._rn.L) { calmBubble(ctx, '不安定なつりあい', P0.x - 118, top.y - 18, 14); stMsg(ctx, R, '重心が角の真上 → つりあってはいる'); }
+  else if (!b.done) {
+    if (b.g - ST1.D0 > 0.03) stTurn(ctx, P0.x, P0.y, 175, -Math.PI / 2 - 0.1, -Math.PI / 2 - 0.55, '#c0392b', '転倒する', P0.x - 150, P0.y - 175);
+    stMsg(ctx, R, '少し傾くと、重力のモーメントが傾きを大きくする', '#9b2418');
+  } else stMsg(ctx, R, '倒れた！（不安定なつりあい）', '#9b2418');
+}
+/* 箱：垂直抗力・摩擦力（mg を 1 とする）。重心の加速度から求める */
+function st1BoxForce(b) {
+  if (!b.w && Math.abs(b.g - ST1.D0) < 1e-9) return { N: 1, f: 0 };
+  var r = ST1.D / 2, ph = Math.atan2(ST1.BB, ST1.BA) + b.g, al = ST1.K * Math.sin(b.g - ST1.D0);
+  var ax = r * (-al * Math.sin(ph) - b.w * b.w * Math.cos(ph)), ay = r * (al * Math.cos(ph) - b.w * b.w * Math.sin(ph));
+  return { N: Math.max(0, 1 + ay / G), f: ax / G };
+}
+/* 横向きの人の棒人間を描く（mp … 体の座標 → 画面） */
+function stickSide(ctx, mp, S) {
+  var INK = '#2a3036';
+  ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 3.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  function poly(a) { ctx.beginPath(); a.forEach(function (q, i) { var p = mp(q[0], q[1]); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }); ctx.stroke(); }
+  poly([TIP.neck, TIP.hip]);
+  poly(TIP.armB); poly(TIP.armF);
+  poly(TIP.legF);
+  poly([TIP.legS[0], TIP.legS[1], TIP.legS[2]]);
+  poly([TIP.heel, TIP.legS[2], TIP.legS[3]]);             /* つま先立ちの足 */
+  var hc = mp(TIP.head[0], TIP.head[1]);
+  ctx.beginPath(); ctx.arc(hc.x, hc.y, TIP.hr * S, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+function st1DrawTip(ctx, s, v, R, rel) {
+  var S = 128, gy = R.y0 + R.h - 56, P0 = { x: R.x0 + R.w * 0.40, y: gy };
+  var p = s._pp, mp = stMap(P0, -p.f, S);
+  stGround(ctx, R.x0 + 14, R.x0 + R.w - 14, gy);
+  stickSide(ctx, mp, S);
+  var Gp = mp(0, ST1.HG);
+  if (v.showL && !p.done) {
+    dotLine(ctx, Gp.x, Gp.y - 40, Gp.x, gy, 'rgba(209,53,43,.55)', 1.4, [6, 5]);
+    if (Math.abs(Gp.x - P0.x) > 3) dotLine(ctx, P0.x, P0.y - 170, P0.x, P0.y, 'rgba(90,100,110,.45)', 1.2, [3, 4]);
+  }
+  if (v.showF && !p.done) {
+    var FL = 62, fr = st1TipForce(p);
+    arrow(ctx, Gp.x, Gp.y, Gp.x, Gp.y + FL, 'force', 1, COL.force);
+    label(ctx, '重力', Gp.x + 10, Gp.y + FL - 6, { size: 13, bold: true, color: COL.force, align: 'left' });
+    if (!p.done) {
+      arrow(ctx, P0.x, P0.y, P0.x, P0.y - FL * fr.N, 'force', 1, COL.norm);
+      label(ctx, '垂直抗力', P0.x - 12, P0.y - 22, { size: 13, bold: true, color: COL.norm, align: 'right' });
+      if (Math.abs(fr.f) > 0.04) arrow(ctx, P0.x, P0.y, P0.x + FL * fr.f, P0.y, 'force', 1, COL.fric);
+    }
+  }
+  stGMark(ctx, Gp.x, Gp.y, '重心', -12, -10);
+  if (!p.done) stPivot(ctx, P0.x, P0.y, 'つま先', 10, 16);
+  var hp = mp(TIP.head[0], TIP.head[1] + TIP.hr);
+  pinchHand(ctx, hp.x, hp.y, rel.open, rel.up, rel.a);
+  if (!s._rn.R) { calmBubble(ctx, '不安定なつりあい', P0.x + 112, R.y0 + 250, 14); stMsg(ctx, R, '重心がつま先の真上 → つりあってはいる'); }
+  else if (!p.done) {
+    if (p.f > 0.03) stTurn(ctx, P0.x, P0.y, 240, -Math.PI / 2 + 0.12, -Math.PI / 2 + 0.5, '#c0392b', '倒れる', P0.x + 150, P0.y - 225);
+    stMsg(ctx, R, '少し傾くと、重力のモーメントが傾きを大きくする', '#9b2418');
+  } else stMsg(ctx, R, '倒れた！（不安定なつりあい）', '#9b2418');
+}
+function st1TipForce(p) {
+  if (!p.w && Math.abs(p.f) < 1e-9) return { N: 1, f: 0 };
+  /* 重心はつま先から HG。時計回り φ … 重心 (HG sinφ, HG cosφ) */
+  var r = ST1.HG, al = ST1.KP * Math.sin(p.f);
+  var ax = r * (al * Math.cos(p.f) - p.w * p.w * Math.sin(p.f)), ay = r * (-al * Math.sin(p.f) - p.w * p.w * Math.cos(p.f));
+  return { N: Math.max(0, 1 + ay / G), f: ax / G };
+}
+
+/* ============ st2　安定なつりあい ============ */
+var ST2 = {
+  /* やじろべえ（体の座標：支点 O = 原点、y 上向き [m]） */
+  M0: 0.004, Y0: 0.05,                   /* 人形（頭と体）の質量と重心の高さ */
+  MW: 0.002, XW: 0.09, YW: 0.0,          /* 腕の針金（1 本） */
+  XE: 0.15, YE: -0.095,                  /* はしのおもりの位置 */
+  MLIST: [2, 4, 10, 20, 50, 100],        /* 両はしのおもりの質量［g］（えらべる値） */
+  DROP: 0.05, CY: 1.8,                   /* はなす高さ [m]、回転の減衰（接点の摩擦） */
+  /* 足を開いて立つ人（前から見た図）。地面ごと左右に揺らせる */
+  FW: 0.22, HG: 1.10, K2: 0.06, E: 0.55, PDROP: 0.08,   /* HG：重心の高さ（おへそのあたり） */
+  /* 指を動かす（ドラッグ・揺らす）：指はばねのように目標へついていく */
+  KF: 400,
+  SHY: { A: 0.05, T: 1.0, N: 2 },        /* 揺らす（やじろべえ）：振幅 [m]・周期 [s]・回数 */
+  SHP: { A: 0.07, T: 0.75, N: 2 },       /* （使わない：以前の「揺らす」） */
+  QUAKE: [0.5, 2.2, 4.2, 9.0], QT: 1.0, QN: 4     /* 震度 1・3・5・7 のときの地面の加速度の最大値［m/s²］（おおよそ）、周期、回数 */
+};
+ST2.THC = Math.atan(ST2.FW / ST2.HG) / DEG;   /* 倒れはじめる傾き（重心の作用線が足の上）。姿勢で変わる（st2Pose） */
+ST2.AC = G * ST2.FW / ST2.HG;                  /* 両足で立っている人が傾きはじめる、地面の加速度 */
+function yjMass(v) { return ST2.MLIST[clamp(Math.round(v.Mi), 0, ST2.MLIST.length - 1)]; }
+function yjG(v) {                          /* やじろべえ：全質量・重心の高さ（負 ＝ O より下）・慣性モーメント */
+  var M = yjMass(v) / 1000, mt = ST2.M0 + 2 * ST2.MW + 2 * M;
+  var yg = (ST2.M0 * ST2.Y0 + 2 * ST2.MW * ST2.YW + 2 * M * ST2.YE) / mt;
+  var I = ST2.M0 * ST2.Y0 * ST2.Y0 + 2 * ST2.MW * (ST2.XW * ST2.XW + ST2.YW * ST2.YW) + 2 * M * (ST2.XE * ST2.XE + ST2.YE * ST2.YE) + 0.000004;
+  return { M: M, mt: mt, yg: yg, d: -yg, I: I };
+}
+/* 前から見た人（体の座標：足の間のまん中 = 原点）。★姿勢（重心の低さ）で形と重心の高さが変わる★ */
+var POSES = [                                         /* fw … 足の幅の半分［m］（足先の接地点） */
+  { name: '足を閉じて背伸び', d: 0, tip: true, fw: 0.07 },
+  { name: 'ふつうに立つ', d: 0, fw: 0.22 },
+  { name: '開いてひざを曲げる', d: 0.18, fw: 0.30 },
+  { name: '大きく開いて腰を落とす', d: 0.38, fw: 0.40 }
+];
+var FRT = {};
+function frtBuild(ps) {
+  var up = ps.tip ? 0.08 : 0, sh = up - ps.d, L = 0.47;
+  var f = { hr: 0.11, head: [0, 1.60 + sh], neck: [0, 1.48 + sh], hip: [0, 0.92 + sh],
+    sh: [[-0.18, 1.42 + sh], [0.18, 1.42 + sh]],
+    armL: [[-0.18, 1.42 + sh], [-0.28, 1.15 + sh], [-0.34, 0.92 + sh]], armR: [[0.18, 1.42 + sh], [0.28, 1.15 + sh], [0.34, 0.92 + sh]] };
+  function leg(k) {                                   /* ひざはふとももとすねの長さ L で決める（外がわに曲がる） */
+    var fw = ps.fw, hp = [k * 0.07, 0.92 + sh], an = ps.tip ? [k * Math.max(0.05, fw - 0.03), 0.08] : [k * fw, 0];
+    var dx = an[0] - hp[0], dy = an[1] - hp[1], D = Math.hypot(dx, dy), hh = D < 2 * L ? Math.sqrt(L * L - D * D / 4) : 0;
+    var nx = -dy / D, ny = dx / D; if (nx * k < 0) { nx = -nx; ny = -ny; }
+    var kn = [(hp[0] + an[0]) / 2 + nx * hh, (hp[1] + an[1]) / 2 + ny * hh];
+    return { pts: [hp, kn, an], foot: ps.tip ? [an, [k * fw, 0]] : [an, [k * (fw + 0.08), 0]] };
+  }
+  var lL = leg(-1), lR = leg(1);
+  f.legL = lL.pts; f.legR = lR.pts; f.footL = lL.foot; f.footR = lR.foot;
+  f.HG = 1.10 + sh;
+  f.pts = [[0, 1.71 + sh], [-0.11, 1.60 + sh], [0.11, 1.60 + sh], f.armL[2], f.armR[2], f.armL[1], f.armR[1], f.sh[0], f.sh[1], lL.pts[1], lR.pts[1], [-ps.fw, 0], [ps.fw, 0]];
+  return f;
+}
+/* いまのスライダーの姿勢を ST2.HG・THC・AC と FRT に入れる */
+function st2Pose(v) {
+  var ps = POSES[clamp(Math.round(v.Gi), 0, POSES.length - 1)];
+  FRT = frtBuild(ps);
+  ST2.FW = ps.fw; ST2.HG = FRT.HG; ST2.THC = Math.atan(ST2.FW / ST2.HG) / DEG; ST2.AC = G * ST2.FW / ST2.HG;
+  return ps;
+}
+function quakeSp(v) {                               /* 揺れの大きさ → 地面を揺らす振幅（加速度の最大値 = A(2π/T)²） */
+  var a = ST2.QUAKE[clamp(Math.round(v.Qi), 0, 3)], w = 2 * Math.PI / ST2.QT;
+  return { A: a / (w * w), T: ST2.QT, N: ST2.QN };
+}
+/* 支える指（ドラッグ・揺らす） */
+function stFinger() { return { xt: 0, x: 0, v: 0, a: 0, drag: false, sh: null }; }
+function stFingerStep(f, h, lim, sp) {
+  if (f.sh) {
+    f.sh.t += h;
+    var T = sp.T, t = f.sh.t;
+    if (t < 0) f.xt = 0;
+    else if (t < sp.N * T) f.xt = sp.A * Math.sin(2 * Math.PI * t / T);
+    else { f.xt = 0; f.sh = null; }
+  }
+  f.xt = clamp(f.xt, -lim, lim);
+  var k = ST2.KF;
+  f.a = k * (f.xt - f.x) - 2 * Math.sqrt(k) * f.v;
+  f.v += f.a * h; f.x += f.v * h;
+}
+function stFingerRest(f) { return !f.drag && !f.sh && Math.abs(f.x - f.xt) < 2e-4 && Math.abs(f.v) < 2e-3; }
+
+DEFS['st2'] = {
+  id: 'st2', tab: '2　安定なつりあい', noAB: true, noPlay: true, noResetAll: true,
+  title: '2　安定なつりあい　～ずれても、もとにもどる～',
+  subSplit: ['<b>やじろべえ</b>は、<b>重心 G が支点 O より下</b>にある。傾くと重力の作用線は O からずれるが、O のまわりの重力のモーメントは<b>傾きをもとにもどす向き</b>にはたらくので、ゆれながらもとにもどる。' +
+      '両はしのおもりを重くすると重心がさらに下がり、もどそうとするモーメントが大きくなって、より安定する。<b>指をドラッグ</b>して揺らしてみよう。',
+    '<b>右の図（やじろべえ全体）</b>：指が急に右へ動くと、支点 O には<b>右向きの摩擦力</b>がはたらく。重心 G は慣性ですぐにはついてこないので、やじろべえは O が先に進んだ形に傾く（G が O より左にずれる）。' +
+      'すると O のまわりの<b>重力のモーメントがもとにもどす向き</b>にはたらき、ゆれながらもとにもどる。<b>スロー再生</b>にすると見やすい。'],
+  split: 0.5,
+  cw: function (v, s) { return (s && s._narrow) ? 470 : 860; },
+  ch: function (v, s) { return (s && s._narrow) ? 760 : 380; },
+  vars: [
+    { k: 'Mi', label: '両はしのおもりの質量', unit: '', min: 0, max: 5, step: 1, dec: 0, def: 3, fmtv: ST2.MLIST.map(function (m) { return m + ' g'; }) },
+    { k: 'thY', label: 'はなすときの傾き', unit: '°', min: 0, max: 40, step: 5, dec: 0, def: 30 },
+    { k: 'Gi', label: '足幅と重心の低さ', unit: '', min: 0, max: 3, step: 1, dec: 0, def: 1, noCtl: true, fmtv: POSES.map(function (q) { return q.name; }) },
+    { k: 'Qi', label: '揺れの大きさ', unit: '', min: 0, max: 3, step: 1, dec: 0, def: 2, noCtl: true, fmtv: ['震度 1', '震度 3', '震度 5', '震度 7'] }
+  ],
+  varGroups: [
+    { label: '', keys: ['Mi', 'thY'], note: '※ おもり以外の質量：人形（頭と体）4 g、腕の針金 2 g × 2 本（合計 8 g）' }
+  ],
+  preHtml: function () { return '<div class="areattl">やじろべえ</div>'; },
+  visFirst: true,
+  cvHtml: function () { return stBtns('L', true, 'やじろべえ'); },
+  vis: [{ k: 'F', label: '力を表示', def: true }, { k: 'L', label: '重力の作用線を表示', def: true }],
+  guides: [{ key: 'st2.left', x: 0 }],
+  resetSide: function (s, side) {
+    var v = V(s);
+    if (side === 'L') {
+      s._yj = { ph: 'hold', h: ST2.DROP, vy: 0, th: v.thY * DEG, w: 0, done: false, pend: false };
+      s._fL = stFinger();
+    } else {
+      st2Pose(v);                                          /* 人は最初から立っている（手ではなさない） */
+      s._fp = { ph: 'stand', h: 0, vy: 0, f: 0, w: 0, pv: 1, fell: false, pend: false, yo: 0 };
+      s._fR = stFinger();
+    }
+  },
+  reset: function (s) { s._rn = { L: null, R: null }; DEFS['st2'].resetSide(s, 'L'); DEFS['st2'].resetSide(s, 'R'); },
+  startSide: function (s, side) { if (side === 'L') s._yj.ph = 'drop'; else { s._fR.sh = { t: 0 }; s._fR.xt = 0; } },   /* 人：地面を揺らしはじめる */
+  /* 揺らす：まだはなしていなければ、はなしてから（のった 0.5 秒後に）揺らす */
+  shake: function (s, side) {
+    var run = s._rn[side], o = side === 'L' ? s._yj : s._fp, f = side === 'L' ? s._fL : s._fR;
+    if (!run || (run.done && o.fell)) {
+      DEFS['st2'].resetSide(s, side); s._rn[side] = { t: 0, paused: false, done: false }; DEFS['st2'].startSide(s, side);
+      o = side === 'L' ? s._yj : s._fp; f = side === 'L' ? s._fL : s._fR;
+      o.pend = true; return;
+    }
+    if (o.ph === 'hold' || o.ph === 'drop') { o.pend = true; return; }
+    f.sh = { t: 0 }; f.xt = 0;
+    run.done = false; run.paused = false; o.done = false;
+  },
+  stepSide: function (s, side, h) {
+    var v = V(s);
+    if (side === 'L') {
+      var y = s._yj, fL = s._fL;
+      stFingerStep(fL, h, 0.12, ST2.SHY);
+      if (y.ph === 'drop') {
+        y.vy += G * h; y.h -= y.vy * h;
+        if (y.h <= 0) { y.h = 0; y.ph = 'rock'; if (y.pend) { fL.sh = { t: -0.5 }; y.pend = false; } }
+      } else if (y.ph === 'rock') {
+        var q = yjG(v);
+        /* 指（支点）が加速度 a で動くと、重心に −m a の見かけの力 → O のまわりのモーメント */
+        var al = (-q.mt * G * q.d * Math.sin(y.th) - q.mt * fL.a * q.d * Math.cos(y.th)) / q.I - ST2.CY * y.w;
+        y.w += al * h; y.th += y.w * h; y.al = al;
+        if (Math.abs(y.th) < 0.008 && Math.abs(y.w) < 0.04 && stFingerRest(fL)) { y.th = 0; y.w = 0; y.al = 0; y.done = true; }
+        else y.done = false;
+      }
+      return;
+    }
+    var p = s._fp, fR = s._fR;
+    st2Pose(v);
+    stFingerStep(fR, h, 0.8, quakeSp(v));
+    var I = ST2.HG * ST2.HG + ST2.FW * ST2.FW + ST2.K2, ap = fR.a;
+    if (p.ph === 'drop') {
+      p.vy += G * h; p.h -= p.vy * h;
+      var low = p.h - ST2.FW * Math.abs(Math.sin(p.f));     /* 低いほうの足の高さ */
+      if (low <= 0) {
+        p.h = ST2.FW * Math.abs(Math.sin(p.f)); p.pv = p.f >= 0 ? 1 : -1; p.w = 0;
+        p.ph = Math.abs(p.f) < 1e-6 ? 'stand' : 'rock';
+        if (p.pend) { fR.sh = { t: -0.5 }; p.pend = false; }
+      }
+    } else if (p.ph === 'stand') {                           /* 両足で立っている：指の加速度が大きいと傾きはじめる */
+      p.f = 0; p.w = 0; p.al = 0;
+      if (ap > ST2.AC) { p.ph = 'rock'; p.pv = -1; }
+      else if (ap < -ST2.AC) { p.ph = 'rock'; p.pv = 1; }
+    }
+    if (p.ph === 'rock') {
+      var sg = p.pv;
+      /* 支点の足から見た重心（時計回りに φ 回転）と、重力・見かけの力（−m a）のモーメント */
+      var gx = -sg * ST2.FW * Math.cos(p.f) + ST2.HG * Math.sin(p.f), gyy = sg * ST2.FW * Math.sin(p.f) + ST2.HG * Math.cos(p.f);
+      var al2 = (G * gx - ap * gyy) / I;
+      p.w += al2 * h; p.f += p.w * h; p.al = al2;
+      if (sg * p.f <= 0) {                                    /* もう片方の足がつく（衝突でおそくなる） */
+        if (Math.abs(p.w) < 0.06) { p.f = 0; p.w = 0; p.al = 0; p.ph = 'stand'; }
+        else { p.w *= ST2.E; p.pv = -sg; p.f = 0; }
+      }
+      if (stMinY(FRT.pts.map(function (q) { return [q[0] - sg * ST2.FW, q[1]]; }), -p.f) < -1e-4) { p.w = 0; p.al = 0; p.ph = 'off'; p.fell = true; }   /* 倒れて地面についた */
+    }
+  },
+  sideDone: function (s, side) {
+    if (side === 'L') return s._yj.done;
+    var p = s._fp;
+    return (p.ph === 'stand' && stFingerRest(s._fR) && !p.pend) || p.ph === 'off';
+  },
+  tickMain: function (s, dt) {
+    var r = stTick(DEFS['st2'], s, dt);
+    if (r) DEFS['st2'].drawBelow(s);                          /* ズームアップも動かす */
+    return r;
+  },
+  /* 指・地面のドラッグ（のせたあと） */
+  dragDown: function (s, lx, ly, sides) {
+    var g = s._g5; if (!g) return false;
+    var side = null;
+    (sides || ['L']).forEach(function (k) { var q = g[k]; if (q && lx > q.x1 && lx < q.x2 && ly > q.y1 && ly < q.y2) side = k; });
+    if (!side) return false;
+    var o = side === 'L' ? s._yj : s._fp;
+    if (o.fell) return false;
+    if (side === 'L' && (!s._rn.L || o.ph === 'hold' || o.ph === 'drop')) return false;
+    s._dg = { side: side, lx0: lx, x0: (side === 'L' ? s._fL : s._fR).xt };
+    return true;
+  },
+  drag: function (s, lx) {
+    var dg = s._dg; if (!dg) return;
+    var g = s._g5[dg.side], f = dg.side === 'L' ? s._fL : s._fR, run = s._rn[dg.side];
+    if (!run) { run = s._rn[dg.side] = { t: 0, paused: false, done: false }; }   /* 人：スタート前でも地面を動かせる */
+    f.drag = true; f.sh = null;
+    f.xt = clamp(dg.x0 + (lx - dg.lx0) / g.S, -g.lim, g.lim);
+    if (run) { run.done = false; run.paused = false; }
+    if (dg.side === 'L') s._yj.done = false;
+    stSync(s);
+  },
+  dragUp: function (s) { var dg = s._dg; if (!dg) return; (dg.side === 'L' ? s._fL : s._fR).drag = false; s._dg = null; },
+  draw: function (ctx, s, W, H) {
+    if (!s._rn) DEFS['st2'].reset(s);
+    var v = V(s), nar = !!s._narrow, RR = stRegions(W, H, nar);
+    var vk = v.Mi + ',' + v.thY + ',' + v.Qi + ',' + v.Gi;
+    if (s._vk !== undefined && s._vk !== vk) {                /* スライダーを動かしたら、その側をつまんだ状態にもどす */
+      var ok = s._vk.split(','), L = ok[0] != v.Mi || ok[1] != v.thY, Rr = ok[2] != v.Qi || ok[3] != v.Gi;
+      if (L && s._rn.L) { DEFS['st2'].resetSide(s, 'L'); s._rn.L = null; }
+      if (Rr) { DEFS['st2'].resetSide(s, 'R'); s._rn.R = null; }
+      stSync(s);
+    }
+    s._vk = vk;
+    if (!s._rn.L) s._yj.th = v.thY * DEG;                    /* はなす前：スライダーの傾きをそのまま */
+    s._g5 = s._g5 || {};
+    stDivider(ctx, W, H, nar);
+    stClip(ctx, RR[0], function () { st2DrawYj(ctx, s, v, RR[0], stRel(s._rn.L)); });
+    var n0 = _fArrows.length;                                 /* 右の図の矢印は「同じ長さの印」の対象にしない（位置がずれて小さな線が出るため） */
+    stClip(ctx, RR[1], function () { st2ZoomOutL(ctx, s, RR[1]); });    /* となりに、やじろべえのズームアウト（ためし） */
+    _fArrows.length = n0;
+  },
+  result: function (v, s) {
+    var q = yjG(v);
+    return { items: [
+      { k: 'やじろべえの重心', v: '支点 O の ' + fmt(q.d * 100, 1) + ' cm 下', kbox: true }
+    ], note: '' };
+  },
+  below: function () {
+    var vs = DEFS['st2'].vars, vG = vs.filter(function (x) { return x.k === 'Gi'; })[0], vP = vs.filter(function (x) { return x.k === 'Qi'; })[0];
+    return '<div class="bcard st2pcard"><div class="areattl">足を開いて立つ人</div>' +
+      '<div class="ctrl grp st2pctl">' + varRowHtml(vG) + varRowHtml(vP) + '<div class="gnote" id="st2thc"></div></div>' +
+      '<div class="cvstage nobar st2pwrap"><canvas id="st2p"></canvas>' +
+      '<div class="guide" style="left:10px">' + guideHtml('st2.right') + '</div>' + stBtns('R', false, '足を開いて立つ人', 'L', '▶ スタート（地面を揺らす）') + '</div>' +
+      '<div class="cvsub split2" style="grid-template-columns:50% 1fr">' +
+      '<p>地面が揺れると、人は傾いて、低いほうの足を支点にして回ろうとする。<b>重心の作用線が両足の間</b>を通っていれば、その足のまわりの重力のモーメントは<b>もとにもどす向き</b>。作用線が足の外に出ると倒れる。' +
+      '<b>足を大きく開いて腰を落とす</b>と、支える面が広く重心が低くなるので、倒れはじめる傾きが大きい（倒れにくい）。<b>足を閉じて背伸び</b>すると倒れやすい。揺れの大きさを変えたり、<b>地面をドラッグ</b>したりして確かめよう。</p>' +
+      '<p><b>ズームアップ</b>：地面が急に右へ動くと、足には<b>右向きの摩擦力</b>がはたらく。重心は高い所にあるので、体は足だけが先に進んだ形に傾き、左足を支点にして回ろうとする。' +
+      'このとき<b>重心の作用線が両足の間</b>を通っていれば、左足のまわりの重力のモーメントがもとにもどす向きにはたらく。揺れが大きくて作用線が足の外に出ると倒れる。</p></div></div>' +
+      '<div class="bcard"><h3>＜考え方＞　安定なつりあい</h3>' +
+      '<p>ずれたとき、<b>もとにもどそうとするはたらき</b>があるつりあいを<b>安定なつりあい</b>という。やじろべえは重心が支点の下にあるから、足を開いて立つ人は重心の作用線が両足の間を通るから、' +
+      '傾いても支点のまわりの重力のモーメントがもとにもどす向きにはたらく。</p>' +
+      '<p class="mini">逆に、少しずれるとずれがどんどん大きくなるつりあいが「不安定なつりあい」（となりのタブ）。</p></div>';
+  },
+  drawBelow: function (s) {                                  /* 2 段目：足を開いて立つ人 と そのズームアップ */
+    var cv = document.getElementById('st2p'); if (!cv || !s._rn || !cv.clientWidth) return;
+    var nar = cv.clientWidth < 600, W = nar ? 470 : 860, H = nar ? 760 : 380, ctx = prep(cv, W, H), v = V(s), RR = stRegions(W, H, nar);
+    cv._cw = W; cv._ch = H; s._g5 = s._g5 || {};
+    st2Pose(v);
+    var ro = document.getElementById('st2thc');
+    if (ro) ro.textContent = '重心の高さ ' + fmt(ST2.HG * 100, 0) + ' cm ／ 倒れはじめる傾き ' + fmt(ST2.THC, 1) + '°';
+    stDivider(ctx, W, H, nar);
+    stClip(ctx, RR[0], function () { st2DrawPerson(ctx, s, v, RR[0], stRel(s._rn.R)); });
+    stClip(ctx, RR[1], function () { st2ZoomR(ctx, s, RR[1]); });
+  }
+};
+DEFS['st2'].wire = function (s, host) {
+  stWire(DEFS['st2'])(s, host);
+  /* 2 段目の図（人）：地面のドラッグ */
+  var cv = document.getElementById('st2p'); if (!cv) return;
+  var d = DEFS['st2'], on = false;
+  function loc(ev) { var r = cv.getBoundingClientRect(); return { lx: (ev.clientX - r.left) / r.width * (cv._cw || 860), ly: (ev.clientY - r.top) / r.height * (cv._ch || 380) }; }
+  cv.addEventListener('pointerdown', function (ev) {
+    var w = loc(ev);
+    if (!d.dragDown(s, w.lx, w.ly, ['R'])) return;
+    on = true; cv.setPointerCapture(ev.pointerId); d.drag(s, w.lx); d.drawBelow(s); ev.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (ev) {
+    var w = loc(ev);
+    if (!on) { var g = s._g5 && s._g5.R; cv.style.cursor = (g && w.ly > g.y1 && w.ly < g.y2) ? 'grab' : 'default'; return; }
+    d.drag(s, w.lx); d.drawBelow(s); ev.preventDefault();
+  });
+  function end() { if (on) { on = false; d.dragUp(s); } }
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+};
+/* やじろべえの絵（指・腕・人形・おもり）。O … 支点の画面位置、P0 … 体の原点の画面位置、S … px/m、th … 傾き */
+function yjFigure(ctx, v, O, P0, S, th, handSc) {
+  var M = yjMass(v), mp = stMap(P0, th, S), k = S / 760;
+  pointHand(ctx, O.x, O.y + 1, 0, handSc);             /* 下から支える指（指先 = 支点 O） */
+  ctx.save(); ctx.strokeStyle = '#7a5c3a'; ctx.lineWidth = 3 * Math.sqrt(k); ctx.lineCap = 'round';
+  [-1, 1].forEach(function (sg) {
+    var a = mp(0, 0.045), c = mp(sg * 0.10, 0.07), e = mp(sg * ST2.XE, ST2.YE);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(c.x, c.y, e.x, e.y); ctx.stroke();
+  });
+  ctx.restore();
+  var b0 = mp(0, 0), b1 = mp(0, 0.058), hc = mp(0, 0.079);
+  ctx.save(); ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 7 * k; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+  ctx.beginPath(); ctx.arc(hc.x, hc.y, 0.021 * S, 0, Math.PI * 2); ctx.fillStyle = '#ffe3b8'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#8a5a2b'; ctx.stroke();
+  var e1 = mp(-0.007, 0.082), e2 = mp(0.007, 0.082), mo = mp(0, 0.072);
+  ctx.fillStyle = '#3d2b1a'; [e1, e2].forEach(function (e) { ctx.beginPath(); ctx.arc(e.x, e.y, 1.8 * k, 0, Math.PI * 2); ctx.fill(); });
+  ctx.beginPath(); ctx.arc(mo.x, mo.y - 2 * k, 3.5 * k, 0.2 * Math.PI, 0.8 * Math.PI); ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.restore();
+  var rb = (4.5 + 4.5 * Math.cbrt(M / 20)) * k;
+  [-1, 1].forEach(function (sg) { var e = mp(sg * ST2.XE, ST2.YE); ball3d(ctx, e.x, e.y, rb, '#f1a08f', '#8e2a1c'); });
+  return { mp: mp, rb: rb, M: M };
+}
+function st2DrawYj(ctx, s, v, R, rel) {
+  var S = 760, y = s._yj, q = yjG(v), fL = s._fL;
+  var O = { x: R.x0 + R.w * 0.42 + fL.x * S, y: R.y0 + R.h * 0.55 };
+  s._g5.L = { x1: O.x - 40, x2: O.x + 45, y1: O.y - 12, y2: O.y + 90, S: S, lim: 0.12 };
+  var air = y.ph === 'hold' || y.ph === 'drop';
+  var P0 = { x: air ? R.x0 + R.w * 0.42 : O.x, y: O.y - y.h * S };
+  var fg = yjFigure(ctx, v, O, P0, S, y.th, 0.78), mp = fg.mp;
+  var e0 = mp(ST2.XE, ST2.YE);
+  label(ctx, 'おもり ' + fg.M + ' g', e0.x + fg.rb + 6, e0.y + 14, { size: 12.5, bold: true, color: '#8e2a1c', align: 'left' });
+  var Gp = mp(0, q.yg);
+  if (v.showL) yjLines(ctx, O, Gp, R.y0 + 4, R.y0 + R.h - 40, y.ph === 'rock');
+  if (v.showF) st2YjArrows(ctx, y, q, fL, O, Gp, 58, 13);
+  if (s._rn.L && y.ph === 'rock' && !fL.drag && !fL.sh)       /* 指はドラッグできる */
+    label(ctx, '← 指をドラッグ →', R.x0 + 14, R.y0 + R.h - 40, { size: 12, bold: true, color: '#a85c0c', align: 'left' });
+  stGMark(ctx, Gp.x, Gp.y, '重心', air ? -20 : -14, 2);
+  stPivot(ctx, O.x, O.y, '支点 O', 14, -12);
+  pinchHand(ctx, mp(0, 0.10).x, mp(0, 0.10).y, rel.open, rel.up, rel.a);
+  if (!s._rn.L) stMsg(ctx, R, '重心は支点 O の ' + fmt(q.d * 100, 1) + ' cm 下');
+  else if (!y.done) {
+    if (y.ph === 'rock' && Math.abs(y.th) > 0.05 && y.th * y.w < 0) {
+      var sgn = y.th > 0 ? 1 : -1;                         /* もどる向き（反時計回りに傾いたら時計回りにもどる） */
+      stTurn(ctx, O.x, O.y, 112, -Math.PI / 2 - sgn * 1.05, -Math.PI / 2 - sgn * 0.45, '#2e8b57', 'もどる', O.x - sgn * 150, O.y - 70);
+    }
+    stMsg(ctx, R, '傾くと、重力のモーメントがもとにもどす', '#0a5c5c');
+  } else stMsg(ctx, R, '安定！　もとの向きにもどった', '#0a5c5c');
+}
+/* 重力の作用線（上下に長く）・O を通る鉛直線・うで（O から作用線までの水平な線）。
+   ★作用線を長くかき、うでを見せて「重力のモーメントがもどす向き」とわかるようにする★ */
+function yjLines(ctx, O, Gp, yTop, yBot, arm, big, rr) {
+  dotLine(ctx, O.x, yTop, O.x, yBot, 'rgba(90,100,110,.45)', 1.2, [3, 4]);
+  dotLine(ctx, Gp.x, yTop, Gp.x, yBot, 'rgba(209,53,43,.7)', 1.8, [7, 5]);
+  label(ctx, '重力の作用線', Gp.x + (Gp.x >= O.x ? 6 : -6), big ? yTop + 12 : yBot - 10, { size: big ? 12.5 : 11.5, bold: true, color: '#c0392b', align: Gp.x >= O.x ? 'left' : 'right' });
+  if (arm && Math.abs(Gp.x - O.x) > 4) {
+    ctx.save(); ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = big ? 3 : 2.4; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(Gp.x, O.y); ctx.stroke(); ctx.restore();
+    label(ctx, 'うで', (O.x + Gp.x) / 2, O.y + (big ? 14 : 12), { size: big ? 13 : 12, bold: true, color: '#2e8b57' });
+    if (big) {                                         /* O のまわりの重力のモーメントの向き（いつも、もとにもどす向き） */
+      var cw = Gp.x > O.x, r = rr || 74;
+      if (cw) stTurn(ctx, O.x, O.y, r, -0.15, 0.75, '#c0392b', '', 0, 0);
+      else stTurn(ctx, O.x, O.y, r, Math.PI + 0.15, Math.PI - 0.75, '#c0392b', '', 0, 0);
+      label(ctx, '重力のモーメント', O.x + (cw ? 1 : -1) * (r + 10), O.y + r * 0.84, { size: 12.5, bold: true, color: '#c0392b', align: cw ? 'left' : 'right' });
+    }
+  }
+}
+/* やじろべえにはたらく力（重力・垂直抗力・摩擦力） */
+function st2YjArrows(ctx, y, q, fL, O, Gp, FL, fs) {
+  var fr = st2YjForce(y, q, fL);
+  arrow(ctx, Gp.x, Gp.y, Gp.x, Gp.y + FL, 'force', 1, COL.force);
+  label(ctx, '重力', Gp.x + 10, Gp.y + FL - 4, { size: fs, bold: true, color: COL.force, align: 'left' });
+  if (y.ph !== 'hold' && y.ph !== 'drop') {
+    arrow(ctx, O.x, O.y, O.x, O.y - FL * fr.N, 'force', 1, COL.norm);
+    label(ctx, '垂直抗力', O.x - 12, O.y - FL * fr.N * 0.45, { size: fs, bold: true, color: COL.norm, align: 'right' });
+    if (Math.abs(fr.f) > 0.03) {
+      var fa = clamp(fr.f, -1.4, 1.4);
+      arrow(ctx, O.x, O.y, O.x + FL * fa, O.y, 'force', 1, COL.fric);
+      label(ctx, '摩擦力', O.x + FL * fa + (fa > 0 ? 6 : -6), O.y - 10, { size: fs - 0.5, bold: true, color: COL.fric, align: fa > 0 ? 'left' : 'right' });
+    }
+  }
+  return fr;
+}
+function st2YjForce(y, q, fL) {
+  if (y.ph !== 'rock') return { N: 1, f: 0 };
+  var al = y.al || 0, d = q.d, th = y.th, w = y.w;
+  /* 重心 (d sinθ, −d cosθ)（θ … 反時計回り）＋ 支点（指）の加速度 */
+  var ax = (fL ? fL.a : 0) + d * (al * Math.cos(th) - w * w * Math.sin(th)), ay = d * (al * Math.sin(th) + w * w * Math.cos(th));
+  return { N: Math.max(0, 1 + ay / G), f: ax / G };
+}
+/* 前から見た人の棒人間 */
+function stickFront(ctx, mp, S) {
+  var INK = '#2a3036', k = Math.min(1.8, S / 118);
+  ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 3.4 * k; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  function poly(a) { ctx.beginPath(); a.forEach(function (q, i) { var p = mp(q[0], q[1]); i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y); }); ctx.stroke(); }
+  poly([FRT.neck, FRT.hip]); poly(FRT.sh);
+  poly(FRT.armL); poly(FRT.armR);
+  poly([FRT.legL[0], FRT.legR[0]]);
+  poly(FRT.legL); poly(FRT.legR);
+  poly(FRT.footL); poly(FRT.footR);                  /* 足先（背伸びのときはつま先立ち） */
+  var hc = mp(FRT.head[0], FRT.head[1]);
+  ctx.beginPath(); ctx.arc(hc.x, hc.y, FRT.hr * S, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+/* 揺れる地面（左右に動く）。模様が地面といっしょに動く */
+function shakeGround(ctx, x1, x2, y, off, S) {
+  ctx.save();
+  ctx.fillStyle = '#efe6d8'; ctx.fillRect(x1, y, x2 - x1, 26);
+  ctx.strokeStyle = '#1b1f24'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+  ctx.strokeStyle = '#6b5a45'; ctx.lineWidth = 1.2;
+  var step = 12, o = ((off * S) % step + step) % step;
+  for (var x = x1 - step + o; x < x2; x += step) { ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(x - 9, y + 11); ctx.stroke(); }
+  /* 目印の小石（動きがわかるように） */
+  ctx.fillStyle = '#9c8b73';
+  var st = 90, o2 = ((off * S) % st + st) % st;
+  for (var x2b = x1 - st + o2; x2b < x2 + st; x2b += st) { ctx.beginPath(); ctx.ellipse(x2b + 20, y + 19, 6, 3, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+/* 人の体の座標 → 画面（空中か、足のまわりに回っているか） */
+function st2PersonMap(p, base, gy, S) {
+  var sgn = p.pv || 1;
+  if (p.ph === 'hold' || p.ph === 'drop') {
+    var P0 = { x: base.x, y: gy - p.h * S };
+    return { mp: stMap(P0, -p.f, S), P0: P0, sgn: sgn };
+  }
+  var Pv = { x: base.x + sgn * ST2.FW * S, y: gy }, mp0 = stMap(Pv, -p.f, S);
+  return { mp: function (x, yy) { return mp0(x - sgn * ST2.FW, yy); }, P0: Pv, sgn: sgn };
+}
+function st2PersonArrows(ctx, p, fR, pm, gy, FL, fs, big) {
+  var mp = pm.mp, P0 = pm.P0, sgn = pm.sgn, Gp = mp(0, ST2.HG), res = { f: 0 };
+  arrow(ctx, Gp.x, Gp.y, Gp.x, Gp.y + FL, 'force', 1, COL.force);
+  label(ctx, '重力', Gp.x + 10, Gp.y + FL - 4, { size: fs, bold: true, color: COL.force, align: 'left' });
+  if (p.ph === 'stand') {                             /* 両足で立っている：垂直抗力は半分ずつ、摩擦力も半分ずつ */
+    var ff = fR.a / G;
+    [-1, 1].forEach(function (k) {
+      var q = mp(k * ST2.FW, 0);
+      arrow(ctx, q.x, q.y, q.x, q.y - FL / 2, 'force', 1, COL.norm);
+      if (Math.abs(ff) > 0.03) arrow(ctx, q.x, q.y, q.x + FL * clamp(ff, -1.4, 1.4) / 2, q.y, 'force', 1, COL.fric);
+    });
+    label(ctx, '垂直抗力', mp(-ST2.FW, 0).x - 8, gy - 22, { size: fs, bold: true, color: COL.norm, align: 'right' });
+    if (Math.abs(ff) > 0.03 && big) label(ctx, '摩擦力', mp(ff > 0 ? ST2.FW : -ST2.FW, 0).x + (ff > 0 ? 1 : -1) * (FL * Math.abs(clamp(ff, -1.4, 1.4)) / 2 + 6), gy + 14, { size: fs - 0.5, bold: true, color: COL.fric, align: ff > 0 ? 'left' : 'right' });
+    res.f = ff;
+  } else if (p.ph === 'rock') {
+    var fr = st2PForce(p, fR);
+    arrow(ctx, P0.x, P0.y, P0.x, P0.y - FL * fr.N, 'force', 1, COL.norm);
+    label(ctx, '垂直抗力', P0.x + (sgn > 0 ? 10 : -10), P0.y - FL * fr.N * 0.6, { size: fs, bold: true, color: COL.norm, align: sgn > 0 ? 'left' : 'right' });
+    if (Math.abs(fr.f) > 0.03) {
+      var fa = clamp(fr.f, -1.4, 1.4);
+      arrow(ctx, P0.x, P0.y, P0.x + FL * fa, P0.y, 'force', 1, COL.fric);
+      if (big) label(ctx, '摩擦力', P0.x + FL * fa + (fa > 0 ? 6 : -6), P0.y + 14, { size: fs - 0.5, bold: true, color: COL.fric, align: fa > 0 ? 'left' : 'right' });
+    }
+    res.f = fr.f;
+  }
+  return res;
+}
+function st2DrawPerson(ctx, s, v, R, rel) {
+  var S = 118, p = s._fp, fR = s._fR, gy = R.y0 + R.h - 70;
+  var base = { x: R.x0 + R.w * 0.46 + fR.x * S };             /* 両足のまん中（地面といっしょに動く） */
+  shakeGround(ctx, R.x0 + 2, R.x0 + R.w - 2, gy, fR.x, S);
+  s._g5.R = { x1: R.x0, x2: R.x0 + R.w, y1: gy - 6, y2: gy + 30, S: S, lim: 0.8 };
+  /* 支える面（両足の間） */
+  ctx.save(); ctx.strokeStyle = 'rgba(15,138,138,.45)'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(base.x - ST2.FW * S, gy - 1); ctx.lineTo(base.x + ST2.FW * S, gy - 1); ctx.stroke(); ctx.restore();
+  if (!p.fell && !fR.drag && !fR.sh)
+    label(ctx, '← 地面をドラッグ →', R.x0 + R.w - 12, gy + 40, { size: 12, bold: true, color: '#a85c0c', align: 'right' });
+  var pm = st2PersonMap(p, base, gy, S), mp = pm.mp;
+  stickFront(ctx, mp, S);
+  var Gp = mp(0, ST2.HG);
+  if (v.showL && !p.fell) dotLine(ctx, Gp.x, Gp.y - 30, Gp.x, gy, 'rgba(209,53,43,.55)', 1.4, [6, 5]);
+  if (v.showF && !p.fell) st2PersonArrows(ctx, p, fR, pm, gy, 62, 13, false);
+  stGMark(ctx, Gp.x, Gp.y, '重心', -12, -10);
+  if (p.ph === 'rock') stPivot(ctx, pm.P0.x, pm.P0.y, '', 0, 0);
+  var run = s._rn.R;
+  if (!run) stMsg(ctx, R, '揺れの大きさを選んで、スタートで地面を揺らそう', '#3d4c5a');
+  else if (p.fell) stMsg(ctx, R, '倒れた（重心の作用線が足の外に出た）', '#9b2418');
+  else if (!run.done) {
+    var outside = Math.abs(p.f) > ST2.THC * DEG;
+    if (p.ph === 'rock' && !outside && Math.abs(p.f) > 0.03 && p.w * p.f < 0) {
+      var sg2 = p.f > 0 ? 1 : -1;                        /* 時計回りに傾いたら、反時計回りにもどる */
+      stTurn(ctx, base.x, gy - 150, 90, -Math.PI / 2 + sg2 * 0.75, -Math.PI / 2 + sg2 * 0.2, '#2e8b57', 'もどる', base.x + sg2 * 112, gy - 228);
+    }
+    stMsg(ctx, R, outside ? '重心の作用線が足の外 → 倒れる' : '傾いても、重力のモーメントがもとにもどす', outside ? '#9b2418' : '#0a5c5c');
+  } else stMsg(ctx, R, '安定！　もとにもどった', '#0a5c5c');
+}
+function st2PForce(p, fR) {
+  var sg = p.pv || 1, al = p.al || 0, w = p.w, f = p.f;
+  /* 支点の足から見た重心：時計回り φ で (−sgFW cosφ + HG sinφ, sgFW sinφ + HG cosφ) */
+  var rx = -sg * ST2.FW * Math.cos(f) + ST2.HG * Math.sin(f), ry = sg * ST2.FW * Math.sin(f) + ST2.HG * Math.cos(f);
+  /* 時計回りの角速度 w、角加速度 al：a = 支点の加速度 ＋ al × r（時計回り） − w² r */
+  var ax = (fR ? fR.a : 0) + al * ry - w * w * rx, ay = -al * rx - w * w * ry;
+  return { N: Math.max(0, 1 + ay / G), f: ax / G };
+}
+/* 支点（指・地面）の加速度の矢印（青） */
+function stAccArrow(ctx, x, y, a, text) {
+  if (Math.abs(a) < 0.3) return;
+  var L = clamp(a, -12, 12) * 7;
+  arrow(ctx, x, y, x + L, y, 'force', 0.9, '#2f7fd0');
+  label(ctx, text, x + L + (L > 0 ? 6 : -6), y, { size: 12.5, bold: true, color: '#2f7fd0', align: L > 0 ? 'left' : 'right' });
+}
+/* ＜ズームアップ＞ 左：やじろべえの支点のまわり */
+function st2ZoomL(ctx0, s, R) {
+  var ctx = ctx0; ctx.save(); ctx.translate(R.x0 + (R.w - 420) / 2, R.y0 + 6);
+  var W = 420, H = 300, v = V(s), y = s._yj, q = yjG(v), fL = s._fL;
+  var S = 1700, O = { x: W / 2, y: 105 };
+  label(ctx, 'やじろべえの支点 O のまわり（約 2.2 倍）', 12, 16, { size: 13, bold: true, color: '#1f3b57', align: 'left' });
+  if (y.ph === 'hold' || y.ph === 'drop') {
+    label(ctx, 'スタートを押して、指にのせてから揺らそう', W / 2, H / 2, { size: 14, bold: true, color: '#8a97a4' });
+    ctx.restore(); return;
+  }
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 26, W, H - 26); ctx.clip();
+  var fg = yjFigure(ctx, v, O, O, S, y.th, 1.0), Gp = fg.mp(0, q.yg);
+  yjLines(ctx, O, Gp, 26, H, true, true);
+  NO_SHIFT = false;
+  var fr = st2YjArrows(ctx, y, q, fL, O, Gp, 80, 14);
+  stGMark(ctx, Gp.x, Gp.y, '重心 G', -16, 2);
+  stPivot(ctx, O.x, O.y, 'O', 12, -12);
+  stAccArrow(ctx, O.x + 40, H - 30, fL.a, '指の加速度');
+  ctx.restore();
+  var dir = function (x) { return x > 0 ? '右' : '左'; };
+  var cap = Math.abs(fL.a) > 0.3 ? '指が' + dir(fL.a) + 'へ加速 → 支点 O に' + dir(fr.f) + '向きの摩擦力。重心 G は遅れて、やじろべえが傾く。'
+    : (Math.abs(y.th) > 0.02 ? '傾いている → O のまわりの重力のモーメントが、もとにもどす向きにはたらく。' : '指を動かすと、支点 O に摩擦力がはたらく。');
+  ctx.restore(); stCap(ctx, R, cap);
+}
+/* ＜ズームアップ＞ 右：人の足もとと重心 */
+function st2ZoomR(ctx0, s, R) {
+  var ctx = ctx0; ctx.save(); ctx.translate(R.x0 + (R.w - 420) / 2, R.y0 + 6);
+  var W = 420, H = 300, p = s._fp, fR = s._fR;
+  var S = 170, gy = H - 40, base = { x: W / 2 - 10 };
+  label(ctx, '人の足もとと重心（約 1.4 倍）', 12, 16, { size: 13, bold: true, color: '#1f3b57', align: 'left' });
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 26, W, H - 26); ctx.clip();
+  shakeGround(ctx, 0, W, gy, fR.x, S);
+  var pm = st2PersonMap(p, base, gy, S), Gp = pm.mp(0, ST2.HG);
+  stickFront(ctx, pm.mp, S);
+  if (!p.fell) {
+    dotLine(ctx, Gp.x, Gp.y - 20, Gp.x, gy, 'rgba(209,53,43,.55)', 1.4, [6, 5]);
+    ctx.save(); ctx.strokeStyle = 'rgba(15,138,138,.45)'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    var a1 = pm.mp(-ST2.FW, 0), a2 = pm.mp(ST2.FW, 0);
+    ctx.beginPath(); ctx.moveTo(a1.x, gy - 1); ctx.lineTo(a2.x, gy - 1); ctx.stroke(); ctx.restore();
+    var r = st2PersonArrows(ctx, p, fR, pm, gy, 80, 14, true);
+    stGMark(ctx, Gp.x, Gp.y, '重心', -14, -10);
+    if (p.ph === 'rock') stPivot(ctx, pm.P0.x, pm.P0.y, '支点', pm.sgn > 0 ? -12 : 12, 16);
+  }
+  stAccArrow(ctx, W / 2 + 60, H - 12, fR.a, '地面の加速度');
+  ctx.restore();
+  var dir = function (x) { return x > 0 ? '右' : '左'; };
+  var cap;
+  if (p.fell) cap = '重心の作用線が足の外に出て、倒れた。';
+  else if (Math.abs(fR.a) > 0.3) cap = '地面が' + dir(fR.a) + 'へ加速 → 足に' + dir(fR.a) + '向きの摩擦力。' + (p.ph === 'rock' ? '体は傾き、' + (pm.sgn > 0 ? '右' : '左') + '足を支点に回る。' : '重心は遅れようとする。');
+  else if (p.ph === 'rock') cap = (Math.abs(p.f) > ST2.THC * DEG ? '重心の作用線が足の外 → 倒れる向きのモーメント。' : '重心の作用線は両足の間 → 支点の足のまわりの重力のモーメントが、もとにもどす向き。');
+  else cap = '地面を動かすと、足に摩擦力がはたらく。';
+  ctx.restore(); stCap(ctx, R, cap);
+}
+/* ズームアップの下の、その瞬間の説明（2 行まで。「。」「→」で折り返す） */
+function stCap(ctx, R, t) {
+  if (!t) return;
+  var lines = [t], i = t.indexOf('→');
+  if (t.length > 26) {
+    var cut = t.indexOf('。') >= 0 && t.indexOf('。') < t.length - 1 ? t.indexOf('。') + 1 : (i > 0 ? i : Math.ceil(t.length / 2));
+    lines = [t.slice(0, cut), t.slice(cut)];
+  }
+  lines.forEach(function (ln, k) { label(ctx, ln, R.x0 + R.w / 2, R.y0 + R.h - 44 + k * 22, { size: 13, bold: true, color: '#0a5c5c' }); });
+}
+
+/* ＜ズームアウト＞（ためし）：やじろべえ全体を小さくして、重力の作用線を上下に長く見せる */
+function st2ZoomOutL(ctx, s, R) {
+  var v = V(s), y = s._yj, q = yjG(v), fL = s._fL, S = 380;
+  label(ctx, 'やじろべえ全体（ズームアウト 約 0.5 倍）', R.x0 + 12, R.y0 + 18, { size: 13, bold: true, color: '#1f3b57', align: 'left' });
+  var O = { x: R.x0 + R.w / 2 + fL.x * S, y: R.y0 + R.h * 0.50 };
+  var air = y.ph === 'hold' || y.ph === 'drop';
+  if (air) { label(ctx, 'スタートを押して、指にのせてから見よう', R.x0 + R.w / 2, R.y0 + R.h / 2, { size: 14, bold: true, color: '#8a97a4' }); return; }
+  var fg = yjFigure(ctx, v, O, O, S, y.th, 0.42), Gp = fg.mp(0, q.yg);
+  yjLines(ctx, O, Gp, R.y0 + 30, R.y0 + R.h - 56, true, true, 48);
+  NO_SHIFT = false;
+  var fr = st2YjArrows(ctx, y, q, fL, O, Gp, 44, 12.5);
+  stGMark(ctx, Gp.x, Gp.y, '重心 G', -16, 4);
+  stPivot(ctx, O.x, O.y, 'O', 12, -12);
+  stAccArrow(ctx, R.x0 + R.w / 2, R.y0 + R.h - 64, fL.a, '指の加速度');
+  var dir = function (x) { return x > 0 ? '右' : '左'; };
+  var cap = Math.abs(fL.a) > 0.3 ? '指が' + dir(fL.a) + 'へ加速 → 支点 O に' + dir(fr.f) + '向きの摩擦力。重心 G は遅れて、やじろべえが傾く。'
+    : (Math.abs(y.th) > 0.02 ? '傾いている → O のまわりの重力のモーメントが、もとにもどす向きにはたらく。' : '重力の作用線が支点 O を通る → モーメントは 0（つりあい）。');
+  stCap(ctx, R, cap);
+}
+
 /* ===== 58_mode5.js ===== */
 /* ============================================================
    モード 5　（超上級編）剛体の重心の運動
@@ -7245,6 +8175,7 @@ function buildPanel() {
   }
   h.push('<div class="simhead"><div class="simtitle">' + mathHtml(d.title) +
     (d.titleBtn ? '<span class="gap3">　　　</span><button id="bTitleBtn" class="tbtn warm">' + d.titleBtn + '</button>' : '') + '</div></div>');
+  if (d.preHtml) h.push(d.preHtml(s));             /* 操作欄の上に（モード 5：「やじろべえ」の見出し） */
   h.push('<div class="simgrid one"><div class="cv">');
   /* 図の上の行：左＝主役のボタン＋変数のカード／右＝a:b のボタン＋表示チェック */
   h.push('<div class="cvtop toprow' + (d.split ? ' split' : '') + (d.ctrlCompact ? ' m3ctrl' : '') + '" id="cvtop"><div class="cvleft">');
@@ -7267,7 +8198,7 @@ function buildPanel() {
   var vlist = d.vars || [];
   var grouped = {};
   (d.varGroups || []).forEach(function (g) { (g.keys || []).forEach(function (k) { grouped[k] = 1; }); });
-  var plain = vlist.filter(function (vd) { return !vd.tick && !grouped[vd.k]; });
+  var plain = vlist.filter(function (vd) { return !vd.tick && !grouped[vd.k] && !vd.noCtl; });   /* noCtl … 操作欄には出さない（図の下のカードに置く） */
   var ticked = vlist.filter(function (vd) { return !!vd.tick && !grouped[vd.k]; });
   ticked.forEach(function (vd) { h.push(tickSliderHtml(d, vd)); });
   if (plain.length && !d.plainSide) {
@@ -7284,7 +8215,8 @@ function buildPanel() {
   /* 図ごとに区切ったスライダーのまとまり（左の図／右の図 …） */
   function groupHtml(g) {
     var hh = [];
-    hh.push('<div class="ctrl grp"><div class="gttl">' + mathHtml(g.label) + '</div>');
+    hh.push('<div class="ctrl grp">' + (g.label ? '<div class="gttl">' + mathHtml(g.label) + '</div>' : ''));   /* 見出しなしのグループもある */
+    if (g.html) hh.push(g.html(s));                   /* そのグループだけのボタンなど（モード 5：左右それぞれのスタート） */
     if (g.play && g.playOnly) {
       hh.push('<div class="btnrow small"><button id="bPlay">' + (d.playLabel ? d.playLabel(s) : '▶ スタート') + '</button>' +
         (g.auto ? '<button id="bAuto" class="warm">' + g.auto + '</button>' : '') +
@@ -7336,10 +8268,11 @@ function buildPanel() {
   });
   if (d.sideHtml) h.push(d.sideHtml(s));
   h.push('</div><div class="cvside">');
+  if (d.visFirst) h.push(visHtml());                 /* チェックボックスを右上に（モード 5） */
   (d.varGroups || []).filter(function (g) { return !!g.side; }).forEach(function (g) { h.push(groupHtml(g)); });
   /* a:b のボタン（＋ r3 の b′） */
   if (!d.noAB) {
-    h.push('<div class="cvopts abrow"><span class="ablab">' + (d.abLabel || '操作対象の箱の a:b') + '</span><span class="abbtns">');
+    h.push('<div class="cvopts abrow"><span class="ablab">' + (d.abLabel || '操作対象の箱の 幅a:高さb') + '</span><span class="abbtns">');
     P.box.KEYS.forEach(function (k) {
       h.push('<button class="ab' + (s.ab === k ? ' on' : '') + '" data-ab="' + k + '">' + k + '</button>');
     });
@@ -7352,16 +8285,18 @@ function buildPanel() {
     });
     h.push('</span></div>');
   }
-  if (d.vis && d.vis.length) {
-    h.push('<div class="opts">');
+  function visHtml() {
+    var hv = ['<div class="opts">'];
     d.vis.forEach(function (vd) {
       /* 「力を表示」（ないときは最初のチェック）は、チェックが入るまでオレンジに光らせて目立たせる */
       var fk = d.vis.some(function (x) { return x.k === 'F'; }) ? 'F' : d.vis[0].k;
       var fl = (vd.k === fk && !s.o['show' + fk]) ? ' class="vflash"' : '';
-      h.push('<label' + fl + '><input type="checkbox" data-vis="show' + vd.k + '"' + (s.o['show' + vd.k] ? ' checked' : '') + '> ' + mathHtml(vd.label) + '</label>');
+      hv.push('<label' + fl + '><input type="checkbox" data-vis="show' + vd.k + '"' + (s.o['show' + vd.k] ? ' checked' : '') + '> ' + mathHtml(vd.label) + '</label>');
     });
-    h.push('</div>');
+    hv.push('</div>');
+    return hv.join('');
   }
+  if (d.vis && d.vis.length && !d.visFirst) h.push(visHtml());
   if (plain.length && d.plainSide) {                 /* 2-3：μ のスライダーは右の列（チェックの下） */
     h.push('<div class="cvvars" id="cvvars">');
     plain.forEach(function (vd) { h.push(varRowHtml(vd)); });
@@ -7378,6 +8313,7 @@ function buildPanel() {
     if (g.inCv) return;
     h.push('<div class="guide ' + (g.cls || '') + '" style="left:calc(' + ((g.x || 0) * 100) + '% + 10px)">' + guideHtml(g.key) + '</div>');
   });
+  if (d.cvHtml) h.push(d.cvHtml(s));                 /* 図に重ねるボタン（モード 5：左右それぞれのスタート） */
   /* 図の左上に重ねる：操作の案内文（HTML なので図の縮小で文字がつぶれない）＋主役のボタン */
   var gIn = (d.guides || []).filter(function (g) { return g.inCv; })[0];
   if (d.cvNote || gIn || d.cvTitle || d.actionsInCv || (d.topActions && d.topActions.length)) {
