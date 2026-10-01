@@ -912,41 +912,6 @@ html.drawer-open{overflow:hidden}
 }
 @media(max-width:640px){.crumbs .en,.crumbs .kdot{display:none}}
 
-/* =========================================================================
-   光らせる演出を軽くする（第 29 回）
-   box-shadow や背景色を毎フレーム描きかえる無限アニメは、何もしていなくても CPU を 20〜50% 使っていた
-   （⑤のように光るボタンが多い章ほど重い）。光の輪は「重ねた輪の不透明度と大きさ」だけを動かす
-   → ブラウザの合成（GPU）だけで済み、ページの描き直しが起きない。見た目の強さは前と同じくらい。
-   ========================================================================= */
-button.glow, .cvwrap .viewbtns button.viewbtn.big, .modebar label.chk.glow, .finale, button.b.play.sg-glow, .stagecap .live{animation:none !important}
-.inbar.glow, .viewbtns button.glow, button.b.play.sg-glow, .modebar label.chk.glow{position:relative}
-button.glow::after, .modebar label.chk.glow::after, button.b.play.sg-glow::after, .finale::after, .stagecap .live::after{
-  content:""; position:absolute; inset:-3px; border-radius:inherit; pointer-events:none;
-  box-shadow:0 0 0 3px rgba(224,123,24,.6), 0 0 18px 3px rgba(224,123,24,.55);
-  opacity:0; animation:ringPulse 1.4s ease-in-out infinite; will-change:opacity,transform}
-@keyframes ringPulse{0%,100%{opacity:.12;transform:scale(1)}50%{opacity:1;transform:scale(1.045)}}
-button.b.play.sg-glow{background:var(--brand) !important;border-color:var(--brand) !important}
-button.b.play.sg-glow::after{inset:-4px;box-shadow:0 0 0 4px rgba(224,123,24,.55),0 0 24px 6px rgba(224,123,24,.6)}
-.modebar label.chk.glow::after{inset:-2px;box-shadow:0 0 0 3px rgba(224,123,24,.38)}
-.finale::after{border-radius:16px;box-shadow:0 0 0 4px rgba(214,39,27,.35),0 0 24px 4px rgba(214,39,27,.55)}
-.stagecap .live{position:relative;box-shadow:none}
-.stagecap .live::after{inset:-1px;border-radius:50%;box-shadow:0 0 0 5px rgba(61,220,132,.45);animation-duration:2s}
-/* 「真上から見る」はとくに目立たせたいので、ボタン自体も少し大きくなったり戻ったり（transform は合成だけで済む） */
-.cvwrap .viewbtns button.viewbtn.big{animation:viewPop 1.05s ease-in-out infinite !important;will-change:transform}
-@keyframes viewPop{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-.cvwrap .viewbtns button.viewbtn.big::after{box-shadow:0 0 0 6px rgba(224,123,24,.32),0 0 26px 6px rgba(224,123,24,.85)}
-@media(prefers-reduced-motion:reduce){
-  button.glow::after, .modebar label.chk.glow::after, button.b.play.sg-glow::after, .finale::after, .stagecap .live::after{animation:none;opacity:.8}
-  .cvwrap .viewbtns button.viewbtn.big{animation:none !important}
-}
-
-/* スライドバーの目盛りの文字：つまみの位置に合わせて置く（位置は JS が計算：第 29 回） */
-.vrow.ticks.tk-on{position:relative;display:block;height:1.35em;padding:0 !important;margin-top:-.3em}
-.vrow.ticks.tk-on > span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
-/* 光の輪は、ボタンの外に広がらないようにボタン自身を基準にする（基準がないとページ全体に輪が広がり、横スクロールまで出た：第 29 回） */
-button.glow{position:relative}
-button.viewbtn.inbar.glow, .cvwrap .viewbtns button.viewbtn.glow{position:relative}
-
 </style>
 </head>
 <body>
@@ -1431,20 +1396,11 @@ class Painter{
   }
 }
 
-/* 方眼ノートの地：地面と同じ座標に固定した方眼（第 29 回）
-   ・細い線の間かくは 20 px くらいになるように 0.1／0.2／0.25／0.5／1 m から選ぶ（どれも 1 m を割り切る）
-   ・1 m ごとに少し濃い線 → 図の中にもともとある 1 m の方眼（真上から見た図）とぴったり重なる
-   ・ox・oy［px］だけずらす（観測者が動くときに、地面といっしょに流すため） */
-function notebookGrid(c, W, H, P, ox, oy){
-  const C=[0.1,0.2,0.25,0.5,1,2,5]; let sw=C[0]; C.forEach(v=>{ if(Math.abs(v*P.s-20) < Math.abs(sw*P.s-20)) sw=v; });
-  const spx=sw*P.s; if(!(spx>=6)) return;
-  const per=(sw<1? Math.round(1/sw) : 5), X0=P.X(0)+(ox||0), Y0=P.Y(0)+(oy||0);
-  const big=(k)=>(((k%per)+per)%per===0);
+/* 方眼ノートの地（お試しデザイン）：20 px ごとに薄い線、100 px ごとに少し濃い線 */
+function notebookGrid(c, W, H){
   c.save(); c.lineWidth=1;
-  for(let k=Math.ceil(-X0/spx), k1=Math.floor((W-X0)/spx); k<=k1; k++){ const x=Math.round(X0+k*spx)+0.5;
-    c.strokeStyle=(big(k)? "#eee8df" : "#f7f4ef"); c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
-  for(let k=Math.ceil(-Y0/spx), k1=Math.floor((H-Y0)/spx); k<=k1; k++){ const y=Math.round(Y0+k*spx)+0.5;
-    c.strokeStyle=(big(k)? "#eee8df" : "#f7f4ef"); c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+  for(let x=0.5, i=0; x<W; x+=20, i++){ c.strokeStyle=(i%5===0? "#eee8df" : "#f7f4ef"); c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
+  for(let y=0.5, i=0; y<H; y+=20, i++){ c.strokeStyle=(i%5===0? "#eee8df" : "#f7f4ef"); c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
   c.restore();
 }
 /* 波（光子）描画用 */
@@ -2459,23 +2415,20 @@ class Sim{
     this.playing=!this.playing; this.started=true; this.smEnd=undefined; this.bSM.classList.remove("on");
     this.syncPlayLabel();
     sfxWarm();
-    if(this.playing){ this.stopOthers(); this.kick(); } else this.draw();
+    if(this.playing){ this.stopOthers(); this.last=performance.now(); this.loop(); } else this.draw();
   }
-  /* 再生の輪（requestAnimationFrame の連なり）は 1 本だけにする（第 29 回）。
-     再生中に「スローモーション」を押すと、もう 1 本の輪ができて 2 倍の回数描いていた（押すたびに増えて重くなる） */
-  kick(){ this.last=performance.now(); if(this._loopOn) return; this._loopOn=true; this.loop(); }
   reset(){ this.playing=false; this.t=0; this.started=false; this.smEnd=undefined; this._snd={}; this.tMax=0; this._looped=false; this._loops=0;
     this.bSM.classList.remove("on"); this.syncPlayLabel(); this.tsl.value="0"; this.draw(); }
   slowmoRun(){
     const sm=this.sc.slowmo; if(!sm) return;
     this.t=sm.t0; this.started=true; this.smEnd=sm.t1; this.smK=sm.k||0.10; this._snd={};
     this.playing=true; this.syncPlayLabel(); this.bSM.classList.add("on");
-    this.stopOthers(); this.kick();
+    this.stopOthers(); this.last=performance.now(); this.loop();
   }
   loop(){
-    if(!this.playing){ this._loopOn=false; return; }
+    if(!this.playing) return;
     /* 画面の外に出たら止める（ゆりかごのように止めるまでくり返す図が裏で回り続けるのを防ぐ） */
-    if(!this.visible()){ this.playing=false; this._loopOn=false; this.smEnd=undefined; this.bSM.classList.remove("on"); this.syncPlayLabel(); this.draw(); return; }
+    if(!this.visible()){ this.playing=false; this.smEnd=undefined; this.bSM.classList.remove("on"); this.syncPlayLabel(); this.draw(); return; }
     const now=performance.now(), dt=Math.min(0.05,(now-this.last)/1000); this.last=now;
     const smk=(this.smEnd!==undefined && this.t<this.smEnd)? this.smK : 1;
     this.t += dt*this.speed*(this.slow?0.28:1)*smk;
@@ -2486,7 +2439,7 @@ class Sim{
     this.tsl.value=String(this.t);
     this.draw();
     this.syncPlayLabel();
-    if(this.playing) requestAnimationFrame(()=>this.loop()); else this._loopOn=false;
+    if(this.playing) requestAnimationFrame(()=>this.loop());
   }
 
   /* ---------------- 描画 ---------------- */
@@ -2494,6 +2447,7 @@ class Sim{
     const sc=this.sc, P=this.P, c=this.ctx, t=this.t;
     if(this.tval) this.tval.textContent=fmt(t,2)+" s";
     c.clearRect(0,0,this.cssW,this.cssH);
+    if(!(this.viewOn && this.def.viewBtn && this.def.viewBtn.v3d)) notebookGrid(c, this.cssW, this.cssH);   // 方眼ノートの地（お試しデザイン）
     if(this.started) this.tMax=Math.max(this.tMax||0,t); else this.tMax=0;
     if(sc.loop && this._looped) this.tMax=sc.tEnd;
     const st=sc.st(t);
@@ -2530,10 +2484,6 @@ class Sim{
       }
       if(t<e.t0-0.02) this._snd[i]=0;
     });
-    /* 方眼ノートの地：ほかを全部描いたあとで「うしろ」に敷く（destination-over）。第 29 回：
-       ・地面と同じ座標（1 m の線が図の中の方眼と重なる）に固定し、
-       ・「B から見た立場」「重心系」で観測者が動くときは、地面といっしょに方眼も流れる（sc._dx・sc._dy） */
-    if(!v3d){ c.save(); c.globalCompositeOperation="destination-over"; notebookGrid(c, this.cssW, this.cssH, P, -(sc._dx||0)*P.s, (sc._dy||0)*P.s); c.restore(); }
     if(shown){ if(this.msg._k!==shown){ this.msg.innerHTML='<div style="width:100%">'+mathify(shown.text)+'</div>'; this.msg.className="msgbox"; this.msg._k=shown; } }
     else if(this.msg._k!==null){ this.msg.innerHTML=EMPTY_MSG; this.msg.className="msgbox empty"; this.msg._k=null; }
     if(this.cssW>this.wrap.clientWidth+2 && sc.follow && this.playing){
@@ -3980,7 +3930,7 @@ function twoBody1D(cfg, v){
       const xG0=(mA*xA0+mB*xB0)/(mA+mB), vGn=(mA*vA+mB*vB)/(mA+mB), xGn=xG0+vGn*t;
       const cmOn=!!(o.cm && cfg.cmFrame);                                // 重心系の観測者から見た運動
       const vw=!!(o.view && cfg.viewB), DX=(vw? s.xB-xB0 : (cmOn? xGn-xG0 : 0)), vRef=(vw? s.vB : (cmOn? vGn : 0)); this._dx=DX; VW.on=vw;
-      P.ground(0,-0.10,7.90,null,(DX? -DX*P.s : 0));                     // 観測者が動くとき（B の立場・重心系）は地面の斜線も流れる（第 29 回）
+      P.ground(0,-0.10,7.90,null,(vw? -DX*P.s : 0));
       if(vw){                                                            // 地面が動いて見える（斜線が流れる。目印の縦線は書かない：第 20 回）
         P.jtextW(0.05,-0.42,"■ B とともに動く観測者から見た運動（B は止まって見え、A の速度は B に対する相対速度）",{size:10.5,col:"#c2700f",bold:true});
       }
@@ -5959,25 +5909,9 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
     if(el._p !== s){ el._p = s; el.style.setProperty("--p", s); } }
   function initRanges(){
     document.addEventListener("input", (ev)=>{ if(ev.target && ev.target.type === "range") syncRange(ev.target); }, true);
-    const sweep = ()=>{ if(document.hidden) return; document.querySelectorAll(".mode.on input[type=range], .modebar input[type=range]").forEach(syncRange); alignTicks(); };
+    const sweep = ()=>{ if(document.hidden) return; document.querySelectorAll(".mode.on input[type=range], .modebar input[type=range]").forEach(syncRange); };
     sweep(); setInterval(sweep, 120);
   }
-
-  /* スライドバーの下の目盛りの文字（e=0・e=0.5・e=1）を、つまみの位置にきっちり合わせる（第 29 回）
-     文字の列を「左右の余白」で合わせていたので、ラベルやボタンの幅が変わるとずれていた。
-     スライドバーの実際の位置と幅を測り、つまみの中心が来る位置に 1 つずつ置く（等間隔の目盛りとして） */
-  function alignTicks(){
-    document.querySelectorAll(".mode.on .vrow.ticks, .modebar .vrow.ticks").forEach(tr=>{
-      let row = tr.previousElementSibling; while(row && !row.querySelector("input[type=range]")) row = row.previousElementSibling;
-      const inp = row && row.querySelector("input[type=range]"); if(!inp) return;
-      const ri = inp.getBoundingClientRect(); if(ri.width < 10) return;
-      tr.classList.add("tk-on");
-      const rt = tr.getBoundingClientRect(), TH = 9, sp = tr.children, n = sp.length;
-      const key = Math.round(ri.left - rt.left)+":"+Math.round(ri.width); if(tr._tk === key) return; tr._tk = key;
-      for(let i=0; i<n; i++){ const f = n>1? i/(n-1) : 0.5; sp[i].style.left = (ri.left - rt.left + TH + f*(ri.width - 2*TH)).toFixed(1)+"px"; }
-    });
-  }
-  window.addEventListener("resize", ()=>{ document.querySelectorAll(".vrow.ticks").forEach(t=>{ t._tk = null; }); alignTicks(); });
 
   /* タブ列の下の進み具合 */
   function initProgress(){
