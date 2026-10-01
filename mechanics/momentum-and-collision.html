@@ -178,6 +178,17 @@ button.tiny.pt.on{background:#f5b56a;border-color:#e59a3c;color:#3b2405}
 .presetbox .pl{font-size:.74rem;color:#8a5a12;font-weight:700}
 .presetbox button.tiny.pt{font-size:.82rem;padding:.24em .7em;white-space:nowrap;text-align:left}
 @media(max-width:560px){.presetbox{flex:1 1 100%}}
+/* 「ねらい」の箱は操作の右はしに置き、見出しが ▶ スタートの段と同じ高さに来るようにする（第 25 回） */
+.ctrls.haspreset{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:.5em;align-items:start}
+.ctrls.haspreset > .row1{grid-column:1;grid-row:1;min-width:0}
+.ctrls.haspreset > .row2{grid-column:1;grid-row:2;min-width:0}
+.ctrls.haspreset > .presetbox{grid-column:2;grid-row:1/span 2;align-self:start;margin:0}
+.ctrls.haspreset > .presetbox .pl{font-size:.72rem}
+.ctrls.haspreset > .presetbox button.tiny.pt{font-size:.74rem;padding:.2em .55em}
+@media(max-width:700px){
+  .ctrls.haspreset{display:block}
+  .ctrls.haspreset > .presetbox{margin-top:.4em}
+}
 /* 2×2 のコマ（2-2 床との斜めの衝突） */
 /* ⑤「覚えておくべき 5 つのこと」：左＝アニメ＋グラフ、右＝短い説明と式 */
 .sec.memo{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
@@ -1516,7 +1527,8 @@ class Sim{
       this.psBtns=def.presets.map(ps=>{
         const b=this.mkBtn(ps.label,"tiny pt",()=>{ Object.assign(this.v, ps.set(this.v)); this.syncPresets(); this.rebuild(); });
         pb.appendChild(b); b._ps=ps; return b; });
-      this.tgrp.appendChild(pb); this.syncPresets();
+      /* 「ねらい」の箱は操作の右はしに、いちばん上の行（▶ スタート・🐢 スローの段）とそろえて置く（第 25 回） */
+      ct.classList.add("haspreset"); ct.appendChild(pb); this.syncPresets();
     }
     (def.toggles||[]).forEach(tg=>{
       const b=this.mkBtn("","tiny",()=>{ this.v[tg.k]=!this.v[tg.k]; b.textContent=this.v[tg.k]?tg.on:tg.label; b.classList.toggle("on",!!this.v[tg.k]); this.draw(); });
@@ -2390,7 +2402,7 @@ function cradleDef(C){ return {
            annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,["衝突の前後で運動量は同じ","（ふれ合う球の間の力は内力）"],COL.J,"tr"); }},
           {title:"K–t 図（運動エネルギー）", kind:"K", unit:"J", ymin:0,
            series:[{label:"運動エネルギー $K$（全部の球）", col:COL.T, fn:(t)=>st(t).K}],
-           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(elastic? ["衝突の前後で $K$ も同じ","（弾性衝突）"] : ["$e\\lt 1$：衝突のたびに $K$ が減る","（運動量は変わらない）"]),COL.T,"tr"); }}
+           annot:(c,mp,t,started)=>{ if(started) gNote(c,mp,(elastic? ["衝突の前後で $K$ も同じ","（弾性衝突）"] : ["$e$ < 1：衝突のたびに $K$ が減る","（運動量は変わらない）"]),COL.T,"tr"); }}
         ];
       },
       eqs(s,t){
@@ -2814,7 +2826,7 @@ DEFS.m1s2 = {
          text:"バットが当たっている間（$\\Delta t$）だけ、ボールはバットに垂直な向きの力 $\\vec{F}$ を受ける。その力積 $\\vec{F}\\Delta t$ の分だけ運動量ベクトルが変わる。",
          at:(s)=>[s.x, s.y+0.95]},
         {t0:tC+DT,t1:tEnd,col:COL.sys,side:true,
-         bub:(v1<0.05? "止まった\n（$m\\vec{v}'=0$）" : (J>0? ((Math.abs(ang1)<22.5 && v1<v0-1e-6)? "勢いが弱まって\n東に進んだ" : dirWord(ang1)+"に\nはね返った") : "力積 0：向きも\n速さも変わらない")),
+         bub:(v1<0.05? "止まった\n（m@v' ＝ 0）" : (J>0? ((Math.abs(ang1)<22.5 && v1<v0-1e-6)? "勢いが弱まって\n東に進んだ" : dirWord(ang1)+"に\nはね返った") : "力積 0：向きも\n速さも変わらない")),
          text:"当たる前は東向きに速さ $"+fmt(v0,1)+"$ m/s。"+(v1<0.05? "当たったあとは<b>静止した</b>（$m\\vec{v}+\\vec{F}\\Delta t=0$）。" : "はね返ったあとは "+dirWord(ang1)+"に速さ $"+fmt(v1,2)+"$ m/s"+(Math.abs(v1-v0)<0.02?"（速さは同じで向きだけ変わった）":"")+"。")+"運動量 $m\\vec{v}'$ は $m\\vec{v}$ と $\\vec{F}\\Delta t$ のベクトルの和。図の左上の三角形と立式で確かめよう。",
          at:(s)=>[s.x, s.y+0.95]}
       ]
@@ -4475,7 +4487,7 @@ function drawDKfig(ctx, W, H, sim, t){
 }
 
 DEFS.m5s3 = { id:"m5s3", num:"3", layout:"memo",
-  title:"$e=1$ でないならば、力学的エネルギーは減少する", short:"$K$ が減る（$e$ ≠ 1）",
+  title:"$e=1$ でないならば、力学的エネルギーは減少する", short:"$e$ ≠ 1 なら $K$ が減る",
   desc:"<p>なめらかな水平面上で、質量が同じ 2 物体 A（$m=1.0$ kg、速さ $2v=4.0$ m/s）と B（$m=1.0$ kg、速さ $v=2.0$ m/s、左向き）が正面衝突する。反発係数 $e$ を変えて、失われるエネルギーを見くらべよう。</p>",
   vars:[{k:"e", label:"反発係数 $e$", min:0, max:1, step:0.1, def:0.8, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
   memo:`<span class="mt">■ 覚えておくべきこと ③</span>
@@ -4660,13 +4672,13 @@ function buildPage(){
   MODES.forEach((m,i)=>{
     h+=`<section class="mode" id="${m.id}">
       <div class="modehead"><h2>${CIRC[i]} ${m.name}</h2><p>${m.lead}</p>${(m.id==="m4"||m.id==="m6")? QUIZ_HTML : ""}</div>
-      <div class="seclinks">`+m.secs.filter(s=>DEFS[s]).map(s=>`<a href="#${(i+1)+"-"+DEFS[s].num}">${DEFS[s].num}　${DEFS[s].short||DEFS[s].title}</a>`).join("")+`</div>
+      <div class="seclinks">`+m.secs.filter(s=>DEFS[s]).map(s=>`<a href="#${(i+1)+"-"+DEFS[s].num}">${CIRC[i]}-${DEFS[s].num}　${DEFS[s].short||DEFS[s].title}</a>`).join("")+`</div>
       <div class="modebar" id="mbar_${m.id}"></div>`;
     m.secs.forEach(sid=>{
       const d=DEFS[sid]; if(!d) return;
       if(d.grid){                                            // 2×2：パターンごとのコマ（グラフなし）
         h+=`<article class="sec grid4" id="${sid}"><div class="sL">
-          <div class="sechead"><span class="secnum">${d.num}</span><h2>${d.title}</h2></div>
+          <div class="sechead"><span class="secnum">${CIRC[i]}-${d.num}</span><h2>${d.title}</h2></div>
           <div class="secdesc descrow"><div>${d.desc||""}</div>${d.deschint? `<div class="deschint">${d.deschint}</div>` : ""}</div>
           <div class="cells">`+d.patterns.map((p,k)=>`<div class="gcell"><div class="cellhead">${p.label}</div><div class="simhost" id="simL_${sid}_${k}"></div></div>`).join("")+`</div>
         </div></article>`;
@@ -4674,7 +4686,7 @@ function buildPage(){
       }
       h+=`<article class="sec${d.layout==="memo"?" memo":""}${d.high?" high":""}" id="${sid}">
         <div class="sL">
-          <div class="sechead"><span class="secnum">${d.num}</span><h2>${d.title}</h2></div>
+          <div class="sechead"><span class="secnum">${CIRC[i]}-${d.num}</span><h2>${d.title}</h2></div>
           <div class="secdesc">${d.desc||""}</div>
           <div class="simhost" id="simL_${sid}"></div>
         </div>
@@ -4876,7 +4888,7 @@ function buildToc(){
     h+='<div class="tocmode">'+"①②③④⑤⑥⑦⑧⑨"[i]+" "+m.name+'</div><ul>';
     m.secs.forEach(sid=>{ const d=DEFS[sid]; if(!d) return;
       const t=String(d.title).replace(/<br>/g,"　").replace(/<[^>]+>/g,"");
-      h+='<li><a href="#'+addrOf(sid)+'" data-toc="'+sid+'">'+d.num+'　'+mathify(t)+'</a></li>'; });
+      h+='<li><a href="#'+addrOf(sid)+'" data-toc="'+sid+'">'+"①②③④⑤⑥⑦⑧⑨"[i]+"-"+d.num+'　'+mathify(t)+'</a></li>'; });
     h+='</ul>';
   });
   p.innerHTML=h;
