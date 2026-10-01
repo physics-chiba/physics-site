@@ -7753,7 +7753,7 @@ function yjFigure(ctx, v, O, P0, S, th, handSc) {
 }
 function st2DrawYj(ctx, s, v, R, rel) {
   var S = 760, y = s._yj, q = yjG(v), fL = s._fL;
-  var O = { x: R.x0 + R.w * 0.42 + fL.x * S, y: R.y0 + R.h * 0.55 };
+  var O = { x: R.x0 + R.w * 0.42 + fL.x * S, y: R.y0 + R.h * 0.45 };   /* 重力の矢印（質量に比例）が下に入るよう少し上に */
   s._g5.L = { x1: O.x - 40, x2: O.x + 45, y1: O.y - 12, y2: O.y + 90, S: S, lim: 0.12 };
   var air = y.ph === 'hold' || y.ph === 'drop';
   var P0 = { x: air ? R.x0 + R.w * 0.42 : O.x, y: O.y - y.h * S };
@@ -7762,7 +7762,7 @@ function st2DrawYj(ctx, s, v, R, rel) {
   label(ctx, 'おもり ' + fg.M + ' g', e0.x + fg.rb + 6, e0.y + 14, { size: 12.5, bold: true, color: '#8e2a1c', align: 'left' });
   var Gp = mp(0, q.yg);
   if (v.showL) yjLines(ctx, O, Gp, R.y0 + 4, R.y0 + R.h - 40, y.ph === 'rock');
-  if (v.showF) st2YjArrows(ctx, y, q, fL, O, Gp, 58, 13);
+  if (v.showF) st2YjArrows(ctx, y, q, fL, O, Gp, 440, 13);
   if (s._rn.L && y.ph === 'rock' && !fL.drag && !fL.sh)       /* 指はドラッグできる */
     label(ctx, '← 指をドラッグ →', R.x0 + 14, R.y0 + R.h - 40, { size: 12, bold: true, color: '#a85c0c', align: 'left' });
   stGMark(ctx, Gp.x, Gp.y, '重心', air ? -20 : -14, 2);
@@ -7782,7 +7782,7 @@ function st2DrawYj(ctx, s, v, R, rel) {
 function yjLines(ctx, O, Gp, yTop, yBot, arm, big, rr) {
   dotLine(ctx, O.x, yTop, O.x, yBot, 'rgba(90,100,110,.45)', 1.2, [3, 4]);
   dotLine(ctx, Gp.x, yTop, Gp.x, yBot, 'rgba(209,53,43,.7)', 1.8, [7, 5]);
-  label(ctx, '重力の作用線', Gp.x + (Gp.x >= O.x ? 6 : -6), big ? yTop + 12 : yBot - 10, { size: big ? 12.5 : 11.5, bold: true, color: '#c0392b', align: Gp.x >= O.x ? 'left' : 'right' });
+  label(ctx, '重力の作用線', Gp.x + (big ? (Gp.x >= O.x ? 6 : -6) : -6), big ? yTop + 12 : yBot - 10, { size: big ? 12.5 : 11.5, bold: true, color: '#c0392b', align: big ? (Gp.x >= O.x ? 'left' : 'right') : 'right' });
   if (arm && Math.abs(Gp.x - O.x) > 4) {
     ctx.save(); ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = big ? 3 : 2.4; ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(Gp.x, O.y); ctx.stroke(); ctx.restore();
@@ -7796,10 +7796,12 @@ function yjLines(ctx, O, Gp, yTop, yBot, arm, big, rr) {
   }
 }
 /* やじろべえにはたらく力（重力・垂直抗力・摩擦力） */
-function st2YjArrows(ctx, y, q, fL, O, Gp, FL, fs) {
+function st2YjArrows(ctx, y, q, fL, O, Gp, K, fs) {
+  /* ★矢印の長さは全体の質量に比例（K … 1 kg あたりの長さ [px]）。おもりを重くすると重力も垂直抗力も長くなる★ */
+  var FL = Math.max(9, q.mt * K);
   var fr = st2YjForce(y, q, fL);
   arrow(ctx, Gp.x, Gp.y, Gp.x, Gp.y + FL, 'force', 1, COL.force);
-  label(ctx, '重力', Gp.x + 10, Gp.y + FL - 4, { size: fs, bold: true, color: COL.force, align: 'left' });
+  label(ctx, '重力 ' + fmt(q.mt * G, 2) + ' N', Gp.x + 10, Gp.y + FL - 4, { size: fs, bold: true, color: COL.force, align: 'left' });
   if (y.ph !== 'hold' && y.ph !== 'drop') {
     arrow(ctx, O.x, O.y, O.x, O.y - FL * fr.N, 'force', 1, COL.norm);
     label(ctx, '垂直抗力', O.x - 12, O.y - FL * fr.N * 0.45, { size: fs, bold: true, color: COL.norm, align: 'right' });
@@ -7942,7 +7944,7 @@ function st2ZoomL(ctx0, s, R) {
   var fg = yjFigure(ctx, v, O, O, S, y.th, 1.0), Gp = fg.mp(0, q.yg);
   yjLines(ctx, O, Gp, 26, H, true, true);
   NO_SHIFT = false;
-  var fr = st2YjArrows(ctx, y, q, fL, O, Gp, 80, 14);
+  var fr = st2YjArrows(ctx, y, q, fL, O, Gp, 900, 14);
   stGMark(ctx, Gp.x, Gp.y, '重心 G', -16, 2);
   stPivot(ctx, O.x, O.y, 'O', 12, -12);
   stAccArrow(ctx, O.x + 40, H - 30, fL.a, '指の加速度');
@@ -8003,7 +8005,7 @@ function st2ZoomOutL(ctx, s, R) {
   var fg = yjFigure(ctx, v, O, O, S, y.th, 0.42), Gp = fg.mp(0, q.yg);
   yjLines(ctx, O, Gp, R.y0 + 30, R.y0 + R.h - 56, true, true, 48);
   NO_SHIFT = false;
-  var fr = st2YjArrows(ctx, y, q, fL, O, Gp, 44, 12.5);
+  var fr = st2YjArrows(ctx, y, q, fL, O, Gp, 380, 12.5);
   stGMark(ctx, Gp.x, Gp.y, '重心 G', -16, 4);
   stPivot(ctx, O.x, O.y, 'O', 12, -12);
   stAccArrow(ctx, R.x0 + R.w / 2, R.y0 + R.h - 64, fL.a, '指の加速度');
