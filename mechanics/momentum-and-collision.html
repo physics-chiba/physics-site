@@ -2926,7 +2926,7 @@ function cradleDef(C){ return {
     const XP=[]; { let x=0; for(let i=0;i<N;i++){ XP.push(x+RS[i]); x+=2*RS[i]; } const cx=x/2; for(let i=0;i<N;i++) XP[i]-=cx; }   // つり下げ点の x（球の大きさぶんずつ並べる）
     const xp=(i)=>XP[i];
     /* ---- 表を作る ---- */
-    const TH=new Float32Array(NF*N), OM=new Float32Array(NF*N);
+    const TH=new Float32Array(NF*N), OM=new Float32Array(NF*N), HIT=new Uint8Array(NF);   // HIT[k]＝k 行目と k+1 行目の間で衝突した（第 30 回）
     const th=new Array(N).fill(0), om=new Array(N).fill(0);
     for(let i=0;i<nL;i++) th[i]=-th0;
     for(let i=N-nR;i<N;i++) th[i]=th0;
@@ -2941,7 +2941,7 @@ function cradleDef(C){ return {
           const xi=xp(i)+L*Math.sin(th[i]), xj=xp(i+1)+L*Math.sin(th[i+1]);
           if(xj-xi<=RS[i]+RS[i+1]+1e-6 && om[i+1]<om[i]){
             const wa=om[i], wb=om[i+1], ma=MS[i], mb=MS[i+1]; if(wa-wb>0.12){ swapped=Math.max(swapped||0, (wa-wb)*L); }   // 衝突（反発係数 e）：同じ質量・e=1 なら速度の交換（音は本当の衝突だけ・相対速度を覚える）
-            om[i]=(ma*wa+mb*wb-e*mb*(wa-wb))/(ma+mb); om[i+1]=(ma*wa+mb*wb+e*ma*(wa-wb))/(ma+mb); done=false;
+            om[i]=(ma*wa+mb*wb-e*mb*(wa-wb))/(ma+mb); om[i+1]=(ma*wa+mb*wb+e*ma*(wa-wb))/(ma+mb); done=false; HIT[k]=1;
             if(xj-xi<RS[i]+RS[i+1]-1e-9){ const d=(RS[i]+RS[i+1]-(xj-xi))/2/L; th[i]-=d; th[i+1]+=d; }
           }
         }
@@ -2950,7 +2950,10 @@ function cradleDef(C){ return {
       if(swapped){ const t=k*dt; if(tFirst<0) tFirst=t; if(!hits.length || t-hits[hits.length-1]>0.3){ hits.push(t); hitV.push(swapped); } }
     }
     const st=(t)=>{
-      const f=Math.max(0,Math.min(NF-2,t/dt)), k=Math.floor(f), a=f-k;
+      const f=Math.max(0,Math.min(NF-2,t/dt)), k=Math.floor(f);
+      /* 衝突をまたぐ 2 行のあいだは補間しない（ぶつかる前と後の速度を混ぜると、その一瞬だけ速度が打ち消し合って
+         K の和が下がり、K–t 図の山の中に縦線が出た：第 30 回）。近いほうの行の値をそのまま使う */
+      const a0=f-k, a=(HIT[k]? (a0<0.5? 0 : 1) : a0);
       const ths=[], oms=[], xs=[], ys=[], vxs=[], vys=[]; let px=0, K=0, moving=0;
       for(let i=0;i<N;i++){
         const T=TH[k*N+i]*(1-a)+TH[(k+1)*N+i]*a, W=OM[k*N+i]*(1-a)+OM[(k+1)*N+i]*a;
@@ -3473,7 +3476,7 @@ DEFS.m3s1 = {
   id:"m3s1", num:"1", title:"1物体の反発係数", maxW:430,
   desc:"<p>小球（質量 $m=1.0$ kg）を高さ $h=2.0$ m から静かに放す。床に当たってはね返り、高さ $e^2h$ まで上がる。</p>",
   descFn:(v)=>"<p>小球（質量 "+symVal(v.km||1,"m",1.0,"kg")+"）を高さ "+symVal(v.kh||1,"h",2.0,"m")+" から静かに放す。床に当たってはね返る（反発係数 $e="+fmt(v.e,1)+"$）。</p>",
-  vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:0.5, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
+  vars:[{k:"e", label:"反発係数 $e$", min:0, max:1, step:0.1, def:0.5, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
   adj:{masses:[{k:"km",sym:"m",opts:[1,2,3],def:1}], speeds:[{k:"kh",sym:"h",opts:[1,1.5,2],def:1}], speedLabel:"落とす高さ"},
   noForceBtn:true,
   make(v){
@@ -4118,7 +4121,7 @@ const AFTER3 = (vA1,vB1,dK,e,vA,vB)=>{ const bef="衝突前は $v_A="+fmt(vA,2)+
 /* ---- 2-1 運動量の保存（直線上の衝突・弾性 e=1）：A・B それぞれの「運動量変化＝力積」の図つき ---- */
 DEFS.m2s1 = { id:"m2s1", num:"1", title:"直線上の衝突",
   desc:desc2({kmA:1,kmB:1,kvA:1,kvB:0},eWord(1)), descFn:(v)=>desc2(v,eWord(v.e===undefined?1:v.e)),
-  vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:1, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
+  vars:[{k:"e", label:"反発係数 $e$", min:0, max:1, step:0.1, def:1, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
   adj:ADJ2(1,1,1,0),
   make(v){ const e=(v.e===undefined? 1 : v.e), ic=icOf(v);
     return twoBody1D(Object.assign({id:"m2s1", e:e, eqs:"4", vNote:VNOTE3, note:NOTE3, bub:BUB3, after:AFTER3,
@@ -4151,7 +4154,7 @@ IC3.forEach((ic,i)=>{
 DEFS.m3s3 = { id:"m3s3", num:"3", title:"2物体の反発係数", viewBtn:{label:"👁 B から見た立場", on:"👁 地面から見た運動にもどす"},
   desc:"<p>なめらかな水平面上で A（質量 $m=1.0$ kg、速さ $v=3.0$ m/s）が静止している B（質量 $3m=3.0$ kg）に衝突する（$m_B\\gt m_A$、反発係数 $e=0.7$）。</p>",
   descFn:(v)=>"<p>なめらかな水平面上で A（質量 "+symVal(v.kmA||1,"m",1.0,"kg")+"、速さ "+symVal(v.kvA===undefined?1:v.kvA,"v",3.0,"m/s")+"）が"+((v.kvB||0)===0?"静止している ":"")+"B（質量 "+symVal(v.kmB||1,"m",1.0,"kg")+"）に衝突する（"+relWord(v.kmB||1,v.kmA||1,"m_B","m_A").replace(" とする","")+"、反発係数 $e="+fmt(v.e,1)+"$）。</p>",
-  vars:[{k:"e", label:"$e$", min:0, max:1, step:0.1, def:0.7, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
+  vars:[{k:"e", label:"反発係数 $e$", min:0, max:1, step:0.1, def:0.7, unit:"", dec:1, ticks:["$e=0$","$e=0.5$","$e=1$"]}],
   adj:ADJ2(1,3,1,0),
   make(v){ const ic=icOf(v,{m:1.0,v:3.0});
     return twoBody1D(Object.assign({id:"m3s3", e:v.e, eqs:"4", foldImp:true, relFig:true, viewB:true, vWhere:"tr", noSnaps:true, speed:0.65,
