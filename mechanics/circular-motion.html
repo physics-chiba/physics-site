@@ -1191,6 +1191,23 @@ button.b.ramp:hover{background:#0a6f6f;border-color:#0a6f6f}
 /* せまい画面：観測者の対のボタンは 2 行までにおさめる（高さ 46px 以下） */
 @media(max-width:380px){ .seg button.b.obs{font-size:.66rem;padding:.3em .5em;line-height:1.25} }
 .sliders .vmark:nth-of-type(2) .katex{top:auto;bottom:-1.1em}
+/* モードの見出しの下：全セクションの観測者の切りかえ（対のボタン） */
+.modebar .rotsw{display:inline-flex;align-items:center;gap:.4em;flex-wrap:wrap;margin-left:auto}
+.modebar .rotsw .lbl{font-size:.78rem;font-weight:700;color:var(--ink-2)}
+.modebar .rotsw .seg button.b{font-size:.76rem;padding:.35em .8em}
+@media(max-width:560px){ .modebar .rotsw{margin-left:0} .modebar .rotsw .seg button.b{font-size:.66rem;padding:.3em .5em} }
+/* ---- 右の列の「立式」カード（モード2・3 共通）：方向の名前・札・式。いまの観測者の色で光る ---- */
+.qcard.setup.in{box-shadow:inset 0 0 0 2px #1663b5,0 0 0 4px rgba(22,99,181,.10)}
+.qcard.setup.rot{box-shadow:inset 0 0 0 2px #3f4a54,0 0 0 4px rgba(63,74,84,.12)}
+.qcard.setup.in .qt{color:#1663b5}
+.qcard.setup.rot .qt{color:#3f4a54}
+.qcard.setup .qt .now{display:inline-block;margin-left:.5em;font-size:.68rem;font-weight:700;color:#fff;background:var(--ink);border-radius:999px;padding:0 .6em;vertical-align:.15em}
+.qcard.setup .dirs{display:flex;flex-direction:column;gap:.35em;margin:.5em 0}
+.qcard.setup .dirrow{display:grid;grid-template-columns:9.6em minmax(0,1fr);align-items:center;gap:.4em;background:var(--paper);border-radius:9px;padding:.2em .6em;transition:background .2s,box-shadow .2s}
+.qcard.setup .dirrow .dirlab{font-size:.76rem;font-weight:800;color:var(--ink-2);line-height:1.35}
+.qcard.setup .dirrow .qeqrow{justify-content:flex-start}
+.qcard.setup .dirrow.hl{background:var(--brand-50);box-shadow:inset 0 0 0 2px var(--brand)}
+@media(max-width:520px){ .qcard.setup .dirrow{grid-template-columns:minmax(0,1fr)} }
 
 </style>
 </head>
@@ -1446,7 +1463,8 @@ var M3 = {
     }
     return t0 + tMax;
   },
-  /* 3-1 なめらかな円筒面（内がわ）をのぼる：床を右へ v0 → 最下点から円の内がわへ。φ＝最下点からの角（左回り） */
+  /* 3-1 なめらかな円筒面（内がわ）をのぼる：床を右へ v0 → 最下点から円の内がわへ。φ＝最下点からの角（左回り）。
+     円筒面は最下点から右がわを通って最高点まで（最高点の左には面がない：2026-10 千葉さん）。最高点に達したら水平に飛び出す */
   b1: function (v0) {
     var m = M3.m, R = M3.R, out = [], ev = null, xs = -0.62, U = function (y) { return m * G * (y + R); };
     var tin = -xs / v0;
@@ -1459,16 +1477,17 @@ var M3 = {
       var N = R * w * w + G * Math.cos(ph);
       if (N < -1e-7 && Math.abs(R * w) > 0.05) return 'off';     /* 面からはなれる（速さが 0 に近い折り返しでは判定しない） */
       if (w < 0 && ph <= 0) return 'back';                        /* もどってきて床へ */
-      if (ph >= TAU) return 'loop';                               /* 1 周した */
+      if (ph >= Math.PI) return 'top';                            /* 最高点に達した（その先に面はない） */
       return null;
     }, 12, function (ph, w) { return R * w * w + G * Math.cos(ph); });
-    if (r.why === 'off') {
-      ev = { kind: 'off', t: r.t, ang: r.ph };
+    if (r.why === 'off' || r.why === 'top') {
+      ev = { kind: r.why, t: r.t, ang: r.ph };
       var x0 = R * Math.sin(r.ph), y0 = -R * Math.cos(r.ph), v = R * r.w;
-      M3.fly(out, r.t, x0, y0, v * Math.cos(r.ph), v * Math.sin(r.ph), r.ph, function (x, y) { return Math.hypot(x, y) >= R; }, U, 4);
-    } else if (r.why === 'back' || r.why === 'loop') {
-      var sg = r.why === 'back' ? -1 : 1, vf = Math.abs(R * r.w), last = out[out.length - 1].t;
-      for (var t2 = 0.01; vf * t2 < 0.95 && t2 < 3; t2 += 0.01) out.push({ t: last + t2, x: sg * vf * t2, y: -R, vx: sg * vf, vy: 0, kind: 'floor', ang: r.why === 'loop' ? TAU : 0, F: m * G, at: 0, K: M3.K(vf), U: 0, E: M3.K(vf) });
+      /* 右半分の円筒面・左の床・図の左はしのどれかに着いたら止める */
+      M3.fly(out, r.t, x0, y0, v * Math.cos(r.ph), v * Math.sin(r.ph), r.ph, function (x, y) { return (Math.hypot(x, y) >= R && x >= 0) || y <= -R || x < -1.5; }, U, 4);
+    } else if (r.why === 'back') {
+      var vf = Math.abs(R * r.w), last = out[out.length - 1].t;
+      for (var t2 = 0.01; vf * t2 < 0.95 && t2 < 3; t2 += 0.01) out.push({ t: last + t2, x: -vf * t2, y: -R, vx: -vf, vy: 0, kind: 'floor', ang: 0, F: m * G, at: 0, K: M3.K(vf), U: 0, E: M3.K(vf) });
     }
     return { pts: out, ev: ev, sec: 1 };
   },
@@ -1791,6 +1810,7 @@ function bubble(ctx, text, x, y, opt) {
 function eventBubble(ctx, kind, x, y, side) {
   var red = { size: 14, bg: '#fde2dc', border: '#d1352b', color: '#9b2418', side: side || 'down' }, yy = side === 'up' ? y : y - 4;
   if (kind === 'slip') return bubble(ctx, '滑り出した！', x, yy, { size: 14, bg: '#dff2ee', border: '#0f8a8a', color: '#0a5c5c', side: side || 'down' });
+  if (kind === 'top') return bubble(ctx, '最高点に達した！', x, yy, { size: 14, bg: '#dff2ee', border: '#0f8a8a', color: '#0a5c5c', side: side || 'down' });
   var T = { cut: '糸が切れた！', off: '面から離れた！', slack: '糸がたるんだ！' }[kind];
   return T ? bubble(ctx, T, x, yy, red) : null;
 }
@@ -1865,7 +1885,8 @@ function Sim(def, hostL, hostR) {
   this.def = def; this.L = hostL; this.R = hostR;
   this.mode = def.mode;
   this.ms = modeState(def.mode);
-  this.v = {}; this.t = 0; this.playing = false; this.rate = 1; this.ended = false;
+  this.v = {}; this.t = 0; this.playing = false; this.ended = false;
+  this.base = def.baseRate || 1; this.slow = false; this.rate = this.base;   /* def.baseRate：ふだんの再生の速さ（モード3 は 1/3）。スローはその 0.3 倍 */
   this.strobe = false; this.sel = null; this.hits = [];
   this.reset0();
   this.build();
@@ -1912,7 +1933,7 @@ Sim.prototype.build = function () {
   });
   this.row1b = row1b;
   this.bPlay.addEventListener('click', function () { self.togglePlay(); });
-  this.bSlow.addEventListener('click', function () { self.rate = (self.rate === 1 ? 0.3 : 1); self.bSlow.classList.toggle('on', self.rate < 1); });
+  this.bSlow.addEventListener('click', function () { self.setSlow(!self.slow); });
   this.bReset.addEventListener('click', function () { self.resetT(); });
   this.bDef.addEventListener('click', function () { self.toDefaults(); });
   this.bStrobe.addEventListener('click', function () { self.strobe = !self.strobe; self.bStrobe.classList.toggle('on', self.strobe); self.bStrobe.setAttribute('aria-pressed', self.strobe ? 'true' : 'false'); self.draw(); });
@@ -2130,12 +2151,12 @@ Sim.prototype.togglePlay = function () {
   this.playing = true; this.syncPlayLabel(); startLoop();
 };
 Sim.prototype.resetT = function () {
-  this.playing = false; this.t = 0; this.ended = false;
+  this.playing = false; this.t = 0; this.ended = false; this.trail = [];
   if (this.def.onReset) this.def.onReset(this);
   this.syncPlayLabel(); this.draw(); this.renderRight();
 };
 Sim.prototype.toDefaults = function () {
-  this.playing = false; this.rate = 1; this.bSlow.classList.remove('on');
+  this.playing = false; this.setSlow(false); this.trail = [];
   this.strobe = false; this.bStrobe.classList.remove('on'); this.bStrobe.setAttribute('aria-pressed', 'false');
   this.reset0();
   this.locks = Object.assign({}, this.def.lockDefault || {}); this.syncLocks();
@@ -2144,6 +2165,7 @@ Sim.prototype.toDefaults = function () {
   else if (this.vbtns) this.vbtns.forEach(function (b) { b.classList.remove('on'); });
   this.syncPlayLabel(); this.draw(); this.renderRight();
 };
+Sim.prototype.setSlow = function (on) { this.slow = on; this.rate = this.base * (on ? 0.3 : 1); this.bSlow.classList.toggle('on', on); };
 Sim.prototype.setT = function (t) {
   this.t = clamp(t, 0, this.tEnd());
   this.ended = this.t >= this.tEnd() - 1e-9;
@@ -2214,6 +2236,36 @@ Sim.prototype.setRoll = function (q) {
   } else { rin.classList.remove('go'); r0.textContent = String(q.n); r1.textContent = String(q.n); }
   this._roll = q.n;
 };
+
+/* ---------- 軌跡（モード2・3 の「軌跡を表示」） ----------
+   毎回の描画で物体の位置を記録し、少し前（def.trailSec 秒）までの道すじを、古いほどうすく描く。
+   p＝慣性系での位置（描画関数に渡す座標）、fr＝そのときの絵の回転角、pr＝回転の中心から見た位置（ふつうは p と同じ）。
+   proj(x, y, z) は「いまの絵」で座標 → 画面。非慣性系では、記録したときの回転のぶんを戻して描く（＝回る観測者から見た道すじ）。
+   fr の向きは proj の回転と同じ（いまの絵が R(fr_now) をかけるなら、R(fr_then − fr_now) をかけた点を渡す） */
+function trailStep(ctx, s, proj, p, fr, pr) {
+  if (!s.trail) s.trail = [];
+  var T = s.trail, last = T[T.length - 1];
+  if (last && (s.t < last.t - 1e-9 || s.t - last.t > 0.6)) { T.length = 0; last = null; }   /* 時間を戻した・飛ばしたら消す */
+  if (!last || s.t - last.t > 0.006) T.push({ t: s.t, p: p.slice(), pr: (pr || p).slice(), fr: fr || 0 });
+  var win = s.def.trailSec || 1.5;
+  while (T.length > 2 && T[0].t < s.t - win) T.shift();
+  if (!s.ms.trail || T.length < 2) return;
+  var frNow = fr || 0;
+  var pt = function (q) {
+    var a = q.p;
+    if (s.rot) { var d = q.fr - frNow, c = Math.cos(d), sn = Math.sin(d); a = [q.pr[0] * c - q.pr[1] * sn, q.pr[0] * sn + q.pr[1] * c, q.pr[2] || 0]; }
+    return proj(a[0], a[1], a[2] || 0);
+  };
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 2.6;
+  var prev = pt(T[0]);
+  for (var i = 1; i < T.length; i++) {
+    var cur = pt(T[i]), age = (s.t - T[i].t) / win;
+    ctx.strokeStyle = 'rgba(22,99,181,' + (0.75 * (1 - clamp(age, 0, 1)) + 0.05).toFixed(3) + ')';
+    ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(cur.x, cur.y); ctx.stroke();
+    prev = cur;
+  }
+  ctx.restore();
+}
 
 /* ===== 50_mode1.js ===== */
 /* =========================================================================
@@ -2627,9 +2679,10 @@ function drawM1(s, ctx, W, H) {
     }
   }
   /* 回る向き ω（決まった場所の円弧の矢印） */
-  if (circ) {
+  if (circ && cam.el >= 8) {                                  /* 真横からは円弧がつぶれるので描かない */
     /* 回る向き ω の矢印は動かさない（左上の決まった場所）。円弧の長さ（角）は ω に比例（0.45ω rad）＝ ω が大きいほど長い矢印 */
-    var rw = p.r + 0.17, a1 = 1.80, a2 = a1 + 0.45 * p.w, pts = [];
+    /* 円弧の半径は r によらず一定（r を変えても矢印の長さが ω だけで決まるように。r を小さくしながら ω が大きくなる様子が見える） */
+    var rw = M1.R.r[1] + 0.17, a1 = 1.80, a2 = a1 + 0.45 * p.w, pts = [];
     for (var j = 0; j <= 30; j++) pts.push(C(a1 + (a2 - a1) * j / 30, rw, zb));
     ctx.save(); ctx.strokeStyle = COL.ink2; ctx.fillStyle = COL.ink2; ctx.lineWidth = 2;
     ctx.beginPath(); pts.slice(0, 27).forEach(function (q, i) { i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.stroke();
@@ -3039,7 +3092,7 @@ function m2SetRot(s, on) {
 function m2SetModeRot(mid, on) {
   var ms = modeState(mid); ms.rot = on;
   SIMS.forEach(function (s) { if (s.mode === mid) m2SetRot(s, on); });
-  if (ms._rcb) ms._rcb.checked = on;
+  if (ms._segb) { ms._segb[0].classList.toggle('on', !on); ms._segb[1].classList.toggle('on', on); }
   if (history.replaceState) history.replaceState(null, '', '#' + mid + (on ? '-rot' : ''));
 }
 
@@ -3123,6 +3176,7 @@ function velAbove(ctx, sc, c, v, scale, zOff, s) {
 }
 /* 回る向き ω（慣性系だけ）：軸のまわりの決まった場所の円弧の矢印 */
 function omegaArc3(ctx, sc, R, z, a1, a2) {
+  if (sc.top || sc.side) return;                              /* 真上・真横からは円弧がつぶれて読めないので描かない */
   var pts = []; for (var j = 0; j <= 30; j++) { var a = a1 + (a2 - a1) * j / 30; pts.push(PP(sc, R * Math.cos(a), R * Math.sin(a), z)); }
   ctx.save(); ctx.strokeStyle = COL.ink2; ctx.fillStyle = COL.ink2; ctx.lineWidth = 2;
   ctx.beginPath(); pts.slice(0, 27).forEach(function (q, i) { i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.stroke();
@@ -3145,7 +3199,7 @@ function m2Outer(ctx, sc, foot, h, active, when, zTab) {
   return null;
 }
 /* いまの視点の観測者のセリフ。ev＝'slip'／'cut' など（できごとがあればそのセリフ） */
-var M2SAY = { slip: '滑ったな', cut: '糸が切れたな', off: '面から離れたな', slack: '糸がたるんだな' };
+var M2SAY = { slip: '滑ったな', cut: '糸が切れたな', off: '面から離れたな', slack: '糸がたるんだな', top: '最高点から飛び出したな' };
 function m2Speech(ctx, s, hdIn, hdRot, ev, opt) {
   opt = opt || {};
   var hd = s.rot ? hdRot : hdIn; if (!hd) return;
@@ -3164,6 +3218,15 @@ function m2Rider(ctx, sc, foot, active) { return observer3(ctx, sc, foot, 0.17, 
 function m2FrameNote(rot) {
   return rot ? '<p class="qnote">遠心力は、一緒に回る観測者だけが感じる<b>見かけの力（慣性力）</b>。外（慣性系）から見るときには描かない。</p>'
     : '<p class="qnote">外（慣性系）から見ると物体は円運動している（加速度がある）ので' + T_EOM + 'を立てる。<b>慣性系に「遠心力」は存在しない。</b></p>';
+}
+/* 右の列の「立式」カード（モード2・3 で同じ形）：いまの視点のぶんだけ、方向ごとに 1 行（方向の名前・札・式）。
+   o = { lead:{in, rot}, rows:[{ dir:'水平方向（中心向き）', hl:'h', in:[札, 式], rot:[札, 式] }], note:{in, rot} } */
+function m2Setup(s, o) {
+  var k = s.rot ? 'rot' : 'in', hl = s.hl || '';
+  return '<div class="qcard setup ' + k + '"><p class="qt">' + (s.rot ? '一緒に回る観測者（非慣性系）から見ると' : '外（慣性系）から見ると') + '<span class="now">いまの視点</span></p>' +
+    '<p>' + o.lead[k] + '</p><div class="dirs">' +
+    o.rows.map(function (r) { var q = r[k]; return '<div class="dirrow' + (r.hl && hl === r.hl ? ' hl' : '') + '"><span class="dirlab">' + r.dir + '</span>' + eqRow(q[0], q[1]) + '</div>'; }).join('') +
+    '</div>' + ((o.note && o.note[k]) || m2FrameNote(s.rot)) + '</div>';
 }
 /* 重力と垂直抗力は左右に少しずらす（矢印が重ならないように）。ut＝画面で横に見える向き（接線） */
 function m2GN(ctx, sc, c3, bot, ut, mg, fs, off) {
@@ -3228,12 +3291,12 @@ DEFS.m2s1 = m2Base({
     var m = M2.s1.m, w = s.v.w, r = s.v.r, mu = s.v.mu;
     var need = m * r * w * w, mg = m * G;
     if (s.slip0) return {
-      in: { h: '【慣性系】すべっている', lines: [{ k: '中心方向：', t: 'mr\\omega^2 > \\mu mg' }], num: '必要な向心力 ' + f3(need) + ' N ＞ 最大摩擦力 ' + f3(mu * mg) + ' N', note: '摩擦力だけでは円運動を続けられない' },
-      rot: { h: '【非慣性系】すべり出す', lines: [{ k: '中心方向：', t: 'mr\\omega^2 > \\mu mg' }], num: '遠心力 ' + f3(need) + ' N ＞ 最大摩擦力 ' + f3(mu * mg) + ' N', note: 'つりあわないので、外へすべっていく' } };
+      in: { h: '【慣性系】すべっている', lines: [{ k: '水平方向（中心向き）：', t: 'mr\\omega^2 > \\mu mg' }], num: '必要な向心力 ' + f3(need) + ' N ＞ 最大摩擦力 ' + f3(mu * mg) + ' N', note: '摩擦力だけでは円運動を続けられない' },
+      rot: { h: '【非慣性系】すべり出す', lines: [{ k: '水平方向（中心向き）：', t: 'mr\\omega^2 > \\mu mg' }], num: '遠心力 ' + f3(need) + ' N ＞ 最大摩擦力 ' + f3(mu * mg) + ' N', note: 'つりあわないので、外へすべっていく' } };
     return {
-      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '中心方向：', t: 'mr\\omega^2 = f' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }],
+      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '水平方向（中心向き）：', t: 'mr\\omega^2 = f' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }],
         num: 'いま：' + f3(need) + ' N ＝ ' + f3(need) + ' N（静止摩擦力 f）', note: '※ 慣性系に「遠心力」は存在しない' },
-      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '中心方向：', t: 'f - \\underbrace{mr\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }],
+      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '水平方向（中心向き）：', t: 'f - \\underbrace{mr\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }],
         num: 'いま：' + f3(need) + ' − ' + f3(need) + ' ＝ 0', note: '※ 遠心力は一緒に回る観測者だけが感じる見かけの力' } };
   },
   draw: function (s, ctx, W, H) { drawM2s1(s, ctx, W, H); },
@@ -3259,6 +3322,7 @@ function drawM2s1(s, ctx, W, H) {
     ctx.stroke(); ctx.restore();
   } else ring3(ctx, sc, r, 0.003, '#8a929c');
   var cx = st.x, cy = st.y, rr = st.rr;
+  trailStep(ctx, s, function (x, y, z) { return PP(sc, x, y, z); }, [cx, cy, 0.004], -tab);   /* 軌跡（少し前までの道すじ） */
   box3(ctx, sc, cx, cy, 0, h, st.th);
   var op = m2CoPos(0, r, C.R, tab);                          /* 一緒に回る観測者：箱と同じがわ（少し前）に立つ */
   var hdRot = observer3(ctx, sc, [op[0], op[1], 0], 0.30, '一緒に回る観測者', s.rot, { dy: 2 });
@@ -3292,12 +3356,11 @@ function drawM2s1(s, ctx, W, H) {
 }
 function rightM2s1(s, R) {
   var m = M2.s1.m, w = s.v.w, r = s.v.r, mu = s.v.mu, ws = M2.s1.wSlip(r, mu), slip = !!s.slip0;
-  var h = '<div class="qcard"><p class="qt">' + (s.rot ? '一緒に回る観測者（非慣性系）から見ると' : '外（慣性系）から見ると') + '</p>';
-  if (!s.rot) h += '<p>箱は半径 $r$ の等速円運動をしている。中心向きの加速度 $a=r\\omega^2$ を生んでいるのは、ターンテーブルからの<b>静止摩擦力 $f$</b>。つまり <b>向心力 $F$ の正体は静止摩擦力</b>。</p>' +
-    '<div class="qeq">' + eqRow('eom', 'mr\\omega^2 = f') + eqRow('bal', '0 = N - mg') + '</div>';
-  else h += '<p>一緒に回る観測者には、箱は止まって見える。中心から外向きに<b>遠心力 $mr\\omega^2$</b> がはたらき、静止摩擦力 $f$ とつりあっている。</p>' +
-    '<div class="qeq">' + eqRow('bal', 'f - mr\\omega^2 = 0') + eqRow('bal', 'N - mg = 0') + '</div>';
-  h += m2FrameNote(s.rot) + '</div>';
+  var h = m2Setup(s, {
+    lead: { in: '箱は半径 $r$ の等速円運動をしている。中心向きの加速度 $a=r\\omega^2$ を生んでいるのは、ターンテーブルからの<b>静止摩擦力 $f$</b>。つまり <b>向心力 $F$ の正体は静止摩擦力</b>。',
+            rot: '一緒に回る観測者には、箱は止まって見える。中心から外向きに<b>遠心力 $mr\\omega^2$</b> がはたらき、静止摩擦力 $f$ とつりあっている。' },
+    rows: [{ dir: '水平方向（中心向き）', in: ['eom', 'mr\\omega^2 = f'], rot: ['bal', 'f - mr\\omega^2 = 0'] },
+           { dir: '鉛直方向', in: ['bal', 'N - mg = 0'], rot: ['bal', 'N - mg = 0'] }] });
   if (slip || (s.ramp && s.ramp.ph === 'pause')) {
     h += '<div class="qcard derive"><p class="qt">すべり出す角速度 $\\omega_0$ の導出</p>' +
       '<p>すべらないための条件は、必要な摩擦力 $f$ が最大摩擦力 $\\mu N$ 以下であること。鉛直方向の' + T_BAL + 'より $N=mg$。</p>' +
@@ -3333,9 +3396,9 @@ DEFS.m2s2 = m2Base({
   eqs: function (s) {
     var C = M2.s2, w = s.v.w, x = s.v.x, kx = C.k * x, mr = C.m * (C.l + x) * w * w;
     return {
-      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '中心方向：', t: 'm(\\ell + x)\\omega^2 = kx' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }],
+      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '水平方向（中心向き）：', t: 'm(\\ell + x)\\omega^2 = kx' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }],
         num: 'いま：' + f3(mr) + ' N ＝ ' + f3(kx) + ' N', note: '※ 慣性系に「遠心力」は存在しない' },
-      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '中心方向：', t: 'kx - \\underbrace{m(\\ell + x)\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }],
+      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '水平方向（中心向き）：', t: 'kx - \\underbrace{m(\\ell + x)\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }],
         num: 'いま：' + f3(kx) + ' − ' + f3(mr) + ' ＝ 0', note: '※ 遠心力は一緒に回る観測者だけが感じる見かけの力' } };
   },
   draw: function (s, ctx, W, H) { drawM2s2(s, ctx, W, H); },
@@ -3375,6 +3438,7 @@ function drawM2s2(s, ctx, W, H) {
   dimLine(ctx, d0.x, d0.y, d1.x, d1.y, '#1c8f4a'); dimLine(ctx, d1.x, d1.y, d2.x, d2.y, '#1c8f4a');
   sym(ctx, 'ℓ', (d0.x + d1.x) / 2, (d0.y + d1.y) / 2 + 12, { size: 15, color: '#1c8f4a' });
   sym(ctx, 'x', (d1.x + d2.x) / 2, (d1.y + d2.y) / 2 + 12, { size: 15, color: '#1c8f4a' });
+  trailStep(ctx, s, function (x, y, z) { return PP(sc, x, y, z); }, [cx, cy, zb], -th);
   var B = PP(sc, cx, cy, zb); ballShape(ctx, B.x, B.y, rb * sc.S, '#c9d3de');
   var op = m2CoPos(0, rr, R, th);                            /* 一緒に回る観測者：小球と同じがわ（少し前） */
   var hdRot = observer3(ctx, sc, [op[0], op[1], 0], 0.30, '一緒に回る観測者', s.rot, { dy: 2 });
@@ -3395,10 +3459,11 @@ function drawM2s2(s, ctx, W, H) {
 }
 function rightM2s2(s, R) {
   var C = M2.s2, w = s.v.w, x = s.v.x, wmax = Math.sqrt(C.k / C.m);
-  var h = '<div class="qcard"><p class="qt">' + (s.rot ? '一緒に回る観測者（非慣性系）から見ると' : '外（慣性系）から見ると') + '</p>';
-  if (!s.rot) h += '<p>小球は半径 $\\ell + x$ の等速円運動をしている。<b>向心力の正体はばねの弾性力 $kx$</b>。</p><div class="qeq">' + eqRow('eom', 'm(\\ell + x)\\omega^2 = kx') + '</div>';
-  else h += '<p>小球は止まって見える。外向きの遠心力 $m(\\ell+x)\\omega^2$ と、ばねの弾性力 $kx$ がつりあっている。</p><div class="qeq">' + eqRow('bal', 'kx - m(\\ell + x)\\omega^2 = 0') + '</div>';
-  h += m2FrameNote(s.rot) + '</div>';
+  var h = m2Setup(s, {
+    lead: { in: '小球は半径 $\\ell + x$ の等速円運動をしている。<b>向心力の正体はばねの弾性力 $kx$</b>。',
+            rot: '小球は止まって見える。外向きの遠心力 $m(\\ell+x)\\omega^2$ と、ばねの弾性力 $kx$ がつりあっている。' },
+    rows: [{ dir: '水平方向（中心向き）', in: ['eom', 'm(\\ell + x)\\omega^2 = kx'], rot: ['bal', 'kx - m(\\ell + x)\\omega^2 = 0'] },
+           { dir: '鉛直方向', in: ['bal', 'N - mg = 0'], rot: ['bal', 'N - mg = 0'] }] });
   h += '<div class="qcard"><p class="qt">伸び $x$ を求める</p><p>' + (s.rot ? T_BAL : T_EOM) + 'を $x$ について解くと</p>' +
     '<div class="qeq">' + tex('x = \\dfrac{m\\ell\\omega^2}{k - m\\omega^2}', true) + '</div>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('x = \\dfrac{' + f2(C.m) + '\\times' + f2(C.l) + '\\times' + f2(w) + '^2}{' + C.k + ' - ' + f2(C.m) + '\\times' + f2(w) + '^2} = ' + f3(x) + '\\ \\text{m}') + '</p>' +
@@ -3446,7 +3511,7 @@ DEFS.m2s3 = m2Base({
     prep: function (s) { s.cut0 = null; },
     sync: function (s) { s.v.S = M2.s3.m * s.v.r * s.v.w * s.v.w; },
     fire: function (s) { s.v.S = M2.s3.m * s.v.r * s.v.w * s.v.w; },
-    after: function (s) { s.cut0 = { t0: s.t, th0: m2Ang(s) }; s.rate = 0.3; s.bSlow.classList.add('on'); },   /* 切れたあとは速いので、スローにして見せる */
+    after: function (s) { s.cut0 = { t0: s.t, th0: m2Ang(s) }; s.setSlow(true); },   /* 切れたあとは速いので、スローにして見せる */
     noReach: function (s) { return 'この半径では、糸が切れる $\\omega_0 = ' + f2(M2.s3.wCut(s.v.r)) + '$ rad/s がスライダーの範囲（6 rad/s まで）をこえている。半径 $r$ を大きくしよう。'; }
   },
   tEnd: function (s) { return s.cut0 ? s.cut0.t0 + M2.s3.exitAfter(s.v.r, s.v.w, s.cut0.th0) : 30; },
@@ -3460,11 +3525,11 @@ DEFS.m2s3 = m2Base({
   eqs: function (s) {
     var C = M2.s3, w = s.v.w, r = s.v.r, S = s.v.S, mr = C.m * r * w * w;
     if (s.cut0) return {
-      in: { h: '【慣性系】糸が切れた', lines: [{ k: '水平方向：', t: '\\text{力がはたらかない}\\ (a = 0)' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }], note: '水平方向の力がないので、等速直線運動（慣性の法則）' },
-      rot: { h: '【非慣性系】糸が切れた', lines: [{ k: '中心方向：', t: '\\text{張力なし} \\ \\Rightarrow\\ \\text{遠心力で外へ}' }], note: '回る観測者からは、小球が外へ遠ざかっていくように見える' } };
+      in: { h: '【慣性系】糸が切れた', lines: [{ k: '水平方向（中心向き）：', t: '\\text{力がはたらかない}\\ (a = 0)' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }], note: '水平方向の力がないので、等速直線運動（慣性の法則）' },
+      rot: { h: '【非慣性系】糸が切れた', lines: [{ k: '水平方向（中心向き）：', t: '\\text{張力なし} \\ \\Rightarrow\\ \\text{遠心力で外へ}' }], note: '回る観測者からは、小球が外へ遠ざかっていくように見える' } };
     return {
-      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '中心方向：', t: 'mr\\omega^2 = S' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }], num: 'いま：' + f3(mr) + ' N ＝ ' + f3(S) + ' N', note: '※ 慣性系に「遠心力」は存在しない' },
-      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '中心方向：', t: 'S - \\underbrace{mr\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }], num: 'いま：' + f3(S) + ' − ' + f3(mr) + ' ＝ 0', note: '※ 遠心力は一緒に回る観測者だけが感じる見かけの力' } };
+      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '水平方向（中心向き）：', t: 'mr\\omega^2 = S' }, { tag: 'bal', k: '鉛直方向：', t: '0 = N - mg' }], num: 'いま：' + f3(mr) + ' N ＝ ' + f3(S) + ' N', note: '※ 慣性系に「遠心力」は存在しない' },
+      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '水平方向（中心向き）：', t: 'S - \\underbrace{mr\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }], num: 'いま：' + f3(S) + ' − ' + f3(mr) + ' ＝ 0', note: '※ 遠心力は一緒に回る観測者だけが感じる見かけの力' } };
   },
   draw: function (s, ctx, W, H) { drawM2s3(s, ctx, W, H); },
   right: function (s, R) { rightM2s3(s, R); }
@@ -3527,8 +3592,9 @@ function drawM2s3(s, ctx, W, H) {
     ctx.save(); ctx.strokeStyle = '#7a5a32'; ctx.lineWidth = 1.7; ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(e.x, e.y); ctx.stroke(); ctx.restore();
     var tx = -ur0[1], ty = ur0[0], rq = PP(sc, cx * 0.42 + tx * 0.07, cy * 0.42 + ty * 0.07, zb); sym(ctx, 'r', rq.x, rq.y, { size: 16 });
   }
+  trailStep(ctx, s, function (x, y, z) { return PP(sc, x, y, z); }, [cx, cy, zb], -ph);
   ballShape(ctx, B.x, B.y, rb * sc.S, '#c9d3de');
-  /* 一緒に回る観測者：小球の上に乗った小人（少しうしろにずらす） */
+  /* 一緒に回る観測者：小球の上に乗る（少しうしろにずらす） */
   var hdRot = m2Rider(ctx, sc, [cx - uv[0] * 0.02, cy - uv[1] * 0.02, 2 * rb], s.rot);
   var rr = Math.hypot(cx, cy), ur = [cx / rr, cy / rr, 0], ut = [-ur[1], ur[0], 0], c3 = [cx, cy, zb], fs = M2SC.s3.F;
   if (showF) {
@@ -3553,10 +3619,10 @@ function drawM2s3(s, ctx, W, H) {
 }
 function rightM2s3(s, R) {
   var C = M2.s3, w = s.v.w, r = s.v.r, wc = C.wCut(r);
-  var h = '<div class="qcard"><p class="qt">' + (s.rot ? '一緒に回る観測者（非慣性系）から見ると' : '外（慣性系）から見ると') + '</p>' +
-    (!s.rot ? '<p>小球は半径 $r$ の等速円運動。<b>向心力の正体は糸の張力 $S$</b>。</p><div class="qeq">' + eqRow('eom', 'mr\\omega^2 = S') + eqRow('bal', '0 = N - mg') + '</div>'
-      : '<p>小球は止まって見える。外向きの遠心力 $mr\\omega^2$ と張力 $S$ がつりあう。</p><div class="qeq">' + eqRow('bal', 'S - mr\\omega^2 = 0') + eqRow('bal', 'N - mg = 0') + '</div>') +
-    m2FrameNote(s.rot) + '</div>';
+  var h = m2Setup(s, {
+    lead: { in: '小球は半径 $r$ の等速円運動。<b>向心力の正体は糸の張力 $S$</b>。', rot: '小球は止まって見える。外向きの遠心力 $mr\\omega^2$ と張力 $S$ がつりあう。' },
+    rows: [{ dir: '水平方向（中心向き）', in: ['eom', 'mr\\omega^2 = S'], rot: ['bal', 'S - mr\\omega^2 = 0'] },
+           { dir: '鉛直方向', in: ['bal', 'N - mg = 0'], rot: ['bal', 'N - mg = 0'] }] });
   h += '<div class="qcard' + (s.cut0 ? ' derive' : '') + '"><p class="qt">糸が切れる角速度 $\\omega_0$</p><p>張力が $S_0$ に達したときに切れる。$mr\\omega_0^{\\,2} = S_0$ より</p>' +
     '<div class="qeq">' + tex('\\omega_0 = \\sqrt{\\dfrac{S_0}{mr}}', true) + '</div>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('\\omega_0 = \\sqrt{\\dfrac{' + f2(C.S0) + '}{' + f2(C.m) + '\\times' + f2(r) + '}} = ' + f2(wc) + '\\ \\text{rad/s}') + '</p>' +
@@ -3595,9 +3661,9 @@ DEFS.m2s4 = m2Base({
   eqs: function (s) {
     var C = M2.s4, w = s.v.w, th = C.thOf(w), S = s.v.S, r = C.L * Math.sin(th), mr = C.m * r * w * w;
     return {
-      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '水平（中心）方向：', t: 'mr\\omega^2 = S\\sin\\theta' }, { tag: 'bal', k: '鉛直方向：', t: '0 = S\\cos\\theta - mg' }],
+      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '水平方向（中心向き）：', t: 'mr\\omega^2 = S\\sin\\theta' }, { tag: 'bal', k: '鉛直方向：', t: '0 = S\\cos\\theta - mg' }],
         num: 'いま：' + f3(mr) + ' ＝ ' + f3(S * Math.sin(th)) + '、0 ＝ ' + f3(S * Math.cos(th)) + ' − ' + f3(C.m * G), note: '※ 慣性系に「遠心力」は存在しない' },
-      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '水平方向：', t: 'S\\sin\\theta - \\underbrace{mr\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'S\\cos\\theta - mg = 0' }],
+      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '水平方向（中心向き）：', t: 'S\\sin\\theta - \\underbrace{mr\\omega^2}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '鉛直方向：', t: 'S\\cos\\theta - mg = 0' }],
         num: 'いま：' + f3(S * Math.sin(th)) + ' − ' + f3(mr) + ' ＝ 0', note: '※ 遠心力は一緒に回る観測者だけが感じる見かけの力' } };
   },
   draw: function (s, ctx, W, H) { drawM2s4(s, ctx, W, H); },
@@ -3632,8 +3698,9 @@ function drawM2s4(s, ctx, W, H) {
     ctx.save(); ctx.strokeStyle = COL.ink2; ctx.lineWidth = 1.2; ctx.beginPath(); arc.forEach(function (q, i) { i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.stroke(); ctx.restore();
     var am = PP(sc, 0.26 * Math.sin(th / 2) * ur[0], 0.26 * Math.sin(th / 2) * ur[1], -0.26 * Math.cos(th / 2)); sym(ctx, 'θ', am.x, am.y, { size: 15 });
   }
+  trailStep(ctx, s, function (x, y, z) { return PP(sc, x, y, z); }, [cx, cy, zc], -ph);
   ballShape(ctx, B.x, B.y, rb * sc.S, '#c9d3de');
-  /* 一緒に回る観測者：小球の上に乗った小人（糸と重ならないよう、少し進む向きの後ろへずらす）。床の回転台は描かない */
+  /* 一緒に回る観測者：小球の上に乗る（糸と重ならないよう、少し進む向きの後ろへずらす）。床の回転台は描かない */
   var hdRot = m2Rider(ctx, sc, [cx - ut[0] * 0.03, cy - ut[1] * 0.03, zc + rb], s.rot);
   if (!s.rot && !sc.top) omegaArc3(ctx, sc, r + 0.16, zc, 1.9, 2.6);
   var fs = M2SC.s4.F, S = s.v.S;
@@ -3661,18 +3728,16 @@ function drawM2s4(s, ctx, W, H) {
 }
 function rightM2s4(s, R) {
   var C = M2.s4, w = s.v.w, th = C.thOf(w), hl = s.hl || '';
-  var blk = function (cls, title, body) { return '<div class="qcard part' + (hl === cls ? ' hl' : '') + '"><p class="qt">' + title + '</p>' + body + '</div>'; };
-  var h = '<p class="qlead">円錐振り子は、<b>慣性系と非慣性系の両方</b>で立式してみよう。右上の「水平からみる」「真上からみる」を押すと、対応する式が光る。</p>';
-  h += blk('h', '水平（中心）方向 ― 真上からみると円運動',
-    '<p><b>慣性系：</b>糸が引く力の水平成分 $S\\sin\\theta$ が向心力。</p><div class="qeq">' + eqRow('eom', 'mr\\omega^2 = S\\sin\\theta') + '</div>' +
-    '<p><b>非慣性系：</b>遠心力 $mr\\omega^2$ と $S\\sin\\theta$ がつりあう。</p><div class="qeq">' + eqRow('bal', 'S\\sin\\theta - mr\\omega^2 = 0') + '</div>');
-  h += blk('v', '鉛直方向 ― 水平からみると上下に動かない',
-    '<p>慣性系でも非慣性系でも、鉛直方向は' + T_BAL + '。</p><div class="qeq">' + eqRow('bal', 'S\\cos\\theta - mg = 0') + '</div>');
+  var h = '<p class="qlead">右上の「真上からみる」を押すと水平方向の式が、「水平からみる」を押すと鉛直方向の式が光る。観測者を切りかえると、その観測者の式に変わる。</p>';
+  h += m2Setup(s, {
+    lead: { in: '糸が引く力の水平成分 $S\\sin\\theta$ が向心力。鉛直方向には動かないので力がつりあう。', rot: '遠心力 $mr\\omega^2$ と $S\\sin\\theta$ がつりあう。鉛直方向も力がつりあう。' },
+    rows: [{ dir: '水平方向（中心向き）', hl: 'h', in: ['eom', 'mr\\omega^2 = S\\sin\\theta'], rot: ['bal', 'S\\sin\\theta - mr\\omega^2 = 0'] },
+           { dir: '鉛直方向', hl: 'v', in: ['bal', 'S\\cos\\theta - mg = 0'], rot: ['bal', 'S\\cos\\theta - mg = 0'] }] });
   h += '<div class="qcard"><p class="qt">$S$ と $\\theta$ を求める</p><p>$r = L\\sin\\theta$ を水平方向の式に入れると $mL\\omega^2\\sin\\theta = S\\sin\\theta$ より</p>' +
     '<div class="qeq">' + tex('S = mL\\omega^2', true) + tex('\\cos\\theta = \\dfrac{mg}{S} = \\dfrac{g}{L\\omega^2}', true) + '</div>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('S = ' + fmt(s.v.S, 2) + '\\ \\text{N},\\ \\ \\theta = ' + fmt(th * 180 / Math.PI, 1) + '^\\circ') + '</p>' +
-    '<p class="qnote">$\\cos\\theta \\le 1$ なので $\\omega \\ge \\sqrt{g/L} = ' + f2(C.wMin()) + '$ rad/s のときだけ、この円運動ができる。</p>' + m2FrameNote(s.rot) + '</div>';
-  h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('L = 1.0') + ' m、' + tex('g = 9.8') + ' m/s²。一緒に回る観測者は、小球に乗った小人で表している。</p>';
+    '<p class="qnote">$\\cos\\theta \\le 1$ なので $\\omega \\ge \\sqrt{g/L} = ' + f2(C.wMin()) + '$ rad/s のときだけ、この円運動ができる。</p></div>';
+  h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('L = 1.0') + ' m、' + tex('g = 9.8') + ' m/s²。一緒に回る観測者は、小球の上に乗っている。</p>';
   R.innerHTML = mathify(h);
 }
 
@@ -3692,10 +3757,9 @@ DEFS.m2s5 = m2Base({
   },
   draw: function (s, ctx, W, H) { drawM2s5(s, ctx, W, H); },
   right: function (s, R) {
-    var h = '<div class="qcard"><p class="qt">' + (s.rot ? '地球と一緒に回る観測者（非慣性系）から見ると' : '外（慣性系）から見ると') + '</p>' +
-      (!s.rot ? '<p>地球（質量 $m$）は太陽（質量 $M$）のまわりを半径 $r$ で回る。<b>向心力の正体は万有引力</b> $G\\dfrac{Mm}{r^2}$。</p><div class="qeq">' + eqRow('eom', 'mr\\omega^2 = G\\dfrac{Mm}{r^2}') + '</div>'
-        : '<p>地球は止まって見え、外向きの遠心力 $mr\\omega^2$ と万有引力がつりあう。</p><div class="qeq">' + eqRow('bal', 'G\\dfrac{Mm}{r^2} - mr\\omega^2 = 0') + '</div>') +
-      m2FrameNote(s.rot) + '</div>' +
+    var h = m2Setup(s, {
+      lead: { in: '地球（質量 $m$）は太陽（質量 $M$）のまわりを半径 $r$ で回る。<b>向心力の正体は万有引力</b> $G\\dfrac{Mm}{r^2}$。', rot: '地球は止まって見え、外向きの遠心力 $mr\\omega^2$ と万有引力がつりあう。' },
+      rows: [{ dir: '中心方向（太陽向き）', in: ['eom', 'mr\\omega^2 = G\\dfrac{Mm}{r^2}'], rot: ['bal', 'G\\dfrac{Mm}{r^2} - mr\\omega^2 = 0'] }] }) +
       '<div class="qcard"><p class="qt">ここから分かること</p><p>$\\omega = \\dfrac{2\\pi}{T}$ を入れて整理すると $\\dfrac{T^2}{r^3} = \\dfrac{4\\pi^2}{GM}$。惑星によらず一定になる（ケプラーの第 3 法則）。</p>' +
       '<p><a class="golink" href="https://physics-chiba.github.io/physics-site/mechanics/celestial-mechanics.html" target="_blank" rel="noopener">万有引力とケプラーの法則のページへ →</a></p></div>' +
       '<p class="assume">太陽・地球の大きさと距離は、実際の比ではない。</p>';
@@ -3717,6 +3781,7 @@ function drawM2s5(s, ctx, W, H) {
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 30, 0, TAU); ctx.fill();
   ctx.fillStyle = '#f0b429'; ctx.beginPath(); ctx.arc(cx, cy, 17, 0, TAU); ctx.fill();
   label(ctx, '太陽 M', cx, cy + 32, { size: 12, bold: true, color: '#f6d37a', halo: false });
+  trailStep(ctx, s, function (x, y) { return P(x, y); }, [R * Math.cos(ph), R * Math.sin(ph), 0], -ph);
   var E = P(R * Math.cos(ph), R * Math.sin(ph)), ux = (E.x - cx) / R, uy = (E.y - cy) / R;
   var eg = ctx.createRadialGradient(E.x - 3, E.y - 3, 1, E.x, E.y, 10); eg.addColorStop(0, '#bfe3ff'); eg.addColorStop(1, '#2a73c8');
   ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(E.x, E.y, 10, 0, TAU); ctx.fill();
@@ -3740,18 +3805,136 @@ function drawM2s5(s, ctx, W, H) {
   label(ctx, '大きさ・距離は実際の比ではない', W - 8, H - 12, { size: 10.5, color: 'rgba(246,242,233,.55)', align: 'right', halo: false });
 }
 
+/* ===================== セクション6 ローレンツ力と電子 ===================== */
+/* 一様な磁場 B（鉛直上向き）の中を、電荷 q（|q| = 1 C）・質量 m の粒子が速さ v で運動する。ローレンツ力 qvB が向心力。
+   量を変えても最初にもどさない：変えた瞬間の位置・速度の向きから、新しい半径の円運動を続ける（区間 segs をつなぐ）。
+   正の電荷は上から見て右回り（F = qv × B）、負の電荷は左回り */
+M2SC.s6 = { F: 0.15, v: 0.32, a: 0.15 };
+var M2S6COL = { B: '#2e8b57', f: '#b07d00' };          /* 磁場＝緑、ローレンツ力＝金（力の色表の空き色） */
+function m2s6K(v) { return -v.q * v.B / v.m; }        /* 速度の向きの角 ψ の変わる速さ（右回りが負） */
+function m2s6Seg0(s) { var v = s.v, r = v.m * v.u / v.B; return { t0: 0, x0: 0, y0: v.q > 0 ? r : -r, psi0: 0, B: v.B, u: v.u, m: v.m, q: v.q }; }
+function m2s6At(s, t) {
+  var g = s.segs[0]; s.segs.forEach(function (q) { if (q.t0 <= t + 1e-12) g = q; });
+  var k = m2s6K(g), tau = t - g.t0, ps = g.psi0 + k * tau, a = g.u / k;
+  var x = g.x0 + a * (Math.sin(ps) - Math.sin(g.psi0)), y = g.y0 - a * (Math.cos(ps) - Math.cos(g.psi0));
+  var cx = g.x0 - a * Math.sin(g.psi0), cy = g.y0 + a * Math.cos(g.psi0);
+  return { x: x, y: y, psi: ps, vx: g.u * Math.cos(ps), vy: g.u * Math.sin(ps), cx: cx, cy: cy, r: Math.abs(a), g: g, phi: Math.atan2(y - cy, x - cx) };
+}
+function m2s6New(s, apply) {                           /* 量を変える：いまの位置・速度の向きから新しい区間 */
+  var st = m2s6At(s, s.t); apply();
+  if (s.t <= 1e-9) { s.segs = [m2s6Seg0(s)]; return; }
+  s.segs = s.segs.filter(function (q) { return q.t0 < s.t - 1e-12; });
+  var v = s.v; s.segs.push({ t0: s.t, x0: st.x, y0: st.y, psi0: st.psi, B: v.B, u: v.u, m: v.m, q: v.q });
+}
+function m2s6Q(s) {
+  ['qp', 'qn'].forEach(function (k, i) { if (s.extra && s.extra[k]) s.extra[k].classList.toggle('on', (s.v.q > 0) === (i === 0)); });
+}
+DEFS.m2s6 = m2Base({
+  id: 'm2s6', num: 6, title: 'ローレンツ力と電子',
+  desc: '一様な磁場 $\\vec{B}$（鉛直上向き）の中で、電荷 $q$ をもつ粒子（電子など）が磁場に垂直に速さ $v$ で動く。向心力は<b>ローレンツ力 $qvB$</b>。「軌跡を表示」をオンにして、量を変えると半径がどう変わるか見てみよう。',
+  vars: [
+    { k: 'B', label: '磁束密度 $B$', aria: '磁束密度', min: 1.0, max: 4.0, step: 0.1, def: 1.0, dec: 1, unit: 'T' },
+    { k: 'u', label: '速さ $v$', aria: '速さ', min: 1.0, max: 6.0, step: 0.1, def: 4.0, dec: 1, unit: 'm/s' },
+    { k: 'm', label: '質量 $m$', aria: '質量', min: 0.5, max: 2.0, step: 0.1, def: 1.0, dec: 1, unit: 'kg' }
+  ],
+  views: [{ label: '斜め上から', az: -24, el: 34 }, { label: '真上から', az: 0, el: 90 }, { label: '真横から', az: 0, el: 0 }],
+  trailSec: 4,
+  tEnd: function () { return 120; },
+  init: function (s) { s.v.q = 1; s.v.w = s.v.B / s.v.m; s.segs = [m2s6Seg0(s)]; m2s6Q(s); },
+  buttons: [
+    { k: 'qp', label: '正の電荷（＋）', cls: 'obs', seg: 'q', segLabel: '電荷の正負', onClick: function (s) { if (s.v.q > 0) return; m2s6New(s, function () { s.v.q = 1; }); m2s6Q(s); s.draw(); s.renderRight(); } },
+    { k: 'qn', label: '負の電荷（−）・電子', cls: 'obs', seg: 'q', onClick: function (s) { if (s.v.q < 0) return; m2s6New(s, function () { s.v.q = -1; }); m2s6Q(s); s.draw(); s.renderRight(); } }
+  ],
+  onVar: function (s, k, x) { m2s6New(s, function () { s.v[k] = x; s.v.w = s.v.B / s.v.m; }); return true; },
+  onReset: function (s) { s.segs = [m2s6Seg0(s)]; },
+  msg: function (s) {
+    var st = m2s6At(s, s.t);
+    return '$r = \\dfrac{mv}{qB} = ' + f2(st.r) + '$ m。' + (s.v.q > 0 ? '正の電荷は、上から見て<b>右回り</b>。' : '負の電荷（電子）は、上から見て<b>左回り</b>。') + '$B$ を大きくすると半径が小さく、$v$ や $m$ を大きくすると半径が大きくなる。';
+  },
+  eqs: function (s) {
+    var v = s.v, st = m2s6At(s, s.t), f = v.u * v.B, mv = v.m * v.u * v.u / st.r;
+    return {
+      in: { h: '【慣性系】円運動している', lines: [{ tag: 'eom', k: '中心方向：', t: 'm\\dfrac{v^2}{r} = qvB' }], num: 'いま：' + f2(mv) + ' N ＝ ' + f2(f) + ' N', note: '※ 慣性系に「遠心力」は存在しない' },
+      rot: { h: '【非慣性系】止まって見える', lines: [{ tag: 'bal', k: '中心方向：', t: 'qvB - \\underbrace{m\\dfrac{v^2}{r}}_{\\text{遠心力}} = 0' }], num: 'いま：' + f2(f) + ' − ' + f2(mv) + ' ＝ 0', note: '※ 遠心力は一緒に回る観測者だけが感じる見かけの力' } };
+  },
+  draw: function (s, ctx, W, H) { drawM2s6(s, ctx, W, H); },
+  right: function (s, R) {
+    var v = s.v, r = v.m * v.u / v.B, T = TAU * v.m / v.B;
+    var h = m2Setup(s, {
+      lead: { in: '粒子は半径 $r$ の等速円運動。<b>向心力の正体はローレンツ力 $qvB$</b>。ローレンツ力はいつも速度に垂直なので、速さは変わらない。', rot: '粒子は止まって見える。外向きの遠心力 $m\\dfrac{v^2}{r}$ とローレンツ力 $qvB$ がつりあう。' },
+      rows: [{ dir: '中心方向', in: ['eom', 'm\\dfrac{v^2}{r} = qvB'], rot: ['bal', 'qvB - m\\dfrac{v^2}{r} = 0'] }] });
+    h += '<div class="qcard"><p class="qt">半径と周期</p><p>運動方程式を $r$ について解くと</p><div class="qeq">' + tex('r = \\dfrac{mv}{qB},\\qquad T = \\dfrac{2\\pi r}{v} = \\dfrac{2\\pi m}{qB}', true) + '</div>' +
+      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('r = \\dfrac{' + fmt(v.m, 1) + '\\times' + fmt(v.u, 1) + '}{1\\times' + fmt(v.B, 1) + '} = ' + f2(r) + '\\ \\text{m},\\ \\ T = ' + f2(T) + '\\ \\text{s}') + '</p>' +
+      '<p class="qnote">周期 $T$ は<b>速さ $v$ によらない</b>（速いと半径が大きくなり、1 周の長さも長くなるため）。サイクロトロンはこの性質を使っている。</p></div>';
+    h += '<div class="qcard"><p class="qt">回る向き</p><p>ローレンツ力の向きは、フレミングの左手の法則（$\\vec{F} = q\\vec{v}\\times\\vec{B}$）で決まる。磁場が上向きなら、正の電荷は上から見て右回り、負の電荷（電子）は左回り。電子の電流の向きは、電子の運動と逆向きであることに注意。</p></div>';
+    h += '<p class="assume">見やすくするため、' + tex('|q| = 1') + ' C、質量・速さ・磁束密度も扱いやすい数値にした。重力は考えない。緑の矢印が磁場 ' + tex('\\vec{B}') + '、金色の矢印がローレンツ力。</p>';
+    R.innerHTML = mathify(h);
+  }
+});
+function drawM2s6(s, ctx, W, H) {
+  var st = m2s6At(s, s.t), v = s.v, showF = s.ms.showF, HALF = 7;
+  var frame = s.rot ? -st.phi : 0, ox = s.rot ? st.cx : 0, oy = s.rot ? st.cy : 0;
+  var sc = scene3d(s, W, H, [{ R: HALF * 1.42, z0: 0, z1: 1.6 }], frame);
+  var Q = function (x, y, z) { return PP(sc, x - ox, y - oy, z || 0); };
+  /* 運動する面（方眼）と磁場（上向きの緑の矢印） */
+  var c4 = [[-HALF, -HALF], [HALF, -HALF], [HALF, HALF], [-HALF, HALF]].map(function (q) { return Q(q[0], q[1], 0); });
+  ctx.save(); ctx.beginPath(); c4.forEach(function (q, i) { i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.fillStyle = '#fbfaf6'; ctx.fill(); ctx.clip();
+  for (var gi = -HALF; gi <= HALF; gi++) { ctx.strokeStyle = (gi % 3 === 0) ? '#e6dfd2' : '#f1ece3'; ctx.lineWidth = 1;
+    var a1 = Q(gi, -HALF, 0), a2 = Q(gi, HALF, 0), b1 = Q(-HALF, gi, 0), b2 = Q(HALF, gi, 0); ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(a2.x, a2.y); ctx.moveTo(b1.x, b1.y); ctx.lineTo(b2.x, b2.y); ctx.stroke(); }
+  ctx.restore();
+  ctx.save(); ctx.beginPath(); c4.forEach(function (q, i) { i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.strokeStyle = '#cfc8bb'; ctx.stroke(); ctx.restore();
+  var bArrows = [];
+  for (var bx = -HALF + 1; bx <= HALF - 0.5; bx += 2.4) for (var by = -HALF + 1; by <= HALF - 0.5; by += 2.4) bArrows.push([bx, by]);
+  var Bl = 0.5 + 0.25 * v.B;                                   /* 磁場の矢印の長さ：B に比例して少し長く */
+  if (sc.top) {                                                 /* 真上からは「紙面の裏から表へ」の ⊙ */
+    bArrows.forEach(function (q) { var p = Q(q[0], q[1], 0); ctx.save(); ctx.strokeStyle = M2S6COL.B; ctx.fillStyle = M2S6COL.B; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, TAU); ctx.fill(); ctx.restore(); });
+  } else bArrows.forEach(function (q) { var p0 = Q(q[0], q[1], 0), p1 = Q(q[0], q[1], Bl); ctx.save(); ctx.globalAlpha = 0.55; arrow(ctx, p0.x, p0.y, p1.x, p1.y, 'comp', M2S6COL.B); ctx.restore(); });   /* 力ではないので等長マークの対象にしない */
+  var bl = Q(HALF - 1.5, HALF - 1.5, sc.top ? 0 : Bl); sym(ctx, 'B', bl.x + 12, bl.y - 4, { size: 17, color: M2S6COL.B, vec: true });
+  var hdIn = observer3(ctx, sc, [HALF - 2 - ox, -HALF + 1 - oy, 0], 2.2, '外の観測者', !s.rot, { dy: 2 });
+  /* いまの円（破線）と中心 */
+  ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = '#8a929c'; ctx.lineWidth = 1.2; ctx.beginPath();
+  for (var i = 0; i <= 96; i++) { var aa = TAU * i / 96, pq = Q(st.cx + st.r * Math.cos(aa), st.cy + st.r * Math.sin(aa), 0); i ? ctx.lineTo(pq.x, pq.y) : ctx.moveTo(pq.x, pq.y); }
+  ctx.stroke(); ctx.restore();
+  var Cp = Q(st.cx, st.cy, 0); ctx.save(); ctx.fillStyle = '#2b323c'; ctx.beginPath(); ctx.arc(Cp.x, Cp.y, 2.8, 0, TAU); ctx.fill(); ctx.restore();
+  /* 軌跡（回転系では、回る中心から見た道すじ） */
+  trailStep(ctx, s, function (x, y, z) { return PP(sc, x, y, z); }, [st.x, st.y, 0], -st.phi, [st.x - st.cx, st.y - st.cy, 0]);
+  /* 粒子 */
+  var rb = 0.28, P0 = Q(st.x, st.y, 0);
+  ctx.save(); var gg = ctx.createRadialGradient(P0.x - 3, P0.y - 3, 1, P0.x, P0.y, rb * sc.S);
+  gg.addColorStop(0, '#fff'); gg.addColorStop(0.4, v.q > 0 ? '#f19a8f' : '#8fb6f1'); gg.addColorStop(1, v.q > 0 ? '#b83a2e' : '#2a5fb8');
+  ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(P0.x, P0.y, rb * sc.S, 0, TAU); ctx.fill(); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 1.1; ctx.stroke(); ctx.restore();
+  label(ctx, v.q > 0 ? '+' : '−', P0.x, P0.y, { size: 13, bold: true, color: '#fff', halo: false });
+  var ur = [(st.x - st.cx) / st.r, (st.y - st.cy) / st.r, 0], uv = [Math.cos(st.psi), Math.sin(st.psi), 0];
+  var hdRot = observer3(ctx, sc, [st.x - uv[0] * 0.35 - ox, st.y - uv[1] * 0.35 - oy, rb], 1.1, '', s.rot);   /* 一緒に回る観測者は粒子の上に乗る */
+  var c3 = [st.x, st.y, 0], f = v.u * v.B;
+  var A3 = function (p0, d, L, kind, col) { return arrow3(ctx, sc, [p0[0] - ox, p0[1] - oy, p0[2]], d, L, kind, col); };
+  if (showF) {
+    var af = A3([st.x - ur[0] * rb, st.y - ur[1] * rb, 0], [-ur[0], -ur[1], 0], f * M2SC.s6.F, 'force', M2S6COL.f);
+    if (af) { var lf = tipLabel(ctx, af, 'F', M2S6COL.f, { off: 13 }); }
+    if (s.rot) centLabel(ctx, A3(c3, ur, v.m * v.u * v.u / st.r * M2SC.s6.F, 'fict', COL.cent), s);
+  }
+  if (!s.rot) {
+    var vc = [st.x + ur[0] * 0.9, st.y + ur[1] * 0.9, 0.4], Lv = v.u * M2SC.s6.v;
+    var va = Q(vc[0] - uv[0] * Lv / 2, vc[1] - uv[1] * Lv / 2, vc[2]), vb = Q(vc[0] + uv[0] * Lv / 2, vc[1] + uv[1] * Lv / 2, vc[2]);
+    var av = arrow(ctx, va.x, va.y, vb.x, vb.y, 'vel'); tipLabel(ctx, av, 'v', COL.vel, { off: 11 });
+  }
+  drawEqualTicks(ctx);
+  m2Speech(ctx, s, hdIn, hdRot, null);
+}
+
 /* ===== 70_mode3.js ===== */
 /* =========================================================================
    70_mode3.js … モード3「等速ではない円運動」（鉛直面内の円運動。2 次元の図）
    ・軌道は 30_physics.js の M3 で前もって計算（図・式・グラフが同じ点を見る）。
-   ・非慣性系＝「一緒に円運動する観測者」は、小球に乗った小人。絵全体を −（小球の角）回して、小球を画面の決まった場所に止める。
+   ・非慣性系＝「一緒に円運動する観測者」は、小球に乗っている人。絵全体を −（小球の角）回して、小球を画面の決まった場所に止める。
      重力は「ほんとうの下」なので、回した絵の中では傾いて見える。
    ・非慣性系では遠心力 m v²/r と、接線方向の慣性力 −m a_t（速さが変わるため）を描く（2026-10 千葉さん：案 C。注釈つき）。
    ・はなれた／糸がたるんだあとは、観測者は円運動をやめるので、絵の回転はその瞬間の角で止める。
    ========================================================================= */
 'use strict';
 var M3CFG = {
-  1: { box: { x0: -1.12, x1: 1.12, y0: -0.82, y1: 0.62 }, ref: 0, sgn: -1, surf: 'in', fName: 'N', fCol: '#7b3fd4' },
+  1: { box: { x0: -1.55, x1: 0.80, y0: -0.82, y1: 0.62 }, ref: 0, sgn: -1, surf: 'in', fName: 'N', fCol: '#7b3fd4' },
   2: { box: { x0: -0.95, x1: 1.45, y0: -0.10, y1: 0.80 }, ref: 0, sgn: 1, surf: 'out', fName: 'N', fCol: '#7b3fd4' },
   3: { box: { x0: -1.05, x1: 1.05, y0: -0.86, y1: 0.62 }, ref: Math.PI / 2, sgn: -1, surf: 'str', fName: 'S', fCol: '#c2367f' }
 };
@@ -3759,7 +3942,7 @@ var M3RB = 0.045;
 function m3Tr(s) { return M3.traj(s.def.sec, s.v.v0); }
 function m3Base(o) {
   var d = Object.assign({
-    mode: 'mode3', belowCanvas: true, strobe: false, views: null,
+    mode: 'mode3', belowCanvas: true, strobe: false, views: null, baseRate: 1 / 3, trailSec: 0.6,   /* モード3 はふだん 1/3 の速さ（スローはさらに 0.3 倍） */
     height: function (s, w) { return Math.round(clamp(w * 0.72, 320, 480)); }
   }, o);
   var init0 = d.init;
@@ -3769,7 +3952,7 @@ function m3Base(o) {
     { k: 'obsRot', label: '一緒に円運動する観測者（非慣性系）から見る', cls: 'obs rotb', seg: 'obs', onClick: function (s) { m2SetRot(s, true); } }
   ];
   d.tEnd = function (s) { return m3Tr(s).tEnd; };
-  d.onChanged = function () { };                           /* v0 を変えたら最初から（軌道が変わる） */
+  d.onChanged = function (s) { s.t = Math.min(s.t, m3Tr(s).tEnd); return 'keepT'; };   /* v0 を変えても最初にもどさない（同じ時刻の、新しい軌道の位置へ） */
   d.below = function (s) { m2EqBox(s, d.eqs(s, M3.at(m3Tr(s), s.t))); };
   d.afterBuild = function (s) { m2SetRot(s, s.rot); };
   d.draw = function (s, ctx, W, H) { drawM3(s, ctx, W, H); };
@@ -3798,7 +3981,7 @@ function m3Base(o) {
 /* 状態のひとこと */
 function m3Phase(q, tr) {
   if (q.kind === 'floor') return '床の上を等速で進む';
-  if (q.kind === 'fly') return tr.ev.kind === 'slack' ? '糸がたるんで放物運動' : '面から離れて放物運動';
+  if (q.kind === 'fly') return tr.ev.kind === 'slack' ? '糸がたるんで放物運動' : (tr.ev.kind === 'top' ? '最高点から飛び出して放物運動' : '面から離れて放物運動');
   return '円運動（速さが変わる）';
 }
 
@@ -3830,16 +4013,18 @@ function drawM3(s, ctx, W, H) {
     pts.forEach(function (p, i) { if (i % 2) return; var a = P(p[0], p[1]), n = (nx !== undefined) ? [nx, ny] : p[2], b = P(p[0] + n[0] * 0.035 - (n[1]) * 0.02, p[1] + n[1] * 0.035 + n[0] * 0.02); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
     ctx.restore();
   };
-  var floorY = sec === 1 ? -R : (sec === 2 ? 0 : -0.80), fx0 = sec === 2 ? -0.95 : -1.12, fx1 = sec === 2 ? 1.45 : 1.12;
+  var floorY = sec === 1 ? -R : (sec === 2 ? 0 : -0.80), fx0 = sec === 2 ? -0.95 : (sec === 1 ? -1.55 : -1.12), fx1 = sec === 2 ? 1.45 : (sec === 1 ? 0 : 1.12);
   var fpts = []; for (var xx = fx0; xx <= fx1 + 1e-9; xx += 0.035) fpts.push([xx, floorY]);
-  if (sec === 1) fpts = fpts.filter(function (p) { return Math.abs(p[0]) > 0.04; });
   hatch(fpts, 0, -1);
   line(fx0, floorY, fx1, floorY, '#2b323c', 1.8);
   if (sec === 1) {                                           /* 円筒面（内がわを走る）：円＋外がわの斜線 */
-    var cp = []; for (var k = 0; k < 180; k++) { var a = TAU * k / 180; if (Math.abs(a - Math.PI * 1.5) < 0.09) continue; cp.push([R * Math.cos(a), R * Math.sin(a), [Math.cos(a), Math.sin(a)]]); }
+    /* 最下点から右がわを通って最高点まで（最高点の左には面がない） */
+    var cp = []; for (var k = 0; k <= 90; k++) { var a = -Math.PI / 2 + Math.PI * k / 90; cp.push([R * Math.cos(a), R * Math.sin(a), [Math.cos(a), Math.sin(a)]]); }
     hatch(cp);
-    ctx.save(); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(O.x, O.y, R * S, 0, TAU); ctx.stroke(); ctx.restore();
-    label(ctx, 'なめらかな円筒面', P(-R * 0.72, R * 0.86).x, P(-R * 0.72, R * 0.86).y, { size: 11, color: COL.sub, halo: false });
+    ctx.save(); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 2; ctx.beginPath(); cp.forEach(function (q2, i) { var pp = P(q2[0], q2[1]); i ? ctx.lineTo(pp.x, pp.y) : ctx.moveTo(pp.x, pp.y); }); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.fillStyle = '#2b323c'; ctx.beginPath(); ctx.arc(O.x, O.y, 2.6, 0, TAU); ctx.fill(); ctx.restore();
+    label(ctx, '中心', O.x - 6, O.y - 2, { size: 10.5, color: COL.sub, align: 'right' });
+    var lb1 = P(R * 0.95, R * 0.62); label(ctx, 'なめらかな円筒面', lb1.x + 6, lb1.y - 4, { size: 11, color: COL.sub, halo: false, align: 'left' });
   } else if (sec === 2) {                                     /* 半円柱（外がわを走る） */
     ctx.save(); ctx.beginPath(); for (var k2 = 0; k2 <= 90; k2++) { var a2 = Math.PI * k2 / 90, pp = P(R * Math.cos(a2), R * Math.sin(a2)); k2 ? ctx.lineTo(pp.x, pp.y) : ctx.moveTo(pp.x, pp.y); }
     ctx.closePath(); ctx.fillStyle = '#e8e1d3'; ctx.fill(); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
@@ -3857,7 +4042,7 @@ function drawM3(s, ctx, W, H) {
     var fo3 = [-0.86, floorY], uo3 = up(fo3, 0.40);
     hdIn = observer(ctx, uo3.a.x, uo3.a.y, uo3.ux, uo3.uy, '外の観測者', !s.rot, uo3.L, { dy: 2 });
   } else {
-    var fo = sec === 1 ? [-0.95, floorY] : [-0.72, floorY], uo = up(fo, 0.40);
+    var fo = sec === 1 ? [-0.75, floorY] : [-0.72, floorY], uo = up(fo, 0.40);
     hdIn = observer(ctx, uo.a.x, uo.a.y, uo.ux, uo.uy, '外の観測者', !s.rot, uo.L, { dy: 2 });
   }
   /* 基準の線（中心から最下点／最高点へ）と、半径・角 θ（円の上にいるとき） */
@@ -3885,7 +4070,7 @@ function drawM3(s, ctx, W, H) {
     var fst = true; tr.pts.forEach(function (p) { if (p.t < tr.ev.t || p.t > s.t) return; var o2 = offOf(p), pp = P(p.x + o2[0], p.y + o2[1]); fst ? ctx.moveTo(pp.x, pp.y) : ctx.lineTo(pp.x, pp.y); fst = false; });
     ctx.stroke(); ctx.restore();
     ctx.save(); ctx.fillStyle = COL.vel; ctx.beginPath(); ctx.arc(ep.x, ep.y, 3, 0, TAU); ctx.fill(); ctx.restore();
-    label(ctx, tr.ev.kind === 'slack' ? 'たるんだ点' : '離れた点', ep.x + 14, ep.y + 14, { size: 10.5, color: COL.vel, align: 'left' });
+    label(ctx, tr.ev.kind === 'slack' ? 'たるんだ点' : (tr.ev.kind === 'top' ? '最高点' : '離れた点'), ep.x + 14, ep.y + 14, { size: 10.5, color: COL.vel, align: 'left' });
   }
   /* 糸（3-3）：手から小球まで。たるんだあとは曲がった線 */
   if (sec === 3) {
@@ -3894,9 +4079,10 @@ function drawM3(s, ctx, W, H) {
     if (q.kind === 'fly') { var mid = P(bx * 0.5 + 0.0, by * 0.5 - 0.10); ctx.quadraticCurveTo(mid.x, mid.y, Bp.x, Bp.y); } else ctx.lineTo(Bp.x, Bp.y);
     ctx.stroke(); ctx.restore();
   }
-  /* 小球 */
+  /* 軌跡（少し前までの道すじ）→ 小球 */
+  trailStep(ctx, s, function (x, y) { return P(x, y); }, [bx, by, 0], C.sgn * (q.ang - C.ref));
   ballShape(ctx, Bp.x, Bp.y, rb * S, '#c9d3de');
-  /* 一緒に回る観測者（小球に乗った小人）：頭は 3-1・3-3 では中心向き、3-2 では外向き。床の上では上向き */
+  /* 一緒に回る観測者（小球に乗っている人）：頭は 3-1・3-3 では中心向き、3-2 では外向き。床の上では上向き */
   var upv;
   if (q.kind === 'floor') upv = [0, 1];
   else { var a4 = q.kind === 'fly' ? tr.ev.ang : q.ang; upv = sec === 2 ? [Math.sin(a4), Math.cos(a4)] : [-Math.sin(a4), Math.cos(a4)]; }
@@ -3904,8 +4090,8 @@ function drawM3(s, ctx, W, H) {
   var ur2 = up(rf, 1), u2 = P(rf[0] + upv[0] * 0.16, rf[1] + upv[1] * 0.16), a5 = P(rf[0], rf[1]);
   var Lr = Math.hypot(u2.x - a5.x, u2.y - a5.y);
   var hdRot = observer(ctx, a5.x, a5.y, (u2.x - a5.x) / Lr, (u2.y - a5.y) / Lr, '', s.rot, Lr);
-  { var tq = P(rf[0] + tv[0] * 0.10 + upv[0] * 0.08, rf[1] + tv[1] * 0.10 + upv[1] * 0.08);   /* 名前は小人の横（吹き出しと重ならないように） */
-    label(ctx, '小人', tq.x, tq.y, { size: s.rot ? 11.5 : 10.5, bold: s.rot, color: s.rot ? COL.vel : '#9aa3ac' }); }
+  { var tq = P(rf[0] + tv[0] * 0.10 + upv[0] * 0.08, rf[1] + tv[1] * 0.10 + upv[1] * 0.08);   /* 名前は人の横（吹き出しと重ならないように） */
+    label(ctx, '一緒に回る観測者', tq.x, tq.y, { size: s.rot ? 11.5 : 10.5, bold: s.rot, color: s.rot ? COL.vel : '#9aa3ac', align: tv[0] >= 0 ? 'left' : 'right' }); }
   /* ---- 力 ---- */
   var fmax = 0; tr.pts.forEach(function (p) { fmax = Math.max(fmax, p.F); });
   var fs = Math.min(0.10, 0.50 / Math.max(fmax, m * G));        /* 矢印の長さ［m/N］：いちばん大きい力でも 0.50 m */
@@ -3950,7 +4136,7 @@ function drawM3(s, ctx, W, H) {
   var after = tr.ev && s.t >= tr.ev.t;
   var say = after ? M2SAY[tr.ev.kind] : (q.kind === 'floor' ? 'まっすぐ等速で進んでいるな' : (s.rot ? '力がつりあっているな' : '速さを変えながら円運動しているな'));
   speech(ctx, say, s.rot ? hdRot : hdIn);
-  if (after && s.t - tr.ev.t < 1.6) {                          /* 小人のセリフと重ならないよう、非慣性系では小球の下に出す */
+  if (after && s.t - tr.ev.t < 1.6) {                          /* 観測者のセリフと重ならないよう、非慣性系では小球の下に出す */
     if (s.rot) eventBubble(ctx, tr.ev.kind, Bp.x, Bp.y + rb * S + 6, 'up'); else eventBubble(ctx, tr.ev.kind, Bp.x, Bp.y - rb * S - 22);
   }
   pill(ctx, '状態：' + m3Phase(q, tr), 10, 10, { size: 12 });
@@ -3962,10 +4148,10 @@ function m3Eqs(sec, q, tr) {
   var nm = fmt(m * v * v / R, 2), mgc = fmt(m * G * Math.cos(th), 2);
   if (q.kind === 'floor') return {
     in: { h: '【慣性系】床の上を等速で進む', lines: [{ tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }], note: '水平方向には力がはたらかない（等速直線運動）' },
-    rot: { h: '【小人から見る】まだ円運動していない', lines: [{ tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }], note: '等速で動いているあいだは、見かけの力ははたらかない' } };
+    rot: { h: '【非慣性系】まだ円運動していない', lines: [{ tag: 'bal', k: '鉛直方向：', t: 'N - mg = 0' }], note: '等速で動いているあいだは、見かけの力ははたらかない' } };
   if (q.kind === 'fly') return {
-    in: { h: '【慣性系】' + (tr.ev.kind === 'slack' ? '糸がたるんだ' : '面から離れた') + '→ 放物運動', lines: [{ tag: 'eom', k: '', t: 'm\\vec{a} = m\\vec{g}' }], note: '重力だけを受けて落ちていく' },
-    rot: { h: '【小人から見る】円運動をやめた', lines: [{ k: '', t: (sec === 3 ? 'S' : 'N') + ' = 0' }], note: '小人は小球といっしょに落ちていく（円運動の非慣性系ではなくなる）' } };
+    in: { h: '【慣性系】' + (tr.ev.kind === 'slack' ? '糸がたるんだ' : (tr.ev.kind === 'top' ? '最高点から飛び出した' : '面から離れた')) + '→ 放物運動', lines: [{ tag: 'eom', k: '', t: 'm\\vec{a} = m\\vec{g}' }], note: '重力だけを受けて落ちていく' },
+    rot: { h: '【非慣性系】円運動をやめた', lines: [{ k: '', t: (sec === 3 ? 'S' : 'N') + ' = 0' }], note: '観測者は小球といっしょに落ちていく（円運動の非慣性系ではなくなる）' } };
   var Ls = {
     1: { in: [{ tag: 'eom', k: '中心方向：', t: 'm\\dfrac{v^2}{r} = N - mg\\cos\\theta' }, { tag: 'eom', k: '接線方向：', t: 'ma_t = -mg\\sin\\theta' }],
          rot: [{ tag: 'bal', k: '中心方向：', t: 'N - mg\\cos\\theta - \\underbrace{m\\dfrac{v^2}{r}}_{\\text{遠心力}} = 0' }, { tag: 'bal', k: '接線方向：', t: '-mg\\sin\\theta \\underbrace{- ma_t}_{\\text{慣性力}} = 0' }] },
@@ -3978,12 +4164,18 @@ function m3Eqs(sec, q, tr) {
   var num2 = sec === 2 ? 'いま：' + mgc + ' − ' + fmt(F, 2) + ' − ' + nm + ' ＝ 0' : 'いま：' + fmt(F, 2) + ' − (' + mgc + ') − ' + nm + ' ＝ 0';
   return {
     in: { h: '【慣性系】円運動している（速さも変わる）', lines: Ls.in, num: num, note: '※ 慣性系に「遠心力」は存在しない。θ は' + (sec === 2 ? '最高点' : '最下点') + 'からの角' },
-    rot: { h: '【小人から見る】止まって見える', lines: Ls.rot, num: num2, note: '※ 遠心力と接線方向の慣性力（注）は、一緒に回る観測者だけが感じる見かけの力' } };
+    rot: { h: '【非慣性系】止まって見える', lines: Ls.rot, num: num2, note: '※ 遠心力と接線方向の慣性力（注）は、一緒に回る観測者だけが感じる見かけの力' } };
 }
 var M3NOTE = '<p class="qnote">（注）速さが変わる円運動では、一緒に回る観測者には、遠心力のほかに<b>接線方向の慣性力 $-ma_t$</b> もはたらいて見える。高校の教科書では、ふつう中心方向（遠心力）だけを扱う。</p>';
-function m3Frame(s, inTxt, inEq, rotTxt, rotEq) {
-  return '<div class="qcard"><p class="qt">' + (s.rot ? '一緒に円運動する小人（非慣性系）から見ると' : '外（慣性系）から見ると') + '</p>' +
-    (s.rot ? '<p>' + rotTxt + '</p><div class="qeq">' + rotEq + '</div>' + M3NOTE : '<p>' + inTxt + '</p><div class="qeq">' + inEq + '</div><p class="qnote">' + T_EOM + 'は、<b>中心方向</b>（加速度 $\\dfrac{v^2}{r}$）と<b>接線方向</b>（加速度 $a_t$）に分けて立てる。</p>') + '</div>';
+/* 右の列の「立式」カード（モード2 と同じ形）。方向は「中心方向」と「接線方向」。sec ごとの式は m3Eqs と同じ */
+function m3Frame(s, sec, inTxt, rotTxt) {
+  var E = { 1: ['m\\dfrac{v^2}{r} = N - mg\\cos\\theta', 'ma_t = -mg\\sin\\theta', 'N - mg\\cos\\theta - m\\dfrac{v^2}{r} = 0', '-mg\\sin\\theta - ma_t = 0'],
+            2: ['m\\dfrac{v^2}{r} = mg\\cos\\theta - N', 'ma_t = mg\\sin\\theta', 'mg\\cos\\theta - N - m\\dfrac{v^2}{r} = 0', 'mg\\sin\\theta - ma_t = 0'],
+            3: ['m\\dfrac{v^2}{r} = S - mg\\cos\\theta', 'ma_t = -mg\\sin\\theta', 'S - mg\\cos\\theta - m\\dfrac{v^2}{r} = 0', '-mg\\sin\\theta - ma_t = 0'] }[sec];
+  return m2Setup(s, {
+    lead: { in: inTxt, rot: rotTxt },
+    rows: [{ dir: '中心方向', in: ['eom', E[0]], rot: ['bal', E[2]] }, { dir: '接線方向', in: ['eom', E[1]], rot: ['bal', E[3]] }],
+    note: { in: '<p class="qnote">外（慣性系）から見ると加速度があるので' + T_EOM + 'を、<b>中心方向</b>（加速度 $\\dfrac{v^2}{r}$）と<b>接線方向</b>（加速度 $a_t$）に分けて立てる。慣性系に「遠心力」は存在しない。</p>', rot: M3NOTE } });
 }
 function m3Energy(tr, eqTex) {
   return '<div class="qcard"><p class="qt">力学的エネルギー保存則</p><p>垂直抗力や張力は速度と垂直なので仕事をしない。重力だけが仕事をするので、力学的エネルギーは保存する（右下のグラフの $E$ が水平）。</p>' +
@@ -3998,23 +4190,23 @@ DEFS.m3s1 = m3Base({
     mark: function () { return [{ x: Math.sqrt(2 * G * M3.R), label: '$\\sqrt{2gr}$' }, { x: Math.sqrt(5 * G * M3.R), label: '$\\sqrt{5gr}$' }]; } }],
   msg: function (s) {
     var tr = m3Tr(s), q = M3.at(tr, s.t), v0 = s.v.v0, r2 = Math.sqrt(2 * G * M3.R), r5 = Math.sqrt(5 * G * M3.R);
-    if (tr.ev && s.t >= tr.ev.t) return '<b>面から離れた！</b>（$N = 0$）　$\\theta = ' + fmt(tr.ev.ang * 180 / Math.PI, 1) + '^\\circ$ で離れ、そのあとは放物運動。' + (s.ended ? '円筒面にぶつかったところで止めた。' : '');
-    if (v0 >= r5) return '$v_0 \\ge \\sqrt{5gr} = ' + fmt(r5, 2) + '$ m/s なので、最高点でも $N \\ge 0$。1 周して出ていく。';
+    if (tr.ev && tr.ev.kind === 'off' && s.t >= tr.ev.t) return '<b>面から離れた！</b>（$N = 0$）　$\\theta = ' + fmt(tr.ev.ang * 180 / Math.PI, 1) + '^\\circ$ で離れ、そのあとは放物運動。' + (s.ended ? '円筒面か床にぶつかったところで止めた。' : '');
+    if (tr.ev && tr.ev.kind === 'top' && s.t >= tr.ev.t) return '<b>最高点に達した！</b>　その先には円筒面がないので、最高点から水平に飛び出して放物運動。';
+    if (v0 >= r5) return '$v_0 \\ge \\sqrt{5gr} = ' + fmt(r5, 2) + '$ m/s なので、最高点まで面から離れずに達する。';
     if (v0 <= r2) return '$v_0 \\le \\sqrt{2gr} = ' + fmt(r2, 2) + '$ m/s なので、中心の高さまでのぼらずに止まり、すべりもどる（$N$ は 0 にならない）。';
     return '▶ スタート。$\\sqrt{2gr} < v_0 < \\sqrt{5gr}$ なので、中心より高いところで面から離れる。';
   },
   eqs: function (s, q) { return m3Eqs(1, q, m3Tr(s)); },
   right: function (s, tr) {
     var v0 = s.v.v0, R = M3.R, r5 = Math.sqrt(5 * G * R);
-    var h = m3Frame(s, '小球は円の中心へ向かう加速度 $\\dfrac{v^2}{r}$ をもつ。中心向きの合力は $N - mg\\cos\\theta$。',
-      eqRow('eom', 'm\\dfrac{v^2}{r} = N - mg\\cos\\theta'), '小人には小球が止まって見える。遠心力と接線方向の慣性力を加えて、力がつりあう。',
-      eqRow('bal', 'N - mg\\cos\\theta - m\\dfrac{v^2}{r} = 0'));
+    var h = m3Frame(s, 1, '小球は円の中心へ向かう加速度 $\\dfrac{v^2}{r}$ をもつ。中心向きの合力は $N - mg\\cos\\theta$（$\\theta$ は最下点からの角）。',
+      '一緒に回る観測者には小球が止まって見える。遠心力と接線方向の慣性力を加えて、力がつりあう。');
     h += m3Energy(tr, '\\dfrac{1}{2}mv_0^{\\,2} = \\dfrac{1}{2}mv^2 + mgr(1 - \\cos\\theta)');
     h += '<div class="qcard derive"><p class="qt">最高点に達する条件</p><p>最高点（$\\theta = 180^\\circ$）で面から離れないためには $N \\ge 0$。最高点での速さを $v_1$ とすると</p>' +
       '<div class="qeq">' + eqRow('eom', 'm\\dfrac{v_1^{\\,2}}{r} = N + mg \\;\\Longrightarrow\\; v_1^{\\,2} \\ge gr') + tex('\\dfrac{1}{2}mv_0^{\\,2} = \\dfrac{1}{2}mv_1^{\\,2} + mg(2r)\\ \\Longrightarrow\\ v_0 \\ge \\sqrt{5gr}', true) + '</div>' +
       '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('\\sqrt{5gr} = \\sqrt{5\\times 9.8\\times ' + fmt(R, 2) + '} = ' + fmt(r5, 2) + '\\ \\text{m/s}') + '（いま ' + tex('v_0 = ' + fmt(v0, 1)) + ' m/s）</p>' +
       '<p class="qnote">$N = 0$ になる角は $\\cos\\theta = \\dfrac{2gr - v_0^{\\,2}}{3gr}$。$v_0 \\le \\sqrt{2gr}$ のときは、中心の高さまでで速さが 0 になり、すべりもどる。</p></div>';
-    h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('r = 0.50') + ' m、' + tex('g = 9.8') + ' m/s²。小球の大きさは考えない（図では面の内がわに半径ぶんずらして描いた）。</p>';
+    h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('r = 0.50') + ' m、' + tex('g = 9.8') + ' m/s²。小球の大きさは考えない（図では面の内がわに半径ぶんずらして描いた）。最高点の左には円筒面がない。</p>';
     return h;
   }
 });
@@ -4031,9 +4223,8 @@ DEFS.m3s2 = m3Base({
   eqs: function (s, q) { return m3Eqs(2, q, m3Tr(s)); },
   right: function (s, tr) {
     var v0 = s.v.v0, R = M3.R, c = 2 / 3 + v0 * v0 / (3 * G * R);
-    var h = m3Frame(s, '中心向きの合力は $mg\\cos\\theta - N$。速くなるほど必要な向心力が大きくなり、$N$ が小さくなる。',
-      eqRow('eom', 'm\\dfrac{v^2}{r} = mg\\cos\\theta - N'), '小人には小球が止まって見える。遠心力が外向きにはたらき、$N$ を小さくしていく。',
-      eqRow('bal', 'mg\\cos\\theta - N - m\\dfrac{v^2}{r} = 0'));
+    var h = m3Frame(s, 2, '中心向きの合力は $mg\\cos\\theta - N$（$\\theta$ は最高点からの角）。速くなるほど必要な向心力が大きくなり、$N$ が小さくなる。',
+      '一緒に回る観測者には小球が止まって見える。遠心力が外向きにはたらき、$N$ を小さくしていく。');
     h += m3Energy(tr, '\\dfrac{1}{2}mv_0^{\\,2} + mgr = \\dfrac{1}{2}mv^2 + mgr\\cos\\theta');
     h += '<div class="qcard derive"><p class="qt">面から離れる角</p><p>離れる瞬間は $N = 0$。中心方向の' + T_EOM + 'と力学的エネルギー保存則から</p>' +
       '<div class="qeq">' + eqRow('eom', 'm\\dfrac{v^2}{r} = mg\\cos\\theta') + tex('v^2 = v_0^{\\,2} + 2gr(1 - \\cos\\theta)', true) + tex('\\cos\\theta = \\dfrac{2}{3} + \\dfrac{v_0^{\\,2}}{3gr}', true) + '</div>' +
@@ -4059,9 +4250,8 @@ DEFS.m3s3 = m3Base({
   eqs: function (s, q) { return m3Eqs(3, q, m3Tr(s)); },
   right: function (s, tr) {
     var v0 = s.v.v0, R = M3.R, r3 = Math.sqrt(3 * G * R);
-    var h = m3Frame(s, '中心向きの合力は $S - mg\\cos\\theta$（$\\theta$ は最下点からの角）。',
-      eqRow('eom', 'm\\dfrac{v^2}{r} = S - mg\\cos\\theta'), '小人には小球が止まって見える。遠心力と接線方向の慣性力を加えて、力がつりあう。',
-      eqRow('bal', 'S - mg\\cos\\theta - m\\dfrac{v^2}{r} = 0'));
+    var h = m3Frame(s, 3, '中心向きの合力は $S - mg\\cos\\theta$（$\\theta$ は最下点からの角）。',
+      '一緒に回る観測者には小球が止まって見える。遠心力と接線方向の慣性力を加えて、力がつりあう。');
     h += m3Energy(tr, '\\dfrac{1}{2}mv_0^{\\,2} + mgr = \\dfrac{1}{2}mv^2 + mgr(1 - \\cos\\theta)');
     h += '<div class="qcard derive"><p class="qt">最高点に達する条件</p><p>最高点で糸がたるまないためには $S \\ge 0$。最高点での速さを $v_1$ とすると</p>' +
       '<div class="qeq">' + eqRow('eom', 'm\\dfrac{v_1^{\\,2}}{r} = S + mg \\;\\Longrightarrow\\; v_1^{\\,2} \\ge gr') + tex('\\dfrac{1}{2}mv_0^{\\,2} = \\dfrac{1}{2}mv_1^{\\,2} + mgr\\ \\Longrightarrow\\ v_0 \\ge \\sqrt{3gr}', true) + '</div>' +
@@ -4249,7 +4439,7 @@ var MODES = [
   { id: 'mode1', name: '円運動の基本的な物理量', secs: ['m1s1'], rotSwitch: false,
     en: 'Describing Circular Motion',
     lead: '角速度 $\\omega$・加速度 $a$・向心力 $F$ などの円運動に関係する物理量を理解する。糸を切ると、小球は速度の向きにまっすぐ飛ぶ。' },
-  { id: 'mode2', name: '等速円運動と力', secs: ['m2s1', 'm2s2', 'm2s3', 'm2s4', 'm2s5'], rotSwitch: true,
+  { id: 'mode2', name: '等速円運動と力', secs: ['m2s1', 'm2s2', 'm2s3', 'm2s4', 'm2s5', 'm2s6'], rotSwitch: true,
     en: 'Centripetal Force &amp; Two Observers',
     lead: '向心力は特別な力ではない。摩擦力・弾性力・張力などの「中心向きの合力」が向心力のはたらきをしている。外（慣性系）から見れば<span class="t-eom">運動方程式</span>、一緒に回る観測者（非慣性系）から見れば遠心力を加えた<span class="t-bal">力のつり合いの式</span>になる。' },
   { id: 'mode3', name: '等速ではない円運動', secs: ['m3s1', 'm3s2', 'm3s3'], rotSwitch: true,
@@ -4349,11 +4539,19 @@ function buildModeBar(m) {
   cb.addEventListener('change', function () { ms.showF = cb.checked; SIMS.forEach(function (s) { if (s.mode === m.id) s.draw(); }); });
   lab.appendChild(cb); lab.appendChild(document.createTextNode(' 力を表示')); bar.appendChild(lab);
   ms._cb = cb;
-  if (m.rotSwitch) {                                    /* モード全体の観測者スイッチ（ON＝全セクションを非慣性系に。アドレスは #mode2-rot） */
-    var rl = el('label', 'chk rotsw'); var rc = el('input'); rc.type = 'checkbox'; rc.checked = !!ms.rot;
-    rc.addEventListener('change', function () { m2SetModeRot(m.id, rc.checked); });
-    rl.appendChild(rc); rl.appendChild(document.createTextNode(' 全セクションを「一緒に円運動する観測者（非慣性系）」から見る'));
-    bar.appendChild(rl); ms._rcb = rc;
+  if (m.rotSwitch) {
+    /* 軌跡を表示（少し前までの道すじ。量を変えたときの半径などの変化がわかる） */
+    ms.trail = false;
+    var tl = el('label', 'chk'); var tc = el('input'); tc.type = 'checkbox'; tc.checked = false; tc.className = 'showtrail';
+    tc.addEventListener('change', function () { ms.trail = tc.checked; SIMS.forEach(function (s) { if (s.mode === m.id) { s.trail = []; s.draw(); } }); });
+    tl.appendChild(tc); tl.appendChild(document.createTextNode(' 軌跡を表示')); bar.appendChild(tl);
+    /* モード全体の観測者の切りかえ（各シムと同じ対のボタン。アドレスは #mode2-rot） */
+    var rw = el('span', 'rotsw'); rw.appendChild(el('span', 'lbl', '全セクション：'));
+    var sg = el('div', 'seg'); sg.setAttribute('role', 'group'); sg.setAttribute('aria-label', '全セクションをどの観測者から見るか');
+    var b0 = el('button', 'b obs', '外（慣性系）から見る'), b1 = el('button', 'b obs rotb', '一緒に円運動する観測者（非慣性系）から見る');
+    [b0, b1].forEach(function (b, i) { b.type = 'button'; b.addEventListener('click', function () { m2SetModeRot(m.id, i === 1); }); sg.appendChild(b); });
+    rw.appendChild(sg); bar.appendChild(rw); ms._segb = [b0, b1];
+    b0.classList.toggle('on', !ms.rot); b1.classList.toggle('on', !!ms.rot);
   }
 }
 function syncModeBar(mid) {
@@ -4877,7 +5075,7 @@ function check() {
   [1, 2, 3.5].forEach(function (v0) { eA = Math.max(eA, Math.abs(Math.abs(M3.traj(3, v0).ev.ang) - Math.acos(-v0 * v0 / (3 * G * R3)))); });
   out.m3_leave_angle_err = +eA.toExponential(2);
   var v5 = Math.sqrt(5 * G * R3), v3 = Math.sqrt(3 * G * R3), v2 = Math.sqrt(2 * G * R3);
-  out.m3_s1_loop_just_above_5gr = !M3.traj(1, v5 + 0.002).ev && M3.traj(1, v5 - 0.02).ev !== null;
+  out.m3_s1_top_just_above_5gr = M3.traj(1, v5 + 0.002).ev.kind === 'top' && M3.traj(1, v5 - 0.02).ev.kind === 'off';
   out.m3_s1_back_below_2gr = !M3.traj(1, v2 - 0.01).ev && M3.traj(1, v2 + 0.02).ev !== null;
   out.m3_s3_loop_just_above_3gr = !M3.traj(3, v3 + 0.002).ev && M3.traj(3, v3 - 0.02).ev !== null;
   var dr = 0, bal = 0;
