@@ -2,10 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="ケプラーの3法則、万有引力と位置エネルギー、人工衛星の周期、スイングバイまでを、自分で動かして確かめる高校物理のシミュレーション教材。">
-<meta name="theme-color" content="#0e1115">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1115'/%3E%3Cellipse cx='32' cy='32' rx='26' ry='14' fill='none' stroke='%23e07b18' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23f0b429'/%3E%3Ccircle cx='56' cy='26' r='4.5' fill='%235aa7ff'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>万有引力とケプラーの法則のシミュレーション</title>
 
 <style>
@@ -1068,526 +1065,28 @@ table.ktab tr.on td.kcol{background:#f7e2c4;color:var(--orange-d)}
 }
 
 </style>
-<style>
-/* ===== 12_design.css（見た目の上書き層） ===== */
-/* =========================================================================
-   デザイン移植（2026-10）：「物理のノート × 科学誌」
-   見本＝mechanics/momentum-and-collision.html。コードはプロジェクト文書
-   「デザイン統一キット.md」から取っている（記憶で書いていない）。
-
-   ★この層は 10_style.css の「あと」に読む上書き★
-     もとの見た目は書きかえず、色・形・余白・骨組みだけをかぶせる。
-   ★class 名の読みかえ（このページは見本と構造が違う）★
-     見本 .tabs（上に固定する帯）        → このページ #tabbar
-     見本 .tabs-in                        → #tabbar .tabs-in（同名で使える）
-     見本 .tab（1つのタブ）               → #tabbar .tabs button
-     見本 .sec（セクションのカード）      → #simhost（シムは1度に1つだけ）
-     見本 .sL / .sR                       → .cvleft / .cvside
-     見本 .modehead（章の扉）             → #modetip
-   ★物理の作図（canvas）の色・形は、この層では一切さわらない★
-   ========================================================================= */
-:root{
-  --paper:#f5f3ee; --paper-2:#ede9e1; --paper-3:#e4dfd5; --surface:#ffffff;
-  --ink:#14171c; --ink-2:#3a414c; --ink-3:#69717d; --ink-4:#9aa1ab;
-  --rule:#e6e1d7; --rule-2:#d5cfc3;
-  --brand:#e07b18; --brand-600:#c9670c; --brand-700:#9c4e06; --brand-50:#fdf4e8; --brand-100:#fae4c8;
-  --night:#0e1115; --night-2:#161a20; --night-rule:rgba(255,255,255,.09);
-  --r-s:10px; --r:14px; --r-l:20px; --r-xl:28px;
-  --sh-1:0 1px 2px rgba(20,23,28,.05);
-  --sh-2:0 1px 2px rgba(20,23,28,.04),0 12px 32px -12px rgba(20,23,28,.14);
-  --sh-3:0 30px 80px -20px rgba(14,17,21,.38),0 4px 14px rgba(14,17,21,.08);
-  --ease:cubic-bezier(.2,.75,.2,1);
-  --f-jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",YuGothic,"Noto Sans JP","Noto Sans CJK JP",Meiryo,system-ui,sans-serif;
-  --f-jph:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,"Noto Sans JP","Noto Sans CJK JP",Meiryo,system-ui,sans-serif;
-  --f-serif:"KaTeX_Main","Times New Roman",serif;
-  --f-mono:"KaTeX_Typewriter",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --navh:58px;
-  /* このページの古い変数も、新しい色につなぐ */
-  --bg:var(--paper); --card:var(--surface); --sub:var(--ink-3); --line:var(--rule); --line2:var(--rule-2);
-  --accent:#1663b5; --panel:#faf8f4; --ink2:var(--ink-2);
-  --jp:var(--f-jp); --mono:var(--f-mono);
-}
-/* ★横スクロール止めは html に書く★（設計メモ 158。body に書くと sticky が死ぬ） */
-html{scroll-padding-top:calc(var(--navh) + 12px)}
-body{background:var(--paper);color:var(--ink);font-family:var(--f-jp);font-size:16px;line-height:1.8;
-  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
-::selection{background:var(--brand-100);color:var(--ink)}
-:focus-visible{outline:3px solid rgba(224,123,24,.55);outline-offset:2px;border-radius:8px}
-h1,h2,h3{font-family:var(--f-jph)}
-
-/* =========================================================
-   ヒーロー
-   ========================================================= */
-.hero{position:relative;background:var(--night);color:#f3efe6;overflow:hidden;isolation:isolate;
-  border-radius:0 0 clamp(20px,3vw,40px) clamp(20px,3vw,40px)}
-.hero::before{content:"";position:absolute;inset:0;z-index:-2;
-  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
-  background-size:40px 40px;background-position:-1px -1px;
-  -webkit-mask-image:radial-gradient(ellipse 85% 75% at 50% 40%,#000 30%,transparent 100%);mask-image:radial-gradient(ellipse 85% 75% at 50% 40%,#000 30%,transparent 100%)}
-.hero::after{content:"";position:absolute;z-index:-1;width:1100px;height:700px;left:50%;top:38%;transform:translate(-50%,-50%);
-  background:radial-gradient(closest-side,rgba(224,123,24,.20),rgba(224,123,24,.06) 55%,transparent 75%);filter:blur(10px);pointer-events:none}
-.hero-in{position:relative;max-width:1240px;margin:0 auto;padding:28px 24px clamp(30px,4vw,48px)}
-.hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
-.hero-title{margin:clamp(26px,5vw,58px) 0 0;line-height:1.08;font-weight:800;letter-spacing:-.025em;color:#f6f2e9;border:0;padding:0}
-.hero-title .t1{display:block;font-size:clamp(1.9rem,5vw,4.1rem)}
-.hero-title .nb{display:inline-block}
-.hero .introrow{margin-top:22px;gap:22px;align-items:stretch;max-width:980px;display:flex}
-.hero .lead2{margin:0;font-size:clamp(.95rem,1.25vw,1.06rem);line-height:1.9;color:rgba(243,239,230,.78);max-width:46em}
-.hero .tocbtn{min-height:3.2em;align-self:stretch;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
-  font-family:var(--f-jph);font-size:.92rem;font-weight:700;letter-spacing:.04em;
-  color:#1a1206;background:var(--brand);border:0;box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 10px 30px -10px rgba(224,123,24,.65);
-  transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s}
-.hero .tocbtn:hover{background:#f08c2a;transform:translateY(-1px);box-shadow:0 14px 34px -10px rgba(224,123,24,.8)}
-.hero .tocbtn:active{transform:translateY(0)}
-.tocbtn .ti{width:14px;height:11px;display:inline-block;background:
-  linear-gradient(currentColor,currentColor) 0 0/100% 2px no-repeat,
-  linear-gradient(currentColor,currentColor) 0 50%/72% 2px no-repeat,
-  linear-gradient(currentColor,currentColor) 0 100%/86% 2px no-repeat}
-
-/* パンくず */
-.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;color:rgba(243,239,230,.6)}
-.crumbs a{color:rgba(243,239,230,.78);text-decoration:none;border-radius:6px;transition:color .16s}
-.crumbs a:hover{color:#fff}
-.crumb-home{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 6px;margin-left:-6px;border-radius:999px !important;background:rgba(255,255,255,.05);border:1px solid var(--night-rule)}
-.crumb-home:hover{background:rgba(255,255,255,.1)}
-.crumbs .atom{width:20px;height:20px;flex:0 0 auto}
-.crumbs .cs{color:rgba(243,239,230,.28)}
-.crumbs .now{color:#f3efe6}
-.crumbs .kdot{width:4px;height:4px;border-radius:50%;background:var(--brand);margin-left:6px}
-.crumbs .en{font-family:var(--f-serif);font-style:italic;letter-spacing:.04em;font-weight:400;font-size:.95rem;color:rgba(243,239,230,.5)}
-
-/* ステージ（軌道の種類のアニメ） */
-.stage{margin:34px 0 0;position:relative;border-radius:var(--r-l);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));
-  border:1px solid var(--night-rule);overflow:hidden}
-/* ★10_style.css の canvas{background:#fff;border:...} を打ち消す★
-   （打ち消さないと、暗いヒーローの中に白い板が出る） */
-.stage canvas{display:block;width:100%;height:clamp(200px,24vw,290px);touch-action:pan-y;
-  background:transparent;border:0;border-radius:0;box-shadow:none;max-width:none}
-/* ===== 舞台の右上の読み出し（v0 = √(k gR)・軌道の名前・いま何番目か）=====
-   ★canvas ではなく HTML（KaTeX）★。canvas の fillText では √ の横線が
-   中身の上にかからないため（ハマったこと 162）。
-   pointer-events:none … 絵のドラッグや下のボタンのじゃまをしない。 */
-.stageread{position:absolute;top:14px;right:20px;text-align:right;pointer-events:none;
-  transition:opacity .12s linear}
-.stageread .sr-e{display:block;color:#f3efe6;font-size:clamp(1rem,1.6vw,1.4rem)}
-.stageread .sr-e .katex{color:inherit}
-.stageread .sr-n{display:block;margin-top:2px;font-family:var(--f-jph);font-weight:700;font-size:.8rem}
-.stageread .sr-d{display:flex;gap:7px;justify-content:flex-end;margin-top:7px}
-.stageread .sr-d i{width:6px;height:6px;border-radius:50%;background:rgba(243,239,230,.2)}
-.stageread .sr-d i.on{background:var(--brand)}
-@media (max-width:620px){
-  /* せまい画面では、左上の見出し（canvas 側）を出さないので重ならない */
-  .stageread{top:10px;right:12px}
-  .stageread .sr-d{display:none}
-}
-.stagecap{display:flex;align-items:center;gap:10px;margin:0;padding:12px 18px 14px;border-top:1px solid var(--night-rule);
-  font-size:.82rem;color:rgba(243,239,230,.62);line-height:1.6;flex-wrap:wrap}
-.stagecap .sct{flex:1 1 360px;min-width:0}
-.stagecap .katex{font-size:1.04em;color:rgba(243,239,230,.92)}
-.stagecap .live{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:#3ddc84;position:relative}
-.stagectl{display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--night-rule);margin-left:auto}
-.stagectl .sl-l{padding:0 8px 0 10px;color:rgba(243,239,230,.7)}
-.stagectl button{font:inherit;font-family:var(--f-serif);font-size:.86rem;min-width:38px;height:28px;padding:0 10px;border-radius:999px;border:0;background:transparent;color:rgba(243,239,230,.72);cursor:pointer;transition:background .16s,color .16s;white-space:nowrap}
-.stagectl button[data-k="auto"]{font-family:var(--f-jph);font-size:.74rem;font-weight:700;letter-spacing:.04em}
-.stagectl button:hover{color:#fff;background:rgba(255,255,255,.08)}
-.stagectl button[aria-pressed="true"]{background:var(--brand);color:#1a1206}
-.stagectl .sep{width:1px;height:18px;background:var(--night-rule);margin:0 4px}
-.stagectl button.slow{font-family:var(--f-jph);font-size:.74rem;font-weight:700;letter-spacing:.02em;min-width:0;padding:0 12px}
-.stagectl .pp{min-width:28px;width:28px;padding:0;margin-left:4px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
-.stagectl .pp i{width:10px;height:10px;display:block;background:linear-gradient(90deg,currentColor 0 35%,transparent 35% 65%,currentColor 65%)}
-.stagectl .pp.paused i{width:0;height:0;background:none;border-left:9px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px}
-.stagectl .pp[hidden],.stagectl .slow[hidden]{display:none}
-
-/* 3 つの要点（各シムへのリンク） */
-.ideas{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.ideas a{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:4px;align-items:center;
-  padding:16px 18px 16px;padding-right:40px;border-radius:var(--r);text-decoration:none;color:#f3efe6;background:rgba(255,255,255,.035);
-  border:1px solid var(--night-rule);transition:background .2s,border-color .2s,transform .2s var(--ease);position:relative}
-.ideas a:hover{background:rgba(255,255,255,.07);border-color:rgba(224,123,24,.45);transform:translateY(-2px)}
-.ideas .in{grid-row:1/span 2;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--brand);display:grid;place-items:center}
-.ideas .in b{font-family:var(--f-serif);font-weight:400;font-size:1.3rem;color:var(--brand);line-height:1;transform:translateY(1px)}
-.ideas a:hover .in{background:var(--brand)}
-.ideas a:hover .in b{color:var(--night)}
-.ideas .ie{font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ideas .ie .katex{font-size:1.05em;color:#fff}
-.ideas .ij{font-size:.78rem;color:rgba(243,239,230,.6);letter-spacing:.02em}
-.ideas .ia{position:absolute;right:16px;top:50%;transform:translate(-4px,-50%);opacity:0;color:var(--brand);font-family:var(--f-serif);font-size:1.2rem;transition:opacity .2s,transform .2s var(--ease)}
-.ideas a:hover .ia,.ideas a:focus-visible .ia{opacity:1;transform:translate(0,-50%)}
-@media(hover:none){.ideas .ia{opacity:.6;transform:translate(0,-50%)}}
-
-/* 読みこんだときの登場（下から静かに） */
-@keyframes heroIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:no-preference){
-  .hero-top{animation:heroIn .7s var(--ease) both}
-  .hero-title .t1{animation:heroIn .8s .06s var(--ease) both}
-  .hero .introrow{animation:heroIn .8s .2s var(--ease) both}
-  .stage{animation:heroIn .9s .26s var(--ease) both}
-  .ideas{animation:heroIn .9s .32s var(--ease) both}
-}
-
-/* =========================================================
-   タブの帯（#tabbar）：画面の上に固定・すりガラス
-   ★このページは2段（モード・シム）。どちらも1行の横スクロールのまま★（設計メモ 157）
-   ========================================================= */
-#tabbar{position:sticky;top:0;z-index:40;margin:0;padding:0;
-  background:rgba(245,243,238,.9);-webkit-backdrop-filter:saturate(1.3) blur(10px);backdrop-filter:saturate(1.3) blur(10px);
-  border-bottom:1px solid var(--rule);box-shadow:none}
-#tabbar .tabs-in{max-width:1440px;margin:0 auto;padding:7px 16px 6px;display:flex;gap:10px;align-items:stretch;min-width:0}
-#tabbar .tabcols{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:3px;justify-content:center}
-#tabbar .tabs{margin:0;gap:4px}
-#tabbar .tabs.sub{margin:0;gap:4px}
-/* モードのタブ：①＋名前。選択中は墨の文字＋オレンジの下線 */
-#tabbar #modetabs button{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;
-  font-family:var(--f-jph);font-size:.88rem;font-weight:700;line-height:1.3;height:32px;padding:0 11px;
-  border:0;border-radius:0;background:none;color:var(--ink-3);box-shadow:none;white-space:nowrap;transition:color .18s}
-#tabbar #modetabs button::before{content:attr(data-n);font-family:var(--f-serif);font-size:1.02rem;color:var(--ink-4);transition:color .18s}
-#tabbar #modetabs button::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--brand);
-  transform:scaleX(0);transform-origin:center;transition:transform .28s var(--ease)}
-#tabbar #modetabs button:hover{color:var(--ink);background:none;border:0}
-#tabbar #modetabs button:hover::before{color:var(--brand)}
-#tabbar #modetabs button.on{color:var(--ink);background:none;border:0;font-weight:800}
-#tabbar #modetabs button.on::before{color:var(--brand)}
-#tabbar #modetabs button.on::after{transform:scaleX(1)}
-/* シムのタブ：ピル。選択中は墨。
-   ★色の意味は「文字」で残す★（先生の指示・2026-10-03）
-     読み物（補足）＝オレンジの文字／入り口（1-0）＝灰青の文字／法則のシム＝墨の文字 */
-#tabbar #simtabs button{flex:0 0 auto;font-family:var(--f-jph);font-size:.78rem;font-weight:600;line-height:1.3;
-  padding:.3em .85em;border:1px solid var(--rule-2);border-radius:999px;background:var(--surface);color:var(--ink-2);
-  box-shadow:none;white-space:nowrap;transition:background .16s,border-color .16s,color .16s}
-#tabbar #simtabs button:hover{background:var(--paper);border-color:var(--ink-4);color:var(--ink)}
-#tabbar #simtabs button.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
-#tabbar #simtabs button.game{color:var(--brand-700);border-color:rgba(224,123,24,.45);background:var(--brand-50)}
-#tabbar #simtabs button.game:hover{background:var(--brand-100);border-color:var(--brand)}
-#tabbar #simtabs button.game.on{background:var(--ink);border-color:var(--ink);color:#fff}
-#tabbar #simtabs button.intro{color:#4a5f75;border-color:var(--rule-2);background:var(--paper-2)}
-#tabbar #simtabs button.intro:hover{background:var(--paper-3);color:var(--ink)}
-#tabbar #simtabs button.intro.on{background:var(--ink);border-color:var(--ink);color:#fff}
-#tabbar .tabs::-webkit-scrollbar{height:4px}
-#tabbar .tabs::-webkit-scrollbar-thumb{background:var(--rule-2);border-radius:3px}
-.tprog{position:absolute;left:0;bottom:-1px;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(var(--prog,0));
-  background:linear-gradient(90deg,rgba(224,123,24,.25),rgba(224,123,24,.9));pointer-events:none}
-/* タブ列の左：ホーム（家）とページ一覧 */
-.navsite{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding-right:10px;border-right:1px solid var(--rule-2);align-self:center}
-.navhome,.navpages{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;border-radius:999px;cursor:pointer;
-  color:var(--ink);background:var(--surface);border:1px solid var(--rule-2);text-decoration:none;font:inherit;font-family:var(--f-jph);font-size:.8rem;font-weight:700;
-  transition:background .16s,border-color .16s,color .16s,transform .12s var(--ease)}
-.navhome{width:36px;padding:0}
-.navpages{padding:0 13px 0 11px}
-.navhome svg,.navpages svg{width:17px;height:17px;flex:0 0 auto}
-.navpages svg{color:var(--brand)}
-.navhome:hover,.navpages:hover{background:var(--ink);border-color:var(--ink);color:#fff}
-.navhome:hover svg,.navpages:hover svg{color:var(--brand)}
-.navhome:active,.navpages:active{transform:scale(.96)}
-
-/* =========================================================
-   章の扉（#modetip）：丸の番号＋Chapter 01 — 英字＋モード名＋ひとこと
-   ========================================================= */
-#modetip{display:grid;grid-template-columns:auto minmax(0,1fr);gap:26px;align-items:start;
-  margin:34px 0 20px;padding:0;font-size:1rem;color:var(--ink-2);line-height:1.8}
-/* ★10_style.css の ▲（#modetip:not(:empty)::before）を必ず消すこと★
-   消さないと ::before が grid のアイテムになり、丸の番号と本文が
-   1列ずつ右へずれて、2行に折り返してしまう（実際そうなった）。
-   同じ数の条件（:not(:empty)）を書かないと、詳しさで負けて効かない。 */
-#modetip::before,#modetip:not(:empty)::before{content:none;display:none}
-#modetip .mh-num{width:84px;height:84px;border-radius:50%;border:1.5px solid var(--ink);display:grid;place-items:center;margin-top:4px;position:relative}
-#modetip .mh-num::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px dashed var(--rule-2)}
-#modetip .mh-num span{font-family:var(--f-serif);font-size:2.7rem;line-height:1;color:var(--ink);transform:translateY(1px)}
-#modetip .mh-en{margin:0 0 6px;font-family:var(--f-serif);font-style:italic;font-size:1rem;color:var(--brand-600);letter-spacing:.01em}
-#modetip h2{margin:0;font-size:clamp(1.5rem,2.6vw,2.2rem);font-weight:800;line-height:1.25;letter-spacing:-.02em;color:var(--ink);border:0;padding:0}
-#modetip .mh-lead{margin:12px 0 0;font-size:1.02rem;line-height:1.95;color:var(--ink-2);max-width:52em}
-
-/* =========================================================
-   本文・カード
-   ========================================================= */
-.wrap{max-width:1240px;padding:8px 16px 40px}
-.card{background:var(--surface);border:1px solid rgba(20,23,28,.06);border-radius:var(--r-xl);box-shadow:var(--sh-2)}
-#simhost{padding:24px 26px 26px;scroll-margin-top:calc(var(--navh) + 12px)}
-.simtitle{font-size:clamp(1.12rem,1.55vw,1.32rem);font-weight:800;line-height:1.45;letter-spacing:-.01em;color:var(--ink)}
-.simdesc{font-size:.95rem;line-height:1.9;color:var(--ink-2)}
-.cvside{background:var(--panel);border-radius:var(--r-l);padding:16px 16px 18px}
-/* 操作のくぼみ：枠線なし、面の色だけ */
-.cvtop,.cvvars,.opts,.cvbar{border:0;background:var(--paper);border-radius:var(--r)}
-.ctrl,.playctrl{border:0;background:linear-gradient(180deg,var(--brand-50),#fbeedd);border-radius:var(--r)}
-/* ===== 計算結果の帯（2026-10-03 作りなおし）=====
-   「計算結果を表示」は〈ボタン〉。押したときだけ中身が開く。
-   中身は ラベル／値／単位 を縦に3段にした〈横1列の表〉（circular-motion と同じ形）。
-   ★.cvvars のグリッド幅を1pxも増やさないこと★（規約 158）——
-     ここは .cvvars の外なので幅には影響しないが、せまい画面では
-     grid が自動で折り返すので、ページごと横スクロールにはならない。 */
-.resbar{background:var(--paper);border:0;border-radius:var(--r);padding:0;overflow:hidden}
-.resbar .rtog{display:flex;align-items:center;gap:8px;width:100%;margin:0;padding:9px 14px;
-  font-family:var(--f-jph);font-size:.78rem;font-weight:700;letter-spacing:.04em;
-  color:var(--brand-700);background:transparent;border:0;border-radius:var(--r);
-  text-align:left;cursor:pointer;transition:background .14s}
-.resbar .rtog:hover{background:var(--brand-50)}
-.resbar .rtog .rcv{flex:none;width:0;height:0;border-left:6px solid currentColor;
-  border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;
-  transition:transform .16s var(--ease)}
-.resbar.open .rtog .rcv{transform:rotate(90deg)}
-.resbar .rbody{padding:0 12px 11px}
-.resbar .rbody[hidden]{display:none}
-/* 横1列の表。せまい画面では自動で2段・3段に折り返す（横スクロールにしない） */
-.resbar .rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
-  gap:0;background:var(--surface);border-radius:var(--r);padding:8px 2px;
-  box-shadow:0 0 0 1px var(--rule) inset}
-/* ★同じ行のセルは、ラベルの下の線をそろえる★
-   セルを縦の flex にして、ラベルの箱だけを伸ばす。grid は同じ行のセルの高さを
-   そろえてくれるので、ラベルが1行のものも2行のものも、線の高さがぴったり合う。 */
-/* ★セルの中は grid（flex にしないこと）★
-   flex にすると、ラベルの中の「ふつうの文字」と「KaTeX の式」が別々の箱になり、
-   justify-content:center のせいで文字のあいだに大きなすきまができる
-   （「地表　　（での F/m＝g）」のようになった。ハマったこと 164）。
-   grid なら中身はふつうの文章のまま流れ、箱だけ下にそろえられる。 */
-.resbar .rgrid .ritem{display:grid;grid-template-rows:1fr auto auto;flex:none;min-width:0;
-  background:transparent;border:0;border-left:1px solid var(--rule);border-radius:0;
-  padding:3px 9px 2px;text-align:center;white-space:normal;position:relative}
-.resbar .rgrid .ritem:first-child{border-left:0}
-.resbar .rgrid .ritem .rk{display:block;align-self:end;font-size:.7rem;line-height:1.45;
-  color:var(--ink-3);text-align:center;padding-bottom:4px;margin-bottom:5px;
-  border-bottom:1px solid var(--rule);overflow-wrap:anywhere}
-.resbar .rgrid .ritem .rv{display:block;font-family:var(--mono);
-  font-variant-numeric:tabular-nums;font-size:.92rem;font-weight:700;line-height:1.3;
-  color:var(--ink);text-align:center;overflow-wrap:anywhere}
-.resbar .rgrid .ritem .ru{display:block;font-size:.66rem;line-height:1.5;color:var(--ink-3);
-  text-align:center;margin-top:1px;overflow-wrap:anywhere}
-/* K = T²/a³ は主役なので、面の色だけで目立たせる（枠を足すと列の幅がずれる） */
-.resbar .rgrid .ritem.kbox{background:var(--accent-l);border-radius:var(--r-s)}
-.resbar .rgrid .ritem.kbox .rk,.resbar .rgrid .ritem.kbox .rv{color:var(--accent-d)}
-/* 解説の @@r:…@@ から飛んできたときの光り（枠ではなく面の色で。幅を変えないため） */
-.resbar .rgrid .ritem.flash{background:var(--orange);border-radius:var(--r-s)}
-.resbar .rgrid .ritem.flash .rk,.resbar .rgrid .ritem.flash .rv,
-.resbar .rgrid .ritem.flash .ru,.resbar .rgrid .ritem.flash .katex{color:#fff}
-.resbar .rgrid .ritem.flash .rk{border-bottom-color:rgba(255,255,255,.5)}
-.resbar .ktabwrap{margin-top:9px}
-.resbar .knote{margin:7px 4px 0}
-@media (max-width:640px){
-  .resbar .rgrid{grid-template-columns:repeat(auto-fit,minmax(84px,1fr))}
-  .resbar .rgrid .ritem .rv{font-size:.86rem}
-}
-.note{background:var(--brand-50);border:0;border-left:0;box-shadow:inset 3px 0 0 var(--brand);border-radius:var(--r)}
-.eq{background:var(--surface);border:0;box-shadow:0 0 0 1px var(--rule) inset;border-radius:var(--r)}
-.gsec{border:1px solid var(--rule);border-radius:var(--r-l);background:var(--surface);box-shadow:var(--sh-1)}
-.ghead{background:var(--paper);color:var(--ink);font-family:var(--f-jph)}
-.ghead:hover{background:var(--paper-2)}
-.card.sidetext,.card.longbox,.card.purpose,.card.intro,.card.topcard,.card.explist,.card.probs{border:0;box-shadow:var(--sh-2)}
-.card.purpose{padding:26px 30px}
-.purpose .lead{font-size:.78rem;letter-spacing:.14em;color:var(--brand-700)}
-#legend{color:var(--ink-3)}
-
-/* ボタン：全部ピル。
-   ★色の意味（設計メモ 137）★
-     オレンジ塗り＝状況を変えるボタン（topActions・actions）
-     墨のピル    ＝別の見方（.sub / alt）。選んでいるものは墨で塗る
-     白地＋細い枠＝見る向きだけを変えるボタン */
-button{font-family:var(--f-jph);border-radius:999px;transition:background .16s,border-color .16s,color .16s,transform .12s var(--ease)}
-button:active{transform:scale(.97)}
-button.warm{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
-button.warm:hover{background:#ec8526;border-color:#ec8526;color:#fff}
-button.warm.on{background:var(--brand-700);border-color:var(--brand-700);color:#fff}
-button.sub{background:var(--surface);border:1px solid var(--rule-2);color:var(--ink-2);font-weight:600}
-button.sub:hover{background:var(--paper);border-color:var(--ink-4);color:var(--ink)}
-button.sub.on,button.on{background:var(--ink);border-color:var(--ink);color:#fff}
-#bPlay,button.play{background:var(--brand);border:0;color:#fff;font-weight:800;letter-spacing:.04em;
-  box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 24px -10px rgba(224,123,24,.85)}
-#bPlay:hover,button.play:hover{background:#ec8526;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 14px 30px -10px rgba(224,123,24,.95)}
-/* スライドバー：細い溝＋塗り（--p）＋白縁のつまみ。
-   ★つまみは 18px。.cvvars のグリッドの幅を増やさないよう、行の高さだけで収める★（設計メモ 34・37・46・73） */
-input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:20px;cursor:pointer;--p:0%;--c:var(--ink)}
-input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:linear-gradient(90deg,var(--c) var(--p),var(--rule-2) var(--p))}
-input[type=range]::-moz-range-track{height:4px;border-radius:999px;background:var(--rule-2)}
-input[type=range]::-moz-range-progress{height:4px;border-radius:999px;background:var(--c)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--surface);
-  border:4px solid var(--c);box-shadow:0 1px 4px rgba(20,23,28,.25);transition:transform .15s var(--ease)}
-input[type=range]::-moz-range-thumb{width:9px;height:9px;border-radius:50%;background:var(--surface);border:4px solid var(--c);box-shadow:0 1px 4px rgba(20,23,28,.25)}
-input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
-#tslider,.ctrl input[type=range]{--c:var(--brand)}
-
-/* =========================================================
-   コンテンツ一覧のパネル（中身と動きは 160 のまま）
-   ========================================================= */
-.hero .tocpanel{top:96px;color:var(--ink)}
-.tocpanel{border:0;border-radius:var(--r-l);box-shadow:var(--sh-3),0 0 0 1px rgba(20,23,28,.06);padding:18px 22px 22px;background:var(--surface)}
-.tochead{border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:6px;font-size:1.05rem;font-family:var(--f-jph)}
-.tocx{width:34px;height:34px;border-radius:50%;padding:0;display:grid;place-items:center;font-size:1.25rem;color:var(--ink-3);transition:background .16s}
-.tocx:hover{background:var(--paper)}
-.tocmode{font-family:var(--f-jph);font-size:.92rem;color:var(--ink);margin:16px 0 4px;padding-bottom:4px;border-bottom:1px dashed var(--rule)}
-.tocpanel ul{list-style:none;padding:0}
-.tocpanel li{margin:0;font-size:.88rem}
-.tocpanel li.tocsub{margin-left:1.2em;font-size:.82rem;list-style:none}
-.tocpanel a{display:block;padding:.38em .6em;border-radius:10px;color:var(--ink-2);transition:background .14s,color .14s}
-.tocpanel a:hover{background:var(--paper);color:var(--ink);text-decoration:none}
-
-/* =========================================================
-   フッター（暗い地）
-   ========================================================= */
-#pagefoot{margin:56px 0 0;background:var(--night);color:rgba(243,239,230,.55);font-size:.8rem;text-align:left;padding:0}
-.ft-in{max-width:1240px;margin:0 auto;padding:46px 24px 40px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px 60px}
-.ft-mark{margin:0;font-family:var(--f-serif);font-style:italic;font-size:clamp(1.5rem,2.8vw,2.3rem);color:#f3efe6;line-height:1.15}
-.ft-mark span{display:block;font-family:var(--f-jph);font-style:normal;font-weight:700;font-size:.9rem;letter-spacing:.06em;color:rgba(243,239,230,.55);margin-top:10px}
-.ft-nav{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
-.ft-nav a{display:flex;gap:10px;align-items:baseline;padding:6px 0;color:rgba(243,239,230,.75);text-decoration:none;font-size:.86rem;border-bottom:1px solid rgba(255,255,255,.07);transition:color .16s}
-.ft-nav a:hover{color:#fff}
-.ft-nav a b{font-family:var(--f-serif);font-weight:400;color:var(--brand);min-width:1.4em}
-.ft-base{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);font-size:.76rem;color:rgba(243,239,230,.4)}
-.ft-base a{color:rgba(243,239,230,.7)}
-.ft-base .ft-home{color:rgba(243,239,230,.85);text-decoration:none;font-weight:700}
-.ft-base .ft-home:hover{color:#fff;text-decoration:underline}
-.ft-r{display:inline-flex;gap:18px;align-items:center}
-.ft-pages{font:inherit;font-size:.76rem;color:rgba(243,239,230,.7);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
-.ft-pages:hover{color:#fff}
-
-/* =========================================================
-   左から出るページ一覧のパネル
-   ========================================================= */
-.drawer-scrim{position:fixed;inset:0;z-index:90;background:rgba(14,17,21,.5);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;transition:opacity .25s var(--ease)}
-.drawer-scrim.on{opacity:1}
-.drawer{position:fixed;z-index:91;top:0;left:0;bottom:0;width:min(400px,88vw);overflow-y:auto;overscroll-behavior:contain;
-  background:var(--night);color:#f3efe6;padding:0 0 28px;box-shadow:20px 0 60px -20px rgba(0,0,0,.5);
-  transform:translateX(-102%);transition:transform .3s var(--ease)}
-.drawer.on{transform:none}
-.drawer[hidden],.drawer-scrim[hidden]{display:none}
-html.drawer-open{overflow:hidden}
-.dr-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 16px 14px 20px;background:rgba(14,17,21,.94);border-bottom:1px solid var(--night-rule)}
-.dr-brand{display:inline-flex;align-items:center;gap:10px;color:#f3efe6;text-decoration:none;font-family:var(--f-jph);font-weight:800;font-size:.95rem}
-.dr-brand .atom{width:26px;height:26px}
-.dr-x{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.07);color:#f3efe6;font-size:1.3rem;line-height:1;cursor:pointer}
-.dr-x:hover{background:rgba(255,255,255,.14)}
-.dr-home{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;margin:16px 16px 6px;padding:12px 14px;border-radius:var(--r);
-  background:var(--brand);color:#1a1206;text-decoration:none;transition:filter .16s,transform .16s var(--ease)}
-.dr-home:hover{filter:brightness(1.07);transform:translateY(-1px)}
-.dr-hi{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:rgba(26,18,6,.12)}
-.dr-hi svg{width:20px;height:20px}
-.dr-home b{display:block;font-family:var(--f-jph);font-size:1rem}
-.dr-home small{display:block;font-size:.72rem;opacity:.8;line-height:1.5}
-.dr-go{font-family:var(--f-serif);font-size:1.2rem}
-.dr-g{margin:22px 20px 6px;font-size:.7rem;font-weight:700;letter-spacing:.18em;color:rgba(243,239,230,.45)}
-.dr-sec{margin:0 12px 6px}
-.dr-sec h3{display:flex;align-items:center;gap:9px;margin:8px 8px 4px;font-size:.86rem;font-weight:800;color:#f3efe6;border:0;padding:0}
-.dr-sec h3 i{width:10px;height:10px;border-radius:3px;background:var(--c)}
-.dr-sec ul{list-style:none;margin:0;padding:0}
-.dr-sec a{display:block;padding:8px 12px 8px 27px;border-radius:10px;font-size:.84rem;line-height:1.55;color:rgba(243,239,230,.78);text-decoration:none;position:relative;transition:background .14s,color .14s}
-.dr-sec a:hover{background:rgba(255,255,255,.07);color:#fff}
-.dr-sec a.cur{background:rgba(255,255,255,.06);color:#fff;box-shadow:inset 3px 0 0 var(--brand)}
-.dr-sec a em{display:block;font-style:normal;font-size:.68rem;font-weight:700;letter-spacing:.06em;color:var(--brand);margin-top:2px}
-.dr-form{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:22px 16px 0;padding:12px 14px;border-radius:var(--r);
-  border:1px solid var(--night-rule);color:rgba(243,239,230,.8);text-decoration:none;font-size:.8rem;transition:background .16s}
-.dr-form:hover{background:rgba(255,255,255,.06);color:#fff}
-@media(prefers-reduced-motion:reduce){.drawer,.drawer-scrim{transition:none}}
-
-/* =========================================================
-   光らせる演出は opacity・transform だけで（設計メモ 93〜104 と同じ考え方）
-   ★光る要素には基準（position:relative）を必ず持たせる★
-     ないと輪がページ全体に広がって、横スクロールが出る。
-   ========================================================= */
-#bPlay.sg-glow,.topacts button.tglow{animation:none !important;position:relative}
-#bPlay.sg-glow::after,.topacts button.tglow::after{
-  content:""; position:absolute; inset:-4px; border-radius:inherit; pointer-events:none;
-  box-shadow:0 0 0 4px rgba(224,123,24,.55),0 0 24px 6px rgba(224,123,24,.6);
-  opacity:0; animation:ringPulse 1.4s ease-in-out infinite; will-change:opacity,transform}
-@keyframes ringPulse{0%,100%{opacity:.12;transform:scale(1)}50%{opacity:1;transform:scale(1.045)}}
-#bPlay.sg-glow{background:var(--brand) !important;border-color:var(--brand) !important;color:#fff !important}
-.stagecap .live{box-shadow:none}
-.stagecap .live::after{content:"";position:absolute;inset:-1px;border-radius:50%;box-shadow:0 0 0 5px rgba(61,220,132,.45);
-  opacity:0;animation:ringPulse 2s ease-in-out infinite;will-change:opacity,transform}
-@media(prefers-reduced-motion:reduce){
-  #bPlay.sg-glow::after,.topacts button.tglow::after,.stagecap .live::after{animation:none;opacity:.8}
-}
-
-/* =========================================================
-   画面の幅ごとの調整
-   ========================================================= */
-@media(max-width:980px){ .ideas{grid-template-columns:1fr} }
-@media(max-width:760px){ .ft-in{grid-template-columns:1fr}.ft-nav{grid-template-columns:1fr} }
-@media(max-width:640px){
-  :root{--navh:50px}
-  .hero-in{padding:18px 16px 22px}
-  .hero-top{align-items:flex-start}
-  .crumbs .en,.crumbs .kdot{display:none}
-  .hero .introrow{flex-direction:column;gap:12px}
-  .hero .tocbtn{min-height:0;padding:.75em 1.2em;align-self:flex-start}
-  .stage{margin-top:22px;border-radius:var(--r)}
-  .stage canvas{height:220px}
-  .stagecap{gap:8px}
-  .stagecap .live{display:none}
-  .stagectl{margin-left:0;width:100%;justify-content:space-between}
-  .stagectl button{min-width:0;padding:0 8px}
-  .stagectl .sl-l{padding:0 4px 0 8px}
-  #modetip{grid-template-columns:1fr;gap:12px;margin:24px 0 14px}
-  #modetip .mh-num{width:58px;height:58px}
-  #modetip .mh-num span{font-size:1.9rem}
-  #simhost{padding:18px 16px 20px;border-radius:var(--r-l)}
-  .navpages span{display:none}
-  .navpages{width:36px;padding:0}
-  .navsite{padding-right:8px}
-  .ft-in{padding:32px 16px 30px}
-}
-@media(min-width:1240px) and (max-width:1399px){
-  .navpages span{display:none} .navpages{width:36px;padding:0}
-}
-
-/* 印刷：飾りを外して、本文だけを白地で */
-@media print{
-  body{background:#fff}
-  .hero{background:#fff;color:#000;border-radius:0}
-  .hero::before,.hero::after,.stage,.ideas,.tocbtn,#tabbar,#pagefoot .ft-nav,.navsite,.drawer,.drawer-scrim{display:none !important}
-  .hero-title,.hero .lead2{color:#000}
-  #simhost{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
-}
-
-/* 図のすぐ下に置く説明（d.cvnote）。2026-10-04。
-   「この図の見かた」の地の文を、canvas の中ではなく HTML で出すための場所。 */
-.cvnote{margin:8px 2px 0;font-size:.82rem;line-height:1.75;color:var(--ink-2)}
-@media (max-width:640px){ .cvnote{font-size:.78rem} }
-
-</style>
 </head>
 <body>
-<!-- ============================================================
-     ヒーロー（暗い地・方眼・オレンジの光）
-     momentum-and-collision.html と同じ骨組み。中身は 85_design.js が入れる。
-     ★h1・リード・#bToc・#tocpanel は、もともとページの頭にあったものを
-       そのままここへ移しただけ★（id は変えない）。
-     ============================================================ -->
-<header class="hero" id="hero">
-  <div class="hero-in">
-    <div class="hero-top">
-      <nav class="crumbs" aria-label="現在地" id="crumbs"></nav>
-    </div>
-    <h1 class="hero-title"><span class="t1"><span class="nb">万有引力と</span><span class="nb">ケプラーの法則の</span><span class="nb">シミュレーション</span></span></h1>
-    <div class="introrow">
-      <p class="mini lead2">惑星や人工衛星がどう動くかを、自分で数値を変えながら動かして確かめるページ。<br>
-      それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、なぜその形になるのかを納得いくまで考えよう。</p>
-      <button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button>
-    </div>
-    <div id="tocpanel" class="tocpanel" hidden></div>
-    <figure class="stage" aria-label="地表から真横に打ち出す速さを変えると、軌道が 円 → だ円 → 放物線 → 双曲線 と変わる">
-      <canvas id="heroCv"></canvas>
-      <figcaption class="stagecap"><span class="live" aria-hidden="true"></span><span class="sct" id="heroCap"></span>
-        <span class="stagectl" role="group" aria-label="打ち出す速さをえらぶ"></span></figcaption>
-    </figure>
-    <ol class="ideas" id="ideas"></ol>
-  </div>
-</header>
+<div class="wrap">
+
+<h1>万有引力とケプラーの法則のシミュレーション</h1>
+<!-- ★イントロの文と「コンテンツ一覧」ボタンを横に並べる★
+     （rigid-body-dynamics.html と同じ見た目・動き。640px 以下では たてに積む） -->
+<div class="introrow">
+<p class="mini">惑星や人工衛星がどう動くかを、自分で数値を変えながら動かして確かめるページ。<br>
+それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、なぜその形になるのかを納得いくまで考えよう。</p>
+<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false">コンテンツ一覧</button>
+</div>
+<div id="tocpanel" class="tocpanel" hidden></div>
 
 <!-- ★タブの帯は画面の上に貼りつける（position:sticky）★
      長いページでも「いまどのモード・どのシミュレーションを見ているか」がいつも見える。
      ★帯に入れるのはタブの列だけ★——モードのひとこと（#modetip）を中に入れると、
-     文が2〜3行になったときに帯が急に高くなって、図の場所がなくなる。
-     ★このページのタブは2段（モードとシム）で、どちらも1行の横スクロール★（設計メモ 157）。
-     見本の「641〜1239px で2段に折り返す」は使わない。 -->
+     文が2〜3行になったときに帯が急に高くなって、図の場所がなくなる。 -->
 <div class="tabbar" id="tabbar">
-  <div class="tabs-in">
-    <div class="navsite" id="navsite"></div>
-    <div class="tabcols">
-      <div class="tabs" id="modetabs"></div>
-      <div class="tabs sub" id="simtabs"></div>
-    </div>
-  </div>
-  <span class="tprog" aria-hidden="true"></span>
+  <div class="tabs" id="modetabs"></div>
+  <div class="tabs sub" id="simtabs"></div>
 </div>
-
-<div class="wrap">
-
 <div id="modetip"></div>
 
 <div class="card" id="simhost"></div>
@@ -1636,10 +1135,6 @@ html.drawer-open{overflow:hidden}
 
 </div>
 
-<!-- 暗い地のフッター（章の目次・ホーム・ページ一覧）。中身は 85_design.js が入れる。
-     ★95_tail.html（GoatCounter と ▶スタートを光らせる部品）には いっさい触らない★ -->
-<footer id="pagefoot"></footer>
-
 <!-- 入試問題の問題文（画像）を大きく見せる重ね窓 -->
 <div id="probov" class="probov" hidden>
   <div class="probov-in">
@@ -1669,48 +1164,6 @@ var IMG = {
   "skater_head": 'data:image/jpeg;base64,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',
   "skater_side": 'data:image/jpeg;base64,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'
 };
-/* ===== 29_canvas_theme.js ===== */
-/* =========================================================================
-   図の中（canvas）の「UI の色」だけを、ページのデザイン（紙・墨）にそろえる
-   -------------------------------------------------------------------------
-   ★入れてよいのは UI の色だけ★（先生の確認ずみ・2026-10-03）
-     このページの UI のグレーは、COL の中のつぎの4つだけ。
-       COL.ink  #1b1f24  文字・寸法の破線
-       COL.sub  #5b6672  補足の文字
-       COL.grid #e2e6ea  グラフの格子
-       COL.axis #8b949e  軸
-   ★物理の色は1つも入れない★
-     力 #d1352b／垂直抗力 #7b3fd4／摩擦 #0f8a8a／手 #c2367f／速度 #1663b5／
-     加速度 #e07b18／太陽 #f0b429・#c07f00／★軌道 #98a2ac（灰色だが物理の色）★／
-     束縛 #1c8f4a／放物線 #b58900／双曲線 #3f4a54／扇形 3色／
-     星空の図の色（#0d1626・#9fb0c4・#c9d6e4・#9fd0ff・#7fe0a0・#e8eef4・#cfe0f0 …）
-   canvas に色を入れる瞬間（fillStyle / strokeStyle）に置きかえるので、
-   個々の作図コードは1行も書きかえない。
-   ========================================================================= */
-(function () {
-  'use strict';
-  var MAP = {
-    '#1b1f24': '#14171c',   /* 墨（文字・寸法の破線） */
-    '#5b6672': '#5f6670',   /* 補足の文字 */
-    '#e2e6ea': '#ece7de',   /* グラフの格子（あたたかい紙色に） */
-    '#8b949e': '#8d9097'    /* 軸 */
-  };
-  var P2D = (typeof CanvasRenderingContext2D !== 'undefined') ? CanvasRenderingContext2D.prototype : null;
-  if (!P2D) return;
-  ['fillStyle', 'strokeStyle'].forEach(function (prop) {
-    var d = Object.getOwnPropertyDescriptor(P2D, prop);
-    if (!d || !d.set) return;
-    Object.defineProperty(P2D, prop, {
-      configurable: true, enumerable: d.enumerable, get: d.get,
-      set: function (v) {
-        if (typeof v === 'string') { var k = v.toLowerCase(); if (MAP.hasOwnProperty(k)) v = MAP[k]; }
-        d.set.call(this, v);
-      }
-    });
-  });
-  window.CANVAS_THEME = { MAP: MAP };
-})();
-
 /* ===== 30_physics.js ===== */
 /* 純粋な物理計算だけ（描画を混ぜない）。同じ入力 → 同じ出力。
    ★方針：楕円軌道は数値積分せず、ケプラー方程式から閉じた式で出す。
@@ -1751,41 +1204,6 @@ function fmtAuto(x, d) {
      （4.83×10⁻⁸ のような表示は、生徒には「ほぼ 0」と読めないため）。
      小さい値を細かく見せたいところでは fmtE() を直接使うこと。 */
   return fmt(x, dd);
-}
-
-/* ★有効数字3けた★（計算結果の表・読み出しの表は、全シムこれでそろえる。
-   先生の指示・2026-10-03：「2.3562 AU²/年 のような細かすぎる表示は意味がない」）
-     2.3562 → 2.36 ／ 12.043 → 12.0 ／ 0.4380 → 0.438 ／ 0.01712 → 0.0171
-     6371 → 6371（整数のけたはそのまま。四捨五入して 6370 にはしない）
-     10万以上・0.001未満 → 3.99×10⁵ のように指数で
-   ★図（canvas）の中の数字には使わない★——図は fmtLen などこれまでどおり。 */
-function fmt3(x) {
-  if (!isFinite(x)) return '—';
-  var a = Math.abs(x);
-  if (x === 0) return '0';
-  /* ★「ほとんど 0」は 0 と書く★
-     ε は円のとき 1.05×10⁻⁸ のような計算誤差になる。これを指数で出すと
-     生徒には「0 ではない何か」に見えてしまうので、0 と書く（fmtAuto と同じ考え方）。 */
-  if (a < 1e-6) return '0';
-  if (a >= 1e5 || a < 1e-3) return fmtE(x, 2);
-  /* 小数点以下のけた数 ＝ 3 −（整数部のけた数）。1 以上はけたを落とさない */
-  var e = Math.floor(Math.log(a) / Math.LN10);
-  var dd = clamp(2 - e, 0, 4);
-  var s = fmt(x, dd);
-  /* 9.999 → 「10.00」になってしまうので、けたが1つ上がったら入れ直す */
-  if (dd > 0 && Math.abs(parseFloat(s)) >= Math.pow(10, e + 1)) s = fmt(x, Math.max(0, dd - 1));
-  return s;
-}
-
-/* ★K = T²/a³ だけは4けた★（fmt3 ではなく、これを使う）
-   「どの天体でも K がそろう」を見せるのがこのページの主題なので、
-   1.0000 / 0.9991 のちがいが読めるところまで出す（有効数字3けたでは
-   ぜんぶ 1.00 になってしまい、そろっているのか判断できない）。 */
-function fmtK(x) {
-  if (!isFinite(x)) return '—';
-  var a = Math.abs(x);
-  if (a >= 1e5 || (a > 0 && a < 1e-3)) return fmtE(x, 4);
-  return fmt(x, 4);
 }
 
 /* 長さの書き方（AU なら小数3けた、km なら整数…と、けたに合わせて自動で選ぶ） */
@@ -4366,23 +3784,17 @@ function runOver(s, sec) { return !!s && (s._run || 0) >= sec; }
 
 /* ===== 計算結果の帯（図のすぐ下）=====
    d.result(v, s, t) が返すもの：
-     { items:[{k,v,u,kbox}], table:{head:[…], rows:[[…]], kcol:n}, note:'…' }
-   半長軸 a・周期 T・K = T²/a³ は必ず並べる。
-
-   ★2026-10-03 から、単位は 4つめの引数 u に分けて書く★（先生の指示）
-     ラベル／値／単位 の3段の表にするため。u を書かないと、いままでどおり
-     v の文字をそのまま1行で出す（古い書き方も動く）。
-       resItem('半長軸 $a$', fmt3(o.a), false, 'AU')  →  半長軸a ／ 1.60 ／ AU
-   ★値は fmt3（有効数字3けた）でそろえる★ */
-function resItem(k, v, kbox, u) { return { k: k, v: v, kbox: !!kbox, u: u || '' }; }
+     { items:[{k,v,kbox}], table:{head:[…], rows:[[…]], kcol:n}, note:'…' }
+   半長軸 a・周期 T・K = T²/a³ は必ず並べる。 */
+function resItem(k, v, kbox) { return { k: k, v: v, kbox: !!kbox }; }
 
 /* 1つの軌道について「a・T・K」の3つを作る（どのシムでも同じ書き方にそろえる） */
-function resAT(o, sys) {
+function resAT(o, sys, dec) {
   var Kv = o.T * o.T / (o.a * o.a * o.a);
   return [
-    resItem('半長軸 $a$', fmt3(o.a), false, sys.uL),
-    resItem('周期 $T$', fmt3(o.T), false, sys.uT),
-    resItem('$K = T^2/a^3$', fmtK(Kv), true, (sys.key === 'sun' ? '年²/AU³' : 's²/km³'))
+    resItem('半長軸 $a$', fmtAuto(o.a, dec === undefined ? 3 : dec) + ' ' + sys.uL),
+    resItem('周期 $T$', fmtAuto(o.T, dec === undefined ? 3 : dec) + ' ' + sys.uT),
+    resItem('$K = T^2/a^3$', fmtAuto(Kv, 4) + (sys.key === 'sun' ? ' 年²/AU³' : ' s²/km³'), true)
   ];
 }
 
@@ -4858,10 +4270,10 @@ DEFS['m1-1'] = {
     return {
       items: [
         resItem('選んだ天体', p.name),
-        resItem('半長軸 $a$', fmt3(p.a), false, 'AU'),
-        resItem('周期 $T$', fmt3(p.T), false, '年'),
-        resItem('離心率 $\\varepsilon$', fmt3(p.e)),
-        resItem('$K = T^2/a^3$', fmtK(Kv), true, '年²/AU³')
+        resItem('半長軸 $a$', fmt(p.a, 3) + ' AU'),
+        resItem('周期 $T$', fmt(p.T, 3) + ' 年'),
+        resItem('離心率 $\\varepsilon$', fmt(p.e, 3)),
+        resItem('$K = T^2/a^3$', fmt(Kv, 4) + ' 年²/AU³', true)
       ],
       /* pick に名前を書くと、その行が光る（80_ui.js の renderResult）。
          アニメや T–a 図で選んだ天体が、表の中でもすぐ分かるようにするため。 */
@@ -5202,21 +4614,19 @@ DEFS['m1-2'] = {
   result: function (v, s, t) {
     var o = orbOf(v), sy = sysOf(v);
     var q = K.state(o, t, 0, false);
+    var Tsh = (sy.key === 'earth') ? (fmt(o.T / 3600, 3) + ' 時間') : (fmt(o.T, 3) + ' 年');
     var Kv = o.T * o.T / (o.a * o.a * o.a);
     return {
-      /* K = T²/a³ は太陽系のときだけ出す（地球まわりでは 0.0001 と丸まって意味がないため）
-         ★近点・遠点は右の読み出しから、ここ（決まった値）へ移した★（2026-10-03） */
+      /* K = T²/a³ は太陽系のときだけ出す（地球まわりでは 0.0001 と丸まって意味がないため） */
       items: [
-        resItem('半長軸 $a$', fmt3(o.a), false, sy.uL),
-        resItem('半短軸 $b$', fmt3(o.b), false, sy.uL),
-        resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem('近点 $a(1-\\varepsilon)$', fmt3(o.rp), false, sy.uL),
-        resItem('遠点 $a(1+\\varepsilon)$', fmt3(o.ra), false, sy.uL),
-        resItem('中心〜焦点 $c=a\\varepsilon$', fmt3(o.c), false, sy.uL),
-        resItem('周期 $T$', (sy.key === 'earth') ? fmt3(o.T / 3600) : fmt3(o.T),
-          false, (sy.key === 'earth') ? '時間' : '年')
+        resItem('半長軸 $a$', fmtLen(o.a) + ' ' + sy.uL),
+        resItem('半短軸 $b$', fmtLen(o.b) + ' ' + sy.uL + (o.e < 1e-9 ? '（a = b）' : '')),
+        resItem('周期 $T$', Tsh)
       ].concat(sy.key === 'sun'
-        ? [resItem('$K = T^2/a^3$', fmtK(Kv), true, '年²/AU³')] : []),
+        ? [resItem('$K = T^2/a^3$', fmt(Kv, 4) + ' 年²/AU³', true)] : []).concat([
+          resItem('離心率 $\\varepsilon$', fmt(o.e, 2)),
+          resItem('$r_1 + r_2$', fmtLen(2 * o.a) + ' ' + sy.uL + '（＝2a で一定）')
+        ]),
       note: '$r_1 = ' + fmtLen(q.r) + '$、$r_2 = ' + fmtLen(2 * o.a - q.r) + '$ ' + sy.uL +
         '。惑星が動いても、<b>2つの焦点までの距離の和はいつも 2a</b> のまま。' +
         (o.e < 1e-9 ? '<b>いまは ε = 0 なので a と b が同じ長さ（＝円）</b>です。' : '')
@@ -5226,11 +4636,12 @@ DEFS['m1-2'] = {
     var v = V(s), o = orbOf(v), sy = sysOf(v);
     var q = K.state(o, t, 0, false);
     return [
-      /* ★右の読み出しは「動いている値」だけ★（先生の指示・2026-10-03）
-         決まった値（近点・遠点・c）は下の「計算結果を表示」へ移した。 */
-      ['距離 $r_1$（焦点1から）', fmt3(q.r) + ' ' + sy.uL],
-      ['距離 $r_2$（焦点2から）', fmt3(2 * o.a - q.r) + ' ' + sy.uL],
-      ['速さ $v$', fmt3(q.v) + ' ' + sy.uV],
+      ['距離 $r_1$（焦点1から）', fmtLen(q.r) + ' ' + sy.uL],
+      ['距離 $r_2$（焦点2から）', fmtLen(2 * o.a - q.r) + ' ' + sy.uL],
+      ['速さ $v$', fmtAuto(q.v, 3) + ' ' + sy.uV],
+      ['近点距離 $a(1-\\varepsilon)$', fmtLen(o.rp) + ' ' + sy.uL],
+      ['遠点距離 $a(1+\\varepsilon)$', fmtLen(o.ra) + ' ' + sy.uL],
+      ['中心から焦点まで $c = a\\varepsilon$', fmtLen(o.c) + ' ' + sy.uL],
       ['時刻 $t$', tText(v, t)]
     ];
   },
@@ -5430,9 +4841,7 @@ DEFS['m1-3'] = {
         return [
           '\\dfrac{dS}{dt} = \\dfrac{1}{2} r v \\sin\\theta = \\dfrac{L}{2m}\\;(\\text{一定})',
           '\\dfrac{dS}{dt} = \\dfrac{1}{2} r_0 v_0 \\sin\\theta_0 \\;\\;(\\theta_0 = 90^\\circ - \\varphi)',
-          /* ★グラフの「数値」のカードも、計算結果の表と同じ 有効数字3けた にそろえる★
-             （先生の指摘・2026-10-03：2.3562 のような細かい桁は意味がない） */
-          '\\dfrac{dS}{dt} = ' + fmt3(o.dS) + '\\;[\\mathrm{' + sy.uL + '^2/' + (sy.key === 'earth' ? 's' : '年') + '}]'
+          '\\dfrac{dS}{dt} = ' + fmtAuto(o.dS, 4) + '\\;[\\mathrm{' + sy.uL + '^2/' + (sy.key === 'earth' ? 's' : '年') + '}]'
         ];
       }
     },
@@ -5527,14 +4936,12 @@ DEFS['m1-3'] = {
     var wins = m13Windows(o), dt = o.T / 12;
     var uA = sy.uL + '²/' + (sy.key === 'earth' ? 's' : '年');
     return {
-      /* ★面積速度 dS/dt は、右の読み出しにも出していて二重だった★（先生の指摘）
-         ここは「決まった値」なので、dS/dt はここに置き、右からは消した。 */
-      items: (sy.key === 'sun' ? resAT(o, sy) : resAT(o, sy).slice(0, 2)).concat([
-        resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem('はじめの距離 $r_0$', fmt3(o.r0), false, sy.uL),
-        resItem('はじめの速さ $v_0$', fmt3(o.v0), false, sy.uV),
-        resItem('近点の速さ $v_{\\text{近}}$', fmt3(o.vp), false, sy.uV),
-        resItem('面積速度 $dS/dt$', fmt3(o.dS), false, uA)
+      items: (sy.key === 'sun' ? resAT(o, sy, 3) : resAT(o, sy, 3).slice(0, 2)).concat([
+        resItem('離心率 $\\varepsilon$', fmt(o.e, 3)),
+        resItem('はじめの距離 $r_0$', fmtLen(o.r0) + ' ' + sy.uL),
+        resItem('はじめの速さ $v_0$', fmtAuto(o.v0, 3) + ' ' + sy.uV),
+        resItem('近点の速さ $v_{\\text{近}}$', fmtAuto(o.vp, 3) + ' ' + sy.uV),
+        resItem('面積速度 $dS/dt$', fmtAuto(o.dS, 4) + ' ' + uA)
       ]),
       table: {
         head: ['扇形', 'どこで', '掃いた面積 [' + sy.uL + '²]', '掃いた時間'],
@@ -5553,14 +4960,13 @@ DEFS['m1-3'] = {
     var v = V(s), o = m13Orb(v), sy = sysOf(v);
     var q = K.state(o, t, o.M0, false);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         面積速度 dS/dt と 円軌道になる速さ は下の「計算結果を表示」にあるので、
-         ここからは消した（同じ数字が左右に出ていた）。
-         $\tfrac12 rv\sin\theta$ も dS/dt と同じ値なので消す。
-         残すのは「近いところでは速い」を読み取るための r・v・v⊥ と 時刻。 */
-      ['距離 $r$', fmt3(q.r) + ' ' + sy.uL],
-      ['速さ $v$', fmt3(q.v) + ' ' + sy.uV],
-      ['垂直方向の速さ $v_\\perp$', fmt3(q.vt) + ' ' + sy.uV],
+      ['距離 $r$', fmtLen(q.r) + ' ' + sy.uL],
+      ['速さ $v$', fmtAuto(q.v, 3) + ' ' + sy.uV],
+      ['動径方向の速さ $v_r$', fmtAuto(q.vr, 3) + ' ' + sy.uV],
+      ['垂直方向の速さ $v_\\perp$', fmtAuto(q.vt, 3) + ' ' + sy.uV],
+      ['$\\tfrac{1}{2}rv\\sin\\theta$（＝面積速度）', fmtAuto(0.5 * q.r * q.vt, 4)],
+      ['面積速度 $dS/dt$', fmtAuto(o.dS, 4)],
+      ['円軌道になる速さ $\\sqrt{GM/r_0}$', fmtAuto(o.vc, 3) + ' ' + sy.uV],
       ['時刻 $t$', tText(v, t)]
     ];
   },
@@ -5921,9 +5327,9 @@ DEFS['m1-4'] = {
     var pk = m14Pick(v), e = pk || bl[1];
     return {
       items: [
-        resItem('半長軸 $a$（' + e.name + '）', fmt3(e.a), false, S.uL),
+        resItem('半長軸 $a$（' + e.name + '）', S.aFmt(e.a) + ' ' + S.uL),
         resItem('周期 $T$（' + e.name + '）', S.tFmt(e.T)),
-        resItem('$K = T^2/a^3$', fmtK(e.T * e.T / (e.a * e.a * e.a)), true, S.uK)
+        resItem('$K = T^2/a^3$', S.kFmt(e.T * e.T / (e.a * e.a * e.a)) + ' ' + S.uK, true)
         /* ★「経過した時間」は消した★ 時間のバー・図の中の時計・グラフの横軸と
            まったく同じことを4か所目に書いていて、帯を長くするだけだった。 */
       ],
@@ -5940,7 +5346,7 @@ DEFS['m1-4'] = {
     var v = V(s), S = m14Set(v);
     return m14Bodies(v).map(function (p) {
       var q = planetXY(p, t);
-      return [p.name + 'の距離 $r$', fmt3(q.r) + ' ' + S.uL];
+      return [p.name + 'の距離 $r$', S.aFmt(q.r) + ' ' + S.uL];
     }).concat([['経過した時間 $t$', S.clock(t)]]);
   },
   eq: function () {
@@ -6092,7 +5498,7 @@ DEFS['m1-5'] = {
         return [
           '\\dfrac{dS}{dt} = \\dfrac{1}{2} r v \\sin\\theta\\;(\\text{一定})',
           '\\dfrac{dS}{dt} = \\dfrac{1}{2} r_0 v_0\\;\\;(\\text{' + periName(v) + 'では }\\theta = 90^\\circ)',
-          '\\dfrac{dS}{dt} = ' + fmt3(o.dS) + '\\;[\\mathrm{' + sysOf(v).uL + '^2/' + sysOf(v).uT + '}]'
+          '\\dfrac{dS}{dt} = ' + fmtE(o.dS, 3) + '\\;[\\mathrm{' + sysOf(v).uL + '^2/' + sysOf(v).uT + '}]'
         ];
       }
     }
@@ -6186,19 +5592,17 @@ DEFS['m1-5'] = {
     var Kv = o.T * o.T / (o.a * o.a * o.a);
     return {
       items: [
-        /* ★円軌道の速さ・脱出速度は、右の読み出しから ここへ移した★（2026-10-03）
-           どちらも r₀ で決まる「決まった値」で、右に出す理由がなかった。
-           面積速度はこのシムの主題ではないので消した（1-2 で扱う）。 */
-        resItem(periName(v) + 'の速さ $v_0$', fmt3(o.v0), false,
-          sys.uV + '（k = ' + fmt(v.k, 1) + '）'),
-        resItem('円軌道の速さ $\\sqrt{GM/r_0}$', fmt3(o.vc), false, sys.uV),
-        resItem('脱出速度 $\\sqrt{2GM/r_0}$', fmt3(P.m15.vEsc(r0Of(v), sys)), false, sys.uV),
-        resItem('半長軸 $a$', fmt3(o.a), false, sys.uL),
-        resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem(apoName(v) + ' $r_a$', fmt3(o.ra), false, sys.uL),
-        resItem('周期 $T$', e ? fmt3(o.T / 3600) : fmt3(o.T), false, e ? '時間' : '年'),
-        resItem('$K = T^2/a^3$', fmtK(Kv), true, e ? 's²/km³' : '年²/AU³'),
-        resItem('力学的エネルギー $E/m$', fmt3(o.Em), false, e ? 'MJ/kg' : 'AU²/年²')
+        resItem(periName(v) + 'の速さ $v_0$',
+          fmt(o.v0, 3) + ' ' + sys.uV + '（k = ' + fmt(v.k, 1) + '）'),
+        resItem('半長軸 $a$', fmtLen(o.a) + ' ' + sys.uL),
+        resItem('周期 $T$', e ? (fmt(o.T / 3600, 3) + ' 時間') : (fmt(o.T, 3) + ' 年')),
+        resItem('$K = T^2/a^3$',
+          e ? (fmtE(Kv, 4) + ' s²/km³') : (fmt(Kv, 4) + ' 年²/AU³'), true),
+        resItem('離心率 $\\varepsilon$', fmt(o.e, 3)),
+        resItem(apoName(v) + ' $r_a$', fmtLen(o.ra) + ' ' + sys.uL),
+        resItem('力学的エネルギー $E/m$',
+          fmt(o.Em, 3) + (e ? ' MJ/kg' : ' AU²/年²')),
+        resItem('面積速度 $dS/dt$', fmtE(o.dS, 3) + ' ' + sys.uL + '²/' + sys.uT)
       ],
       note: '$E$ が上がると $a$ が大きくなり、$T$ も長くなります（$E = -GMm/2a$、$T^2 = Ka^3$）。' +
         'それでも <b>K = T²/a³ は変わりません</b>（同じ' + sys.center + 'のまわりだから）。'
@@ -6207,16 +5611,18 @@ DEFS['m1-5'] = {
   info: function (s, t) {
     var v = V(s), o = m15Orb(v), sys = sysOf(v), e = (v.sys === 'earth');
     var q = K.state(o, t, 0, false);
-    /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-       v₀・円軌道の速さ・脱出速度は r₀ で決まる値なので、下の「計算結果を表示」へ移した。
-       高度は「距離」の行にそえて1行にまとめる（行を増やさない）。 */
     var rows = [
-      [sys.center + 'からの距離 $r$',
-        fmt3(q.r) + ' ' + sys.uL + (e ? '（高度 ' + fmt(q.r - SYS.earth.R, 0) + ' km）' : '')],
-      ['速さ $v$', fmt3(q.v) + ' ' + sys.uV],
+      [sys.center + 'からの距離 $r$', fmtLen(q.r) + ' ' + sys.uL]
+    ];
+    if (e) rows.push(['高度（地表から）', fmt(q.r - SYS.earth.R, 0) + ' km']);
+    rows.push(
+      ['速さ $v$', fmt(q.v, 3) + ' ' + sys.uV],
+      [periName(v) + 'の速さ $v_0$', fmt(o.vp, 3) + ' ' + sys.uV],
+      ['円軌道の速さ $\\sqrt{GM/r_0}$', fmt(o.vc, 3) + ' ' + sys.uV],
+      ['脱出速度 $\\sqrt{2GM/r_0}$', fmt(P.m15.vEsc(r0Of(v), sys), 3) + ' ' + sys.uV],
       ['軌道の種類', K.kindName(K.kind(o.Em, o.e))],
       ['時刻 $t$', tText(v, t)]
-    ];
+    );
     return rows;
   },
   eq: function (s) {
@@ -6318,15 +5724,9 @@ function m16DrawSky(ctx, s, t, W, H) {
       { size: 11.5, bold: true, color: back ? '#ffd479' : '#bfe6c9', haloColor: 'rgba(34,48,74,.92)' });
   }
 
-  /* 下の帯：同じ時刻の「太陽・地球・火星の位置関係」を上から見た図
-     ★説明の文は図の中に描かない★（先生の指示・2026-10-04）。
-       もとは図の右に 8 行の説明と「いまの距離／順行・逆行」を描いていたが、
-       ・説明の地の文は DEFS['m1-6'].cvnote（図のすぐ下の HTML）へ移した
-       ・「いまの距離」「いまの火星」は右の読み出しの表にもう出ている（二重）ので消した
-       文がなくなって右が空いたぶん、上から見た図を中央に置いて大きくした。 */
-  /* ★高さは 148 のまま★（これ以上大きくすると、図の下にはみ出して切れる） */
-  var tw = 260, th = 148;
-  m16DrawTop(ctx, Math.round((W - tw) / 2), H - pd.b + 58, tw, th, t);
+  /* 下の帯：同じ時刻の「太陽・地球・火星の位置関係」を上から見た図 */
+  m16DrawTop(ctx, 10, H - pd.b + 58, 206, 148, t);
+  m16TopCaption(ctx, 230, H - pd.b + 66, W - 242, t);
 }
 
 /* 左下の小さな図：太陽・地球・火星を「上から」見た位置関係。
@@ -6390,9 +5790,29 @@ function m16DrawTop(ctx, x0, y0, w, h, t) {
     { size: 10.5, bold: true, color: '#cfd9e6', haloColor: 'rgba(34,48,74,.9)' });
 }
 
-/* ★m16TopCaption は消した★（2026-10-04・先生の指示）
-   図の中に描いていた8行の説明は DEFS['m1-6'].cvnote（図のすぐ下の HTML）へ移し、
-   「いまの地球―火星の距離」「いまの火星：逆行中」は右の読み出しにもう出ているので消した。 */
+/* 上から見た図のとなりに置く説明（いまの距離と、順行・逆行のわけ） */
+function m16TopCaption(ctx, x0, y0, w, t) {
+  var mars = planetById('mars');
+  var qm3 = P.m16.planetSky(mars, t);
+  var back = P.m11.retroNow(mars, t);
+  var lines = [
+    '破線は「地球から火星を見る向き」。',
+    'この向きが上の図の黄経 λ になります。',
+    '地球は火星より内側を速く回るので、',
+    '追いこすときだけ、火星は空を西へ',
+    '戻るように見えます（＝逆行）。',
+    '',
+    'いまの地球―火星の距離：' + fmt(qm3.d, 2) + ' AU',
+    'いまの火星：' + (back ? '逆行中' : '順行中')
+  ];
+  lines.forEach(function (ln, j) {
+    if (!ln) return;
+    label(ctx, ln, x0, y0 + j * 17, {
+      align: 'left', size: 11, color: (j >= 6 ? '#ffd479' : '#cfd9e6'),
+      bold: j >= 6, haloColor: 'rgba(34,48,74,.9)'
+    });
+  });
+}
 
 /* 右下の図：同じ運動を「太陽を中心に見る」と「地球を中心に見る」 */
 function m16DrawModels(ctx, s, t, W, H) {
@@ -6473,11 +5893,11 @@ DEFS['m1-6'] = {
     '縦が<b>黄緯 β</b>。<b>太陽</b>と<b>火星</b>が、それぞれどう動くかを見比べよう。<br>' +
     'まわりの星（恒星）は<b>まったく動かず</b>、太陽は黄道の上を<b>まっすぐ一定の速さで</b>進みます。' +
     'ところが<b>火星だけは、ときどき止まって逆戻りします</b>。<br>' +
-    '<b>図の下半分の小さな図</b>は、同じ時刻の<b>太陽・地球・火星の位置関係を上から見た</b>ものです。' +
+    '<b>左下の小さな図</b>は、同じ時刻の<b>太陽・地球・火星の位置関係を上から見た</b>ものです。' +
     '地球が火星を内側から追いこすときに逆行が起きることを、見比べて確かめよう。',
   note: 'まわりの星は動かず、太陽はまっすぐ。<b>火星だけが行きつ戻りつする</b>——これが' +
     '「惑（まど）う星」＝<b>惑星</b>という名前の由来です。' +
-    '下の小さな図で<b>地球が火星を追いこす</b>タイミングと、空で<b>逆行</b>が起きるタイミングを見比べよう。' +
+    '左下の図で<b>地球が火星を追いこす</b>タイミングと、空で<b>逆行</b>が起きるタイミングを見比べよう。' +
     'さらに下の図では、同じ動きを「太陽を中心に見た場合」と「地球を中心に見た場合」で比べられます。',
   sideText:
     '<span class="q">なぜ火星や土星を惑星と呼ぶのか？</span>' +
@@ -6533,12 +5953,6 @@ DEFS['m1-6'] = {
     '創作部分も多数ありますが、<b>「チ。-地球の運動について-」</b>は面白いです。' +
     'ぜひ読んでみて、昔の人たちの感動を追体験してみてください。</p>',
   cw: 560, ch: 510,
-  /* ★図のすぐ下に出す説明★（2026-10-04・先生の指示でここへ移した。
-     もとは「上から見た位置関係」の図の右に、canvas の文字で描いていた） */
-  cvnote: '図の下半分「上から見た位置関係」の<b>破線</b>は「地球から火星を見る向き」。' +
-    'この向きが、上の空の図の<b>黄経 λ</b> になります。' +
-    '地球は火星より<b>内側を速く回る</b>ので、<b>追いこすときだけ</b>、' +
-    '火星は空を西へ戻るように見えます（＝<b>逆行</b>）。',
   loop: true,
   vars: [],
   tEnd: function () { return 4.4; },
@@ -6556,15 +5970,11 @@ DEFS['m1-6'] = {
     var mars = planetById('mars');
     var qs = P.m16.sunSky(t), qm = P.m16.planetSky(mars, t);
     return [
-      /* ★4つにしぼる★（先生の指示・2026-10-03）。太陽の λ は図の中に太陽の印が
-         あるので消した。λ と β は「空の上で、横に・縦にどこか」なので1行にまとめる。 */
-      /* ★右の読み出しの〈値〉は textContent で入れる（数式は組まれない）★
-         だから $\lambda$ とは書かず、ギリシャ文字をそのまま書くこと（ハマったこと 163）。 */
-      /* ★ラベルは短く★ 読み出しの表はラベルを1行で切るので、長いと「火星の見か…」
-         のように途中で消える（ハマったこと 165）。 */
-      ['火星の位置', 'λ ' + fmt(qm.lam, 1) + '°　β ' + fmt(qm.bet, 2) + '°'],
-      ['地球から火星まで', fmt3(qm.d) + ' AU'],
-      ['いまの火星', P.m11.retroNow(mars, t) ? '逆行中（西へ）' : '順行中（東へ）'],
+      ['太陽の見かけの位置 $\\lambda$', fmt(qs.lam, 1) + '°'],
+      ['火星の見かけの位置 $\\lambda$', fmt(qm.lam, 1) + '°'],
+      ['火星の見かけの位置 $\\beta$', fmt(qm.bet, 2) + '°'],
+      ['地球から火星までの距離', fmt(qm.d, 3) + ' AU'],
+      ['いまの火星', P.m11.retroNow(mars, t) ? '逆行中（西へ戻っている）' : '順行中（東へ進んでいる）'],
       ['経過した時間 $t$', fmt(t, 2) + ' 年']
     ];
   }
@@ -7351,22 +6761,19 @@ DEFS['m2-2'] = {
   result: function (v, s, t) {
     var o = gravOrb(v);
     var items = [
-      /* ★「はじめの位置エネルギー U」は消した★（2026-10-03）
-         r₀ での U のことで、右の読み出しの U と同じ数字が出ていた（左右の被り）。
-         力学的エネルギー E は保存する＝決まった値なので、ここに置き、右からは消した。 */
       resItem('軌道の種類', K.kindName(o.kind)),
-      resItem('地球の質量 $M$', fmt(v.Ms, 1), false, '地球質量'),
-      resItem('はじめの距離 $r_0$', fmt(v.r02, 0), false, 'km'),
-      resItem('初速度 $v_0$', fmt3(o.v0km), false,
-        'km/s（k = ' + fmt(v.k2, 1) + '・' + fmt(v.th0, 0) + '°）'),
-      resItem('円軌道になる速さ $\\sqrt{GM/r_0}$', fmt3(o.vc), false, 'km/s'),
-      resItem('脱出速度 $\\sqrt{2GM/r_0}$', fmt3(o.ve), false, 'km/s'),
-      resItem('力学的エネルギー $E$', fmt3(o.Em), false, 'MJ')
+      resItem('地球の質量 $M$', fmt(v.Ms, 1) + ' 地球質量'),
+      resItem('はじめの距離 $r_0$', fmt(v.r02, 0) + ' km'),
+      resItem('初速度 $v_0$', fmt(o.v0km, 3) + ' km/s（k = ' + fmt(v.k2, 1) + '・向き ' + fmt(v.th0, 0) + '°）'),
+      resItem('円軌道になる速さ $\\sqrt{GM/r_0}$', fmt(o.vc, 3) + ' km/s'),
+      resItem('脱出速度 $\\sqrt{2GM/r_0}$', fmt(o.ve, 3) + ' km/s'),
+      resItem('力学的エネルギー $E$', fmt(o.Em, 3) + ' MJ'),
+      resItem('はじめの位置エネルギー $U$', fmt(P.grav.U(v.Ms, v.r02), 3) + ' MJ')
     ];
     if (o.bound) {
-      items.push(resItem('半長軸 $a$', fmt(o.a, 0), false, 'km'));
-      items.push(resItem('周期 $T$', fmt3(o.T / 60), false, '分'));
-      items.push(resItem('$K = T^2/a^3$', fmtK(o.T * o.T / (o.a * o.a * o.a)), true, 's²/km³'));
+      items.push(resItem('半長軸 $a$', fmt(o.a, 0) + ' km'));
+      items.push(resItem('周期 $T$', fmt(o.T / 60, 1) + ' 分'));
+      items.push(resItem('$K = T^2/a^3$', fmtE(o.T * o.T / (o.a * o.a * o.a), 4) + ' s²/km³', true));
     }
     var msg;
     if (o.kind === 'circle') {
@@ -7389,15 +6796,13 @@ DEFS['m2-2'] = {
     var v = V(s), o = gravOrb(v), q = P.grav.at(o, t);
     var U = P.grav.U(v.Ms, q.r);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         力学的エネルギー E は保存する（動かない）ので、下の「計算結果を表示」へ。
-         高度は距離の行にそえて1行にまとめる。
-         残した U と K は「2つ足すと E になる＝動いても和は変わらない」を見せる主役。 */
-      ['地球の中心からの距離 $r$',
-        fmt(q.r, 0) + ' km（高度 ' + fmt(q.r - P.grav.RE, 0) + ' km）'],
-      ['速さ $v$', fmt3(q.v) + ' km/s'],
-      ['位置エネルギー $U$', fmt3(U) + ' MJ'],
-      ['運動エネルギー $K$', fmt3(o.Em - U) + ' MJ'],
+      ['地球の中心からの距離 $r$', fmt(q.r, 0) + ' km'],
+      ['高度（地表から）', fmt(q.r - P.grav.RE, 0) + ' km'],
+      ['速さ $v$', fmt(q.v, 3) + ' km/s'],
+      ['万有引力 $F$', fmt(P.grav.gm(v.Ms) / (q.r * q.r) * 1000, 3) + ' N'],
+      ['位置エネルギー $U$', fmt(U, 3) + ' MJ'],
+      ['運動エネルギー $K$', fmt(o.Em - U, 3) + ' MJ'],
+      ['力学的エネルギー $E$', fmt(o.Em, 3) + ' MJ'],
       ['時刻 $t$', fmt(t / 60, 1) + ' 分']
     ];
   },
@@ -7717,16 +7122,13 @@ DEFS['m2-1'] = {
     var Kv = o.T * o.T / (o.a * o.a * o.a);
     return {
       items: [
-        /* ★$m_1r_1 = m_2r_2$ は右の読み出しから ここへ移した★（2026-10-03）
-           2つ並べても同じ数になるだけなので、1つの項目にまとめた。 */
         resItem('天体1の質量 $m_1$', m21Step(v).m1txt),
-        resItem('天体2の質量 $m_2$', '1', false, '地球質量'),
+        resItem('天体2の質量 $m_2$', '1 地球質量'),
         resItem('質量比 $m_1 : m_2$', m21Step(v).ratxt),
-        resItem('半長軸 $a$（2天体の間）', fmt3(o.a), false, 'AU'),
-        resItem('重心までの距離 $a_1 : a_2$', fmt3(o.a1) + ' : ' + fmt3(o.a2), false, 'AU'),
-        resItem('$m_1r_1 = m_2r_2$', fmt3(o.m1 / M21_ME * o.a1), false, '地球質量·AU'),
-        resItem('周期 $T$', fmt3(o.T), false, '年'),
-        resItem('$K = T^2/a^3$', fmtK(Kv), true, '年²/AU³')
+        resItem('半長軸 $a$（2天体の間）', fmt(o.a, 3) + ' AU'),
+        resItem('周期 $T$', fmtAuto(o.T, 3) + ' 年'),
+        resItem('$K = T^2/a^3$', fmtAuto(Kv, 4) + ' 年²/AU³', true),
+        resItem('重心までの距離', fmtAuto(o.a1, 3) + ' : ' + fmtAuto(o.a2, 3) + ' AU')
       ],
       note: '$K = \\dfrac{4\\pi^2}{G(m_1+m_2)}$ なので、<b>K の値は中心にある天体の質量でほぼ決まります</b>。' +
         'いまの合計質量は ' + fmtAuto(o.M / M21_ME, 0) + ' 地球質量で、K = ' + fmtAuto(Kv, 4) + '。' +
@@ -7737,15 +7139,17 @@ DEFS['m2-1'] = {
   info: function (s, t) {
     var v = V(s), o = m21Orb(v), m = DEFS['m2-1'].sample(v, t);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         $m_1r_1 = m_2r_2$ は下の「計算結果を表示」へ移した（決まった値）。
-         r₁ と r₂ は「重心までの距離」の1行にまとめ、v₁ と v₂ も1行にまとめた。 */
-      ['2天体の間の距離 $r$', fmt3(m.r) + ' AU'],
-      ['重心までの距離 $r_1 : r_2$', fmt3(m.r1) + ' : ' + fmt3(m.r2) + ' AU'],
-      ['速さ $v_1 : v_2$', fmt3(m.v1) + ' : ' + fmt3(m.v2) + ' AU/年'],
+      ['2天体の間の距離 $r$', fmt(m.r, 3) + ' AU'],
+      ['重心から天体1まで $r_1$', fmt(m.r1, 3) + ' AU'],
+      ['重心から天体2まで $r_2$', fmt(m.r2, 3) + ' AU'],
+      ['$m_1 r_1$（地球質量·AU）', fmtAuto(o.m1 / M21_ME * m.r1, 4)],
+      ['$m_2 r_2$（同じ値になる）', fmtAuto(o.m2 / M21_ME * m.r2, 4)],
+      ['天体1の速さ $v_1$', fmt(m.v1, 3) + ' AU/年'],
+      ['天体2の速さ $v_2$', fmt(m.v2, 3) + ' AU/年'],
+      ['運動量の和（いつも 0）', fmt(Math.hypot(m.px, m.py), 4)],
       /* 太陽質量・AU・年の単位系のままだと F は 10⁻⁹ ほどの数になって読めないので、
          N（ニュートン）に直して出す（M21_FN 倍する。定義は上のコメントを見ること）。 */
-      ['万有引力 $F$', fmtE(m.F * M21_FN, 2) + ' N']
+      ['万有引力 $F$', fmtE(m.F * M21_FN, 3) + ' N']
     ];
   },
   eq: function (s) {
@@ -8081,23 +7485,23 @@ DEFS['m2-3'] = {
     var o = m23Orb(v);
     var items = [
       resItem('軌道の種類', K.kindName(o.kind)),
-      resItem('打ち出す速さ $v_0$', fmt3(o.v0), false, 'km/s'),
-      resItem('$\\sqrt{gR}$（第一宇宙速度）', fmt3(o.vc), false, 'km/s'),
-      resItem('脱出速度 $\\sqrt{2}v_c$', fmt3(o.vc * Math.SQRT2), false, 'km/s'),
-      resItem('力学的エネルギー $E/m$', fmt3(o.Em), false, 'MJ/kg')
+      resItem('打ち出す速さ $v_0$', fmt(o.v0, 3) + ' km/s'),
+      resItem('$\\sqrt{gR}$（第一宇宙速度）', fmt(o.vc, 3) + ' km/s'),
+      resItem('脱出速度 $\\sqrt{2}v_c$', fmt(o.vc * Math.SQRT2, 3) + ' km/s'),
+      resItem('力学的エネルギー $E/m$', fmt(o.Em, 3) + ' MJ/kg')
     ];
     if (o.bound) {
       items = items.concat([
-        resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem('半長軸 $a$', fmt(o.a, 0), false, 'km'),
-        resItem('周期 $T$', fmt3(o.T / 60), false, '分'),
-        resItem('$K = T^2/a^3$', fmtK(o.T * o.T / (o.a * o.a * o.a)), true, 's²/km³')
+        resItem('半長軸 $a$', fmt(o.a, 0) + ' km'),
+        resItem('周期 $T$', fmt(o.T / 60, 2) + ' 分'),
+        resItem('$K = T^2/a^3$', fmtE(o.T * o.T / (o.a * o.a * o.a), 4) + ' s²/km³', true),
+        resItem('離心率 $\\varepsilon$', fmt(o.e, 3))
       ]);
     } else {
       items = items.concat([
-        resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem('周期 $T$', 'なし', false, '戻ってこない'),
-        resItem('$K = T^2/a^3$', '—', true, '閉じた軌道だけ')
+        resItem('離心率 $\\varepsilon$', fmt(o.e, 3)),
+        resItem('周期 $T$', 'なし（戻ってこない）'),
+        resItem('$K = T^2/a^3$', '—（閉じた軌道だけ）', true)
       ]);
     }
     return {
@@ -8110,13 +7514,13 @@ DEFS['m2-3'] = {
   info: function (s, t) {
     var v = V(s), o = m23Orb(v), q = o.at(t);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         E/m（保存する）と 軌道の種類 は下の「計算結果を表示」にあるので消した。
-         高度は距離の行にそえて1行にまとめる。 */
-      ['距離 $r$', fmt(q.r, 0) + ' km（高度 ' + fmt(q.r - M23.R, 0) + ' km）'],
-      ['速さ $v$', fmt3(q.v) + ' km/s'],
-      ['運動エネルギー $K/m$', fmt3(q.v * q.v / 2) + ' MJ/kg'],
-      ['位置エネルギー $U/m$', fmt3(-M23.GM / q.r) + ' MJ/kg'],
+      ['距離 $r$', fmt(q.r, 0) + ' km'],
+      ['高度（地表から）', fmt(q.r - M23.R, 0) + ' km'],
+      ['速さ $v$', fmt(q.v, 3) + ' km/s'],
+      ['運動エネルギー $K/m$', fmt(q.v * q.v / 2, 3) + ' MJ/kg'],
+      ['位置エネルギー $U/m$', fmt(-M23.GM / q.r, 3) + ' MJ/kg'],
+      ['力学的エネルギー $E/m$', fmt(o.Em, 3) + ' MJ/kg'],
+      ['軌道の種類', K.kindName(o.kind)],
       ['時刻 $t$', fmt(t / 60, 1) + ' 分']
     ];
   },
@@ -8458,18 +7862,13 @@ DEFS['m2-4'] = {
     var rgeo = P.m24.rGeo();
     return {
       items: [
-        /* ★向心加速度 v²/r と GM/r² は、右の読み出しから ここへ移した★（2026-10-03）
-           円軌道なのでどちらも変わらない値で、「2つが同じ数になる」ことが見どころ。
-           並べて置いたほうが見くらべやすい。 */
-        resItem('地上からの高度', fmt(v.h4, 0), false, 'km'),
-        resItem('半長軸 $a$（＝半径 $r$）', fmt(r, 0), false, 'km'),
-        resItem('速さ $v$', fmt3(P.m24.v(r)), false, 'km/s'),
-        resItem('向心加速度 $v^2/r$', fmt3(P.m24.v(r) * P.m24.v(r) / r * 1000), false, 'm/s²'),
-        resItem('その場所の $GM/r^2$', fmt3(P.m24.GM / (r * r) * 1000), false, 'm/s²'),
-        resItem('周期 $T$', fmt3(T / 3600), false, '時間'),
-        resItem('$K = T^2/a^3$', fmtK(T * T / (r * r * r)), true, 's²/km³'),
-        resItem('地球の自転周期', fmt3(P.m24.TDAY / 3600), false, '時間'),
-        resItem('静止軌道までの差', fmt(r - rgeo, 0), false, 'km')
+        resItem('地上からの高度', fmt(v.h4, 0) + ' km'),
+        resItem('半長軸 $a$（＝半径 $r$）', fmt(r, 0) + ' km'),
+        resItem('周期 $T$', fmt(T / 3600, 3) + ' 時間'),
+        resItem('$K = T^2/a^3$', fmtE(T * T / (r * r * r), 4) + ' s²/km³', true),
+        resItem('速さ $v$', fmt(P.m24.v(r), 3) + ' km/s'),
+        resItem('地球の自転周期', fmt(P.m24.TDAY / 3600, 3) + ' 時間'),
+        resItem('静止軌道までの差', fmt(r - rgeo, 0) + ' km')
       ],
       note: Math.abs(T - P.m24.TDAY) / P.m24.TDAY < 0.01
         ? '<b>周期と自転がそろいました＝静止衛星</b>（r = 42164 km、高度 35793 km）。地上から見ると空の一点に止まって見えます。'
@@ -8480,12 +7879,13 @@ DEFS['m2-4'] = {
   info: function (s, t) {
     var v = V(s), r = P.m24.R + v.h4, T = P.m24.T(r);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         このシムは円軌道なので、r・v・T・v²/r はどれも変わらない「決まった値」。
-         ぜんぶ下の「計算結果を表示」へ移し、ここには時間とともに増える数だけ残した。 */
-      ['地球の中心からの距離 $r$', fmt(r, 0) + ' km（高度 ' + fmt(v.h4, 0) + ' km）'],
-      ['1日で回る回数', fmt3(P.m24.TDAY / T) + ' 周'],
-      ['いままでに回った数', fmt(t / T, 2) + ' 周'],
+      ['地球の中心からの距離 $r$', fmt(r, 0) + ' km'],
+      ['高度', fmt(v.h4, 0) + ' km'],
+      ['周期 $T$', fmt(T / 3600, 3) + ' 時間'],
+      ['速さ $v$', fmt(P.m24.v(r), 3) + ' km/s'],
+      ['向心加速度 $v^2/r$', fmt(P.m24.v(r) * P.m24.v(r) / r * 1000, 4) + ' m/s²'],
+      ['その場所の $GM/r^2$', fmt(P.m24.GM / (r * r) * 1000, 4) + ' m/s²'],
+      ['1日で回る回数', fmt(P.m24.TDAY / T, 2) + ' 周'],
       ['時刻 $t$', fmt(t / 3600, 2) + ' 時間']
     ];
   },
@@ -8765,13 +8165,11 @@ DEFS['m2-5'] = {
     var sp = P.m25.sunSpeeds(B.h, M25.Vp, v.ang * DEG);
     return {
       items: [
-        /* ★遠方での相対速さ v∞ は、右の読み出しから ここへ移した★（2026-10-03） */
-        resItem('遠方での相対速さ $v_\\infty$', fmt3(v.vinf), false, 'km/s'),
-        resItem('曲がる角 $\\delta$', fmt3(B.h.delta / DEG), false, '°'),
-        resItem('最接近の距離', fmtE(B.h.q, 2), false, 'km（半径の ' + fmt(B.h.q / M25.Rp, 1) + ' 倍）'),
-        resItem('太陽から見た速さ（前）', fmt3(sp.vin), false, 'km/s'),
-        resItem('太陽から見た速さ（後）', fmt3(sp.vout), false, 'km/s'),
-        resItem('速さの変化', (sp.gain >= 0 ? '+' : '') + fmt3(sp.gain), true, 'km/s')
+        resItem('曲がる角 $\\delta$', fmt(B.h.delta / DEG, 2) + '°'),
+        resItem('最接近の距離', fmtE(B.h.q, 3) + ' km（半径の ' + fmt(B.h.q / M25.Rp, 1) + ' 倍）'),
+          resItem('太陽から見た速さ（前）', fmt(sp.vin, 3) + ' km/s'),
+        resItem('太陽から見た速さ（後）', fmt(sp.vout, 3) + ' km/s'),
+        resItem('速さの変化', (sp.gain >= 0 ? '+' : '') + fmt(sp.gain, 3) + ' km/s', true)
       ],
       note: '惑星から見た速さは前も後も <b>' + fmt(v.vinf, 1) + ' km/s</b> のまま（エネルギー保存）。' +
         'それでも太陽から見ると <b>' + fmt(sp.vin, 2) + ' → ' + fmt(sp.vout, 2) + ' km/s</b> に変わります。' +
@@ -8782,12 +8180,13 @@ DEFS['m2-5'] = {
     var v = V(s), B = m25Build(m25V(v)), q = B.at(t);
     var sp = P.m25.sunSpeeds(B.h, M25.Vp, v.ang * DEG);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         v∞・曲がる角 δ・最接近の距離・速さの変化 は、どれも軌道が決まれば決まる値。
-         下の「計算結果を表示」にまとめ、右からは消した（左右の被り）。 */
-      ['惑星からの距離 $r$', fmtE(q.r, 2) + ' km'],
-      ['惑星から見た速さ', fmt3(q.rel.v) + ' km/s'],
-      ['太陽から見た速さ', fmt3(q.sun.v) + ' km/s'],
+      ['惑星からの距離 $r$', fmtE(q.r, 3) + ' km'],
+      ['惑星から見た速さ', fmt(q.rel.v, 3) + ' km/s'],
+      ['太陽から見た速さ', fmt(q.sun.v, 3) + ' km/s'],
+      ['遠方での相対速さ $v_\\infty$', fmt(v.vinf, 1) + ' km/s'],
+      ['曲がる角 $\\delta$', fmt(B.h.delta / DEG, 2) + '°'],
+      ['最接近の距離', fmtE(B.h.q, 3) + ' km'],
+      ['太陽から見た速さの変化', (sp.gain >= 0 ? '+' : '') + fmt(sp.gain, 3) + ' km/s'],
       ['最接近からの時間', fmt((t - B.T0) / 86400, 2) + ' 日']
     ];
   },
@@ -9237,21 +8636,21 @@ DEFS['m3-1'] = {
       /* ★解説（probs）から参照している項目は、かならずここに置くこと★
          （もとの (1)「地表での g を求めよ」は先生の指示でカットしたので、
            そのためだけに置いていた「地表での F/m」の項目も外した。） */
-      resItem('打ち上げの速さ $v_0=\\sqrt{gR}$', fmt3(Math.sqrt(gR)), false, 'km/s'),
-      resItem("加えた $E\'$", fmt3(v.eq), false, 'mgR'),
-      resItem('点 A での速さ $v$', fmt3(o.v), false, 'km/s'),
-      resItem('軌道の種類', K.kindName(o.kind) + (o.hit ? '（落ちる）' : '')),
-      resItem('力学的エネルギー $E/m$', fmt3(o.Em), false, 'MJ/kg'),
-      resItem('面積速度 $\\frac{1}{2}rv_\\perp$', fmt(0.5 * o.L, 0), true, 'km²/s')
+      resItem('打ち上げの速さ $v_0=\\sqrt{gR}$', fmt(Math.sqrt(gR), 3) + ' km/s'),
+      resItem("加えた $E\'$", fmt(v.eq, 3) + ' mgR'),
+      resItem('点 A での速さ $v$', fmt(o.v, 3) + ' km/s'),
+      resItem('軌道の種類', K.kindName(o.kind) + (o.hit ? '（地球に落ちる）' : '')),
+      resItem('力学的エネルギー $E/m$', fmt(o.Em, 3) + ' MJ/kg'),
+      resItem('面積速度 $\\frac{1}{2}rv_\\perp$', fmt(0.5 * o.L, 0) + ' km²/s', true)
     ];
     if (o.bound) {
       items = items.concat([
-        resItem('近地点 $r_{\\text{近}}$', fmt3(o.q / R), false, 'R'),
-        resItem('遠地点 $r_{\\text{遠}}$', fmt3(o.ra / R), false, 'R'),
-        resItem('点 B の速さ $V$', fmt3(o.L / o.ra), false, 'km/s'),
-        resItem('半長軸 $a$', fmt3(o.a / R), false, 'R'),
-        resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem('周期 $T$', fmt3(o.T / 60), true, '分')
+        resItem('近地点 $r_{\\text{近}}$', fmt(o.q / R, 3) + ' R'),
+        resItem('遠地点 $r_{\\text{遠}}$', fmt(o.ra / R, 3) + ' R'),
+        resItem('点 B の速さ $V$', fmt(o.L / o.ra, 3) + ' km/s'),
+        resItem('半長軸 $a$', fmt(o.a / R, 3) + ' R'),
+        resItem('周期 $T$', fmt(o.T / 60, 1) + ' 分', true),
+        resItem('離心率 $\\varepsilon$', fmt(o.e, 3))
       ]);
     }
     var note;
@@ -9274,13 +8673,11 @@ DEFS['m3-1'] = {
   info: function (s, t) {
     var v = V(s), o = m31Orb(v), q = P.m31.at(o, t);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         「加えた E'」と「点 A での速さ v」は下の「計算結果を表示」にもあって二重だった。
-         $r\,v_\perp$ は「どこでも同じ値になる」のが見どころなので、ここに残す。 */
-      /* ★$r\,v_\perp$ も消した★ 下の「面積速度 $\frac12 rv_\perp$」のちょうど2倍で、
-         35633 と 71267 が左右に並ぶと「どっちが面積速度？」と迷うため。 */
-      ['いまの距離 $r$', fmt3(q.r / M31.R) + ' R'],
-      ['いまの速さ $v$', fmt3(q.v) + ' km/s'],
+      ['加えた $E\'$', fmt(v.eq, 3) + ' mgR'],
+      ['点 A での速さ $v$', fmt(o.v, 3) + ' km/s'],
+      ['いまの距離 $r$', fmt(q.r / M31.R, 3) + ' R'],
+      ['いまの速さ $v$', fmt(q.v, 3) + ' km/s'],
+      ['$r\\,v_\\perp$', fmt(q.r * q.vt, 0) + ' km²/s'],
       ['時刻 $t$', fmt(t / 60, 1) + ' 分']
     ];
   },
@@ -9748,26 +9145,23 @@ DEFS['m3-2'] = {
     var v3R = Math.sqrt(2 * GM * (1 / R - 1 / (3 * R)));
     function spd(x) { return Math.sqrt(Math.max(0, 2 * (h.E - P.m32.U(x)))); }
     var items = [
-      /* ★「地表（x=R）での速さ」だけ消した★（2026-10-03）
-         「中心での速さ」とほぼ同じ話で、項目が9個も並ぶ原因になっていた。
-         ★「x=3R に届く最小の初速度」と「地表での F/m」は消してはいけない★——
-           解説の @@r:…@@ の飛び先になっている（run_test が落ちる）。 */
-      resItem('はじめの位置 $x_0$', fmt(h.x0, 0), false, 'km（' + fmt(v.x0R, 1) + ' R）'),
-      resItem('はじめの速さ $v_0$', fmt3(v.v0), false, 'km/s'),
-      resItem('力学的エネルギー $E/m$', fmt3(h.E), true, 'MJ/kg'),
-      resItem('その場所の脱出速度', fmt3(P.m32.vEsc(h.x0)), false, 'km/s'),
-      resItem('中心での速さ', fmt3(spd(0)), false, 'km/s'),
-      resItem('地表での $F/m$（＝$g$）', fmt3(g), false, 'm/s²'),
-      resItem('$\\sqrt{gR}$（第一宇宙速度）', fmt3(Math.sqrt(GM / R)), false, 'km/s'),
-      resItem('$x=3R$ に届く最小の初速度', fmt3(v3R), false, 'km/s')
+      resItem('はじめの位置 $x_0$', fmt(h.x0, 0) + ' km（' + fmt(v.x0R, 1) + ' R）'),
+      resItem('はじめの速さ $v_0$', fmt(v.v0, 1) + ' km/s'),
+      resItem('力学的エネルギー $E/m$', fmt(h.E, 2) + ' MJ/kg', true),
+      resItem('その場所の脱出速度', fmt(P.m32.vEsc(h.x0), 3) + ' km/s'),
+      resItem('中心での速さ', fmt(spd(0), 3) + ' km/s'),
+      resItem('地表（$x=R$）での速さ', fmt(spd(R), 3) + ' km/s'),
+      resItem('地表での $F/m$（＝$g$）', fmt(g, 2) + ' m/s²'),
+      resItem('$\\sqrt{gR}$（第一宇宙速度）', fmt(Math.sqrt(GM / R), 3) + ' km/s'),
+      resItem('$x=3R$ に届く最小の初速度', fmt(v3R, 3) + ' km/s')
     ];
     if (h.bound) {
-      items.splice(3, 0, resItem('周期 $T$', fmt3(h.T / 60), true, '分'));
+      items.splice(3, 0, resItem('周期 $T$', fmt(h.T / 60, 2) + ' 分', true));
       items.splice(4, 0, resItem('いちばん遠くまで $x_{max}$',
-        fmt3(h.inside ? h.A / R : h.xmax / R), false, 'R'));
+        fmt(h.inside ? h.A / R : h.xmax / R, 2) + ' R'));
     }
     items.splice(h.bound ? 6 : 4, 0,
-      resItem('内側だけの周期 $2\\pi\\sqrt{R/g}$', fmt3(P.m32.Tin() / 60), true, '分'));
+      resItem('内側だけの周期 $2\\pi\\sqrt{R/g}$', fmt(P.m32.Tin() / 60, 2) + ' 分', true));
     var note;
     if (!h.bound) {
       note = '<b>$E \\ge 0$ なので、もう二度と戻ってきません。</b>' +
@@ -9788,12 +9182,11 @@ DEFS['m3-2'] = {
   info: function (s, t) {
     var v = V(s), h = m32H(v), q = P.m32.at(h, t);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         周期 T は下の「計算結果を表示」にもあって二重だったので、ここからは消した。 */
-      ['いまの位置 $x$', fmt3(q.x / M32.R) + ' R'],
-      ['いまの速さ $|v|$', fmt3(Math.abs(q.v)) + ' km/s'],
-      ['いまの $F/m$', fmt3(P.m32.F(q.x)) + ' m/s²'],
+      ['いまの位置 $x$', fmt(q.x / M32.R, 3) + ' R'],
+      ['いまの速さ $|v|$', fmt(Math.abs(q.v), 3) + ' km/s'],
+      ['いまの $F/m$', fmt(P.m32.F(q.x), 3) + ' m/s²'],
       ['いる場所', q.zone === 'in' ? '地球の中（単振動）' : '地球の外（万有引力）'],
+      ['周期 $T$', fmt(h.T / 60, 2) + ' 分'],
       ['時刻 $t$', fmt(t / 60, 2) + ' 分']
     ];
   },
@@ -10224,22 +9617,17 @@ DEFS['m3-3'] = {
     var h = m33H(v);
     return {
       items: [
-        /* ★「月の速さ（【B】）」「地球の速さ（【B】）」は消した★（2026-10-03）
-           右の読み出しに同じ数字が出ていた（左右の被り）。
-           ★「月の速さ（【A】）」は消してはいけない★——解説の @@r:…@@ の飛び先。
-           角速度 ω の2つは、動かない値なので右からここへ移した。 */
-        resItem('距離 $r_0$', fmtE(h.r0, 2), false, 'km'),
-        resItem('万有引力 $F/m$', fmt3(h.Fm), false, 'm/s²'),
-        resItem('【A】角速度 $\\omega$', fmtE(h.wA, 2), false, 'rad/s'),
-        resItem('【B】角速度 $\\omega$', fmtE(h.wB, 2), false, 'rad/s'),
-        resItem('【A】周期 $T$', fmt3(h.TA / M33_DAY), true, '日'),
-        resItem('【B】周期 $T$', fmt3(h.TB / M33_DAY), true, '日'),
-        resItem('2つの周期の違い', fmt3((h.TA / h.TB - 1) * 100), false, '%'),
-        resItem('月の速さ（【A】）', fmt3(h.vA), false, 'km/s'),
-        resItem('共通重心 $r_1$', fmt(h.r1, 0), false,
-          'km' + (h.r1 < M33.R ? '（地球の中）' : '（地球の外）')),
-        resItem('月の $E/m$（【A】）', fmt3(h.EmA), false, 'MJ/kg'),
-        resItem('月の脱出速度', fmt3(h.vEsc), false, 'km/s')
+        resItem('距離 $r_0$', fmtAuto(h.r0, 0) + ' km'),
+        resItem('万有引力 $F/m$', fmt(h.Fm, 5) + ' m/s²'),
+        resItem('【A】周期 $T$', fmt(h.TA / M33_DAY, 3) + ' 日', true),
+        resItem('【B】周期 $T$', fmt(h.TB / M33_DAY, 3) + ' 日', true),
+        resItem('2つの周期の違い', fmt((h.TA / h.TB - 1) * 100, 2) + ' %'),
+        resItem('月の速さ（【A】）', fmt(h.vA, 3) + ' km/s'),
+        resItem('月の速さ（【B】）', fmt(h.v2, 3) + ' km/s'),
+        resItem('地球の速さ（【B】）', fmt(h.v1 * 1000, 1) + ' m/s'),
+        resItem('共通重心 $r_1$', fmtAuto(h.r1, 0) + ' km' + (h.r1 < M33.R ? '（地球の中）' : '（地球の外）')),
+        resItem('月の $E/m$（【A】）', fmt(h.EmA, 3) + ' MJ/kg'),
+        resItem('月の脱出速度', fmt(h.vEsc, 3) + ' km/s')
       ],
       note: '<b>【A】と【B】の周期の違いは ' + fmt((h.TA / h.TB - 1) * 100, 2) + ' %。</b>' +
         (h.mu < 0.05
@@ -10255,10 +9643,11 @@ DEFS['m3-3'] = {
     var v = V(s), h = m33H(v);
     var a = P.m33.atA(h, t), b = P.m33.atB(h, t);
     return [
-      /* ★右は「動いている値」だけ★（先生の指示・2026-10-03）
-         角速度 ω は変わらない値なので、下の「計算結果を表示」へ移した。 */
-      ['【B】月の速さ $v$', fmt3(Math.hypot(b.m.vx, b.m.vy)) + ' km/s'],
-      ['【B】地球の速さ', fmt3(Math.hypot(b.e.vx, b.e.vy) * 1000) + ' m/s'],
+      ['【A】月の速さ $v$', fmt(Math.hypot(a.m.vx, a.m.vy), 3) + ' km/s'],
+      ['【B】月の速さ $v$', fmt(Math.hypot(b.m.vx, b.m.vy), 3) + ' km/s'],
+      ['【B】地球の速さ', fmt(Math.hypot(b.e.vx, b.e.vy) * 1000, 1) + ' m/s'],
+      ['【A】角速度 $\\omega$', fmtE(h.wA, 3) + ' rad/s'],
+      ['【B】角速度 $\\omega$', fmtE(h.wB, 3) + ' rad/s'],
       ['経過した時間 $t$', fmt(t / M33_DAY, 2) + ' 日']
     ];
   },
@@ -10817,13 +10206,13 @@ DEFS['m4-2'] = {
     var w0 = 2.2, r0 = 0.85;
     return {
       items: [
-        /* ★ここは「腕を変えても変わらない値」だけにする★（2026-10-03）
-           腕の長さ r・角速度 ω・手の速さ v は、スライドバーを動かすとすぐ変わるので
-           右の読み出しにまかせた（前は左右にまったく同じ数字が出ていた）。 */
-        resItem('1秒あたりの回転数', fmt3(w / TAU), false, '回転/秒'),
-        resItem('角運動量 $L = mr^2\\omega$', fmt3(m * v.arm * v.arm * w), true, 'kg·m²/s'),
-        resItem('はじめの $L$', fmt3(m * r0 * r0 * w0), true, 'kg·m²/s'),
-        resItem('面積速度 $L/2m$', fmt3(v.arm * v.arm * w / 2), true, 'm²/s')
+        resItem('腕の長さ $r$', fmt(v.arm, 2) + ' m'),
+        resItem('角速度 $\\omega$', fmt(w, 3) + ' rad/s'),
+        resItem('1秒あたりの回転数', fmt(w / TAU, 2) + ' 回転/秒'),
+        resItem('手の速さ $v = r\\omega$', fmt(v.arm * w, 3) + ' m/s'),
+        resItem('角運動量 $L = mr^2\\omega$', fmt(m * v.arm * v.arm * w, 4) + ' kg·m²/s', true),
+        resItem('はじめの $L$', fmt(m * r0 * r0 * w0, 4) + ' kg·m²/s', true),
+        resItem('面積速度 $L/2m$', fmt(v.arm * v.arm * w / 2, 4) + ' m²/s', true)
       ],
       note: '<b>腕の長さ $r$ をどう変えても、$L$ の2つの値はぴったり同じ</b>——' +
         'これが<b>角運動量保存</b>です。<br>' +
@@ -10834,12 +10223,11 @@ DEFS['m4-2'] = {
   info: function (s, t) {
     var v = V(s), w = m42Om(v), m = 2.0;
     return [
-      /* ★右は「腕を変えるとすぐ変わる値」だけ★（先生の指示・2026-10-03）
-         角運動量 L と 面積速度 L/2m は「変わらない」のが見どころなので、
-         下の「計算結果を表示」にまとめた（前はここにも同じ数字が出ていた）。 */
       ['腕の長さ $r$', fmt(v.arm, 2) + ' m'],
-      ['角速度 $\\omega$', fmt3(w) + ' rad/s'],
-      ['手の速さ $v = r\\omega$', fmt3(v.arm * w) + ' m/s'],
+      ['角速度 $\\omega$', fmt(w, 3) + ' rad/s'],
+      ['手の速さ $v = r\\omega$', fmt(v.arm * w, 3) + ' m/s'],
+      ['角運動量 $L$', fmt(m * v.arm * v.arm * w, 4) + ' kg·m²/s'],
+      ['面積速度 $L/2m$', fmt(v.arm * v.arm * w / 2, 4) + ' m²/s'],
       ['時刻 $t$', fmt(t, 2) + ' 秒']
     ];
   },
@@ -11060,16 +10448,15 @@ DEFS['m4-3'] = {
     var p = planetById('halley'), o = pElems(p), q = planetXY(p, t);
     return {
       items: [
-        /* ★「いまの距離 r」は消した★（2026-10-03）
-           右の読み出しの「太陽からの距離 r」と同じ数字だった（左右の被り）。 */
-        resItem('半長軸 $a$', fmt3(p.a), false, 'AU'),
-        resItem('離心率 $\\varepsilon$', fmt3(p.e)),
-        resItem('近日点 $r_{\\text{近}}$', fmt3(o.rp), false, 'AU'),
-        resItem('遠日点 $r_{\\text{遠}}$', fmt3(o.ra), false, 'AU'),
-        resItem('近日点の速さ', fmt3(o.vp * 4.7405), false, 'km/s'),
-        resItem('遠日点の速さ', fmt3(o.va * 4.7405), false, 'km/s'),
-        resItem('周期 $T$', fmt3(p.T), false, '年'),
-        resItem('$K = T^2/a^3$', fmtK(p.T * p.T / (p.a * p.a * p.a)), true, '年²/AU³')
+        resItem('半長軸 $a$', fmt(p.a, 3) + ' AU'),
+        resItem('離心率 $\\varepsilon$', fmt(p.e, 4)),
+        resItem('周期 $T$', fmt(p.T, 2) + ' 年'),
+        resItem('$K = T^2/a^3$', fmt(p.T * p.T / (p.a * p.a * p.a), 4) + ' 年²/AU³', true),
+        resItem('近日点 $r_{\\text{近}}$', fmt(o.rp, 3) + ' AU'),
+        resItem('遠日点 $r_{\\text{遠}}$', fmt(o.ra, 2) + ' AU'),
+        resItem('近日点の速さ', fmt(o.vp * 4.7405, 1) + ' km/s'),
+        resItem('遠日点の速さ', fmt(o.va * 4.7405, 2) + ' km/s'),
+        resItem('いまの距離 $r$', fmt(q.r, 2) + ' AU')
       ],
       note: '<b>$r_{\\text{近}}v_{\\text{近}} = ' + fmt(o.rp * o.vp, 3) + '$、' +
         '$r_{\\text{遠}}v_{\\text{遠}} = ' + fmt(o.ra * o.va, 3) + '$</b>——ぴったり同じです（面積速度一定）。' +
@@ -11080,9 +10467,9 @@ DEFS['m4-3'] = {
   info: function (s, t) {
     var p = planetById('halley'), q = planetXY(p, t);
     return [
-      ['太陽からの距離 $r$', fmt3(q.r) + ' AU'],
-      ['速さ $v$', fmt3(q.v * 4.7405) + ' km/s'],
-      ['$r\\,v_\\perp$（どこでも同じ）', fmt3(q.r * q.st.vt) + ' AU²/年'],
+      ['太陽からの距離 $r$', fmt(q.r, 3) + ' AU'],
+      ['速さ $v$', fmt(q.v * 4.7405, 2) + ' km/s'],
+      ['$r\\,v_\\perp$（面積速度の2倍）', fmt(q.r * q.st.vt, 3) + ' AU²/年'],
       ['経過した時間 $t$', fmt(t, 1) + ' 年']
     ];
   },
@@ -11443,14 +10830,14 @@ DEFS['m4-4'] = {
     if (v.topic === 1) {
       var h = m44BH(v);
       items = [
-        resItem('星の質量 $M$', fmtE(h.Ms, 2), false, '太陽質量'),
-        resItem('シュワルツシルト半径 $r_s$', fmtE(h.rs, 2), true, 'km'),
-        resItem('光を出す場所 $r_0$', fmt(v.r0k, 1), false, 'rs（' + fmtE(h.r0, 2) + ' km）'),
-        resItem('そこでの脱出速度', fmt3(h.vesc / P.m44.c), false, '× 光の速さ'),
-        resItem('光の粒の $E/m$', fmtE(h.Em, 2), false, 'km²/s²'),
-        resItem('結果', h.out ? '出ていける' : '戻ってくる', true, h.out ? 'E ≥ 0' : 'E < 0'),
-        resItem('太陽の $r_s$', '2.95', false, 'km'),
-        resItem('地球の $r_s$', '8.87', false, 'mm')
+        resItem('星の質量 $M$', fmtE(h.Ms, 2) + ' 太陽質量'),
+        resItem('シュワルツシルト半径 $r_s$', fmtE(h.rs, 3) + ' km', true),
+        resItem('光を出す場所 $r_0$', fmt(v.r0k, 1) + ' rs（' + fmtE(h.r0, 3) + ' km）'),
+        resItem('そこでの脱出速度', fmt(h.vesc / P.m44.c, 3) + ' × 光の速さ'),
+        resItem('光の粒の $E/m$', fmtE(h.Em, 3) + ' km²/s²'),
+        resItem('結果', h.out ? '出ていける（E ≥ 0）' : '戻ってくる（E < 0）', true),
+        resItem('太陽の $r_s$', '2.953 km'),
+        resItem('地球の $r_s$', '8.87 mm')
       ];
       note = h.out
         ? '<b>$r_0>r_s$ なので、光は出ていけます。</b>' +
@@ -11463,15 +10850,13 @@ DEFS['m4-4'] = {
     } else if (v.topic === 2) {
       var vd = P.m44.vRot(v.rk, v.kdm), v0 = P.m44.vRot(v.rk, 0);
       items = [
-        /* ★半径 r と 2つの v は右の読み出しにもあるが、ここでは「1周する時間」
-           「内側の質量」と見くらべる基準になるので、ここだけに置いて右から消した。 */
-        resItem('半径 $r$', fmt(v.rk, 0), false, 'kpc'),
-        resItem('見える星だけの $v$', fmt(v0, 0), false, 'km/s'),
-        resItem('ダークマター込みの $v$', fmt(vd, 0), true, 'km/s'),
-        resItem('1周する時間（込み）', fmt3(P.m44.Trot(v.rk, v.kdm)), false, '億年'),
-        resItem('1周する時間（見える星だけ）', fmt3(P.m44.Trot(v.rk, 0)), false, '億年'),
-        resItem('内側の質量（見える）', fmt3(P.m44.Mvis(v.rk)), false, '×10¹⁰ 太陽質量'),
-        resItem('内側の質量（ダーク）', fmt3(P.m44.Mdm(v.rk, v.kdm)), true, '×10¹⁰ 太陽質量')
+        resItem('半径 $r$', fmt(v.rk, 0) + ' kpc'),
+        resItem('見える星だけの $v$', fmt(v0, 0) + ' km/s'),
+        resItem('ダークマター込みの $v$', fmt(vd, 0) + ' km/s', true),
+        resItem('1周する時間（込み）', fmt(P.m44.Trot(v.rk, v.kdm), 2) + ' 億年'),
+        resItem('1周する時間（見える星だけ）', fmt(P.m44.Trot(v.rk, 0), 2) + ' 億年'),
+        resItem('内側の質量（見える）', fmt(P.m44.Mvis(v.rk), 1) + ' ×10¹⁰ 太陽質量'),
+        resItem('内側の質量（ダーク）', fmt(P.m44.Mdm(v.rk, v.kdm), 1) + ' ×10¹⁰ 太陽質量', true)
       ];
       note = '<b>$v=\\sqrt{GM(<r)/r}$ を逆に読むと、$v$ から $M$ が分かります。</b>' +
         '外側でも $v$ が落ちない＝<b>外側にも質量がある</b>ということ。' +
@@ -11480,16 +10865,14 @@ DEFS['m4-4'] = {
       var tH = P.m44.tH(), te = P.m44.tauEnd(v.om);
       items = [
         resItem('$\\Omega$（中身の濃さ）', fmt(v.om, 2)),
-        resItem('宇宙の力学的エネルギー $E$', v.om < 1 ? '正' : (v.om > 1 ? '負' : '0'), true,
-          v.om < 1 ? 'E > 0' : (v.om > 1 ? 'E < 0' : 'E = 0')),
-        resItem('運命', v.om < 1 ? '永遠に広がる' : (v.om > 1 ? 'いつか縮む' : 'ぎりぎり広がる'), true,
-          v.om > 1 ? 'ビッグクランチ' : ''),
-        resItem('この式での宇宙の年齢', fmt(P.m44.tau0(v.om) * tH, 0), false, '億年'),
-        resItem('ハッブル時間 $1/H_0$', fmt(tH, 0), false, '億年')
+        resItem('宇宙の力学的エネルギー $E$', v.om < 1 ? '正（E > 0）' : (v.om > 1 ? '負（E < 0）' : '0'), true),
+        resItem('運命', v.om < 1 ? '永遠に広がる' : (v.om > 1 ? 'いつか縮む（ビッグクランチ）' : 'ぎりぎり広がる'), true),
+        resItem('この式での宇宙の年齢', fmt(P.m44.tau0(v.om) * tH, 0) + ' 億年'),
+        resItem('ハッブル時間 $1/H_0$', fmt(tH, 0) + ' 億年')
       ];
       if (isFinite(te)) {
-        items.push(resItem('いちばん大きくなる $a$', fmt3(P.m44.aMax(v.om)), false, '倍'));
-        items.push(resItem('つぶれるまで', fmt(te * tH, 0), true, '億年'));
+        items.push(resItem('いちばん大きくなる $a$', fmt(P.m44.aMax(v.om), 2) + ' 倍'));
+        items.push(resItem('つぶれるまで', fmt(te * tH, 0) + ' 億年', true));
       }
       note = '<b>$E$ の符号が、そのまま宇宙の運命です。</b>' +
         'まっすぐ投げ上げたボールが、速ければ二度と戻らず、おそければ落ちてくるのと同じ。<br>' +
@@ -11503,18 +10886,17 @@ DEFS['m4-4'] = {
     if (v.topic === 1) {
       var h = m44BH(v);
       return [
-        /* ★右は「動いている値」だけ★（2026-10-03）。rs と 脱出速度 は
-           下の「計算結果を表示」にあるので消した（左右の被り）。 */
-        ['いまの距離 $r$',
-          fmt3(m44BHr(h, t) / h.rs) + ' rs（' + fmtE(m44BHr(h, t), 2) + ' km）'],
-        ['光の粒はいま', m44BHr(h, t) > h.rs ? '境界線の外' : '境界線の中'],
-        ['経過した時間 $t$', fmtE(t, 2) + ' s']
+        ['$r_s = 2GM/c^2$', fmtE(h.rs, 3) + ' km'],
+        ['いまの距離 $r$', fmt(m44BHr(h, t) / h.rs, 2) + ' rs'],
+        ['そこでの脱出速度', fmt(h.vesc / P.m44.c, 3) + ' c（光の速さ）']
       ];
     }
     if (v.topic === 2) {
-      /* ★この話題は時間で動く値がない★（半径 r のスライドバーだけ）。
-         数字は下の「計算結果を表示」にまとめたので、右は出さない。 */
-      return [];
+      return [
+        ['半径 $r$', fmt(v.rk, 0) + ' kpc'],
+        ['$v$（ダーク込み）', fmt(P.m44.vRot(v.rk, v.kdm), 0) + ' km/s'],
+        ['$v$（見える星だけ）', fmt(P.m44.vRot(v.rk, 0), 0) + ' km/s']
+      ];
     }
     return [
       ['$\\Omega$', fmt(v.om, 2)],
@@ -12478,7 +11860,7 @@ DEFS['m4-5'] = {
     return {
       items: [
         resItem('自転の周期', '23 時間 56 分 4 秒'),
-        resItem('赤道の上の速さ', fmt(TAU * G.RE / G.TROT * 1000, 0), false, 'm/s')
+        resItem('赤道の上の速さ', fmt(TAU * G.RE / G.TROT * 1000, 0) + ' m/s')
       ],
       table: {
         /* ★表の見出しは「ふつうの文字」で書く★ 数式（$…$）としては組まれない */
@@ -13503,12 +12885,9 @@ function buildTabsFull() {
   var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[st.cur];
   mt.innerHTML = '';
   var curBtn = null, curMode = null;
-  MODES.forEach(function (M, i) {
+  MODES.forEach(function (M) {
     var b = document.createElement('button');
-    /* ★番号（①②③④）は CSS の ::before で出す★（デザイン移植・2026-10）
-       文字（M.label）からは番号を取りのぞいて、名前だけにする。 */
-    b.textContent = String(M.label).replace(/^\d+\s*/, '');
-    b.setAttribute('data-n', '①②③④⑤⑥⑦⑧⑨'.charAt(i));
+    b.textContent = M.label;
     if (M.n === cur.mode) { b.className = 'on'; curBtn = b; curMode = M; }
     b.addEventListener('click', function () {
       if (M.n !== DEFS[st.cur].mode) gotoSim(M.ids[0]);
@@ -13526,12 +12905,9 @@ function buildTabsFull() {
     var bar = $('tabbar') || mt;
     bar.parentNode.insertBefore(tip, bar.nextSibling);
   }
-  /* ★章の扉★（デザイン移植・2026-10）
-     丸の中の章番号（serif）＋「Chapter 01 — 英字」＋モード名＋ひとこと。
-     文言（M.label・M.tip）は1文字も変えていない。 */
-  tip.innerHTML = curMode ? modeHeadHtml(curMode) : '';
-  renderMath(tip);
+  tip.innerHTML = (curMode && curMode.tip) ? curMode.tip : '';
   st._tipBtn = curBtn;
+  placeModeTip();
   stb.innerHTML = '';
   MODES.forEach(function (M) {
     if (M.n !== cur.mode) return;
@@ -13561,31 +12937,22 @@ function renderLegend(d) {
   });
 }
 
-/* ===== 章の扉（#modetip）の中身 =====
-   ★モード名とひとことは MODES から取る（文言は書きかえない）★
-   英字の副題だけ、このページ用に決めてある（先生の確認ずみ・2026-10-03）。 */
-var MODE_EN = ["Kepler's Laws", 'Universal Gravitation & Orbits',
-  'University Entrance Problems', 'Beyond High-School Physics'];
-function modeHeadHtml(M) {
-  var i = 0, j;
-  for (j = 0; j < MODES.length; j++) if (MODES[j].n === M.n) i = j;
-  var name = String(M.label).replace(/^\d+\s*/, '');
-  return '<div class="mh-num" aria-hidden="true"><span>' + (i + 1) + '</span></div>' +
-    '<div class="mh-body">' +
-    '<p class="mh-en">Chapter ' + ('0' + (i + 1)).slice(-2) + ' — ' + MODE_EN[i] + '</p>' +
-    '<h2>' + name + '</h2>' +
-    (M.tip ? '<p class="mh-lead">' + mathHtml(M.tip) + '</p>' : '') +
-    '</div>';
-}
-
-/* ひとことの ▲ は、章の扉にしたので もう要らない（呼び出しは残っているので空のまま置く） */
+/* ひとことの ▲ が、選んでいるモードのボタンの真下に来るようにする */
 function placeModeTip() {
-  /* ★2026-10 のデザイン移植で「章の扉」にしたので、▲ の位置合わせは要らなくなった★
-     以前はモードのボタンの真下に ▲ を置くため paddingLeft を計算していたが、
-     せまい画面でページごと横スクロールする原因になっていた（設計メモ 159）。
-     呼び出しているところが何か所かあるので、空の関数として残す。 */
-  var tip = $('modetip');
-  if (tip && tip.style.paddingLeft) tip.style.paddingLeft = '';
+  var tip = $('modetip'), b = st._tipBtn, mt = $('modetabs');
+  if (!tip || !b || !mt) return;
+  var off = b.getBoundingClientRect().left - mt.getBoundingClientRect().left;
+  /* ★左にあける幅は、かならず頭を打たせること★（2026-09-25）
+     タブの列を1行の横スクロールにしたので、モード3・4を選ぶとボタンが右のほうにあり、
+     そのまま真下に ▲ を置こうとすると paddingLeft が 394 px になって、
+     320 px の画面ではページごと横にスクロールしてしまった。
+     文を出す場所を 220 px は残す（▲ の位置は多少ずれてよい）。
+     ★せまい画面（560 px 未満）では、そもそも左にあけない★——
+     文を出せる幅が 160 px しか残らず、5〜6行の細長い柱になって読みにくい。
+     タブの列は横スクロールするので、▲ で指すことにこだわらなくてよい。 */
+  var box = tip.parentNode ? tip.parentNode.clientWidth : 0;
+  var maxPad = (box < 560) ? 0 : Math.max(0, box - 220);
+  tip.style.paddingLeft = clamp(off + b.offsetWidth / 2 - 7, 0, maxPad) + 'px';
 }
 
 /* ===== 「入試問題の読み解き」の文の中に置く、動かせる部品 =====
@@ -13864,11 +13231,6 @@ function buildPanel() {
   h.push('<div class="cvstage' + (hasRes ? ' hasres' : (hasAct ? '' : ' nobar')) + '">');
   h.push(cvSlot('mainCv', (d.drag || d.drag3d) ? 'dragcv' : ''));
   h.push('</div>');
-  /* ③b 図のすぐ下に置く説明（d.cvnote）。
-     ★図の中に長い文章を描かないこと★（先生の指示・2026-10-04）——
-       canvas に描いた文字は、拡大しても読みやすくならず、折り返しも手で決めるしかない。
-       「この図の見かた」のような地の文は、HTML にして図の下に出す。 */
-  if (d.cvnote) h.push('<p class="cvnote">' + mathHtml(d.cvnote) + '</p>');
   /* ④ オレンジの状況ボタン（1行におさめる） */
   if (hasAct) {
     h.push('<div class="cvbar' + (hasRes ? ' midbar' : '') + '"><div class="acts n' + Math.min(4, d.actions.length) + '">');
@@ -14307,8 +13669,6 @@ function jumpToRes(key) {
   /* ★光らせたままにする★ 数秒で消すと「どれのことか分からない」ので、
      つぎのリンクが押されるまで、ずっと強調しつづける（先生の指示）。 */
   st.flashRes = key;
-  /* ★飛び先は折りたたみの中にある★ 閉じていたら、まず開く（開かないと見えない） */
-  setResOpen(true);
   renderResult(DEFS[st.cur], st.sims[st.cur], st.sims[st.cur].t);
   var hit = host.querySelector('.ritem.flash');
   if (hit && hit.scrollIntoView) hit.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -14871,34 +14231,10 @@ function unitNoteHtml(d, s) {
   return '<div class="unitnote"><b class="unt">この図で使っている単位</b><ul>' + rows + '</ul></div>';
 }
 
-/* ===== 計算結果の帯 =====
-   ★2026-10-03 作りなおし（先生の指示）★
-     前は、図のすぐ下にチップが10個も横に並び、右の読み出しの表と同じ数字が
-     二重に出ていて「変数が多すぎる・左右で被っている」状態だった。
-     いまは
-       ・「計算結果を表示」は〈ボタン〉で、押したときだけ中身が開く（最初は閉じている）
-       ・中身は ラベル／値／単位 を縦に積んだ〈横1列の表〉（circular-motion と同じ形）
-       ・シムを切りかえても、開いた・閉じたは覚えておく（resOpen）
-     「動いている値」は右の読み出しの表、「決まった値」はここ、と役割を分けた。 */
-var resOpen = false;         /* ★ページ全体で1つ。シムを切りかえても覚えておく★ */
-function setResOpen(on) {
-  resOpen = !!on;
-  var el = $('resbar'); if (!el) return;
-  var b = el.querySelector('.rtog'), bd = el.querySelector('.rbody');
-  if (b) b.setAttribute('aria-expanded', resOpen ? 'true' : 'false');
-  if (bd) bd.hidden = !resOpen;
-  el.className = 'resbar' + (resOpen ? ' open' : '');
-  /* 開いた瞬間に数字を入れる（止まっているシムでも空のまま出さないため） */
-  if (resOpen && DEFS[st.cur]) renderResult(DEFS[st.cur], st.sims[st.cur], st.sims[st.cur].t);
-}
-function toggleRes() { setResOpen(!resOpen); }
-
+/* ===== 計算結果の帯 ===== */
 function renderResult(d, s, t) {
   var el = $('resbar');
   if (!el || !d.result) return;
-  /* ★閉じているあいだは中身を作らない★
-     毎コマ走る関数なので、見えていない数字のために仕事をしないこと。
-     （ボタンの文字だけは出しておく） */
   var r = d.result(V(s), s, t) || {};
   var items = r.items || [], i;
 
@@ -14910,7 +14246,7 @@ function renderResult(d, s, t) {
      → ★「文字（ラベル）の並び」が変わったときだけ作り直す★。
        ふだんは <span class="rv"> の中の文字だけ差しかえる（KaTeX は走らない）。 */
   var keys = items.map(function (it) {
-    return rkey(it.k) + '\u0001' + it.k + '\u0001' + (it.kbox ? '1' : '') + '\u0001' + (it.u || '');
+    return rkey(it.k) + '\u0001' + it.k + '\u0001' + (it.kbox ? '1' : '');
   }).join('\u0002') + '\u0003';
   if (r.table) {
     /* 表は「見出し」と「1列目（天体の名前）」だけが文字。ほかは数値なので入れかえるだけ */
@@ -14919,18 +14255,11 @@ function renderResult(d, s, t) {
   }
 
   if (el._keys !== keys) {
-    /* ★見出しは〈ボタン〉★（押すと開く・閉じる）。data-res は 90_boot.js の受けつけ用 */
-    var h = ['<button type="button" class="rtog" data-res="1" aria-expanded="'
-      + (resOpen ? 'true' : 'false') + '" aria-controls="resbody">'
-      + '<span class="rcv" aria-hidden="true"></span>計算結果を表示</button>'
-      + '<div class="rbody" id="resbody"' + (resOpen ? '' : ' hidden') + '>'
-      + '<div class="rgrid">'];
+    var h = ['<p class="rtitle">計算結果を表示</p><div class="rrow">'];
     items.forEach(function (it) {
-      /* data-rk … 解説の @@r:…@@ から飛んでくるための目じるし
-         ラベル／値／単位 の3段。単位は it.u に入っているときだけ別の行にする。 */
+      /* data-rk … 解説の @@r:…@@ から飛んでくるための目じるし */
       h.push('<div class="ritem' + (it.kbox ? ' kbox' : '') + '" data-rk="' + rkey(it.k) +
-        '"><span class="rk">' + mathHtml(it.k) + '</span><span class="rv"></span>' +
-        (it.u ? '<span class="ru">' + mathHtml(it.u) + '</span>' : '') + '</div>');
+        '"><span class="rk">' + mathHtml(it.k) + '</span><span class="rv"></span></div>');
     });
     h.push('</div>');
     if (r.table) {
@@ -14951,16 +14280,11 @@ function renderResult(d, s, t) {
       });
       h.push('</table></div>');
     }
-    h.push('<p class="knote"></p></div>');
+    h.push('<p class="knote"></p>');
     el.innerHTML = h.join('');
     el._keys = keys; el._flash = null; el._note = null; el._pick = null;
-    el.className = 'resbar' + (resOpen ? ' open' : '');
     renderMath(el);
   }
-
-  /* ★閉じているあいだは、ここから下（数字の入れかえ）をしない★
-     見えていない数字のために毎コマ働かない。開いたときは setResOpen が呼び直す。 */
-  if (!resOpen) return;
 
   /* ★選んでいる天体の行を光らせる★（先生の指示・2026-09-05）
      r.table.pick に 1列目の名前を書くと、その行に class="on" が付く。
@@ -15236,551 +14560,6 @@ function tick(ts) {
   requestAnimationFrame(tick);
 }
 
-/* ===== 85_design.js ===== */
-/* =========================================================================
-   デザイン移植の動き（2026-10）
-   見本＝momentum-and-collision.html の 85_design.js。
-   このページ用に作りかえたのは initStage()（ヒーローのアニメ）だけで、
-   作り方の約束（大きさは canvas から決める・ストロボの1枚絵・止める条件・
-   window.__hero.frame で決まった瞬間を描かせる）は見本のまま。
-
-   ★ヒーローのアニメ＝「軌道の種類」★（先生の選択・2026-10-03）
-     地表から真横に打ち出す速さ v0 = k√(gR) を 1 → 1.5 → 2 → 2.5 と変え、
-     円 → だ円 → 放物線 → 双曲線 と変わるのを見せる。
-     ★閉じた式だけ★（数値積分はしない）。軌道は円すい曲線の式
-       r(θ) = L²/GM / (1 + ε cos θ)
-     から出す。2-2（m2-3）とまったく同じ物理。
-   ★暗い地なので、物理の色は「同じ色相の明るい版」を使う★（キット 1 章）。
-     本文の図の色（COL.*）は1ミリも変えない。
-   ========================================================================= */
-(function () {
-  'use strict';
-  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var SER = '"KaTeX_Main","Times New Roman",serif',
-      MATH = '"KaTeX_Math","KaTeX_Main",serif',
-      JP = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,"Noto Sans JP",Meiryo,sans-serif';
-  /* 暗い地での色（同じ色相の明るい版）。本文の図は COL.* のまま */
-  var C = {
-    earth: '#5aa7ff',      /* 地球（本文は earthShape の青） */
-    ell:   '#49d18a',      /* 円・だ円  ← COL.bound #1c8f4a の明るい版 */
-    para:  '#e8c96a',      /* 放物線    ← COL.para  #b58900 の明るい版 */
-    hyp:   '#c3ccd6',      /* 双曲線    ← COL.hyper #3f4a54 の明るい版 */
-    vel:   '#7fc0ff',      /* 速度      ← COL.vel   #1663b5 の明るい版 */
-    T:     '#f6f2e9', dim: 'rgba(243,239,230,.42)', brand: '#e07b18'
-  };
-  /* 打ち出す速さ（第一宇宙速度の何倍か）と、そのときの軌道の名前 */
-  var KS = [1.0, 1.5, 2.0, 2.5];
-  var KNAME = { 1: '円', 1.5: 'だ円', 2: '放物線', 2.5: '双曲線' };
-  var KCOL = { 1: C.ell, 1.5: C.ell, 2: C.para, 2.5: C.hyp };
-
-  /* ===== ヒーローのステージ ===== */
-  function initStage() {
-    var cv = document.getElementById('heroCv'); if (!cv) return;
-    var ctx = cv.getContext('2d');
-    var W = 0, H = 0, dpr = 1, run = false, raf = 0, last = 0;
-    var cyc = 0, t = 0, sc = null, lockK = null, paused = false, rate = 1;
-
-    function setup() {
-      var r = cv.getBoundingClientRect();
-      dpr = Math.min(2, window.devicePixelRatio || 1);
-      W = Math.max(280, r.width); H = Math.max(160, r.height);
-      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      var s = Math.max(W < 640 ? 0.86 : 0.72, Math.min(1.15, H / 260));
-      /* 地球の半径を R=1 として、画面にどれだけの px を当てるか。
-         双曲線（k=2.5）でも画面に収まるよう、canvas の小さいほうの辺から決める */
-      /* 地球の半径［px］。いちばん大きい だ円（k=2.5 の手前、k=1.5 の遠地点 r=3）が
-         画面に入るように、よこ・たての両方から決める。 */
-      var R = Math.min(W * 0.078, H * 0.215);
-      sc = { s: s, R: R, cx: W * 0.40, cy: H * 0.52 };
-    }
-    /* 円すい曲線（閉じた式）。
-       ★k の決め方は 2-2（m2-3）とまったく同じ★：$v_0=\sqrt{k\,gR}$。
-         k = 1 … 円（第一宇宙速度）／k = 2 … 放物線（第二宇宙速度）
-       地表 r = 1 で真横に打ち出すので（GM = R = 1 の単位で）
-         L = r v = √k、　半直弦 p = L² = k、　離心率 ε = |k − 1|
-       打ち出した点は k>1 なら近地点、k<1 なら遠地点。どちらも θ = 0 に置く。 */
-    function orbit(k) {
-      return { p: k, e: Math.abs(k - 1), sign: (k < 1 ? -1 : 1) };
-    }
-    function rOf(o, th) {
-      var d = 1 + o.sign * o.e * Math.cos(th);
-      return (d > 1e-3) ? o.p / d : Infinity;
-    }
-    /* その軌道を一周（または画面の外まで）描くための点の列 */
-    function path(o, RMAX) {
-      var pts = [], i, N = 420;
-      var thMax = Math.PI;                       /* 閉じた軌道は 0〜2π、開いた軌道は漸近線まで */
-      if (o.e >= 1 - 1e-9) {
-        var ca = -1 / o.e;                       /* cos θ∞ = −1/ε */
-        thMax = (ca <= -1) ? Math.PI * 0.995 : Math.acos(Math.max(-0.999, ca)) * 0.985;
-      }
-      for (i = -N; i <= N; i++) {
-        var th = thMax * i / N;
-        var r = rOf(o, th);
-        if (!isFinite(r) || r > RMAX) continue;
-        pts.push([r * Math.cos(th), r * Math.sin(th)]);
-      }
-      return pts;
-    }
-    /* 時刻 tt での位置（面積速度一定＝ケプラー第2法則を、角度の刻みで積み上げる。
-       閉じた式の軌道の上を「等しい面積ずつ」進むので、数値積分はしていない） */
-    var TSC = 1.9;                        /* アニメの1秒 ＝ 軌道の時間 1.9（円軌道1周 ≒ 3.3 秒） */
-    function posAt(o, tt) {
-      /* 面積速度 dA/dt = L/2 は一定（ケプラー第2法則）。だから dθ/dt = L / r²。
-         これを細かい角度の刻みで積み上げる（軌道そのものは閉じた式のまま）。 */
-      var th = 0, dt = 0.0025, u = 0, L = Math.sqrt(o.p);
-      var N = Math.min(6000, Math.round(tt * TSC / dt));
-      for (u = 0; u < N; u++) {
-        var r = rOf(o, th);
-        if (!isFinite(r) || r > 80) break;
-        th += L / (r * r) * dt;
-      }
-      var rr = rOf(o, th);
-      return { r: rr, th: th, x: rr * Math.cos(th), y: rr * Math.sin(th) };
-    }
-    function X(x) { return sc.cx + x * sc.R; }
-    function Y(y) { return sc.cy - y * sc.R; }
-
-    /* ===== 右上の読み出し（$v_0=\sqrt{k\,gR}$・軌道の名前・いま何番目か）=====
-       ★canvas には描かない★（先生の指示・2026-10-03）
-         canvas の fillText で「√」を書くと、根号の横線が中身の上にかからず
-         $\sqrt{1.5\,gR}$ に見えない。式は HTML にして KaTeX に組ませる。
-       ★KaTeX は重いので、k が変わったときだけ組みなおす★（毎コマ走らせない）。
-       点（いま何番目か）は class の付けはずしだけ。 */
-    var kbox = null, kboxK = null;
-    function makeKbox() {
-      var st2 = cv.parentNode;                       /* .stage（figure） */
-      if (!st2) return null;
-      var b = document.createElement('div');
-      b.className = 'stageread';
-      b.setAttribute('aria-hidden', 'true');         /* 同じことは figcaption の文が伝えている */
-      b.innerHTML = '<span class="sr-e"></span><span class="sr-n"></span>' +
-        '<span class="sr-d">' + KS.map(function () { return '<i></i>'; }).join('') + '</span>';
-      st2.appendChild(b);
-      return b;
-    }
-    function showK(k, fade) {
-      if (!kbox) { kbox = makeKbox(); if (!kbox) return; }
-      kbox.style.opacity = (fade < 1 ? Math.max(0, fade).toFixed(2) : '');
-      if (kboxK === k) return;
-      kboxK = k;
-      var e = kbox.querySelector('.sr-e'), n = kbox.querySelector('.sr-n');
-      var src = 'v_0=\\sqrt{' + k.toFixed(1) + '\\,gR}';
-      if (window.katex) { try { window.katex.render(src, e, { throwOnError: false, displayMode: false }); } catch (x) { e.textContent = src; } }
-      else e.textContent = src;
-      n.textContent = KNAME[k]; n.style.color = KCOL[k];
-      Array.prototype.forEach.call(kbox.querySelectorAll('.sr-d i'), function (d, i2) {
-        d.className = (KS[i2] === k ? 'on' : '');
-      });
-    }
-
-    function draw(tt, k, fade) {
-      var s = sc.s, o = orbit(k), i;
-      ctx.clearRect(0, 0, W, H);
-      ctx.save(); ctx.globalAlpha = fade;
-      /* 地球 */
-      var R = sc.R;
-      var g = ctx.createRadialGradient(X(0) - R * 0.35, Y(0) - R * 0.4, R * 0.1, X(0), Y(0), R);
-      g.addColorStop(0, '#9fd0ff'); g.addColorStop(0.25, C.earth); g.addColorStop(1, '#16436f');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X(0), Y(0), R, 0, 7); ctx.fill();
-      ctx.save(); ctx.shadowColor = C.earth; ctx.shadowBlur = 26; ctx.globalAlpha = fade * 0.3;
-      ctx.beginPath(); ctx.arc(X(0), Y(0), R, 0, 7); ctx.fill(); ctx.restore();
-      ctx.fillStyle = 'rgba(243,239,230,.72)'; ctx.font = '700 ' + Math.round(10.5 * s) + 'px ' + JP;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText('地球', X(0), Y(0) + R + 5);
-      /* これまでの軌道を薄く残す（4つを見くらべられるように） */
-      var RMAX = Math.max(W, H) / sc.R;
-      KS.forEach(function (kk) {
-        if (kk === k) return;
-        var oo = orbit(kk), pp = path(oo, RMAX);
-        ctx.save(); ctx.globalAlpha = fade * 0.16; ctx.strokeStyle = KCOL[kk]; ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        pp.forEach(function (q, j) { if (j === 0) ctx.moveTo(X(q[0]), Y(q[1])); else ctx.lineTo(X(q[0]), Y(q[1])); });
-        ctx.stroke(); ctx.restore();
-      });
-      /* いまの軌道 */
-      var pts = path(o, RMAX);
-      ctx.save(); ctx.strokeStyle = KCOL[k]; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-      if (k >= 2) ctx.setLineDash(k === 2 ? [7, 5] : [10, 4, 2, 4]);
-      ctx.beginPath();
-      pts.forEach(function (q, j) { if (j === 0) ctx.moveTo(X(q[0]), Y(q[1])); else ctx.lineTo(X(q[0]), Y(q[1])); });
-      ctx.stroke(); ctx.restore();
-      /* 人工衛星（閉じた式の上を、面積速度一定で進む） */
-      var q2 = posAt(o, tt);
-      if (isFinite(q2.r) && q2.r < RMAX * 1.2) {
-        var px = X(q2.x), py = Y(q2.y);
-        ctx.save(); ctx.fillStyle = C.T; ctx.shadowColor = KCOL[k]; ctx.shadowBlur = 14;
-        ctx.beginPath(); ctx.arc(px, py, 4.4 * s, 0, 7); ctx.fill(); ctx.restore();
-      }
-      /* 打ち出す点と、速度の矢印（地表から真横） */
-      (function () {
-        var x0 = X(1), y0 = Y(0), L0 = Math.min(W * 0.16, 30 + k * 22) * s / 1.0;
-        ctx.save(); ctx.strokeStyle = C.vel; ctx.fillStyle = C.vel; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 - L0 + 7); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x0, y0 - L0); ctx.lineTo(x0 - 4.4, y0 - L0 + 9); ctx.lineTo(x0 + 4.4, y0 - L0 + 9);
-        ctx.closePath(); ctx.fill();
-        ctx.restore();
-        ctx.save(); ctx.fillStyle = C.vel; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'italic ' + Math.round(14 * s) + 'px ' + MATH;
-        ctx.fillText('v', x0 + 7, y0 - L0 + 6);
-        var wv = ctx.measureText('v').width;
-        ctx.font = Math.round(10 * s) + 'px ' + SER; ctx.fillText('0', x0 + 7 + wv + 1, y0 - L0 + 10);
-        ctx.restore();
-      })();
-      /* 右上：いまの速さと軌道の名前
-         ★式は canvas に手で描かず、上にかぶせた HTML を KaTeX で組む★（先生の指示・2026-10-03）
-           canvas の fillText では √ の横線が数式の上にかからず、きれいに出せないため。
-           KaTeX は重いので、★k が変わったときだけ★組みなおす（showK の中で見ている）。 */
-      showK(k, fade);
-      /* 左上：見出し。
-         ★せまい画面では出さない★——右上の $v_0$ の読み出しと重なるため（390px で実際に重なった）。 */
-      if (W > 620) (function () {
-        ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = C.dim; ctx.font = '700 ' + Math.max(11, Math.round(10.5 * s)) + 'px ' + JP;
-        ctx.fillText('打ち出す速さで、軌道の形が変わる', 24, 30 * s + 6);
-        if (W > 560) {
-          var w0 = ctx.measureText('打ち出す速さで、軌道の形が変わる').width;
-          ctx.font = 'italic ' + Math.round(10.5 * s) + 'px ' + SER;
-          ctx.fillText('conic sections', 24 + w0 + 8, 30 * s + 6);
-        }
-        ctx.restore();
-      })();
-      ctx.restore();
-    }
-
-    var DUR = 3.4, FADE = 0.45;
-    function frame(ts) {
-      if (!run) return;
-      var dtm = last ? Math.min(0.05, (ts - last) / 1000) : 0; last = ts;
-      t += dtm * rate;
-      var k = (lockK !== null ? lockK : KS[cyc % KS.length]);
-      var fade = 1;
-      if (t < FADE * 0.6) fade = t / (FADE * 0.6);
-      else if (t > DUR - FADE) fade = Math.max(0, (DUR - t) / FADE);
-      draw(t, k, fade);
-      if (t >= DUR) { t = 0; cyc++; }
-      raf = requestAnimationFrame(frame);
-    }
-    function start() { if (run || RM || paused) return; run = true; last = 0; raf = requestAnimationFrame(frame); }
-    function stop() { run = false; cancelAnimationFrame(raf); }
-    function still(k) {
-      k = (k === undefined ? (lockK !== null ? lockK : 1.5) : k);
-      draw(1.6, k, 1);
-    }
-    /* ★シムが動いていてもヒーローは止めない★（先生の指示・2026-10-03）
-       前は「シムの再生中は止める」ことにしていたが、モード1（1-0）は開いた瞬間に
-       動きだす（autoplay）ので、ページを開いた人にはヒーローが「ずっと止まっている」
-       ように見えてしまった。止めるのは
-         画面の外・タブが非表示・一時停止ボタン・「動きを減らす」設定
-       の4つだけにする。ヒーローは画面のいちばん上なので、生徒がシムまで
-       スクロールすればどのみち画面の外に出て止まる（重さは増えない）。 */
-    /* ★止まっているときは「1枚の絵」を出す★（キットの決まり）
-       このページはモード1が開いた瞬間に動きだす（autoplay）ので、
-       はじめから止まっている。何も描かないと、ヒーローに黒い板が出るだけになる。 */
-    setup(); still();
-    /* 自動テストから決まった瞬間の絵を描かせる */
-    window.__hero = { frame: function (tt, k) { stop(); draw(tt, k === undefined ? 1 : k, 1); }, start: start, stop: stop, still: still };
-
-    var rz = 0;
-    window.addEventListener('resize', function () {
-      clearTimeout(rz); rz = setTimeout(function () { setup(); if (RM || paused) still(); }, 120);
-    });
-    /* 止める条件：画面外・タブが非表示・一時停止・動きを減らす設定 */
-    var seen = true;
-    function retune() {
-      if (seen && !document.hidden && !paused) start();
-      else { stop(); if (!document.hidden) still(); }
-    }
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (en) { seen = en.isIntersecting; });
-        retune();
-      }, { threshold: 0.05 }).observe(cv);
-    } else start();
-    document.addEventListener('visibilitychange', retune);
-    /* ★「シムの再生を見張る 500ms のタイマー」と「#simhost を押したら止める」は
-         やめた★（上の説明のとおり）。見張りをやめたぶん、1秒あたりの仕事も減る。 */
-
-    /* 操作：速さをえらぶ（自動＝1 → 1.5 → 2 → 2.5）・スロー・一時停止 */
-    var ctl = document.querySelector('#hero .stagectl');
-    if (ctl) {
-      var SLL = (typeof mathHtml === 'function') ? mathHtml('$v_0$') : 'v<sub>0</sub>';
-      ctl.innerHTML = '<span class="sl-l">' + SLL + '</span>' +
-        '<button type="button" data-k="auto" aria-pressed="true">自動</button>' +
-        KS.map(function (k) { return '<button type="button" data-k="' + k + '" aria-pressed="false">' + k.toFixed(1) + '</button>'; }).join('') +
-        '<span class="sep" aria-hidden="true"></span>' +
-        '<button type="button" class="slow" aria-pressed="false" title="ゆっくり再生">🐢 スロー</button>' +
-        '<button type="button" class="pp" aria-label="一時停止"><i></i></button>';
-      if (typeof renderMath === 'function') renderMath(ctl);
-      var kb = ctl.querySelectorAll('button[data-k]'), pp = ctl.querySelector('.pp'), sl = ctl.querySelector('.slow');
-      if (sl) {
-        if (RM) sl.hidden = true;
-        sl.addEventListener('click', function () {
-          rate = (rate === 1 ? 0.3 : 1); sl.setAttribute('aria-pressed', rate < 1 ? 'true' : 'false');
-        });
-      }
-      Array.prototype.forEach.call(kb, function (b) {
-        b.addEventListener('click', function () {
-          var v = b.dataset.k; lockK = (v === 'auto' ? null : parseFloat(v));
-          Array.prototype.forEach.call(kb, function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-          t = 0; if (lockK === null) cyc = 0;
-          if (RM || paused) still();
-        });
-      });
-      if (pp) {
-        if (RM) pp.hidden = true;
-        pp.addEventListener('click', function () {
-          paused = !paused; pp.classList.toggle('paused', paused);
-          pp.setAttribute('aria-label', paused ? '再生' : '一時停止');
-          if (paused) { stop(); still(); } else { t = 0; retune(); }
-        });
-      }
-    }
-    var cap = document.getElementById('heroCap');
-    if (cap) {
-      cap.innerHTML = '地表から真横に $v_0=\\sqrt{k\\,gR}$ で打ち出す。$k$ を大きくすると、' +
-        '軌道は<b>円 → だ円 → 放物線 → 双曲線</b>と変わる（$k=1$ 円軌道・$k=2$ 脱出）。2-2 と同じ $k$ です。';
-      if (typeof mathHtml === 'function') { cap.innerHTML = mathHtml(cap.innerHTML); }
-      if (typeof renderMath === 'function') renderMath(cap);
-    }
-  }
-
-  /* ===== ヒーローの中身（パンくず・要点カード）とタブ列の左、フッター ===== */
-  var EN = ["Kepler's Laws", 'Universal Gravitation &amp; Orbits', 'University Entrance Problems', 'Beyond High-School Physics'];
-  var PAGE_EN = "Universal Gravitation &amp; Kepler's Laws";
-  var PAGE_JA = '万有引力とケプラーの法則のシミュレーション';
-  var ATOM = '<svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg>';
-  var HOMESVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-  var PAGESSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor"/></svg>';
-
-  /* 要点カード3枚（先生の選択）。日本語は LAW とタブの名前をそのまま使う */
-  var IDEAS = [
-    { id: 'm1-3', e: '\\dfrac{dS}{dt} = \\text{一定}', j: '第2法則（面積速度一定）' },
-    { id: 'm1-4', e: '\\dfrac{T^2}{a^3} = K', j: '第3法則（周期と半長軸）' },
-    /* ★「= 一定」まで書く★（先生の指示・2026-10-03）。保存の法則なので、
-       式だけでなく「変わらない」ことが読めないと意味が伝わらない。 */
-    { id: 'm2-2', e: 'E = \\dfrac{1}{2}mv^2 - G\\dfrac{mM}{r} = \\text{一定}', j: '力学的エネルギー保存の法則' }
-  ];
-
-  function buildHeroParts() {
-    var cr = document.getElementById('crumbs');
-    if (cr) {
-      cr.innerHTML = '<a class="crumb-home" href="' + SITE_HOME + '" title="楽楽（らくらく）高校物理のトップページへ">' + ATOM +
-        '<span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span>' +
-        '<a class="crumb" href="' + SITE_HOME + '#sec-mechanics">力学</a><span class="cs" aria-hidden="true">/</span>' +
-        '<span class="crumb now" aria-current="page">万有引力とケプラーの法則</span>' +
-        '<span class="kdot"></span><span class="en">' + PAGE_EN + '</span>';
-    }
-    var ns = document.getElementById('navsite');
-    if (ns) {
-      ns.innerHTML = '<a class="navhome" href="' + SITE_HOME + '" aria-label="ホーム（楽楽高校物理のトップページ）" title="ホーム（楽楽高校物理のトップページ）">' + HOMESVG + '</a>' +
-        '<button class="navpages" id="bPages" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="siteDrawer">' + PAGESSVG + '<span>ページ一覧</span></button>';
-    }
-    var id = document.getElementById('ideas');
-    if (id) {
-      id.innerHTML = IDEAS.map(function (x, i) {
-        return '<li><a href="#' + x.id + '" data-idea="' + x.id + '"><span class="in" aria-label="' + '①②③'.charAt(i) + '"><b>' + (i + 1) + '</b></span>' +
-          '<span class="ie">$' + x.e + '$</span><span class="ij">' + x.j + '</span><span class="ia" aria-hidden="true">→</span></a></li>';
-      }).join('');
-      if (typeof mathHtml === 'function') id.innerHTML = mathHtml(id.innerHTML);
-      if (typeof renderMath === 'function') renderMath(id);
-      Array.prototype.forEach.call(id.querySelectorAll('[data-idea]'), function (a) {
-        a.addEventListener('click', function (ev) {
-          ev.preventDefault();
-          if (typeof gotoSim === 'function') gotoSim(a.getAttribute('data-idea'));
-          if (typeof scrollSimIntoView === 'function') {
-            scrollSimIntoView(true);
-            requestAnimationFrame(function () { requestAnimationFrame(function () { scrollSimIntoView(true); }); });
-          }
-        });
-      });
-    }
-  }
-
-  /* タブ列の下の読み進みの線 */
-  function initProgress() {
-    var nav = document.getElementById('tabbar'); if (!nav) return;
-    var pend = false;
-    var upd = function () {
-      pend = false;
-      var h = document.documentElement, max = h.scrollHeight - innerHeight;
-      nav.style.setProperty('--prog', max > 0 ? Math.min(1, Math.max(0, scrollY / max)).toFixed(4) : 0);
-    };
-    window.addEventListener('scroll', function () { if (!pend) { pend = true; requestAnimationFrame(upd); } }, { passive: true });
-    window.addEventListener('resize', upd); upd();
-  }
-
-  /* スライドバーの塗り（--p） */
-  function syncRange(el) {
-    var mn = parseFloat(el.min) || 0, mx = parseFloat(el.max), v = parseFloat(el.value);
-    var p = (isFinite(mx) && mx > mn) ? (v - mn) / (mx - mn) * 100 : 0, s = p.toFixed(1) + '%';
-    if (el._p !== s) { el._p = s; el.style.setProperty('--p', s); }
-  }
-  function initRanges() {
-    document.addEventListener('input', function (ev) { if (ev.target && ev.target.type === 'range') syncRange(ev.target); }, true);
-    var sweep = function () {
-      if (document.hidden) return;
-      Array.prototype.forEach.call(document.querySelectorAll('input[type=range]'), syncRange);
-    };
-    sweep(); setInterval(sweep, 150);
-  }
-
-  /* フッター（英字の題名・章の目次・ホーム・ページ一覧・上へ） */
-  function initFooter() {
-    var f = document.getElementById('pagefoot'); if (!f) return;
-    var CI = '①②③④⑤⑥⑦⑧⑨';
-    var items = (typeof MODES !== 'undefined' ? MODES : []).map(function (m, i) {
-      return '<li><a href="#' + m.ids[0] + '" data-fmode="' + m.ids[0] + '"><b>' + CI[i] + '</b>' +
-        String(m.label).replace(/^\d+\s*/, '') + '</a></li>';
-    }).join('');
-    f.innerHTML = '<div class="ft-in"><p class="ft-mark">' + PAGE_EN + '<span>' + PAGE_JA + '</span></p>' +
-      '<ul class="ft-nav">' + items + '</ul>' +
-      '<div class="ft-base"><span><a class="ft-home" href="' + SITE_HOME + '">⌂ 楽楽（らくらく）高校物理 トップページ</a>　／　高校物理 ・ 力学</span>' +
-      '<span class="ft-r"><button type="button" class="ft-pages">ほかのページ一覧</button>' +
-      '<a href="#top" class="ft-top">▲ ページの一番上へ</a></span></div></div>';
-    Array.prototype.forEach.call(f.querySelectorAll('a[data-fmode]'), function (a) {
-      a.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        if (typeof gotoSim === 'function') gotoSim(a.getAttribute('data-fmode'));
-        if (typeof scrollSimIntoView === 'function') scrollSimIntoView(true);
-      });
-    });
-    var fp = f.querySelector('.ft-pages');
-    if (fp) fp.addEventListener('click', function () { if (window.SITENAV) window.SITENAV.open(); });
-    var tp = f.querySelector('.ft-top');
-    if (tp) tp.addEventListener('click', function (ev) { ev.preventDefault(); window.scrollTo(0, 0); });
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    buildHeroParts(); initFooter(); initStage(); initRanges(); initProgress();
-  });
-})();
-
-/* ===== 84_sitenav.js ===== */
-/* =========================================================================
-   サイト全体へのナビ（第 28 回）
-   ・ホーム（楽楽高校物理のトップページ）へのリンク：ヒーローのパンくずと、上に固定したタブ列の左はし（家のアイコン）。
-   ・「ページ一覧」：タブ列の左はしのボタンで、左から引き出すパネル（ドロワー）を開く。分野ごとに全ページのリンク。
-   ・一覧のもとはトップページ（index.html）の SITE・EXPSITE。
-       - この中に「写し」を持つ（オフラインでも出る）。
-       - 公開先（https://physics-chiba.github.io）で開いたときは、トップページを読みこんで最新の一覧に置きかえる
-         （トップページにページを足せば、このページの一覧にも自動で出る）。
-   ========================================================================= */
-const SITE_HOME = "https://physics-chiba.github.io/physics-site/";
-const SITE_FORM = "https://docs.google.com/forms/d/e/1FAIpQLScU1DzFTmUDGSvP3UE5Lr7RY8NvjukkzBHmQYtmOac44twPwQ/viewform";
-/* 写し（2026-10-02 のトップページから）。g＝大きな見出し（シミュレーション／実験／作成後記） */
-const SITE_SNAPSHOT = [
-  { g:"シミュレーション", id:"mechanics", name:"力学", color:"#1663b5", items:[
-    { t:"一次元と平面の運動　～v-tグラフで理解する～", u:"mechanics/basics-of-motion-on-plane.html" },
-    { t:"力学的エネルギーと非保存力の仕事の関係", u:"mechanics/mechanical-energy.html" },
-    { t:"剛体と力のモーメント", u:"mechanics/rigid-body-dynamics.html" },
-    { t:"箱の回転　～傾くのが先か滑るのが先か～", u:"mechanics/rotation-box_tip-or-slip.html" },
-    { t:"運動量と力積、2物体の衝突と反発係数", u:"mechanics/momentum-and-collision.html" },
-    { t:"保存則クイズ　基本編", u:"mechanics/conservation-quiz-basic.html" },
-    { t:"保存則クイズ　難関大受験編", u:"mechanics/conservation-quiz-advanced.html" },
-    { t:"上級者向け解説・重心ミニ実験室", u:"mechanics/conservation-quiz-advanced.html#advbox" },
-    { t:"円運動：円筒面のループ運動", u:"mechanics/circular-motion-loop.html" },
-    { t:"単振動：ばねで打ち出される小球の運動", u:"mechanics/spring-launch.html" },
-    { t:"万有引力とケプラーの法則", u:"mechanics/celestial-mechanics.html" },
-    { t:"2026年8月 校内模試の力学の問題　動く台の上のばねと円弧面上の運動", u:"mechanics/cart-spring-arc.html" } ]},
-  { g:"シミュレーション", id:"wave", name:"波動", color:"#3ea0e0", items:[
-    { t:"光の干渉①　ヤングの実験", u:"wave/youngs-experiment.html" },
-    { t:"光の干渉②　回折格子", u:"wave/diffraction_grating.html" },
-    { t:"光の干渉③　薄膜の干渉", u:"wave/Light-interference-thin-film.html" } ]},
-  { g:"シミュレーション", id:"elemag", name:"電磁気", color:"#7b5bd6", items:[
-    { t:"電気回路３次元シミュレーター", u:"elemag/circuit-water-model-3d.html" } ]},
-  { g:"実験", id:"movie", name:"動画をつかう", color:"#0e7490", items:[
-    { t:"動画解析・トラッキングツール", u:"experiment/motion-analysis.html" } ]},
-  { g:"作成後記", id:"note", name:"作成後記", color:"#1c8f4a", items:[
-    { t:"動画解析アプリができるまで　AIとの共同作業の記録", u:"AI_log/motion-analysis_AI-collaboration.html" },
-    { t:"薄膜の干渉ができるまで　AIとの共同作業の記録", u:"AI_log/Light-interference-thin-film_AI-collaboration.html" } ]}
-];
-
-/* トップページの文字列から SITE・EXPSITE の中身を取り出す（失敗したら null） */
-function parseSiteIndex(txt){
-  try{
-    const grab = (name)=>{ const i = txt.indexOf("const "+name+" = ["); if(i<0) return "";
-      const j = txt.indexOf("\nconst ", i+10); return txt.slice(i, j<0? undefined : j); };
-    const out = [];
-    [["SITE","シミュレーション"],["EXPSITE","実験"]].forEach(([nm, g])=>{
-      const src = grab(nm); if(!src) return;
-      src.split(/\{\s*\n\s*id:"/).slice(1).forEach(chunk=>{
-        const id = (chunk.match(/^([\w-]+)"/)||[])[1], name = (chunk.match(/name:"([^"]+)"/)||[])[1], color = (chunk.match(/color:"(#[0-9a-fA-F]{3,8})"/)||[])[1];
-        const items = []; const re = /\bt:"([^"]+)"[\s\S]*?\bu:BASE\+"([^"]+)"/g; let m;
-        while((m = re.exec(chunk))) items.push({ t:m[1], u:m[2] });
-        if(id && name && items.length) out.push({ g:(id==="note"? "作成後記" : g), id, name, color:color||"#5b6672", items });
-      });
-    });
-    const ORD = {"シミュレーション":0, "実験":1, "作成後記":2};
-    out.sort((a,b)=>(ORD[a.g]||0)-(ORD[b.g]||0));       // 見出しの順（シミュレーション → 実験 → 作成後記）。同じ見出しの中はトップページの順のまま
-    const n = out.reduce((a,s)=>a+s.items.length, 0);
-    return (n >= 5)? out : null;               // 取り出しが明らかにおかしいときは写しのまま
-  }catch(e){ return null; }
-}
-
-function buildSiteDrawer(){
-  /* ★このページのタブの帯は #tabbar★（見本は #tabs。class 名の読みかえ表のとおり） */
-  const nav = document.getElementById("tabbar"); if(!nav) return;
-  const dr = document.createElement("aside");
-  dr.id = "siteDrawer"; dr.className = "drawer"; dr.setAttribute("role","dialog"); dr.setAttribute("aria-modal","true");
-  dr.setAttribute("aria-label","楽楽（らくらく）高校物理のページ一覧"); dr.hidden = true;
-  const scrim = document.createElement("div"); scrim.className = "drawer-scrim"; scrim.hidden = true;
-  document.body.appendChild(scrim); document.body.appendChild(dr);
-  const here = (location.pathname.match(/physics-site\/(.+)$/) || [])[1] || "mechanics/celestial-mechanics.html";
-  const esc = (s)=>String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const render = (data)=>{
-    let h = '<div class="dr-head"><a class="dr-brand" href="'+SITE_HOME+'">'+(document.querySelector("#hero .atom")? document.querySelector("#hero .atom").outerHTML : "")+
-      '<span>楽楽（らくらく）高校物理</span></a><button type="button" class="dr-x" aria-label="閉じる">×</button></div>'+
-      '<a class="dr-home" href="'+SITE_HOME+'"><span class="dr-hi" aria-hidden="true">'+(nav.querySelector(".navhome svg")||{outerHTML:""}).outerHTML+'</span>'+
-      '<span><b>ホーム</b><small>トップページ（分野ごとの一覧・検索・更新履歴）</small></span><span class="dr-go" aria-hidden="true">→</span></a>';
-    let lastG = "";
-    data.forEach(sec=>{
-      if(sec.g !== lastG){ h += '<p class="dr-g">'+esc(sec.g)+'</p>'; lastG = sec.g; }
-      h += '<section class="dr-sec" style="--c:'+esc(sec.color)+'"><h3><i></i>'+esc(sec.name)+'</h3><ul>';
-      sec.items.forEach(it=>{
-        const cur = (it.u === here);
-        h += '<li><a href="'+esc(SITE_HOME+it.u)+'"'+(cur? ' aria-current="page" class="cur"' : '')+'>'+esc(it.t)+(cur? '<em>いま見ているページ</em>' : '')+'</a></li>';
-      });
-      h += '</ul></section>';
-    });
-    h += '<a class="dr-form" href="'+SITE_FORM+'" target="_blank" rel="noopener">感想・励ましの言葉・要望・バグ報告はこちら<span aria-hidden="true">↗</span></a>';
-    dr.innerHTML = h;
-    dr.querySelector(".dr-x").addEventListener("click", ()=>close());
-  };
-  render(SITE_SNAPSHOT);
-  const btn = document.getElementById("bPages");
-  let lastFocus = null;
-  function open(){ lastFocus = document.activeElement; dr.hidden = false; scrim.hidden = false;
-    requestAnimationFrame(()=>{ dr.classList.add("on"); scrim.classList.add("on"); });
-    document.documentElement.classList.add("drawer-open"); if(btn) btn.setAttribute("aria-expanded","true");
-    const cur = dr.querySelector("a.cur") || dr.querySelector("a"); if(cur) setTimeout(()=>{ cur.focus({preventScroll:true}); cur.scrollIntoView({block:"center"}); }, 60); }
-  function close(){ if(dr.hidden) return; dr.classList.remove("on"); scrim.classList.remove("on");
-    document.documentElement.classList.remove("drawer-open"); if(btn) btn.setAttribute("aria-expanded","false");
-    setTimeout(()=>{ dr.hidden = true; scrim.hidden = true; }, 260); if(lastFocus && lastFocus.focus) lastFocus.focus({preventScroll:true}); }
-  if(btn) btn.addEventListener("click", ()=>{ dr.hidden? open() : close(); });
-  scrim.addEventListener("click", close);
-  document.addEventListener("keydown", (ev)=>{
-    if(dr.hidden) return;
-    if(ev.key === "Escape"){ ev.preventDefault(); close(); return; }
-    if(ev.key === "Tab"){                                  // パネルの中だけでフォーカスを回す
-      const f = dr.querySelectorAll("a[href],button"); if(!f.length) return;
-      const a = f[0], z = f[f.length-1];
-      if(ev.shiftKey && document.activeElement === a){ ev.preventDefault(); z.focus(); }
-      else if(!ev.shiftKey && document.activeElement === z){ ev.preventDefault(); a.focus(); }
-    }
-  });
-  window.SITENAV = { open, close, render };
-  /* 公開先で開いたときだけ、トップページから最新の一覧を読みこむ（失敗したら写しのまま） */
-  if(location.protocol === "https:" && /physics-chiba\.github\.io$/.test(location.hostname) && window.fetch){
-    fetch(SITE_HOME + "index.html", {cache:"no-cache"}).then(r=> r.ok? r.text() : "").then(txt=>{
-      const d = txt && parseSiteIndex(txt); if(d) render(d);
-    }).catch(()=>{});
-  }
-}
-document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
-
-
 /* ===== 90_boot.js ===== */
 /* 起動とテスト用フック */
 'use strict';
@@ -15802,13 +14581,6 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
   applySysKind(st.sysKind);    /* 描画対象（太陽と惑星／地球と人工衛星）を4つのシムにそろえる */
   autoPlayOn(st.cur);          /* ★開いた瞬間に動きだすシム（autoplay: true）★ */
   initProbOverlay();           /* 入試問題の問題文（画像）の重ね窓 */
-  /* ★「計算結果を表示」の開け閉め★（2026-10-03）
-     #resbar は毎フレーム作り直されることがあるので、ボタンに直接ではなく
-     document で受ける（＝作り直されても効きつづける）。 */
-  document.addEventListener('click', function (e) {
-    var b = e.target && e.target.closest ? e.target.closest('.rtog') : null;
-    if (b) { toggleRes(); }
-  });
   buildTabs();
   buildToc();
   buildPanel();
@@ -15887,19 +14659,12 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
     result: function () {
       var el = document.getElementById('resbar');
       if (!el) return null;
-      /* ★計算結果は ふだん閉じている★（2026-10-03）。テストから読むときだけ
-         いったん開いて数字を入れ、読み終えたらもとの状態に戻す。 */
-      var was = resOpen;
-      setResOpen(true);
       var items = Array.prototype.map.call(el.querySelectorAll('.ritem'), function (x) {
-        var u = x.querySelector('.ru');
-        return x.querySelector('.rk').textContent + '=' + x.querySelector('.rv').textContent
-          + (u ? ' ' + u.textContent : '');
+        return x.querySelector('.rk').textContent + '=' + x.querySelector('.rv').textContent;
       });
       var rows = Array.prototype.map.call(el.querySelectorAll('table.ktab tr'), function (tr) {
         return Array.prototype.map.call(tr.children, function (td) { return td.textContent; }).join('|');
       });
-      setResOpen(was);
       return { items: items, table: rows };
     },
     readout: function () {
