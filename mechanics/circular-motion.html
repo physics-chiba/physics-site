@@ -4299,6 +4299,11 @@ function rightM2s3(s, R) {
 var M2RES = '#2f3a8f';   /* 合力＝あい色 */
 function m2ForceOn(s) { s.ms.showF = true; syncModeBar(s.mode); }   /* 力の矢印を自動で ON */
 M2SC.s4 = { F: 0.12, v: 0.14, a: 0.014 };
+/* 2-4：「張力を分解する」と「合力のみ表示」は同時に ON にならない（片方を ON にすると、もう片方は OFF。2026-10-06 千葉さん） */
+function m2s4Chk(s) {
+  if (s.decomp) s.resOnly = false;
+  [['decomp', s.decomp], ['resOnly', s.resOnly]].forEach(function (q) { var b = s.extra && s.extra[q[0]]; if (b) { b.classList.toggle('on', !!q[1]); b.setAttribute('aria-pressed', q[1] ? 'true' : 'false'); } });
+}
 DEFS.m2s4 = m2Base({
   id: 'm2s4', num: 4, title: '円錐振り子',
   desc: '長さ $L=1.0$ m の糸で小球（$m=0.20$ kg）をつるし、水平面内で回す。向心力は<b>糸の張力の水平成分</b>。<span class="todo">右上の「真上から見る」「水平から見る」を押して、右の式と見比べよう。</span>',
@@ -4321,10 +4326,10 @@ DEFS.m2s4 = m2Base({
   },
   onView: function (s, i) { s.hl = (i === 2) ? 'v' : (i === 1 ? 'h' : null); s.renderRight(); },
   onDragView: function (s) { if (s.hl) { s.hl = null; s.renderRight(); } },
-  buttons: [{ k: 'decomp', label: '張力を分解する', cls: 'chkb', onClick: function (s, b) { s.decomp = !s.decomp; b.classList.toggle('on', s.decomp); b.setAttribute('aria-pressed', s.decomp ? 'true' : 'false'); if (s.decomp && !s.ms.showF) m2ForceOn(s); s.draw(); } },
+  buttons: [{ k: 'decomp', label: '張力を分解する', cls: 'chkb', onClick: function (s, b) { s.decomp = !s.decomp; m2s4Chk(s); if (s.decomp && !s.ms.showF) m2ForceOn(s); s.draw(); } },
     { k: 'resF', label: '合力を表示（張力と重力を合成）', cls: 'chkb', onClick: function (s, b) { s.resF = !s.resF; b.classList.toggle('on', s.resF); b.setAttribute('aria-pressed', s.resF ? 'true' : 'false'); if (s.resF && !s.ms.showF) m2ForceOn(s); s.draw(); } },
     /* 合力のみ表示：張力と重力を消して、合力（水平・中心向き）だけ（2026-10-05 千葉さん） */
-    { k: 'resOnly', label: '合力のみ表示', cls: 'chkb', onClick: function (s, b) { s.resOnly = !s.resOnly; b.classList.toggle('on', s.resOnly); b.setAttribute('aria-pressed', s.resOnly ? 'true' : 'false'); if (s.resOnly && !s.ms.showF) m2ForceOn(s); s.draw(); } }],
+    { k: 'resOnly', label: '合力のみ表示', cls: 'chkb', onClick: function (s, b) { s.resOnly = !s.resOnly; if (s.resOnly) s.decomp = false; m2s4Chk(s); if (s.resOnly && !s.ms.showF) m2ForceOn(s); s.draw(); } }],
   msg: function (s) {
     var th = M2.s4.thOf(s.v.w) * 180 / Math.PI;
     return '$\\cos\\theta = \\dfrac{g}{L\\omega^2}$ より $\\theta = ' + fmt(th, 1) + '^\\circ$。$\\omega$ を大きくすると、小球は外へ広がって高く上がる。';
@@ -4425,7 +4430,7 @@ function rightM2s4(s, R) {
     '<div class="qeq">' + tex('S = mL\\omega^2', true) + tex('\\cos\\theta = \\dfrac{mg}{S} = \\dfrac{g}{L\\omega^2}', true) + '</div>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('S = ' + fmt(s.v.S, 2) + '\\ \\text{N},\\ \\ \\theta = ' + fmt(th * 180 / Math.PI, 1) + '^\\circ') + '</p>' +
     '<p class="qnote">$\\cos\\theta \\le 1$ なので $\\omega \\ge \\sqrt{g/L} = ' + f2(C.wMin()) + '$ rad/s のときだけ、この円運動ができる。</p></div>';
-  h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('L = 1.0') + ' m、' + tex('g = 9.8') + ' m/s²。一緒に回る観測者は、小球の上に乗っている。</p>';
+  h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('L = 1.0') + ' m、' + tex('g = 9.8') + ' m/s²。' + (s.rot ? '一緒に回る観測者は、小球の上に乗っている。' : '') + '</p>';
   R.innerHTML = mathify(h);
 }
 
