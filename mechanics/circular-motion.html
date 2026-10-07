@@ -1452,6 +1452,11 @@ button.b.instb.nope{text-decoration:line-through;text-decoration-thickness:2px;o
 /* 指で押しやすく：−／＋ は 28px 以上（タッチの画面だけ） */
 @media(pointer:coarse){button.tiny.nudge,.vrow.cell button.tiny.nudge{min-width:28px;min-height:28px}}
 
+/* 1-1 の説明アニメ：右の列の「加速度 a」の中に置く（浮かぶ小窓ではない）。最大化のときだけ画面いっぱいに */
+.aexp.inline{position:static;width:auto;max-height:none;box-shadow:none;margin-top:.7em;border:1.5px solid #e07b18;background:#fffdf8;z-index:auto}
+.aexp.inline.max{position:fixed;left:16px;top:16px;right:16px;bottom:16px;z-index:60;overflow:auto;box-shadow:0 18px 50px rgba(20,23,28,.28);background:#fff}
+.aexp.inline .aexh b{color:#8a4300}
+
 </style>
 </head>
 <body id="top">
@@ -2008,7 +2013,8 @@ function sym(ctx, s, x, y, opt) {
   if (opt.halo !== false) { ctx.strokeStyle = opt.haloColor || 'rgba(255,255,255,.94)'; ctx.lineWidth = 4.5; ctx.lineJoin = 'round'; draw(true); }
   ctx.fillStyle = col; draw(false);
   if (opt.vec) {                                               /* 文字の上の小さな矢印 */
-    var ax0 = X + wb * 0.18, ax1 = X + wb * 0.98 + 1, ay = Y - size * 0.83;
+    var pw = 0; if (opt.vecSkip) { ctx.font = 'italic ' + size + 'px ' + MATH; pw = ctx.measureText(opt.vecSkip).width; }   /* vecSkip：矢印をつけない頭の文字（Δv の Δ） */
+    var ax0 = X + pw + (wb - pw) * 0.18, ax1 = X + wb * 0.98 + 1, ay = Y - size * 0.83;
     ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(ax0, ay); ctx.lineTo(ax1 - 2, ay); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(ax1 + 1, ay); ctx.lineTo(ax1 - 3.5, ay - 2.6); ctx.lineTo(ax1 - 3.5, ay + 2.6); ctx.closePath(); ctx.fill();
@@ -3250,7 +3256,7 @@ function rightM1(s, R) {
       '<div class="qeq">' + I.eq.map(function (e) { return '<div>' + tex(e, true) + '</div>'; }).join('') + '</div>' +
       '<p class="qnow"><span class="qtag now">いまの値</span>' + tex(m1Num(k, D)) + '</p>' +
       (I.note ? '<p class="qnote">' + I.note + '</p>' : '') +
-      (I.explainA ? '<button type="button" class="b aexpbtn" data-aexp>▶ $a$ が中心方向を向き、$v$ との関係式 $a = v\\omega = r\\omega^2$ が成り立つ理由</button>' : '') + '</div>';
+      (I.explainA ? '<div class="aexhost"></div>' : '') + '</div>';   /* 説明アニメは折りたたまずに最初から（2026-10-07 千葉さん） */
   }
   /* 7 つの量の関係の表：r と ω が決まれば全部決まる。いまの値もいっしょに */
   var REL = [
@@ -3271,7 +3277,7 @@ function rightM1(s, R) {
   R.querySelectorAll('[data-q]').forEach(function (b) {
     b.addEventListener('click', function () { s.sel = b.dataset.q; s.renderRight(); s.draw(); });
   });
-  var xb = R.querySelector('[data-aexp]'); if (xb) xb.addEventListener('click', function () { openAExplain(); });
+  aexpMount(R.querySelector('.aexhost'));
 }
 /* ---------- 「Ｆ一定・r小さくする」：F を一定に保ったまま、r を最大→最小へ少しずつ小さくする ----------
    ω = √(F/(m r)) が大きくなっていく様子を見せる。時刻はふつうに進め（戻さない）、
@@ -3344,26 +3350,62 @@ var AEXP_STEPS = [
   { d: 5.0, h: '6. $\\Delta t \\to 0$ にすると、$\\Delta\\vec{v}$ は中心を向く', t: '$\\Delta t$（$\\Delta\\theta$）を小さくしていくと、$\\Delta\\vec{v}$ は $\\vec{v}$ に垂直になり、<b>円の中心の向き</b>を指す。だから $\\vec{a}$ は中心向き。' },
   { d: 7.0, h: '7. 加速度の大きさ $a = v\\omega = r\\omega^2$', t: '$a = \\dfrac{|\\Delta\\vec{v}|}{\\Delta t} = \\dfrac{v\\Delta\\theta}{\\Delta t} = \\dfrac{v\\,\\omega\\Delta t}{\\Delta t} = v\\omega$。さらに $v = r\\omega$ を入れると $a = r\\omega^2 = \\dfrac{v^2}{r}$。<b>向きは円の中心向き。</b>' }
 ];
+/* 右の列の「加速度 a」の説明の中に、折りたたまずに置く（2026-10-07 千葉さん）。右の列は何度も描き直されるので、
+   箱は 1 つだけ作って、描き直されるたびに新しい置き場所（.aexhost）へ移す。初めて出たときは最初から再生 */
+function aexpMount(host) {
+  if (!host) { if (AEXP) { aexpPlay(false); AEXP.box.classList.remove('max'); AEXP.mounted = false; } return; }   /* a 以外を選んだら止める */
+  var first = !AEXP;
+  if (first) openAExplain();
+  host.appendChild(AEXP.box); AEXP.box.classList.add('show');
+  if (!AEXP.mounted) { AEXP.mounted = true; aexpGo(0); aexpPlay(true); } else aexpDraw();
+}
 function openAExplain() {
   if (AEXP) { AEXP.box.classList.add('show'); aexpPlay(true); return; }
-  var box = el('div', 'aexp show'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '加速度が中心を向く理由の説明アニメ');
-  box.innerHTML = '<div class="aexh"><b>a が中心方向を向き、a = vω = rω² が成り立つ理由</b>' +
-    '<button type="button" class="aexmax" title="最大化" aria-label="最大化">' + MAX_SVG + '</button><button type="button" class="aexx" title="閉じる" aria-label="閉じる">×</button></div>' +
+  var box = el('div', 'aexp inline show'); box.setAttribute('role', 'region'); box.setAttribute('aria-label', '加速度が中心を向く理由の説明アニメ');
+  box.innerHTML = '<div class="aexh"><b>$a$ が中心方向を向き、$v$ との関係式 $a = v\\omega = r\\omega^2$ が成り立つ理由</b>' +
+    '<button type="button" class="aexmax" title="最大化" aria-label="最大化">' + MAX_SVG + '</button></div>' +
     '<canvas class="aexcv"></canvas><div class="aextxt"></div>' +
     '<div class="aexbar"><button type="button" class="b tiny aexprev">◀ 戻る</button><button type="button" class="b aexpp">❚❚ 一時停止</button><button type="button" class="b tiny aexnext">次へ ▶</button>' +
     '<span class="aexdots"></span><button type="button" class="b tiny aexrw">最初から</button></div>';
-  document.body.appendChild(box);
+  box.querySelector('.aexh b').innerHTML = mathify(box.querySelector('.aexh b').innerHTML);
   AEXP = { box: box, cv: box.querySelector('.aexcv'), txt: box.querySelector('.aextxt'), step: 0, u: 0, playing: true, last: 0, raf: 0, shown: -1 };
   var dots = box.querySelector('.aexdots');
   AEXP_STEPS.forEach(function (st, i) { var b = el('button', 'aexdot'); b.type = 'button'; b.title = 'ステップ ' + (i + 1); b.addEventListener('click', function () { aexpGo(i); }); dots.appendChild(b); });
-  box.querySelector('.aexx').addEventListener('click', function () { box.classList.remove('show'); aexpPlay(false); });
   box.querySelector('.aexmax').addEventListener('click', function () { box.classList.toggle('max'); aexpDraw(); });
   box.querySelector('.aexpp').addEventListener('click', function () { aexpPlay(!AEXP.playing); });
   box.querySelector('.aexprev').addEventListener('click', function () { aexpGo(Math.max(0, AEXP.step - (AEXP.u < 0.15 ? 1 : 0))); });
   box.querySelector('.aexnext').addEventListener('click', function () { aexpGo(Math.min(AEXP_STEPS.length - 1, AEXP.step + 1)); });
   box.querySelector('.aexrw').addEventListener('click', function () { aexpGo(0); aexpPlay(true); });
-  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && AEXP && AEXP.box.classList.contains('show')) { box.classList.remove('show', 'max'); aexpPlay(false); } });
-  aexpGo(0); aexpPlay(true);
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && AEXP && AEXP.box.classList.contains('max')) { box.classList.remove('max'); aexpDraw(); } });   /* Esc で最大化をやめる */
+}
+/* 図の中の式：a⃗ = Δv⃗/Δt = (v⃗' − v⃗)/Δt（分数も canvas に描く） */
+function aexpFormula(ctx, x, y, size) {
+  var parts = [['a', true], ['=', false], ['F', ['Δv', true], ['Δt', false]], ['=', false], ['F', ["v'−v", 'vv'], ['Δt', false]]];
+  ctx.save(); ctx.font = 'italic ' + size + 'px ' + MATH;
+  var wOf = function (t) { return ctx.measureText(t).width; }, gap = 6, w = 0;
+  var ws = parts.map(function (p) { var ww = p[0] === 'F' ? Math.max(wOf(p[1][0]) + (p[1][1] === 'vv' ? 14 : 0), wOf(p[2][0])) + 8 : wOf(p[0]); w += ww + gap; return ww; });
+  w -= gap;
+  ctx.fillStyle = 'rgba(255,255,255,.93)'; ctx.strokeStyle = 'rgba(193,46,104,.45)'; ctx.lineWidth = 1.2;
+  rrect(ctx, x - 8, y - size * 1.45, w + 16, size * 2.9, 8); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  var cx = x;
+  parts.forEach(function (p, i) {
+    var ww = ws[i];
+    if (p[0] === 'F') {
+      var nm = p[1][0], dn = p[2][0];
+      if (p[1][1] === 'vv') {                                    /* v' − v（どちらにも矢印） */
+        ctx.save(); ctx.font = 'italic ' + size + 'px ' + MATH; var w1 = ctx.measureText("v'").width, wm = ctx.measureText('−').width, w2 = ctx.measureText('v').width; ctx.restore();
+        var sx = cx + (ww - (w1 + wm + w2 + 14)) / 2;
+        sym(ctx, "v'", sx + w1 / 2, y - size * 0.62, { size: size, color: COL.acc, vec: true });
+        label(ctx, '−', sx + w1 + 7 + wm / 2, y - size * 0.62, { size: size, color: COL.acc, halo: false });
+        sym(ctx, 'v', sx + w1 + wm + 14 + w2 / 2, y - size * 0.62, { size: size, color: COL.acc, vec: true });
+      } else sym(ctx, nm, cx + ww / 2, y - size * 0.62, { size: size, color: COL.acc, vec: !!p[1][1], vecSkip: nm.charAt(0) === 'Δ' ? 'Δ' : '' });   /* Δ はベクトルでない：v だけに矢印 */
+      sym(ctx, dn, cx + ww / 2, y + size * 0.68, { size: size, color: COL.acc });
+      ctx.save(); ctx.strokeStyle = COL.acc; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx + ww, y); ctx.stroke(); ctx.restore();
+    } else if (p[0] === '=') label(ctx, '=', cx + ww / 2, y, { size: size, color: COL.acc, halo: false });
+    else sym(ctx, p[0], cx + ww / 2, y, { size: size + 1, color: COL.acc, vec: p[1] });
+    cx += ww + gap;
+  });
 }
 function aexpGo(i) { AEXP.step = i; AEXP.u = 0; aexpDraw(); }
 function aexpPlay(on) {
@@ -3396,9 +3438,11 @@ function aexpDraw() {
   ctx.fillStyle = '#fbfaf6'; ctx.fillRect(0, 0, W, H);
   var S = Math.min(W, H * 1.5) / 520;                         /* 図の縮尺（基準の幅 520） */
   var O = { x: W * 0.52, y: H * 0.88 }, R = 230 * S, L = 120 * S;
-  var dth0 = 40 * Math.PI / 180;
-  /* Δθ：ステップ 6 で小さくしていく */
-  var dth = st < 5 ? dth0 : (st === 5 ? dth0 + (5 * Math.PI / 180 - dth0) * e : 5 * Math.PI / 180);
+  var dth0 = 40 * Math.PI / 180, d5 = 5 * Math.PI / 180, d7 = 0.4 * Math.PI / 180;
+  /* Δθ：ステップ 6 で 40° → 5°、ステップ 7 の前半でさらに 0 に近づける（a が中心を向くところまで見せる。2026-10-06 千葉さん） */
+  var u7 = clamp(u / 0.55, 0, 1), e7 = u7 * u7 * (3 - 2 * u7);
+  var dth = st < 5 ? dth0 : (st === 5 ? dth0 + (d5 - dth0) * e : d5 + (d7 - d5) * e7);
+  var lin = u;                                                   /* ステップ 1・2 の小球は一定の速さ（ゆっくり止まって見えないように） */
   var P = function (ang, rr) { return { x: O.x + rr * Math.cos(ang), y: O.y - rr * Math.sin(ang) }; };
   /* 円（上の部分だけ見える）と中心 O */
   ctx.save(); ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(O.x, O.y, R, Math.PI * 1.02, Math.PI * 1.98, false); ctx.stroke(); ctx.restore();
@@ -3407,8 +3451,9 @@ function aexpDraw() {
   var p0 = P(Math.PI / 2, R);                                    /* 始点（いちばん上） */
   /* ステップ 1：小球が円の上を動く */
   var ballAng = Math.PI / 2;
-  if (st === 0) ballAng = Math.PI / 2 - 0.6 * (1 - e);        /* 右から始点へ進んできて、始点で止まる（もどらない） */
-  if (st === 1) ballAng = Math.PI / 2 + dth * e;
+  var span0 = dth0 * AEXP_STEPS[0].d / AEXP_STEPS[1].d;         /* ステップ 1 と 2 で同じ角速度になるように */
+  if (st === 0) ballAng = Math.PI / 2 - span0 * (1 - lin);     /* 右から一定の速さで始点へ（そのままステップ 2 へ続く） */
+  if (st === 1) ballAng = Math.PI / 2 + dth * lin;
   if (st >= 2) ballAng = Math.PI / 2 + dth;
   var p1 = P(Math.PI / 2 + dth, R);
   /* 半径の破線と Δθ */
@@ -3416,8 +3461,8 @@ function aexpDraw() {
   dline(O, p0);
   sym(ctx, 'r', (O.x + p0.x) / 2 - 12, (O.y + p0.y) / 2 + (st >= 5 ? 40 * S : 0), { size: 15 });
   if (st >= 1 && st <= 3) {
-    var pb = P(Math.PI / 2 + dth * (st === 1 ? e : 1), R); dline(O, pb);
-    ctx.save(); ctx.fillStyle = 'rgba(46,170,110,.28)'; ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.arc(O.x, O.y, 36 * S, -Math.PI / 2, -Math.PI / 2 - dth * (st === 1 ? e : 1), true); ctx.closePath(); ctx.fill(); ctx.restore();
+    var pb = P(Math.PI / 2 + dth * (st === 1 ? lin : 1), R); dline(O, pb);
+    ctx.save(); ctx.fillStyle = 'rgba(46,170,110,.28)'; ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.arc(O.x, O.y, 36 * S, -Math.PI / 2, -Math.PI / 2 - dth * (st === 1 ? lin : 1), true); ctx.closePath(); ctx.fill(); ctx.restore();
     sym(ctx, 'Δθ', O.x - 22 * S, O.y - 60 * S, { size: 14 });
   }
   ctx.save(); ctx.fillStyle = '#1b1f24'; ctx.beginPath(); ctx.arc(p0.x, p0.y, 4, 0, TAU); ctx.fill(); ctx.restore();
@@ -3429,7 +3474,7 @@ function aexpDraw() {
   /* v' の向き（下向きに Δθ 回る） */
   var dv = { x: -Math.cos(dth), y: Math.sin(dth) };
   if (st >= 1) {
-    var ang1 = Math.PI / 2 + dth * (st === 1 ? e : 1), pp = P(ang1, R), dvv = { x: -Math.cos(ang1 - Math.PI / 2), y: Math.sin(ang1 - Math.PI / 2) };
+    var ang1 = Math.PI / 2 + dth * (st === 1 ? lin : 1), pp = P(ang1, R), dvv = { x: -Math.cos(ang1 - Math.PI / 2), y: Math.sin(ang1 - Math.PI / 2) };
     var from = pp, tip;
     if (st === 2) { from = { x: p1.x + (p0.x - p1.x) * e, y: p1.y + (p0.y - p1.y) * e }; }   /* 平行移動 */
     if (st >= 3) from = p0;
@@ -3443,18 +3488,26 @@ function aexpDraw() {
       /* Δv（v の先 → v' の先）と a（同じ向き、ピンク） */
       var t1 = { x: p0.x + dv.x * L, y: p0.y + dv.y * L }, k = st === 3 ? e : 1;
       var dvx = (t1.x - vEnd.x), dvy = (t1.y - vEnd.y);
-      ctx.save(); ctx.strokeStyle = '#d1352b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(vEnd.x, vEnd.y); ctx.lineTo(vEnd.x + dvx * k, vEnd.y + dvy * k); ctx.stroke(); ctx.restore();
-      if (k > 0.98) { arrow(ctx, vEnd.x, vEnd.y, t1.x, t1.y, 'force', '#d1352b', { noShift: true }); sym(ctx, 'Δv', vEnd.x + dvx / 2 - (st >= 5 ? 34 : 22), vEnd.y + dvy / 2, { size: 15, color: '#d1352b', vec: true }); }
+      var dvOn = !(st === 6 && u > 0.8);                           /* ステップ 7：a が中心を向いたら Δv は消す（2026-10-07 千葉さん） */
+      if (dvOn) { ctx.save(); ctx.strokeStyle = '#d1352b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(vEnd.x, vEnd.y); ctx.lineTo(vEnd.x + dvx * k, vEnd.y + dvy * k); ctx.stroke(); ctx.restore(); }
+      if (dvOn && k > 0.98) { arrow(ctx, vEnd.x, vEnd.y, t1.x, t1.y, 'force', '#d1352b', { noShift: true }); sym(ctx, 'Δv', vEnd.x + dvx / 2 - (st >= 5 ? 34 : 22), vEnd.y + dvy / 2, { size: 15, color: '#d1352b', vec: true, vecSkip: 'Δ' }); }
       if (st === 3 && k > 0.98 || st >= 4) {
         /* 加速度 a は Δv と同じ向き（始点から） */
         var al = Math.hypot(dvx, dvy) || 1, aL = (st >= 5 ? 110 : 90) * S;
-        var ax = p0.x + dvx / al * aL, ay = p0.y + dvy / al * aL;
+        var ux = dvx / al, uy = dvy / al;
+        if (st === 6) { var kk = clamp((u - 0.55) / 0.25, 0, 1); ux = ux * (1 - kk); uy = uy * (1 - kk) + kk; var ul = Math.hypot(ux, uy) || 1; ux /= ul; uy /= ul; }   /* 最後はぴったり中心向き */
+        var ax = p0.x + ux * aL, ay = p0.y + uy * aL;
+        if (st === 6 && u > 0.6) dline(p0, O);
         arrow(ctx, p0.x, p0.y, ax, ay, 'acc');
         sym(ctx, 'a', ax + 14, ay - 4, { size: 16, color: COL.acc, vec: true });
       }
-      /* Δθ（v と v' のあいだ） */
-      ctx.save(); ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(p0.x, p0.y, 34 * S, Math.PI, Math.PI - dth, true); ctx.stroke(); ctx.restore();
     }
+    if ((st === 2 && e > 0.97) || (st >= 3 && st <= 4)) {        /* Δθ（v と v' のあいだ）：弧と文字（2026-10-06 千葉さん） */
+      var rr2 = 40 * S;
+      ctx.save(); ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(p0.x, p0.y, rr2, Math.PI, Math.PI - dth, true); ctx.stroke(); ctx.restore();
+      var am2 = Math.PI - dth / 2; sym(ctx, 'Δθ', p0.x + Math.cos(am2) * (rr2 + 16), p0.y + Math.sin(am2) * (rr2 + 16) * 1 + 2, { size: 14, color: '#1f6b43' });
+    }
+    if (st >= 4) aexpFormula(ctx, p0.x + 30 * S, p0.y + 38 * S, 15);   /* a = Δv/Δt = (v' − v)/Δt */
     if (st === 4) {
       /* 扇形：半径 v、中心角 Δθ の弧（破線）と「弧の長さ vΔθ」 */
       ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(p0.x, p0.y, L, Math.PI, Math.PI - dth, true); ctx.stroke(); ctx.restore();
@@ -5396,7 +5449,7 @@ function drawM3(s, ctx, W, H) {
     line(0, 0, 0, refUp ? R * 1.0 : -R * 1.0, '#6f7782', 1.1, [4, 4]);
     var aNow = q.kind === 'fly' ? tr.ev.ang : q.ang, pr = GS === 2 ? [R * Math.sin(aNow), R * Math.cos(aNow)] : [R * Math.sin(aNow), -R * Math.cos(aNow)];
     if (q.kind === 'circle') line(0, 0, pr[0], pr[1], GS === 3 ? '#7a5a32' : '#6f7782', GS === 3 ? 1.8 : 1.1, GS === 3 ? null : [3, 3]);
-    var an = Math.atan2(Math.sin(aNow), Math.cos(aNow)), aa = Math.abs(an);   /* 何周しても −180°〜180° にそろえる（基準線からの角） */
+    var an = aNow >= 0 ? aNow % TAU : -((-aNow) % TAU), aa = Math.abs(an);   /* θ は 180° を超えてもそのまま（0〜360°。1 周したら 0 から。2026-10-07 千葉さん） */
     if (aa > 0.15) {                                         /* 角 θ（基準線から、いまの半径まで） */
       var rA = 0.13, st0 = refUp ? Math.PI / 2 : -Math.PI / 2, a3 = (GS === 2 ? -1 : 1) * an;
       ctx.save(); ctx.strokeStyle = COL.ink2; ctx.lineWidth = 1.2; ctx.beginPath();
@@ -6419,7 +6472,7 @@ function activateMode(id) {
   document.querySelectorAll('#tabs .tab').forEach(function (b) { b.classList.toggle('on', b.dataset.mode === id); });
   document.querySelectorAll('.mode').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   document.body.classList.toggle('inm1', id === 'mode1');            /* 文字クリックの注意はモード1 だけ */
-  if (id !== 'mode1' && AEXP && AEXP.box.classList.contains('show')) { AEXP.box.classList.remove('show', 'max'); aexpPlay(false); }   /* 1-1 の説明アニメはモード1 だけ */
+  if (id !== 'mode1' && AEXP) { AEXP.box.classList.remove('max'); aexpPlay(false); }   /* 1-1 の説明アニメは他のモードでは止める */
   SIMS.forEach(function (s) { if (s.mode !== id && s.playing) { s.playing = false; s.syncPlayLabel(); } });
   if (!MODE_BUILT[id]) {
     MODE_BUILT[id] = 1;
