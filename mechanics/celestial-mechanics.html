@@ -4394,6 +4394,27 @@ function kTable(rows, sys) {
   };
 }
 
+/* ===== 近○点・遠○点の印と名前（図の中に置く）=====
+   ★「近点」「遠点」とは書かないこと★（先生の指示・2026-10-10）
+     地球のまわりの楕円なら「近地点・遠地点」、太陽のまわりなら「近日点・遠日点」。
+     名前は periName(v) / apoName(v) で作る（どちらも v.sys で切りかわる。
+     いつも地球のまわりと決まっているシムでは、文字をそのまま書いてよい）。
+   X, Y … その点の画面での座標
+   side … 'left' なら文字を点の左、'right'（既定）なら右に置く
+   opt  … { color, haloColor, dy, r } */
+function apsisMark(ctx, X, Y, name, side, opt) {
+  opt = opt || {};
+  var col = opt.color || COL.sub;
+  ctx.save();
+  ctx.fillStyle = col; ctx.strokeStyle = opt.ring || '#fff'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(X, Y, opt.r || 3.6, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  var right = (side !== 'left');
+  label(ctx, name, X + (right ? 8 : -8), Y + (opt.dy === undefined ? -13 : opt.dy),
+    { size: 10.5, bold: true, color: col, align: right ? 'left' : 'right',
+      haloColor: opt.haloColor });
+}
+
 /* ===== 図の共通部品 ===== */
 
 /* 読み物（#longbox）の中に入れる絵。
@@ -5210,8 +5231,8 @@ DEFS['m1-2'] = {
         resItem('半長軸 $a$', fmt3(o.a), false, sy.uL),
         resItem('半短軸 $b$', fmt3(o.b), false, sy.uL),
         resItem('離心率 $\\varepsilon$', fmt3(o.e)),
-        resItem('近点 $a(1-\\varepsilon)$', fmt3(o.rp), false, sy.uL),
-        resItem('遠点 $a(1+\\varepsilon)$', fmt3(o.ra), false, sy.uL),
+        resItem(periName(v) + ' $a(1-\\varepsilon)$', fmt3(o.rp), false, sy.uL),
+        resItem(apoName(v) + ' $a(1+\\varepsilon)$', fmt3(o.ra), false, sy.uL),
         resItem('中心〜焦点 $c=a\\varepsilon$', fmt3(o.c), false, sy.uL),
         resItem('周期 $T$', (sy.key === 'earth') ? fmt3(o.T / 3600) : fmt3(o.T),
           false, (sy.key === 'earth') ? '時間' : '年')
@@ -5340,13 +5361,16 @@ function m13Orb(v) {
   return o;
 }
 
-/* 3つの扇形を掃く時刻（近点・その中間・遠点から、それぞれ同じ Δt だけ）。時刻は近点を 0 とする。 */
-function m13Windows(o) {
+/* 3つの扇形を掃く時刻（近○点・その中間・遠○点から、それぞれ同じ Δt だけ）。
+   時刻は近○点を 0 とする。
+   ★「どこで」の文字は v をもらって 近日点／近地点 を出し分ける★（2026-10-10） */
+function m13Windows(o, v) {
   var dt = o.T / 12;
+  var pn = v ? periName(v) : '近日点', an = v ? apoName(v) : '遠日点';
   return [
-    { t0: 0, t1: dt, col: COL.sect1, name: 'S_1', where: '近点のあたり' },
+    { t0: 0, t1: dt, col: COL.sect1, name: 'S_1', where: pn + 'のあたり' },
     { t0: o.T * 0.25 - dt / 2, t1: o.T * 0.25 + dt / 2, col: COL.sect2, name: 'S_2', where: 'その中間' },
-    { t0: o.T * 0.5 - dt / 2, t1: o.T * 0.5 + dt / 2, col: COL.sect3, name: 'S_3', where: '遠点のあたり' }
+    { t0: o.T * 0.5 - dt / 2, t1: o.T * 0.5 + dt / 2, col: COL.sect3, name: 'S_3', where: an + 'のあたり' }
   ];
 }
 function m13Ecc(o, t) { return K.ecc(TAU * t / o.T, o.e); }
@@ -5362,10 +5386,15 @@ DEFS['m1-3'] = {
   units: function (v) { return (v.sys === 'earth') ? [] : ['AU']; },
   legendKeys: ['sun', 'orbit', 'vel', 'dim', 'sect'],
   title: function () { return '1-2　ケプラーの第2法則　—　' + lawTxt('k2'); },
-  sub: '<b>第2法則</b>：' + LAW.k2 + '。　' + LAW.n2 + '。<br>' +
-    '左上の2本のスライドバーで、<b>はじめの位置での速さ</b>（その場所の円軌道の何倍か）と' +
-    '<b>速度の向き</b>（動径に垂直な向きから測った角）を変えると、軌道の形が変わります。' +
-    'どんな形にしても、近点・中間・遠点でぬり分けた<b>3つの扇形の面積はいつも等しい</b>ことを確かめよう。',
+  /* ★「近点・遠点」とは書かない★（先生の指示・2026-10-10）。
+     描画対象で「近日点・遠日点」／「近地点・遠地点」が変わるので、sub は関数にする。 */
+  sub: function (v) {
+    return '<b>第2法則</b>：' + LAW.k2 + '。　' + LAW.n2 + '。<br>' +
+      '左上の2本のスライドバーで、<b>はじめの位置での速さ</b>（その場所の円軌道の何倍か）と' +
+      '<b>速度の向き</b>（動径に垂直な向きから測った角）を変えると、軌道の形が変わります。' +
+      'どんな形にしても、' + periName(v) + '・中間・' + apoName(v) +
+      'でぬり分けた<b>3つの扇形の面積はいつも等しい</b>ことを確かめよう。';
+  },
   note: '<b>' + LAW.k2 + '</b>（' + LAW.n2 + '）——これが第2法則です。' +
     '近いところでは<b>動径が速く</b>、遠いところでは<b>動径がゆっくり</b>動くので、面積が等しい。' +
     'だから $r$ が小さいほど $v$ は大きく、$\\tfrac{1}{2}rv\\sin\\theta$（＝面積速度）は<b>ずっと一定</b>です。',
@@ -5446,7 +5475,7 @@ DEFS['m1-3'] = {
     var v = V(s), o = m13Orb(v), sy = sysOf(v), i;
     var vw = orbScene(W, H, o, { l: 52, r: 52, t: LAW_BAND + 26, b: 46 });
     s.view = vw;
-    var wins = m13Windows(o), tp = m13Tperi(o, t);
+    var wins = m13Windows(o, v), tp = m13Tperi(o, t);
     drawOrbitEllipse(ctx, vw, o, COL.orbit, [], 1.5);
 
     /* 3つの扇形（同じ Δt で掃くぶん）。
@@ -5467,6 +5496,16 @@ DEFS['m1-3'] = {
       var lx = vw.X(o.a * (Math.cos(Em) - o.e) * 0.72), ly = vw.Y(o.b * Math.sin(Em) * 0.72);
       label(ctx, w.name, lx, ly, { size: 13, bold: true, color: w.col });
     });
+    /* ★近日点（近地点）・遠日点（遠地点）の印★（先生の指示・2026-10-10）
+       下の表の「どこで」に「近日点のあたり」「遠日点のあたり」と書いてあるので、
+       それが図のどこなのかを目で追えるようにする。
+       円に近いときは2つが重なるので出さない。
+       ★名前は長軸の「下」に出す（dy を +）★——上に出すと、遠○点にいる惑星の
+       「惑星」の名前とちょうど同じ高さになって重なる（はじめの状態がまさにそれ）。 */
+    if (vw.X(o.rp) - vw.X(-o.ra) > 52) {
+      apsisMark(ctx, vw.X(o.rp), vw.Y(0), periName(v), 'right', { haloColor: '#fff', r: 3, dy: 16 });
+      apsisMark(ctx, vw.X(-o.ra), vw.Y(0), apoName(v), 'left', { haloColor: '#fff', r: 3, dy: 16 });
+    }
 
     var q = K.state(o, t, o.M0, false);
     var px = vw.X(q.x), py = vw.Y(q.y);
@@ -5524,7 +5563,7 @@ DEFS['m1-3'] = {
   },
   result: function (v, s, t) {
     var o = m13Orb(v), sy = sysOf(v);
-    var wins = m13Windows(o), dt = o.T / 12;
+    var wins = m13Windows(o, v), dt = o.T / 12;
     var uA = sy.uL + '²/' + (sy.key === 'earth' ? 's' : '年');
     return {
       /* ★面積速度 dS/dt は、右の読み出しにも出していて二重だった★（先生の指摘）
@@ -5533,7 +5572,7 @@ DEFS['m1-3'] = {
         resItem('離心率 $\\varepsilon$', fmt3(o.e)),
         resItem('はじめの距離 $r_0$', fmt3(o.r0), false, sy.uL),
         resItem('はじめの速さ $v_0$', fmt3(o.v0), false, sy.uV),
-        resItem('近点の速さ $v_{\\text{近}}$', fmt3(o.vp), false, sy.uV),
+        resItem(periName(v) + 'の速さ $v_{\\text{近}}$', fmt3(o.vp), false, sy.uV),
         resItem('面積速度 $dS/dt$', fmt3(o.dS), false, uA)
       ]),
       table: {
@@ -6167,6 +6206,19 @@ DEFS['m1-5'] = {
     ctx.restore();
     label(ctx, periName(v), vw.X(o.rp) + 12, vw.Y(0) + 13,
       { size: 10.5, color: COL.sub, align: 'left' });
+    /* ★遠日点（遠地点）の目印★（先生の指示・2026-10-10）
+       近○点だけ書いて遠○点がないと、「いちばん遠いところ」がどこなのか図から読めない。
+       円に近いときは近○点と重なるので出さない。 */
+    if (vw.X(o.rp) - vw.X(-o.ra) > 46) {
+      ctx.save();
+      ctx.strokeStyle = COL.sub; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(vw.X(-o.ra), vw.Y(0) - 7); ctx.lineTo(vw.X(-o.ra), vw.Y(0) + 7);
+      ctx.stroke();
+      ctx.restore();
+      label(ctx, apoName(v), vw.X(-o.ra) - 12, vw.Y(0) + 13,
+        { size: 10.5, color: COL.sub, align: 'right' });
+    }
     /* この図だけで第1〜第3法則を全部確かめられるので、3つとも上に書いておく */
     drawLawList(ctx, W, [
       ['第1法則', lawTxt('k1')],
@@ -7044,10 +7096,13 @@ DEFS['m2-2'] = {
         for (i = 0; i <= 220; i++) {
           var rr = rlo + (rmax - rlo) * i / 220;
           var u = P.grav.U(v.Ms, rr);
-          U.push([rr, u]);
-          E.push([rr, o.Em]);
           var kk = o.Em - u;
-          Kk.push([rr, kk >= 0 ? kk : NaN]);      /* K < 0 のところへは行けない */
+          U.push([rr, u]);
+          /* ★E の点線は、K の線と同じところで終わらせる★（先生の指示・2026-10-10）
+             2-2 と同じ決まり。K = E − U < 0 の r には行けないので、
+             そこへ E の点線だけをのばさない。 */
+          E.push([rr, kk >= 0 ? o.Em : NaN]);
+          Kk.push([rr, kk >= 0 ? kk : NaN]);
         }
         var q = P.grav.at(o, t), qU = P.grav.U(v.Ms, q.r);
         /* ★たての範囲は「地表（R = 6371 km）での U」を目安にしめる★
@@ -7159,6 +7214,19 @@ DEFS['m2-2'] = {
       ctx.stroke();
       ctx.restore();
     })();
+
+    /* ★遠地点に印と名前★（先生の指示・2026-10-10）
+       ★向きに注意★ P.grav.make は「はじめの位置がいつも画面の右」に来るように
+       軌道ぜんたいを (cph, sph) だけ回してある。遠地点ももとの座標では (−ra, 0) なので、
+       同じだけ回してから画面の座標に直すこと（回し忘れると、あらぬ場所に印が出る）。
+       円に近いときと、画面の外に出るときは出さない（文字が重なって読めなくなる）。 */
+    if (o.bound) {
+      var apx = vw.X(-o.ra * o.cph), apy = vw.Y(-o.ra * o.sph);
+      if (apx > 14 && apx < W - 14 && apy > 30 && apy < YSP - 34 &&
+        Math.hypot(apx - vw.X(o.q * o.cph), apy - vw.Y(o.q * o.sph)) > 46) {
+        apsisMark(ctx, apx, apy, '遠地点', 'right', { haloColor: '#fff' });
+      }
+    }
 
     /* はじめの位置（いつも右端。初速度を変えても動かない） */
     var s0x = vw.X(v.r02), s0y = vw.Y(0);
@@ -7886,10 +7954,18 @@ DEFS['m2-3'] = {
         for (i = 0; i <= 200; i++) {
           var rr = rlo + (rmax - rlo) * i / 200;
           var u = -M23.GM / rr;
-          U.push([rr, u]);
-          E.push([rr, o.Em]);
           var kk = o.Em - u;
-          Kk.push([rr, kk >= 0 ? kk : NaN]);        /* K<0 のところへは行けない */
+          U.push([rr, u]);
+          /* ★E の点線は、K の線と同じところで終わらせる★
+             （先生の指示・2026-10-10：「実際にはとりえない r についても
+               E の点線を書くのをやめて。右側に延長している部分のこと」）
+             K = E − U < 0 になる r には、どうやっても行けない。
+             前は E だけを右はしまで引いていたので、K の線が終わったあとも
+             点線だけがのびていて、「まだその先へ行ける」ように見えていた。
+             U の曲線は空間のようすなので、これまでどおり全部ひく。
+             ※ E ≥ 0（とじない軌道）のときは K が 0 にならないので、右はしまで引かれる。 */
+          E.push([rr, kk >= 0 ? o.Em : NaN]);
+          Kk.push([rr, kk >= 0 ? kk : NaN]);
         }
         var q = o.at(t);
         /* ★ o.at(t) は軌道の位置と速さしか返さない（U・K は入っていない）★
@@ -7917,8 +7993,10 @@ DEFS['m2-3'] = {
             { color: COL.vel, x: q.r, y: o.Em, r: 5.2, name: 'いまの E', lx: 10, ly: -11, align: 'left' }
           ],
           marks: o.bound ? [
-            { x: o.q, y: o.Em, color: COL.sub, r: 4, name: '近点', lx: -5, ly: 13, align: 'right' },
-            { x: o.ra, y: o.Em, color: COL.sub, r: 4, name: '遠点', lx: 5, ly: 13, align: 'left' }
+            /* ★「近点」「遠点」とは書かない★（先生の指示・2026-10-10）。
+               このシムはいつも地球のまわりなので「近地点・遠地点」。 */
+            { x: o.q, y: o.Em, color: COL.sub, r: 4, name: '近地点', lx: -5, ly: 13, align: 'right' },
+            { x: o.ra, y: o.Em, color: COL.sub, r: 4, name: '遠地点', lx: 5, ly: 13, align: 'left' }
           ] : []
         };
       },
@@ -8044,14 +8122,28 @@ DEFS['m2-3'] = {
         velArrow(ctx, px, py, q.vx, q.vy, vsc, 'v = ' + fmt(q.v, 2) + ' km/s', 10, 16);
       }
     }
-    /* 打ち出す場所 */
+    /* 打ち出す場所（＝いちばん地球に近いところ＝近地点。k ≥ 1 なのでいつもそう） */
     var s0 = o.at(0);
     ctx.save();
     ctx.strokeStyle = COL.sub; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(vw.X(s0.x), vw.Y(s0.y), 8, 0, TAU); ctx.stroke();
     ctx.restore();
-    if (farEnough) label(ctx, '打ち出す場所', vw.X(s0.x), vw.Y(s0.y) + 19,
+    if (farEnough) label(ctx, '打ち出す場所（近地点）', vw.X(s0.x), vw.Y(s0.y) + 19,
       { size: 10.5, color: COL.sub });
+
+    /* ★遠地点に印と名前★（先生の指示・2026-10-10）
+       右の「U・K・E を重ねた図」にも「遠地点」の印があるので、
+       図とグラフで同じところを指していることが目で追えるようにする。
+       とじない軌道（放物線・双曲線）には遠地点がないので出さない。
+       名前は点の上に出す——真下は「めやす：k = 1.9 の楕円」の文字と同じ高さになるため。
+       ★円（k = 1）のときは出さない★——近地点と遠地点が同じ場所になり、
+       地球や「人工衛星」の文字と重なって読めなくなるため（実際にそうなった）。 */
+    if (o.bound) {
+      var apx = vw.X(-o.ra), apy = vw.Y(0);
+      if (apx > 12 && apx < W - 12 && (vw.X(o.q) - apx) > 46) {
+        apsisMark(ctx, apx, apy, '遠地点', 'right', { haloColor: '#fff' });
+      }
+    }
 
     /* ★画面の外へ出ていくとき（第二宇宙速度以上）は、吹き出しでお別れを言う★
        だまって消えると「こわれて消えた」と見えてしまうため。 */
@@ -8922,7 +9014,7 @@ DEFS['m3-1'] = {
     {
       q: '<b>(3)</b> $AB$ を長軸とするだ円を描くとき（B は中心から $6R$）。'
         + '<b>(a)</b> 点 B での速さ $V$ を $v$ で。<b>(b)</b> $v$ を $g,R$ で。<b>(c)</b> 周期を $g,R$ で。',
-      a: '<b>(a) 面積速度一定</b>：近点・遠点では速度が動径に垂直なので $2Rv = 6RV$、つまり $V=\\dfrac{v}{3}$。<br>'
+      a: '<b>(a) 面積速度一定</b>：近地点・遠地点では速度が動径に垂直なので $2Rv = 6RV$、つまり $V=\\dfrac{v}{3}$。<br>'
         + '<b>(b) エネルギー保存</b>：$\\dfrac{1}{2}v^2-\\dfrac{gR^2}{2R}=\\dfrac{1}{2}\\left(\\dfrac{v}{3}\\right)^2-\\dfrac{gR^2}{6R}$ '
         + 'を解いて $v=\\dfrac{\\sqrt{3gR}}{2}$。<br>'
         + '<b>(c) ケプラー第3法則</b>：$a=\\dfrac{2R+6R}{2}=4R$ を $T^2=\\dfrac{4\\pi^2}{GM}a^3$ へ入れて '
@@ -8958,7 +9050,7 @@ DEFS['m3-1'] = {
     '<tr><td><b>力学的エネルギー保存</b></td>' +
     '<td>$\\dfrac{1}{2}mv^2-G\\dfrac{Mm}{r}=$ 一定</td></tr>' +
     '<tr><td><b>面積速度一定</b><br>（＝角運動量保存）</td>' +
-    '<td>$\\dfrac{1}{2}rv\\sin\\theta=$ 一定<br>近点・遠点では $rv=$ 一定</td></tr>' +
+    '<td>$\\dfrac{1}{2}rv\\sin\\theta=$ 一定<br>近地点・遠地点では $rv=$ 一定</td></tr>' +
     '<tr><td><b>円運動のとき</b></td>' +
     '<td>$\\dfrac{mv^2}{r}=G\\dfrac{Mm}{r^2}$</td></tr>' +
     '<tr><td><b>ケプラー第3法則</b></td>' +
@@ -9167,7 +9259,16 @@ DEFS['m3-1'] = {
     ctx.fillStyle = '#fff'; ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.6;
     ctx.beginPath(); ctx.arc(ax, ay, 5, 0, TAU); ctx.fill(); ctx.stroke();
     ctx.restore();
-    label(ctx, 'A（2R）', ax, ay - 15, { size: 11, color: COL.ink, bold: true });
+    /* ★A と B のどちらが「近地点」「遠地点」なのかを、名前にそえる★
+       （先生の指示・2026-10-10。計算結果の表にも「近地点」「遠地点」が出るので、
+         図のどの点のことか分かるようにする）
+       A はいつも 2R。B は 2a − 2R。E′ が小さいと A のほうが遠い。
+       とじない軌道（放物線・双曲線）には遠地点がないので、A は近地点だけ書く。 */
+    var rB0 = o.bound ? (2 * o.a - 2 * R) : Infinity;
+    var aIsApo = o.bound && (rB0 < 2 * R - 1e-9);
+    var aTag = (Math.abs(rB0 - 2 * R) < 1e-6) ? ''          /* 円（A＝B）のときは書かない */
+      : (aIsApo ? '・遠地点' : '・近地点');
+    label(ctx, 'A（2R' + aTag + '）', ax, ay - 15, { size: 11, color: COL.ink, bold: true });
     /* ★点 B は「長軸の、A の反対がわのはし」★
        A はいつも 2R（−x がわ）なので、B までの距離は 2a − 2R（+x がわ）。
        E′ が小さいと A のほうが遠地点になるので、o.ra を使ってはいけない。
@@ -9180,8 +9281,8 @@ DEFS['m3-1'] = {
         ctx.fillStyle = '#fff'; ctx.strokeStyle = COL.bound; ctx.lineWidth = 1.6;
         ctx.beginPath(); ctx.arc(bx, oy, 4.6, 0, TAU); ctx.fill(); ctx.stroke();
         ctx.restore();
-        label(ctx, 'B（' + fmt(rB / R, 2) + 'R）', bx, oy - 14,
-          { size: 10.5, color: COL.bound, bold: true });
+        label(ctx, 'B（' + fmt(rB / R, 2) + 'R' + (aTag ? (aIsApo ? '・近地点' : '・遠地点') : '') + '）',
+          bx, oy - 14, { size: 10.5, color: COL.bound, bold: true });
       }
     }
 
@@ -9662,13 +9763,29 @@ DEFS['m3-2'] = {
       ctx.restore();
       label(ctx, 'U（外は −GM/x・内は放物線）', pr - 4, uy0 + uh - 5,
         { size: 9.5, color: COL.upot, align: 'right' });
-      /* 力学的エネルギー E（一定）＝水平線 */
+      /* 力学的エネルギー E（一定）＝水平線
+         ★「行ける x」のところにだけ引く★（先生の指示・2026-10-10）
+           U > E の x には、そもそも小球は行けない（K < 0 になる）。
+           そこまで E の点線をのばすと「その外にも行ける」ように見えてしまうので、
+           U の曲線を見ながら、U ≤ E のところだけ線を引く。
+           E ≥ 0（戻ってこない）のときは、どこへでも行けるので全部に引かれる。 */
       var Etot = clamp(h.E, Umin, Umax);
       ctx.save();
       ctx.strokeStyle = COL.cg; ctx.lineWidth = 1.6; ctx.setLineDash([6, 4]);
-      ctx.beginPath(); ctx.moveTo(pl, UY(Etot)); ctx.lineTo(pr, UY(Etot)); ctx.stroke();
+      ctx.beginPath();
+      var eOn = false, eLast = null;
+      pts.forEach(function (p) {
+        if (p[1] <= h.E) {
+          var X2 = UX(p[0]);
+          if (!eOn) { ctx.moveTo(X2, UY(Etot)); eOn = true; }
+          else ctx.lineTo(X2, UY(Etot));
+          eLast = X2;
+        } else eOn = false;
+      });
+      ctx.stroke();
       ctx.restore();
-      label(ctx, 'E（一定）', pr - 4, UY(Etot) - 9,
+      /* 名前は「線が実際にあるところ」の右はしにそえる（線のない右はしに出さない） */
+      label(ctx, 'E（一定）', Math.min(pr - 4, (eLast === null ? pr - 4 : eLast + 2)), UY(Etot) - 9,
         { size: 10, color: COL.cg, align: 'right', bold: true });
       /* いまの位置：U の点と、E との差（＝運動エネルギー K） */
       var ux = UX(q.x);
@@ -11021,6 +11138,16 @@ DEFS['m4-3'] = {
     sunShape(ctx, vw.X(0), vw.Y(0), 9);
     label(ctx, '太陽', vw.X(0), vw.Y(0) + 20,
       { size: 10.5, color: COL.sun, bold: true, haloColor: 'rgba(13,22,38,.92)' });
+
+    /* ★遠日点に印と名前★（先生の指示・2026-10-10）
+       計算結果に「遠日点 r遠 ＝ 35.1 AU」と出るので、それが図のどこなのかを示す。
+       ★近日点は書かない★——太陽（0.59 AU のすぐ内がわ）とくっついて読めなくなるため。
+       星空の上なので、色は星空の図の色（#9fc3e0）と、ふちは背景色を使う。 */
+    (function () {
+      var oe = pElems(p);
+      apsisMark(ctx, vw.X(-oe.ra), vw.Y(0), '遠日点', 'right',
+        { color: '#9fc3e0', ring: 'rgba(13,22,38,.9)', haloColor: 'rgba(13,22,38,.92)' });
+    })();
 
     var q2 = planetXY(p, t);
     var px = vw.X(q2.x), py = vw.Y(q2.y);

@@ -3785,16 +3785,18 @@ function m2Base(o) {
 function m2RampShow(s) { s._rampOn = false; if (s.extra && s.extra.ramp) s.extra.ramp.hidden = false; }
 function m2SetRot(s, on) {
   s.rot = on;
+  if (typeof syncGlobalRot === 'function' && document.getElementById('btnRot')) { clearTimeout(m2SetRot._t); m2SetRot._t = setTimeout(syncGlobalRot, 0); }   /* 右上の「全て」の表示をそろえる */
   if (s.extra && s.extra.obsIn) { s.extra.obsIn.classList.toggle('on', !on); s.extra.obsRot.classList.toggle('on', on); }
   s.draw(); s.renderRight();
 }
 /* モードの右上のスイッチ（全セクション） */
-function m2SetModeRot(mid, on) {
+function m2SetModeRot(mid, on, quiet) {                        /* quiet：右上の「全て」から呼ぶとき（アドレスは変えない） */
   var ms = modeState(mid); ms.rot = on;
   SIMS.forEach(function (s) { if (s.mode === mid) m2SetRot(s, on); });
   if (ms._segb) { ms._segb[0].classList.toggle('on', !on); ms._segb[1].classList.toggle('on', on); }
   if (typeof m4SyncSegs === 'function') m4SyncSegs();
-  if (history.replaceState) history.replaceState(null, '', '#' + mid + (on ? '-rot' : ''));
+  if (!quiet && history.replaceState) history.replaceState(null, '', location.pathname + location.search + '#' + mid + (on ? '-rot' : ''));
+  if (!quiet && typeof syncGlobalRot === 'function') syncGlobalRot();
 }
 
 /* ---------- 「ω を大きくしていく」：ω を少しずつ大きくし、限界の ω₀ に達したら一瞬止めてから、すべり出す／糸が切れる ----------
@@ -6110,7 +6112,7 @@ function m4SecHTML(fk) {
     '<div class="m4card m4conc"><p class="m4h">結論</p><p>「角 $\\theta$ の点まで、' + (str ? '糸がたるまずに' : '円筒面上を') + '円運動する必要十分条件」は、その点の速さ $v$、' + K.fName + ' $' + F + '$ を用いて</p>' +
       '<ol class="m4cl">' +
         '<li><span class="m4ci">（ⅰ）</span>「$\\theta < \\dfrac{\\pi}{2}$ の点まで到達する条件」なら　<b>$v \\ge 0$</b>　（つまり $' + F + '$ を考える必要なし）</li>' +
-        '<li><span class="m4ci">（ⅱ）</span>「$\\theta = \\dfrac{\\pi}{2}$ の点まで到達する条件」なら　<b>$v \\ge 0$ または $' + F + ' \\ge 0$</b>　（つまり $v$・$' + F + '$ どちらでもいい）</li>' +
+        '<li><span class="m4ci">（ⅱ）</span>「$\\theta = \\dfrac{\\pi}{2}$ の点まで到達する条件」なら　<b>$v \\ge 0$</b> または <b>$' + F + ' \\ge 0$</b>　（つまり $v$・$' + F + '$ どちらでもいい）</li>' +
         '<li><span class="m4ci">（ⅲ）</span>「$\\theta > \\dfrac{\\pi}{2}$ の点まで到達する条件」なら　<b>$' + F + ' \\ge 0$</b>　（つまり $v$ を考える必要なし）</li>' +
       '</ol>' +
       '<p>頻出の問題である、</p>' +
@@ -6346,7 +6348,9 @@ var MODES = [
     lead: '面の内側を回るなら垂直抗力 $N \\ge 0$、糸で回るなら張力 $S \\ge 0$ が「円運動を続けられる」条件。$N$・$S$ は最高点で一番小さいので、「最高点まで円運動を続けられる」条件は、「最高点で $N \\ge 0$（糸なら $S \\ge 0$）」が成り立てば最高点に到達できる。これを、シミュレーションを通して理解しよう。' }
 ];
 var CIRC = '①②③④⑤⑥⑦⑧⑨';
-var GLOBAL = { hideEq: false };
+var GLOBAL = { hideEq: false, rot: false };
+/* アドレスに ?rot=1 があれば、最初から「全て：一緒に円運動する観測者（非慣性系）から見る」を ON（2026-10-11 千葉さん） */
+try { GLOBAL.rot = /(?:^|[?&])rot=(1|on|true)(?:&|$)/i.test(location.search); } catch (e) { }
 var SIM_BY_ID = {}, MODE_BUILT = {};
 
 function buildPage() {
@@ -6355,7 +6359,7 @@ function buildPage() {
     '<div class="hero-in">' +
       '<div class="hero-top">' +
         '<nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="' + SITE_HOME + '" title="楽楽（らくらく）高校物理のトップページへ"><svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg><span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="' + SITE_HOME + '#sec-mechanics">力学</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">円運動</span><span class="kdot"></span><span class="en">Circular Motion</span></nav>' +
-        '<div class="topbtns" role="group" aria-label="ページ全体の表示"><button id="btnEq" type="button"></button></div>' +
+        '<div class="topbtns" role="group" aria-label="ページ全体の表示"><button id="btnEq" type="button"></button><button id="btnRot" type="button"></button></div>' +
       '</div>' +
       '<h1 class="hero-title"><span class="t1"><span class="nb">円運動</span></span><span class="t2">〜外から見るか、一緒に回って見るか〜</span></h1>' +
       '<div class="introrow">' +
@@ -6410,6 +6414,7 @@ function buildPage() {
   document.title = '円運動';
   wrap.querySelectorAll('.purpose,.modehead,.secdesc,.sechead h2,.seclinks a,.gnote').forEach(function (e) { e.innerHTML = mathify(e.innerHTML); });
   document.querySelectorAll('#hero .ideas .ie, #hero .stagecap .sct').forEach(function (e) { e.innerHTML = mathify(e.innerHTML); });
+  if (GLOBAL.rot) MODES.forEach(function (m) { if (m.rotSwitch) modeState(m.id).rot = true; });
   setupGlobalButtons();
   MODES.forEach(function (m) { buildModeBar(m); });
   buildToc();
@@ -6460,6 +6465,11 @@ function syncGlobalButtons() {
   bE.innerHTML = '<span class="sw" aria-hidden="true"><i></i></span><span class="swl">式・考え方エリアを閉じる</span><span class="swv">' + (GLOBAL.hideEq ? 'ON' : 'OFF') + '</span>';
   bE.setAttribute('aria-pressed', GLOBAL.hideEq ? 'true' : 'false'); bE.classList.toggle('off', !GLOBAL.hideEq);
   document.body.classList.toggle('hideeq', GLOBAL.hideEq);
+  var bR = document.getElementById('btnRot');
+  if (bR) {
+    bR.innerHTML = '<span class="sw" aria-hidden="true"><i></i></span><span class="swl">全て：一緒に円運動する観測者（非慣性系）から見る</span><span class="swv">' + (GLOBAL.rot ? 'ON' : 'OFF') + '</span>';
+    bR.setAttribute('aria-pressed', GLOBAL.rot ? 'true' : 'false'); bR.classList.toggle('off', !GLOBAL.rot);
+  }
 }
 function setupGlobalButtons() {
   var bE = document.getElementById('btnEq');
@@ -6467,7 +6477,21 @@ function setupGlobalButtons() {
     GLOBAL.hideEq = !GLOBAL.hideEq; syncGlobalButtons();
     SIMS.forEach(function (s) { if (s.cv.offsetParent) { s.resize(); s.draw(); } });
   });
+  var bR = document.getElementById('btnRot');
+  bR.addEventListener('click', function () { setGlobalRot(!GLOBAL.rot); });
   syncGlobalButtons();
+}
+/* 全てのモード（観測者を切りかえられるモード）の切りかえを、まとめて ON／OFF */
+function setGlobalRot(on) {
+  GLOBAL.rot = on;
+  MODES.forEach(function (m) { if (m.rotSwitch) m2SetModeRot(m.id, on, true); });
+  syncGlobalButtons();
+}
+/* どれか 1 つの切りかえを変えたら、右上の表示もそろえる（全部が非慣性系なら ON） */
+function syncGlobalRot() {
+  var rm = MODES.filter(function (m) { return m.rotSwitch; }).map(function (m) { return m.id; });
+  var all = rm.every(function (id) { return !!modeState(id).rot; }) && SIMS.every(function (s) { return rm.indexOf(s.mode) < 0 || !!s.rot; });
+  if (GLOBAL.rot !== all) { GLOBAL.rot = all; syncGlobalButtons(); }
 }
 function modeHash(mid) { var ms = modeState(mid); return mid + (ms.rot ? '-rot' : ''); }
 function activateMode(id) {
@@ -6536,6 +6560,7 @@ function buildToc() {
 function gotoHash(first) {
   var q = parseHash(location.hash);
   if (!q.mode) { if (first) activateMode(MODES[0].id); return; }
+  if (first && GLOBAL.rot && q.rot === false) q.rot = true;            /* ?rot=1 のときは、#mode2 などでも非慣性系で始める */
   if (q.rot !== undefined && q.mode.rotSwitch) { modeState(q.mode.id).rot = q.rot; }
   activateMode(q.mode.id);
   if (q.rot !== undefined && q.mode.rotSwitch && typeof m2SetModeRot === 'function') m2SetModeRot(q.mode.id, q.rot);
