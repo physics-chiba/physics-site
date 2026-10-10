@@ -2768,8 +2768,8 @@ DEFS.m1s1 = {
     { k: 'v', label: '速さ $v$', aria: '速さ', min: 0, max: 2.60, step: 0.02, def: 0.63, dec: 2, unit: 'm/s', meter: true },
     { k: 'a', label: '加速度 $a$', aria: '加速度', min: 0, max: 8.00, step: 0.02, def: 0.99, dec: 2, unit: 'm/s²', meter: true },
     { k: 'F', label: '向心力 $F$', aria: '向心力', min: 0, max: 1.600, step: 0.002, def: 0.099, dec: 3, unit: 'N', meter: true },
-    { k: 'm', label: '小球の質量 $m$', aria: '小球の質量', min: 0.05, max: 0.20, step: 0.05, def: 0.10, dec: 2, unit: 'kg', cls: 'mrow' },   /* 0.05 刻み（2026-10-05 千葉さん） */
-    { k: 'r', label: '半径 $r$', aria: '半径', min: 0.20, max: 0.80, step: 0.2, def: 0.40, dec: 2, unit: 'm', cls: 'grpR' },   /* 0.2 刻み */
+    { k: 'm', label: '小球の質量 $m$', aria: '小球の質量', min: 0.05, max: 0.20, step: 0.05, def: 0.20, dec: 2, unit: 'kg', cls: 'mrow' },   /* 0.05 刻み（2026-10-05 千葉さん） */
+    { k: 'r', label: '半径 $r$', aria: '半径', min: 0.20, max: 0.80, step: 0.2, def: 0.60, dec: 2, unit: 'm', cls: 'grpR' },   /* 0.2 刻み */
     { k: 'T', label: '周期 $T$', aria: '周期', stops: [2, 8 / 3, 4, 8], stopLabels: ['2', '2.67', '4', '8 s'], def: 4, dec: 2, unit: 's', cls: 'grpW', meter: true },
     { k: 'n', label: '回転数 $n$', aria: '回転数', stops: [0.125, 0.25, 0.375, 0.5], stopLabels: ['0.125', '0.25', '0.375', '0.5 Hz'], def: 0.25, dec: 3, unit: 'Hz', cls: 'grpW', meter: true },
     { k: 'w', label: '角速度 $\\omega$', aria: '角速度', cls: 'grpW', stops: M1.W, stopLabels: ['0.79', '1.57', '2.36', '3.14 rad/s'], def: Math.PI / 2,
@@ -2783,7 +2783,7 @@ DEFS.m1s1 = {
   view0: 0,
   trailBtn: true, trailSec: 2,                 /* 「軌跡を表示」（既定 ON）：量を変えたときの半径の変化が残る */
   init: function (s) {
-    s.p = { r: 0.40, w: Math.PI / 2, m: 0.10 }; /* 既定：r = 0.40 m、ω = π/2 rad/s（T = 4 s）、m = 0.10 kg。糸を切ったあとストロボが 3 個以上並ぶ */
+    s.p = { r: 0.60, w: Math.PI / 2, m: 0.20 }; /* 既定：r = 0.60 m、ω = π/2 rad/s（T = 4 s）、m = 0.20 kg（加速度の矢印が最初から見えるように。2026-10-07 千葉さん） */
     m1SetMass(s.p.m);
     s.ph = 0;                                    /* 角のずれ：θ = ωt + ph（量を変えても時刻は戻さない） */
     s.tCut = null; s.cutAnim = null;
@@ -3342,8 +3342,8 @@ Sim.prototype.syncCut = function () {
 'use strict';
 var AEXP = null;
 var AEXP_STEPS = [
-  { d: 4.5, h: '1. 等速円運動。始点での速度を $\\vec{v}$ とする', t: '小球は半径 $r$ の円の上を、一定の速さ $v$ で回る。始点での速度 $\\vec{v}$ は円の接線方向。' },
-  { d: 5.0, h: '2. $\\Delta t$ 秒後の速度 $\\vec{v}\\,\'$', t: '$\\Delta t$ 秒後、小球は中心角 $\\Delta\\theta$ だけ進む。角速度が $\\omega$ なので $\\Delta\\theta = \\omega\\Delta t$。速度は $\\vec{v}\\,\'$ になる（大きさは同じ $v$、向きだけ $\\Delta\\theta$ 変わる）。' },
+  { d: 1.5, h: '1. 等速円運動。始点での速度を $\\vec{v}$ とする', t: '小球は半径 $r$ の円の上を、一定の速さ $v$ で回る。始点での速度 $\\vec{v}$ は円の接線方向。' },
+  { d: 1.7, h: '2. $\\Delta t$ 秒後の速度 $\\vec{v}\\,\'$', t: '$\\Delta t$ 秒後、小球は中心角 $\\Delta\\theta$ だけ進む。角速度が $\\omega$ なので $\\Delta\\theta = \\omega\\Delta t$。速度は $\\vec{v}\\,\'$ になる（大きさは同じ $v$、向きだけ $\\Delta\\theta$ 変わる）。' },
   { d: 4.5, h: '3. $\\vec{v}\\,\'$ を始点まで平行移動する', t: '2 つの速度を比べるため、$\\vec{v}\\,\'$ を始点まで平行移動する。$\\vec{v}$ と $\\vec{v}\\,\'$ のあいだの角も $\\Delta\\theta$。' },
   { d: 5.0, h: '4. 速度の変化 $\\Delta\\vec{v} = \\vec{v}\\,\' - \\vec{v}$', t: '速度の変化は $\\Delta\\vec{v} = \\vec{v}\\,\' - \\vec{v}$（$\\vec{v}$ の先から $\\vec{v}\\,\'$ の先へ向かう矢印）。加速度は $\\vec{a} = \\dfrac{\\Delta\\vec{v}}{\\Delta t}$ なので、$\\vec{a}$ は $\\Delta\\vec{v}$ と同じ向き。' },
   { d: 5.5, h: '5. $\\Delta\\theta$ が小さいとき $|\\Delta\\vec{v}| \\fallingdotseq v\\Delta\\theta$', t: '$\\vec{v}$ と $\\vec{v}\\,\'$ は半径 $v$、中心角 $\\Delta\\theta$ の扇形をつくる。$\\Delta\\theta$ が十分小さいとき、弦の長さ $|\\Delta\\vec{v}|$ は弧の長さ $v\\Delta\\theta$ とほぼ等しい。' },
@@ -5430,6 +5430,10 @@ function drawM3(s, ctx, W, H) {
   } else {                                                   /* 糸：中心の手。円の道すじ（破線） */
     ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = '#8a929c'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(O.x, O.y, R * S, 0, TAU); ctx.stroke(); ctx.restore();
   }
+  if (s.mode === 'mode4' && GS === 3 && !SN) {                    /* 4-2：最高点の印（4-1 と同じ。2026-10-07 千葉さん） */
+    var tq4 = P(0, R); ctx.save(); ctx.fillStyle = '#d1352b'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(tq4.x, tq4.y, 4, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore();
+    label(ctx, '最高点', tq4.x - 8, tq4.y - 12, { size: 11.5, bold: true, color: '#b2271b', align: 'right' });
+  }
   /* 外の観測者（床の上に立つ） */
   var hdIn;
   var up = function (foot, h, z) { var a = P(foot[0], foot[1], z), b = P(foot[0], foot[1] + h, z); var L = Math.hypot(b.x - a.x, b.y - a.y); return { a: a, ux: (b.x - a.x) / L, uy: (b.y - a.y) / L, L: L }; };
@@ -5566,7 +5570,7 @@ function drawM3(s, ctx, W, H) {
     if (tr.tTop !== null && s.t >= tr.tTop && s.t - tr.tTop < 0.7) { if (s.rot) eventBubble(ctx, 'loop', Bp.x, Bp.y + rb * S + 6, 'up'); else eventBubble(ctx, 'loop', Bp.x, Bp.y - rb * S - 22); }
   }
   pill(ctx, '状態：' + m3Phase(q, tr), 10, 10, { size: 12 });
-  if (s.inWindow) pill(ctx, '⏱ 瞬間をスローで再生中（実際の 1/' + Math.round(1 / M3WIN.rate) + ' の速さ）', 10, 36, { size: 12 });
+
 }
 
 /* ===================== 式（図の下の 2 つの箱） ===================== */
@@ -6111,8 +6115,7 @@ function m4SecHTML(fk) {
       '</ol>' +
       '<p>頻出の問題である、</p>' +
       '<p class="m4iv"><span class="m4ci">（Ⅳ）</span>「最高点（$\\theta = \\pi$）まで到達する条件」なら<b>「最高点で $' + F + ' \\ge 0$」</b>（つまり $v$ を考える必要なし）</p>' +
-      '<p class="m4small">' + (str ? '面の内側を回る問題（④-1）でも、最高点の到達条件は同じ結論「最高点で垂直抗力 $N \\ge 0$」（つまり $v$ を考える必要なし）。'
-                                   : '最高点で宙返りする条件（<a href="#3-2">3-2</a>）も同様。糸の張力で円運動する問題（④-2）における、最高点の到達条件も同じ結論「最高点で張力 $S \\ge 0$」（つまり $v$ を考える必要なし）。') + '</p></div>' +
+      (str ? '' : '<p class="m4small">' + '最高点で宙返りする条件（<a href="#3-2">3-2</a>）も同様。糸の張力で円運動する問題（④-2）における、最高点の到達条件も同じ結論「最高点で張力 $S \\ge 0$」（つまり $v$ を考える必要なし）。</p>') + '</div>' +
     '<div class="m4card m4sum"><p class="m4h">$v_0$ ごとに起こること（まとめ）</p><table class="reltab m4tab"><tbody>' +
       '<tr><th>$v_0 \\le \\sqrt{2gr}$</th><td>中心の高さまでに速さが 0 になり、' + (str ? '振り子のように往復する' : '滑り戻る') + '（$' + F + '$ は 0 にならない）</td></tr>' +
       '<tr><th>$\\sqrt{2gr} < v_0 < \\sqrt{5gr}$</th><td>中心より高い所で $' + F + ' = 0$ → ' + K.offing + '放物運動（速さは 0 でない）</td></tr>' +
