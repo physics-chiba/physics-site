@@ -1457,6 +1457,21 @@ button.b.instb.nope{text-decoration:line-through;text-decoration-thickness:2px;o
 .aexp.inline.max{position:fixed;left:16px;top:16px;right:16px;bottom:16px;z-index:60;overflow:auto;box-shadow:0 18px 50px rgba(20,23,28,.28);background:#fff}
 .aexp.inline .aexh b{color:#8a4300}
 
+/* 2 段目（観測者の切りかえ・すべて最初の設定に戻す・チェックボックス）を 1 行に。観測者のボタンは 2 行にして幅をせまく（2026-10-11） */
+.ctrls .row1b{flex-wrap:nowrap;gap:.35em}
+.ctrls .row1b .seg{flex:0 0 auto}
+.ctrls .row1b .seg button.obs{font-size:.7rem;line-height:1.2;padding:.28em .7em;white-space:nowrap;text-align:center}
+.ctrls .row1b button.chkb{font-size:.72rem;line-height:1.2;padding:.3em .6em;white-space:nowrap;flex:0 0 auto}
+.ctrls .row1b button.b.resetall{flex:0 0 auto}
+@media(max-width:640px){.ctrls .row1b{flex-wrap:wrap}}
+.trow .tinfo .tpl{display:inline-block;font-size:.62rem;line-height:1.1;vertical-align:middle;margin-right:.45em;color:var(--ink-3);text-align:center}
+.trow .tinfo small{font-size:.72em}
+.trow .tinfo sup{font-size:.85em}
+.ctrls .row1b{gap:.28em}
+.ctrls .row1b button.chkb{font-size:.66rem;padding:.28em .5em}
+.ctrls .row1b .seg button.obs{font-size:.66rem;padding:.28em .6em}
+.ctrls .row1b{flex-wrap:wrap}
+
 </style>
 </head>
 <body id="top">
@@ -2327,7 +2342,9 @@ Sim.prototype.build = function () {
   /* 「すべて最初の設定に戻す」と「離れる瞬間」などは、観測者の切りかえ（対のボタン）のすぐ右。なければ 2 段目の最後 */
   if (!row1b) row1b = el('div', 'row1 row1b');
   var segEl = row1b.querySelector('.seg'), after = segEl;
-  [this.bDef].concat(row1x).forEach(function (b) {
+  /* 観測者の切りかえ（2 行）→ すべて最初の設定に戻す → チェックボックス（全部）→ 他のボタン、を 1 行に（2026-10-11 千葉さん） */
+  var chks = [].slice.call(row1b.querySelectorAll(':scope > button.chkb'));
+  [this.bDef].concat(row1x, chks).forEach(function (b) {
     if (after) { after.insertAdjacentElement('afterend', b); after = b; } else row1b.appendChild(b);
   });
   this.row1b = row1b;
@@ -3737,8 +3754,8 @@ function m2Base(o) {
   };
   /* 観測者の切りかえ（対のボタン 2 つ）。d.ramp があれば「ω を大きくしていく」を図の左上に */
   d.buttons = [
-    { k: 'obsIn', label: '外（慣性系）から見る', cls: 'obs', seg: 'obs', segLabel: 'どの観測者から見るか', onClick: function (s) { m2SetRot(s, false); } },
-    { k: 'obsRot', label: '一緒に円運動する観測者（非慣性系）から見る', cls: 'obs rotb', seg: 'obs', onClick: function (s) { m2SetRot(s, true); } }
+    { k: 'obsIn', label: '外（慣性系）<br>から見る', cls: 'obs', seg: 'obs', segLabel: 'どの観測者から見るか', onClick: function (s) { m2SetRot(s, false); } },
+    { k: 'obsRot', label: '一緒に円運動する観測者<br>（非慣性系）から見る', cls: 'obs rotb', seg: 'obs', onClick: function (s) { m2SetRot(s, true); } }
   ].concat(o.buttons || []);
   if (o.ramp) d.buttons.push({ k: 'ramp', label: '↗ ω を大きくしていく', cls: 'ramp', inCanvas: true, onClick: function (s) { m2StartRamp(s); } });
   /* 量を変えたとき：時刻は戻さず、角 φ = ωt + ph が飛ばないように ph を変える */
@@ -4381,10 +4398,10 @@ DEFS.m2s4 = m2Base({
   },
   onView: function (s, i) { s.hl = (i === 2) ? 'v' : (i === 1 ? 'h' : null); s.renderRight(); },
   onDragView: function (s) { if (s.hl) { s.hl = null; s.renderRight(); } },
-  buttons: [{ k: 'decomp', label: '張力を分解する', cls: 'chkb', onClick: function (s, b) { s.decomp = !s.decomp; m2s4Chk(s); if (s.decomp && !s.ms.showF) m2ForceOn(s); s.draw(); } },
-    { k: 'resF', label: '合力を表示（張力と重力を合成）', cls: 'chkb', onClick: function (s, b) { s.resF = !s.resF; b.classList.toggle('on', s.resF); b.setAttribute('aria-pressed', s.resF ? 'true' : 'false'); if (s.resF && !s.ms.showF) m2ForceOn(s); s.draw(); } },
+  buttons: [{ k: 'decomp', label: '張力を<br>分解する', cls: 'chkb', onClick: function (s, b) { s.decomp = !s.decomp; m2s4Chk(s); if (s.decomp && !s.ms.showF) m2ForceOn(s); s.draw(); } },
+    { k: 'resF', label: '合力を表示<br>（張力と重力を合成）', cls: 'chkb', onClick: function (s, b) { s.resF = !s.resF; b.classList.toggle('on', s.resF); b.setAttribute('aria-pressed', s.resF ? 'true' : 'false'); if (s.resF && !s.ms.showF) m2ForceOn(s); s.draw(); } },
     /* 合力のみ表示：張力と重力を消して、合力（水平・中心向き）だけ（2026-10-05 千葉さん） */
-    { k: 'resOnly', label: '合力のみ表示', cls: 'chkb', onClick: function (s, b) { s.resOnly = !s.resOnly; if (s.resOnly) s.decomp = false; m2s4Chk(s); if (s.resOnly && !s.ms.showF) m2ForceOn(s); s.draw(); } }],
+    { k: 'resOnly', label: '合力のみ<br>表示', cls: 'chkb', onClick: function (s, b) { s.resOnly = !s.resOnly; if (s.resOnly) s.decomp = false; m2s4Chk(s); if (s.resOnly && !s.ms.showF) m2ForceOn(s); s.draw(); } }],
   msg: function (s) {
     var th = M2.s4.thOf(s.v.w) * 180 / Math.PI;
     return '$\\cos\\theta = \\dfrac{g}{L\\omega^2}$ より $\\theta = ' + fmt(th, 1) + '^\\circ$。$\\omega$ を大きくすると、小球は外へ広がって高く上がる。';
@@ -4752,6 +4769,20 @@ function m2s6SetQ(s, sign, pre) {
   m2s6Restart(s); m2s6Q(s); s.syncSliders(true); s.syncPlayLabel(); s.draw(); s.renderRight();
 }
 /* 1.23 × 10^n（HTML の上つき） */
+function m2s6TInfo(s) {
+  var v = s.v, P = v.pre ? M2S6PRE[v.pre] : null, aB = Math.abs(v.B), txt;
+  if (aB < 1e-9) txt = '<b>—</b>';
+  else {
+    var T = P ? TAU * P.m / (P.q * aB) : TAU * v.m / (v.qa * aB);
+    if (T >= 0.01 && T < 1000) txt = '<b>' + (+T.toPrecision(2)) + '</b> s';
+    else {
+      var n = Math.floor(Math.log10(T)), mt = T / Math.pow(10, n);
+      if (+mt.toFixed(1) >= 10) { mt /= 10; n++; }
+      txt = '<b>' + mt.toFixed(1) + '</b><small> × 10<sup>' + (n < 0 ? '−' + (-n) : n) + '</sup></small> s';
+    }
+  }
+  return '<span class="tpl">今の<br>周期</span>' + txt;
+}
 function m2s6Sci(x, d) {
   if (!isFinite(x) || x === 0) return fmt(x, d || 2);
   var n = Math.floor(Math.log10(Math.abs(x))), m = x / Math.pow(10, n);
@@ -4765,7 +4796,9 @@ function m2s6SciTex(x, d) {
   return fmt(m, d || 2) + '\\times10^{' + n + '}';
 }
 DEFS.m2s6 = m2Base({
-  id: 'm2s6', num: 7, title: 'ローレンツ力と電子',
+  id: 'm2s6', num: 7, title: '磁場中の荷電粒子の運動',
+  /* 時間バーの横に「今の周期」（有効数字 2 けた）。v を変えても周期が変わらないことを見せる（2026-10-11 千葉さん） */
+  tInfo: function (s) { return m2s6TInfo(s); },
   desc: '一様な磁場 $\\vec{B}$（$z$ 軸の向き）の中で、電荷 $q$ をもつ粒子（陽子や電子など）が $xy$ 面内を速さ $v$ で動く。向心力は<b>ローレンツ力 $qvB$</b>。<span class="todo">$B$・$v$・$m$・$|q|$ を変えたり電荷の正負を切りかえたりして、軌跡の半径と回る向きの変化を見よう。速度と磁場のなす角 $\\varphi$ を $90^\\circ$ 以外にすると、らせん運動になる。</span>',
   varCols: [['B', 'u', 'th'], ['m', 'qa']],
   vars: [
@@ -5242,8 +5275,8 @@ function m3Base(o) {
   var init0 = d.init;
   d.init = function (s) { if (s.rot === undefined) s.rot = !!modeState(d.mode).rot; if (init0) init0(s); };
   d.buttons = [
-    { k: 'obsIn', label: '外（慣性系）から見る', cls: 'obs', seg: 'obs', segLabel: 'どの観測者から見るか', onClick: function (s) { m2SetRot(s, false); } },
-    { k: 'obsRot', label: '一緒に円運動する観測者（非慣性系）から見る', cls: 'obs rotb', seg: 'obs', onClick: function (s) { m2SetRot(s, true); } },
+    { k: 'obsIn', label: '外（慣性系）<br>から見る', cls: 'obs', seg: 'obs', segLabel: 'どの観測者から見るか', onClick: function (s) { m2SetRot(s, false); } },
+    { k: 'obsRot', label: '一緒に円運動する観測者<br>（非慣性系）から見る', cls: 'obs rotb', seg: 'obs', onClick: function (s) { m2SetRot(s, true); } },
     /* 「離れる瞬間」「たるむ瞬間」：その少し前から少しあとまでを、とてもゆっくり再生（momentum-and-collision の「傾く瞬間」と同じ考え） */
     { k: 'inst', inPlay: true, label: (m3GS(d.sec) === 3 ? '⏱ たるむ瞬間' : '⏱ 離れる瞬間') + '<br>をスローで', cls: 'instb two', onClick: function (s) { m3PlayInstant(s); } }
   ];
