@@ -401,12 +401,6 @@ table.read#readout td.v{flex:1 1 auto;text-align:right}
 .gsel select{font-family:var(--jp);font-size:.81rem;padding:2px 6px;border:1px solid var(--line2);
   border-radius:var(--r-s);background:#fff}
 
-/* ===== 正の向きスイッチ ===== */
-.signsw{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.84rem;
-  background:var(--accent-l);border:1px solid #cfe0f0;border-radius:var(--r-l);
-  padding:8px 12px;margin:10px 0;color:var(--ink2)}
-.signsw button{font-size:.81rem;padding:3px 11px;border-radius:999px}
-
 /* ===== 補足・式 ===== */
 .note{background:var(--orange-l);border:1px solid #f0d6ac;border-left:4px solid var(--orange);
   border-radius:var(--r-m);padding:9px 12px;font-size:.85rem;margin-top:10px;line-height:1.75}
@@ -484,9 +478,47 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 .longbox .src{font-size:.8rem;color:var(--sub);margin-top:10px}
 
 
+/* ===== 縦に並んだセクション ===== */
+.simsec + .simsec{margin-top:30px;padding-top:4px;border-top:2px dashed var(--line2)}
+.simsec > .card:first-child{margin-top:12px}
+
+/* ===== 使い方のヒント（たたんでおくカード） ===== */
+.hintcard > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px}
+.hintcard > summary::-webkit-details-marker{display:none}
+.hintcard > summary h3{margin:0}
+.hintcard > summary::after{content:'▶ ひらく';margin-left:auto;font-size:.78rem;color:var(--sub);font-weight:600}
+.hintcard[open] > summary::after{content:'▼ とじる'}
+.hintcard[open] > summary{margin-bottom:6px}
+
+/* ===== コンテンツ一覧（目次ボタンとパネル） =====
+   rigid-body-dynamics.html と同じ見た目・動き。 */
+.introrow{display:flex;align-items:stretch;gap:14px}
+.introrow > .mini{flex:0 1 auto;margin:0}
+.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;padding:6px 16px;border-radius:12px;font-size:.9rem;font-weight:700;
+  background:#fff;color:var(--accent);border:1.5px solid var(--accent);box-shadow:var(--sh-2)}
+.tocbtn:hover{background:var(--accent-l)}
+.tocpanel{position:absolute;z-index:60;left:50%;transform:translateX(-50%);top:70px;width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 100px);overflow:auto;
+  background:#fff;border:1px solid var(--line2);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);padding:10px 16px 14px}
+.tocpanel[hidden]{display:none}
+.tochead{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px;font-size:1rem}
+.tocx{background:none;border:none;color:var(--sub);font-size:1.3rem;line-height:1;padding:2px 8px;cursor:pointer}
+.tocmode{font-weight:800;color:#1f3b57;margin:10px 0 2px;font-size:.95rem}
+.tocpanel ul{margin:0;padding-left:1.1em}
+.tocpanel li{margin:2px 0;font-size:.88rem}
+.tocpanel li.tocsub{margin-left:1.2em;font-size:.82rem;list-style:circle}
+.tocpanel a{color:var(--accent-d);text-decoration:none}
+.tocpanel a:hover{text-decoration:underline}
+.wrap{position:relative}
+@media (max-width:640px){ .introrow{flex-direction:column;gap:6px} .tocbtn{min-height:0;align-self:flex-start} }
+
 /* ===== 画面が狭いとき ===== */
 @media (max-width:900px){
   .cvvars.two{grid-template-columns:max-content 26px 5.1em 26px minmax(58px,88px)}
+}
+/* とてもせまい画面（〜400px）では、変数が 4 つあるカード（1-7・4-3）の
+   ラベルの列を縮められるようにする（max-content のままだと 320px で画面からはみ出す） */
+@media (max-width:400px){
+  .cvvars.two{grid-template-columns:minmax(0,max-content) 24px 4.6em 24px minmax(40px,1fr);padding:7px 8px}
 }
 @media (max-width:640px){
   body{font-size:15px}
@@ -587,22 +619,6 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
   #tBar{height:30px}
 }
 
-/* 「グラフで正とする向き」を切りかえたときに、図の上へ一瞬だけ出す知らせ */
-.signflash{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:4;
-  background:var(--orange);color:#fff;font-weight:700;font-size:.92rem;
-  padding:7px 18px;border-radius:999px;box-shadow:0 3px 12px rgba(224,123,24,.4);
-  pointer-events:none;white-space:nowrap;
-  animation:signflash 1.8s ease-out forwards}
-@keyframes signflash{
-  0%{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.92)}
-  12%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
-  70%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
-  100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(1)}
-}
-@media (prefers-reduced-motion:reduce){
-  .signflash{animation:signflash-still 1.8s linear forwards}
-  @keyframes signflash-still{0%,90%{opacity:1}100%{opacity:0}}
-}
 
 </style>
 </head>
@@ -610,8 +626,12 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 <div class="wrap">
 
 <h1>一次元運動と平面運動のグラフ・シミュレーション</h1>
+<div class="introrow">
 <p class="mini">物理の基本中の基本「等加速度直線運動・運動方程式・平面内の運動」を、自分で数値を変えながら動かして確かめるページ。<br>
-それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、グラフがなぜそうなるかを納得いくまで考えよう。</p>
+モードのタブを選び、それぞれのシミュレーションの「スタート」を押して運動を見て、グラフがなぜそうなるかを納得いくまで考えよう。</p>
+<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false">コンテンツ一覧</button>
+</div>
+<div id="tocpanel" class="tocpanel" hidden></div>
 
 <!-- タブ列は position:sticky で画面の上に残す（#modetip はこの中に差しこまれる） -->
 <div class="tabbar" id="tabbar">
@@ -619,24 +639,26 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 <div class="tabs sub" id="simtabs"></div>
 </div>
 
-<div class="card" id="simhost"></div>
+<!-- シミュレーションはここに並ぶ。
+     モード 1〜4 はそのモードの全セクションを縦に、モード 5 は選んだ 1 つだけ。
+     各セクションは <article class="simsec"> で、中に #simhost（図とグラフ）と #longbox（くわしい解説）を持つ。 -->
+<div id="secstack"></div>
 
-<div class="card longbox" id="longbox" style="display:none"></div>
-
-<div class="card">
-  <h3>使い方のヒント</h3>
+<!-- 使い方のヒントは、はじめはたたんでおく（見出しを押すと開く） -->
+<details class="card hintcard">
+  <summary><h3>使い方のヒント</h3></summary>
   <p class="mini">
+  ・モード 1〜4 は、シミュレーションが<b>縦に並んでいます</b>。上のシミュレーションのボタンを押すと、そこまでスクロールします（モード 5 はボタンで切りかえ）。<br>
   ・<b>時間バー</b>を手で動かすと、好きな瞬間で止めて矢印とグラフの点を見くらべられます。<br>
   ・図の下のボタンで<b>状況を変え</b>、チェックボックスで<b>力・分解した力・速度・分解した速度</b>の矢印を出し入れできます（力は最初オフ）。<br>
   ・<b>「x–t 図・a–t 図 をまとめて開く」</b>ボタンを押すと、2つのグラフが一度に開いて v–t 図と3つ並べて見くらべられます。<br>
   ・各グラフの右には、<b>公式 → 記号を代入した式 → 数値を代入した式</b>の3段が出ます。<br>
   ・グラフは<b>ドラッグで移動</b>、<b>目盛りの上でドラッグすると軸の拡大縮小</b>、<b>ホイールで拡大縮小</b>、<b>ダブルクリックで自動</b>にもどります。<br>
   ・タブ列の右端の<b>「問題モード」</b>を入れると、<b>どのシミュレーションも</b>「先に運動だけを見る → v–t 図の形を3択で当てる → グラフが出る」の順になります。<br>
-  ・<b>「グラフで正とする向き」</b>を切りかえると、グラフの符号と軸が反転します。<br>
   ・変数は＋／−ボタンで変えられます。変えると自動的にはじめに戻ります。<br>
   <span id="hint3d" style="display:none">・いま見ている<b>3次元の図</b>は、キャンバスを<b>ドラッグすると視点が回り</b>、ホイールで拡大縮小できます。<br></span>
   ・このページは1つのファイルで動きます（インターネット不要）。</p>
-</div>
+</details>
 
 <div class="card purpose">
   <p class="lead">【このシミュレーションの目的】</p>
@@ -2266,15 +2288,26 @@ function plot(cv, spec) {
 /* シミュレーションの登録表。各モードのファイルが DEFS に自分を足していく。 */
 'use strict';
 var DEFS = {};
+/* モードの並び（2026-10 に 5 つに分けた）。
+   ・stack: true … そのモードのシミュレーションを【縦に並べて】1 ページに出す（inertia-force.html と同じ）。
+   ・stack: false … 1 つずつタブで切りかえる（入試物理は縦に並べると長すぎるため）。
+   ・ids はシミュレーションの「中の名前」。番号を振り直しても中の名前は変えない
+     （古いアドレス #m1-9 などがそのまま使えるように）。画面に出す番号は MODES の順から決まる。 */
 var MODES = [
-  { n: 1, label: '1　一次元の等加速度直線運動　※物理基礎', tip: '直線上の運動は単純に見えて、奥が深いです。<b>※物理基礎の内容はここまで</b>',
-    ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6', 'm1-7',
-      'm1-8', 'm1-9', 'm1-10', 'm1-11', 'm1-12'] },
-  { n: 2, label: '2　平面上の運動', tip: '基本的にベクトル的に考える。必要なら分解して成分を見る。',
+  { n: 1, label: '1　一次元の等加速度直線運動　※物理基礎', stack: true,
+    tip: '直線上の運動は単純に見えて、奥が深いです。',
+    ids: ['m1-1', 'm1-2', 'm1-3', 'm1-4', 'm1-5', 'm1-6', 'm1-7', 'm1-8'] },
+  { n: 2, label: '2　一次元（２物体）の等加速度直線運動　※物理基礎', stack: true,
+    tip: '糸や滑車でつながった2物体・重なった2物体は、物体ごとに運動方程式を立てよう。<b>※物理基礎の内容はここまで</b>',
+    ids: ['m1-9', 'm1-10', 'm1-11', 'm1-12'] },
+  { n: 3, label: '3　二次元の運動', stack: true,
+    tip: '基本的にベクトル的に考える。必要なら分解して成分を見る。',
     ids: ['m2-1', 'm2-2', 'm2-3', 'm2-4'] },
-  { n: 3, label: '3　2物体の運動', tip: '2物体それぞれの運動を考えよう。ぶつかるのは座標が一致したときです。',
+  { n: 4, label: '4　二次元（２物体）の運動', stack: true,
+    tip: '2物体それぞれの運動を考えよう。ぶつかるのは座標が一致したときです。',
     ids: ['m3-1', 'm3-2', 'm3-3'] },
-  { n: 4, label: '4　入試物理', tip: '基本的だからこそ、奥深い問題が出題されます。', ids: ['m4-1', 'm4-2', 'm4-3'] }
+  { n: 5, label: '5　入試物理', stack: false,
+    tip: '基本的だからこそ、奥深い問題が出題されます。', ids: ['m4-1', 'm4-2', 'm4-3'] }
 ];
 
 /* 「正の向き」の言い方（水平面か斜面かで変える） */
@@ -3582,7 +3615,7 @@ DEFS['m1-7'] = {
       fmt(v.m * G * Math.sin(th), 1) + ' - ' + fmt(v.mud * v.m * G * Math.cos(th), 1) + '}{' + fmt(v.m, 1) + '} = ' +
       fmt(m.a, 2) + '\\ \\mathrm{m/s^2}';
   },
-  note: '<b>作用点</b>に注目：重力は<b>物体の中心</b>から、垂直抗力と摩擦力は<b>斜面と触れている面</b>から、押す力は<b>手が触れているところ</b>から。F を小さくすると <span class="tex">|F-mg\\sin\\theta| \\le \\mu N</span> になり、静止摩擦がつり合って<b>動かない</b>。'
+  note: 'F を小さくすると <span class="tex">|F-mg\\sin\\theta| \\le \\mu N</span> になり、静止摩擦がつり合って<b>動かない</b>。'
 };
 
 /* ============ 1-7 カーリングゲーム ============ */
@@ -3843,9 +3876,9 @@ function twoBodyGraphs(xLabel, fmlX, fmlV, fmlA) {
 
 /* ============ 1-9 2物体（糸でつなぐ） ============ */
 DEFS['m1-9'] = {
-  id: 'm1-9', mode: 1, tab: '1-9 2物体（糸）',
+  id: 'm1-9', mode: 2, tab: '2-1 2物体（糸）',
   quizKey: 'v', quizName: 'A と B の $v$–$t$ 図（右向きが正）',
-  title: '1-9　2物体を糸でつないで引く（なめらかな水平面）',
+  title: '2-1　2物体を糸でつないで引く（なめらかな水平面）',
   sub: 'なめらかな水平面の上に、質量 $m$ の A と質量 $M$ の B を軽い糸でつなぎ、B を大きさ $f$ の力で右へ引き続ける。' +
     '<b>糸は伸び縮みしないので、A と B の加速度・速さ・進んだ距離は同じ</b>。' +
     'まず<b>2つをひとまとまり</b>と見て $a$ を出し、つぎに<b>A だけ</b>を見て糸の張力 $T$ を出す、というのが定石。' + OBJCOL,
@@ -3972,9 +4005,9 @@ DEFS['m1-9'] = {
 
 /* ============ 1-10 2物体（糸と滑車） ============ */
 DEFS['m1-10'] = {
-  id: 'm1-10', mode: 1, tab: '1-10 2物体（糸と滑車）',
+  id: 'm1-10', mode: 2, tab: '2-2 2物体（糸と滑車）',
   quizKey: 'v', quizName: 'A と B の $v$–$t$ 図（A が上る向きを正）',
-  title: '1-10　なめらかな面の上の A を、つるした B が引く（滑車）',
+  title: '2-2　なめらかな面の上の A を、つるした B が引く（滑車）',
   sub: 'なめらかな面（傾き $\\theta$）の上の A（質量 $m$）に軽い糸をつけ、なめらかに回る軽い滑車を通して、他端に B（質量 $M$）をつるす。' +
     '静かにはなすと B が下り、A は面にそって上る。<b>糸は伸びないので、A が上る速さと B が下りる速さは同じ</b>。' +
     '正の向きは「A が上る向き＝B が下りる向き」にそろえてとる。' + OBJCOL,
@@ -4162,9 +4195,9 @@ DEFS['m1-10'] = {
 
 /* ============ 1-11 2物体（アトウッドの装置） ============ */
 DEFS['m1-11'] = {
-  id: 'm1-11', mode: 1, tab: '1-11 2物体（アトウッド）',
+  id: 'm1-11', mode: 2, tab: '2-3 2物体（アトウッド）',
   quizKey: 'v', quizName: 'A と B の $v$–$t$ 図（B が下りる向きを正）',
-  title: '1-11　アトウッドの装置（滑車の両側におもり）',
+  title: '2-3　アトウッドの装置（滑車の両側におもり）',
   sub: 'なめらかに回る軽い滑車に軽い糸をかけ、両端に A（質量 $m$）と B（質量 $M$）をつるす。$m < M$ なので、' +
     '静かにはなすと <b>B が下り、A が上る</b>。糸は伸びないので<b>2つの速さは同じ</b>。' +
     '正の向きは「B が下りる向き＝A が上る向き」にそろえてとる。' + OBJCOL,
@@ -4309,9 +4342,9 @@ DEFS['m1-11'] = {
 
 /* ============ 1-12 2物体（板と、その上にのる物体） ============ */
 DEFS['m1-12'] = {
-  id: 'm1-12', mode: 1, tab: '1-12 2物体（板の上）',
+  id: 'm1-12', mode: 2, tab: '2-4 2物体（板の上）',
   quizKey: 'v', quizName: '板 A と物体 B の $v$–$t$ 図（右向きが正）',
-  title: '1-12　なめらかな床の上の板とその上で滑る物体',
+  title: '2-4　なめらかな床の上の板とその上で滑る物体',
   sub: '水平でなめらかな床の上に板 A（質量 $M$）を置き、その上に物体 B（質量 $m$）をのせる。' +
     '<b>摩擦があるのは A と B のあいだだけ</b>（床はなめらか）。B が A の上をすべるとき、' +
     'B にはたらく動摩擦力は「A が B に対して動く向き」、A にはその<b>反対向き</b>にはたらく（作用・反作用）。' +
@@ -4660,9 +4693,9 @@ function projFml(v, sg, kind) {
 
 /* ============ 2-1 ストロボ比較 ============ */
 DEFS['m2-1'] = {
-  id: 'm2-1', mode: 2, tab: '2-1 ストロボ比較',
+  id: 'm2-1', mode: 3, tab: '3-1 ストロボ比較',
   quizKey: 'v', quizName: '右の運動（平面内）の $v_y$–$t$ 図（鉛直方向）',
-  title: '2-1　ストロボ写真でくらべる（運動の分解）',
+  title: '3-1　ストロボ写真でくらべる（運動の分解）',
   desc: '左と右で、同じ時刻の球の高さが「いつも同じ」ことを確かめよう。',
   sub: '平面内の運動は、水平方向（等速直線運動）と鉛直方向（等加速度運動）に分けて考えられる。ストロボの間隔を変えて、同じ高さを結ぶ線を見くらべよう。',
   cw: 560, ch: 380,
@@ -4842,9 +4875,9 @@ function m22AreaNote(v, st2) {
 
 /* ============ 2-2 原点からの斜方投射 ============ */
 DEFS['m2-2'] = {
-  id: 'm2-2', mode: 2, tab: '2-2 水平・斜方投射',
+  id: 'm2-2', mode: 3, tab: '3-2 水平・斜方投射',
   quizKey: 'vy', quizName: 'このボールの $v_y$–$t$ 図（鉛直方向）',
-  title: '2-2　原点からの水平投射・斜方投射',
+  title: '3-2　原点からの水平投射・斜方投射',
   desc: 'はじめは θ＝0°、つまり水平投射。角度を変えると斜方投射になる。',
   sub: '「分解した速度を表示」にすると、いつも一定の vx と、まっすぐ減っていく vy が見える。<b>投射角 θ を変えると、同じ v₀ でも飛び方がまったく変わる。</b>いろいろな θ で試してみよう。<br>アニメーションは<b>原点と同じ高さ（y＝0）にもどったところで止まる</b>（うすい放物線はその先も描いてある）。なぜそこで止まるのかは、vy–t 図の下の解説を見よう。',
   cw: 520, ch: 360,
@@ -4915,9 +4948,9 @@ DEFS['m2-2'] = {
 
 /* ============ 2-3 ビルの上からの斜方投射 ============ */
 DEFS['m2-3'] = {
-  id: 'm2-3', mode: 2, tab: '2-3 ビルの上からの斜方投射',
+  id: 'm2-3', mode: 3, tab: '3-3 ビルの上からの斜方投射',
   quizKey: 'vy', quizName: 'このボールの $v_y$–$t$ 図（鉛直方向）',
-  title: '2-3　ビルの上からの斜方投射（原点の取り方）',
+  title: '3-3　ビルの上からの斜方投射（原点の取り方）',
   desc: '同じ運動でも、原点をどこに取るかで式の形は変わる。けれど $v$–$t$ 図・$a$–$t$ 図は変わらない。',
   sub: '「原点の取り方」を切りかえて、y の式と y–t 図がどう変わるかを確かめよう。',
   cw: 520, ch: 360,
@@ -5017,8 +5050,8 @@ DEFS['m2-3'] = {
 
 /* ============ 2-4 かご入れゲーム ============ */
 DEFS['m2-4'] = {
-  id: 'm2-4', mode: 2, tab: '2-4 かご入れゲーム', game: true, startSfx: 'bang',
-  title: '2-4　かごにボールを蹴り入れよう！',
+  id: 'm2-4', mode: 3, tab: '3-4 かご入れゲーム', game: true, startSfx: 'bang',
+  title: '3-4　かごにボールを蹴り入れよう！',
   desc: 'ける速さと角度を変えて、ボールをかごに蹴り入れよう。',
   sub: '<b>成功するのは、ボールが「上から」かごの口に落ちこんだときだけ</b>（横からぶつかっても入らない）。だから、かごの上まで届かせて、そこで<b>下向きに落ちてくる</b>ようにねらおう。かごはドラッグで動かせる。水平到達距離は v₀²sin2θ / g。同じ距離になる角度が2つあることにも注目。',
   cw: 520, ch: 280,
@@ -5135,9 +5168,9 @@ DEFS['m2-4'] = {
 
 /* ============ 3-1 投げ上げAと自由落下Bの衝突 ============ */
 DEFS['m3-1'] = {
-  id: 'm3-1', mode: 3, tab: '3-1 衝突（投げ上げ×自由落下）',
+  id: 'm3-1', mode: 4, tab: '4-1 衝突（投げ上げ×自由落下）',
   quizKey: 'v', quizName: '球 A（投げ上げ）と 球 B（自由落下）の $v$–$t$ 図（鉛直方向）',
-  title: '3-1　鉛直投げ上げA と 自由落下B が一直線上で衝突',
+  title: '4-1　鉛直投げ上げA と 自由落下B が一直線上で衝突',
   desc: '初速度をもつ方がA（投げ上げ）、静かに落とす方がB（自由落下）。',
   sub: '左は見やすいように左右に少しずらした図、右は本来の位置関係（同じ一直線の上）。ぶつかるのは2つの y が一致したとき。',
   cw: 540, ch: 380,
@@ -5301,13 +5334,13 @@ function m32vyFml(v, sg) {
 }
 
 DEFS['m3-2'] = {
-  id: 'm3-2', mode: 3, tab: '3-2 台車から発射',
+  id: 'm3-2', mode: 4, tab: '4-2 台車から発射',
   quizKey: function (v) { return (v.obs === 'cart') ? 'cvy' : 'gvy'; },
   quizName: function (v) {
     return (v.obs === 'cart') ? '小球B の $v_y$–$t$ 図（台車Aから見た鉛直方向）'
       : '小球B の $v_y$–$t$ 図（地上から見た鉛直方向）';
   },
-  title: '3-2　等速直線運動する台車Aから、真上に発射される小球B',
+  title: '4-2　等速直線運動する台車Aから、真上に発射される小球B',
   desc: 'まずクイズに答えてから再生しよう。台車Aは等速で進み、<b>x＝5 m のところで</b>小球Bを<b>真上に</b>発射する。Bはどこに落ちる？',
   sub: 'はじめは台車を止めた状態（V＝0）。まっすぐ上がってまっすぐもどることを確かめてから、V を大きくしてみよう。<br><b>「台車Aの上の観測者」</b>に切りかえると、台車は止まって見え、<b>地面のほうが後ろへ流れていく</b>。そのときBは<b>ただの鉛直投げ上げ</b>——ずっと真上にいて、水平方向には少しも動かない。',
   cw: 520, ch: 340,
@@ -5542,8 +5575,8 @@ DEFS['m3-2'] = {
 
 /* ============ 3-3 モンキーハンティング ============ */
 DEFS['m3-3'] = {
-  id: 'm3-3', mode: 3, tab: '3-3 モンキーハンティングゲーム', game: true, startSfx: 'bang',
-  title: '3-3　モンキーハンティングゲーム　〜猿に当てるにはどうしたらいいか？〜',
+  id: 'm3-3', mode: 4, tab: '4-3 モンキーハンティングゲーム', game: true, startSfx: 'bang',
+  title: '4-3　モンキーハンティングゲーム　〜猿に当てるにはどうしたらいいか？〜',
   desc: '発射と同時に、猿は枝から手をはなして自由落下する。猿をまっすぐねらった向きで撃つと、必ず当たる。',
   sub: '発射角 θ はスライダーで変えられる。弾も猿も、同じ時間だけ ½gt² だけ落ちることがポイント。',
   cw: 520, ch: 360,
@@ -5732,7 +5765,7 @@ function camIs(s, az, el, zoom) {
 
 /* ============ 4-1 気球からの水平投射（防衛大2024） ============ */
 DEFS['m4-1'] = {
-  long: '<h3>4-1 気球からの水平投射（防衛大学校 2024 改）— くわしい解説</h3>' +
+  long: '<h3>5-1 気球からの水平投射（防衛大学校 2024 改）— くわしい解説</h3>' +
     '<h4>1. どんな設定か</h4>' +
     '<p>気球が一定の速さ <span class="tex">V_0</span> で<b>まっすぐ上に上がっている</b>。' +
     '高さ <span class="tex">h</span> に達した瞬間、気球に乗った人が小球を<b>気球から見て水平向きに</b>速さ <span class="tex">v_0</span> で投げ出す。' +
@@ -5779,9 +5812,9 @@ DEFS['m4-1'] = {
     'このページで観測者を切りかえて見くらべよう。</li>' +
     '</ol></div>' +
     '<p class="src">※ 防衛大学校 2024 年の問題を教材用に単純化しています。数値・設問は入試そのものではありません。</p>',
-  id: 'm4-1', mode: 4, tab: '4-1 気球からの水平投射',
+  id: 'm4-1', mode: 5, tab: '5-1 気球からの水平投射',
   quizKey: 'vy', quizName: '小球の $v_y$–$t$ 図（鉛直方向・いま選んでいる観測者から見たもの）',
-  title: '4-1　気球からの水平投射（出典：防衛大2024）',
+  title: '5-1　気球からの水平投射（出典：防衛大2024）',
   desc: '一定の速さ $V_0$ で上昇する気球が高さ $h$ に来たとき、気球から見て水平に速さ $v_0$ で小球を投げ出す。<b>地上の観測者</b>と<b>気球に乗った観測者</b>を切りかえて見くらべよう。',
   sub: '地上から見ると、小球は最初 $V_0$ で上に動いているので<b>斜方投射</b>になる。気球から見ると、気球は等速（慣性系）なので<b>ただの水平投射</b>で、かわりに地面が $V_0$ で下がってくる。<b>どちらの見方でも加速度は下向きに $g$ で同じ</b>。',
   cw: 520, ch: 380,
@@ -5942,7 +5975,7 @@ function gnd3(v) { return v.obs !== 'slope'; }
 function slp3(v) { return v.obs === 'slope'; }
 
 DEFS['m4-3'] = {
-  long: '<h3>4-3 斜面上を転がる小球（東京大学 2012 改）— くわしい解説</h3>' +
+  long: '<h3>5-3 斜面上を転がる小球（東京大学 2012 改）— くわしい解説</h3>' +
     '<h4>1. どんな設定か</h4>' +
     '<p>水平な地面に、折り目（図の y 軸）を軸にして角 <span class="tex">\\theta</span> だけ持ち上げた「なめらかな板」を置く。' +
     '板の上で小球を、斜面を上る向き（<b>X 軸</b>）から角 <span class="tex">\\alpha</span> だけ傾けて、速さ <span class="tex">v_0</span> で打ち出す。' +
@@ -5982,13 +6015,13 @@ DEFS['m4-3'] = {
     '<b>鉛直方向の加速度が −g ではない</b>のは、垂直抗力が重力の一部を支えているから。</li>' +
     '</ol></div>' +
     '<p class="src">※ 東京大学 2012 年の問題を教材用に単純化しています。数値・設問は入試そのものではありません。</p>',
-  id: 'm4-3', mode: 4, tab: '4-3 斜面上を転がる小球',
+  id: 'm4-3', mode: 5, tab: '5-3 斜面上を転がる小球',
   quizKey: function (v) { return (v.obs === 'slope') ? 'pgvX' : 'wgvz'; },
   quizName: function (v) {
     return (v.obs === 'slope') ? '小球の $v_X$–$t$ 図（斜面を上る向きが $X$）'
       : '小球の $v_z$–$t$ 図（鉛直方向）';
   },
-  title: '4-3　斜面上を転がる小球（出典：東京大学2012）',
+  title: '5-3　斜面上を転がる小球（出典：東京大学2012）',
   desc: '水平な地面に、折り目を軸にして角 θ だけ持ち上げた「なめらかな板」を置く。板の上を斜めに打ち出した小球は、板の上に放物線をえがく。',
   sub: '斜面の中の座標は、<b>X：斜面を上る向き</b>、<b>Y：斜面の横方向（折り目の向き）</b>、<b>Z：斜面に垂直</b>。$\\alpha$ は X 軸から測った打ち出しの向き。<br><b>「水平面の観測者」</b>は x–z 平面（真横）から見る。<b>「斜面の上の観測者」</b>に切りかえると<b>絵全体が −θ 回って板が水平になり</b>、X–Z 平面で見ることになる。<b>板から離れないので Z はずっと 0</b>——ここがこの問題のポイント。キャンバスをドラッグすると視点が回り、ホイールで拡大縮小できる。',
   cw: 560, ch: 420,
@@ -6416,7 +6449,7 @@ DEFS['m4-3'] = {
 function gnd(v) { return v.obs !== 'slope'; }
 function slp(v) { return v.obs === 'slope'; }
 DEFS['m4-2'] = {
-  long: '<h3>4-2 斜面上の斜方投射（横浜市立大学 2018 改） — くわしい解説</h3>' +
+  long: '<h3>5-2 斜面上の斜方投射（横浜市立大学 2018 改） — くわしい解説</h3>' +
     '<h4>1. どんな設定か</h4>' +
     '<p>傾き <span class="tex">\\theta</span> の斜面の上の点から、<b>斜面から測って角 <span class="tex">\\Phi</span></b>、速さ <span class="tex">v_0</span> でボールを打ち出す。' +
     'ボールは空中を飛び、やがて斜面にもどってくる。水平から測った投射角は <span class="tex">\\Phi + \\theta</span>。' +
@@ -6451,14 +6484,14 @@ DEFS['m4-2'] = {
     'ということが目で分かる。<b>座標の取り方は自由</b>で、ラクなほうを選んでよい。</li>' +
     '</ol></div>' +
     '<p class="src">※ 横浜市立大学 2018 年の問題を教材用に単純化しています。数値・設問は入試そのものではありません。</p>',
-  id: 'm4-2', mode: 4, tab: '4-2 斜面上の斜方投射',
+  id: 'm4-2', mode: 5, tab: '5-2 斜面上の斜方投射',
   /* 問題に使うグラフは、いま選んでいる観測者に合わせる */
   quizKey: function (v) { return (v.obs === 'slope') ? 'svY' : 'gvy'; },
   quizName: function (v) {
     return (v.obs === 'slope') ? 'このボールの $v_Y$–$t$ 図（斜面に垂直な向き）'
       : 'このボールの $v_y$–$t$ 図（鉛直方向）';
   },
-  title: '4-2　斜面上の斜方投射（出典：横浜市大2018）',
+  title: '5-2　斜面上の斜方投射（出典：横浜市大2018）',
   desc: '斜面の傾きを $\\theta$（のぼりが正）、斜面から測った投射角を $\\Phi$ とする。<b>座標は斜面にそって $X$、斜面に垂直に $Y$</b> をとる。<b>水平面の観測者</b>と<b>斜面の上の観測者</b>を切りかえて見くらべよう。'
     ,
   sub: '斜面にそった軸 X・斜面に垂直な軸 Y で考えると、<b>Y 方向はただの投げ上げ（加速度 −g cosθ）、X 方向は等加速度（加速度 −g sinθ）</b>になる。斜面に落ちるのは Y＝0 にもどったとき。Φ を変えると飛距離が最大になる角が見つかる。θ を負にすると下り坂。<br><b>「斜面の上の観測者から見る」に切りかえると、絵全体が −θ だけ回って斜面が水平になる</b>。斜面が「地面」に見えるかわりに、重力の矢印が θ だけ傾く。うすい x・y 軸がもとの水平・鉛直の向きを示している。',
@@ -6738,7 +6771,85 @@ function V(s) {
   return o;
 }
 
-function $(id) { return document.getElementById(id); }
+/* 要素を id で探す。
+   ★モード 1〜4 では同じ作りのセクションが縦に並ぶので、mainCv・bPlay・readout などの id は
+   セクションごとに同じものがある★ そこで「いま扱っているセクション（st.root）」の中から探す。
+   見つからなければ、セクションの外にある要素（タブの帯・問題モードのスイッチなど）だけを返す
+   （となりのセクションの要素をまちがって書きかえないように）。 */
+function $(id) {
+  var r = st.root;
+  if (r) {
+    var e = r.querySelector('#' + id);
+    if (e) return e;
+  }
+  var g = document.getElementById(id);
+  return (g && !(g.closest && g.closest('.simsec'))) ? g : null;
+}
+
+/* ===== セクションの切りかえ（どのセクションを「いま扱っている」ことにするか） =====
+   st.cur  … いま扱っているシムの中の名前（m1-3 など）
+   st.root … そのセクションの <article>
+   st.focus … 生徒が最後にさわった（またはタブ・目次で選んだ）セクション
+   st.shown … いま画面に並んでいるセクション（上から順）
+   st.view … アドレス欄に出すセクション（縦に並ぶモードでは、画面の上にあるもの） */
+function secEl(id) { return document.querySelector('.simsec[data-sim="' + id + '"]'); }
+function useSim(id) { st.cur = id; st.root = secEl(id); }
+function eachShown(fn) {
+  var keep = st.focus;
+  (st.shown || []).forEach(function (id) { useSim(id); fn(id); });
+  if (keep) useSim(keep);
+}
+
+/* 画面に出す番号（2-1 など）は MODES の順から決める。中の名前（m1-9 など）は変えない。 */
+var NUM = {}, BYNUM = {};
+function numberSims() {
+  MODES.forEach(function (M) {
+    M.ids.forEach(function (id, k) {
+      if (!DEFS[id]) return;
+      DEFS[id].mode = M.n;
+      NUM[id] = M.n + '-' + (k + 1);
+      BYNUM[NUM[id]] = id;
+    });
+  });
+}
+function modeDef(n) {
+  var r = MODES[0];
+  MODES.forEach(function (M) { if (M.n === n) r = M; });
+  return r;
+}
+
+/* モードを開く：そのモードのセクションを並べて、ひとつずつ組み立てる */
+function showMode(n, focusId) {
+  var M = modeDef(n);
+  (st.shown || []).forEach(function (id) { if (st.sims[id]) st.sims[id].playing = false; });
+  st.mode = M.n;
+  var ids = M.stack ? M.ids.filter(function (id) { return !!DEFS[id]; })
+                    : [(focusId && DEFS[focusId]) ? focusId : M.ids[0]];
+  var box = document.getElementById('secstack');
+  box.innerHTML = ids.map(function (id) {
+    return '<article class="simsec" data-sim="' + id + '">' +
+      '<div class="card" id="simhost"></div>' +
+      '<div class="card longbox" id="longbox" style="display:none"></div></article>';
+  }).join('');
+  st.shown = ids;
+  /* セクションの中をさわったら、そのセクションを「いま扱っている」ことにする。
+     capture（外がわが先）なので、中のボタンの処理より前に切りかわる。 */
+  var EVS = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'mousedown', 'touchstart',
+    'click', 'dblclick', 'input', 'change', 'wheel', 'keydown', 'focusin'];
+  Array.prototype.forEach.call(box.querySelectorAll('.simsec'), function (el) {
+    var id = el.getAttribute('data-sim');
+    EVS.forEach(function (ev) {
+      el.addEventListener(ev, function () { st.focus = id; useSim(id); }, { capture: true, passive: true });
+    });
+  });
+  ids.forEach(function (id) { useSim(id); buildPanel(); renderActive(); });
+  st.focus = (focusId && ids.indexOf(focusId) >= 0) ? focusId : ids[0];
+  st.view = st.focus;
+  useSim(st.focus);
+  /* 3次元の図の操作の説明は、3次元の図が画面にあるときだけ */
+  var h3d = $('hint3d');
+  if (h3d) h3d.style.display = ids.some(function (id) { return !!DEFS[id].drag3d; }) ? '' : 'none';
+}
 
 /* いま表示するグラフだけを返す。
    グラフに when(v) を書くと、その条件のときだけ出る（4-2 の観測者切りかえで使う）。 */
@@ -6780,14 +6891,15 @@ function initState() {
 
 /* ===== タブ ===== */
 function buildTabs() {
-  var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[st.cur];
+  var mt = $('modetabs'), stb = $('simtabs');
   mt.innerHTML = '';
   var curBtn = null, curMode = null, curSim = null;
   MODES.forEach(function (M) {
     var b = document.createElement('button');
     b.textContent = M.label;
-    if (M.n === cur.mode) { b.className = 'on'; curBtn = b; curMode = M; }
-    b.addEventListener('click', function () { if (M.n !== DEFS[st.cur].mode) gotoSim(M.ids[0]); });
+    if (M.n === st.mode) { b.className = 'on'; curBtn = b; curMode = M; }
+    /* モードのタブ：そのモードを開いて、いちばん上へ（開いているモードなら上へもどるだけ） */
+    b.addEventListener('click', function () { gotoSim(M.ids[0]); });
     mt.appendChild(b);
   });
   /* 問題モードのスイッチ（タブ列の右端。入れるとどのシミュレーションも問題モードになる） */
@@ -6813,18 +6925,19 @@ function buildTabs() {
   tip.innerHTML = (curMode && curMode.tip) ? curMode.tip : '';
   st._tipBtn = curBtn;
   placeModeTip();
+  /* シミュレーションのタブ。
+     縦に並ぶモード（1〜4）では「そこまでスクロール」、モード 5 では「切りかえ」になる。 */
   stb.innerHTML = '';
-  MODES.forEach(function (M) {
-    if (M.n !== cur.mode) return;
-    M.ids.forEach(function (id) {
-      if (!DEFS[id]) return;          /* まだ作っていない番号は飛ばす */
-      var b = document.createElement('button');
-      b.textContent = DEFS[id].tab;
-      b.className = (DEFS[id].game ? 'game' : '') + (id === st.cur ? ' on' : '');
-      b.addEventListener('click', function () { gotoSim(id); });
-      if (id === st.cur) curSim = b;
-      stb.appendChild(b);
-    });
+  var here = st.view || st.cur;
+  (curMode ? curMode.ids : []).forEach(function (id) {
+    if (!DEFS[id]) return;          /* まだ作っていない番号は飛ばす */
+    var b = document.createElement('button');
+    b.textContent = DEFS[id].tab;
+    b.setAttribute('data-sim', id);
+    b.className = (DEFS[id].game ? 'game' : '') + (id === here ? ' on' : '');
+    b.addEventListener('click', function () { gotoSim(id); });
+    if (id === here) curSim = b;
+    stb.appendChild(b);
   });
   /* タブの列は1行の横スクロールなので、いま選んでいるタブが列の外にかくれることがある。
      まん中あたりに来るように、その列だけを横へ送る
@@ -6858,7 +6971,7 @@ function updateUrlBar() {
    図の列の幅に上限をかける。縦横比は保たれるので高さもいっしょに縮み、
    オレンジの帯や図の上にのせるカードも列といっしょに縮むので、ずれない。 */
 function fitStageHeight() {
-  var col = document.querySelector('#simhost .cv'), cv = $('mainCv');
+  var host0 = $('simhost'), col = host0 && host0.querySelector('.cv'), cv = $('mainCv');
   if (!col || !cv) return;
   var vh = window.innerHeight, vw = window.innerWidth;
   var key = vh + 'x' + vw + '|' + (cv.style.aspectRatio || '');
@@ -6892,9 +7005,9 @@ function placeModeTip() {
 
 /* ===== パネルの組み立て ===== */
 function buildPanel() {
-  /* シムを選んだ瞬間を覚えておく（図の中の「ここを操作してね」を数秒ピカピカさせるため） */
-  st._hintT0 = (window.performance && performance.now) ? performance.now() : Date.now();
   var d = DEFS[st.cur], s = st.sims[st.cur];
+  /* 組み立てた瞬間を覚えておく（図の中の「ここを操作してね」を数秒ピカピカさせるため） */
+  s._hintT0 = (window.performance && performance.now) ? performance.now() : Date.now();
   s._eq = null;                       /* DOM を作り直すのでキャッシュを捨てる */
   var h = [];
   h.push('<div class="simhead"><div class="simtitle">' + d.title + '</div></div>');
@@ -7010,10 +7123,6 @@ function buildPanel() {
   /* note も sub と同じく「$…$」を KaTeX に変換する（<span class="tex"> 直書きも可） */
   h.push('<div class="note" id="notebox"><b>見るポイント</b>：' + mathHtml(d.note) + '</div>');
 
-  h.push('<div class="signsw"><span>グラフで正とする向き：</span>' +
-    '<button id="sgnP" class="' + (s.sign > 0 ? '' : 'sub') + '">' + d.signLabels[0] + '</button>' +
-    '<button id="sgnM" class="' + (s.sign < 0 ? '' : 'sub') + '">' + d.signLabels[1] + '</button></div>');
-
   h.push('<div class="ctrl">');
   (d.mainOpts ? [] : (d.selects || [])).forEach(function (sd) {
     h.push('<div class="row"><label>' + sd.label + '</label><select data-sel="' + sd.k + '">' +
@@ -7037,9 +7146,6 @@ function buildPanel() {
   h.push('<table class="read" id="readout"></table>');
   h.push('</div></div>');
   $('simhost').innerHTML = h.join('');
-  /* 3次元の視点操作の説明は、3次元の図のシム（4-3）を見ているときだけ出す */
-  var h3d = $('hint3d');
-  if (h3d) h3d.style.display = d.drag3d ? '' : 'none';
   /* くわしい解説は、パネルを差しかえた「あと」に出す
      （中で renderActive() が走るので、先に呼ぶと運動方程式の欄が空になる） */
   renderLong(d);
@@ -7076,8 +7182,6 @@ function buildPanel() {
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-ga]'), function (b) {
     b.addEventListener('click', function () { delete s.gview[b.getAttribute('data-ga')]; renderActive(); });
   });
-  $('sgnP').addEventListener('click', function () { setSign(s, 1); });
-  $('sgnM').addEventListener('click', function () { setSign(s, -1); });
 
   Array.prototype.forEach.call($('simhost').querySelectorAll('[data-act]'), function (b) {
     b.addEventListener('click', function () {
@@ -7206,8 +7310,7 @@ function setQmode(on) {
     x.t = 0; x.playing = false; x.gview = {};
   });
   buildTabs();
-  buildPanel();
-  renderActive();
+  eachShown(function () { buildPanel(); renderActive(); });
   syncHash();
   updateUrlBar();
   placeQNotice();                      /* タブ列を作り直すとボタンの位置が変わる */
@@ -7216,9 +7319,10 @@ function setQmode(on) {
 /* 図の中の「ここを操作してね」のまばたきの強さ（0〜1）。
    シムを選んでから 2.6 秒だけピカピカして、そのあとは光ったまま落ち着く。 */
 function flashK() {
-  if (!st._hintT0) return 1;
+  var s0 = st.sims[st.cur], t0 = s0 && s0._hintT0;
+  if (!t0) return 1;
   var now = (window.performance && performance.now) ? performance.now() : Date.now();
-  var e = now - st._hintT0;
+  var e = now - t0;
   if (e > 2600) return 1;
   return Math.abs(Math.sin(e / 250));
 }
@@ -7460,12 +7564,15 @@ function bigFmlLabel() { return st.bigFml ? '式をもとの大きさに' : '式
 /* 「公式・代入・数値」の3段を大きく見せる（式が細かくて読みにくいときに） */
 function toggleBigFml() {
   st.bigFml = !st.bigFml;
-  Array.prototype.forEach.call(document.querySelectorAll('#simhost .gbody'), function (b) {
+  /* 「式を拡大」はページ全体の設定なので、並んでいるセクションすべてに効かせる */
+  Array.prototype.forEach.call(document.querySelectorAll('.simsec .gbody'), function (b) {
     b.className = b.className.replace(' bigf', '') + (st.bigFml ? ' bigf' : '');
   });
-  var bt = $('bBigFml');
-  if (bt) { bt.textContent = bigFmlLabel(); bt.className = st.bigFml ? '' : 'sub'; }
-  refitFormulas();
+  eachShown(function () {
+    var bt = $('bBigFml');
+    if (bt) { bt.textContent = bigFmlLabel(); bt.className = st.bigFml ? '' : 'sub'; }
+    refitFormulas();
+  });
 }
 
 function toggleAllGraphs() {
@@ -7608,29 +7715,8 @@ function attach3dDrag(d, s) {
   }, { passive: false });
 }
 
-/* 「グラフで正とする向き」を切りかえたとき。
-   どちらが＋になったのかが空間のイメージと結びつくよう、図の上に一瞬だけ知らせを出す。 */
-function setSign(s, sg) {
-  var d = DEFS[st.cur];
-  if (s.sign === sg) return;
-  s.sign = sg; s.gview = {};
-  refreshSignBtns(); renderActive();
-  var stage = document.querySelector('#simhost .cvstage');
-  if (!stage) return;
-  var old = stage.querySelector('.signflash');
-  if (old) old.parentNode.removeChild(old);
-  var el = document.createElement('div');
-  el.className = 'signflash';
-  el.textContent = posWord(d, s) + ' が ＋ になりました';
-  stage.appendChild(el);
-  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1900);
-}
-
-function refreshSignBtns() {
-  var s = st.sims[st.cur];
-  $('sgnP').className = s.sign > 0 ? '' : 'sub';
-  $('sgnM').className = s.sign < 0 ? '' : 'sub';
-}
+/* 「グラフで正とする向き」の切りかえは、先生の指示でなくした（2026-10）。
+   正の向きは各シミュレーションの signLabels[0] のまま固定（s.sign はいつも +1）。 */
 
 function setPlayLabel() {
   var s = st.sims[st.cur], d = DEFS[st.cur], b = $('bPlay');
@@ -7654,7 +7740,7 @@ function setPlayLabel() {
 /* シムごとのクイズ（3-2）の誘導：まだ答えていなければ3択を光らせる */
 function syncSimQuiz() {
   var d = DEFS[st.cur], s = st.sims[st.cur];
-  var box = document.querySelector('#simhost .quiz');
+  var host0 = $('simhost'), box = host0 && host0.querySelector('.quiz');
   if (!box || !d.quiz) return;
   var need = (s.quiz === null);
   box.className = 'quiz' + (need ? ' pulse' : '');
@@ -8000,15 +8086,32 @@ function renderMath(root) {
 }
 
 /* ===== 画面の切りかえ ===== */
-/* ハッシュの形： #m1-1  … ふつう
-                  #m1-1!q … 問題モードで開く                                   */
-function hashOf() { return st.cur + (st.qmode ? '!q' : ''); }
+/* アドレスの形（2026-10 にモードを 5 つに分けて、画面の番号と同じ形にした）
+     #2-1    … 2-1 のセクション（縦に並ぶモードでは、そこまでスクロール）
+     #2-1!q  … 問題モードで開く
+     #3      … モード 3 のいちばん上
+   ★前のアドレス（#m1-9 など、中の名前そのまま）もそのまま使える★
+   （配ったリンクがこわれないように。#m1-9 は 2-1 に、#m2-1 は 3-1 に開く）。 */
+function hashOf() {
+  var id = st.view || st.cur;
+  return (NUM[id] || id) + (st.qmode ? '!q' : '');
+}
 function parseHash(h) {
-  h = (h || '').replace('#', '');
+  h = (h || '').replace(/^#/, '');
   var q = false, i = h.indexOf('!');
   if (i < 0) i = h.indexOf('?');
   if (i >= 0) { q = /^[!?]q/i.test(h.slice(i)); h = h.slice(0, i); }
-  return { id: h, quiz: q };
+  var has = Object.prototype.hasOwnProperty, id = null;
+  if (has.call(BYNUM, h)) id = BYNUM[h];                      /* 新しい形 #2-1 */
+  else if (has.call(DEFS, h) && DEFS[h] && DEFS[h].id === h) id = h;   /* 前の形 #m1-9 */
+  else if (/^[1-9]$/.test(h) && modeDef(+h).n === +h) id = modeDef(+h).ids[0];   /* #3 */
+  return { id: id, quiz: q };
+}
+/* スクロールしただけのときは、履歴を増やさずにアドレスだけ書きかえる */
+function replaceHash() {
+  var want = '#' + hashOf();
+  if (location.hash === want) return;
+  try { history.replaceState(null, '', want); } catch (e) { /* 書きかえられない環境では何もしない */ }
 }
 function syncHash() {
   var want = '#' + hashOf();
@@ -8018,54 +8121,165 @@ function syncHash() {
   }
 }
 
-/* タブは画面の上に残るので、下のほうまでスクロールしたままタブを押すと、
-   新しいシミュレーションの「とちゅう」が見えてしまう。
-   図の頭がタブの帯のすぐ下に来るまでスクロールする（すでに見えているときは動かさない）。 */
-function scrollSimIntoView() {
-  var host = $('simhost');
-  if (!host) return;
-  var tb = $('tabbar');
-  var band = (tb && getComputedStyle(tb).position === 'sticky') ? tb.offsetHeight : 0;
-  var top = host.getBoundingClientRect().top;
-  if (top >= band - 2) return;
-  window.scrollTo({ top: window.scrollY + top - band - 8, behavior: 'auto' });
+/* セクションの頭が、上に貼りついたタブの帯のすぐ下に来るまでスクロールする。
+   そのモードのいちばん上のセクションなら、モードのひとこと（#modetip）から見せる。
+   図を描き直すと高さが変わるので、描いたあと（rAF 2回＋少し遅れてもう一度）そろえ直す。 */
+function bandH() {
+  var tb = document.getElementById('tabbar');
+  return (tb && getComputedStyle(tb).position === 'sticky') ? tb.offsetHeight : 0;
+}
+function scrollToSec(id) {
+  var go = function () {
+    var el = secEl(id);
+    if (!el) return;
+    var target = el, tip = document.getElementById('modetip');
+    if (st.shown && st.shown[0] === id && tip && tip.offsetHeight) target = tip;
+    var y = window.scrollY + target.getBoundingClientRect().top - bandH() - 8;
+    window.scrollTo({ top: Math.max(0, Math.round(y)), behavior: 'auto' });
+  };
+  go();
+  if (window.requestAnimationFrame) requestAnimationFrame(function () { requestAnimationFrame(go); });
+  setTimeout(go, 120);
 }
 
-function gotoSim(id) {
+/* 縦に並ぶモードで、いま画面の上にあるセクションのタブを青くする（アドレスもそれに合わせる） */
+function spySection() {
+  if (!st.shown || st.shown.length < 2) return;
+  var lim = bandH() + 70, cur = st.shown[0];
+  st.shown.forEach(function (id) {
+    var el = secEl(id);
+    if (el && el.getBoundingClientRect().top <= lim) cur = id;
+  });
+  if (cur === st.view) return;
+  st.view = cur;
+  var stb = document.getElementById('simtabs'), on = null;
+  if (stb) Array.prototype.forEach.call(stb.querySelectorAll('button'), function (b) {
+    var me = b.getAttribute('data-sim') === cur;
+    b.classList.toggle('on', me);
+    if (me) on = b;
+  });
+  centerTab(stb, on);
+  replaceHash();
+}
+
+/* 共通フッターの「スタートを光らせる」しくみは、ページのいちばん上の ▶スタート を光らせる。
+   タブや目次で下のセクションへ飛んだときは、そのセクションの ▶スタート に光を移す
+   （フッターは書きかえない。光の付け外しだけをする）。 */
+function glowStart(id) {
+  var sec = secEl(id), mine = sec && sec.querySelector('#bPlay');
+  if (!mine || mine.disabled || /一時停止/.test(mine.textContent)) return;
+  Array.prototype.forEach.call(document.querySelectorAll('#bPlay'), function (b) {
+    b.__sgKnown = 1; b.__sgVisible = true;           /* フッターの見張り役に「新しいボタン」と思わせない */
+    if (b !== mine) b.classList.remove('sg-glow');
+  });
+  if (!mine.__sgDone) mine.classList.add('sg-glow');
+}
+
+/* ===== コンテンツ一覧（モードとセクションの題名・リンク） =====
+   題名は手で書かない。MODES と DEFS から自動で作る。
+   小項目を足したくなったら、ここに「シムの id → 小項目の名前の配列」を書くだけでよい
+   （いまのページには小項目はないので空）。リンクのアドレスは画面の番号（#2-1 など）。 */
+var TOC_SUBS = {};
+
+function buildToc() {
+  var p = $('tocpanel'), b = $('bToc');
+  if (!p || !b) return;
+  var h = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>';
+  MODES.forEach(function (m) {
+    h += '<div class="tocmode">' + m.label + '</div><ul>';
+    m.ids.forEach(function (id) {
+      var d = DEFS[id];
+      if (!d) return;                       /* まだ作っていない番号は飛ばす */
+      var t = String(d.title || d.tab).replace(/<br\s*\/?>/gi, '　').replace(/<[^>]+>/g, '');
+      h += '<li><a href="#' + NUM[id] + '" data-toc="' + id + '">' + mathHtml(t) + '</a></li>';
+      (TOC_SUBS[id] || []).forEach(function (st2, j) {
+        h += '<li class="tocsub"><a href="#' + NUM[id] + '" data-toc="' + id + '" data-tocsub="' + (j + 1) + '">' + mathHtml(st2) + '</a></li>';
+      });
+    });
+    h += '</ul>';
+  });
+  p.innerHTML = h;
+  renderMath(p);
+
+  function close() { p.hidden = true; b.setAttribute('aria-expanded', 'false'); }
+  /* パネルは「コンテンツ一覧」ボタンのすぐ下に開く。
+     CSS の top は 70px だが、それだとボタンの上にかぶさって
+     「もう一度押して閉じる」ができなくなるので、開くときに高さをそろえ直す。 */
+  function place() {
+    var row = document.querySelector('.introrow'), w = document.querySelector('.wrap');
+    if (!row || !w) return;
+    p.style.top = Math.max(70, Math.round(row.getBoundingClientRect().bottom - w.getBoundingClientRect().top) + 8) + 'px';
+    /* 下がはみ出さないように、残りの高さで打ち止めにする（あふれた分は中でスクロール） */
+    p.style.maxHeight = '';
+    var vt = p.getBoundingClientRect().top;
+    p.style.maxHeight = Math.max(160, Math.round(window.innerHeight - vt - 14)) + 'px';
+  }
+  b.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    p.hidden = !p.hidden;
+    if (!p.hidden) place();
+    b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true');
+  });
+  window.addEventListener('resize', function () { if (!p.hidden) place(); });
+  p.querySelector('.tocx').addEventListener('click', close);
+  document.addEventListener('click', function (ev) {
+    if (!p.hidden && !p.contains(ev.target) && ev.target !== b) close();
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') close(); });
+  Array.prototype.forEach.call(p.querySelectorAll('[data-toc]'), function (a) {
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      close();
+      /* パネルを閉じる → そのセクションへ（モードを開く・アドレスを書きかえる・図までスクロール） */
+      gotoSim(a.getAttribute('data-toc'));
+    });
+  });
+}
+
+/* そのセクションへ行く：ちがうモードならモードを開き、タブとアドレスを合わせて、そこまでスクロール */
+function gotoSim(id, noScroll) {
   if (!DEFS[id]) return;
-  st.cur = id;
+  var M = modeDef(DEFS[id].mode);
+  if (st.mode !== M.n || (!M.stack && (!st.shown || st.shown[0] !== id))) showMode(M.n, id);
+  st.focus = id; st.view = id;
+  useSim(id);
   buildTabs();
-  buildPanel();
-  renderActive();
   syncHash();
   updateUrlBar();
-  requestAnimationFrame(function () { requestAnimationFrame(scrollSimIntoView); });
+  if (!noScroll) scrollToSec(id);
+  setTimeout(function () { glowStart(id); }, 160);
 }
 
 /* ===== アニメーション ===== */
 var lastTs = null;
 function tick(ts) {
-  var s = st.sims[st.cur], d = DEFS[st.cur];
   if (lastTs === null) lastTs = ts;
   var dt = Math.min(0.033, (ts - lastTs) / 1000);
   lastTs = ts;
-  /* 止まっていても、選んだ直後だけは「ここを操作してね」をまばたきさせる */
-  if (s && !s.playing && d && d.hintFlash && st._hintT0) {
-    var el2 = (window.performance && performance.now) ? performance.now() : Date.now();
-    if (el2 - st._hintT0 < 2700 && (!st._hintLast || ts - st._hintLast > 55)) {
-      st._hintLast = ts; renderActive();
-    }
-  }
-  if (s && s.playing) {
-    var T = d.tEnd(V(s));
-    s.t = Math.min(T, s.t + dt * (s.slow ? 0.25 : 1));
-    if (s.t >= T - 1e-9) {
-      s.playing = false;
-      if (quizOn() && s.qphase === 0) { s.qphase = 1; sfx('pico'); syncQuiz(); }
-      setPlayLabel();
+  var now = (window.performance && performance.now) ? performance.now() : Date.now();
+  var keep = st.focus, moved = false;
+  /* 並んでいるセクションのうち、動いているもの（とまばたき中のもの）だけを進めて描く */
+  (st.shown || []).forEach(function (id) {
+    var s = st.sims[id], d = DEFS[id];
+    if (!s || !d) return;
+    /* 止まっていても、組み立てた直後だけは「ここを操作してね」をまばたきさせる */
+    var blink = !s.playing && d.hintFlash && s._hintT0 && now - s._hintT0 < 2700 &&
+      (!s._hintLast || ts - s._hintLast > 55);
+    if (!s.playing && !blink) return;
+    useSim(id); moved = true;
+    if (blink) s._hintLast = ts;
+    if (s.playing) {
+      var T = d.tEnd(V(s));
+      s.t = Math.min(T, s.t + dt * (s.slow ? 0.25 : 1));
+      if (s.t >= T - 1e-9) {
+        s.playing = false;
+        if (quizOn() && s.qphase === 0) { s.qphase = 1; sfx('pico'); syncQuiz(); }
+        setPlayLabel();
+      }
     }
     renderActive();
-  }
+  });
+  if (moved && keep) useSim(keep);
   requestAnimationFrame(tick);
 }
 
@@ -8074,44 +8288,62 @@ function tick(ts) {
 'use strict';
 (function () {
   initState();
+  numberSims();                          /* 画面の番号（2-1 など）とアドレスの対応表 */
   renderMath(document.body);
+  buildToc();
 
   var hp = parseHash(location.hash);
-  if (!DEFS[hp.id]) hp.id = 'm1-1';
-  st.cur = hp.id;
+  var id0 = hp.id || 'm1-1';
+  showMode(DEFS[id0].mode, id0);
+  st.focus = id0; st.view = id0; useSim(id0);
   buildTabs();
-  buildPanel();
-  renderActive();
   if (hp.quiz) {
     setQmode(true);                      /* 問題モードで開く（各シムを①の状態にそろえる） */
     showQNotice();                       /* リンクで来た生徒に「いまは問題モード」と大きく知らせる */
+  }
+  if (hp.id && DEFS[hp.id].mode !== 5 && modeDef(DEFS[hp.id].mode).ids[0] !== hp.id) {
+    scrollToSec(hp.id);
+    setTimeout(function () { glowStart(hp.id); }, 650);   /* フッターが光らせたあとで、そのセクションへ移す */
   }
   updateUrlBar();
 
   window.addEventListener('hashchange', function () {
     if (st._skipHash) { st._skipHash = false; return; }
     var q = parseHash(location.hash);
-    if (!DEFS[q.id]) return;
+    if (!q.id) return;                   /* 知らない名前は無視する */
+    gotoSim(q.id);
     if (q.quiz !== st.qmode) {
-      st.cur = q.id;
       setQmode(q.quiz);
       if (q.quiz) showQNotice();         /* リンクで問題モードに入ったときも知らせる */
-      return;
     }
-    if (q.id !== st.cur) gotoSim(q.id);
   });
 
+  /* 縦に並ぶモードでは、スクロールに合わせてタブの色とアドレスを変える */
+  var spyReq = false;
+  window.addEventListener('scroll', function () {
+    if (spyReq) return;
+    spyReq = true;
+    requestAnimationFrame(function () { spyReq = false; spySection(); });
+  }, { passive: true });
 
   /* KaTeX のフォントが読み込まれたら、式の幅をそろえ直す */
   if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
-    document.fonts.ready.then(function () { refitFormulas(); placeModeTip(); });
+    document.fonts.ready.then(function () { eachShown(function () { refitFormulas(); }); placeModeTip(); });
   }
-  window.addEventListener('resize', function () { refitFormulas(); placeModeTip(); fitStageHeight(); renderActive(); });
+  window.addEventListener('resize', function () {
+    placeModeTip();
+    eachShown(function () { fitStageHeight(); refitFormulas(); });
+  });
   requestAnimationFrame(tick);
 
   /* ===== 自動テスト用のフック ===== */
   window.TEST = {
     sims: function () { return Object.keys(DEFS); },
+    /* 画面に並んでいるセクション・開いているモード・画面の番号 */
+    shown: function () { return (st.shown || []).slice(); },
+    mode: function () { return st.mode; },
+    num: function (id) { return NUM[id || st.cur]; },
+    focus: function (id) { if (secEl(id)) { st.focus = id; useSim(id); } return st.cur; },
     state: function () {
       var s = st.sims[st.cur];
       return { sim: st.cur, v: JSON.parse(JSON.stringify(s.v)), o: JSON.parse(JSON.stringify(s.o)), sign: s.sign, t: +s.t.toFixed(4) };
@@ -8138,7 +8370,7 @@ function tick(ts) {
       return s.gview[key] || null;
     },
     graphMap: function (key) {
-      var cv = document.getElementById('gc_' + key);
+      var cv = $('gc_' + key);
       if (!cv || !cv._map) return null;
       var m = cv._map;
       return { xmin: +m.xmin.toFixed(4), xmax: +m.xmax.toFixed(4), ymin: +m.ymin.toFixed(4), ymax: +m.ymax.toFixed(4) };
@@ -8148,7 +8380,7 @@ function tick(ts) {
       var d = DEFS[st.cur], s = st.sims[st.cur], out = {};
       var T = d.tGraph ? d.tGraph(V(s)) : d.tEnd(V(s));
       graphsOf(d, s).forEach(function (g) {
-        var cv = document.getElementById('gc_' + g.key);
+        var cv = $('gc_' + g.key);
         if (!s.open[g.key] || !cv || !cv._map) return;
         var m = cv._map, last = null, i;
         for (i = Math.ceil(m.xmin / m.xstep) * m.xstep; i <= m.xmax + 1e-9; i += m.xstep) {
@@ -8207,7 +8439,8 @@ function tick(ts) {
     },
     /* いま表示しているシムの読み出し（DOM の文言） */
     readout: function () {
-      return Array.prototype.map.call(document.querySelectorAll('#readout tr'), function (tr) {
+      var ro = $('readout');
+      return Array.prototype.map.call(ro ? ro.querySelectorAll('tr') : [], function (tr) {
         return tr.children[0].textContent + '=' + tr.children[1].textContent;
       });
     },
