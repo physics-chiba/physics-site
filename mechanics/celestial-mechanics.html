@@ -6,7 +6,7 @@
 <meta name="description" content="ケプラーの3法則、万有引力と位置エネルギー、人工衛星の周期、スイングバイまでを、自分で動かして確かめる高校物理のシミュレーション教材。">
 <meta name="theme-color" content="#0e1115">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1115'/%3E%3Cellipse cx='32' cy='32' rx='26' ry='14' fill='none' stroke='%23e07b18' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='8' fill='%23f0b429'/%3E%3Ccircle cx='56' cy='26' r='4.5' fill='%235aa7ff'/%3E%3C/svg%3E">
-<title>万有引力とケプラーの法則のシミュレーション</title>
+<title>万有引力・ケプラーの法則と天体物理学</title>
 
 <style>
 /* ===== KaTeX 0.16.45 (fonts embedded / offline) ===== */
@@ -1163,22 +1163,26 @@ h1,h2,h3{font-family:var(--f-jph)}
    （打ち消さないと、暗いヒーローの中に白い板が出る） */
 .stage canvas{display:block;width:100%;height:clamp(200px,24vw,290px);touch-action:pan-y;
   background:transparent;border:0;border-radius:0;box-shadow:none;max-width:none}
-/* ===== 舞台の右上の読み出し（v0 = √(k gR)・軌道の名前・いま何番目か）=====
-   ★canvas ではなく HTML（KaTeX）★。canvas の fillText では √ の横線が
-   中身の上にかからないため（ハマったこと 162）。
-   pointer-events:none … 絵のドラッグや下のボタンのじゃまをしない。 */
-.stageread{position:absolute;top:14px;right:20px;text-align:right;pointer-events:none;
-  transition:opacity .12s linear}
-.stageread .sr-e{display:block;color:#f3efe6;font-size:clamp(1rem,1.6vw,1.4rem)}
-.stageread .sr-e .katex{color:inherit}
-.stageread .sr-n{display:block;margin-top:2px;font-family:var(--f-jph);font-weight:700;font-size:.8rem}
-.stageread .sr-d{display:flex;gap:7px;justify-content:flex-end;margin-top:7px}
-.stageread .sr-d i{width:6px;height:6px;border-radius:50%;background:rgba(243,239,230,.2)}
-.stageread .sr-d i.on{background:var(--brand)}
+/* ===== 舞台の上にかぶせる「ケプラーの3法則」の見出し（3つ横ならび）=====
+   ★canvas ではなく HTML（KaTeX）★。canvas の fillText では
+   $T^2/a^3$ のような式がきれいに出せないため（ハマったこと 162）。
+   pointer-events:none … 絵のドラッグや下のボタンのじゃまをしない。
+   ★3つの列の幅は canvas の3等分とぴったり同じにすること★
+     （絵は W/3 ずつで描いているので、ずれると見出しと絵が別の法則を指す）。 */
+.stagelaws{position:absolute;top:0;left:0;right:0;display:grid;
+  grid-template-columns:repeat(3,1fr);padding:13px 8px 0;pointer-events:none;text-align:center}
+.stagelaws b{display:block;font-family:var(--f-jph);font-size:.72rem;font-weight:800;
+  letter-spacing:.08em;color:var(--brand)}
+/* ★「.stagelaws span」と書いてはいけない★（ハマったこと 169）
+   KaTeX の中身はぜんぶ <span> なので、子孫セレクタにすると
+   式の文字がひとつずつ縦に並んでしまう。かならず直接の子だけにすること。 */
+.stagelaws > div > span{display:block;margin-top:3px;font-size:.76rem;line-height:1.45;
+  color:rgba(243,239,230,.74)}
+.stagelaws .katex{font-size:1.05em;color:rgba(243,239,230,.92)}
 @media (max-width:620px){
-  /* せまい画面では、左上の見出し（canvas 側）を出さないので重ならない */
-  .stageread{top:10px;right:12px}
-  .stageread .sr-d{display:none}
+  .stagelaws{padding:9px 3px 0}
+  .stagelaws b{font-size:.6rem;letter-spacing:.02em}
+  .stagelaws > div > span{font-size:.62rem;margin-top:1px}
 }
 .stagecap{display:flex;align-items:center;gap:10px;margin:0;padding:12px 18px 14px;border-top:1px solid var(--night-rule);
   font-size:.82rem;color:rgba(243,239,230,.62);line-height:1.6;flex-wrap:wrap}
@@ -1553,17 +1557,17 @@ html.drawer-open{overflow:hidden}
     <div class="hero-top">
       <nav class="crumbs" aria-label="現在地" id="crumbs"></nav>
     </div>
-    <h1 class="hero-title"><span class="t1"><span class="nb">万有引力と</span><span class="nb">ケプラーの法則の</span><span class="nb">シミュレーション</span></span></h1>
+    <h1 class="hero-title"><span class="t1"><span class="nb">万有引力・</span><span class="nb">ケプラーの法則と</span><span class="nb">天体物理学</span></span></h1>
     <div class="introrow">
       <p class="mini lead2">惑星や人工衛星がどう動くかを、自分で数値を変えながら動かして確かめるページ。<br>
       それぞれのタブからシミュレーションを選び、「スタート」を押して運動を見て、なぜその形になるのかを納得いくまで考えよう。</p>
       <button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button>
     </div>
     <div id="tocpanel" class="tocpanel" hidden></div>
-    <figure class="stage" aria-label="地表から真横に打ち出す速さを変えると、軌道が 円 → だ円 → 放物線 → 双曲線 と変わる">
+    <figure class="stage" aria-label="ケプラーの3法則を横に3つならべたアニメーション。左から 楕円軌道、面積速度が等しい、遠い惑星ほど1周が長い">
       <canvas id="heroCv"></canvas>
       <figcaption class="stagecap"><span class="live" aria-hidden="true"></span><span class="sct" id="heroCap"></span>
-        <span class="stagectl" role="group" aria-label="打ち出す速さをえらぶ"></span></figcaption>
+        <span class="stagectl" role="group" aria-label="アニメーションの再生"></span></figcaption>
     </figure>
     <ol class="ideas" id="ideas"></ol>
   </div>
@@ -2507,7 +2511,7 @@ P.m25 = {
      E' <  mgR/6  … 近地点が地表より内側 → 地球に落ちる
      E' =  mgR/6  … 近地点がちょうど地表（ぎりぎり落ちない）
      E' =  mgR/4  … 半径 2R の等速円運動（v = √(gR/2)）
-     E' = 3mgR/8  … AB を長軸とするだ円（B は中心から 6R）
+     E' = 3mgR/8  … AB を長軸とする楕円（B は中心から 6R）
      E' =  mgR/2  … 放物線（脱出）／それ以上は双曲線
    軌道はすべて K.orb（閉じた式）で出す。数値積分はしない。 */
 P.m31 = {
@@ -2519,7 +2523,7 @@ P.m31 = {
   eqOf: function (v) { return v * v / (2 * P.m31.gR()); },
   EQ_MIN: 1 / 6,        /* 近地点がちょうど地表 */
   EQ_CIRC: 0.25,        /* 半径 2R の円 */
-  EQ_AB: 0.375,         /* B が 6R のだ円 */
+  EQ_AB: 0.375,         /* B が 6R の楕円 */
   EQ_ESC: 0.5,          /* 放物線（脱出） */
   make: function (eq) {
     var v = P.m31.vOf(eq), rA = P.m31.rA();
@@ -2559,7 +2563,7 @@ P.m31 = {
      地表から鉛直上向きに v₀ = √(gR) で打ち上げる。
        E/m = v₀²/2 − GM/R = GM/2R − GM/R = −GM/(2R)
      なので、まっすぐ上がって r = 2R（点 A）でちょうど速さ 0 になる。
-     まっすぐな（動径だけの）運動は、つぶれただ円としてケプラーの式で解ける：
+     まっすぐな（動径だけの）運動は、つぶれた楕円としてケプラーの式で解ける：
        r = a(1 − cos η),  t = √(a³/GM)(η − sin η),  a = |GM/2E| = R
      数値積分はしない。P.m32 の tOut / rOut がちょうど同じ式なので、それを使う。 */
   Elaunch: function () { return -P.m31.GM / (2 * P.m31.R); },
@@ -2585,7 +2589,7 @@ P.m31 = {
      |x| > R … F = −GMm/x²   ＝ ふつうの万有引力
    ★内側で放すと単振動（周期 84.4 分・x0 によらない）★
    ★外側で放すと、落ちてきて中を通りぬけ、反対がわの同じ高さまで上がって戻る★
-   外側の落下は「つぶれただ円（e = 1）」のパラメータ表示
+   外側の落下は「つぶれた楕円（e = 1）」のパラメータ表示
      r = a(1 − cos η),  t = √(a³/GM)(η − sin η),  a = x0/2
    で閉じた式に書ける。η は「η − sinη = M」を二分法で解く（単調なので必ず収束）。 */
 P.m32 = {
@@ -4697,9 +4701,9 @@ function drawOrbitEllipse(ctx, vw, o, col, dash, lw) {
     lo = Math.min(lo, px, py); hi = Math.max(hi, px, py);
     pts.push([px, py]);
   }
-  /* ★安全弁★ 画面から桁ちがいにはみ出すだ円は描かない。
+  /* ★安全弁★ 画面から桁ちがいにはみ出す楕円は描かない。
      単位を取りちがえる（AU の図に km の値を渡すなど）と、
-     何十万 px のだ円を破線で描こうとして 1フレーム 200 ms かかり、
+     何十万 px の楕円を破線で描こうとして 1フレーム 200 ms かかり、
      アニメーションが「ものすごくおそい」状態になる（実際にそうなった）。
      ここで止めておけば、まちがえても画面が固まることはない。 */
   if (hi - lo > 40000) return;
@@ -5261,29 +5265,29 @@ DEFS['m1-2'] = {
   side: {
     w: 420, h: 250,
     title: '数学では・・・',
-    note: 'だ円は、ある決まった2点 $F_1$, $F_2$ からの距離の和が等しい点 $P$ の集まりである。' +
-      'この2点をだ円の<b>焦点</b>という。' +
+    note: '楕円は、ある決まった2点 $F_1$, $F_2$ からの距離の和が等しい点 $P$ の集まりである。' +
+      'この2点を楕円の<b>焦点</b>という。' +
       '左の図の<b>太陽は、2つの焦点のうちの1つ</b>にあたる。<br>' +
       '<b>【離心率 $\\varepsilon$ の定義】</b>　半長軸を $a$、中心から焦点までの距離を $c$ として<br>' +
       '<b>$\\varepsilon = \\dfrac{c}{a}$</b>　（$0 \\le \\varepsilon < 1$）<br>' +
       'つまり<b>「半長軸に対して、焦点が中心からどれだけずれているか」の割合</b>。' +
       '$\\varepsilon = 0$ なら2つの焦点が重なって<b>円</b>、' +
-      '$\\varepsilon$ が 1 に近いほど<b>細長い</b>だ円になる。<br>' +
+      '$\\varepsilon$ が 1 に近いほど<b>細長い</b>楕円になる。<br>' +
       '短半軸は $b = a\\sqrt{1-\\varepsilon^2}$、近日点は $a(1-\\varepsilon)$、遠日点は $a(1+\\varepsilon)$。<br>' +
       '<span class="mini">※ 焦点を原点にとると $r=\\dfrac{a(1-\\varepsilon^2)}{1+\\varepsilon\\cos\\theta}$ '
-      + 'と書ける（これが「だ円軌道の式」）。$\\varepsilon=1$ で放物線、$\\varepsilon>1$ で双曲線になる。</span>',
+      + 'と書ける（これが「楕円軌道の式」）。$\\varepsilon=1$ で放物線、$\\varepsilon>1$ で双曲線になる。</span>',
     draw: function (ctx, s, t, W, H) { m12DrawMath(ctx, s, t, W, H); }
   }
 };
 
-/* 1-2 の右に出す「数学のだ円」の図（教科書の作図をなぞる） */
+/* 1-2 の右に出す「数学の楕円」の図（教科書の作図をなぞる） */
 function m12DrawMath(ctx, s, t, W, H) {
   var v = V(s), o = orbOf(v), i;
   var box = { x0: -o.ra, x1: o.rp, y0: -o.b, y1: o.b };
   var mx = (box.x1 - box.x0) * 0.10, my = (box.y1 - box.y0) * 0.18;
   var vw = mkView(W, H, { l: 34, r: 34, t: 30, b: 34 },
     { x0: box.x0 - mx, x1: box.x1 + mx, y0: box.y0 - my, y1: box.y1 + my });
-  /* だ円 */
+  /* 楕円 */
   drawOrbitEllipse(ctx, vw, o, COL.ink, [], 1.6);
   var F1 = { x: vw.X(0), y: vw.Y(0) };                  /* 太陽のある焦点 */
   var F2 = { x: vw.X(-2 * o.c), y: vw.Y(0) };
@@ -5321,7 +5325,7 @@ function m12DrawMath(ctx, s, t, W, H) {
   ctx.fillStyle = COL.ink;
   ctx.beginPath(); ctx.arc(px, py, 3.6, 0, TAU); ctx.fill();
   ctx.restore();
-  label(ctx, 'だ円上の点 P', px, py - 13, { size: 10.5, color: COL.ink });
+  label(ctx, '楕円上の点 P', px, py - 13, { size: 10.5, color: COL.ink });
   /* 半長軸・半短軸 */
   var aY = C.y - 20;
   dashLine(ctx, C.x, C.y, C.x, aY, COL.dim, [3, 3], 1);
@@ -6153,7 +6157,7 @@ DEFS['m1-5'] = {
     drawOrbitEllipse(ctx, vw, oMax, COL.grid, [4, 4], 1.2);
     /* ★近点の距離は r0Of(v) で取ること★（v.r0 は「地球と人工衛星」用の km の変数）。
        ここだけ v.r0 のままだったので、「太陽と惑星」を選ぶと
-       a = 7000 AU（本当は 0.8 AU）の巨大なだ円を破線で描こうとして、
+       a = 7000 AU（本当は 0.8 AU）の巨大な楕円を破線で描こうとして、
        1フレーム 200 ms かかっていた（＝アニメーションが6倍おそく見えた）。 */
     drawOrbitEllipse(ctx, vw, P.m15.boost(r0Of(v), 1.0, sys), COL.orbit, [3, 3], 1.2);
     drawOrbitEllipse(ctx, vw, o, orbColor(K.kind(o.Em, o.e)), orbDash(K.kind(o.Em, o.e)), 2.2);
@@ -7068,7 +7072,7 @@ DEFS['m2-2'] = {
   tEnd: function (v) {
     var o = gravOrb(v);
     /* ★初速度 0（k = 0）は「まっすぐ谷底へ落ちて、二度と出てこない」★
-       もともとは「つぶれただ円」なので、計算上は谷底ではね返って
+       もともとは「つぶれた楕円」なので、計算上は谷底ではね返って
        もとの高さまで戻ってくる。それでは
        「なぜはね返るの？」と生徒が思ってしまうので（先生の指摘）、
        すりばちの底（RMIN）に着いたところで時間を打ち切り、そこで止める。 */
@@ -7906,7 +7910,7 @@ DEFS['m2-3'] = {
       label: '速さを上げる →', prim: true, play: true,
       /* ★きざみは「1〜2 は 0.1／2.1 から先は 0.3」★（先生の指示・2026-09-03）
          1 ずつだと、1回押しただけで円 → 脱出まで飛んでしまい、
-         「少しずつ速くすると、円 → だ円 → 放物線 → 双曲線 と変わる」ようすが見えない。
+         「少しずつ速くすると、円 → 楕円 → 放物線 → 双曲線 と変わる」ようすが見えない。
          いちばん見せたい 1〜2 のあいだをこまかく、そこから先は大きく進める。
          上限（k = 4.0）で止める。1.0 に戻ると「脱出したのに円に戻った」と見えるため。 */
       dis: function (v) { return v.k3 >= 4.0 - 1e-9; },
@@ -8907,7 +8911,7 @@ function m25V(v) {
    ------------------------------------------------------------
    地上から鉛直上方へ打ち上げ、中心から 2R の点 A でちょうど速さ 0。
    その瞬間に OA に垂直な向きへエネルギー E'（＝½mv²）を加える。
-   ★E' をスライドバーで変えると、軌道が「落下 → だ円 → 円 → だ円 → 放物線 → 双曲線」
+   ★E' をスライドバーで変えると、軌道が「落下 → 楕円 → 円 → 楕円 → 放物線 → 双曲線」
      と変わっていく★のが、このシミュレーションの中心。
    ============================================================ */
 var M31 = { GM: 398600.4418, R: 6371 };
@@ -8937,7 +8941,7 @@ function m31State(v, t) {
 var M31_ROWS = [
   { eq: P.m31.EQ_MIN, name: 'E′ = mgR/6', note: '近地点が地表（ぎりぎり）', col: COL.sub },
   { eq: P.m31.EQ_CIRC, name: 'E′ = mgR/4', note: '半径 2R の円', col: COL.bound },
-  { eq: P.m31.EQ_AB, name: 'E′ = 3mgR/8', note: 'B が 6R のだ円（問題の(4)）', col: COL.bound },
+  { eq: P.m31.EQ_AB, name: 'E′ = 3mgR/8', note: 'B が 6R の楕円（問題の(4)）', col: COL.bound },
   { eq: P.m31.EQ_ESC, name: 'E′ = mgR/2', note: '放物線（脱出）', col: COL.para }
 ];
 
@@ -8969,7 +8973,7 @@ DEFS['m3-1'] = {
     '中心から <b>2R</b> の点 A でちょうど速さが 0 になりました（打ち上げの速さは $v_0=\\sqrt{gR}$）。<br>' +
     'その瞬間に、<b>OA に垂直な向き</b>へエネルギー <b>$E\'$</b>（＝$\\frac{1}{2}mv^2$）を加えます。' +
     '<b>$E\'$ をスライドバーで変えると、軌道が変わります。</b>' +
-    '落ちる → だ円 → <b>半径 2R の円</b> → だ円 → <b>放物線（脱出）</b> → 双曲線。<br>' +
+    '落ちる → 楕円 → <b>半径 2R の円</b> → 楕円 → <b>放物線（脱出）</b> → 双曲線。<br>' +
     '$E\'$ は<b>$mgR$ の何倍か</b>で表しています（$gR$ は $GM/R$ のこと）。',
   probsHead: '入試問題を読み解く　—　大阪市立大（一部やさしく書きかえています）',
   probsSetup:
@@ -8979,7 +8983,7 @@ DEFS['m3-1'] = {
     + '速さをうまく選ぶと、上がっていって<b>中心から $2R$ の点 A でちょうど止まり</b>ます'
     + '（ここまでが (1)）。<br>'
     + '<b>② 止まったその瞬間に、$OA$ に垂直な向き（横向き）へ「ポン」と速さ $v$ を与えます。</b>'
-    + 'ここから先は、$v$ の大きさしだいで、円になったり、だ円になったり、'
+    + 'ここから先は、$v$ の大きさしだいで、円になったり、楕円になったり、'
     + '飛び去ったりします（(2) 以降）。<br>'
     + 'このページのスライドバーは、そのとき<b>加えるエネルギー $E′=\\frac{1}{2}mv^2$</b> です。<br>'
     + '<b>「スタート」を押すと、まず ① の打ち上げ（地表 → 点 A・約 34.5 分）から動きます。</b>'
@@ -9012,20 +9016,20 @@ DEFS['m3-1'] = {
         + '<br>$E′$ をここで少しずつ動かして、円からどうずれていくか見よう：@@v:eq@@'
     },
     {
-      q: '<b>(3)</b> $AB$ を長軸とするだ円を描くとき（B は中心から $6R$）。'
+      q: '<b>(3)</b> $AB$ を長軸とする楕円を描くとき（B は中心から $6R$）。'
         + '<b>(a)</b> 点 B での速さ $V$ を $v$ で。<b>(b)</b> $v$ を $g,R$ で。<b>(c)</b> 周期を $g,R$ で。',
       a: '<b>(a) 面積速度一定</b>：近地点・遠地点では速度が動径に垂直なので $2Rv = 6RV$、つまり $V=\\dfrac{v}{3}$。<br>'
         + '<b>(b) エネルギー保存</b>：$\\dfrac{1}{2}v^2-\\dfrac{gR^2}{2R}=\\dfrac{1}{2}\\left(\\dfrac{v}{3}\\right)^2-\\dfrac{gR^2}{6R}$ '
         + 'を解いて $v=\\dfrac{\\sqrt{3gR}}{2}$。<br>'
         + '<b>(c) ケプラー第3法則</b>：$a=\\dfrac{2R+6R}{2}=4R$ を $T^2=\\dfrac{4\\pi^2}{GM}a^3$ へ入れて '
         + '$T=16\\pi\\sqrt{\\dfrac{R}{g}}$。',
-      do: '@@b:2|B が 6R のだ円にする（E′ = 3mgR/8）@@ を押そう。'
+      do: '@@b:2|B が 6R の楕円にする（E′ = 3mgR/8）@@ を押そう。'
         + '@@r:遠地点|遠地点 ＝ 6.000 R@@、'
         + '@@r:点 B の速さ|点 B の速さ $V$ ＝ $v$ の 1/3@@、'
         + '@@r:半長軸|半長軸 $a$ ＝ 4.000 R@@ を確かめよう。'
     },
     {
-      q: '<b>(4)</b> 地球に衝突もせず、無限遠へ飛び去りもせず、だ円を描き続けるための $v$ の範囲は。',
+      q: '<b>(4)</b> 地球に衝突もせず、無限遠へ飛び去りもせず、楕円を描き続けるための $v$ の範囲は。',
       a: '<b>下の限界</b>：近地点がちょうど地表（$R$）になるとき。'
         + '$2Rv=R\\,V_{\\text{地表}}$ と エネルギー保存から $v=\\sqrt{\\dfrac{gR}{3}}$。<br>'
         + '<b>上の限界</b>：$E=0$（放物線）になるとき、$\\dfrac{1}{2}v^2=\\dfrac{gR^2}{2R}$ より $v=\\sqrt{gR}$。<br>'
@@ -9096,7 +9100,7 @@ DEFS['m3-1'] = {
       is: function (v) { return Math.abs(v.eq - P.m31.EQ_CIRC) < 1e-9; }
     },
     {
-      label: 'B が 6R のだ円（E′ = 3mgR/8）', prim: true, play: true,
+      label: 'B が 6R の楕円（E′ = 3mgR/8）', prim: true, play: true,
       fn: function (s) { s.v.eq = P.m31.EQ_AB; },
       is: function (v) { return Math.abs(v.eq - P.m31.EQ_AB) < 1e-9; }
     },
@@ -9195,7 +9199,7 @@ DEFS['m3-1'] = {
     s.view = vw;
     var ox = vw.X(0), oy = vw.Y(0);
 
-    /* めやす：AB を長軸とするだ円（いつもうすく描いておく） */
+    /* めやす：AB を長軸とする楕円（いつもうすく描いておく） */
     (function () {
       var og = P.m31.make(P.m31.EQ_AB);
       var gp = P.m31.path(og, 12 * R, 300);
@@ -10001,7 +10005,7 @@ DEFS['m3-3'] = {
         + '<br>ここで $r_0$ を小さくすると、'
         + '@@r:月の速さ（【A】）|月の速さ@@ が大きくなることを確かめよう：@@v:r0@@'
         + '<br><b>※ここは「円軌道どうしを比べた話」</b>です。'
-        + 'いまの月に横向きの加速を与えると円ではなくなり、だ円が<b>大きく</b>なります'
+        + 'いまの月に横向きの加速を与えると円ではなくなり、楕円が<b>大きく</b>なります'
         + '（→ <a href="#m1-5" data-goto="m1-5">1-4</a>・'
         + '<a href="#m2-2" data-goto="m2-2">2-1</a>）。'
         + '<b>「速くする」と「エネルギーを失って落ちる」は、別の話</b>だと気をつけて。'
@@ -10451,7 +10455,7 @@ function drawSkaterHead(ctx, cx, gy, Hs, Ws, th) {
 }
 
 /* ===== 真上から見た体（回る）=====
-   肩は腕の向き（th）にそった細長いだ円、顔の向きはそれと垂直（th + 90°）。
+   肩は腕の向き（th）にそった細長い楕円、顔の向きはそれと垂直（th + 90°）。
    小さな鼻の三角で「どちらを向いているか」を出す。 */
 function drawSkaterTop(ctx, cx, cy, th) {
   /* ★画面の y は下向きなので、反時計まわりに見せるには角を反転する★ */
@@ -10459,7 +10463,7 @@ function drawSkaterTop(ctx, cx, cy, th) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-th);
-  /* 肩（腕にそった細長いだ円） */
+  /* 肩（腕にそった細長い楕円） */
   ctx.fillStyle = '#e7edf3'; ctx.strokeStyle = COL.sub; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.ellipse(0, 0, 17, 10, 0, 0, TAU); ctx.fill(); ctx.stroke();
   ctx.restore();
@@ -10813,7 +10817,7 @@ DEFS['m4-2'] = {
     ctx.beginPath(); ctx.moveTo(h1[0], h1[1]); ctx.lineTo(h2[0], h2[1]); ctx.stroke();
     ctx.restore();
     /* ★まるい「体」ではなく、回る体の図にする★
-       肩は腕にそった細長いだ円、顔は腕と垂直の向き。鼻の三角で向きが分かる。 */
+       肩は腕にそった細長い楕円、顔は腕と垂直の向き。鼻の三角で向きが分かる。 */
     /* ★「L（手前向き）」と ⊙ の印は出さない★（先生の指示・2026-09-03）
        ⊙ は「紙面の手前を向いたベクトル」を表す大学の書き方で、
        高校生には意味が分からず、かえって図がごちゃごちゃする。
@@ -10848,15 +10852,15 @@ DEFS['m4-2'] = {
     label(ctx, '【1】真上から見たようす', cx, cy + 120, { size: 11, color: COL.sub, bold: true });
 
     /* ===== 上半分（右）惑星のたとえ ===== */
-    /* ★だ円と惑星の位置は、同じ縮尺で描くこと★
+    /* ★楕円と惑星の位置は、同じ縮尺で描くこと★
        K.state が返す (x, y) は「焦点（太陽）を原点」とした座標なので、
-       だ円の中心は太陽から −aε のところに来る。ここをそろえ忘れて、
-       惑星がだ円の線からはずれて動いていた（先生の指摘）。 */
+       楕円の中心は太陽から −aε のところに来る。ここをそろえ忘れて、
+       惑星が楕円の線からはずれて動いていた（先生の指摘）。 */
     (function () {
       var aE = 1, eE = 0.55, SCE = 62;               /* 1 AU = 62 px */
       var bE = aE * Math.sqrt(1 - eE * eE);
       var sunx = 442, suny = 150;                    /* 焦点（太陽）の位置 */
-      var ecx = sunx - aE * eE * SCE;                /* だ円の中心 */
+      var ecx = sunx - aE * eE * SCE;                /* 楕円の中心 */
       ctx.save();
       ctx.strokeStyle = fade(COL.bound, 0.6); ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.ellipse(ecx, suny, aE * SCE, bE * SCE, 0, 0, TAU); ctx.stroke();
@@ -15371,12 +15375,17 @@ function tick(ts) {
    作り方の約束（大きさは canvas から決める・ストロボの1枚絵・止める条件・
    window.__hero.frame で決まった瞬間を描かせる）は見本のまま。
 
-   ★ヒーローのアニメ＝「軌道の種類」★（先生の選択・2026-10-03）
-     地表から真横に打ち出す速さ v0 = k√(gR) を 1 → 1.5 → 2 → 2.5 と変え、
-     円 → だ円 → 放物線 → 双曲線 と変わるのを見せる。
-     ★閉じた式だけ★（数値積分はしない）。軌道は円すい曲線の式
-       r(θ) = L²/GM / (1 + ε cos θ)
-     から出す。2-2（m2-3）とまったく同じ物理。
+   ★ヒーローのアニメ＝「ケプラーの3法則」を3つ横に並べる★（先生の指示・2026-10-11）
+     前は「軌道の種類（円→楕円→放物線→双曲線）」だったが、
+     このページの主役は 第1〜第3法則 なので、入口でその3つを見せる。
+       ① 第1法則　楕円軌道（太陽は焦点のひとつ）
+       ② 第2法則　同じ時間に通る面積は等しい（近いと速い・遠いとおそい）
+       ③ 第3法則　遠い惑星ほど1周に時間がかかる（T² ∝ a³）
+     ★閉じた式だけ★（数値積分はしない）。楕円はケプラー方程式
+       E − ε sinE = M（K.ecc）から出す。3つめの円は等速円運動。
+     ★3つの法則の名前と式は canvas ではなく HTML（.stagelaws）で出す★
+       KaTeX で組めるし、canvas の文字より読みやすい。
+       KaTeX は重いので ★1回だけ★ 組む（毎コマ組んではいけない）。
    ★暗い地なので、物理の色は「同じ色相の明るい版」を使う★（キット 1 章）。
      本文の図の色（COL.*）は1ミリも変えない。
    ========================================================================= */
@@ -15388,24 +15397,43 @@ function tick(ts) {
       JP = '"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,"Noto Sans JP",Meiryo,sans-serif';
   /* 暗い地での色（同じ色相の明るい版）。本文の図は COL.* のまま */
   var C = {
-    earth: '#5aa7ff',      /* 地球（本文は earthShape の青） */
-    ell:   '#49d18a',      /* 円・だ円  ← COL.bound #1c8f4a の明るい版 */
-    para:  '#e8c96a',      /* 放物線    ← COL.para  #b58900 の明るい版 */
-    hyp:   '#c3ccd6',      /* 双曲線    ← COL.hyper #3f4a54 の明るい版 */
-    vel:   '#7fc0ff',      /* 速度      ← COL.vel   #1663b5 の明るい版 */
+    sun:   '#f0b429',      /* 太陽 */
+    ell:   '#49d18a',      /* 楕円・円の軌道  ← COL.bound #1c8f4a の明るい版 */
+    ell2:  '#7fc0ff',      /* 外がわの軌道    ← COL.vel   #1663b5 の明るい版 */
+    sect1: '#e8c96a',      /* 扇形（近日点がわ） */
+    sect2: '#c48ce0',      /* 扇形（遠日点がわ） */
     T:     '#f6f2e9', dim: 'rgba(243,239,230,.42)', brand: '#e07b18'
   };
-  /* 打ち出す速さ（第一宇宙速度の何倍か）と、そのときの軌道の名前 */
-  var KS = [1.0, 1.5, 2.0, 2.5];
-  var KNAME = { 1: '円', 1.5: 'だ円', 2: '放物線', 2.5: '双曲線' };
-  var KCOL = { 1: C.ell, 1.5: C.ell, 2: C.para, 2.5: C.hyp };
+
+  /* 3つの法則の見出し（HTML で出す。$…$ は KaTeX で組む） */
+  var LAWS = [
+    { no: '第1法則', tx: '楕円軌道（太陽は焦点のひとつ）' },
+    { no: '第2法則', tx: '$\\dfrac{dS}{dt}=$ 一定' },
+    { no: '第3法則', tx: '$\\dfrac{T^2}{a^3}=K$' }
+  ];
 
   /* ===== ヒーローのステージ ===== */
   function initStage() {
     var cv = document.getElementById('heroCv'); if (!cv) return;
     var ctx = cv.getContext('2d');
     var W = 0, H = 0, dpr = 1, run = false, raf = 0, last = 0;
-    var cyc = 0, t = 0, sc = null, lockK = null, paused = false, rate = 1;
+    var t = 0, sc = null, paused = false, rate = 1;
+
+    /* ===== 上にかぶせる見出し（HTML・KaTeX）=====
+       ★1回だけ作る★。毎コマ KaTeX を走らせると、それだけでページがカクつく。 */
+    function buildLaws() {
+      var st2 = cv.parentNode; if (!st2) return;
+      if (st2.querySelector('.stagelaws')) return;
+      var b = document.createElement('div');
+      b.className = 'stagelaws';
+      b.setAttribute('aria-hidden', 'true');   /* 同じことは figcaption の文が伝えている */
+      b.innerHTML = LAWS.map(function (L) {
+        var tx = (typeof mathHtml === 'function') ? mathHtml(L.tx) : L.tx;
+        return '<div><b>' + L.no + '</b><span>' + tx + '</span></div>';
+      }).join('');
+      st2.appendChild(b);
+      if (typeof renderMath === 'function') renderMath(b);
+    }
 
     function setup() {
       var r = cv.getBoundingClientRect();
@@ -15414,206 +15442,179 @@ function tick(ts) {
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       var s = Math.max(W < 640 ? 0.86 : 0.72, Math.min(1.15, H / 260));
-      /* 地球の半径を R=1 として、画面にどれだけの px を当てるか。
-         双曲線（k=2.5）でも画面に収まるよう、canvas の小さいほうの辺から決める */
-      /* 地球の半径［px］。いちばん大きい だ円（k=2.5 の手前、k=1.5 の遠地点 r=3）が
-         画面に入るように、よこ・たての両方から決める。 */
-      var R = Math.min(W * 0.078, H * 0.215);
-      sc = { s: s, R: R, cx: W * 0.40, cy: H * 0.52 };
-    }
-    /* 円すい曲線（閉じた式）。
-       ★k の決め方は 2-2（m2-3）とまったく同じ★：$v_0=\sqrt{k\,gR}$。
-         k = 1 … 円（第一宇宙速度）／k = 2 … 放物線（第二宇宙速度）
-       地表 r = 1 で真横に打ち出すので（GM = R = 1 の単位で）
-         L = r v = √k、　半直弦 p = L² = k、　離心率 ε = |k − 1|
-       打ち出した点は k>1 なら近地点、k<1 なら遠地点。どちらも θ = 0 に置く。 */
-    function orbit(k) {
-      return { p: k, e: Math.abs(k - 1), sign: (k < 1 ? -1 : 1) };
-    }
-    function rOf(o, th) {
-      var d = 1 + o.sign * o.e * Math.cos(th);
-      return (d > 1e-3) ? o.p / d : Infinity;
-    }
-    /* その軌道を一周（または画面の外まで）描くための点の列 */
-    function path(o, RMAX) {
-      var pts = [], i, N = 420;
-      var thMax = Math.PI;                       /* 閉じた軌道は 0〜2π、開いた軌道は漸近線まで */
-      if (o.e >= 1 - 1e-9) {
-        var ca = -1 / o.e;                       /* cos θ∞ = −1/ε */
-        thMax = (ca <= -1) ? Math.PI * 0.995 : Math.acos(Math.max(-0.999, ca)) * 0.985;
-      }
-      for (i = -N; i <= N; i++) {
-        var th = thMax * i / N;
-        var r = rOf(o, th);
-        if (!isFinite(r) || r > RMAX) continue;
-        pts.push([r * Math.cos(th), r * Math.sin(th)]);
-      }
-      return pts;
-    }
-    /* 時刻 tt での位置（面積速度一定＝ケプラー第2法則を、角度の刻みで積み上げる。
-       閉じた式の軌道の上を「等しい面積ずつ」進むので、数値積分はしていない） */
-    var TSC = 1.9;                        /* アニメの1秒 ＝ 軌道の時間 1.9（円軌道1周 ≒ 3.3 秒） */
-    function posAt(o, tt) {
-      /* 面積速度 dA/dt = L/2 は一定（ケプラー第2法則）。だから dθ/dt = L / r²。
-         これを細かい角度の刻みで積み上げる（軌道そのものは閉じた式のまま）。 */
-      var th = 0, dt = 0.0025, u = 0, L = Math.sqrt(o.p);
-      var N = Math.min(6000, Math.round(tt * TSC / dt));
-      for (u = 0; u < N; u++) {
-        var r = rOf(o, th);
-        if (!isFinite(r) || r > 80) break;
-        th += L / (r * r) * dt;
-      }
-      var rr = rOf(o, th);
-      return { r: rr, th: th, x: rr * Math.cos(th), y: rr * Math.sin(th) };
-    }
-    function X(x) { return sc.cx + x * sc.R; }
-    function Y(y) { return sc.cy - y * sc.R; }
-
-    /* ===== 右上の読み出し（$v_0=\sqrt{k\,gR}$・軌道の名前・いま何番目か）=====
-       ★canvas には描かない★（先生の指示・2026-10-03）
-         canvas の fillText で「√」を書くと、根号の横線が中身の上にかからず
-         $\sqrt{1.5\,gR}$ に見えない。式は HTML にして KaTeX に組ませる。
-       ★KaTeX は重いので、k が変わったときだけ組みなおす★（毎コマ走らせない）。
-       点（いま何番目か）は class の付けはずしだけ。 */
-    var kbox = null, kboxK = null;
-    function makeKbox() {
-      var st2 = cv.parentNode;                       /* .stage（figure） */
-      if (!st2) return null;
-      var b = document.createElement('div');
-      b.className = 'stageread';
-      b.setAttribute('aria-hidden', 'true');         /* 同じことは figcaption の文が伝えている */
-      b.innerHTML = '<span class="sr-e"></span><span class="sr-n"></span>' +
-        '<span class="sr-d">' + KS.map(function () { return '<i></i>'; }).join('') + '</span>';
-      st2.appendChild(b);
-      return b;
-    }
-    function showK(k, fade) {
-      if (!kbox) { kbox = makeKbox(); if (!kbox) return; }
-      kbox.style.opacity = (fade < 1 ? Math.max(0, fade).toFixed(2) : '');
-      if (kboxK === k) return;
-      kboxK = k;
-      var e = kbox.querySelector('.sr-e'), n = kbox.querySelector('.sr-n');
-      var src = 'v_0=\\sqrt{' + k.toFixed(1) + '\\,gR}';
-      if (window.katex) { try { window.katex.render(src, e, { throwOnError: false, displayMode: false }); } catch (x) { e.textContent = src; } }
-      else e.textContent = src;
-      n.textContent = KNAME[k]; n.style.color = KCOL[k];
-      Array.prototype.forEach.call(kbox.querySelectorAll('.sr-d i'), function (d, i2) {
-        d.className = (KS[i2] === k ? 'on' : '');
-      });
+      /* ★上の見出し（HTML）の高さぶんを空ける★
+         高さを決め打ちにすると、文字の大きさが変わったときに絵と重なる。
+         実際の箱の高さを測ってから、絵を描く場所を決めること。 */
+      var lw = cv.parentNode && cv.parentNode.querySelector('.stagelaws');
+      var topH = lw ? Math.min(H * 0.42, lw.getBoundingClientRect().height + 6) : 46;
+      var pw = W / 3, ph = H - topH;
+      /* 楕円の半長軸［px］。よこは1枚ぶんの幅、たては残りの高さから決める。
+         ★下の小さな見出し（「楕円」など）のぶんを残すこと★——
+           0.52/0.40 にしたら、3枚目の円の下の文字が canvas の下で切れた。 */
+      var R = Math.max(18, Math.min(pw * 0.36, ph * 0.37));
+      sc = { s: s, pw: pw, R: R, cy: topH + ph * 0.47, topH: topH };
     }
 
-    function draw(tt, k, fade) {
-      var s = sc.s, o = orbit(k), i;
-      ctx.clearRect(0, 0, W, H);
-      ctx.save(); ctx.globalAlpha = fade;
-      /* 地球 */
-      var R = sc.R;
-      var g = ctx.createRadialGradient(X(0) - R * 0.35, Y(0) - R * 0.4, R * 0.1, X(0), Y(0), R);
-      g.addColorStop(0, '#9fd0ff'); g.addColorStop(0.25, C.earth); g.addColorStop(1, '#16436f');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(X(0), Y(0), R, 0, 7); ctx.fill();
-      ctx.save(); ctx.shadowColor = C.earth; ctx.shadowBlur = 26; ctx.globalAlpha = fade * 0.3;
-      ctx.beginPath(); ctx.arc(X(0), Y(0), R, 0, 7); ctx.fill(); ctx.restore();
-      ctx.fillStyle = 'rgba(243,239,230,.72)'; ctx.font = '700 ' + Math.round(10.5 * s) + 'px ' + JP;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      ctx.fillText('地球', X(0), Y(0) + R + 5);
-      /* これまでの軌道を薄く残す（4つを見くらべられるように） */
-      var RMAX = Math.max(W, H) / sc.R;
-      KS.forEach(function (kk) {
-        if (kk === k) return;
-        var oo = orbit(kk), pp = path(oo, RMAX);
-        ctx.save(); ctx.globalAlpha = fade * 0.16; ctx.strokeStyle = KCOL[kk]; ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        pp.forEach(function (q, j) { if (j === 0) ctx.moveTo(X(q[0]), Y(q[1])); else ctx.lineTo(X(q[0]), Y(q[1])); });
-        ctx.stroke(); ctx.restore();
-      });
-      /* いまの軌道 */
-      var pts = path(o, RMAX);
-      ctx.save(); ctx.strokeStyle = KCOL[k]; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-      if (k >= 2) ctx.setLineDash(k === 2 ? [7, 5] : [10, 4, 2, 4]);
+    /* ===== 共通の小さな部品 ===== */
+    function sun(x, y, r) {
+      ctx.save();
+      var g = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 2.1);
+      g.addColorStop(0, 'rgba(255,214,102,.55)'); g.addColorStop(1, 'rgba(255,214,102,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.1, 0, 7); ctx.fill();
+      ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+    function dot(x, y, r, col) {
+      ctx.save(); ctx.fillStyle = col;
+      ctx.shadowColor = col; ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore();
+    }
+    /* 楕円を描く（中心が (cx, cy)、半長軸 a・半短軸 b） */
+    function ellipse(cx, cy, a, b, col, lw) {
+      ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = lw || 1.8;
       ctx.beginPath();
-      pts.forEach(function (q, j) { if (j === 0) ctx.moveTo(X(q[0]), Y(q[1])); else ctx.lineTo(X(q[0]), Y(q[1])); });
-      ctx.stroke(); ctx.restore();
-      /* 人工衛星（閉じた式の上を、面積速度一定で進む） */
-      var q2 = posAt(o, tt);
-      if (isFinite(q2.r) && q2.r < RMAX * 1.2) {
-        var px = X(q2.x), py = Y(q2.y);
-        ctx.save(); ctx.fillStyle = C.T; ctx.shadowColor = KCOL[k]; ctx.shadowBlur = 14;
-        ctx.beginPath(); ctx.arc(px, py, 4.4 * s, 0, 7); ctx.fill(); ctx.restore();
+      for (var i = 0; i <= 160; i++) {
+        var E = Math.PI * 2 * i / 160, px = cx + a * Math.cos(E), py = cy - b * Math.sin(E);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       }
-      /* 打ち出す点と、速度の矢印（地表から真横） */
-      (function () {
-        var x0 = X(1), y0 = Y(0), L0 = Math.min(W * 0.16, 30 + k * 22) * s / 1.0;
-        ctx.save(); ctx.strokeStyle = C.vel; ctx.fillStyle = C.vel; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 - L0 + 7); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x0, y0 - L0); ctx.lineTo(x0 - 4.4, y0 - L0 + 9); ctx.lineTo(x0 + 4.4, y0 - L0 + 9);
-        ctx.closePath(); ctx.fill();
-        ctx.restore();
-        ctx.save(); ctx.fillStyle = C.vel; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.font = 'italic ' + Math.round(14 * s) + 'px ' + MATH;
-        ctx.fillText('v', x0 + 7, y0 - L0 + 6);
-        var wv = ctx.measureText('v').width;
-        ctx.font = Math.round(10 * s) + 'px ' + SER; ctx.fillText('0', x0 + 7 + wv + 1, y0 - L0 + 10);
-        ctx.restore();
-      })();
-      /* 右上：いまの速さと軌道の名前
-         ★式は canvas に手で描かず、上にかぶせた HTML を KaTeX で組む★（先生の指示・2026-10-03）
-           canvas の fillText では √ の横線が数式の上にかからず、きれいに出せないため。
-           KaTeX は重いので、★k が変わったときだけ★組みなおす（showK の中で見ている）。 */
-      showK(k, fade);
-      /* 左上：見出し。
-         ★せまい画面では出さない★——右上の $v_0$ の読み出しと重なるため（390px で実際に重なった）。 */
-      if (W > 620) (function () {
-        ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = C.dim; ctx.font = '700 ' + Math.max(11, Math.round(10.5 * s)) + 'px ' + JP;
-        ctx.fillText('打ち出す速さで、軌道の形が変わる', 24, 30 * s + 6);
-        if (W > 560) {
-          var w0 = ctx.measureText('打ち出す速さで、軌道の形が変わる').width;
-          ctx.font = 'italic ' + Math.round(10.5 * s) + 'px ' + SER;
-          ctx.fillText('conic sections', 24 + w0 + 8, 30 * s + 6);
-        }
-        ctx.restore();
-      })();
+      ctx.closePath(); ctx.stroke(); ctx.restore();
+    }
+    /* 時刻 tt（0〜1 が1周）での、楕円の上の位置。
+       ★ケプラー方程式（閉じた式）で出す★ 数値積分はしない。
+       返すのは「楕円の中心から見た」座標（画面の px）。 */
+    function onEll(tt, a, b, e) {
+      var E = K.ecc(Math.PI * 2 * (tt % 1), e);
+      return { x: a * Math.cos(E), y: b * Math.sin(E), E: E };
+    }
+    /* 焦点（太陽）を頂点にした扇形をぬる。E1→E2 のあいだ */
+    function sector(cx, cy, a, b, e, E1, E2, col, al) {
+      var fx = cx + a * e;                                /* 焦点（近日点がわ）の画面 x */
+      ctx.save(); ctx.globalAlpha = al; ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(fx, cy);
+      var N = 40;
+      for (var i = 0; i <= N; i++) {
+        var E = E1 + (E2 - E1) * i / N;
+        ctx.lineTo(cx + a * Math.cos(E), cy - b * Math.sin(E));
+      }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    /* 小さな見出し（絵の下） */
+    function cap(x, y, txt, col) {
+      ctx.save();
+      ctx.fillStyle = col || C.dim;
+      ctx.font = '700 ' + Math.max(9.5, Math.round(10 * sc.s)) + 'px ' + JP;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(txt, x, y);
       ctx.restore();
     }
 
-    var DUR = 3.4, FADE = 0.45;
+    /* ===== ① 第1法則：楕円軌道（太陽は焦点のひとつ）===== */
+    var E1C = 0.5;                        /* 見せる楕円の離心率 */
+    function law1(cx, tt) {
+      var a = sc.R, b = a * Math.sqrt(1 - E1C * E1C), cy = sc.cy;
+      var fx = cx + a * E1C;                             /* 太陽のいる焦点 */
+      ellipse(cx, cy, a, b, C.ell, 1.8);
+      /* もう1つの焦点（小さな輪だけ） */
+      ctx.save(); ctx.strokeStyle = C.dim; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(cx - a * E1C, cy, 2.6, 0, 7); ctx.stroke(); ctx.restore();
+      sun(fx, cy, Math.max(4.5, sc.R * 0.12));
+      var q = onEll(tt, a, b, E1C);
+      dot(cx + q.x, cy - q.y, Math.max(3, sc.R * 0.075), C.T);
+      cap(cx, cy + sc.R + 15 * sc.s, '楕円', C.ell);
+    }
+
+    /* ===== ② 第2法則：同じ時間に通る面積は等しい ===== */
+    var E2C = 0.6, FR = 1 / 7;            /* 扇形が1つぶんの時間（周期の何倍か） */
+    function law2(cx, tt) {
+      var a = sc.R, b = a * Math.sqrt(1 - E2C * E2C), cy = sc.cy;
+      var fx = cx + a * E2C;
+      /* 2つの扇形（同じ Δt＝同じ面積）。近日点のあたりと遠日点のあたり */
+      var w = [
+        { t0: -FR / 2, t1: FR / 2, col: C.sect1 },               /* 近日点のあたり */
+        { t0: 0.5 - FR / 2, t1: 0.5 + FR / 2, col: C.sect2 }     /* 遠日点のあたり */
+      ];
+      var nowT = tt % 1;
+      w.forEach(function (x) {
+        var Ea = K.ecc(Math.PI * 2 * ((x.t0 + 1) % 1), E2C);
+        var Eb = K.ecc(Math.PI * 2 * ((x.t1 + 1) % 1), E2C);
+        if (Eb < Ea) Eb += Math.PI * 2;
+        /* いま惑星がその扇形の中にいるときは、濃くぬる */
+        var inside = (nowT >= (x.t0 + 1) % 1 || nowT <= x.t1) ;
+        if (x.t0 > 0) inside = (nowT >= x.t0 && nowT <= x.t1);
+        sector(cx, cy, a, b, E2C, Ea, Eb, x.col, inside ? 0.55 : 0.26);
+      });
+      ellipse(cx, cy, a, b, C.ell, 1.6);
+      sun(fx, cy, Math.max(4.5, sc.R * 0.12));
+      var q = onEll(tt, a, b, E2C);
+      /* 太陽と惑星を結ぶ線（これが「通った面積」をつくる） */
+      ctx.save(); ctx.strokeStyle = 'rgba(243,239,230,.5)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(fx, cy); ctx.lineTo(cx + q.x, cy - q.y); ctx.stroke(); ctx.restore();
+      dot(cx + q.x, cy - q.y, Math.max(3, sc.R * 0.075), C.T);
+      cap(cx, cy + sc.R + 15 * sc.s, '面積速度が等しい', C.sect1);
+    }
+
+    /* ===== ③ 第3法則：遠い惑星ほど1周に時間がかかる ===== */
+    var R3 = [0.52, 1.0];                 /* 2つの円の半径（半長軸の何倍か） */
+    function law3(cx, tt) {
+      var cy = sc.cy, i;
+      sun(cx, cy, Math.max(4.5, sc.R * 0.12));
+      for (i = 0; i < R3.length; i++) {
+        var rr = sc.R * R3[i], col = (i === 0 ? C.ell : C.ell2);
+        ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.75;
+        ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 7); ctx.stroke(); ctx.restore();
+        /* ★T² ∝ a³ なので、周期は a^1.5 に比例する★（これが第3法則そのもの） */
+        var Tn = Math.pow(R3[i], 1.5);
+        var th = Math.PI * 2 * ((tt / Tn) % 1) - Math.PI / 2;
+        dot(cx + rr * Math.cos(th), cy + rr * Math.sin(th), Math.max(2.8, sc.R * 0.07), col);
+      }
+      cap(cx, cy + sc.R + 15 * sc.s, '遠いほど おそい', C.ell2);
+    }
+
+    /* ===== 1枚ぶんを描く ===== */
+    function draw(tt) {
+      if (!sc) setup();
+      ctx.clearRect(0, 0, W, H);
+      /* 3枚のしきり（うすいたて線） */
+      ctx.save(); ctx.strokeStyle = 'rgba(243,239,230,.09)'; ctx.lineWidth = 1;
+      for (var i = 1; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.round(sc.pw * i) + 0.5, sc.topH - 4);
+        ctx.lineTo(Math.round(sc.pw * i) + 0.5, H - 8);
+        ctx.stroke();
+      }
+      ctx.restore();
+      /* ★1周の時間★ 1・2 は同じ速さ、3 は内がわの円がそれより少しゆっくり */
+      law1(sc.pw * 0.5, tt / 3.6);
+      law2(sc.pw * 1.5, tt / 3.6);
+      law3(sc.pw * 2.5, tt / 3.0);
+    }
+
     function frame(ts) {
       if (!run) return;
       var dtm = last ? Math.min(0.05, (ts - last) / 1000) : 0; last = ts;
       t += dtm * rate;
-      var k = (lockK !== null ? lockK : KS[cyc % KS.length]);
-      var fade = 1;
-      if (t < FADE * 0.6) fade = t / (FADE * 0.6);
-      else if (t > DUR - FADE) fade = Math.max(0, (DUR - t) / FADE);
-      draw(t, k, fade);
-      if (t >= DUR) { t = 0; cyc++; }
+      if (t > 1e4) t = 0;            /* 長く開きっぱなしでも数が暴れないように */
+      draw(t);
       raf = requestAnimationFrame(frame);
     }
     function start() { if (run || RM || paused) return; run = true; last = 0; raf = requestAnimationFrame(frame); }
     function stop() { run = false; cancelAnimationFrame(raf); }
-    function still(k) {
-      k = (k === undefined ? (lockK !== null ? lockK : 1.5) : k);
-      draw(1.6, k, 1);
-    }
-    /* ★シムが動いていてもヒーローは止めない★（先生の指示・2026-10-03）
-       前は「シムの再生中は止める」ことにしていたが、モード1（1-0）は開いた瞬間に
-       動きだす（autoplay）ので、ページを開いた人にはヒーローが「ずっと止まっている」
-       ように見えてしまった。止めるのは
-         画面の外・タブが非表示・一時停止ボタン・「動きを減らす」設定
-       の4つだけにする。ヒーローは画面のいちばん上なので、生徒がシムまで
-       スクロールすればどのみち画面の外に出て止まる（重さは増えない）。 */
     /* ★止まっているときは「1枚の絵」を出す★（キットの決まり）
-       このページはモード1が開いた瞬間に動きだす（autoplay）ので、
-       はじめから止まっている。何も描かないと、ヒーローに黒い板が出るだけになる。 */
-    setup(); still();
+       何も描かないと、ヒーローに黒い板が出るだけになる。 */
+    function still() { draw(1.1); }
+
+    buildLaws(); setup(); still();
     /* 自動テストから決まった瞬間の絵を描かせる */
-    window.__hero = { frame: function (tt, k) { stop(); draw(tt, k === undefined ? 1 : k, 1); }, start: start, stop: stop, still: still };
+    window.__hero = { frame: function (tt) { stop(); draw(tt === undefined ? 1.1 : tt); }, start: start, stop: stop, still: still };
 
     var rz = 0;
     window.addEventListener('resize', function () {
       clearTimeout(rz); rz = setTimeout(function () { setup(); if (RM || paused) still(); }, 120);
     });
-    /* 止める条件：画面外・タブが非表示・一時停止・動きを減らす設定 */
+    /* 止める条件：画面外・タブが非表示・一時停止・動きを減らす設定
+       ★シムが動いていてもヒーローは止めない★（先生の指示・2026-10-03）。
+       ヒーローは画面のいちばん上なので、生徒がシムまでスクロールすれば
+       どのみち画面の外に出て止まる（重さは増えない）。 */
     var seen = true;
     function retune() {
       if (seen && !document.hidden && !paused) start();
@@ -15626,57 +15627,45 @@ function tick(ts) {
       }, { threshold: 0.05 }).observe(cv);
     } else start();
     document.addEventListener('visibilitychange', retune);
-    /* ★「シムの再生を見張る 500ms のタイマー」と「#simhost を押したら止める」は
-         やめた★（上の説明のとおり）。見張りをやめたぶん、1秒あたりの仕事も減る。 */
 
-    /* 操作：速さをえらぶ（自動＝1 → 1.5 → 2 → 2.5）・スロー・一時停止 */
+    /* 操作：スローと一時停止だけ（★「速さをえらぶ」のボタンは消した★——
+       見せるものが「軌道の種類」から「3つの法則」に変わり、えらぶものが無くなったため） */
     var ctl = document.querySelector('#hero .stagectl');
     if (ctl) {
-      var SLL = (typeof mathHtml === 'function') ? mathHtml('$v_0$') : 'v<sub>0</sub>';
-      ctl.innerHTML = '<span class="sl-l">' + SLL + '</span>' +
-        '<button type="button" data-k="auto" aria-pressed="true">自動</button>' +
-        KS.map(function (k) { return '<button type="button" data-k="' + k + '" aria-pressed="false">' + k.toFixed(1) + '</button>'; }).join('') +
-        '<span class="sep" aria-hidden="true"></span>' +
+      ctl.innerHTML = '<span class="sl-l">ケプラーの3法則</span>' +
         '<button type="button" class="slow" aria-pressed="false" title="ゆっくり再生">🐢 スロー</button>' +
         '<button type="button" class="pp" aria-label="一時停止"><i></i></button>';
-      if (typeof renderMath === 'function') renderMath(ctl);
-      var kb = ctl.querySelectorAll('button[data-k]'), pp = ctl.querySelector('.pp'), sl = ctl.querySelector('.slow');
+      var pp = ctl.querySelector('.pp'), sl = ctl.querySelector('.slow');
       if (sl) {
         if (RM) sl.hidden = true;
         sl.addEventListener('click', function () {
           rate = (rate === 1 ? 0.3 : 1); sl.setAttribute('aria-pressed', rate < 1 ? 'true' : 'false');
         });
       }
-      Array.prototype.forEach.call(kb, function (b) {
-        b.addEventListener('click', function () {
-          var v = b.dataset.k; lockK = (v === 'auto' ? null : parseFloat(v));
-          Array.prototype.forEach.call(kb, function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-          t = 0; if (lockK === null) cyc = 0;
-          if (RM || paused) still();
-        });
-      });
       if (pp) {
         if (RM) pp.hidden = true;
         pp.addEventListener('click', function () {
           paused = !paused; pp.classList.toggle('paused', paused);
           pp.setAttribute('aria-label', paused ? '再生' : '一時停止');
-          if (paused) { stop(); still(); } else { t = 0; retune(); }
+          if (paused) { stop(); still(); } else { retune(); }
         });
       }
     }
-    var cap = document.getElementById('heroCap');
-    if (cap) {
-      cap.innerHTML = '地表から真横に $v_0=\\sqrt{k\\,gR}$ で打ち出す。$k$ を大きくすると、' +
-        '軌道は<b>円 → だ円 → 放物線 → 双曲線</b>と変わる（$k=1$ 円軌道・$k=2$ 脱出）。2-2 と同じ $k$ です。';
-      if (typeof mathHtml === 'function') { cap.innerHTML = mathHtml(cap.innerHTML); }
-      if (typeof renderMath === 'function') renderMath(cap);
+    var capEl = document.getElementById('heroCap');
+    if (capEl) {
+      capEl.innerHTML = 'ケプラーの3法則は ' +
+        '<b>①</b> 惑星は太陽を焦点のひとつとする<b>楕円</b>を描く。' +
+        '<b>②</b> 同じ時間に通る<b>面積は等しい</b>（近いと速い）。' +
+        '<b>③</b> <b>遠い惑星ほど1周が長い</b>。詳しくは 1-1〜1-3。';
+      if (typeof mathHtml === 'function') { capEl.innerHTML = mathHtml(capEl.innerHTML); }
+      if (typeof renderMath === 'function') renderMath(capEl);
     }
   }
 
   /* ===== ヒーローの中身（パンくず・要点カード）とタブ列の左、フッター ===== */
   var EN = ["Kepler's Laws", 'Universal Gravitation &amp; Orbits', 'University Entrance Problems', 'Beyond High-School Physics'];
   var PAGE_EN = "Universal Gravitation &amp; Kepler's Laws";
-  var PAGE_JA = '万有引力とケプラーの法則のシミュレーション';
+  var PAGE_JA = '万有引力・ケプラーの法則と天体物理学';
   var ATOM = '<svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg>';
   var HOMESVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
   var PAGESSVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor"/></svg>';

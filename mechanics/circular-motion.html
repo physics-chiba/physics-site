@@ -2085,6 +2085,17 @@ function stickman(ctx, x, y, ux, uy, s, color, lw) {
   ctx.restore();
   return { x: hd[0], y: hd[1], r: s * 0.13 };                  /* 頭（吹き出しのしっぽを向ける） */
 }
+/* 真上から見た人（頭と肩）。プロジェクト「真上から見た観測者の描き方ルール.md」と同じ（inertia-force.html モード③ と同じ描き方）。
+   肩＝横長の楕円（2.1r × 1.1r）、頭＝白い円（r）。いまの視点は青・太線・うすい青のぬり、もう一方はグレー・細線。
+   rot：肩の楕円の長い軸の向き（回転台の上の人は、中心から人への向きに垂直＝肩が接線の向き）。戻り値は棒人間の頭と同じ形 */
+function topHead(ctx, x, y, active, r, rot) {
+  r = Math.max(6, r);
+  ctx.save(); ctx.lineWidth = active ? 2.4 : 1.4; ctx.strokeStyle = active ? COL.vel : '#b8bec5';
+  ctx.fillStyle = active ? 'rgba(31,111,214,.12)' : 'rgba(255,255,255,.7)';
+  ctx.beginPath(); ctx.ellipse(x, y, r * 2.1, r * 1.1, rot || 0, 0, TAU); ctx.fill(); ctx.stroke();   /* 肩 */
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke(); ctx.restore();   /* 頭 */
+  return { x: x, y: y, r: r };
+}
 /* 観測者（棒人間＋名前）。active なら青くて太い＋「（いまの視点）」 */
 var OBS_DIM = 0.42;
 function observer(ctx, x, y, ux, uy, name, active, s, lab) {
@@ -3668,13 +3679,17 @@ function observer3(ctx, sc, foot, h, name, active, lab) {
   var a = PP(sc, foot[0], foot[1], foot[2]), b = PP(sc, foot[0], foot[1], foot[2] + h);
   var dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy);
   var col = active ? COL.vel : '#9aa3ac';
-  if (L < 12) {                                              /* 真上から見ると人は「頭のてっぺん」の丸 */
+  if (L < 12) {                                              /* 真上から見るときは、頭と肩を上から見た形（topHead。2026-10-11 千葉さん） */
+    var r = Math.max(6, h * 0.11 * sc.S), rot = 0;              /* 頭の半径：背の高さの 11%（台の半径の 7% ほど） */
+    if (lab && lab.radial) {                                   /* 回転台・円の上の人：肩は中心から人への向きに垂直 */
+      var cc = lab.ctr || [0, 0], c0 = PP(sc, cc[0], cc[1], foot[2]);
+      if (Math.hypot(a.x - c0.x, a.y - c0.y) > 1) rot = Math.atan2(a.y - c0.y, a.x - c0.x) + Math.PI / 2;
+    }
     ctx.save(); if (!active) ctx.globalAlpha *= OBS_DIM;
-    ctx.strokeStyle = col; ctx.lineWidth = active ? 2.4 : 1.7; ctx.beginPath(); ctx.arc(a.x, a.y, 7, 0, TAU); ctx.stroke();
-    ctx.beginPath(); ctx.arc(a.x, a.y, 2.5, 0, TAU); ctx.fillStyle = col; ctx.fill();
-    if (name) label(ctx, name + (active ? '（いまの視点）' : ''), a.x + (lab && lab.dx || 0), a.y + 16, { size: active ? 11 : 10.5, bold: !!active, color: col });
+    var hd = topHead(ctx, a.x, a.y, active, r, rot);
+    if (name) label(ctx, name + (active ? '（いまの視点）' : ''), a.x + (lab && lab.dx || 0), a.y + r * 2.1 + 10, { size: active ? 11 : 10.5, bold: !!active, color: col });
     ctx.restore();
-    return { x: a.x, y: a.y, r: 7 };
+    return hd;
   }
   return observer(ctx, a.x, a.y, dx / L, dy / L, name, active, L, lab);
 }
@@ -3941,7 +3956,7 @@ function m2CoPos(ang, rObj, Rtab, tab) {
   return [rr * Math.cos(a), rr * Math.sin(a)];
 }
 /* 小人（物体の上に乗って一緒に回る観測者）。foot＝足もと（物理の座標） */
-function m2Rider(ctx, sc, foot, active) { return observer3(ctx, sc, foot, 0.17, '', active); }
+function m2Rider(ctx, sc, foot, active) { return observer3(ctx, sc, foot, 0.17, '', active, { radial: true }); }
 /* 右の列の共通の注意 */
 function m2FrameNote(rot) {
   return rot ? '<p class="qnote">遠心力は、一緒に回る観測者だけが感じる<b>見かけの力（慣性力）</b>。</p>'
@@ -4055,7 +4070,7 @@ function drawM2s1(s, ctx, W, H) {
   var bz = st.z || 0;                                         /* 台からとび出したあとは落ちていく */
   box3(ctx, sc, cx, cy, bz, h, st.th);
   var op = m2CoPos(0, r, C.R, tab);                          /* 一緒に回る観測者：箱と同じがわ（少し前）に立つ */
-  var hdRot = observer3(ctx, sc, [op[0], op[1], 0], 0.30, '一緒に回る観測者', s.rot, { dy: 2 });
+  var hdRot = observer3(ctx, sc, [op[0], op[1], 0], 0.30, '一緒に回る観測者', s.rot, { dy: 2, radial: true });
   var ur = [cx / rr, cy / rr, 0], ut = [-ur[1], ur[0], 0], c3 = [cx, cy, bz + h];
   if (showF) {
     var fs = M2SC.s1.F;
@@ -4173,7 +4188,7 @@ function drawM2s2(s, ctx, W, H) {
   trailStep(ctx, s, function (x, y, z) { return PP(sc, x, y, z); }, [cx, cy, zb], -th);
   var B = PP(sc, cx, cy, zb); ballShape(ctx, B.x, B.y, rb * sc.S, '#c9d3de');
   var op = m2CoPos(0, rr, R, th);                            /* 一緒に回る観測者：小球と同じがわ（少し前） */
-  var hdRot = observer3(ctx, sc, [op[0], op[1], 0], 0.30, '一緒に回る観測者', s.rot, { dy: 2 });
+  var hdRot = observer3(ctx, sc, [op[0], op[1], 0], 0.30, '一緒に回る観測者', s.rot, { dy: 2, radial: true });
   var c3 = [cx, cy, zb], fs = M2SC.s2.F, kx = C.k * x;
   if (showF) {
     m2GN(ctx, sc, c3, [cx, cy, 0], ut, C.m * G, fs, 0.016);
@@ -4980,7 +4995,7 @@ function drawM2s6(s, ctx, W, H) {
   label(ctx, g.q > 0 ? '+' : '−', P0.x, P0.y, { size: 13, bold: true, color: '#fff', halo: false });
   var rr = isFinite(st.r) && st.r > 1e-9 ? st.r : 1;
   var ur = [(st.x - st.cx) / rr, (st.y - st.cy) / rr, 0], uv = [Math.cos(st.psi), Math.sin(st.psi), 0];
-  var hdRot = observer3(ctx, sc, [st.x - uv[0] * 0.35 - ox, st.y - uv[1] * 0.35 - oy, st.z + rb], 1.1, '', s.rot);   /* 一緒に回る観測者は粒子の上に乗る */
+  var hdRot = observer3(ctx, sc, [st.x - uv[0] * 0.35 - ox, st.y - uv[1] * 0.35 - oy, st.z + rb], 1.1, '', s.rot, { radial: true, ctr: [st.cx - ox, st.cy - oy] });   /* 一緒に回る観測者は粒子の上に乗る */
   var c3 = [st.x, st.y, st.z], f = Math.abs(g.q) * st.up * Math.abs(v.B);
   var A3 = function (p0, d, L, kind, col, opt) { return arrow3(ctx, sc, [p0[0] - ox, p0[1] - oy, p0[2] - oz], d, L, kind, col, opt); };
   if (showF && isFinite(st.r)) {
