@@ -1042,7 +1042,10 @@ button.b.strobe.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .vrow.cell .vbar input[type=range]{flex:1 1 auto;min-width:0;width:auto}
 .vrow .wtex{font-weight:400;color:var(--ink-3)}
 .vrow .wtex .katex{font-size:1em}
-.stoptk{display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-4);padding:0 2.6em;margin-top:-.15em;font-variant-numeric:tabular-nums}
+.stoptk{position:absolute;left:0;right:0;top:100%;height:1.1em;font-size:.7rem;color:var(--ink-4);font-variant-numeric:tabular-nums;pointer-events:none}
+.stoptk > span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;line-height:1.1}
+.stoptk .tku{position:absolute;left:100%;top:0;margin-left:.2em;font-style:normal}
+.vrow.hasstops{padding-bottom:1.05em}   /* 目盛りの数字はスライダーの線の下（つまみの中心にそろえる。2026-10-13 千葉さん） */
 /* 鍵 */
 button.lockbtn{display:inline-grid;place-items:center;width:24px;height:24px;padding:0;border-radius:7px;border:1px solid var(--rule-2);background:var(--surface);color:var(--ink-4);cursor:pointer;flex:0 0 auto;transition:background .15s,color .15s,border-color .15s}
 button.lockbtn svg{width:14px;height:14px}
@@ -1061,6 +1064,7 @@ button.tiny.nudge:disabled{opacity:.5;cursor:not-allowed}
 .varbox.cols2{padding:.4em .7em .45em;row-gap:0;column-gap:1.1em}
 .varbox.cols2 .vcol{gap:0}
 .vrow.cell{padding:.05em 0 .1em;line-height:1.35}
+.vrow.cell.hasstops{padding-bottom:1.05em}
 .vrow.cell .vhead{font-size:.8rem;gap:.3em;min-height:22px}
 .vrow.cell .vhead .vl{font-size:.8rem}
 .vrow.cell .vhead .vv{font-size:.84rem}
@@ -1068,7 +1072,7 @@ button.tiny.nudge:disabled{opacity:.5;cursor:not-allowed}
 .vrow.cell .vbar input[type=range]{height:18px}
 .vrow.cell button.tiny.nudge{width:22px;height:22px;font-size:.9rem}
 .vrow.cell + .vrow.cell{border-top:1px solid rgba(20,23,28,.05)}
-.stoptk{font-size:.62rem;line-height:1.1;margin:-.15em 0 .1em;padding:0 30px}
+.stoptk{font-size:.62rem}
 button.lockbtn{width:21px;height:21px;border-radius:6px}
 button.lockbtn svg{width:12px;height:12px}
 .trow{display:flex;align-items:center;gap:.6em;flex-wrap:wrap}
@@ -1192,6 +1196,7 @@ button.b.ramp:hover{background:#0a6f6f;border-color:#0a6f6f}
 /* せまい画面：観測者の対のボタンは 2 行までにおさめる（高さ 46px 以下） */
 @media(max-width:380px){ .seg button.b.obs{font-size:.66rem;padding:.3em .5em;line-height:1.25} }
 .sliders .vmark:nth-of-type(2) .katex{top:auto;bottom:-1.1em}
+#m3s3 .vmark .katex{top:auto;bottom:-1.25em}   /* ③-4：初速のスライダーは半分の幅なので、印の文字は線の下へ（値の表示と重ならないように） */
 /* モードの見出しの下：全セクションの観測者の切りかえ（対のボタン） */
 .modebar .rotsw{display:inline-flex;align-items:center;gap:.4em;flex-wrap:wrap;margin-left:auto}
 .modebar .rotsw .lbl{font-size:.78rem;font-weight:700;color:var(--ink-2)}
@@ -1609,7 +1614,7 @@ M1.solve = function (key, x, cur, locks) {
 };
 
 
-/* ---------- モード2：等速円運動と力 ---------- */
+/* ---------- モード2：等速円運動と向心力 ---------- */
 var M2 = {
   /* セクション1：ターンテーブルと箱（質量 m）。静止摩擦係数 μ（すべり出したあとの動摩擦係数も μ とする） */
   s1: { m: 0.20, R: 0.60, half: 0.045,
@@ -1683,10 +1688,10 @@ var M3 = {
   m: 0.20, R: 0.50, dt: 0.0005, every: 8, _c: {},
   K: function (v) { return 0.5 * M3.m * v * v; },
   /* key ごとに 1 回だけ計算する */
-  traj: function (sec, v0) {
-    var key = sec + '|' + v0.toFixed(4);
+  traj: function (sec, v0, th0) {                                 /* th0：3-4 の初期角度（度。最下点から）。ほかのセクションでは使わない */
+    var key = sec + '|' + v0.toFixed(4) + (th0 === undefined ? '' : '|' + th0);
     if (M3._c[key]) return M3._c[key];
-    var o = M3['b' + sec](v0); o.key = key;
+    var o = M3['b' + sec](v0, th0); o.key = key;
     o.tEnd = o.pts[o.pts.length - 1].t;
     var ks = Object.keys(M3._c); if (ks.length > 60) ks.slice(0, ks.length - 40).forEach(function (k) { delete M3._c[k]; });   /* 古い軌道は捨てる（メモリが増え続けないように） */
     M3._c[key] = o; return o;
@@ -1694,6 +1699,7 @@ var M3 = {
   /* 時刻 t の状態（補間） */
   at: function (tr, t) {
     var P = tr.pts, tt = clamp(t, 0, tr.tEnd), lo = 0, hi = P.length - 1;
+    if (tt <= 0) { var q0 = {}; ['t', 'x', 'y', 'vx', 'vy', 'ang', 'F', 'at', 'K', 'U', 'E', 'kind'].forEach(function (k) { q0[k] = P[0][k]; }); q0.v = Math.hypot(q0.vx, q0.vy); return q0; }   /* スタートの瞬間は最初の点（③-4 の θ0 = 180° で、t = 0 にたるむときも「まだ円の上」） */
     while (hi - lo > 1) { var md = (lo + hi) >> 1; if (P[md].t <= tt) lo = md; else hi = md; }
     var a = P[lo], b = P[hi], u = (b.t > a.t) ? (tt - a.t) / (b.t - a.t) : 0, q = {};
     ['t', 'x', 'y', 'vx', 'vy', 'ang', 'F', 'at', 'K', 'U', 'E'].forEach(function (k) { q[k] = a[k] + (b[k] - a[k]) * u; });
@@ -1777,14 +1783,19 @@ var M3 = {
     M3.fly(out, r.t, R * Math.sin(r.ph), R * Math.cos(r.ph), v * Math.cos(r.ph), -v * Math.sin(r.ph), r.ph, function (x, y) { return y <= 0; }, U, 3);
     return { pts: out, ev: ev, sec: 2 };
   },
-  /* 3-3 糸による鉛直面内の円運動：糸が水平（小球は中心と同じ高さ、右）から下向きに v0。φ＝最下点からの角 */
-  b3: function (v0) {
+  /* 3-4 糸による鉛直面内の円運動：最下点から角 θ0 の位置（右がわ）から、時計回り（φ が減る向き）に v0。φ＝最下点からの角。
+     θ0 は 0°・30°・90°・180°（既定 90°＝糸が水平。2026-10-13 千葉さん） */
+  b3: function (v0, th0d) {
     var m = M3.m, R = M3.R, out = [], ev = null, U = function (y) { return m * G * (y + R); };
+    var th0 = (th0d === undefined ? 90 : th0d) * Math.PI / 180;
     var rec = function (tt, ph, w) {
       var v = R * w, y = -R * Math.cos(ph), K = 0.5 * m * v * v;
       out.push({ t: tt, x: R * Math.sin(ph), y: y, vx: v * Math.cos(ph), vy: v * Math.sin(ph), kind: 'circle', ang: ph, F: m * (R * w * w + G * Math.cos(ph)), at: -G * Math.sin(ph), K: K, U: U(y), E: K + U(y) });
     };
-    var r = M3.arc(out, 0, Math.PI / 2, -v0 / R, function (ph) { return -G / R * Math.sin(ph); }, rec, function (ph, w) {
+    var r;
+    if (v0 * v0 / R + G * Math.cos(th0) < -1e-7) {                 /* 最高点で v0 < √(gr)：はじめから S < 0。すぐにたるむ */
+      rec(0, th0, -v0 / R); out[0].F = 0; r = { t: 0, ph: th0, w: -v0 / R, why: 'slack' };   /* 張力は負にならない（0） */
+    } else r = M3.arc(out, 0, th0, -v0 / R, function (ph) { return -G / R * Math.sin(ph); }, rec, function (ph, w) {
       return (R * w * w + G * Math.cos(ph) < -1e-7 && Math.abs(R * w) > 0.05) ? 'slack' : null;
     }, 6, function (ph, w) { return R * w * w + G * Math.cos(ph); });
     if (r.why === 'slack') {
@@ -1792,7 +1803,7 @@ var M3 = {
       var v = R * r.w;
       M3.fly(out, r.t, R * Math.sin(r.ph), -R * Math.cos(r.ph), v * Math.cos(r.ph), v * Math.sin(r.ph), r.ph, function (x, y) { return Math.hypot(x, y) >= R; }, U, 3);
     }
-    return { pts: out, ev: ev, sec: 3 };
+    return { pts: out, ev: ev, sec: 3, th0: th0d === undefined ? 90 : th0d };
   },
   /* 4-1 円筒面のループ（内がわ・1 周ぶんの面がある）：床を右へ v0 → 最下点から円の内がわへ（3-1 と同じ向き）。
      1 周したら最下点から右の床へ出ていく。N < 0 になったら面から離れて放物運動（面にぶつかったら止める）。v0 ≤ √(2gr) はすべりもどる */
@@ -2406,11 +2417,13 @@ Sim.prototype.build = function () {
         head.appendChild(lk);
       }
       var inp = el('input'); inp.type = 'range';
-      if (vd.stops) { inp.min = '0'; inp.max = String(vd.stops.length - 1); inp.step = '1'; }
+      if (vd.stops && vd.prop) { inp.min = String(vd.stops[0]); inp.max = String(vd.stops[vd.stops.length - 1]); inp.step = 'any'; }   /* vd.prop：とびとびの値を、値に比例した位置に置く（等間隔にしない） */
+      else if (vd.stops) { inp.min = '0'; inp.max = String(vd.stops.length - 1); inp.step = '1'; }
       else { inp.min = String(vd.min); inp.max = String(vd.max); inp.step = String(vd.allow ? 0.01 : vd.step); }   /* allow の端（√2gr など）でつまみがきちんと止まるよう細かく */
       inp.setAttribute('aria-label', vd.aria || vd.k);
       var slot = inp, mk = null;                         /* vd.mark：スライダーの中に小さな目印（2-1 の ω₀ など） */
-      if (vd.mark) { slot = el('span', 'rw'); slot.appendChild(inp); mk = []; }          /* 目印は複数でもよい（配列を返す） */
+      if (vd.mark || vd.stops) { slot = el('span', 'rw'); slot.appendChild(inp); }      /* 目盛りの数字も、スライダーの線と同じ箱の中に置く（つまみの位置とそろえるため） */
+      if (vd.mark) mk = [];                              /* 目印は複数でもよい（配列を返す） */
       var dn = el('button', 'tiny nudge', '−'); dn.type = 'button'; dn.title = '1 目盛り小さく';
       var val = el('span', 'vv', ''); var up = el('button', 'tiny nudge', '＋'); up.type = 'button'; up.title = '1 目盛り大きく';
       if (two) {
@@ -2418,9 +2431,15 @@ Sim.prototype.build = function () {
         var bar = el('div', 'vbar'); bar.appendChild(dn); bar.appendChild(slot); bar.appendChild(up);
         row.appendChild(head); row.appendChild(bar);
       } else { row.appendChild(slot); row.appendChild(dn); row.appendChild(val); row.appendChild(up); }
-      if (vd.stops && vd.stopLabels) {
-        var tk = el('div', 'stoptk'); vd.stopLabels.forEach(function (t) { tk.appendChild(el('span', '', mathify(t))); });
-        row.appendChild(tk);
+      if (vd.stops && vd.stopLabels) {                  /* 目盛りの数字：つまみの中心と同じ位置（つまみの幅 18px ぶん内がわ）に、数字のまん中をそろえる。単位は数字の右に */
+        var tk = el('div', 'stoptk'), n1 = vd.stops.length - 1, s0 = vd.stops[0], s1 = vd.stops[n1];
+        vd.stopLabels.forEach(function (t, i) {
+          var f = vd.prop ? (vd.stops[i] - s0) / (s1 - s0) : i / n1, m = /^(\S+)\s+(.+)$/.exec(t);
+          var tw = vd.meter ? 9 : 18, sp = el('span', '', mathify(m ? m[1] : t)); sp.style.left = 'calc(' + tw / 2 + 'px + (100% - ' + tw + 'px) * ' + f.toFixed(4) + ')';   /* メーターはつまみが 9px */
+          if (m) sp.appendChild(el('i', 'tku', mathify(m[2])));
+          tk.appendChild(sp);
+        });
+        slot.appendChild(tk); row.classList.add('hasstops');
       }
       (holder[k] || vb).appendChild(row);
       var set = function (x) {
@@ -2432,7 +2451,8 @@ Sim.prototype.build = function () {
       };
       var idxOf = function (x) { var b = 0; vd.stops.forEach(function (q, i) { if (Math.abs(q - x) < Math.abs(vd.stops[b] - x)) b = i; }); return b; };
       inp.addEventListener('input', function () {
-        var x = vd.stops ? vd.stops[+inp.value] : parseFloat(inp.value);
+        var x = vd.stops ? (vd.prop ? vd.stops[idxOf(parseFloat(inp.value))] : vd.stops[+inp.value]) : parseFloat(inp.value);
+        if (vd.prop) inp.value = String(x);                /* いちばん近い目盛りに吸いつく */
         if (vd.allow) { var al = vd.allow(self), xc = clamp(x, al.lo, al.hi); if (xc !== x) { inp.value = String(xc); x = xc; } }   /* 選べない範囲へはドラッグしても進まない（止まる） */
         set(x);
       });
@@ -2532,7 +2552,8 @@ Sim.prototype.syncSliders = function (force) {
   var self = this;
   Object.keys(this.sl).forEach(function (k) {
     var s = self.sl[k], x = self.disp(k), vd = s.vd, pos, p;
-    if (vd.stops) { pos = s.idxOf(x); p = pos / (vd.stops.length - 1) * 100; }
+    if (vd.stops && vd.prop) { pos = vd.stops[s.idxOf(x)]; p = (pos - vd.stops[0]) / (vd.stops[vd.stops.length - 1] - vd.stops[0]) * 100; }
+    else if (vd.stops) { pos = s.idxOf(x); p = pos / (vd.stops.length - 1) * 100; }
     else { pos = clamp(x, vd.min, vd.max); p = (pos - vd.min) / (vd.max - vd.min) * 100; }
     if (force || document.activeElement !== s.inp) s.inp.value = String(pos);
     var html = vd.fmt ? vd.fmt(x, self) : (fmt(x, vd.dec) + (vd.unit ? ' ' + vd.unit : ''));
@@ -3701,7 +3722,7 @@ function frameBanner(ctx, W, rot) {
 
 /* ===== 60_mode2.js ===== */
 /* =========================================================================
-   60_mode2.js … モード2「等速円運動と力」
+   60_mode2.js … モード2「等速円運動と向心力」
    各セクションに「外（慣性系）から見る」「一緒に円運動する観測者（非慣性系）から見る」の切りかえ。
    ・非慣性系は絵全体を −φ 回す（55_scene.js）。遠心力（濃いグレーの破線）は非慣性系だけに描く。慣性系には絶対に描かない。
    ・図のすぐ下の式の箱には、切りかえに関係なく慣性系の式と非慣性系の式を 2 つ並べる（いまの視点のほうを強調）。
@@ -5281,7 +5302,20 @@ function m3GS(sec) { return M3CFG[sec].gs || sec; }
 var M3RB = 0.045;
 var M3SNAPBOX = { 1: { x0: -0.72, x1: 0.72, y0: -0.60, y1: 0.62 }, 2: { x0: -0.70, x1: 1.30, y0: -0.04, y1: 1.02 }, 3: { x0: -0.72, x1: 0.72, y0: -0.74, y1: 0.62 },
   4: { x0: -0.72, x1: 0.72, y0: -0.60, y1: 0.62 }, 5: { x0: -0.72, x1: 0.72, y0: -0.70, y1: 0.66 } };
-function m3Tr(s) { return M3.traj(s.def.sec, s.v.v0); }
+function m3Tr(s) { return M3.traj(s.def.sec, s.v.v0, s.def.sec === 3 ? s.v.th0 : undefined); }
+/* 3-4 の初期角度 θ0（度）と、それに応じた特徴的な初速（1 周できる最小の v0 ＝ √((3 + 2cosθ0)gr)。2026-10-13 千葉さん） */
+var M3S3 = {
+  crit: { 0: { k: 5, tex: '\\sqrt{5gr}' }, 30: { k: 3 + Math.sqrt(3), tex: '\\sqrt{(3+\\sqrt{3})gr}' }, 90: { k: 3, tex: '\\sqrt{3gr}' }, 180: { k: 1, tex: '\\sqrt{gr}' } },
+  /* 中心の高さまで上がれない（振り子のように往復する）上限：√(2gr cosθ0)（θ0 < 90° のとき） */
+  v0min180: 0.5,                             /* θ0 = 180°（最高点）では v0 ≥ 0.5 m/s（v0 = 0 だと、まっすぐ落ちてくぎを通ってしまうため） */
+  low: { 0: { k: 2, tex: '\\sqrt{2gr}' }, 30: { k: Math.sqrt(3), tex: '\\sqrt{\\sqrt{3}\\,gr}' } }
+};
+/* 離れた／たるんだあとか（③-4 の θ0 = 180° では t = 0 でたるむが、スタート前は「まだ」とする） */
+function m3After(s, tr) { return !!tr.ev && s.t >= tr.ev.t && (s.t > 0 || tr.ev.t > 0); }
+function m3Th0(s) { return s.v.th0 === undefined ? 90 : s.v.th0; }
+function m3S3Crit(th0) { var c = M3S3.crit[th0]; return { v: Math.sqrt(c.k * G * M3.R), tex: c.tex }; }
+/* 非慣性系で絵を回すときの基準の角（スタートの瞬間は回さない） */
+function m3Ref(s) { return s.def.sec === 3 ? m3Th0(s) * Math.PI / 180 : M3CFG[s.def.sec].ref; }
 function m3Base(o) {
   var d = Object.assign({
     mode: 'mode3', belowCanvas: true, strobe: false, views: null, baseRate: 1 / 3, trailSec: 0.6,   /* モード3 はふだん 1/3 の速さ（スローはさらに 0.3 倍） */
@@ -5297,7 +5331,7 @@ function m3Base(o) {
   ];
   d.onWindow = function (s, on) { if (s.extra.inst) s.extra.inst.classList.toggle('on', on); };
   d.tEnd = function (s) { return m3Tr(s).tEnd; };
-  d.onChanged = function () { return 'stop'; };                 /* v0 を変えたら最初にもどす（2026-10-04 千葉さん） */
+  d.onChanged = function (s, k) { if (d.fixVars) d.fixVars(s, k); return 'stop'; };   /* v0 を変えたら最初にもどす（2026-10-04 千葉さん）。fixVars：ほかの量に合わせて直す（③-4） */
   d.below = function (s) { m2EqBox(s, d.eqs(s, M3.at(m3Tr(s), s.t))); };
   d.afterBuild = function (s) { m3BuildSnaps(s); m2SetRot(s, s.rot); };
   d.onResize = function (s) { m3DrawSnaps(s); };
@@ -5340,7 +5374,7 @@ function m3PlayInstant(s) {
   var tr = m3Tr(s);
   if (!tr.ev) {                                                    /* この v0 では離れない・たるまない */
     s.msg.innerHTML = mathify('<b>いまの $v_0$ では' + (m3GS(s.def.sec) === 3 ? '糸はたるまない' : '面から離れない') + '。</b>' +
-      (s.def.sec === 3 ? '$0 < v_0 < \\sqrt{3gr}$ にしてから、もう一度押そう。' : (s.def.sec === 2 ? '$v_0$ を変えてからもう一度押そう。' : '$\\sqrt{2gr} < v_0 < \\sqrt{5gr}$ にしてから、もう一度押そう。')));
+      (s.def.sec === 3 ? m3S3Hint(s) : (s.def.sec === 2 ? '$v_0$ を変えてからもう一度押そう。' : '$\\sqrt{2gr} < v_0 < \\sqrt{5gr}$ にしてから、もう一度押そう。')));
     s.lastMsg = null; return;
   }
   var te = tr.ev.t;
@@ -5415,7 +5449,7 @@ function drawM3(s, ctx, W, H) {
   var sec = s.def.sec, GS = m3GS(sec), C = M3CFG[sec], tr = m3Tr(s), q = M3.at(tr, s.t), R = M3.R, m = M3.m, rb = M3RB, SN = !!s._snap, showF = SN || s.ms.showF;   /* SN：左下のコマ図を描いているとき（観測者・吹き出し・デコピンは描かない） */
   if (!SN && !s._snapKey) m3DrawSnaps(s);                       /* コマ図がまだなら（画面の外で幅がとれなかったとき）ここで描く */
   /* 絵の回転：小球の角（はなれたあとはその瞬間の角）だけ回す */
-  var al = s.rot ? C.sgn * (q.ang - C.ref) : 0, ca = Math.cos(al), sa = Math.sin(al);
+  var al = s.rot ? C.sgn * (q.ang - m3Ref(s)) : 0, ca = Math.cos(al), sa = Math.sin(al);
   var B = SN ? M3SNAPBOX[sec] : C.box, mg = SN ? { t: 8, b: 6, x: 6 } : { t: 40, b: 16, x: 10 };   /* コマ図は小球のまわりだけを大きく */
   /* 3-2（sec 4）：3 次元のループコースター。s.cam3＝{az, el}（度）。真横（0, 0）なら今までの 2 次元の図と同じ */
   var cam = (sec === 4 && !SN && s.cam3) ? m3CamNow(s) : null, D3 = !!cam && (Math.abs(cam.az) > 0.2 || cam.el > 0.2);
@@ -5515,7 +5549,7 @@ function drawM3(s, ctx, W, H) {
     if (GS === 3 && q.kind === 'circle') { var rl3 = P(pr[0] * 0.5 + (pr[1] >= 0 ? 0.05 : -0.05), pr[1] * 0.5 + 0.05); sym(ctx, 'r', rl3.x, rl3.y, { size: 15 }); }
   }
   /* はなれた点と、そのあとの道すじ */
-  if (tr.ev && s.t >= tr.ev.t) {
+  if (m3After(s, tr)) {
     var e = M3.at(tr, tr.ev.t), eo = offOf(e), ep = P(e.x + eo[0], e.y + eo[1]);
     ctx.save(); ctx.setLineDash([6, 4]); ctx.strokeStyle = COL.vel; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.6; ctx.beginPath();
     var fst = true; tr.pts.forEach(function (p) { if (p.t < tr.ev.t || p.t > s.t) return; var o2 = offOf(p), pp = P(p.x + o2[0], p.y + o2[1]); fst ? ctx.moveTo(pp.x, pp.y) : ctx.lineTo(pp.x, pp.y); fst = false; });
@@ -5537,13 +5571,13 @@ function drawM3(s, ctx, W, H) {
     ctx.stroke(); ctx.restore();
   } else {
     s.autoTrail = !!(tr.ev && s.t >= tr.ev.t - 0.25);           /* 離れる・たるむ・飛び出す前後は軌跡を自動で描く */
-    trailStep(ctx, s, function (x, y, z) { return P(x, y, z); }, [bx, by, zb], C.sgn * (q.ang - C.ref));
+    trailStep(ctx, s, function (x, y, z) { return P(x, y, z); }, [bx, by, zb], C.sgn * (q.ang - m3Ref(s)));
   }
   ballShape(ctx, Bp.x, Bp.y, rb * S, '#c9d3de');
-  /* デコピン：はじめの小球の位置のうしろから、進む向きへはじく（3-1・3-2 は右へ、3-3 は下へ） */
+  /* デコピン：はじめの小球の位置のうしろから、進む向きへはじく（3-1・3-2 は右へ、3-4 は円の接線方向に時計回り） */
   if (s.t < 0.34 && !SN) {
     var q0 = M3.at(tr, 0), o0 = offOf(q0), B0 = P(q0.x + o0[0], q0.y + o0[1]);
-    var fa = sec === 3 ? Math.PI / 2 : 0, back = rb * S + 38;
+    var t0r = m3Th0(s) * Math.PI / 180, fa = sec === 3 ? Math.atan2(Math.sin(t0r), -Math.cos(t0r)) : 0, back = rb * S + 38;   /* 画面の向き（右が 0、下が π/2） */
     if (s.v.v0 < 0.05) {                                          /* 初速度 0：デコピンではなく、手でそっと放す（mechanical-energy.html 1-2 と同じ） */
       var hA = (s.t <= 0.18) ? 1 : Math.max(0, 1 - (s.t - 0.18) / 0.22);
       if (hA > 0.02) dropHand(ctx, B0.x, B0.y, 0.5, clamp(s.t / 0.18, 0, 1), hA);
@@ -5608,7 +5642,7 @@ function drawM3(s, ctx, W, H) {
   }
   drawEqualTicks(ctx);
   /* 吹き出し：いまの視点の観測者のセリフ、できごと */
-  var after = tr.ev && s.t >= tr.ev.t;
+  var after = m3After(s, tr);
   var say = after ? M2SAY[tr.ev.kind] : (q.kind === 'floor' ? 'まっすぐ等速で進んでいるな' : (s.rot ? '力がつり合っているな' : '速さを変えながら円運動しているな'));
   if (!SN) speech(ctx, say, s.rot ? hdRot : hdIn);
   if (SN) { if (s._snapEv) eventBubble(ctx, tr.ev.kind, Bp.x, Bp.y - rb * S - 22); return; }   /* コマ図は「瞬間」のコマだけできごとの吹き出し */
@@ -5773,29 +5807,46 @@ DEFS.m3s2 = m3Base({
     return h;
   }
 });
-/* ===================== セクション3 糸による円運動 ===================== */
+/* ===================== セクション3 糸による円運動（③-4） ===================== */
+/* 「たるむ瞬間をスローで」が押せないときのヒント（θ0 ごとに、たるむ v0 の範囲） */
+function m3S3Hint(s) {
+  var t0 = m3Th0(s), c = M3S3.crit[t0].tex, lo = t0 === 180 ? '0 \\le v_0' : (M3S3.low[t0] ? M3S3.low[t0].tex + ' < v_0' : '0 < v_0');
+  return '$' + lo + ' < ' + c + '$ にしてから、もう一度押そう。';
+}
 DEFS.m3s3 = m3Base({
   id: 'm3s3', num: 4, sec: 3, title: '糸による円運動',
-  desc: '長さ $r=0.50$ m の糸の一端を支柱のくぎ（中心）に結び、糸を水平にした位置で小球（$m=0.20$ kg）をデコピンで下向きに弾く（速さ $v_0$）。中心方向には<b>張力と重力の成分</b>の合力がはたらく。<span class="todo">$v_0$ を変えて ▶ スタートし、最高点まで糸がたるまずに回れるか見よう。</span>',
+  desc: '長さ $r=0.50$ m の糸の一端を支柱のくぎ（中心）に結び、最下点から角 $\\theta_0$ の位置で小球（$m=0.20$ kg）をデコピンで円の接線方向（時計回り）に弾く（速さ $v_0$）。中心方向には<b>張力と重力の成分</b>の合力がはたらく。<span class="todo">$\\theta_0$ と $v_0$ を変えて ▶ スタートし、最高点まで糸がたるまずに回れるか見よう。</span>',
+  varCols: [['v0'], ['th0']],                /* 初速のスライダーを半分にして、右に初期角度（2026-10-13 千葉さん） */
   vars: [{ k: 'v0', label: '初速 $v_0$', aria: '初速', min: 0, max: 5.0, step: 0.1, def: 0, dec: 1, unit: 'm/s',
-    mark: function () { return { x: Math.sqrt(3 * G * M3.R), label: '$\\sqrt{3gr}$' }; } }],
+    allow: function (s) { return { lo: m3Th0(s) === 180 ? M3S3.v0min180 : 0, hi: 5.0 }; },   /* 180° のときは v0 の最小値を上げる（2026-10-13 千葉さん） */
+    mark: function (s) { var c = m3S3Crit(m3Th0(s)); return { x: c.v, label: '$' + c.tex + '$' }; } },
+    { k: 'th0', label: '初期角度 $\\theta_0$', aria: '初期角度', stops: [0, 30, 90, 180], prop: true, stopLabels: ['0°', '30°', '90°', '180°'], def: 90,   /* 角度に比例した位置（等間隔にしない） */
+      fmt: function (x) { return x + '°'; } }],
+  fixVars: function (s) { if (m3Th0(s) === 180 && s.v.v0 < M3S3.v0min180) { s.v.v0 = M3S3.v0min180; s.syncSliders(true); } },
   msg: function (s) {
-    var tr = m3Tr(s), v0 = s.v.v0, r3 = Math.sqrt(3 * G * M3.R);
-    if (tr.ev && s.t >= tr.ev.t) return '<b>糸がたるんだ！</b>（$S = 0$）　そのあとは放物運動。糸がまたぴんと張ったところで止めた。';
-    if (v0 >= r3) return '$v_0 \\ge \\sqrt{3gr} = ' + fmt(r3, 2) + '$ m/s なので、最高点でも $S \\ge 0$。糸がたるまずに回り続ける。';
-    if (v0 === 0) return '$v_0 = 0$ では、反対がわの水平の位置まで上がって戻る（振り子）。$v_0$ を大きくしてみよう。';
-    return '▶ スタート。$v_0 < \\sqrt{3gr}$ なので、中心より高いところで糸がたるむ。';
+    var tr = m3Tr(s), v0 = s.v.v0, t0 = m3Th0(s), c = m3S3Crit(t0), lo = M3S3.low[t0];
+    if (m3After(s, tr)) return '<b>糸がたるんだ！</b>（$S = 0$）　そのあとは放物運動。糸がまたぴんと張ったところで止めた。';
+    if (t0 === 180 && v0 < c.v) return '最高点で $v_0 < ' + c.tex + ' = ' + fmt(c.v, 2) + '$ m/s では、重力 $mg$ だけで、円運動に必要な中心向きの力 $m\\dfrac{v_0^{\\,2}}{r}$ より大きい（$S < 0$ が必要になる）。▶ スタートすると、糸はすぐにたるむ。';
+    if (v0 >= c.v) return '$v_0 \\ge ' + c.tex + ' = ' + fmt(c.v, 2) + '$ m/s なので、最高点でも $S \\ge 0$。糸がたるまずに回り続ける。';
+    if (v0 === 0) {
+      if (t0 === 0) return '最下点で $v_0 = 0$ では動かない。$v_0$ を大きくしてみよう。';
+      return '$v_0 = 0$ では、反対がわの同じ高さ（$\\theta = ' + t0 + '^\\circ$）まで上がって戻る（振り子）。$v_0$ を大きくしてみよう。';
+    }
+    if (lo && v0 <= Math.sqrt(lo.k * G * M3.R)) return '$v_0 \\le ' + lo.tex + ' = ' + fmt(Math.sqrt(lo.k * G * M3.R), 2) + '$ m/s なので、中心の高さまで上がらない。糸はたるまずに往復する（振り子）。';
+    return '▶ スタート。$v_0 < ' + c.tex + '$ なので、中心より高いところで糸がたるむ。';
   },
   eqs: function (s, q) { return m3Eqs(3, q, m3Tr(s)); },
   right: function (s, tr) {
-    var v0 = s.v.v0, R = M3.R, r3 = Math.sqrt(3 * G * R);
+    var v0 = s.v.v0, R = M3.R, t0 = m3Th0(s), c = m3S3Crit(t0), cs = { 0: '1', 30: '\\dfrac{\\sqrt{3}}{2}', 90: '0', 180: '-1' }[t0];
     var h = m3Frame(s, 3, '中心向きの合力は $S - mg\\cos\\theta$（$\\theta$ は最下点からの角）。',
       '一緒に回る観測者には小球が止まって見える。遠心力と接線方向の慣性力を加えて、力がつり合う。');
-    h += m3TheoryOpen(s) + m3Energy(tr, '\\dfrac{1}{2}mv_0^{\\,2} + mgr = \\dfrac{1}{2}mv^2 + mgr(1 - \\cos\\theta)');
+    h += m3TheoryOpen(s) + m3Energy(tr, '\\dfrac{1}{2}mv_0^{\\,2} + mgr(1 - \\cos\\theta_0) = \\dfrac{1}{2}mv^2 + mgr(1 - \\cos\\theta)');
     h += '<div class="qcard derive"><p class="qt">最高点に達する条件</p><p>最高点で糸がたるまないためには $S \\ge 0$。最高点での速さを $v_1$ とすると</p>' +
-      '<div class="qeq">' + eqRow('eom', 'm\\dfrac{v_1^{\\,2}}{r} = S + mg \\;\\Longrightarrow\\; v_1^{\\,2} \\ge gr') + tex('\\dfrac{1}{2}mv_0^{\\,2} = \\dfrac{1}{2}mv_1^{\\,2} + mgr\\ \\Longrightarrow\\ v_0 \\ge \\sqrt{3gr}', true) + '</div>' +
-      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('\\sqrt{3gr} = \\sqrt{3\\times 9.8\\times ' + fmt(R, 2) + '} = ' + fmt(r3, 2) + '\\ \\text{m/s}') + '（いま ' + tex('v_0 = ' + fmt(v0, 1)) + ' m/s）</p>' +
-      '<p class="qnote">初めの位置（中心と同じ高さ）を基準にした。糸がたるむ角は $\\cos\\theta = -\\dfrac{v_0^{\\,2}}{3gr}$。</p>' + M3LINK42 + '</div>';
+      '<div class="qeq">' + eqRow('eom', 'm\\dfrac{v_1^{\\,2}}{r} = S + mg \\;\\Longrightarrow\\; v_1^{\\,2} \\ge gr') +
+      tex('\\dfrac{1}{2}mv_0^{\\,2} + mgr(1 - \\cos\\theta_0) = \\dfrac{1}{2}mv_1^{\\,2} + 2mgr\\ \\Longrightarrow\\ v_0 \\ge \\sqrt{(3 + 2\\cos\\theta_0)gr}', true) + '</div>' +
+      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('\\theta_0 = ' + t0 + '^\\circ') + ' なので ' + tex('\\cos\\theta_0 = ' + cs) + '、' +
+      tex(c.tex + ' = ' + fmt(c.v, 2) + '\\ \\text{m/s}') + '（いま ' + tex('v_0 = ' + fmt(v0, 1)) + ' m/s）</p>' +
+      '<p class="qnote">最下点を位置エネルギーの基準にした。糸がたるむ角は $\\cos\\theta = \\dfrac{2gr\\cos\\theta_0 - v_0^{\\,2}}{3gr}$。</p>' + M3LINK42 + '</div>';
     h += '</div></details>';
     h += '<p class="assume">' + tex('m = 0.20') + ' kg、' + tex('r = 0.50') + ' m。糸の質量は考えない。中心（くぎ）は動かない。</p>';
     return h;
@@ -5869,15 +5920,29 @@ function m3SnapList(sec, tr) {
   }
   if (sec === 2) return [{ label: '最高点から右へ', t: Math.min(0.03, ev.t * 0.1) }, { label: '面にそって滑りおりる', t: ev.t * 0.55 },
     { label: '離れる瞬間', t: ev.t, ev: true }, { label: '離れた後', t: after() }];
-  if (ev) return [{ label: '下向きに打ち出す', t: 0.02 }, { label: '最下点を通る', t: tLow },
+  /* ③-4 糸：初期角度 θ0（0°・30°・90°・180°）で打ち出し方とコマの選び方を変える（2026-10-13 千葉さん） */
+  var th0 = tr.th0 === undefined ? 90 : tr.th0, v00 = Math.hypot(P[0].vx, P[0].vy);
+  var shot = v00 < 0.05 ? (th0 === 0 ? '最下点で静止' : '静かに放す') : { 0: '最下点で左へ打ち出す', 30: '打ち出す', 90: '下向きに打ち出す', 180: '最高点で右へ打ち出す' }[th0];
+  var firstT = function (f) { for (var k = 0; k < P.length; k++) if (P[k].kind === 'circle' && f(P[k])) return P[k].t; return null; };
+  var tBot = th0 === 0 ? null : firstT(function (p) { return p.ang <= 0; });               /* 最下点を通る */
+  var tMid = firstT(function (p) { return p.ang <= -Math.PI / 2; });                        /* 反対がわの中心の高さ */
+  var second = tBot !== null ? { label: '最下点を通る', t: tBot } : (tMid !== null ? { label: '中心の高さを通る', t: tMid } : null);
+  if (ev && ev.t < 0.01) return [{ label: shot, t: 0 }, { label: 'すぐにたるむ（S = 0）', t: ev.t + 0.005, ev: true },   /* 最高点で v0 < √(gr)：はじめからたるむ */
+    { label: 'たるんだ後', t: Math.min(tEnd, tEnd * 0.4) }, { label: '糸がまた張る', t: tEnd }];
+  if (ev) return [{ label: shot, t: 0.02 }, second || { label: '糸を張ったまま上る', t: ev.t * 0.5 },
     { label: 'たるむ瞬間', t: ev.t, ev: true }, { label: 'たるんだ後', t: after() }];
-  /* たるまない：1 周する */
-  var tTop = 0, hi = -1e9; P.forEach(function (p) { if (p.kind === 'circle' && p.t > tLow && p.y > hi) { hi = p.y; tTop = p.t; } });
-  if (hi < M3.R * 0.5) {                                          /* v0 = 0：振り子のように往復する */
-    return [{ label: '静かに放す', t: 0.02 }, { label: '最下点を通る', t: tLow }, { label: '反対側で止まる', t: tTop }, { label: '戻っていく', t: Math.min(tEnd, tTop + (tTop - tLow) * 0.6) }];
+  /* たるまない */
+  var tTop = 0, hi = -1e9; P.forEach(function (p) { if (p.kind === 'circle' && p.y > hi + 1e-9 && p.t > 0.02) { hi = p.y; tTop = p.t; } });
+  if (th0 === 0 && v00 < 0.05) return [{ label: shot, t: 0.02 }, { label: '動かない', t: tEnd }];
+  if (tMid === null || hi < M3.R * 0.5 && Math.abs(P[P.length - 1].ang) < Math.PI) {          /* 中心より上まで回らない：振り子のように往復する */
+    var tSw = tEnd; for (var k2 = 0; k2 + 1 < P.length; k2++) if (P[k2].ang < 0 && P[k2 + 1].ang > P[k2].ang) { tSw = P[k2].t; break; }   /* 反対がわで初めて折り返す時刻 */
+    var tb = tBot !== null ? tBot : tSw * 0.5;
+    return [{ label: shot, t: 0.02 }, { label: tBot !== null ? '最下点を通る' : '反対側へ上る', t: tb }, { label: '反対側で止まる', t: tSw }, { label: '戻っていく', t: Math.min(tEnd, tSw + (tSw - tb) * 0.6) }];
   }
-  return [{ label: '下向きに打ち出す', t: 0.02 }, { label: '最下点を通る', t: tLow }, { label: '最高点（たるまない）', t: tTop },
-    { label: 'もとの高さに戻る', t: Math.min(tEnd, tTop + (tTop - tLow) * 0.5) }];
+  var tTp = firstT(function (p) { return p.ang <= -Math.PI; });                              /* 最高点を通る */
+  if (tTp === null) tTp = tTop;
+  return [{ label: shot, t: 0.02 }, second || { label: '下っていく', t: tTp * 0.5 }, { label: '最高点（たるまない）', t: tTp },
+    { label: th0 === 180 ? '回り続ける' : 'もとの高さに戻る', t: Math.min(tEnd, tTp + (tTp - (second ? second.t : 0)) * 0.6) }];
 }
 
 /* ---- 左の列のいちばん下に箱をつくる ---- */
@@ -5892,7 +5957,7 @@ var M3SNAP = { pw: 280, k: 3 };                                     /* コマ 1 
 function m3DrawSnaps(s) {
   if (!s.snapCv || !s.snapBox) return;
   var BW = Math.floor(s.snapBox.clientWidth - 8); if (BW < 120) return;
-  var tr = m3Tr(s), key = BW + '|' + s.v.v0;
+  var tr = m3Tr(s), key = BW + '|' + s.v.v0 + '|' + (s.v.th0 === undefined ? '' : s.v.th0);   /* ③-4 は初期角度でもコマが変わる */
   if (s._snapKey === key) return; s._snapKey = key;
   var list = m3SnapList(s.def.sec, tr), n = list.length;
   var cols = BW < 470 ? 2 : n, rows = Math.ceil(n / cols);
@@ -6385,7 +6450,7 @@ var MODES = [
   { id: 'mode1', name: '円運動の基本的な物理量', secs: ['m1s1'], rotSwitch: false,
     en: 'Describing Circular Motion',
     lead: '角速度 $\\omega$・加速度 $a$・向心力 $F$ などの円運動に関係する物理量を理解する。糸を切ると、小球は速度の向きにまっすぐ飛ぶ。' },
-  { id: 'mode2', name: '等速円運動と力', secs: ['m2s1', 'm2s2', 'm2s3', 'm2s4', 'm2s5', 'm2sq', 'm2s6'], rotSwitch: true,
+  { id: 'mode2', name: '等速円運動と向心力', secs: ['m2s1', 'm2s2', 'm2s3', 'm2s4', 'm2s5', 'm2sq', 'm2s6'], rotSwitch: true,
     en: 'Centripetal Force &amp; Two Observers',
     lead: '摩擦力・弾性力・張力などの「中心向きの合力」が向心力のはたらきをしている。外（慣性系）から見れば<span class="t-eom">運動方程式</span>、一緒に回る観測者（非慣性系）から見れば遠心力を加えた<span class="t-bal">力のつり合いの式</span>になる。' },
   { id: 'mode3', name: '等速ではない円運動', secs: ['m3s1', 'm3sL', 'm3s2', 'm3s3'], rotSwitch: true,
@@ -6434,8 +6499,9 @@ function buildPage() {
     h += '<section class="mode" id="' + m.id + '">' +
       '<header class="modehead"><div class="mh-num" aria-hidden="true"><span>' + (i + 1) + '</span></div><div class="mh-body"><p class="mh-en">Chapter ' + String(i + 1).padStart(2, '0') + ' — ' + m.en + '</p>' +
       '<h2><span class="mh-c">' + CIRC[i] + '</span>' + m.name + '</h2><p class="mh-lead">' + m.lead + '</p></div></header>' +
+      (m.secs.filter(function (sid) { return DEFS[sid]; }).length < 2 ? '' :          /* セクションが 1 つだけのモード（①）は、セクションへのリンクを出さない（2026-10-12 千葉さん） */
       '<div class="seclinks">' + m.secs.filter(function (sid) { return DEFS[sid]; }).map(function (sid) {
-        return '<a href="#' + (i + 1) + '-' + DEFS[sid].num + '" data-toc="' + sid + '">' + CIRC[i] + '-' + DEFS[sid].num + '　' + (DEFS[sid].short || DEFS[sid].title) + '</a>'; }).join('') + '</div>' +
+        return '<a href="#' + (i + 1) + '-' + DEFS[sid].num + '" data-toc="' + sid + '">' + CIRC[i] + '-' + DEFS[sid].num + '　' + (DEFS[sid].short || DEFS[sid].title) + '</a>'; }).join('') + '</div>') +
       '<div class="modebar" id="mbar_' + m.id + '"></div>';
     if (!m.secs.length) h += '<div class="sec soon"><div class="sL"><p class="secdesc">このモードは、モード1を確認していただいたあとで作ります。</p></div></div>';
     m.secs.forEach(function (sid) {
@@ -7056,9 +7122,21 @@ function check() {
   out.m3_s1_top_just_above_5gr = M3.traj(1, v5 + 0.002).ev.kind === 'top' && M3.traj(1, v5 - 0.02).ev.kind === 'off';
   out.m3_s1_back_below_2gr = !M3.traj(1, v2 - 0.01).ev && M3.traj(1, v2 + 0.02).ev !== null;
   out.m3_s3_loop_just_above_3gr = !M3.traj(3, v3 + 0.002).ev && M3.traj(3, v3 - 0.02).ev !== null;
+  /* ③-4 の初期角度 θ0：1 周できる最小の v0 ＝ √((3 + 2cosθ0)gr) の前後で、たるむ／たるまないが切りかわる。たるむ角は cosθ = (2gr cosθ0 − v0²)/(3gr) */
+  var okTh = true, eTh = 0;
+  [0, 30, 90, 180].forEach(function (d) {
+    var c = Math.sqrt((3 + 2 * Math.cos(d * Math.PI / 180)) * G * R3);
+    okTh = okTh && !M3.traj(3, c + 0.003, d).ev && M3.traj(3, c - 0.02, d).ev !== null;
+    var vt = d === 180 ? c - 0.3 : c - 0.4;
+    var tr = M3.traj(3, vt, d), cs = (2 * G * R3 * Math.cos(d * Math.PI / 180) - vt * vt) / (3 * G * R3);
+    if (tr.ev && tr.ev.t > 0) eTh = Math.max(eTh, Math.abs(Math.cos(tr.ev.ang) - cs));
+  });
+  out.m3_s3_th0_threshold = okTh;
+  out.m3_s3_th0_slack_cos_err = +eTh.toExponential(2);
+  out.m3_s3_top_slow_slacks_at_0 = M3.traj(3, 1.0, 180).ev.t === 0 && M3.traj(3, 0, 180).ev.t === 0;
   var dr = 0, bal = 0;
-  [[1, 4], [1, 5.5], [2, 0.1], [3, 2], [3, 4.5]].forEach(function (c) {
-    var tr = M3.traj(c[0], c[1]), E0 = tr.pts[0].E;
+  [[1, 4], [1, 5.5], [2, 0.1], [3, 2], [3, 4.5], [3, 3, 0], [3, 4, 30], [3, 2.5, 180], [3, 1, 30]].forEach(function (c) {
+    var tr = M3.traj(c[0], c[1], c[2]), E0 = tr.pts[0].E;
     tr.pts.forEach(function (p) {
       dr = Math.max(dr, Math.abs(p.E - E0) / E0);
       if (p.kind !== 'circle') return;

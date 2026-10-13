@@ -1751,6 +1751,11 @@ details.qcard.fold > summary .foldhint{font-size:.78rem;color:var(--ink-4)}
 /* 1-3「1階→3階に着くまで」：押している間は青く。見せている間はほかの操作をうすく */
 .vhead button.b.ride{margin-left:auto;font-weight:800;color:#1d4f86;border:1.5px solid #8fb3dc;background:#fff;white-space:nowrap}
 .vhead button.b.ride.on{background:#1f6fd6;color:#fff;border-color:#1f6fd6}
+/* 2026-10-13 千葉さん：加速度バーを短くして、空いた右に 2 行のボタン */
+.vrow.cell.sidebtn{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:.9em;align-items:center}
+.vrow.cell.sidebtn > .vhead,.vrow.cell.sidebtn > .vbar,.vrow.cell.sidebtn > .stoptk{grid-column:1}
+.vrow.cell.sidebtn > button.b.ride{grid-column:2;grid-row:1 / span 3;align-self:center;font-weight:800;color:#1d4f86;border:1.5px solid #8fb3dc;background:#fff;white-space:nowrap;line-height:1.3;padding:.45em .9em;text-align:center}
+.vrow.cell.sidebtn > button.b.ride.on{background:#1f6fd6;color:#fff;border-color:#1f6fd6}
 .ridebusy .ctrls button:disabled:not(.ride), .ridebusy .ctrls input:disabled{opacity:.45}
 .ridecard canvas.ridecv{display:block;width:100%;background:#fff;border-radius:10px;box-shadow:inset 0 0 0 1px var(--rule);margin:.4em 0}
 
@@ -2293,6 +2298,7 @@ Sim.prototype.build = function () {
   var cvBtns = [], rowTop = null, row1x = [], varBtns = [], playBtns = [];             /* bd.inCanvas：図（方眼紙）の左上に置くボタン／row1x：観測者の切りかえのとなりへ */
   (d.buttons || []).forEach(function (bd) {
     var b = el('button', 'b ' + (bd.cls || ''), bd.label); b.type = 'button';
+    if (bd.lines) { b.textContent = ''; bd.lines.forEach(function (t, i) { if (i) b.appendChild(el('br')); b.appendChild(document.createTextNode(t)); }); }   /* bd.lines：ボタンの文字を改行して 2 行に（1-3「1階→3階／に着くまで」。2026-10-13 千葉さん） */
     b.addEventListener('click', function () { bd.onClick(self, b); });
     self.extra[bd.k] = b;
     if (bd.inCanvas) { cvBtns.push(b); return; }
@@ -2423,7 +2429,10 @@ Sim.prototype.build = function () {
       self.sl[vd.k] = { inp: inp, val: val, vd: vd, row: row, lk: lk, dn: dn, up: up, mk: mk, rw: slot, idxOf: vd.stops ? idxOf : null, set: set };
     });
     if (d.lockable) { this.lockmsg = el('div', 'lockmsg'); vb.appendChild(this.lockmsg); }
-    if (varBtns.length) { var vr0 = this.sl[d.vars[0].k].row; vr0.classList.add('hasbtn'); var vtg = vr0.querySelector('.vhead') || vr0; varBtns.forEach(function (b) { vtg.appendChild(b); }); }
+    if (varBtns.length) { var vr0 = this.sl[d.vars[0].k].row; vr0.classList.add('hasbtn'); var vtg = vr0.querySelector('.vhead') || vr0; varBtns.forEach(function (b) {
+      var bd = (d.buttons || []).filter(function (x) { return self.extra[x.k] === b; })[0];
+      if (bd && bd.varSide) { vr0.classList.add('sidebtn'); vr0.appendChild(b); }   /* bd.varSide：スライダーを短くして、その右に置く（1-3「1階→3階に着くまで」。2026-10-13 千葉さん） */
+      else vtg.appendChild(b); }); }
   }
   /* ならび：スライダー → ボタン（▶ スタート …）→ 時間バー → 図 */
   /* ▶ スタート・スロー・リセット（・ストロボ）と時間バーを 1 行にまとめ、図のすぐ上に置く（2026-10-05 千葉さん） */
@@ -3880,7 +3889,7 @@ function rideCard(s) {
 }
 DEFS.m1s3 = ifBase({
   id: 'm1s3', num: 3, title: 'エレベーターで上昇・下降するはかり', V0: P.V0E * P.V1K, TW: EL.TW,
-  buttons: [{ k: 'ride', label: '1階→3階に着くまで', cls: 'ride', inVar: true, onClick: function (s) { if (!s._ride || s.ended) rideOn(s); } }],
+  buttons: [{ k: 'ride', label: '1階→3階に着くまで', lines: ['1階→3階', 'に着くまで'], cls: 'ride', inVar: true, varSide: true, onClick: function (s) { if (!s._ride || s.ended) rideOn(s); } }],
   tEnd: function (s) { return s._ride ? RIDE13.T : EL.TW; },
   height: function (s, w) { return s._ride && !s.rot ? Math.round(clamp(w * 1.2, 480, 720)) : Math.round(clamp(w * 0.66, 300, 420)); },   /* 1階→3階を外から見るときは 6 m 上がるので、図をたてに長く */
   live: function (s) {                                             /* 1階→3階：いまの区間の加速度をバーと右の列に出す。終わったらボタンを押せるように */
