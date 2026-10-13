@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>動画解析アプリの作成をAIと行ったレポート</title>
+<style>
+:root{
+  --ink:#1f2933; --sub:#5b6b78; --line:#d7dee5;
+  --blue:#1a5fb4; --blue-bg:#eaf2fd; --green:#1b6b34; --green-bg:#e8f5ec;
+  --red:#a12a1c; --red-bg:#fdecea; --amber:#8a6100; --amber-bg:#fff6e0; --orange:#c96c11;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);background:#f2f4f6;
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",system-ui,sans-serif;font-size:9.8pt;line-height:1.6}
+.page{width:210mm;min-height:297mm;margin:6mm auto;padding:11mm 14mm 11mm;background:#fff;
+  box-shadow:0 1px 6px rgba(0,0,0,.15);position:relative}
+h1{font-size:21pt;line-height:1.35;margin:0 0 6px}
+h2{font-size:13pt;margin:12px 0 6px;padding:6px 10px;border-radius:6px;background:var(--blue-bg);color:var(--blue);border-left:5px solid var(--blue)}
+h2 .no{font-size:11pt;opacity:.8;margin-right:6px}
+h3{font-size:11.5pt;margin:14px 0 4px;color:var(--green)}
+p{margin:6px 0}
+ul,ol{margin:6px 0 6px 1.3em;padding:0}
+li{margin:3px 0}
+b{color:#0f2b46}
+.lead{color:var(--sub);font-size:11pt;margin:2px 0 12px}
+.cover{border:2px solid var(--blue);border-radius:12px;padding:16px 20px;background:linear-gradient(180deg,#f7fbff,#fff)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:10pt;margin:12px 0 4px}
+.meta div{border-bottom:1px dotted var(--line);padding:3px 0}
+.meta b{display:inline-block;min-width:9em;color:var(--sub);font-weight:600}
+figure{margin:10px 0;text-align:center;page-break-inside:avoid;break-inside:avoid}
+figure img{max-width:100%;max-height:80mm;width:auto;border:1px solid var(--line);border-radius:8px}
+.two figure img{max-height:62mm}
+figure.h50 img{max-height:50mm} figure.h60 img{max-height:60mm} figure.h70 img{max-height:70mm} figure.h150 img{max-height:150mm}
+figcaption{font-size:9pt;color:var(--sub);margin-top:4px;text-align:left}
+figcaption b{color:var(--ink)}
+.say{border:1px dashed #b9c6d2;background:#fbfdff;border-radius:10px;padding:5px 11px;margin:6px 0;font-size:9.5pt}
+.say .who{font-size:8.5pt;color:var(--blue);font-weight:700;display:block;margin-bottom:1px}
+.say.ai{border-color:#cfe3d4;background:#f7fdf9}
+.say.ai .who{color:var(--green)}
+.tip,.warn{border-radius:10px;padding:6px 12px;margin:8px 0;font-size:9.5pt;page-break-inside:avoid;break-inside:avoid}
+.tip{background:var(--green-bg);border:1px solid #bfe2cd}
+.tip::before{content:"ポイント";display:block;font-weight:700;color:var(--green);font-size:9pt}
+.warn{background:var(--red-bg);border:1px solid #f2c2bb}
+.warn::before{content:"ここに注意";display:block;font-weight:700;color:var(--red);font-size:9pt}
+.two{display:flex;gap:12px;align-items:flex-start}
+.two > *{flex:1;min-width:0}
+.two.n32 > :first-child{flex:3} .two.n32 > :last-child{flex:2}
+table{border-collapse:collapse;width:100%;font-size:9.3pt;margin:8px 0;page-break-inside:avoid;break-inside:avoid}
+th,td{border:1px solid var(--line);padding:4px 7px;text-align:left;vertical-align:top}
+th{background:#f3f6f9}
+.pagenum{position:absolute;right:16mm;bottom:7mm;font-size:9pt;color:var(--sub)}
+.tag{display:inline-block;font-size:8.5pt;padding:1px 8px;border-radius:999px;background:var(--amber-bg);color:var(--amber);border:1px solid #ecd9a0;margin-right:4px;vertical-align:middle}
+.big{font-size:12.5pt;font-weight:700;color:var(--blue);margin:8px 0}
+.kw{background:#fff3d6;padding:0 4px;border-radius:4px}
+.prompt{font-size:8.6pt;line-height:1.5;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:#fbfcfd;column-count:2;column-gap:14px}
+.prompt b{color:var(--blue)}
+.prompt .hl{background:#fff3d6}
+.mk{display:inline-block;background:var(--blue);color:#fff;border-radius:50%;width:15px;height:15px;line-height:15px;text-align:center;font-size:8pt;margin-left:2px}
+.note{font-size:8.5pt;color:var(--sub);margin:4px 0 0}
+@media print{
+  body{background:#fff}
+  .page{margin:0;box-shadow:none;width:auto;min-height:auto;page-break-after:always;padding:10mm 13mm}
+  .page:last-child{page-break-after:auto}
+}
+@page{size:A4;margin:0}
+.attach{position:absolute;top:9mm;right:14mm;width:56mm;background:#fff;border:1.5px solid var(--orange);border-radius:8px;padding:6px 9px;font-size:8.6pt;line-height:1.45;box-shadow:0 1px 4px rgba(0,0,0,.12);z-index:2}
+.attach .attach-t{font-weight:700;color:var(--orange);margin-bottom:3px}
+.attach a{display:block;color:var(--blue);text-decoration:none;padding:2px 0;border-top:1px dashed var(--line)}
+.attach a:hover{text-decoration:underline}
+.attach a b{color:var(--blue)}
+.attach .sm{color:var(--sub);font-size:7.8pt}
+.cover h1,.cover>.lead,.cover>.lead+p{padding-right:60mm}
+
+/* ---- せまい画面では A4 の紙幅（210mm）をやめて、画面幅に合わせる ----
+       screen and … を付けないと、A4 の紙幅（794px）も 820px 以下なので
+       印刷にもこの指定が効いてしまい、紙の余白と添付資料の位置が変わる ---- */
+@media screen and (max-width:820px){
+  .page{width:auto;max-width:100%;min-height:auto;margin:0;padding:14px 12px;box-shadow:none}
+  .attach{position:static;width:auto;margin:0 0 10px}      /* 「添付資料」は浮かせず本文の上へ */
+  .cover h1,.cover>.lead,.cover>.lead+p{padding-right:0}   /* 添付資料のためにあけていた右余白を外す */
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 1 表紙 ===== -->
+<div class="page">
+  <div class="attach">
+    <div class="attach-t">添付資料（クリックで開きます）</div>
+    <a href="motion-analysis_first-prompt.pdf" target="_blank"><b>一番最初のプロンプト</b>（PDF・3 ページ）<br><span class="sm">AI に最初に送った 3,000 字の依頼文</span></a>
+    <a href="motion-analysis_prompts.pdf" target="_blank"><b>プロンプト全文</b>（PDF・26 ページ）<br><span class="sm">保存していた約 3.8 万字を古い順に</span></a>
+    <a href="motion-analysis_flowmap.pdf" target="_blank"><b>アプリのフローチャート</b>（PDF・4 ページ）<br><span class="sm">①→②③④ の進み方と、もどる道</span></a>
+  </div>
+  <div class="cover">
+    <h1>動画解析アプリの作成をAIと行ったレポート</h1>
+    <p class="lead">高校物理「動画解析・トラッキングツール」ができるまで ―― AI の上手な使い方・気をつけること</p>
+    <p>この冊子は、先生（人間）と AI（Claude）が <b>6 日間・42 回</b>のやり取りで、1 つの実験アプリを作り上げた記録です。
+    どんな言葉で頼むと、どう変わったのかを、実際の画面で追いかけます。伝えたいことは 1 つ。
+    <span class="big" style="display:inline">AI は「作る係」。正しいかどうかを決めるのは、いつも人間。</span></p>
+    <div class="meta">
+      <div><b>作成日</b>2026 年 9 月 14 日</div>
+      <div><b>かかった期間</b>2026 年 9 月 9 日〜14 日（6 日間）</div>
+      <div><b>やり取りした回数</b>42 回（1 回に数個〜十数個の指示）</div>
+      <div><b>先生が書いた文の量</b>約 4 万字（最初の 3,000 字＋保存された 35 回分 38,082 字）</div>
+      <div><b>使った AI</b>Claude 5.0（約 8 割）・Claude 5.1（約 2 割）</div>
+      <div><b>できたもの</b>HTML 1 枚（約 500 KB・約 9,100 行）＋生徒用プリント A4 4 枚</div>
+      <div><b>自動テスト</b>666 項目（毎回 2 回連続で合格させる）</div>
+      <div><b>AI が読んだ図</b>先生が赤丸を付けた画面 21 枚・実験の動画 5 本</div>
+    </div>
+  </div>
+  <figure class="h70">
+    <img src="{{fig1}}" alt="完成したページ">
+    <figcaption><b>図 1　完成したページ（① 撮影・トラッキング）。</b>左に手順のカード、真ん中に動画、右に測定した値。</figcaption>
+  </figure>
+  <p class="lead" style="margin-top:6px">読み方 ―― 各ページに「<span class="tag">先生の言葉</span>」と、その結果どう変わったかの図をのせています。まねできる言い方を探しながら読んでください。</p>
+  <div class="pagenum">1</div>
+</div>
+
+
+<!-- ===== N1 最初の指示 ===== -->
+<div class="page">
+  <h2><span class="no">1</span>最初の指示は、3,000 字の「仕様書」だった</h2>
+  <p>最初の日、先生が AI に渡したのは、<b>手描きの画面の絵</b>と<b>参考にしたいサイトの画面</b>、そして約 3,000 字の文章です。
+  「作って」の一言ではなく、9 つのまとまりに分けて書かれていました（全文は次のページ）。</p>
+  <table>
+    <tr><th style="width:11em">まとまり</th><th>書いてあったこと</th><th style="width:15em">あとで効いたところ</th></tr>
+    <tr><td>依頼内容</td><td>単一 HTML で動く「高校物理 動画解析ツール」。ファイル名まで指定</td><td>最後までファイル 1 枚のまま</td></tr>
+    <tr><td>目的</td><td>生徒が各自の端末で運動を解析する。題材は台車・投射・単振動・衝突</td><td>AI が「何のためか」を判断の基準にできた</td></tr>
+    <tr><td>絶対条件</td><td><b>AI は一切使わない・ネット不要・動画も測定値もどこにも送信しない</b>（生徒が映るため）</td><td>42 回の改修で一度も破られなかった</td></tr>
+    <tr><td>使用環境</td><td>端末はバラバラ。三脚なし・手持ち撮影。校内 Wi-Fi はあるがネット無しで動く</td><td>手ぶれ補正・タブレット対策・オフライン</td></tr>
+    <tr><td>3 つのモード</td><td>撮影・トラッキング／グラフ／解析。<b>a や g、周期の自動算出は不要</b>（生徒に考えさせたい）</td><td>タブの骨組みと「係数と R² まで」の線引き</td></tr>
+    <tr><td>実験の記録</td><td>実験 1〜10 を保持し、並べて・重ねて比較</td><td>「実験」の単位（あとで定義のずれが発覚 → 5 章）</td></tr>
+    <tr><td>参考にしたツールの操作</td><td>添付図のとおりに：Shift＋クリック、Ctrl＋Z、コマ送りボタン…</td><td>操作の作法をゼロから考えずに済んだ</td></tr>
+    <tr><td>精度に関わる注意</td><td>スマホ動画は可変フレームレート。<b>1 コマ＝1/30 秒と決め打ちしない</b>。シーク後は実際の位置を読み直す。.MOV が開けないときは具体的に案内</td><td>「コマの時刻を実測する」設計はここから</td></tr>
+    <tr><td>あなたへの要望</td><td>CDN を使わない。<b>作ったあと自分で動画を読ませて検証し、結果を報告する</b></td><td>毎回の自動テストの原点</td></tr>
+  </table>
+  <div class="two">
+    <figure><img src="{{fig2}}" alt="手描きの画面の絵"><figcaption><b>図 2　先生が最初に添えた画面の絵。</b>「操作説明エリア／操作エリア」は左、「動画」と「ストロボ画像」は右。この配置は最後まで変わりませんでした。</figcaption></figure>
+    <figure><img src="{{fig3}}" alt="参考にしたサイト"><figcaption><b>図 3　参考にしたページ（国際物理オリンピック 2023 記念協会の動画解析アプリ）。</b>赤枠が動画エリア。「動画の上を直接クリックして記録する」やり方を引きつぎました。</figcaption></figure>
+  </div>
+  <div class="tip">最初の指示に <b>目的・環境・絶対条件・参考にするもの・精度の注意・検証の頼み方</b> がそろっていたので、AI は 1 日目から「それらしいもの」ではなく「使えるもの」を出せました。
+  長く書くことより、<b>この 6 つがあるか</b>が大事です。</div>
+  <div class="pagenum">2</div>
+</div>
+
+
+<!-- ===== N2 最初のプロンプト全文 ===== -->
+<div class="page">
+  <h2><span class="no">2</span>いちばん最初のプロンプト（全文）</h2>
+  <p class="lead" style="margin:0 0 6px">2026 年 9 月 9 日。青い番号は、次のページで取り上げる「まねしたい書き方」です。</p>
+  <div class="prompt">
+<b>依頼内容</b><br>
+単一HTMLで動く「高校物理 動画解析ツール」を作ってください。ファイル名は motion-analysis.html です。<br>
+<b>目的</b> <span class="mk">①</span><br>
+私は高校教員です。生徒が各自の端末で、実験動画から物体の位置を読み取り、運動を解析できるようにするのが目的です。想定している題材は ①斜面を下る台車 ②投げ上げ・斜方投射 ③単振動 ④２物体の衝突（1円玉と１０円玉）です。<br>
+AIは一切使いません。インターネット接続も不要で、ブラウザの中だけで処理が完結すること。<span class="hl">動画も測定値もどこにも送信しないこと（生徒が映り込むため、ここは絶対条件です）。</span> <span class="mk">②</span><br>
+<b>使用環境</b><br>
+生徒の端末はバラバラです。Windowsのタブレット PC、iPad、Chromebook、スマートフォン。三脚はありません。手で持つか机に立てかけて撮影します。衝突の実験では、真上にタブレットを固定させて撮影します。校内Wi-Fiはありますが、ネットに繋がっていなくても動くようにしてください。GitHub Pages などに置いて配布します。画面の文言はすべて日本語。右上に「使い方」ボタンを置いてください。<br>
+<b>3つのモード（タブで切り替え）</b><br>
+<b>モード1　撮影・トラッキング</b>　動画ファイルの読み込み。加えて、対応している端末ではアプリ内でカメラを呼び出して撮影もできるようにする（非対応端末では、その機能を隠して「端末のカメラアプリで撮ってから読み込んでください」と案内する）。動画の中身を再生できるようにして、シークバーで解析する範囲の最初の時刻と最後の時刻を指定する。２物体に対応できるようにする。原点を設定／スケールを設定／時刻の原点／軸の向きを設定（斜面や斜方投射のため、x軸をドラッグして回転できること）。物体番号を指定して複数の物体を追跡できる。手でクリック（タップ）して1点ずつ記録するのが既定の方法。動画の上に原点と x軸・y軸を重ねて常時表示する。x軸だけがデフォルト。ストロボ合成画像の生成（PNG保存）。CSV出力とクリップボードへのコピー。画面右上に「色マーカーの自動追跡」チェックボックスを置く。OFFが既定。ONにしたときだけ自動追跡を行い、<span class="hl">結果は必ず手で修正できるようにする。</span><br>
+<b>モード2　グラフ</b>　x–t / y–t / v–t / a–t のグラフ。速度・加速度は中央差分。エネルギーの移り変わり（質量 m を入力 → 運動エネルギー・位置エネルギー・その和）。データとグラフをセットにしたExcel（.xlsx）を出力する。<br>
+<b>モード3　解析</b>　最小二乗フィット：直線・放物線・正弦関数・指数関数の4種類。フィット結果は係数と決定係数 R² を表示し、グラフに重ねて描く。<span class="hl">※ 傾きから a や g を出す、周期 T や角振動数 ω を出す、といった物理量の自動算出は不要です。そこは生徒に考えさせたいので、係数までで止めてください。</span> <span class="mk">③</span><br>
+<b>実験の記録（重要）</b>　測定結果を実験1、実験2 …… 実験10として記録・保持できるようにする。モード2とモード3では、複数の実験を比較表示できること。既定は「並べて表示」。選択式で「重ねて表示」に切り替えられる。実験ごとに名前とメモを付けられると助かります。<br>
+<b>操作方法（参考にしたい既存ツールの操作を踏襲）</b> <span class="mk">④</span>　添付図が参考にしているツールのUIです。1枚目が操作パネル、2枚目の赤枠が動画エリアです。以下の操作を同じように実装してください。「ファイルを選択」で動画を読み込み、fps を表示／「物体番号」の指定により複数物体の追跡／「原点設定」「スケール設定」を画面内で行う／「時刻の原点」：いま表示しているコマを t = 0 にする／トラッキングして1フレーム進む：Shift＋クリック／指定した値のフレーム進む：Ctrl（またはCmd）＋クリック／直前の記録点を取り消す：「↩ 取消」ボタン、または Ctrl＋Z／コマ送りボタン（←N ←10 ←8 ←5 ←1 ／ 1→ 5→ 8→ 10→ N→）とシークバー／右上のボタンでメニューの位置を「上」「左」に切り替えられる<br>
+<b>授業運用のための機能</b>　測定結果をJSONで保存・読み込み（続きから作業する／提出させる）。課題モード：教員が動画と設問を1つのファイルに同梱して配布。結果を1枚のレポート（PNG または PDF）に書き出す。サンプル動画を同梱する（Wi-Fiが不安定でも、撮影に失敗しても授業が止まらないように）。<br>
+<b>タブレット・スマホ対応</b>　大きなタップ領域、明確なUndo、Apple Pencil対応。<span class="hl">タップは2段階にしてください：タップ→その場所を拡大したルーペを表示→指やペンでドラッグして微調整→離して確定。指では正確に押せないためです。</span>ピンチでの拡大縮小。画面が狭いときはメニューを折りたたむ。<br>
+<b>精度に関わる注意（ここは慎重にお願いします）</b> <span class="mk">⑤</span>　スマホ動画は可変フレームレートです。<span class="hl">「1コマ＝1/30秒」と決め打ちせず、各コマの実測時刻を記録して使ってください。</span>コマ送りのシークはキーフレームの位置によってずれます。シーク後に実際の再生位置を読み直してから記録してください。iPhone/iPadで撮った .MOV（HEVC）は、Windows の Chrome では再生できないことがあります。再生できなかったときは黙って失敗せず、「この動画はこの端末では開けません。◯◯してください」と具体的に案内してください。手持ち撮影なので画面が揺れます。画面内の固定点を1つ指定して、そのずれで全点を補正する機能を入れてください（任意でON）。クリック精度が実距離で何cmに相当するかを表示してください（例：「±3px ＝ ±0.8cm」）。<br>
+<b>あなたへの要望</b> <span class="mk">⑥</span>　単一HTMLファイルで完結させてください。CDNは学校のネットワークで塞がれることがあるので、必要なライブラリはすべてHTML内に埋め込んでください。<span class="hl">作ったあと、実際に動画を読み込ませて動作確認し、CSVとExcelを開き直して、時刻・座標・速度・グラフが意図どおりか検証した結果を報告してください。</span>大量のコマを扱うため、動作が重くならない工夫をしてください。
+  </div>
+  <p class="note">※ 読みやすさのため、改行と一部の箇条書きをつめています。文言はそのままです。</p>
+  <div class="pagenum">3</div>
+</div>
+
+
+<!-- ===== N3 数字で見る ===== -->
+<div class="page">
+  <h2><span class="no">3</span>先生の指示を数字で見る ―― 保存されていた 35 回分・約 3.8 万字</h2>
+  <p>先生は指示の文をほぼ毎回保存していました（最初の 3,000 字とは別に 35 回分・38,082 字）。数えてみると、こんな特徴があります。</p>
+  <div class="two">
+    <div>
+      <table>
+        <tr><th>数えたもの</th><th style="text-align:right">回数</th></tr>
+        <tr><td>1 回の指示の長さ（中央値）</td><td style="text-align:right">約 1,100 字</td></tr>
+        <tr><td>いちばん長い 1 回</td><td style="text-align:right">2,710 字（Word プリントの注文）</td></tr>
+        <tr><td>「モード①」「モード②」など見出しで分けた回</td><td style="text-align:right">63 か所</td></tr>
+        <tr><td>「〜に名称変更」「〜に変更」</td><td style="text-align:right">45 回</td></tr>
+        <tr><td>「添付図」「添付の動画」を指す</td><td style="text-align:right">31 回</td></tr>
+        <tr><td>「やめて」「消して」「不要」「カット」</td><td style="text-align:right">31 回</td></tr>
+        <tr><td>「光らせて」「オレンジに」</td><td style="text-align:right">30 回</td></tr>
+        <tr><td>AI への質問（教えて・どう思う・できますか）</td><td style="text-align:right">26 回</td></tr>
+        <tr><td>「確認して」</td><td style="text-align:right">21 回</td></tr>
+        <tr><td>「#重要」「##重要」</td><td style="text-align:right">17 回</td></tr>
+        <tr><td>「表にして」「リストにして」</td><td style="text-align:right">13 回</td></tr>
+        <tr><td>「バグ」</td><td style="text-align:right">7 回</td></tr>
+        <tr><td>「フローチャート」</td><td style="text-align:right">5 回</td></tr>
+        <tr><td>「3 回確認してください」</td><td style="text-align:right">2 回</td></tr>
+      </table>
+    </div>
+    <div>
+      <p><b>読み取れること</b></p>
+      <ul>
+        <li><b>「足す」より「直す・消す・名前を変える」が多い</b>。名称変更 45 回、消す 31 回。機能を足すのは前半だけで、後半は言葉と配置の調整です。</li>
+        <li><b>見出しで場所を分ける</b>。「モード①／②／③」「2. 解析する時間範囲」のように、どの画面の話かを先に書いてから本文。AI が場所を取りちがえません。</li>
+        <li><b>絵を 31 回使った</b>。「添付図１の赤丸の位置に」が定番の言い方。</li>
+        <li><b>「光らせて」が 30 回</b>。「次にここを押さないと進めない場所は必ず光らせる」が、この教材のいちばんの設計方針でした。</li>
+        <li><b>4 回に 3 回は質問が混じる</b>。「できますか？」「あなたはどう思う？」「案を出して」。命令だけでなく相談も多い。</li>
+        <li><b>「#重要」は 17 回だけ</b>。全部に付けると効かなくなる。バグや設計のずれのときに限って使っています。</li>
+      </ul>
+      <div class="say"><span class="who">先生（1 回の指示の書き出し・実例）</span>モード①<br>・最初に動画を張り付ける前に、動画エリアに「動画ファイルを選択」から読み込んでください とあるのを、「動画ファイルを選択」から読み込んでください　改行　このエリアにドラッグ＆ドロップでもOK　と表示。<br>・2. 解析する時間範囲　を　2. 解析する時間範囲の指定　に名称変更。</div>
+    </div>
+  </div>
+  <div class="tip">指示は「<b>どこの・何を・どうする</b>」の順で、1 行 1 件。上の実例のように「A を B に変更」と書けば、AI は迷いません。長い文で気持ちを説明するより、短い行を並べる方が伝わります。</div>
+  <div class="pagenum">4</div>
+</div>
+
+
+<!-- ===== N4 指示の型 ===== -->
+<div class="page">
+  <h2><span class="no">4</span>指示の「型」10 種 ―― 実際の言葉から</h2>
+  <table>
+    <tr><th style="width:11em">型</th><th>実際の言葉（先生）</th><th style="width:14em">なぜ効くか</th></tr>
+    <tr><td>① 目的と条件を先に</td><td>「私は高校教員です。生徒が各自の端末で…するのが目的です」「ここは絶対条件です」</td><td>AI が細部を自分で判断できる基準になる</td></tr>
+    <tr><td>② 置きかえ型</td><td>「時刻の原点（t = 0）ボタンは、この時刻をt = 0 に名称変更」</td><td>解釈の余地がない。45 回使われた</td></tr>
+    <tr><td>③ 場所を絵で</td><td>「添付図１の赤丸の位置に」「添付図３赤線の位置に移動し」</td><td>言葉より速く正確</td></tr>
+    <tr><td>④ 再現の仕方つきのバグ報告</td><td>「この時刻をt = 0 と この時刻まで解析 を連続で押すと大きな不具合が生じる」「添付の動画を見てください」</td><td>原因に一発でたどり着く</td></tr>
+    <tr><td>⑤ 認識合わせ</td><td>「##重要 新しい実験 の定義が、あなたとずれていると感じるので確認します。私は、動画一つを取り込んで、解析して… が終わると１つの実験が終了だと思っています」</td><td>ずれたまま作り続けるのを防ぐ</td></tr>
+    <tr><td>⑥ 相談・案出し</td><td>「コマを少なくしたときにもきれいに見せるにはどうしたらいいかな？案を出して」「あなたはどう思う？」「あなたの測定値の accuracy はどの程度あるの？」</td><td>AI の知識を引き出せる。決めるのは自分</td></tr>
+    <tr><td>⑦ 全部さがして</td><td>「変なひらがなを用いているところがないかをチェックして。判断に迷うところはリストにして私の判断を仰いで」</td><td>同じ種類の直しを 1 回で終える</td></tr>
+    <tr><td>⑧ 設計の原則を渡す</td><td>「とにかく、『次にここをタップしないと先に進めない』場所があれば、光らせるようにして」「以上を実験データのグラフ化のスキルとして、まとめて覚えておいて」</td><td>個別の指示が減る。以後 AI が自分で当てはめる</td></tr>
+    <tr><td>⑨ 図で整理させる</td><td>「一度フローチャートを作って整理して」「他の、動画画面に大きく言葉が表示されるケースを一度リストにして、基本的に全て同じ仕様にして」</td><td>矛盾は図にしないと見えない</td></tr>
+    <tr><td>⑩ できていない、と言う</td><td>「先ほどの指示…ができていません。何回も指示しています。3回確認してください」「前のほうが良かった。もとに戻して」</td><td>AI は指摘されるまで「できた」と思っている</td></tr>
+  </table>
+  <div class="say"><span class="who">先生（⑥ の例・実際の言葉）</span>1コマづつにするとあっという間に表が埋まっていきますが、何コマ目までデータをとれるの？万が一多いデータ数だと負荷がかかってしまうならば、簡易モードとして200コマまでのデータをとるモードと精密モードとして2000コマ分のデータを取るモードを作り、分ける、などが必要ですか？あなたはどう考えますか？</div>
+  <div class="say ai"><span class="who">AI（要約）</span>実測すると 2,000 コマでも表の描き直しは十数 ms なので、モードを分ける必要はありません。重いのは「コマの時刻を測る」処理だけなので、そこに時間の上限と進みぐあいの表示を付けます。</div>
+  <div class="warn">⑥ のように AI に相談すると、AI は「モードを分けない方がいい」と<b>先生の案に反対する</b>こともあります。反対されたときは、理由（実測した数字）を出させて判断してください。理由の無い反対や、理由の無い賛成は信じないこと。</div>
+  <div class="pagenum">5</div>
+</div>
+
+
+<!-- ===== N5 言葉が育つ ===== -->
+<div class="page">
+  <h2><span class="no">5</span>一つの言葉が育っていく ―― 同じ場所への指示を並べる</h2>
+  <p>保存された指示を時間順に並べると、同じボタンや文が何度も直されているのが分かります。1 回で決まらないのが普通です。</p>
+  <table>
+    <tr><th style="width:9em">場所</th><th>指示の流れ（古い → 新しい）</th></tr>
+    <tr><td>解析の始まりを決めるボタン</td><td>「ここを最初に」（参考ツール）→「時刻の原点（t=0）ボタンにする。その下に説明として『この画像の時刻を時間の原点（t=0）に』」→「この時刻をt = 0 に名称変更」→「再生ボタンを押したのちは、この時刻をt = 0 をオレンジにする。右上に吹き出しで『解析をはじめたいコマで押す』」→「吹き出しがボタンと被って邪魔。ボタンの左か右から矢印を向けて、薄い色に」</td></tr>
+    <tr><td>シークバーの案内</td><td>「シークバーをドラッグして時間を選ぶと楽です と吹き出しで表示」→「吹き出しにして、文字分の大きさだけでよい。今は横幅いっぱいで邪魔」→「下の時間バーをドラッグして…に変更」→「吹き出しはシークバーの下に置き、『上の時間バーを…』と表示」→「『…選ぶと楽です』は『…選んでください』に」</td></tr>
+    <tr><td>自動追跡の入口</td><td>「色マーカーの自動追跡 チェックボックスを右上に。OFF が既定」→「色を取得 を『始点を設定し色を取得』に。クリックされたら探索半径を表示し、ドラッグで変えられるように」→「２物体のときに自動追跡は果たしてできるのか？一度フローチャートを作って整理して」→「チェックが OFF なら手でトラッキングにいきなり入り、ON なら『手でクリックして記録／色で自動追跡』の 2 択に。絶対にそうしてほしい」→「『追いかけたい物体を…』の案内は 2 倍の大きさで、最小化ボタン付きで」→「やたら大きい。ほかと同じ大きさに」</td></tr>
+    <tr><td>「実験」の単位</td><td>最初の仕様「実験 1〜10 を記録・保持」→「＋新しい実験 ボタンを表示して」→「##重要 新しい実験の定義が、あなたとずれている…動画一つを取り込んで解析し終わると 1 つの実験が終了」→「名前・メモの欄と＋新しい実験は無くす。保存するときに名前を付けてもらう」→「別の動画を選んだら『ここまでの実験を実験○として記録しますか？』と聞く」→「②を開いたら『実験2を開始する』ボタン。押したら『グラフを記録しますか？』のあと動画選択へ」</td></tr>
+    <tr><td>a の出し方</td><td>「a–t がギザギザになる理由を理解しました…案を出して」→「a の出し方は 2 通り用意」→「既定は『3つ離す』がいいかな。自動で最適なものを選べる？」→「『離す数』『3つ離す』は日本語的に理解しづらい。『Δt の幅』の方がいいかな？」→「そもそも Δt の定義は N コマ分という認識で合っていますか？」→「点が 7 個だと自動で 5Δt になり a が 1 点になる。既定はやっぱり Δt で」</td></tr>
+  </table>
+  <div class="tip">同じ場所を 5 回直すのは、失敗ではありません。<b>使ってみて初めて分かること</b>が毎回あるからです。
+  ただし「自動追跡の案内を 2 倍に → やっぱり元に」のように、<b>見た目の注文は一度画面で見てから決める</b>と往復が減ります。</div>
+  <div class="warn">「実験」の単位のように、<b>言葉の意味が人と AI でずれたまま</b>進むと、あとで大きく作り直すことになります。
+  変だと感じたら「私はこう思っている。あなたは？」と早めに確かめること。</div>
+  <div class="pagenum">6</div>
+</div>
+
+
+<!-- ===== 3 最初の版 ===== -->
+<div class="page">
+  <h2><span class="no">6</span>最初の版は、その日のうちに動いた ―― でも穴だらけ</h2>
+  <figure class="h70"><img src="{{fig4}}" alt="1 日目の版"><figcaption><b>図 4　1 日目（9 月 9 日）の版。</b>動画を読み、原点とスケールを決め、クリックで点を打ってグラフにする、という骨組みはこの時点でできています。ただし操作説明は 6 行の文章だけ、案内も光る場所もありません。</figcaption></figure>
+  <p>AI は「まず動くもの」を出すのがとても速いです。1 日目の終わりには、本物の動画（円運動の台車）で点を打ってグラフが出ていました。
+  ところが、実際に使ってみると、次のようなことが次々に見つかります。</p>
+  <ul>
+    <li>表の速さ v が、位置と同じ行に書かれていて、記録タイマーの読み方（<b>2 点の間</b>に v を書く）と合わない</li>
+    <li>2 つ目の縦軸を選ぶ欄が、グラフから離れた下の方にある（図 5）</li>
+    <li>ボタンの名前が「フィット」「離す数」など、生徒には意味が分からない</li>
+    <li>スマホの動画は 1 コマの時間が一定でないのに、「1 コマ＝1/30 秒」と決め打ちしていた</li>
+  </ul>
+  <div class="two">
+    <figure><img src="{{fig5}}" alt="自由選択グラフの指摘"><figcaption><b>図 5　2 日目、先生が赤で囲んだ場所。</b>縦軸 2 の選択が下の段に離れていて、右には黒い空白。「縦軸 2 の欄はグラフの右に」と直しました。</figcaption></figure>
+    <figure><img src="{{fig6}}" alt="表の指摘"><figcaption><b>図 6　表の指摘。</b>「−0.002 は前の行との間の速さなのに、その行に書いてある」。以後、v は行と行の間に書き、a はまた同じ行、という記録タイマーと同じ書き方になりました。</figcaption></figure>
+  </div>
+  <div class="tip">最初から完ぺきを求めない。<b>「まず動くものを出して」→「実物で使って直す」</b>のくり返しがいちばん速い。
+  この教材も、42 回のうち最初の 8 回は 1 日で終わっています。</div>
+  <div class="pagenum">7</div>
+</div>
+
+
+<!-- ===== 4 絵で伝える ===== -->
+<div class="page">
+  <h2><span class="no">7</span>置き場所や見た目の注文は、画面に赤丸を描いて渡す</h2>
+  <p>言葉で「右上のあのボタンを…」と説明するより、<b>画面のスクリーンショットに丸や矢印を描いて貼る</b>方が、ずっと速く正確に伝わります。先生は 6 日間で 21 枚の図を渡しました。</p>
+  <figure class="h70"><img src="{{fig7}}" alt="上の段の並べ替え"><figcaption><b>図 7　4 日目、上の段の作り直しの指示。</b>紫＝「実験の選び方はタブの右へ」、オレンジ＝「消去・リセット・登録は右端にまとめる」、×＝「名前とメモの欄は要らない」、黄＝「メニュー：左 は教員用の隣へ」。1 枚の絵で 5 つの指示が伝わっています。</figcaption></figure>
+  <figure class="h50"><img src="{{fig8}}" alt="③のレイアウトの指示"><figcaption><b>図 8　③ 解析のレイアウト指示。</b>「フィッティングの結果は、グラフの下ではなく右のここに」。矢印 1 本で十分でした。</figcaption></figure>
+  <div class="say"><span class="who">先生（実際の言葉）</span>モード③ レイアウト…左にグラフ、その右にフィットする数式・フィットボタン、右下にフィッティング結果、その右にフィッティング残差のプロット。自由選択グラフも同様</div>
+  <div class="tip">絵と一緒に「<b>どこを・どうしたいか</b>」を短い文で添えると、AI は絵の意味を取りちがえません。
+  絵だけだと「赤丸＝消す？直す？」で迷います。</div>
+  <div class="pagenum">8</div>
+</div>
+
+
+<!-- ===== 5 本物の実験 ===== -->
+<div class="page">
+  <h2><span class="no">8</span>本物の実験で使ってみると、物理の問題が見えてくる</h2>
+  <div class="two n32">
+    <figure class="h50"><img src="{{fig9}}" alt="台車の実験"><figcaption><b>図 9　3 日目、レールを走る台車の動画で試したところ。</b>先生は自分で撮った動画（円運動・台車・落下）を何本も読ませて、実際の授業と同じ手順で使いました。</figcaption></figure>
+    <figure><img src="{{fig10}}" alt="ものさしと球"><figcaption><b>図 10　先生が撮った、ものさしの上を転がる球の写真。</b>生徒用プリントの「ストロボ写真」に使いました。</figcaption></figure>
+  </div>
+  <p>本物のデータで分かった、いちばん大きな問題は<b>加速度 a のグラフがギザギザになる</b>ことでした。原因は物理そのものです。</p>
+  <div class="say"><span class="who">先生（要約）</span>円運動などで a–t グラフが荒れる。進むフレーム数 N の目安と、a の出し方を何種類か用意して。</div>
+  <div class="say ai"><span class="who">AI（要約）</span>クリックが 1 px ずれると、v は「ずれ ÷ Δt」、a は「ずれ ÷ Δt²」で効くので、Δt が短いほど a が荒れます。
+  対策を 3 つ用意します：①点と点の間が画面の横幅の 2〜3 % 以上になるように N を選ぶ、②a に使う時間の幅を Δt・3Δt・5Δt から選べるようにする、③v–t の傾きから a を出す。
+  「クリックが 1 px ずれると a は約 ○ m/s² ずれます」の目安も画面に出します。</div>
+  <figure class="h60"><img src="{{fig11}}" alt="補足タブ"><figcaption><b>図 11　「補足」タブ「誤差の要因の例 ― なぜグラフがずれるのか、どうすれば防ぐことができるのか」。</b>同じ見本データから a を 3 通りの方法で出して並べ、ばらつきのちがいを生徒が自分の目で確かめられるようにしました。</figcaption></figure>
+  <div class="warn">AI が最初に書いた説明には「幅を広げるとずれは 1/9 になる」とありましたが、あとで検算すると<b>アプリの式では約 1/6</b>でした。見本グラフの式とアプリの式がちがっていたのです。
+  <b>数字の入った説明は、必ず計算で確かめさせる</b>こと。「合ってる？」ではなく「この式でこの倍率になるか計算して」と聞くと、AI は本気で検算します。</div>
+  <div class="pagenum">9</div>
+</div>
+
+
+<!-- ===== 6 バグ ===== -->
+<div class="page">
+  <h2><span class="no">9</span>「固まった」「進めない」―― 致命的なバグは、再現の仕方を書いて伝える</h2>
+  <figure class="h60"><img src="{{fig12}}" alt="固まった画面"><figcaption><b>図 12　5 日目の朝、先生から届いた図。</b>「動画を読み込んだだけで固まりました」。コマごとの時刻を測る処理が、長い動画で終わらなくなっていました。</figcaption></figure>
+  <div class="say"><span class="who">先生（実際の言葉）</span>#重要 添付図１のように、動画を読み込んだだけで固まりました…改善してください。</div>
+  <div class="say ai"><span class="who">AI（要約）</span>原因は「コマの時刻を測り直す処理」に締め切りが無かったことです。①測る処理に時間の上限を付けて途中でも先に進める、②進みぐあいを表示する、③撮れぐあいの診断は 30 ms を超えたら打ち切る、の 3 つで直しました。</div>
+  <p>もう 1 つ、最終日に見つかった致命的なバグはこうでした。</p>
+  <div class="say"><span class="who">先生（実際の言葉）</span>#重要 致命的なバグ　色マーカーの自動追跡 チェックボックスなしの状態で、4 トラッキング に進んだ時に、動画エリアに トラッキング開始 が表示されない時があります。…その後 ３にもどってから 4 に来ても、同じでした。</div>
+  <div class="say ai"><span class="who">AI（要約）</span>前回入れた「4 に入ったら N を聞く」が原因でした。質問が 3 の案内に置きかわって消えると、内部では「質問中」のまま N が未決定扱いになり、開始ボタンが出なくなっていました。「質問が画面に無ければ出し直す」ように直しました。</div>
+  <div class="tip">バグの報告で効くのは 3 つ：<b>どうすると起きるか</b>（自動追跡 OFF で 4 に進む）、<b>何が起きるか</b>（開始ボタンが出ない）、<b>試したこと</b>（3 に戻っても同じ）。
+  「なんか変」では AI は直せません。この報告は一発で原因にたどり着きました。</div>
+  <div class="warn">このバグは、<b>AI が前の回に足した機能が原因</b>でした。新しい機能を足すたびに、前からある機能が壊れることがあります。
+  だから先生は毎回「テストを 2 回連続で全部通してから納品」をルールにしました（最終的に 666 項目）。</div>
+  <div class="pagenum">10</div>
+</div>
+
+
+<!-- ===== 7 表で提案 ===== -->
+<div class="page">
+  <h2><span class="no">10</span>迷うことは、AI に「表」で出させて、人間が決める</h2>
+  <p>AI に決めさせると、あとで「なぜこうなっているの？」と説明できなくなります。先生は何度も「整理して表にして、私の判断を仰いで」と頼みました。</p>
+  <div class="say"><span class="who">先生（実際の言葉）</span>#重要 動画エリア上部に似たような言葉が表示される時がありますが、ユーザーはどちらを読めばいいのか混乱します。…似たような例がいくつかあると思うので、整理してまとめて私の判断を仰いで。</div>
+  <p>AI が出した表（一部）：</p>
+  <table>
+    <tr><th>場面</th><th>同時に出ていたもの</th><th>AI の案</th><th>先生の判断</th></tr>
+    <tr><td>開いた直後</td><td>真ん中「ここをクリックして動画を選択」＋上の吹き出し（同じ文）＋左カードの赤い文（同じ文）</td><td>上の吹き出しを消す</td><td>そのとおりに</td></tr>
+    <tr><td>4 開始直後</td><td>上の吹き出し「動画の中の物体をクリック…」＋下の黒い通知（同じ意味）</td><td>通知（toast）をやめる</td><td>「消してみて」</td></tr>
+    <tr><td>2（t=0 の前）</td><td>上の吹き出し＋シークバーの上の文＋ボタン横の吹き出し</td><td>役割がちがうので残す</td><td>そのまま</td></tr>
+  </table>
+  <p>別の AI（Gemini）にページを見せて感想をもらったときも、その指摘を表で仕分けさせました。</p>
+  <table>
+    <tr><th>Gemini の指摘</th><th>判定</th><th>理由</th></tr>
+    <tr><td>プログラムが途中で切れていてエラーになる</td><td>勘違い</td><td>Gemini はファイルの先頭 19 % しか読めていなかった</td></tr>
+    <tr><td>シークバーの t=0 の印が小さくて指でつかめない</td><td>正しい</td><td>当たり判定を 44 px に広げた（見た目はそのまま）</td></tr>
+    <tr><td>サンプル動画のメニューが空</td><td>半分正しい</td><td>サーバーにまだ置いていないだけ → 無いときはメニューごと隠す</td></tr>
+  </table>
+  <div class="tip"><b>案を出すのは AI、決めるのは自分</b>。表にすると「何を決めていないか」が一目で分かり、決めたことが記録に残ります。
+  先生は「あなたに提案や確認事項を表で出してもらったのが大事だった」と振り返っています。</div>
+  <div class="warn">AI 同士の意見も、そのまま信じない。Gemini の「エラーになる」は、読み込みの都合による勘違いでした。
+  <b>別の AI の指摘は、元の AI に事実で反論させる</b>と仕分けが速いです。</div>
+  <div class="pagenum">11</div>
+</div>
+
+
+<!-- ===== 8 フローチャート ===== -->
+<div class="page">
+  <h2><span class="no">11</span>進み方をフローチャートにして、矛盾をつぶす</h2>
+  <p>機能が増えると「2 に戻ってから 4 に来たら？」「別の動画を読んだら？」のように、進み方の組合せが爆発します。最終日、先生はこう頼みました。</p>
+  <div class="say"><span class="who">先生（実際の言葉）</span>一度、html ファイルを選んでからモード①→②→③→④とすすむチャートマップを作ってみてください。モード①だけでも、途中でステップ 4 から 2 に戻るなど、たくさんの進み方があります。それらを一度整理し、どの進み方でも矛盾がないようにしてください。</div>
+  <figure class="h150"><img src="{{fig13}}" alt="進み方のフローチャート"><figcaption><b>図 13　AI が作った「進み方マップ」の本線。</b>オレンジ＝動画の上で「はい／いいえ」を聞く所。これとは別に「戻る道」（もう一度・範囲を解除・点をリセット・測定を消去・別の動画…）を表にして、行ごとに「何が消え、何が残り、途中の質問をどう扱うか」を決めました。</figcaption></figure>
+  <p>図にしたことで、AI 自身が 4 つの矛盾を見つけて直しました：「もう一度 2」で 4 を離れても N の質問が残る／「このままでよい→次へ」だとトリミングの質問が出ない／範囲を解除しても途中の質問の旗が残る／トリミング中に 3 の案内が出る。</p>
+  <div class="tip">「全部の進み方で矛盾がないか」は、人間が頭の中だけで確かめるのは無理です。<b>図と表を AI に作らせ、それを見ながら人間が気になる道を指さす</b>。この役割分担がうまくいきました。</div>
+  <div class="pagenum">12</div>
+</div>
+
+
+<!-- ===== 9 言葉 ===== -->
+<div class="page">
+  <h2><span class="no">12</span>言葉を直す ―― 生徒に分かる日本語になるまで</h2>
+  <p>動くようになってからの指示の半分は、<b>言葉</b>についてでした。AI は正確でも、生徒に分からない言い方をします。</p>
+  <table>
+    <tr><th>AI の言い方</th><th>先生の指摘</th><th>直したあと</th></tr>
+    <tr><td>離す数 1／2つ離す／3つ離す</td><td>「離す」は日本語的に理解しづらい。ほかの場所も全部直して</td><td>a に使う時間の幅：Δt（となりの v との差 ÷ Δt）／3Δt／5Δt</td></tr>
+    <tr><td>フィットする</td><td>スケールフィットと混同する</td><td>フィッティングする</td></tr>
+    <tr><td>その場にとどまる</td><td>ボタン名？意味が分からない</td><td>同じ位置に点を打つ</td></tr>
+    <tr><td>やめる</td><td>スケールの案内から「やめる」を消して「この表示を最小化」に</td><td>この表示を最小化 ⇄ もう一度表示</td></tr>
+    <tr><td>Δt</td><td>「そもそも Δt の定義は 1 コマ分ではなく N コマ分、という認識で合っていますか？」</td><td>「Δt ＝ 記録した点の間隔（ふつう N コマ分、今回の解析では 5 コマ＝0.165 秒）という意味です」と画面に書く</td></tr>
+  </table>
+  <div class="say"><span class="who">先生（実際の言葉）</span>変なひらがなが多いです。「たとえば」などは漢字に直して。</div>
+  <figure class="h70"><img src="{{fig14}}" alt="はい／いいえの案内"><figcaption><b>図 14　動画の上で「はい／いいえ」を聞きながら進む案内（左上：N の質問、右上：決めたあと、下：色で自動追跡の案内）。</b>「原点はこの位置でいいですか？ はい／いいえ」の形は、先生が文面まで指定しました。最初 AI は自動追跡の案内を文字 2 倍で出しましたが、「やたら大きい」と言われてほかと同じ大きさに戻しています。</figcaption></figure>
+  <div class="tip">画面の言葉は、<b>頼んだ人が最後まで責任をもつ</b>。AI は「軌跡」を「奇跡」と書いた先生の入力をそのまま使わず「軌跡」に直して報告する、というような細かい判断もしますが、それでも最終チェックは人間です。</div>
+  <div class="pagenum">13</div>
+</div>
+
+
+<!-- ===== 10 説明と実装 ===== -->
+<div class="page">
+  <h2><span class="no">13</span>説明書きと中身が合っているか、最後に必ず確かめる</h2>
+  <p>機能を変えるたびに、ヘルプ（使い方と時間算出法）・左の操作説明・生徒用プリント・レポート出力・Excel 出力が古いままになります。先生は毎回こう頼みました。</p>
+  <div class="say"><span class="who">先生（実際の言葉）</span>最後に、使い方と時間算出法 や、操作説明、ワードの生徒向け説明書類 は、今の仕様と 100% 合っているか最終確認して。</div>
+  <div class="two n32">
+    <figure><img src="{{fig15}}" alt="レポート出力の修正"><figcaption><b>図 15　レポート PDF のグラフ。</b>最終日の指摘「左の v–t と a–t が、なぜか vx と vy を重ねた表示になっている」。画面は直っていたのに、出力の方が古いままでした。左を vx–t・ax–t だけに直しました。</figcaption></figure>
+    <figure><img src="{{fig16}}" alt="生徒用プリント"><figcaption><b>図 16　生徒用プリント（Word、A4 4 枚）の 1 ページ目。</b>アプリの機能が変わるたびに、5 章「分析の流れ」の図とタブの説明を作り直しました。</figcaption></figure>
+  </div>
+  <div class="say"><span class="who">先生（実際の言葉）</span>力学的エネルギーを解析する を一切やっていないのに、質量等の決めてもいない数値が出力されています。これらは、力学的エネルギーを解析するをやったときだけに限定して出力してください。</div>
+  <div class="warn"><b>画面が直っても、出力ファイルは別物</b>。レポート・Excel・CSV・プリントは、実際に出して開いて見ないと分かりません。
+  「やっていない解析の値を出さない」も、言われるまで AI は気づきませんでした。</div>
+  <div class="tip">「100% 合っているか確認して」は魔法の言葉ではありません。AI は自分の書いた説明を信じがちなので、
+  <b>「ボタン名を変えたら古い名前を全部さがして」</b>のように、確かめ方まで指定すると確実です。</div>
+  <div class="pagenum">14</div>
+</div>
+
+
+<!-- ===== 11 変わり方まとめ ===== -->
+<div class="page">
+  <h2><span class="no">14</span>6 日間で、ページはこう変わった</h2>
+  <table>
+    <tr><th style="width:9em">日</th><th>回</th><th>おもな変化</th></tr>
+    <tr><td>9 月 9 日（1 日目）</td><td>1〜8</td><td>骨組みが動く。原点・スケール・クリックで記録・グラフ・CSV・ストロボ画像。実測したコマの時刻を使う仕組み</td></tr>
+    <tr><td>9 月 10 日（2 日目）</td><td>9〜16</td><td>手順 1〜5 のカードと「いまここ」の光り方。表の書き方を記録タイマーと同じに。自由選択グラフ。v・a の出し方を決める</td></tr>
+    <tr><td>9 月 11 日（3 日目）</td><td>17〜19</td><td>2 物体の運動。生徒のでたらめな操作を試すテスト（chaos）。読み込みの速さの実測と対策。4 の入口を「手で／色で自動追跡」の 2 択に</td></tr>
+    <tr><td>9 月 12 日（4 日目）</td><td>20〜31</td><td>上の段をタブにまとめる。小さいタブレット対策。コマ送りの 1 段化。スケールフィット。残差のプロット。レポートの作り直し。撮影ガイド。生徒用プリント</td></tr>
+    <tr><td>9 月 13 日（5 日目）</td><td>32〜39</td><td>固まる件・fps の確認・40 秒制限。3 を「はい／いいえ」で進む形に。④ストロボと補足のタブ。軸クリックで範囲。「離す」廃止。N の質問。自動追跡の案内</td></tr>
+    <tr><td>9 月 14 日（6 日目）</td><td>40〜42</td><td>開始ボタンが出ないバグ。トリミングの確認。進み方マップで矛盾を直す。レポート・Excel の系列。「実験 2 を開始する」</td></tr>
+  </table>
+  <figure class="h60"><img src="{{fig17}}" alt="完成した②グラフ"><figcaption><b>図 17　完成した ② グラフ。</b>1 日目の図 4 と見くらべてください。点をクリックすると座標が出て同じ時刻の線が他のグラフにも引かれる、目盛りをクリックすると範囲を数で決められる、など「読み取る」ための機能はすべて先生の指示で足されたものです。</figcaption></figure>
+  <div class="tip">42 回のうち、機能を「足す」指示は前半に集中し、後半は「言葉」「置き場所」「矛盾」「説明との一致」が大半です。
+  <b>作るより整える方に時間がかかる</b>のは、AI と作るときの普通の姿です。</div>
+  <div class="pagenum">15</div>
+</div>
+
+
+<!-- ===== N6 AI の側から ===== -->
+<div class="page">
+  <h2><span class="no">15</span>AI の側から見た 6 日間 ―― うまくいったこと・できなかったこと</h2>
+  <h3>AI が毎回やっていたこと</h3>
+  <ul>
+    <li><b>直したら必ずテスト</b>：ブラウザを自動で動かして 666 項目を確かめ、2 回連続で全部通ってから納品。生徒のでたらめな操作（読み込み中に連打、範囲の外をクリック…）だけを試すテストも別に 57 項目。</li>
+    <li><b>設計メモを残す</b>：回ごとに「何を・なぜ・どう直したか」を表にして保存。次の回はそれを読んでから始める。</li>
+    <li><b>決めごとを覚える</b>：「表の v は行と行の間に書く」「次に押す所は光らせる」のような先生の方針を記録し、新しい機能にも自分で当てはめる。</li>
+    <li><b>見た目を自分で確認</b>：直すたびにスクリーンショットを撮って、重なり・はみ出しを見る。</li>
+  </ul>
+  <h3>それでも起きた失敗（先生に指摘されたもの）</h3>
+  <table>
+    <tr><th style="width:15em">失敗</th><th>何が起きたか</th><th style="width:13em">教訓</th></tr>
+    <tr><td>同じ指示を何回も</td><td>「再生を押したら t=0 をオレンジに」「x 軸の矢印を大きく」が 2〜3 回言われるまで直らなかった（「3回確認してください」）</td><td>「直した」と報告する前に、画面で確かめる</td></tr>
+    <tr><td>言葉の意味のずれ</td><td>「新しい実験」を AI は「もう 1 つの測定セット」と解釈し、先生は「動画 1 本＝実験 1 つ」だった</td><td>言葉の定義は早めに確かめる</td></tr>
+    <tr><td>足した機能が前を壊す</td><td>「4 で N を聞く」を足したら、開始ボタンが出なくなる致命的バグ</td><td>新機能ごとにテストを足す</td></tr>
+    <tr><td>説明の数字が違う</td><td>見本グラフの式がアプリの式と違い「ずれは 1/9」と書いていた（実際は約 1/6）</td><td>数字の入った説明は検算する</td></tr>
+    <tr><td>画面は直っても出力は古い</td><td>レポートの v–t に vy が重なったまま。やっていないエネルギー解析の質量を Excel に出していた</td><td>出力は実際に出して開く</td></tr>
+    <tr><td>やりすぎ</td><td>案内の文字を 2 倍に、平仮名を増やしすぎ、toast と吹き出しの二重表示</td><td>「もっと大きく」は 1.3 倍から。同じ文を 2 か所に出さない</td></tr>
+  </table>
+  <div class="tip">AI は<b>疲れずに何百回でも確かめる</b>のが得意で、<b>「言われていないこと」の判断</b>が苦手です。
+  テストと記録は AI に任せ、判断と言葉の意味は人間が持つ。この分担で 6 日間が回りました。</div>
+  <div class="pagenum">16</div>
+</div>
+
+
+<!-- ===== 12 まとめ ===== -->
+<div class="page">
+  <h2><span class="no">16</span>まとめ ―― AI と何かを作るときの 10 か条</h2>
+  <ol>
+    <li><b>絶対に守ることを最初に書く</b>（送らない・使わない・勝手に計算しない）。してほしくないことも。</li>
+    <li><b>絵で頼む</b>。手描きの画面、参考サイト、赤丸を付けたスクリーンショット。</li>
+    <li><b>まず動くものを出させ、本物のデータで使って直す</b>。最初の版は穴だらけで当たり前。</li>
+    <li><b>バグは「どうすると・何が・試したこと」</b>で報告する。「なんか変」では直らない。</li>
+    <li><b>迷うことは表にさせて、人間が決める</b>。決めたことが記録に残る。</li>
+    <li><b>進み方はフローチャートにする</b>。矛盾は図にしないと見えない。</li>
+    <li><b>数字の入った説明は計算で確かめさせる</b>。AI は自信たっぷりに間違える。</li>
+    <li><b>言葉は使う人（生徒）の言葉に</b>。専門用語には実際の数値を添える。</li>
+    <li><b>説明書きと中身の一致を最後に確認</b>。画面が直っても出力は古いまま、が起こる。</li>
+    <li><b>直したら壊れていないか、毎回テストで確かめる</b>。新しい機能が前の機能を壊す。</li>
+  </ol>
+  <h3>生徒のみなさんへ ―― 気をつけてほしいこと</h3>
+  <ul>
+    <li>AI が出したものを<b>そのまま提出しない</b>。この記録でも、AI の説明の数字（1/9）は間違っていました。確かめたのは人間です。</li>
+    <li><b>人が映った動画や、友だちの名前・顔をAIに送らない</b>。このアプリが「動画をどこにも送らない」設計なのは、そのためです。</li>
+    <li>AI は「知らない」と言わずに、それらしい答えを書くことがあります。<b>「◯◯のとき△△になるか確認して」</b>と具体的に聞くと、本気で調べ直します。</li>
+    <li>うまくいかないときは、<b>自分の中の「こうすればいい」を先に言う</b>。AI は方法まで指定された方が正確に動きます。</li>
+    <li>「前のほうが良かった」「もとに戻して」は、いつでも使える言葉です。</li>
+  </ul>
+  <div class="say"><span class="who">先生（この記録を頼んだときの言葉）</span>私個人的には、あなたに私への提案や確認事項を表で出力してもらったり、フローチャートで確認したりが大事だった気はする。</div>
+  <p class="lead" style="margin-top:14px">できたアプリ：https://physics-chiba.github.io/physics-site/experiment/motion-analysis.html</p>
+  <div class="pagenum">17</div>
+</div>
+
+<!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
+
+<!-- ① アクセス数のカウント（GoatCounter・Cookie を使わない）
+     file:// で開いたとき（オフライン利用・自動テスト）は読みこまない。
+     GitHub Pages（https）で開いたときだけ動く。 -->
+<script>
+(function () {
+  if (location.protocol.indexOf('http') !== 0) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://physics-chiba.goatcounter.com/count');
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ② ▶スタートを光らせて「ここを押す」と知らせる
+     ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+     ・光り終わり … そのボタンを押したとき／動きはじめたとき
+     ページ本体のしくみにはさわらず、外から付け外しするだけ。 -->
+<style>
+@keyframes sgPulse{
+  0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
+  60%{box-shadow:0 0 0 17px rgba(224,123,24,0)}
+  100%{box-shadow:0 0 0 0 rgba(224,123,24,0)}
+}
+@keyframes sgBlink{
+  0%,100%{background:#e07b18;border-color:#e07b18}
+  50%{background:#f7a13f;border-color:#f7a13f}
+}
+.sg-glow{color:#fff !important;font-weight:700 !important;
+  animation:sgPulse 1.35s ease-out infinite, sgBlink 1.35s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .sg-glow{animation:none !important;background:#e07b18 !important;border-color:#e07b18 !important;
+    box-shadow:0 0 0 4px rgba(224,123,24,.55) !important}
+}
+</style>
+<script>
+(function () {
+  'use strict';
+  /* 主役の再生ボタンは id="bPlay"。古いページのための予備もいくつか見る */
+  var SEL  = '#bPlay, #playBtn, #btn-play, #btn-convert, #btn-convert2, button.b.play';
+  var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
+  var RUN  = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+
+  function btns()    { return [].slice.call(document.querySelectorAll(SEL)); }
+  function shown(e)  { return e.offsetParent !== null && !e.disabled; }
+  function running(e){ return RUN.test(e.textContent || ''); }
+
+  function arm() {                              /* 光らせるのは、いつも1つだけ */
+    var all = btns(), first = null;
+    for (var i = 0; i < all.length; i++) {
+      var e = all[i];
+      if (!first && shown(e) && !running(e) && !e.__sgDone) first = e;
+      else e.classList.remove('sg-glow');
+    }
+    if (first) first.classList.add('sg-glow');
+  }
+  function disarm(e) {
+    if (e) e.classList.remove('sg-glow');
+    else btns().forEach(function (x) { x.classList.remove('sg-glow'); });
+  }
+
+  /* 押されたら消す／タブ・プリセットが押されたら光らせ直す */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    var b = t.closest('button');
+    if (b && btns().indexOf(b) >= 0) {                     /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });    /* 同じ働きの予備ボタンもまとめて */
+      disarm(); return;
+    }
+    if (t.closest(TABS)) {                     /* タブ・プリセットを開いたら光らせ直す */
+      btns().forEach(function (x) { x.__sgDone = 0; });
+      setTimeout(arm, 90);
+    }
+  }, true);
+
+  /* 見張り役：ボタンが作り直された／隠れていたのが出てきたら光らせる。
+     動きはじめたら消す。（タブを切り替えるとボタンが作り直されるページがあるため） */
+  function tick() {
+    var need = false;
+    btns().forEach(function (e) {
+      var v = shown(e);
+      if (v && !e.__sgDone && (!e.__sgKnown || e.__sgVisible === false)) need = true;
+      e.__sgKnown = 1; e.__sgVisible = v;
+      if (running(e)) e.classList.remove('sg-glow');
+    });
+    if (need) arm();
+  }
+  setInterval(tick, 400);
+
+  function boot() { setTimeout(arm, 500); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
+<!-- ============ 公開用の共通フッター（ここまで） ============ -->
+</body>
+</html>

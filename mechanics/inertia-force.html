@@ -1738,6 +1738,22 @@ details.qcard.fold > summary .foldhint{font-size:.78rem;color:var(--ink-4)}
 .stepdown{display:flex;justify-content:center;margin:.25em 0}
 .stepdown svg{width:34px;height:26px;fill:#1c8f4a;opacity:.85}
 
+/* 2-3：図の左上の「小物体の運動のみ表示」「台の運動のみ表示」（押している間は青く） */
+.cvwrap .cvbtns button.b.only{background:#fff;color:#1d4f86;border:1.5px solid #8fb3dc;font-weight:800}
+.cvwrap .cvbtns button.b.only.on{background:#1f6fd6;color:#fff;border-color:#1f6fd6}
+.cvwrap .cvbtns button.b.only .sm{display:none}
+@media(max-width:520px){.cvwrap .cvbtns button.b.only .lg{display:none}.cvwrap .cvbtns button.b.only .sm{display:inline}}
+/* 1-4 ミニコラム：タブと見出しの色を変える（読みものだと分かるように。2026-10-13 千葉さん） */
+.seclinks a.coltab{color:#0f6b4f;border-color:#7cc2a6;background:#ecf8f2}
+.seclinks a.coltab:hover{background:#d8f0e4;border-color:#0f6b4f;color:#0b5a42}
+.colsec .sechead .secnum{background:#0f6b4f}
+.colsec .sechead h2{color:#0f6b4f}
+/* 1-3「1階→3階に着くまで」：押している間は青く。見せている間はほかの操作をうすく */
+.vhead button.b.ride{margin-left:auto;font-weight:800;color:#1d4f86;border:1.5px solid #8fb3dc;background:#fff;white-space:nowrap}
+.vhead button.b.ride.on{background:#1f6fd6;color:#fff;border-color:#1f6fd6}
+.ridebusy .ctrls button:disabled:not(.ride), .ridebusy .ctrls input:disabled{opacity:.45}
+.ridecard canvas.ridecv{display:block;width:100%;background:#fff;border-radius:10px;box-shadow:inset 0 0 0 1px var(--rule);margin:.4em 0}
+
 </style>
 </head>
 <body id="top">
@@ -1762,6 +1778,7 @@ var P = {
   TW: 1.0,                 /* 1 回の再生で見る時間［s］（電車） */
   V0T: 1.0,                /* 電車の「等速」の速さ［m/s］ */
   V0E: 0.5,                /* エレベーターの「等速」の速さ［m/s］（上向き） */
+  V1K: 3,                  /* モード1 だけ「等速」を 3 倍に（遅く感じるため。2026-10-13 千葉さん）。モード2 の電車はそのまま */
   AST: [-9.8, -5, 0, 5, 9.8],  /* 加速度の目盛り［m/s²］（2026-10-11 千葉さん） */
   mP: 50,                  /* 人の質量［kg］ */
   /* 一定の加速度の運動：変位と速度 */
@@ -1900,6 +1917,7 @@ function arrow(ctx, x1, y1, x2, y2, kind, col, opt) {
   }
   var head = (kind === 'dim' ? 8 : (kind === 'fict' ? 16 : (kind === 'vel' || kind === 'comp' ? 11 : 12)));
   if (head > len * 0.8) head = len * 0.8;
+  if (kind === 'fict' && head > len * 0.45) head = Math.max(7, len * 0.45);   /* 短い慣性力の矢印が、頭だけのかたまりにつぶれないように（2026-10-13 千葉さん） */
   var bx = x2 - ux * head, by = y2 - uy * head;
   var FC = col || COL.force;
   ctx.save(); ctx.lineJoin = 'round';
@@ -2483,11 +2501,18 @@ Sim.prototype.resize = function () {
   if (this.def.onResize) this.def.onResize(this);
 };
 Sim.prototype.disp = function (k) { return this.def.disp ? this.def.disp(this, k) : this.v[k]; };
+/* 目盛りの間の値の位置（目盛りの番号の小数）。値がどれかの目盛りと同じなら null（静止・等速の 0 を区別するため） */
+function stopFrac(st, x) {
+  var v = st.map(function (q) { return Math.abs(q) < 1e-5 ? 0 : q; }), xv = Math.abs(x) < 1e-5 ? 0 : x;
+  for (var i = 0; i < v.length; i++) if (Math.abs(v[i] - xv) < 1e-9) return null;
+  for (var j = 0; j + 1 < v.length; j++) if (v[j + 1] - v[j] > 1e-9 && xv > v[j] && xv < v[j + 1]) return j + (xv - v[j]) / (v[j + 1] - v[j]);
+  return null;
+}
 Sim.prototype.syncSliders = function (force) {
   var self = this;
   Object.keys(this.sl).forEach(function (k) {
     var s = self.sl[k], x = self.disp(k), vd = s.vd, pos, p;
-    if (vd.stops) { pos = s.idxOf(x); p = pos / (vd.stops.length - 1) * 100; }
+    if (vd.stops) { pos = s.idxOf(x); var fr = stopFrac(vd.stops, x); if (fr !== null) pos = fr; s.inp.step = fr !== null ? 'any' : '1'; p = pos / (vd.stops.length - 1) * 100; }   /* 目盛りの間の値（1-3 の 1階→3階 の a = ±2 など）は、つまみを目盛りの間に置く */
     else { pos = clamp(x, vd.min, vd.max); p = (pos - vd.min) / (vd.max - vd.min) * 100; }
     if (force || document.activeElement !== s.inp) s.inp.value = String(pos);
     var html = vd.fmt ? vd.fmt(x, self) : (fmt(x, vd.dec) + (vd.unit ? ' ' + vd.unit : ''));
@@ -2655,7 +2680,17 @@ Sim.prototype.draw = function () {
 };
 Sim.prototype.addHit = function (k, box) { if (box) this.hits.push({ k: k, x: box.x, y: box.y, w: box.w, h: box.h }); };
 Sim.prototype.addHitSeg = function (k, a) { if (a) this.hits.push({ k: k, seg: [a.x1, a.y1, a.x2, a.y2] }); };
-Sim.prototype.renderRight = function () { if (this.def.right && this.R) { this.def.right(this, this.R); if (typeof cfAim === 'function') cfAim(this.R); } };
+Sim.prototype.renderRight = function () { if (this.def.right && this.R) { this.def.right(this, this.R); if (typeof cfAim === 'function') cfAim(this.R); fitEqs(this.R); } };
+/* 式の箱（.qeq）からはみ出す長い式は、横スクロールのバーを出さずに文字を小さくして収める（2026-10-13 千葉さん） */
+function fitEqs(root) {
+  if (!root) return;
+  root.querySelectorAll('.katex-display').forEach(function (d) {
+    var k = d.querySelector('.katex'); if (!k) return; k.style.fontSize = '';
+    var cw = d.clientWidth, sw = d.scrollWidth; if (!cw || sw <= cw + 1) return;
+    k.style.fontSize = Math.max(0.55, (cw - 2) / sw).toFixed(3) + 'em';
+  });
+}
+window.addEventListener('resize', function () { clearTimeout(fitEqs._t); fitEqs._t = setTimeout(function () { document.querySelectorAll('.sR, .leftcards, .colsec').forEach(fitEqs); }, 120); });
 
 /* ---------- アニメの心臓（同時に動くのは 1 つだけ） ---------- */
 var _loopOn = false, _lastTs = 0;
@@ -2837,6 +2872,7 @@ function setChk(s, k, on) {
   s.chk[k] = on;
   if (on && me && me.only) { cs.forEach(function (c) { if (c.k !== k) s.chk[c.k] = false; }); if (s.ms.showF) { s.ms.showF = false; syncModeBar(s.mode); } }
   if (on && me && !me.only) cs.forEach(function (c) { if (c.only) s.chk[c.k] = false; });
+  if (on && me && me.grp) cs.forEach(function (c) { if (c.k !== k && c.grp === me.grp) s.chk[c.k] = false; });   /* 同じ grp はどちらか一方（斜面方向／水平・鉛直に分解。2026-10-13 千葉さん） */
   if (on && me && me.needF && !s.ms.showF) { s.ms.showF = true; syncModeBar(s.mode); }
   cs.forEach(function (c) { var b = s.extra['chk_' + c.k]; if (b) { b.classList.toggle('on', !!s.chk[c.k]); b.setAttribute('aria-pressed', s.chk[c.k] ? 'true' : 'false'); } });
   s.draw(); s.renderRight();
@@ -2850,7 +2886,8 @@ function aAt(s, t) { return segAt(s, t).a; }
 function v0Of(s) { return segsOf(s)[0].v0; }
 function dispOf(s, t) { var g = segAt(s, t), d = t - g.t0; return g.x0 + g.v0 * d + 0.5 * g.a * d * d; }
 function velOf(s, t) { var g = segAt(s, t); return g.v0 + g.a * (t - g.t0); }
-function rangeOf(s) { var g = segsOf(s)[0]; return P.range(g.v0, g.a, s.def.TWr ? s.def.TWr(s) : s.def.TW); }   /* d.TWr：糸を切ったあと時間が伸びるとき（1-2）は、その分まで見えるように */   /* 図の置き場所は、はじめの区間で決める（途中で a を変えても絵が飛ばない） */
+function rangeOf(s) { if (s._ride) return { lo: 0, hi: RIDE13.D };   /* 1-3「1階→3階」：6 m 上がる */
+  var g = segsOf(s)[0]; return P.range(g.v0, g.a, s.def.TWr ? s.def.TWr(s) : s.def.TW); }   /* d.TWr：糸を切ったあと時間が伸びるとき（1-2）は、その分まで見えるように */   /* 図の置き場所は、はじめの区間で決める（途中で a を変えても絵が飛ばない） */
 /* 加速度を変える：運動の途中なら新しい区間を足して続ける。止まっているとき（t = 0・最後まで行った）は最初から */
 function applyA(s, x) {
   s.v.still = false;                                          /* a を変えたら「静止」は解除 */
@@ -2967,10 +3004,13 @@ function blockArrow(ctx, x, y, ux, uy, L, txt, lab) {
   }
 }
 /* 速度の矢印（白抜きの青）を (cx, cy) を真ん中にして、(ux, uy) の向きに長さ L で描く */
-function velAt(ctx, cx, cy, ux, uy, L, labOff) {
+/* 相対速度・相対加速度の書き方（2026-10-13 千葉さん）：′ は使わず、添え字で「何から見た何の量か」を書く（例 v_{台→小物体}）。
+   relQ('a', '台', '小物体') → a_{\text{台}\to\text{小物体}}。vec：ベクトルの矢印、comp：成分（x など） */
+function relQ(q, from, to, vec, comp) { return (vec ? '\\vec{' + q + '}' : q) + '_{\\text{' + from + '}\\to\\text{' + to + '}' + (comp ? ',\\,' + comp : '') + '}'; }
+function velAt(ctx, cx, cy, ux, uy, L, labOff, nm, tail, sub) {   /* nm：記号（ふつうは v。台の速度は V。2026-10-13 千葉さん）、tail：記号のあと（相対速度の ′ など） */
   if (L < 4) return null;
   var ar = arrow(ctx, cx - ux * L / 2, cy - uy * L / 2, cx + ux * L / 2, cy + uy * L / 2, 'vel');
-  if (ar) sym(ctx, 'v', ar.x2 + ux * 11 + (labOff ? labOff[0] : 0), ar.y2 + uy * 11 + (labOff ? labOff[1] : 0), { size: 16, color: COL.vel });
+  if (ar) sym(ctx, nm || 'v', ar.x2 + ux * 11 + (labOff ? labOff[0] : 0), ar.y2 + uy * 11 + (labOff ? labOff[1] : 0), { size: 16, color: COL.vel, tail: tail || '', sub: sub || '' });
   return ar;
 }
 /* 力の矢印＋記号 */
@@ -3140,7 +3180,7 @@ function vecDiagram(cv, o) {
     if (ar0 && (o.sum.lab || o.sum.sym)) { var mx0 = (ar0.x1 + ar0.x2) / 2, my0 = (ar0.y1 + ar0.y2) / 2, nx0 = -ar0.uy, ny0 = ar0.ux; if ((mx0 - cx) * nx0 + (my0 - cy) * ny0 > 0) { nx0 = -nx0; ny0 = -ny0; }
       /* 名前は線から十分はなし、線と反対がわへ寄せる（mg′ の「′」が線と重ならないように） */
       var alS = Math.abs(nx0) < 0.3 ? 'center' : (nx0 > 0 ? 'right' : 'left');
-      if (o.sum.sym) sym(ctx, o.sum.sym, mx0 - nx0 * 16, my0 - ny0 * 16, { size: 15, color: o.sum.col || '#2f3a8f', vec: true, tail: o.sum.tail || '', align: alS });   /* ベクトルの記号（矢印つき）＋名前 */
+      if (o.sum.sym) sym(ctx, o.sum.sym, mx0 - nx0 * 16, my0 - ny0 * 16, { size: 15, color: o.sum.col || '#2f3a8f', vec: true, tail: o.sum.tail || '', sub: o.sum.sub || '', align: alS });   /* ベクトルの記号（矢印つき）＋名前 */
       else label(ctx, o.sum.lab, mx0 - nx0 * 14, my0 - ny0 * 14, { size: 13, bold: true, color: o.sum.col || '#2f3a8f', align: alS }); }
   }
   o.vecs.forEach(function (v, i) {
@@ -3153,7 +3193,7 @@ function vecDiagram(cv, o) {
     if (lin) { var sx = of * px, sy = of * py; if (Math.abs(sx) >= Math.abs(sy)) { nx = sx < 0 ? -1 : (sx > 0 ? 1 : (i === 0 ? -1 : 1)); ny = 0; } else { nx = 0; ny = sy < 0 ? -1 : 1; } }   /* ずらしたときは、ずらした向き（外側）へ */
     var off = v.kind === 'fict' ? 22 : 16;
     var alV = Math.abs(nx) < 0.3 ? 'center' : (nx > 0 ? 'left' : 'right');
-    if (v.sym) sym(ctx, v.sym, mx + nx * (off + 2), my + ny * (off + 2), { size: 15, color: v.col || COL.force, vec: true, tail: v.tail || '', align: alV });
+    if (v.sym) sym(ctx, v.sym, mx + nx * (off + 2), my + ny * (off + 2), { size: 15, color: v.col || COL.force, vec: true, tail: v.tail || '', sub: v.sub || '', align: alV });
     else label(ctx, v.lab, mx + nx * off, my + ny * off, { size: 13, bold: true, color: v.kind === 'fict' ? '#b35f0c' : (v.col || COL.force), align: alV });
   });
   if (o.closed) label(ctx, o.closed === true ? '矢印をつなぐと、元の点に戻る（合力 0）' : o.closed, W / 2, H - 12, { size: 11, color: COL.sub });
@@ -3288,7 +3328,7 @@ function rightTrain(s, R) {
     '<p class="assume">人の質量 ' + tex('m=' + P.mP) + ' kg。鉛直方向の力（重力と座面の垂直抗力）は図では省いた。空き缶は床を滑る（摩擦なし）とし、電車の壁に当たったら壁と一緒に動くとした。</p>');
 }
 DEFS.m1tr = ifBase({
-  id: 'm1tr', V0: P.V0T, TW: 0.8,
+  id: 'm1tr', V0: P.V0T * P.V1K, TW: 0.8,
   height: function (s, w) { return Math.round(clamp(w * 0.66, 290, 400)); },   /* 1-1 の左右の図の下はしをそろえる（右のエレベーターと同じ高さ。2026-10-12 千葉さん） */
   onPair: function (s, still) { var B = SIM_BY_ID.m1el; if (!B) return;
     if (still) { B.v.a = 0; B.v.still = true; B.aSeg = null; B.changed('still'); } else { applyA(B, s.v.a); B.changed('a'); } },
@@ -3323,6 +3363,9 @@ function elevScene(s, ctx, W, H, inner) {
   ctx.lineWidth = 1; for (var q = -12; q <= 12; q++) { var yq = Y0 - q * k + sh; if (yq < -4 || yq > H + 4) continue;
     ctx.beginPath(); ctx.moveTo(cl - 14, yq); ctx.lineTo(cl - 6, yq); ctx.moveTo(cr + 6, yq); ctx.lineTo(cr + 14, yq); ctx.stroke(); }
   ctx.restore();
+  if (s._ride) for (var fl = 0; fl < 3; fl++) { var yf = Y0 - fl * RIDE13.FL * k + sh; if (yf < 8 || yf > H - 4) continue;   /* 1階→3階：階の目じるし（建物と一緒に動く） */
+    ctx.save(); ctx.strokeStyle = '#8a8478'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cr + 6, yf); ctx.lineTo(cr + 22, yf); ctx.stroke(); ctx.restore();
+    label(ctx, (fl + 1) + '階', cr + 9, yf + 10, { size: 10.5, bold: true, color: '#6d675c', align: 'left' }); }   /* 壁のすぐ右・線の下（右の「等速」「加速度」の文字と重ねない） */
   /* 外の観測者が立つ床（t = 0 のエレベーターの床の高さ） */
   var yP = Y0 + sh, ox = cl - 0.95 * k, hdIn = null;
   if (yP > -6 && yP < H + 12) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, cl - 6, H); ctx.clip(); groundShift(ctx, 0, cl - 6, yP, 0); ctx.restore(); }
@@ -3337,7 +3380,7 @@ function elevScene(s, ctx, W, H, inner) {
   var ret = inner(g) || {};
   /* 加速度（太い矢印）・速度（慣性系だけ） */
   var bxA = cr + 0.95 * k, ym = (yFloor + yCeil) / 2;
-  if (Math.abs(a) > 1e-9) { var dir = a > 0 ? -1 : 1, La = 22 + 5 * Math.abs(a);
+  if (Math.abs(a) > 1e-9) { var dir = a > 0 ? -1 : 1, La = (s._ride ? 40 : 22) + 5 * Math.abs(a);   /* 1階→3階（a = ±2）は短くつぶれるので長めに */
     blockArrow(ctx, bxA, ym - dir * La / 2, 0, dir, La, 'エレベーターの\n加速度 a' + (a > 0 ? '（上向き）' : '（下向き）'), { x: bxA + 14, y: ym + dir * La / 2 + dir * 22, align: 'left' }); }
   else label(ctx, s.v.still ? '静止' : '等速（加速度 0）', bxA - 6, ym, { size: 11.5, color: COL.sub, align: 'left' });
   if (!s.rot) { var v = velOf(s, t); if (Math.abs(v) > 0.01) velAt(ctx, cr + 0.42 * k, ym, 0, v > 0 ? -1 : 1, 22 + Math.abs(v) * 10 * k / 60, [10, 0]); }
@@ -3394,7 +3437,7 @@ function rightElev1(s, R) {
   }) + '<p class="assume">人の質量 ' + tex('m=' + P.mP) + ' kg、' + tex('g=9.8') + ' m/s²。</p>');
 }
 DEFS.m1el = ifBase({
-  id: 'm1el', V0: P.V0E, TW: EL.TW, bare: true,
+  id: 'm1el', V0: P.V0E * P.V1K, TW: EL.TW, bare: true,
   height: function (s, w) { return Math.round(clamp(w * 0.66, 290, 400)); },
   msg: function (s) {
     var a = s.v.a;
@@ -3553,14 +3596,14 @@ function rightBall12(s, R) {
   var h1 = st.cut ? ifSetup(s, {
     title: '糸が切れたあと',
     lead: { in: '外から見ると、糸が切れた小球にはたらく力は<b>重力 $mg$ だけ</b>（張力はなくなる）。小球は、切った瞬間のエレベーターと同じ速度で動き出し、加速度 $g$（下向き）で運動する。',
-            rot: 'エレベーターの中から見ると、糸が切れた小球には重力 $mg$ と<b>慣性力 $ma$</b>（' + (a >= 0 ? '下向き' : '上向き') + '）がはたらく。2 つの力はつり合わないので、小球は止まったままではいられず、<b>加速度 $g+a$ で落ちていく</b>。' },
-    rows: [{ dir: '鉛直方向（下向き正）', in: ['eom', 'm\\alpha = mg'], rot: ['eom', "ma' = mg + ma"] }],
-    now: { in: tex('\\alpha = g = 9.8\\ \\text{m/s}^2'), rot: tex("a' = g + a = 9.8" + aT + ' = ' + f1(Math.abs(G + a) < 1e-9 ? 0 : G + a) + '\\ \\text{m/s}^2') },
+            rot: 'エレベーターの中から見ると、糸が切れた小球には重力 $mg$ と<b>慣性力 $ma$</b>（' + (a >= 0 ? '下向き' : '上向き') + '）がはたらく。2 つの力はつり合わないので、小球は止まったままではいられず、<b>加速度 $g+a$ で落ちていく</b>。エレベーターに対する小球の<b>相対加速度</b>を $a_{\\text{エレベーター}\\to\\text{小球}}$ とする。' },
+    rows: [{ dir: '鉛直方向（下向き正）', in: ['eom', 'm\\alpha = mg'], rot: ['eom', 'ma_{\\text{エレベーター}\\to\\text{小球}} = mg + ma'] }],
+    now: { in: tex('\\alpha = g = 9.8\\ \\text{m/s}^2'), rot: tex('a_{\\text{エレベーター}\\to\\text{小球}} = g + a = 9.8' + aT + ' = ' + f1(Math.abs(G + a) < 1e-9 ? 0 : G + a) + '\\ \\text{m/s}^2') },
     note: { in: '<p class="qnote">外（慣性系）から見ると、小球は重力だけで運動する。<b>慣性系に「慣性力」は存在しない。</b></p>', rot: '<p class="qnote">慣性力は、加速度 $\\vec{a}$ で運動する観測者だけが感じる<b>見かけの力</b>。糸が切れたあとも、エレベーターが加速している限りはたらき続ける。</p>' },
     a0: { lead: { in: '外から見ると、糸が切れた小球にはたらく力は<b>重力 $mg$ だけ</b>（張力はなくなる）。小球は、切った瞬間のエレベーターと同じ速度で動き出し、加速度 $g$（下向き）で運動する。',
                   rot: 'エレベーターの中から見ると、糸が切れた小球にはたらく力は<b>重力 $mg$ だけ</b>（加速度 0 なので慣性力ははたらかない）。小球は加速度 $g$ で落ちていく（自由落下）。' },
-          rows: [{ dir: '鉛直方向（下向き正）', in: ['eom', 'm\\alpha = mg'], rot: ['eom', "ma' = mg"] }],
-          now: { in: tex('\\alpha = g = 9.8\\ \\text{m/s}^2'), rot: tex("a' = g = 9.8\\ \\text{m/s}^2") }, note: { in: '<p class="qnote">外（慣性系）から見ると、小球は重力だけで運動する。<b>慣性系に「慣性力」は存在しない。</b></p>', rot: '' } }
+          rows: [{ dir: '鉛直方向（下向き正）', in: ['eom', 'm\\alpha = mg'], rot: ['eom', 'ma_{\\text{エレベーター}\\to\\text{小球}} = mg'] }],
+          now: { in: tex('\\alpha = g = 9.8\\ \\text{m/s}^2'), rot: tex('a_{\\text{エレベーター}\\to\\text{小球}} = g = 9.8\\ \\text{m/s}^2') }, note: { in: '<p class="qnote">外（慣性系）から見ると、小球は重力だけで運動する。<b>慣性系に「慣性力」は存在しない。</b></p>', rot: '' } }
   }) : ifSetup(s, {
     title: '糸を切る前',
     lead: { in: '外から見ると、小球はエレベーターと一緒に加速度 $a$ で運動している。はたらく力は張力 $S$ と重力 $mg$。',
@@ -3577,7 +3620,7 @@ function rightBall12(s, R) {
     h2 = '<div class="qcard derive"><p class="qt">糸が切れてから床に着くまでの時間</p>' + (s.rot ?
       (Math.abs(a) < 1e-9 ? '<p>エレベーターの中から見ると、糸が切れた小球には重力 $mg$ だけがはたらく（加速度 0 なので慣性力は 0）。下向きを正とした' + T_EOM + 'は、慣性力 $ma$ を $0$ とおいて</p>' :
       '<p>エレベーターの中から見ると、糸が切れた小球には重力 $mg$ と慣性力 $ma$（' + (a >= 0 ? '下向き' : '上向き') + '）がはたらく。下向きを正とした' + T_EOM + 'は</p>') +
-      '<div class="qeq">' + tex("ma' = mg + ma \\;\\Longrightarrow\\; a' = g + a", true) + '</div>' +
+      '<div class="qeq">' + tex('ma_{\\text{エレベーター}\\to\\text{小球}} = mg + ma \\;\\Longrightarrow\\; a_{\\text{エレベーター}\\to\\text{小球}} = g + a', true) + '</div>' +
       '<p>小球は<b>見かけの重力加速度 $g\'=g+a$</b> で、初速度 0 で落ちる（エレベーターの中から見ると、はじめ止まっているから）。床は動かない。</p>' +
       '<canvas class="fallcv"></canvas>' +
       '<div class="qeq">' + tex('h = \\frac{1}{2}(g+a)t^2 \\;\\Longrightarrow\\; t = \\sqrt{\\frac{2h}{g+a}}', true) + '</div>'
@@ -3643,7 +3686,7 @@ function fbdBall(cut) {
   } };
 }
 DEFS.m1s2 = ifBase({
-  id: 'm1s2', num: 2, title: 'エレベーターで上昇・下降する小球', V0: P.V0E, TW: TW12,
+  id: 'm1s2', num: 2, title: 'エレベーターで上昇・下降する小球', V0: P.V0E * P.V1K, TW: TW12,
   height: function (s, w) { return Math.round(clamp(w * 0.86, 360, 520)); },
   desc: 'エレベーターの天井から、糸で小球（質量 $m$）をつるす。小球の床からの高さは $h$。<span class="todo">加速度を選び、図の左上の「✂ 糸を切る」を押して、小球が床に着くまでの時間を比べよう。</span>',
   buttons: [{ k: 'cut', label: '✂ 糸を切る', cls: 'cut', inCanvas: true, onClick: function (s) { startCut(s, Infinity); } },   /* いまの瞬間に切る */
@@ -3669,7 +3712,7 @@ DEFS.m1s2 = ifBase({
       rot: { h: '一緒に加速運動する観測者（非慣性系）から見る', fbd: fbdBall(false), lines: [{ tag: 'bal', k: '鉛直（上向き正）：', t: Math.abs(a) < 1e-9 ? 'S - mg = 0' : 'S - mg - ma = 0' }], num: 'いま：' + tex('S = ' + f2(P.ballS(B12.m, a)) + '\\ \\text{N}'), note: '慣性力 ' + tex('ma') + ' は加速度と逆向き' } };
     return {
       in: { h: '外（慣性系）から見る（糸が切れたあと）', fbd: fbdBall(true), lines: [{ tag: 'eom', k: '鉛直（上向き正）：', t: "ma_1 = -mg" }], num: '小球の加速度は ' + tex('-g') + '（重力だけ）' },
-      rot: { h: '一緒に加速運動する観測者（非慣性系）から見る（糸が切れたあと）', fbd: fbdBall(true), lines: [{ tag: 'eom', k: '鉛直（下向き正）：', t: "ma' = mg + ma" }], num: tex("a' = g + a = 9.8" + aT + ' = ' + f1(Math.abs(G + a) < 1e-9 ? 0 : G + a)) + ' m/s²', note: '見かけの重力加速度 ' + tex('g + a') + ' で落ちる' } };
+      rot: { h: '一緒に加速運動する観測者（非慣性系）から見る（糸が切れたあと）', fbd: fbdBall(true), lines: [{ tag: 'eom', k: '鉛直（下向き正）：', t: 'ma_{\\text{エレベーター}\\to\\text{小球}} = mg + ma' }], num: tex('a_{\\text{エレベーター}\\to\\text{小球}} = g + a = 9.8' + aT + ' = ' + f1(Math.abs(G + a) < 1e-9 ? 0 : G + a)) + ' m/s²', note: '見かけの重力加速度 ' + tex('g + a') + ' で落ちる' } };
   },
   draw: drawBall12, right: rightBall12
 });
@@ -3710,9 +3753,9 @@ function drawScale13(s, ctx, W, H) {
     dial(ctx, sx, ytop + shh / 2 + 1, Math.min(shh * 0.4, 10), s._nd, false);
     var ww = 0.62 * k, wh = 0.46 * k, wy = ytop - 4 - wh;
     ctx.save(); ctx.fillStyle = '#ffffff'; ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.rect(sx - ww / 2, wy, ww, wh); ctx.fill(); ctx.stroke(); ctx.restore();
-    label(ctx, 'おもり 10 kg', sx, wy - 10, { size: 11, bold: true, color: COL.ink2 });
+    label(ctx, 'おもり', sx - ww / 2, wy - 24, { size: 11, bold: true, color: COL.ink2, align: 'left' }); label(ctx, '10 kg', sx - ww / 2, wy - 10, { size: 11, bold: true, color: COL.ink2, align: 'left' });   /* おもりの左上に 2 行（右を通る N の矢印、左の慣性力の文字と重ねない） */
     if (s.ms.showF) {
-      var fsc = 0.4 * k / 63, cy = wy + wh / 2;
+      var fsc = 0.4 * k / 63 * (s._ride ? 1.4 : 1), cy = wy + wh / 2;   /* 1階→3階（a = ±2）は力の差が小さいので、矢印を長めに */
       forceArrow(ctx, sx, cy, 0, 1, SC.m * G * fsc, COL.force, 'mg', 'below');
       forceArrow(ctx, sx + ww * 0.32, wy + wh, 0, -1, N * fsc, COL.norm, 'N', 'right');
       if (s.rot && Math.abs(a) > 1e-9) forceArrow(ctx, sx - ww * 0.3, cy, 0, a > 0 ? 1 : -1, SC.m * Math.abs(a) * fsc, COL.inert, '慣性力 ma', 'left', 'fict');
@@ -3750,10 +3793,106 @@ function rightScale13(s, R) {
     '<p>目盛りを kg で読むと（静止しているとき 98 N が 10 kg）</p>' +
     '<div class="qeq">' + tex('\\frac{' + f1(N) + '}{9.8} = ' + f2(kg) + '\\ \\text{kg}', true) + '</div>' +
     '<p>' + (a > 0 ? '上向きに加速すると、目盛りは<b>大きく</b>なる。' : (a < 0 ? '下向きに加速すると、目盛りは<b>小さく</b>なる。' : '加速度 0（静止・等速）では、いつもと同じ 98 N（10 kg）。')) + 'どちらの観測者で考えても、同じ値になる。</p></div>';
-  R.innerHTML = mathify(h + '<p class="assume">おもりの質量 ' + tex('m=10') + ' kg、' + tex('g=9.8') + ' m/s²。</p>');
+  if (s._ride) h = rideCard(s) + h;                                /* 1階→3階のときは、いちばん上にグラフ */
+  R.innerHTML = mathify(h + '<p class="assume">おもりの質量 ' + tex('m=10') + ' kg、' + tex('g=9.8') + ' m/s²。' + (s._ride ? '1 階分の高さは 3 m とした。' : '') + '</p>');
+  if (s._ride) rideGraph(R.querySelector('canvas.ridecv'), s);
+}
+/* ---------- 1-3「1階→3階に着くまで」（2026-10-13 千葉さん） ----------
+   1 階で静止 → 上向きに加速 → 等速 → 下向きに加速（減速）→ 3 階で静止。その間のはかりの目盛りの変化を見せる。
+   見せている間は、▶（一時停止・再開）のほかのボタンは押せない。終わったら押せる。
+   加速度バー・観測者の切りかえ・リセットなどを押すと、このボタンの選択は外れる。 */
+var RIDE13 = (function () {
+  var a = 2, vm = 2.4, ta = vm / a, da = 0.5 * a * ta * ta, D = 6, tc = (D - 2 * da) / vm, t0 = 0.5;   /* 1 階分の高さ 3 m → 1 階から 3 階まで 6 m */
+  var S = [{ t0: 0, x0: 0, v0: 0, a: 0 }, { t0: t0, x0: 0, v0: 0, a: a }, { t0: t0 + ta, x0: da, v0: vm, a: 0 },
+           { t0: t0 + ta + tc, x0: D - da, v0: vm, a: -a }, { t0: t0 + 2 * ta + tc, x0: D, v0: 0, a: 0 }];
+  return { S: S, D: D, FL: 3, a: a, vm: vm, T: t0 + 2 * ta + tc + 0.9, rate: 0.7 };
+})();
+function rideLock(s, on) {
+  if (on) {
+    if (s._rideDis) return; s._rideDis = [];
+    s.L.querySelectorAll('.ctrls button, .ctrls input').forEach(function (e) { if (e !== s.bPlay && !e.disabled) { e.disabled = true; s._rideDis.push(e); } });
+    s.L.classList.add('ridebusy');
+  } else if (s._rideDis) { s._rideDis.forEach(function (e) { e.disabled = false; }); s._rideDis = null; s.L.classList.remove('ridebusy'); if (s.syncLocks) s.syncLocks(); }
+}
+function rideSet(s) { s.aSeg = RIDE13.S.map(function (g) { return { t0: g.t0, x0: g.x0, v0: g.v0, a: g.a }; }); s.v.a = 0; s.v.still = true; s._nd = undefined; s.rate = RIDE13.rate; }   /* 再生の速さ：ふだんの 1-3 より速め（5 秒の運動を約 7 秒で） */
+function rideOn(s) {
+  SIMS.forEach(function (o) { if (o.playing) { o.playing = false; o.syncPlayLabel(); } });
+  s.endWindow(); s._ride = true; rideSet(s); s.t = 0; s.ended = false; s.trail = [];
+  var b = s.extra && s.extra.ride; if (b) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); }
+  rideLock(s, true); s.resize();
+  s.playing = true; s.syncPlayLabel(); s.renderRight(); startLoop();
+}
+function rideOff(s) {
+  if (!s._ride) return;
+  s._ride = false; rideLock(s, false); s.rate = s.base * (s.slow ? 0.3 : 1);
+  s.aSeg = null; s.playing = false; s.t = 0; s.ended = false; s._nd = undefined; s.syncPlayLabel(); s.resize();   /* ふつうの 1-3 の最初にもどす（6 m 上がった絵のままにしない） */
+  var b = s.extra && s.extra.ride; if (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); }
+}
+/* v–t・a–t・はかりの目盛り–t の 3 つのグラフを縦に並べる（時間軸は共通。いまの時刻に縦線と点。2026-10-13 千葉さん）
+   縦軸には矢印をつけ、負から正までまたいで 0 を途中に置く（プロジェクトのグラフのきまり） */
+function rideGraph(cv, s) {
+  if (!cv) return;
+  var W = Math.max(260, Math.floor(cv.parentNode.clientWidth || 300)), PH = 78, GAP = 14, TOP = 8, H = TOP + 3 * PH + 2 * GAP + 30, ctx = prep(cv, W, H);
+  var L = 54, Rr = W - 16, T = RIDE13.T, S = RIDE13.S, tn = Math.min(s.t, T);
+  var X = function (t) { return L + (Rr - L) * t / T; };
+  var axArrow = function (x1, y1, x2, y2) { var dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - ux * 7 - uy * 3.5, y2 - uy * 7 + ux * 3.5); ctx.lineTo(x2 - ux * 7 + uy * 3.5, y2 - uy * 7 - ux * 3.5); ctx.closePath(); ctx.fill(); };
+  var panels = [
+    { name: '速度 v［m/s］', lo: -1, hi: 3, ticks: [0, 2], col: COL.vel, f: function (t) { return velOf(s, t); }, step: false },
+    { name: '加速度 a［m/s²］', lo: -3, hi: 3, ticks: [-2, 0, 2], col: COL.acc, f: function (t) { return aAt(s, t); }, step: true },
+    { name: 'はかりの目盛り［kg］', lo: -2, hi: 14, ticks: [0, 8, 10, 12], col: '#c0392b', f: function (t) { return P.scaleKg(SC.m, aAt(s, t)); }, step: true }];
+  var tb = [0]; S.forEach(function (g) { if (g.t0 > 0) tb.push(g.t0); }); tb.push(T);
+  panels.forEach(function (pn, pi) {
+    var y0 = TOP + pi * (PH + GAP), y1 = y0 + PH, Y = function (q) { return y1 - (y1 - y0) * (q - pn.lo) / (pn.hi - pn.lo); };
+    ctx.save(); ctx.strokeStyle = '#e4dfd5'; ctx.lineWidth = 1;
+    pn.ticks.forEach(function (q) { if (q === 0) return; ctx.beginPath(); ctx.moveTo(L, Y(q)); ctx.lineTo(Rr, Y(q)); ctx.stroke(); });
+    ctx.strokeStyle = COL.ink2; ctx.fillStyle = COL.ink2; ctx.lineWidth = 1.2;
+    axArrow(L, y1 + 2, L, y0 - 4);                                  /* 縦軸 */
+    axArrow(L, Y(0), Rr + 10, Y(0));                                /* 時間軸（0 の高さ） */
+    ctx.restore();
+    pn.ticks.forEach(function (q) { label(ctx, String(q), L - 6, Y(q), { size: 9.5, color: COL.sub, align: 'right' }); });
+    label(ctx, pn.name, L + 6, y0 + 2, { size: 10.5, bold: true, color: pn.col, align: 'left' });
+    ctx.save(); ctx.strokeStyle = pn.col; ctx.lineWidth = 2.3; ctx.beginPath();
+    if (pn.step) {
+      S.forEach(function (g, i) { var t1 = i + 1 < S.length ? S[i + 1].t0 : T, q = pn.f(g.t0 + 1e-6);
+        if (i === 0) ctx.moveTo(X(g.t0), Y(q)); else ctx.lineTo(X(g.t0), Y(q)); ctx.lineTo(X(t1), Y(q)); });
+    } else { for (var k = 0; k <= 200; k++) { var tt = T * k / 200, q2 = pn.f(tt); if (k === 0) ctx.moveTo(X(tt), Y(q2)); else ctx.lineTo(X(tt), Y(q2)); } }
+    ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.fillStyle = pn.col; ctx.beginPath(); ctx.arc(X(tn), Y(pn.f(Math.max(0, tn - 1e-6))), 4.2, 0, TAU); ctx.fill(); ctx.restore();
+  });
+  /* 区間の境目（うすい縦線）・いまの時刻（青い破線）・区間の名前 */
+  var yb = TOP + 3 * PH + 2 * GAP;
+  ctx.save(); ctx.strokeStyle = 'rgba(43,50,60,.12)'; ctx.setLineDash([2, 3]); tb.slice(1, -1).forEach(function (t) { ctx.beginPath(); ctx.moveTo(X(t), TOP); ctx.lineTo(X(t), yb); ctx.stroke(); }); ctx.restore();
+  ctx.save(); ctx.strokeStyle = 'rgba(31,111,214,.55)'; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(X(tn), TOP - 2); ctx.lineTo(X(tn), yb); ctx.stroke(); ctx.restore();
+  var names = ['静止', '加速', '等速', '減速', '静止'];
+  S.forEach(function (g, i) { var t1 = i + 1 < S.length ? S[i + 1].t0 : T, cur = tn >= g.t0 - 1e-9 && tn < t1 + 1e-9;
+    label(ctx, names[i], (X(g.t0) + X(t1)) / 2, yb + 10, { size: 10, bold: cur, color: cur ? COL.acc : COL.sub }); });
+  label(ctx, '時間 t', Rr + 8, yb + 24, { size: 10, color: COL.sub, align: 'right' });
+}
+function rideCard(s) {
+  var a = aAt(s, s.t), ph = a > 0 ? '上向きに加速している（目盛りは<b>大きく</b>なる）' : (a < 0 ? '下向きの加速度で減速している（目盛りは<b>小さく</b>なる）' : (Math.abs(velOf(s, s.t)) > 1e-6 ? '一定の速さで上がっている（目盛りは<b>いつもと同じ</b>）' : '止まっている（目盛りはいつもと同じ）'));
+  return '<div class="qcard derive ridecard"><p class="qt">1階 → 3階に着くまで</p>' +
+    '<p>1 階で止まっていたエレベーターが、上向きに加速度 $' + RIDE13.a + '$ m/s² で動き出し、速さ ' + RIDE13.vm + ' m/s の等速で上がったあと、加速度 $-' + RIDE13.a + '$ m/s²（下向き）で減速して 3 階（' + RIDE13.D + ' m 上）で止まる。</p>' +
+    '<canvas class="vecc ridecv"></canvas>' +
+    '<p class="qnow"><span class="qtag now">いま</span>' + ph + '</p>' +
+    '<p>動き出すときは重く、止まるときは軽く感じる。等速のあいだは、動いていても目盛りはいつもと同じ。目盛りを変えるのは<b>速度ではなく加速度</b>である。</p></div>';
 }
 DEFS.m1s3 = ifBase({
-  id: 'm1s3', num: 3, title: 'エレベーターで上昇・下降するはかり', V0: P.V0E, TW: EL.TW,
+  id: 'm1s3', num: 3, title: 'エレベーターで上昇・下降するはかり', V0: P.V0E * P.V1K, TW: EL.TW,
+  buttons: [{ k: 'ride', label: '1階→3階に着くまで', cls: 'ride', inVar: true, onClick: function (s) { if (!s._ride || s.ended) rideOn(s); } }],
+  tEnd: function (s) { return s._ride ? RIDE13.T : EL.TW; },
+  height: function (s, w) { return s._ride && !s.rot ? Math.round(clamp(w * 1.2, 480, 720)) : Math.round(clamp(w * 0.66, 300, 420)); },   /* 1階→3階を外から見るときは 6 m 上がるので、図をたてに長く */
+  live: function (s) {                                             /* 1階→3階：いまの区間の加速度をバーと右の列に出す。終わったらボタンを押せるように */
+    if (!s._ride) return;
+    var a = aAt(s, s.t), still = Math.abs(a) < 1e-9 && Math.abs(velOf(s, s.t)) < 1e-6;
+    if (a !== s.v.a || still !== s.v.still) { s.v.a = a; s.v.still = still; s.renderRight(); }
+    else rideGraph(s.R && s.R.querySelector('canvas.ridecv'), s);
+    if (s.ended) rideLock(s, false); else if (!s._rideDis) rideLock(s, true);
+  },
+  onChanged: function (s) { rideOff(s); }, onRot: function (s) { rideOff(s); },
+  onReset: function (s) { rideOff(s); }, onDefaults: function (s) { rideOff(s); },
+  onRestart: function (s) { if (s._ride) { rideSet(s); rideLock(s, true); } },   /* 終わったあと ▶ 最初から：もう一度 1 階から */
   desc: 'エレベーターの床に台はかりを置き、おもり（10 kg）をのせる。エレベーターが静止しているとき、目盛りは 98 N（10 kg）。台はかりがおもりに及ぼす垂直抗力は、作用反作用の法則により、はかりの針が示す力と同じ。<span class="todo">加速度を変えて、はかりの針がどう動くか見よう。</span>',
   msg: function (s) {
     var a = s.v.a, N = P.scaleN(SC.m, a);
@@ -3783,8 +3922,8 @@ DEFS.m1s4 = {
       '<p><b>慣性系</b>とは、<b>慣性の法則が成り立つ観測者</b>のこと。具体的には、外から見ている観測者、地面から見ている観測者、それらに対し等速直線運動している観測者のこと。（①-1 で加速度を「0 等速」にすると、電車の中でも慣性力は現れない）。</p>' +
       '<p><b>非慣性系</b>とは、<b>慣性の法則が成り立たない観測者</b>のこと。具体的には、慣性系に対して加速度運動している観測者のことであり、加速する台の上に乗っている観測者などのこと。非慣性系から見ると、力を受けていない物体でも加速して見える（①-1 の空き缶）。そこで、加速度 $\\vec{a}$ の観測者から見るときは、すべての物体に<b>慣性力 $-m\\vec{a}$</b> がはたらいていると考える。そうすれば、非慣性系でも慣性の法則がなりたつし、運動の法則（つまり運動方程式）を立式することができる。</p>' +   /* 文は千葉さんの指定どおり（2026-10-12） */
       '<div class="colfml"><p class="cfh">非慣性系において、慣性力が必要になる理由</p>' +
-      '<p>慣性系から見た物体の加速度を $\\vec{\\alpha}$、加速度 $\\vec{a}$ の観測者から見た加速度を $\\vec{\\alpha}\\,\'$ とすると、$\\vec{\\alpha} = \\vec{\\alpha}\\,\' + \\vec{a}$。これを慣性系の運動方程式 $m\\vec{\\alpha} = \\vec{F}$ に入れると</p>' +
-      '<div class="qeq">' + tex("m(\\vec{\\alpha}\\,' + \\vec{a}) = \\vec{F} \\quad\\Longrightarrow\\quad m\\vec{\\alpha}\\,' = \\vec{F} + (-m\\vec{a})", true) + '</div>' +
+      '<p>慣性系から見た物体の加速度を $\\vec{\\alpha}$、加速度 $\\vec{a}$ の観測者から見た物体の加速度（観測者に対する物体の<b>相対加速度</b>）を $\\vec{a}_{\\text{観測者}\\to\\text{物体}}$ とすると、$\\vec{\\alpha} = \\vec{a}_{\\text{観測者}\\to\\text{物体}} + \\vec{a}$。これを慣性系の運動方程式 $m\\vec{\\alpha} = \\vec{F}$ に入れると</p>' +
+      '<div class="qeq">' + tex('m(\\vec{a}_{\\text{観測者}\\to\\text{物体}} + \\vec{a}) = \\vec{F} \\quad\\Longrightarrow\\quad m\\vec{a}_{\\text{観測者}\\to\\text{物体}} = \\vec{F} + (-m\\vec{a})', true) + '</div>' +
       '<p>右辺の $-m\\vec{a}$ が慣性力。実際の力 $\\vec{F}$ に慣性力を加えれば、加速する観測者の立場でも「質量 × 加速度 ＝ 力」の形で式が立てられる。</p></div>' +
       '<p class="colsum">まとめ</p>' +
       '<div class="colgrid">' +
@@ -3806,7 +3945,7 @@ DEFS.m1s4 = {
           '<dt>どんな観測者？</dt><dd>加速度 $\\vec{a}$ で運動している観測者（加速する電車・エレベーター・動かされる台の上・回転台の上 など）</dd>' +
           '<dt>慣性の法則</dt><dd>そのままでは成り立たない（力がなくても加速して見える）</dd>' +
           '<dt>考える力</dt><dd>実際の力 ＋ <b>慣性力 $-m\\vec{a}$</b>（及ぼし手のない<b>見かけの力</b>）</dd>' +
-          '<dt>立てる式</dt><dd>止まって見えるなら' + T_BAL + '：' + tex('\\vec{F} + (-m\\vec{a}) = \\vec{0}') + '<br>動いて見えるなら' + T_EOM + '：' + tex("m\\vec{\\alpha}\\,' = \\vec{F} + (-m\\vec{a})") + '</dd>' +
+          '<dt>立てる式</dt><dd>止まって見えるなら' + T_BAL + '：' + tex('\\vec{F} + (-m\\vec{a}) = \\vec{0}') + '<br>動いて見えるなら' + T_EOM + '：' + tex('m\\vec{a}_{\\text{観測者}\\to\\text{物体}} = \\vec{F} + (-m\\vec{a})') + '</dd>' +
           '<dt class="good">よいところ</dt><dd><b>1 物体の運動</b>として見るので、変位・速度などを簡単に求められる。運動方程式も簡単</dd>' +
           '<dt class="bad">難しいところ</dt><dd>慣性系（地面）から見た動きは、そのままでは分からない</dd>' +
           '</dl></div>' +
@@ -3816,7 +3955,7 @@ DEFS.m1s4 = {
         '<li>問題演習の時は 2 つの立場両方で解法が導けると、かなり物理の力を伸ばせるのでお勧め。</li>' +
         '<li><b>慣性力を描くのは、非慣性系の図だけ</b>。外から見ているのに、図の中に慣性力を描いたら誤り。円運動では、外から見るなら向心方向の運動方程式、一緒に回って見るなら通常の力に遠心力を加えたつり合いの式となる。</li>' +
         '<li>動く台と、その上の物体の問題（②-3、④入試物理）は、台の運動を考える場合は慣性系で見て運動方程式、台の上の物体は台と一緒に動く観測者で見て（慣性力を入れて）立式、と使い分けるのが定石。</li>' +
-        '<li>台の上から見た加速度 $\\vec{\\alpha}\\,\'$・速度 $\\vec{v}\\,\'$ を求めたら、地面から見た各量は $\\vec{\\alpha} = \\vec{\\alpha}\\,\' + \\vec{a}$、$\\vec{v} = \\vec{v}\\,\' + \\vec{V}$（ベクトルの和）で求めることができる。</li>' +
+        '<li>台の上から見た加速度（相対加速度 $\\vec{a}_{\\text{台}\\to\\text{物体}}$）・速度（相対速度 $\\vec{v}_{\\text{台}\\to\\text{物体}}$）を求めたら、地面から見た各量は、台の加速度を $\\vec{a}$、台の速度を $\\vec{V}$ として $\\vec{\\alpha} = \\vec{a}_{\\text{台}\\to\\text{物体}} + \\vec{a}$、$\\vec{v} = \\vec{v}_{\\text{台}\\to\\text{物体}} + \\vec{V}$（ベクトルの和）で求めることができる。</li>' +
         '<li>慣性力は一定の加速度ならば、重力と同じように「どの物体にも質量に比例してはたらく力」。よって、重力とまとめて<b>見かけの重力</b> $m\\vec{g}\\,\'$ と考えると、振り子の周期や放物運動を、普通の重力の問題と同じように解ける（②-1・②-4）。</li>' +   /* 文は千葉さんの指定どおり（2026-10-12） */
       '</ul></div>' +
       '</div></div></article>';
@@ -4219,9 +4358,10 @@ function fbd21(rot, cut) {
     forceArrow(ctx, bx, by, 0, 1, m * G * fsc, COL.force, 'mg', 'below');
     var as = forceArrow(ctx, bx + ux * br, by + uy * br, ux, uy, S * fsc, COL.hand, 'S', sg > 0 ? 'right' : 'left');
     if (Math.abs(a) > 1e-9) {
-      arrow(ctx, bx, by, bx + ux * S * fsc, by, 'comp', COL.hand); arrow(ctx, bx, by, bx, by + uy * S * fsc, 'comp', COL.hand);
-      label(ctx, 'S sinθ', bx + ux * S * fsc + sg * 6, by + 14, { size: 11, color: COL.hand, align: sg > 0 ? 'left' : 'right' });
-      label(ctx, 'S cosθ', bx - sg * 8, by - S * fsc * Math.cos(th) * 0.6, { size: 11, color: COL.hand, align: sg > 0 ? 'right' : 'left' });
+      var px0 = bx + ux * br, py0 = by + uy * br;                /* 分力も張力の作用点（糸と小球の接触点）から（2026-10-13 千葉さん） */
+      arrow(ctx, px0, py0, px0 + ux * S * fsc, py0, 'comp', COL.hand); arrow(ctx, px0, py0, px0, py0 + uy * S * fsc, 'comp', COL.hand);
+      label(ctx, 'S sinθ', px0 + ux * S * fsc + sg * 6, py0 + 14, { size: 11, color: COL.hand, align: sg > 0 ? 'left' : 'right' });
+      label(ctx, 'S cosθ', px0 - sg * 8, py0 - S * fsc * Math.cos(th) * 0.6, { size: 11, color: COL.hand, align: sg > 0 ? 'right' : 'left' });
       if (isRot) forceArrow(ctx, bx, by + 4, -sg, 0, m * Math.abs(a) * fsc, COL.inert, '慣性力 ma', sg > 0 ? 'left' : 'right', 'fict');
       else { var ar = arrow(ctx, bx + sg * 20, by + 34, bx + sg * (20 + 10 + 30 * Math.abs(a) / G), by + 34, 'acc'); if (ar) label(ctx, '小球の加速度 a', ar.x2 + sg * 8, ar.y2, { size: 12, bold: true, color: COL.acc, align: sg > 0 ? 'left' : 'right' }); }
     }
@@ -4309,7 +4449,7 @@ DEFS.m2s1 = ifBase({
     var a = s.v.a, m = TR2.m, S = m * Math.hypot(G, a);
     if (cut21(s)) return {                                           /* 糸が切れたあと：つり合いではなく運動方程式 */
       in: { h: '外（慣性系）から見る（糸が切れたあと）', fbd: fbd21(false, true), lines: [{ tag: 'eom', k: '水平方向：', t: 'm\\alpha_x = 0' }, { tag: 'eom', k: '鉛直方向：', t: 'm\\alpha_y = -mg' }], num: '水平は等速、鉛直は自由落下（水平投射）' },
-      rot: { h: '一緒に加速運動する観測者（非慣性系）から見る（糸が切れたあと）', fbd: fbd21(true, true), lines: [{ tag: 'eom', k: '水平方向：', t: Math.abs(a) < 1e-9 ? "m\\alpha'_x = 0" : "m\\alpha'_x = -ma" }, { tag: 'eom', k: '鉛直方向：', t: "m\\alpha'_y = -mg" }], num: '合力 ' + tex("mg'") + ' の向きに、初速度 0 でまっすぐ落ちる', note: '慣性力 ' + tex('-m\\vec{a}') + ' は糸が切れたあともはたらく' } };
+      rot: { h: '一緒に加速運動する観測者（非慣性系）から見る（糸が切れたあと）', fbd: fbd21(true, true), lines: [{ tag: 'eom', k: '水平方向：', t: Math.abs(a) < 1e-9 ? 'ma_{\\text{電車}\\to\\text{小球},\\,x} = 0' : 'ma_{\\text{電車}\\to\\text{小球},\\,x} = -ma' }, { tag: 'eom', k: '鉛直方向：', t: 'ma_{\\text{電車}\\to\\text{小球},\\,y} = -mg' }], num: '合力 ' + tex("mg'") + ' の向きに、初速度 0 でまっすぐ落ちる', note: '慣性力 ' + tex('-m\\vec{a}') + ' は糸が切れたあともはたらく' } };
     if (Math.abs(a) < 1e-9) return {                                  /* a = 0：張力と重力のつり合いだけ（2026-10-12 千葉さん） */
       in: { h: '外（慣性系）から見る', fbd: fbd21(false, false), lines: [{ tag: 'bal', k: '鉛直方向：', t: 'S - mg = 0' }], num: 'いま：' + tex('S = mg = ' + f2(S) + '\\ \\text{N}') },
       rot: { h: '一緒に加速運動する観測者（非慣性系）から見る', fbd: fbd21(true, false), lines: [{ tag: 'bal', k: '鉛直方向：', t: 'S - mg = 0' }], num: 'いま：' + tex('S = mg = ' + f2(S) + '\\ \\text{N}'), note: '加速度 0 なので慣性力ははたらかない' } };
@@ -4324,14 +4464,14 @@ DEFS.m2s1 = ifBase({
     var hc = ct ? ifSetup(s, {
       title: '糸が切れたあと',
       lead: { in: '外から見ると、糸が切れた小球にはたらく力は<b>重力 $mg$ だけ</b>（張力はなくなる）。小球は切った瞬間の電車と同じ速度で水平に飛び出すので、<b>水平投射</b>と同じ運動をする。',
-              rot: '電車の中から見ると、糸が切れた小球には重力 $mg$ と<b>慣性力 $ma$</b>（加速度と逆向き）がはたらく。この 2 つの合力（見かけの重力 $mg\'$）はつり合わないので、小球は<b>合力の向きにまっすぐ</b>、初速度 0 の等加速度運動をする。' },
-      rows: [{ dir: '水平方向（右向き正）', in: ['eom', 'm\\alpha_x = 0'], rot: ['eom', "m\\alpha'_x = -ma"] },
-             { dir: '鉛直方向（上向き正）', in: ['eom', 'm\\alpha_y = -mg'], rot: ['eom', "m\\alpha'_y = -mg"] }],
+              rot: '電車の中から見ると、糸が切れた小球には重力 $mg$ と<b>慣性力 $ma$</b>（加速度と逆向き）がはたらく。この 2 つの合力（見かけの重力 $mg\'$）はつり合わないので、小球は<b>合力の向きにまっすぐ</b>、初速度 0 の等加速度運動をする。電車に対する小球の<b>相対加速度</b>を $\\vec{a}_{\\text{電車}\\to\\text{小球}}$ とする。' },
+      rows: [{ dir: '水平方向（右向き正）', in: ['eom', 'm\\alpha_x = 0'], rot: ['eom', 'ma_{\\text{電車}\\to\\text{小球},\\,x} = -ma'] },
+             { dir: '鉛直方向（上向き正）', in: ['eom', 'm\\alpha_y = -mg'], rot: ['eom', 'ma_{\\text{電車}\\to\\text{小球},\\,y} = -mg'] }],
       fig: { in: '', rot: '<canvas class="vecc" data-v="c21"></canvas>' },
       note: { in: '<p class="qnote">外（慣性系）から見ると、小球は重力だけで運動する。<b>慣性系に「慣性力」は存在しない。</b></p>', rot: '<p class="qnote">慣性力は、電車が加速している限り、糸が切れたあともはたらき続ける。</p>' },
       a0: { lead: { in: '外から見ると、糸が切れた小球にはたらく力は<b>重力 $mg$ だけ</b>（張力はなくなる）。小球は切った瞬間の電車と同じ速度で水平に飛び出す（電車が止まっていれば、そのまま自由落下）。電車も同じ速度で進み続けるので、小球は<b>真下</b>に落ちる。',
                     rot: '電車の中から見ると、糸が切れた小球にはたらく力は<b>重力 $mg$ だけ</b>（加速度 0 なので慣性力ははたらかない）。小球は<b>真下にまっすぐ</b>自由落下する。' },
-            rows: [{ dir: '水平方向（右向き正）', in: ['eom', 'm\\alpha_x = 0'], rot: ['eom', "m\\alpha'_x = 0"] }, { dir: '鉛直方向（上向き正）', in: ['eom', 'm\\alpha_y = -mg'], rot: ['eom', "m\\alpha'_y = -mg"] }],
+            rows: [{ dir: '水平方向（右向き正）', in: ['eom', 'm\\alpha_x = 0'], rot: ['eom', 'ma_{\\text{電車}\\to\\text{小球},\\,x} = 0'] }, { dir: '鉛直方向（上向き正）', in: ['eom', 'm\\alpha_y = -mg'], rot: ['eom', 'ma_{\\text{電車}\\to\\text{小球},\\,y} = -mg'] }],
             fig: { in: '', rot: '' }, note: { in: '<p class="qnote">外（慣性系）から見ると、小球は重力だけで運動する。<b>慣性系に「慣性力」は存在しない。</b></p>', rot: '' } }
     }) : '';
     var h = ct ? hc : ifSetup(s, {
@@ -4391,7 +4531,7 @@ DEFS.m2s1 = ifBase({
         sum: Math.abs(a) > 1e-9 ? { col: COL.acc, lab: '合力 ma' } : null, closed: Math.abs(a) > 1e-9 ? '合力は加速度の向き（水平）' : '合力 0（加速度 0）' });
     }
     var cs = R.querySelector('canvas.vecc[data-v="c21"]');
-    if (cs) vecDiagram(cs, { h: 180, title: '糸が切れたあとの力（ベクトル図）', lead: "運動方程式 $m\\vec{\\alpha}\\,' = m\\vec{g} + (-m\\vec{a})$ の右辺（合力）を図に表すと", vecs: [{ x: 0, y: -m * G, col: COL.force, lab: 'mg' }].concat(Math.abs(a) > 1e-9 ? [{ x: -m * a, y: 0, col: COL.inert, lab: '慣性力 ma', kind: 'fict' }] : []),
+    if (cs) vecDiagram(cs, { h: 180, title: '糸が切れたあとの力（ベクトル図）', lead: '運動方程式 $m\\vec{a}_{\\text{電車}\\to\\text{小球}} = m\\vec{g} + (-m\\vec{a})$ の右辺（合力）を図に表すと', vecs: [{ x: 0, y: -m * G, col: COL.force, lab: 'mg' }].concat(Math.abs(a) > 1e-9 ? [{ x: -m * a, y: 0, col: COL.inert, lab: '慣性力 ma', kind: 'fict' }] : []),
       sum: Math.abs(a) > 1e-9 ? { col: COL_RES, lab: "合力（見かけの重力）mg′" } : null, closed: Math.abs(a) > 1e-9 ? '元の点に戻らない（つり合っていない）→ 合力の向きに加速する' : 'a = 0 なら重力だけ' });
     gpPairDraw(R, a, m);
     var gs = R.querySelector('canvas.vecc[data-v="g21"]');
@@ -4423,7 +4563,13 @@ function pushHand(ctx, x, y, s, pull) {
    チェック「力を斜面方向に分解する」（dec）：力の矢印に加えて、斜面にそった成分と斜面に垂直な成分（破線）を描く。
    チェック「斜面方向の力のみ表示する」（par）：斜面にそった成分だけを描く（他のチェックと「力を表示」は外れる）。
    F = [{x0, y0, fx, fy（画面の向き・N）, col, kind, lab, where, lp（斜面にそった成分の名前）, ln（垂直な成分の名前）}] */
-var SLOPE_CHECKS = [{ k: 'dec', label: '力を斜面方向に<br>分解する', needF: true }, { k: 'par', label: '斜面方向の力のみ<br>表示する', only: true }];
+var SLOPE_CHECKS = [{ k: 'dec', label: '力を斜面方向に<br>分解する', needF: true, grp: 'dec' }, { k: 'par', label: '斜面方向の力のみ<br>表示する', only: true }];
+/* 2-3 だけ：「力を水平・鉛直方向に分解する」（hv）。斜面方向の分解（dec）とはどちらか一方（grp）。2026-10-13 千葉さん（momentum-and-collision.html の 6-4 にならう） */
+var SLOPE_CHECKS23 = SLOPE_CHECKS.concat([{ k: 'hv', label: '力を水平・鉛直<br>方向に分解する', needF: true, grp: 'dec' }]);
+function m23Only(s, w) { s._only23 = s._only23 === w ? null : w; m23OnlySync(s); s.draw(); }
+function m23OnlySync(s) {                                       /* 図の左上の「〜の運動のみ表示」：外から見るときだけ出す */
+  ['blk', 'wdg'].forEach(function (w) { var b = s.extra && s.extra['only_' + w]; if (!b) return; var on = s._only23 === w; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.style.display = s.rot ? 'none' : ''; });
+}
 function slopeForces(ctx, s, P) {
   var th = P.th, d = [Math.cos(th), Math.sin(th)], n = [Math.sin(th), -Math.cos(th)], fsc = P.fsc;
   var par = !!(s.chk && s.chk.par), dec = !!(s.chk && s.chk.dec) && s.ms.showF;
@@ -4449,6 +4595,7 @@ function slopeForces(ctx, s, P) {
 
 /* ===================== 2-2 動かされる斜め台の上の物体 ===================== */
 var M22 = { h: 1.4, m: 0.5, bs: 0.3, TW: 1.2, s0: 0.5 };
+var REL22 = relQ('a', '台', '小物体');   /* 台に対する小物体の相対加速度（斜面にそって下向き正。′ は使わない。2026-10-13 千葉さん） */
 function m22Th(s) { return s.v.th * Math.PI / 180; }
 function m22Rel(s, a) { var th = m22Th(s); return G * Math.sin(th) - (a === undefined ? s.v.a : a) * Math.cos(th); }   /* 斜面にそって下向きの相対加速度 */
 function m22Th0(a) { return Math.atan2(a, G) * 180 / Math.PI; }
@@ -4555,7 +4702,7 @@ DEFS.m2s2 = ifBase({
     var th = m22Th(s), a = s.v.a, m = M22.m, N = m * (G * Math.cos(th) + a * Math.sin(th)), ar = m22Rel(s);
     return {
       in: { h: '外（慣性系）から見る（斜面に対して静止しているとき）', lines: [{ tag: 'eom', k: '小物体・水平：', t: 'ma = N\\sin\\theta' }, { tag: 'bal', k: '小物体・鉛直：', t: '0 = N\\cos\\theta - mg' }], num: 'いま：' + tex('N = ' + f2(N) + '\\ \\text{N}') + (Math.abs(ar) > 0.05 ? '（いまは静止していない）' : '') },
-      rot: { h: '一緒に加速運動する観測者（非慣性系）から見る', lines: [{ tag: 'bal', k: '小物体・斜面に垂直：', t: 'N - mg\\cos\\theta - ma\\sin\\theta = 0' }, { tag: Math.abs(ar) > 0.05 ? 'eom' : 'bal', k: '小物体・斜面にそって：', t: Math.abs(ar) > 0.05 ? "ma' = mg\\sin\\theta - ma\\cos\\theta" : 'mg\\sin\\theta - ma\\cos\\theta = 0' }], num: "いま：" + tex("a' = " + f2(ar) + '\\ \\text{m/s}^2') + '（斜面にそって下向き）' } };
+      rot: { h: '一緒に加速運動する観測者（非慣性系）から見る', lines: [{ tag: 'bal', k: '小物体・斜面に垂直：', t: 'N - mg\\cos\\theta - ma\\sin\\theta = 0' }, { tag: Math.abs(ar) > 0.05 ? 'eom' : 'bal', k: '小物体・斜面にそって：', t: Math.abs(ar) > 0.05 ? 'm' + REL22 + ' = mg\\sin\\theta - ma\\cos\\theta' : 'mg\\sin\\theta - ma\\cos\\theta = 0' }], num: 'いま：' + tex(REL22 + ' = ' + f2(ar) + '\\ \\text{m/s}^2') + '（斜面にそって下向き）' } };
   },
   draw: drawM22,
   right: function (s, R) {
@@ -4572,16 +4719,16 @@ DEFS.m2s2 = ifBase({
       a0: { lead: { in: '外から見ると、台は止まっているか一定の速さで動いている（加速度 0）。小物体には重力 $mg$ と垂直抗力 $N$ だけがはたらき、固定された斜面と同じように、斜面にそって滑り下りる。',
                     rot: '台の上の観測者から見ると、加速度 0 なので<b>慣性力ははたらかない</b>。小物体には重力 $mg$ と垂直抗力 $N$ だけがはたらき、斜面にそって滑り下りる。' },
             rows: [{ dir: SJ + '斜面に垂直', in: ['bal', 'N - mg\\cos\\theta = 0'], rot: ['bal', 'N - mg\\cos\\theta = 0'] },
-                   { dir: SJ + '斜面にそって', in: ['eom', "ma' = mg\\sin\\theta"], rot: ['eom', "ma' = mg\\sin\\theta"] }],
+                   { dir: SJ + '斜面にそって', in: ['eom', 'm' + REL22 + ' = mg\\sin\\theta'], rot: ['eom', 'm' + REL22 + ' = mg\\sin\\theta'] }],
             fig: { in: '', rot: '' },
-            now: { in: tex("a' = g\\sin\\theta = " + f2(G * Math.sin(th)) + '\\ \\text{m/s}^2'), rot: tex("a' = g\\sin\\theta = " + f2(G * Math.sin(th)) + '\\ \\text{m/s}^2') },
+            now: { in: tex(REL22 + ' = g\\sin\\theta = ' + f2(G * Math.sin(th)) + '\\ \\text{m/s}^2'), rot: tex(REL22 + ' = g\\sin\\theta = ' + f2(G * Math.sin(th)) + '\\ \\text{m/s}^2') },
             note: { in: '<p class="qnote">外（慣性系）から見ると、小物体は斜面にそって加速するので、斜面にそった向きは' + T_EOM + 'を立てる。<b>慣性系に「慣性力」は存在しない。</b></p>', rot: '' } }
     });
     h += foldCard(s, 'fit', Math.abs(a) > 1e-9, 'derive', '斜面に対して静止する条件', (s.rot ?
       '<p>斜面にそった向きの' + T_BAL + 'から（「力を斜面方向に分解する」で、成分 $mg\\sin\\theta$ と $ma\\cos\\theta$ を確かめよう）</p><div class="qeq">' + tex('mg\\sin\\theta = ma\\cos\\theta \\;\\Rightarrow\\; a = g\\tan\\theta', true) + '</div>' :
       '<p>2 つの式を割り算すると</p><div class="qeq">' + tex('\\frac{N\\sin\\theta}{N\\cos\\theta} = \\frac{ma}{mg} \\;\\Rightarrow\\; a = g\\tan\\theta', true) + '</div>') +
       '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('g\\tan\\theta = 9.8\\times\\tan' + f1(s.v.th) + '^\\circ = ' + f2(G * Math.tan(th)) + '\\ \\text{m/s}^2') + '（いまの ' + tex('a = ' + f1(a)) + '）</p>' +
-      '<p>力のつり合いが成り立たない場合、小物体は斜面にそって ' + tex("a' = g\\sin\\theta - a\\cos\\theta") + ' で' + '（正なら滑り下り、負なら滑り上がる）動く。</p>');
+      '<p>力のつり合いが成り立たない場合、小物体は斜面にそって相対加速度 ' + tex(REL22 + ' = g\\sin\\theta - a\\cos\\theta') + ' で' + '（正なら滑り下り、負なら滑り上がる）動く。</p>');
     R.innerHTML = mathify(h + '<p class="assume">小物体の質量 ' + tex('m=0.50') + ' kg、台の高さ 1.4 m、' + tex('g=9.8') + ' m/s²。床も斜面もなめらか。手は台を水平に押す（' + tex('a<0') + ' のときは引く）。</p>');
     var cv = R.querySelector('canvas.vecc[data-v="f22"]');
     if (cv) {
@@ -4595,75 +4742,134 @@ DEFS.m2s2 = ifBase({
 });
 
 /* ===================== 2-3 斜め台を滑る物体（問7：自由に動ける三角台） ===================== */
-var M23 = { m: 1, th: Math.PI / 6, h: 1.4, bs: 0.34, MST: [0.1, 0.5, 1, 2, 10] };   /* 台の質量の選択（2026-10-11 千葉さん：0.1・0.5・1・2・10、はじめは 1） */
+var M23 = { m: 1, th: Math.PI / 6, h: 1.4, bs: 0.34, MST: [0.1, 0.5, 1, 3, 10] };   /* 台の質量の選択（0.1・0.5・1・3・10、はじめは 1。3 kg は momentum-and-collision.html の 6-4 と同じ。2026-10-13 千葉さん） */
+var REL23 = { a: relQ('a', '台', '小物体'), v: relQ('v', '台', '小物体'), vv: relQ('v', '台', '小物体', true) };   /* 相対加速度・相対速度（台→小物体） */
 function m23(s) {
   var m = M23.m, M = s.v.M, th = (s.v.th === undefined ? 30 : s.v.th) * Math.PI / 180, sn = Math.sin(th), cs = Math.cos(th);   /* θ もスライダーで（2026-10-11 千葉さん） */
   var den = M + m * sn * sn, aRel = G * sn * (M + m) / den, A = m * G * sn * cs / den, N = m * G * M * cs / den;
   var S = M23.h / sn, Send = S - M23.bs, t1 = Math.sqrt(2 * Send / aRel);
   return { m: m, M: M, th: th, aRel: aRel, A: A, N: N, t1: t1 };
 }
+/* 2-3 の図（2026-10-13 千葉さん）
+   ・外から見るとき：台にはたらく力のうち、垂直抗力の反作用（小物体から受ける力）も描く。
+   ・チェック「力を水平・鉛直方向に分解する」（hv）：垂直抗力（と反作用）を水平・鉛直の成分に分ける。外から見るときは、
+     床の下に「水平成分どうしが及ぼし合う」矢印の組も出す（momentum-and-collision.html の 6-4 と同じ）。
+   ・図の左上の「小物体の運動のみ表示」「台の運動のみ表示」（外から見るときだけ）：もう一方をうすく描き、台の上の観測者は消す。 */
+var M23_FADE = 0.2;
+function m23Comp(ctx, x, y, fx, fy, fsc, col, lx, ly) {          /* 力 (fx, fy)［画面の向き］を水平・鉛直に分ける（破線の矢印＋補助線） */
+  var X = fx * fsc, Y = fy * fsc;
+  ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = col; ctx.globalAlpha *= 0.45; ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.moveTo(x + X, y); ctx.lineTo(x + X, y + Y); ctx.moveTo(x, y + Y); ctx.lineTo(x + X, y + Y); ctx.stroke(); ctx.restore();
+  if (Math.abs(X) > 4) { var a1 = arrow(ctx, x, y, x + X, y, 'comp', col, { noShift: true }); if (a1) sym(ctx, 'N', a1.x2 + (X > 0 ? 12 : -12), y + (lx || -10), { size: 14, color: col, sub: 'x' }); }
+  if (Math.abs(Y) > 4) { var a2 = arrow(ctx, x, y, x, y + Y, 'comp', col, { noShift: true }); if (a2) sym(ctx, 'N', x + (ly || -14), a2.y2 + (Y > 0 ? 10 : -10), { size: 14, color: col, sub: 'y' }); }
+}
 function drawM23(s, ctx, W, H) {
   var q = m23(s), th = q.th, t = Math.min(s.t, q.t1), base = M23.h / Math.tan(th);
-  var k = Math.min(W / (base + 2.5), (H - 90) / 2.0), yg = H - 46, bw = base * k, hp = M23.h * k;   /* 傾角が小さいと台が横に長くなるので、それに合わせて縮める */
+  var hv = !!(s.chk && s.chk.hv) && s.ms.showF, pair = hv && !s.rot, bot = pair ? 100 : 46;   /* 床の下に「水平成分の組」を出すときは、そのぶん床を上げる */
+  var k = Math.min(W / (base + 2.5), (H - 44 - bot) / 2.0), yg = H - bot, bw = base * k, hp = M23.h * k;   /* 傾角が小さいと台が横に長くなるので、それに合わせて縮める */
   var Xw = -0.5 * q.A * t * t, Vw = -q.A * t, sr = 0.5 * q.aRel * t * t + M23.bs / 2, vr = q.aRel * t;
   var x0 = (W - bw) / 2 + 0.55 * k + (s.rot ? 0 : Xw * k), sh = s.rot ? -Xw * k : 0;
-  var on = s.t > 0;
+  var on = s.t > 0, only = s.rot ? null : (s._only23 || null), aW = only === 'blk' ? M23_FADE : 1, aB = only === 'wdg' ? M23_FADE : 1;
   groundPosts(ctx, W, yg, sh, 0.8 * k);
   groundShift(ctx, 0, W, yg, sh);
   label(ctx, '床も斜面もなめらか', W - 10, yg + 22, { size: 10.5, color: COL.sub, align: 'right' });
   posNote(ctx, W, '右向き', 'right');
-  var ox = W - 0.45 * k + sh, hdIn = null;                    /* 外の観測者：画面の外に出たら目じるしだけ */
+  var ox = W - 0.45 * k + sh, hdIn = null;                    /* 外の観測者 */
   if (ox > -20 && ox < W + 20) hdIn = observer(ctx, ox, yg, 0, -1, NAME_IN, !s.rot, 1.4 * k);
   else offMarker(ctx, W, H, ox, yg - 0.7 * k, NAME_IN, !s.rot);
+  /* ---- 台（絵・M・θ） ---- */
+  ctx.save(); ctx.globalAlpha = aW;
   wedgeDraw(ctx, x0, yg, bw, hp);
-  sym(ctx, 'M', x0 + bw * 0.16, yg - hp * 0.12, { size: 16, color: COL.ink2 });
-  var hdRot = deckObserver(ctx, x0, yg - hp, -1, k, s.rot, Math.min(0.8 * k, 64));
-  label(ctx, '台と' + NAME_ROT + (s.rot ? '（いまの視点）' : ''), x0 + bw * 0.4, yg + 22, { size: s.rot ? 11.5 : 10.5, bold: s.rot, color: s.rot ? COL.vel : '#9aa3ac' });
+  sym(ctx, 'M', x0 + bw * 0.08, yg - hp * 0.62, { size: 16, color: COL.ink2 });   /* 左の鉛直の面の近く（下の A・V の矢印と重ねない） */
   angArc(ctx, x0 + bw, yg, 0.32 * k, Math.PI, Math.PI + th, COL.ink2);
   sym(ctx, 'θ', x0 + bw - 0.45 * k, yg - 0.1 * k, { size: 15, color: COL.ink2 });
+  ctx.restore();
+  /* ---- 台の上の観測者（「〜のみ表示」のときは消す）。名前は台の下ではなく、観測者のそばに ---- */
+  var hdRot = null;
+  if (!only) {
+    var Lp = Math.min(0.36 * k, 50);
+    hdRot = deckObserver(ctx, x0, yg - hp, -1, k, s.rot, Math.min(0.8 * k, 64));
+    if (s.rot) ['台と一緒に', '加速する観測者', '（いまの視点）'].forEach(function (tx, i) { label(ctx, tx, x0 - Lp - 6, yg - hp + 14 + i * 15, { size: 11, bold: true, color: COL.vel, align: 'right' }); });   /* 頭の上は吹き出し */
+    else if (hdRot) label(ctx, '台と' + NAME_ROT, hdRot.x + hdRot.r + 6, hdRot.y, { size: 10, color: '#9aa3ac', align: 'left' });   /* 頭の右（左上のボタンと重ねない） */
+  }
+  /* ---- 小物体（絵・m・力） ---- */
   var ux = Math.cos(th), uy = Math.sin(th), cx = x0 + sr * ux * k, cy = yg - hp + sr * uy * k;
-  blockOnSlope(ctx, cx, cy, th, M23.bs * k);
   var nx = Math.sin(th), ny = -Math.cos(th), bc = [cx + nx * M23.bs * k / 2, cy + ny * M23.bs * k / 2];
-  sym(ctx, 'm', bc[0] + nx * 0.34 * k, bc[1] + ny * 0.34 * k, { size: 15, color: COL.ink2 });
   var fsc = 9 * k / 100, m = q.m, F = [];
+  ctx.save(); ctx.globalAlpha = aB;
+  blockOnSlope(ctx, cx, cy, th, M23.bs * k);
+  sym(ctx, 'm', bc[0] + nx * 0.34 * k, bc[1] + ny * 0.34 * k, { size: 15, color: COL.ink2 });
   F.push({ x0: bc[0] - ux * 7, y0: bc[1] - uy * 7, fx: 0, fy: m * G, col: COL.force, lab: 'mg', where: 'below', lp: 'mg sinθ', ln: 'mg cosθ' });
   F.push({ x0: cx + ux * 7, y0: cy + uy * 7, fx: nx * q.N, fy: ny * q.N, col: COL.norm, lab: 'N', where: 'right' });
   if (s.rot && on) F.push({ x0: bc[0], y0: bc[1] - 7, fx: m * q.A, fy: 0, col: COL.inert, lab: '慣性力 mA', where: 'right', kind: 'fict', lp: 'mA cosθ', ln: 'mA sinθ' });   /* 台の加速度は左向き → 慣性力は右向き */
   slopeForces(ctx, s, { th: th, bc: bc, fsc: fsc, F: F, lift: M23.bs * k * 0.5 + 10 });
-  drawEqualTicks(ctx);
-  if (on) {                                                    /* 台の加速度（左向き） */
-    var La = 22 + 5 * q.A, xa = x0 + bw * 0.3; blockArrow(ctx, xa + La, yg - hp * 0.1, -1, 0, La, '台の加速度 A（左向き）', { x: xa + La / 2, y: yg - hp * 0.1 - 20 });   /* 台の下のほう（斜面の力の矢印とぶつからないように） */
+  if (hv) m23Comp(ctx, cx + ux * 7, cy + uy * 7, nx * q.N, ny * q.N, fsc, COL.norm, -10, -14);   /* 小物体が受ける N の水平・鉛直成分 */
+  ctx.restore();
+  /* ---- 台にはたらく力：垂直抗力の反作用（外から見るときだけ。小物体から受ける力） ---- */
+  if (!s.rot && s.ms.showF) {
+    ctx.save(); ctx.globalAlpha = aW;
+    var rx = cx - ux * 7, ry = cy - uy * 7;
+    if (!(s.chk && s.chk.par)) { var rA = forceArrow(ctx, rx, ry, -nx, -ny, q.N * fsc, COL.norm, '', ''); if (rA) sym(ctx, 'N', rA.x2 - 8, rA.y2 + 8, { size: 15, color: COL.norm, tail: '（反作用）', align: 'right' }); }
+    if (hv) m23Comp(ctx, rx, ry, -nx * q.N, -ny * q.N, fsc, COL.norm, 14, 14);
+    ctx.restore();
   }
+  /* ---- 床の下（等しい長さの目じるしをつけるので drawEqualTicks の前に）：垂直抗力の水平成分どうし（作用・反作用）。外から見て、水平・鉛直に分解しているとき ---- */
+  if (pair) {
+    var Nx = q.N * nx * fsc, xc = clamp(x0 + bw * 0.5, Nx + 70, W - Nx - 70), yp = yg + 44;
+    var p1 = arrow(ctx, xc, yp, xc + Nx, yp, 'force', COL.norm, { noShift: true }), p2 = arrow(ctx, xc, yp, xc - Nx, yp, 'force', COL.norm, { noShift: true });
+    if (p1) sym(ctx, 'N', p1.x2 + 6, yp - 12, { size: 14, color: COL.norm, sub: 'x', tail: '（小物体が受ける）', align: 'left' });
+    if (p2) sym(ctx, 'N', p2.x2 - 6, yp - 12, { size: 14, color: COL.norm, sub: 'x', tail: '（台が受ける）', align: 'right' });
+    ctx.save(); ctx.beginPath(); ctx.arc(xc, yp, 4, 0, TAU); ctx.fillStyle = COL.norm; ctx.fill(); ctx.restore();
+    label(ctx, '垂直抗力の水平成分：大きさが同じで逆向き（作用・反作用）', xc, yp + 22, { size: 10.5, bold: true, color: COL.norm });
+  }
+  drawEqualTicks(ctx);
+  /* ---- 台の加速度 A・速度 V ---- */
+  ctx.save(); ctx.globalAlpha = aW;
+  if (on) { var La = 22 + 5 * q.A, xa = x0 + Math.max(bw * 0.06, 8), ya = yg - Math.max(hp * 0.26, 40); blockArrow(ctx, xa + La, ya, -1, 0, La, W < 480 ? '台の\n加速度 A' : '台の加速度 A（左向き）', { x: xa, y: ya - (W < 480 ? 26 : 20), align: 'left' }); }   /* 台の左下（左の鉛直の面のそば。小物体の力の矢印と重ねない）。スマホでは短く */
+  if (!s.rot) {
+    var LV = Math.abs(Vw) * 14 * k / 100 + 4, xv = x0 + bw * 0.62, yv = yg - 13;   /* 台の速度は V（台の加速度 A とそろえる）。A の矢印の下に */
+    if (Math.abs(Vw) > 0.02 && LV >= 4) { var aV = arrow(ctx, xv, yv, xv - LV, yv, 'vel'); if (aV) sym(ctx, 'V', aV.x2 - 12, yv - 2, { size: 16, color: COL.vel }); }
+  }
+  ctx.restore();
+  /* ---- 吹き出し（速度の矢印より先に描く：スマホで矢印がかくれないように） ---- */
+  var say = s.rot ? (on ? '斜面にそってまっすぐ下りてくる' : '台の上から見ているよ') :
+    (!on ? 'まだ動いていない' : (only === 'blk' ? '小物体は右下へ動いてる' : (only === 'wdg' ? '台は左へ動いてる' : (W < 480 ? '台は左、小物体は右下へ' : '台は左へ、小物体は右下へ動いてる'))));
+  speech(ctx, say, s.rot ? hdRot : hdIn);
+  /* ---- 小物体の速度：外から見ると v（地面に対する）、台の上から見ると 相対速度 v台→小物体 ---- */
+  var fn = s.rot ? 0.85 : (W < 480 ? 1.3 : 0.8), fu = s.rot ? 0 : (W < 480 ? 1.0 : 0.45);   /* 外から：小物体の左上（スマホでは吹き出しより上に）。台の上から：斜面に垂直に離した所 */
+  var vp = [bc[0] + nx * fn * k - ux * fu * k, bc[1] + ny * fn * k - uy * fu * k];
+  ctx.save(); ctx.globalAlpha = aB;
   if (!s.rot) {
     var vbx = Vw + vr * ux, vby = vr * uy, vs = Math.hypot(vbx, vby);
-    if (vs > 0.02) velAt(ctx, bc[0] + nx * 0.45 * k, bc[1] + ny * 0.45 * k, vbx / vs, vby / vs, vs * 14 * k / 100 + 4, [6, -6]);
-    if (Math.abs(Vw) > 0.02) velAt(ctx, x0 + bw * 0.35, yg - 10, -1, 0, Math.abs(Vw) * 14 * k / 100 + 4, [-6, -4]);
-  } else if (vr > 0.02) velAt(ctx, bc[0] + nx * 0.85 * k, bc[1] + ny * 0.85 * k, ux, uy, vr * 14 * k / 100 + 4, [6, -6]);   /* 力の矢印と重ならないよう、少し離して */
-  var say = s.rot ? (on ? '斜面にそってまっすぐ下りてくる' : '台の上から見ているよ') : (on ? '台は左へ、物体は右下へ動いてる' : 'まだ動いていない');
-  speech(ctx, say, s.rot ? hdRot : hdIn);
+    if (vs > 0.02) velAt(ctx, vp[0], vp[1], vbx / vs, vby / vs, vs * 14 * k / 100 + 4, [6, -6]);
+  } else if (vr > 0.02) velAt(ctx, vp[0], vp[1], ux, uy, vr * 14 * k / 100 + 4, [6, -6], 'v', '', '台→小物体');
+  ctx.restore();
   if (s.t >= q.t1 - 1e-9) bubble(ctx, '床に着いた！', cx, cy - M23.bs * k - 10, { size: 13, bg: '#dff2ee', border: '#0f8a8a', color: '#0a5c5c' });
 }
 DEFS.m2s3 = ifBase({
   id: 'm2s3', num: 3, title: '（上級編）斜め台を滑る物体', mode: 'mode2', V0: 0, TW: 2, noAcc: true, baseRate: 0.5,
   height: function (s, w) { return Math.round(clamp(w * 0.6, 300, 400)); },
   desc: 'なめらかで水平な床の上に、傾角 $\\theta$ のなめらかな斜面をもつ質量 $M$ の三角台を置く。<b>三角台は床の上を自由に動ける</b>。斜面の頂点（高さ 1.4 m）に質量 $m=1.0$ kg の小物体をそっと置くと、小物体は滑り降り、台は反対向きに動き出す。<span class="todo">「▶ スタート」を押し、台と一緒に加速運動する観測者から見ると小物体がどう動くか見よう。台の質量 $M$ も変えてみよう。</span>',
-  vars: [{ k: 'M', label: '台の質量 $M$', aria: '台の質量', stops: M23.MST, stopLabels: ['0.1', '0.5', '1', '2', '10'], def: 1, fmt: function (x) { return x + ' kg'; } },
+  vars: [{ k: 'M', label: '台の質量 $M$', aria: '台の質量', stops: M23.MST, stopLabels: ['0.1', '0.5', '1', '3', '10'], def: 1, fmt: function (x) { return x + ' kg'; } },
          { k: 'th', label: '傾角 $\\theta$', aria: '傾角', stops: [20, 25, 30, 35, 40, 45, 50, 55, 60], stopLabels: ['20', '25', '30', '35', '40', '45', '50', '55', '60'], def: 30, fmt: function (x) { return x + '°'; } }],   /* 9 段階 */
   varColsK: [['M'], ['th']],                                     /* 2-2 と同じく、スライダー 2 本を 1 行に */
-  afterBuild: function (s) { if (s.varbox) s.varbox.classList.add('two'); alignStops(s); s._wk = el('div', 'leftcards'); s.L.appendChild(s._wk); },   /* 左の列のいちばん下：「仕事とエネルギーの関係について」 */
-  checks: SLOPE_CHECKS,
+  buttons: [{ k: 'only_blk', label: '<span class="lg">小物体の運動のみ表示</span><span class="sm">小物体のみ</span>', cls: 'only', inCanvas: true, onClick: function (s) { m23Only(s, 'blk'); } },   /* 外から見るときだけ（2026-10-13 千葉さん） */
+            { k: 'only_wdg', label: '<span class="lg">台の運動のみ表示</span><span class="sm">台のみ</span>', cls: 'only', inCanvas: true, onClick: function (s) { m23Only(s, 'wdg'); } }],
+  onRot: function (s, on) { if (on) s._only23 = null; m23OnlySync(s); },
+  afterBuild: function (s) { m23OnlySync(s); if (s.varbox) s.varbox.classList.add('two'); alignStops(s); s._wk = el('div', 'leftcards'); s.L.appendChild(s._wk); },   /* 左の列のいちばん下：「仕事とエネルギーの関係について」 */
+  checks: SLOPE_CHECKS23,
   tEnd: function (s) { return m23(s).t1; },
   msg: function (s) {
     var q = m23(s);
     if (s.t <= 0) return '小物体は頂点に静止している。「▶ スタート」を押そう。';
-    return s.rot ? '台の上から見ると、小物体には $mg$・$N$・慣性力 $mA$（右向き）がはたらき、斜面にそって $a\'=' + f2(q.aRel) + '$ m/s² でまっすぐ滑り降りる。' :
+    return s.rot ? '台の上から見ると、小物体には $mg$・$N$・慣性力 $mA$（右向き）がはたらき、斜面にそって相対加速度 $' + REL23.a + ' = ' + f2(q.aRel) + '$ m/s² でまっすぐ滑り降りる。' :
       '外から見ると、台は垂直抗力の反作用で左へ $A=' + f2(q.A) + '$ m/s² で加速し、小物体は斜めの直線にそって動く（斜面の向きとは少し違う）。';
   },
   eqs: function (s) {
     var q = m23(s);
     return {
       in: { h: '外（慣性系）から見る', lines: [{ tag: 'eom', k: '小物体・水平：', t: 'ma_x = N\\sin\\theta' }, { tag: 'eom', k: '小物体・鉛直：', t: 'ma_y = N\\cos\\theta - mg' }, { tag: 'eom', k: '台・水平：', t: 'MA = N\\sin\\theta' }], num: 'いま：' + tex('A = ' + f2(q.A) + ',\\ N = ' + f2(q.N)) },
-      rot: { h: '台と一緒に加速運動する観測者（非慣性系）から見る', lines: [{ tag: 'bal', k: '小物体・斜面に垂直：', t: 'N + mA\\sin\\theta - mg\\cos\\theta = 0' }, { tag: 'eom', k: '小物体・斜面にそって：', t: "ma' = mg\\sin\\theta + mA\\cos\\theta" }, { tag: 'bal', k: '台・水平：', t: 'N\\sin\\theta - MA = 0' }], num: 'いま：' + tex("a' = " + f2(q.aRel) + '\\ \\text{m/s}^2'), note: '慣性力 ' + tex('mA') + '（小物体）・' + tex('MA') + '（台）は、台の加速度（左向き）と逆の右向き' } };
+      rot: { h: '台と一緒に加速運動する観測者（非慣性系）から見る', lines: [{ tag: 'bal', k: '小物体・斜面に垂直：', t: 'N + mA\\sin\\theta - mg\\cos\\theta = 0' }, { tag: 'eom', k: '小物体・斜面にそって：', t: 'm' + REL23.a + ' = mg\\sin\\theta + mA\\cos\\theta' }, { tag: 'bal', k: '台・水平：', t: 'N\\sin\\theta - MA = 0' }], num: 'いま：' + tex(REL23.a + ' = ' + f2(q.aRel) + '\\ \\text{m/s}^2'), note: '慣性力 ' + tex('mA') + '（小物体）・' + tex('MA') + '（台）は、台の加速度（左向き）と逆の右向き' } };
   },
   draw: drawM23,
   right: function (s, R) {
@@ -4672,40 +4878,43 @@ DEFS.m2s3 = ifBase({
       lead: { in: '外から見ると、小物体は台からの垂直抗力 $N$ と重力 $mg$ を受けて斜め下へ、台は $N$ の反作用を受けて左へ加速する（加速度の大きさ $A$）。小物体の加速度は斜面の向きと一致しないので、このままでは式が立てにくい（「小物体が斜面から離れない」という条件を別に考える必要がある）。',
               rot: '台と一緒に加速運動する観測者から見ると、台は止まって見え、小物体は<b>斜面にそってまっすぐ</b>滑り降りる。小物体には $mg$・$N$・<b>慣性力 $mA$</b>（右向き）がはたらく。斜面に垂直な向きはつり合い、斜面にそった向きに加速する。台にも慣性力 $MA$（右向き）がはたらき、台は止まって見えるので水平方向の力はつり合う。' },
       rows: [{ dir: SJ + '水平／斜面に垂直', in: ['eom', 'ma_x = N\\sin\\theta'], rot: ['bal', 'N + mA\\sin\\theta - mg\\cos\\theta = 0'] },
-             { dir: SJ + '鉛直／斜面にそって', in: ['eom', 'ma_y = N\\cos\\theta - mg'], rot: ['eom', "ma' = mg\\sin\\theta + mA\\cos\\theta"] },
-             { dir: SW + '水平', in: ['eom', 'MA = N\\sin\\theta'], rot: ['bal', 'N\\sin\\theta - MA = 0'] }]
+             { dir: SJ + '鉛直／斜面にそって', in: ['eom', 'ma_y = N\\cos\\theta - mg'], rot: ['eom', 'm' + REL23.a + ' = mg\\sin\\theta + mA\\cos\\theta'] },
+             { dir: SW + '水平', in: ['eom', 'MA = N\\sin\\theta'], rot: ['bal', 'N\\sin\\theta - MA = 0'] }],
+      note: { rot: '<p class="qnote">慣性力は、加速度 $\\vec{A}$ で運動する観測者（台と一緒に動く観測者）だけが感じる<b>見かけの力</b>。大きさは小物体で $mA$、台で $MA$、向きは観測者の加速度と<b>逆</b>（右向き）。</p>' }   /* 2-3 は台の加速度を A とおくので、a・ma ではなく A・mA（2026-10-13 千葉さん） */
     });
-    h += '<div class="qcard derive"><p class="qt">台の加速度 A と、台に対する小物体の加速度 a′</p>' +
+    var AR = REL23.a, VR = REL23.v, VRv = REL23.vv;   /* 相対加速度・相対速度は添え字で「台→小物体」（′ は使わない。2026-10-13 千葉さん） */
+    h += '<div class="qcard derive"><p class="qt">台の加速度 A と、相対加速度 ' + tex(AR) + '</p>' +
+      '<p>台の上から見た小物体の加速度は、<b>台に対する小物体の相対加速度</b> ' + tex(AR) + '（斜面にそって下向き）。</p>' +
       '<p>' + SJ + '台の上から見た、斜面に垂直な' + T_BAL + 'から</p><div class="qeq">' + tex('N = m(g\\cos\\theta - A\\sin\\theta)', true) + '</div>' +
       '<p>' + SW + '台の水平方向の式 $MA = N\\sin\\theta$ に入れると</p>' +
       '<div class="qeq">' + tex('A = \\frac{mg\\sin\\theta\\cos\\theta}{M + m\\sin^2\\theta}', true) + '</div>' +
-      '<p>' + SJ + '斜面にそった' + T_EOM + ' $ma\' = mg\\sin\\theta + mA\\cos\\theta$ から</p>' +
-      '<div class="qeq">' + tex("a' = \\frac{(M+m)g\\sin\\theta}{M + m\\sin^2\\theta}", true) + '</div>' +
-      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('M = ' + q.M + '\\ \\text{kg}:\\ A = ' + f2(q.A) + ',\\ a\' = ' + f2(q.aRel) + ',\\ N = ' + f2(q.N) + '\\ \\text{N}') + '</p>' +
-      '<p>$M$ を大きくすると台は動きにくくなり（$A \\to 0$）、$a\' \\to g\\sin\\theta$ ' + '（いまの ' + tex('\\theta') + ' で ' + f2(G * Math.sin(q.th)) + ' m/s²、台を固定したとき）に近づく。$M$ を小さくすると、台は大きく左へ動く。</p></div>';
-    /* 相対速度について（2026-10-12 千葉さん）：台の速度 V・小物体の速度 v・台に対する小物体の速度（相対速度）v′ のベクトル図 */
+      '<p>' + SJ + '斜面にそった' + T_EOM + ' ' + tex('m' + AR + ' = mg\\sin\\theta + mA\\cos\\theta') + ' から</p>' +
+      '<div class="qeq">' + tex(AR + ' = \\frac{(M+m)g\\sin\\theta}{M + m\\sin^2\\theta}', true) + '</div>' +
+      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('M = ' + q.M + '\\ \\text{kg}:\\ A = ' + f2(q.A) + ',\\ ' + AR + ' = ' + f2(q.aRel) + ',\\ N = ' + f2(q.N) + '\\ \\text{N}') + '</p>' +
+      '<p>$M$ を大きくすると台は動きにくくなり（$A \\to 0$）、' + tex(AR + ' \\to g\\sin\\theta') + '（いまの ' + tex('\\theta') + ' で ' + f2(G * Math.sin(q.th)) + ' m/s²、台を固定したとき）に近づく。$M$ を小さくすると、台は大きく左へ動く。</p></div>';
+    /* 相対速度について（2026-10-12 千葉さん）：台の速度 V・小物体の速度 v・相対速度 v台→小物体 のベクトル図 */
     var tt = q.t1, Vt = q.A * tt, vr = q.aRel * tt, cs = Math.cos(q.th), sn = Math.sin(q.th);
     var vx = vr * cs - Vt, vy = -vr * sn, vv = Math.hypot(vx, vy), phi = Math.atan2(-vy, vx) * 180 / Math.PI;
     h += '<div class="qcard derive"><p class="qt">相対速度について</p>' +
-      '<p>台の速度を $\\vec{V}$（左向き）、地面から見た小物体の速度を $\\vec{v}$、<b>台に対する小物体の相対速度</b>を $\\vec{v}\\,\'$ とする。台の上から見ると小物体は斜面にそってまっすぐ滑るので、$\\vec{v}\\,\'$ の向きは<b>斜面に平行で、水平から $\\theta$ だけ下向き</b>。</p>' +
-      '<div class="qeq">' + tex("\\vec{v}\\,' = \\vec{v} - \\vec{V} \\quad\\Longleftrightarrow\\quad \\vec{v} = \\vec{V} + \\vec{v}\\,'", true) + '</div>' +
+      '<p>台の速度を $\\vec{V}$（左向き）、地面から見た小物体の速度を $\\vec{v}$、<b>台に対する小物体の相対速度</b>を ' + tex(VRv) + ' とする。台の上から見ると小物体は斜面にそってまっすぐ滑るので、' + tex(VRv) + ' の向きは<b>斜面に平行で、水平から $\\theta$ だけ下向き</b>。</p>' +
+      '<div class="qeq">' + tex(VRv + ' = \\vec{v} - \\vec{V} \\quad\\Longleftrightarrow\\quad \\vec{v} = \\vec{V} + ' + VRv, true) + '</div>' +
       '<canvas class="vecc" data-v="rv23"></canvas>' +
-      '<p>図のように、$\\vec{V}$ のあとに $\\vec{v}\\,\'$ をつなぐと $\\vec{v}$ になる。右向きを $x$、上向きを $y$ とすると</p>' +
-      '<div class="qeq">' + tex("v_x = v'\\cos\\theta - V,\\qquad v_y = -v'\\sin\\theta", true) + '</div>' +
-      '<p>$v_x$ は $v\'\\cos\\theta$ より $V$ だけ小さいので、<b>地面から見た小物体は、斜面より急な向き</b>に動く（$\\tan\\varphi = \\dfrac{v\'\\sin\\theta}{v\'\\cos\\theta - V} > \\tan\\theta$）。台が後ろへ逃げるぶん、小物体は斜面から離れずに、より急に落ちていく。</p>' +
+      '<p>図のように、$\\vec{V}$ のあとに ' + tex(VRv) + ' をつなぐと $\\vec{v}$ になる。右向きを $x$、上向きを $y$ とし、相対速度の大きさを ' + tex(VR) + ' とすると</p>' +
+      '<div class="qeq">' + tex('v_x = ' + VR + '\\cos\\theta - V,\\qquad v_y = -' + VR + '\\sin\\theta', true) + '</div>' +
+      '<p>$v_x$ は ' + tex(VR + '\\cos\\theta') + ' より $V$ だけ小さいので、<b>地面から見た小物体は、斜面より急な向き</b>に動く（' + tex('\\tan\\varphi = \\dfrac{' + VR + '\\sin\\theta}{' + VR + '\\cos\\theta - V} > \\tan\\theta') + '）。台が後ろへ逃げるぶん、小物体は斜面から離れずに、より急に落ちていく。</p>' +
       '<p>はじめ静止していて、小物体と台にはたらく外力（重力・床からの垂直抗力）はどれも鉛直なので、<b>水平方向の運動量が保存</b>する。</p>' +
-      '<div class="qeq">' + tex("m(v'\\cos\\theta - V) + M(-V) = 0 \\quad\\Longrightarrow\\quad V = \\frac{m\\cos\\theta}{M+m}\\,v'", true) + '</div>' +
-      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex("t = " + f2(tt) + '\\ \\text{s}:\\ V = ' + f2(Vt) + ',\\ v\' = ' + f2(vr) + ',\\ v = ' + f2(vv) + '\\ \\text{m/s}') + '、' + tex('\\varphi = ' + f1(phi) + '^\\circ\\ (\\theta = ' + s.v.th + '^\\circ)') + '</p>' +
-      '<p class="qnote">$V$・$v\'$・$v$ はどれも時間 $t$ に比例して大きくなる（等加速度運動）ので、三角形の形は時刻によらず同じ。いまの値は、小物体が斜面を滑り終わる瞬間のもの。</p></div>';
-    R.innerHTML = mathify(h + '<p class="assume">' + tex('m=1.0') + ' kg、' + tex('\\theta=' + s.v.th + '^\\circ') + '、高さ 1.4 m、' + tex('g=9.8') + ' m/s²。θ = 30°、M = 3 kg にすると、<a href="conservation-quiz-basic.html">運動量保存則と力学的エネルギー保存則の適用範囲（基本編）のページ</a>の問7 と同じ設定。</p>');
-    var VD = vecDiagram(R.querySelector('canvas.vecc[data-v="rv23"]'), { h: 240, title: '速度の関係（ベクトル図）', lead: "$\\vec{v} = \\vec{V} + \\vec{v}\\,'$ を図に表すと",
-      vecs: [{ x: -Vt, y: 0, col: '#8a5a2b', sym: 'V', tail: '（台の速度）' }, { x: vr * cs, y: -vr * sn, col: '#0f8a8a', sym: 'v', tail: '′（台に対する小物体の相対速度）' }],
-      sum: { col: COL.vel, sym: 'v', tail: '（小物体の速度）' }, closed: 'v′ と水平のなす角は θ、v と水平のなす角 φ は θ より大きい' });
-    if (VD) {                                                         /* v′ と水平のなす角 θ を図に書きこむ（2026-10-12 千葉さん） */
+      '<div class="qeq">' + tex('m(' + VR + '\\cos\\theta - V) + M(-V) = 0 \\quad\\Longrightarrow\\quad V = \\frac{m\\cos\\theta}{M+m}\\,' + VR, true) + '</div>' +
+      '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('t = ' + f2(tt) + '\\ \\text{s}:\\ V = ' + f2(Vt) + ',\\ ' + VR + ' = ' + f2(vr) + ',\\ v = ' + f2(vv) + '\\ \\text{m/s}') + '、' + tex('\\varphi = ' + f1(phi) + '^\\circ\\ (\\theta = ' + s.v.th + '^\\circ)') + '</p>' +
+      '<p class="qnote">$V$・' + tex(VR) + '・$v$ はどれも時間 $t$ に比例して大きくなる（等加速度運動）ので、三角形の形は時刻によらず同じ。いまの値は、小物体が斜面を滑り終わる瞬間のもの。</p></div>';
+    R.innerHTML = mathify(h + '<p class="assume">' + tex('m=1.0') + ' kg、' + tex('\\theta=' + s.v.th + '^\\circ') + '、高さ 1.4 m、' + tex('g=9.8') + ' m/s²。θ = 30°、M = 3 kg にすると、<a href="momentum-and-collision.html#6-4">運動量変化と力積の関係のページ（6-4 斜め台をすべる物体（台は固定していない））</a>と同じ設定。</p>');
+    var VD = vecDiagram(R.querySelector('canvas.vecc[data-v="rv23"]'), { h: 240, title: '速度の関係（ベクトル図）', lead: '$\\vec{v} = \\vec{V} + ' + VRv + '$ を図に表すと',
+      vecs: [{ x: -Vt, y: 0, col: '#8a5a2b', sym: 'V', tail: '（台の速度）' }, { x: vr * cs, y: -vr * sn, col: '#0f8a8a', sym: 'v', sub: '台→小物体', tail: '（相対速度）' }],
+      sum: { col: COL.vel, sym: 'v', tail: '（小物体の速度）' }, closed: '相対速度と水平のなす角は θ、v と水平のなす角 φ は θ より大きい' });
+    if (VD) {                                                         /* 相対速度と水平のなす角 θ を図に書きこむ（2026-10-12 千葉さん） */
       var P1 = VD.P(1), c2 = VD.ctx, rA = 30;
       angArc(c2, P1[0], P1[1], rA, 0, q.th, '#0f8a8a');
       sym(c2, 'θ', P1[0] + (rA + 11) * Math.cos(q.th / 2), P1[1] + (rA + 11) * Math.sin(q.th / 2), { size: 15, color: '#0f8a8a' });
-      var P2 = VD.P(2);                                                /* 矢印の先でも：水平の点線と v′ のなす角 θ（錯角） */
+      var P2 = VD.P(2);                                                /* 矢印の先でも：水平の点線と相対速度のなす角 θ（錯角） */
       c2.save(); c2.setLineDash([3, 4]); c2.strokeStyle = '#c0392b'; c2.lineWidth = 1.3; c2.beginPath(); c2.moveTo(P2[0], P2[1]); c2.lineTo(P2[0] - 90, P2[1]); c2.stroke(); c2.restore();
       angArc(c2, P2[0], P2[1], rA, Math.PI, Math.PI + q.th, '#0f8a8a');
       sym(c2, 'θ', P2[0] - (rA + 11) * Math.cos(q.th / 2), P2[1] - (rA + 11) * Math.sin(q.th / 2) + 2, { size: 15, color: '#0f8a8a' });
@@ -4727,14 +4936,14 @@ function m23WorkCard(s, q, V, vr, vv) {
     '<p class="qsub">② そのわけ：垂直抗力の仕事は、物体系全体では 0</p>' +
     '<p>小物体と台のあいだには、垂直抗力 $\\vec{N}$（小物体が受ける）と、その反作用 $-\\vec{N}$（台が受ける）がはたらく。垂直抗力は、それぞれの物体には仕事をしている。<b>台には正の仕事</b>、<b>小物体には負の仕事</b>をし、大きさは等しい。だから合計は 0 で、<b>物体系全体では垂直抗力は仕事をしていない</b>と言える（<a href="mechanical-energy.html#m3-1">力学的エネルギーと非保存力の仕事の関係のページ（3-1）</a> の、糸の張力と同じ考え方）。</p>' +
     '<div class="qeq">' + tex("W_{\\text{台}} = +\\tfrac12 MV^2,\\qquad W_{\\text{小物体}} = -\\tfrac12 MV^2,\\qquad W_{\\text{台}} + W_{\\text{小物体}} = 0", true) + '</div>' +
-    '<p>ベクトルで書くと、短い時間 $\\Delta t$ のあいだの 2 つの仕事の和は $\\vec{N}\\cdot\\vec{v}\\,\\Delta t + (-\\vec{N})\\cdot\\vec{V}\\,\\Delta t = \\vec{N}\\cdot(\\vec{v} - \\vec{V})\\,\\Delta t = \\vec{N}\\cdot\\vec{v}\\,\'\\,\\Delta t$。相対速度 $\\vec{v}\\,\'$ は斜面に平行で $\\vec{N}$ に垂直なので、これは 0 になる。</p>' +
+    '<p>ベクトルで書くと、短い時間 $\\Delta t$ のあいだの 2 つの仕事の和は $\\vec{N}\\cdot\\vec{v}\\,\\Delta t + (-\\vec{N})\\cdot\\vec{V}\\,\\Delta t = \\vec{N}\\cdot(\\vec{v} - \\vec{V})\\,\\Delta t = \\vec{N}\\cdot' + REL23.vv + '\\,\\Delta t$。相対速度 $' + REL23.vv + '$ は斜面に平行で $\\vec{N}$ に垂直なので、これは 0 になる。</p>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('W_{\\text{台}} = +' + f2(Kw) + '\\ \\text{J},\\quad W_{\\text{小物体}} = -' + f2(Kw) + '\\ \\text{J}') + '</p>' +
     '<p class="qsub">③ 垂直抗力が小物体に負の仕事をすることは、ベクトル図で考えないと分からない</p>' +
-    '<p>台が固定されていれば（<a href="mechanical-energy.html#m1-3">力学的エネルギーと非保存力の仕事の関係のページ（1-3）</a>）、小物体は斜面にそって動くので、垂直抗力は運動の向きに垂直で仕事をしない。ところが台が動くと、<b>地面から見た小物体の速度 $\\vec{v}$ は斜面の向きからずれる</b>（右の「相対速度について」）。下の図のように $\\vec{N}$ と $\\vec{v}$ を並べると、<b>なす角が 90° より大きい</b>ので、垂直抗力は小物体に<b>負の仕事</b>をする。台では、$-\\vec{N}$ と $\\vec{V}$ のなす角が 90° より小さいので<b>正の仕事</b>。斜面だけを見て「垂直抗力は面に垂直だから仕事をしない」と考えると、まちがえる。</p>' +
+    '<p>台が固定されていれば（<a href="mechanical-energy.html#m1-3">力学的エネルギーと非保存力の仕事の関係のページ（1-3）</a>）、小物体は斜面にそって動くので、垂直抗力は運動の向きに垂直で仕事をしない。ところが台が動くと、<b>地面から見た小物体の速度 $\\vec{v}$ は斜面の向きからずれる</b>（右の「相対速度について」を参照）。下の図のように $\\vec{N}$ と $\\vec{v}$ を並べると、<b>なす角が 90° より大きい</b>ので、垂直抗力は小物体に<b>負の仕事</b>をする。台では、$-\\vec{N}$ と $\\vec{V}$ のなす角が 90° より小さいので<b>正の仕事</b>。斜面の問題だからといって「垂直抗力は面に垂直だから仕事をしない」というのは間違いなので、注意せよ。</p>' +
     '<canvas class="vecc" data-v="wk23"></canvas>' +
     '<p class="xlink"><a href="mechanical-energy.html#m3-1">2 物体の力学的エネルギー（力学的エネルギーと非保存力の仕事の関係のページ 3-1）へ →</a></p></div>';
   s._wk.innerHTML = mathify(h);
-  wkFig23(s._wk.querySelector('canvas.vecc[data-v="wk23"]'), q, V, vr);
+  wkFig23(s._wk.querySelector('canvas.vecc[data-v="wk23"]'), q, V, vr); fitEqs(s._wk);
 }
 /* 垂直抗力と速度のなす角（左：小物体、右：台） */
 function wkFig23(cv, q, V, vr) {
@@ -5030,11 +5239,11 @@ DEFS.m3s1 = {
   right: function (s, R) {
     var om = s.v.w, m = M31.m, r = M31.r, F = m31F(om), v = r * om;
     var h = '<div class="qcard derive"><p class="qt">遠心力の導出</p>' +
-      '<div class="stepbox"><p>直線運動に限らず、<b>加速度運動している観測者</b>は、<u>加速度と逆向き</u>、<u>大きさ $ma$</u> の見かけの力（慣性力）を感じる。</p></div>' +
+      '<div class="stepbox"><p>直線運動に限らず、<b>加速度運動している観測者</b>からは、<u>加速度と逆向き</u>、<u>大きさ $ma$</u> の見かけの力（慣性力）が見える。</p></div>' +
       '<div class="stepdown" aria-hidden="true"><svg viewBox="0 0 40 30"><path d="M14 0h12v14h10L20 30 4 14h10z"/></svg></div>' +   /* 論理の順は図の矢印で（「⇓」は見づらい。①②③は取る。2026-10-12 千葉さん） */
       '<div class="stepbox"><p>円運動では、中心に向かって加速度</p><div class="qeq">' + tex('a = \\frac{v^2}{r} \\quad (= r\\omega^2)', true) + '</div><p>が生じている。</p></div>' +
       '<div class="stepdown" aria-hidden="true"><svg viewBox="0 0 40 30"><path d="M14 0h12v14h10L20 30 4 14h10z"/></svg></div>' +
-      '<div class="stepbox"><p>よって、円運動している観測者が感じる見かけの力（<b>遠心力</b>）は</p>' +
+      '<div class="stepbox"><p>よって、円運動している観測者が見える慣性力（＝<b>遠心力</b>）は</p>' +
       '<table class="cmpt"><tbody><tr><th>向き</th><td>中心から外側へ（加速度 $a$ と逆向き）</td></tr>' +
       '<tr><th>大きさ</th><td>' + tex('m\\frac{v^2}{r}\\ \\ (= mr\\omega^2)') + '（$ma$ に $a = \\dfrac{v^2}{r}$ を代入）</td></tr></tbody></table></div>' +
       '<p class="qnow"><span class="qtag now">いまの値</span>' + tex('v = r\\omega = ' + f2(v) + '\\ \\text{m/s},\\quad mr\\omega^2 = ' + f2(m) + '\\times' + f2(r) + '\\times' + om + '^2 = ' + f2(F) + '\\ \\text{N}') + '</p></div>';
@@ -5690,7 +5899,7 @@ function buildPage() {
       '<h2><span class="mh-c">' + CIRC[i] + '</span>' + m.name + '</h2><p class="mh-lead">' + m.lead + '</p>' + (m.pts ? '<details class="mh-ptsbox"><summary>このチャプターの要点</summary><ul class="mh-pts">' + m.pts.map(function (q) { return '<li>' + q + '</li>'; }).join('') + '</ul></details>' : '') /* はじめは折りたたむ（2026-10-12 千葉さん） */ + '</div>' + (m.fig !== undefined ? '<div class="mh-fig" id="mhfig_' + m.id + '">' + m.fig + '</div>' : '') + '</header>' + (m.id === 'mode1' ? INTRO_M1 : '') +
       (m.secs.filter(function (sid) { return DEFS[sid]; }).length < 2 ? '' :   /* セクションが 1 つだけのモード（モード3）はシムを選ぶタブを出さない */
       '<div class="seclinks">' + m.secs.filter(function (sid) { return DEFS[sid]; }).map(function (sid) {
-        return '<a href="#' + (i + 1) + '-' + DEFS[sid].num + '" data-toc="' + sid + '">' + CIRC[i] + '-' + DEFS[sid].num + '　' + (DEFS[sid].short || DEFS[sid].title) + '</a>'; }).join('') + '</div>') +
+        return '<a href="#' + (i + 1) + '-' + DEFS[sid].num + '" data-toc="' + sid + '"' + (DEFS[sid].custom ? ' class="coltab"' : '') + '>' + CIRC[i] + '-' + DEFS[sid].num + '　' + (DEFS[sid].short || DEFS[sid].title) + '</a>'; }).join('') + '</div>') +
       '<div class="modebar" id="mbar_' + m.id + '"></div>';
     if (!m.secs.length) h += '<div class="sec soon"><div class="sL"><p class="secdesc">このモードは、モード1 を確認していただいたあとで作ります。</p></div></div>';
     m.secs.forEach(function (sid) {
@@ -5803,6 +6012,7 @@ function activateMode(id) {
       SIM_BY_ID[sid] = new Sim(d, document.getElementById('simL_' + sid), document.getElementById('simR_' + sid));
     });
   } else SIMS.forEach(function (s) { if (s.mode === id) { s.resize(); s.draw(); } });
+  setTimeout(function () { var el0 = document.getElementById(id); if (el0) el0.querySelectorAll('.sR, .leftcards, .colsec').forEach(fitEqs); }, 60);   /* 見えるようになってから、長い式を枠に収める */
 }
 var hasDef = function (k) { return Object.prototype.hasOwnProperty.call(DEFS, k); };
 function addrOf(sid) {
@@ -6029,6 +6239,11 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
       ctx.restore();
     }
     function sym(s,x,y,col,size){ ctx.save(); ctx.fillStyle=col; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="italic "+size+"px "+MATH; ctx.fillText(s,x,y); ctx.restore(); }
+    /* ベクトルの記号（文字の上に小さな矢印。mg なら g の上だけ：m\vec{g}。2026-10-13 千葉さん） */
+    function vsym(s,x,y,col,size,skip){ ctx.save(); ctx.font="italic "+size+"px "+MATH; const W0=ctx.measureText(s).width, ws=skip? ctx.measureText(skip).width : 0; ctx.restore();
+      sym(s,x,y,col,size); const xa=x-W0/2+ws+(W0-ws)*0.12, xb=x+W0/2+1, ya=y-size*0.62;
+      ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(xa,ya); ctx.lineTo(xb-2,ya); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(xb+1,ya); ctx.lineTo(xb-3.5,ya-2.6); ctx.lineTo(xb-3.5,ya+2.6); ctx.closePath(); ctx.fill(); ctx.restore(); }
     function stick(x,y,s,col,lw){
       ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.lineCap="round";
       const P=(du,dp)=>[x+dp*s, y-du*s], hip=P(.38,0), sh=P(.64,0), hd=P(.8,0);
@@ -6073,9 +6288,10 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
         ctx.fillStyle=g; ctx.beginPath(); ctx.arc(bx,by,rb,0,7); ctx.fill();
         /* 力（同じ縮尺）：S は糸にそって、mg は下、慣性力は加速度と逆向き */
         const LG = 0.7*Math.min(H*0.17, 0.95*ppm), ux = Math.sin(th), uy = Math.cos(th), Sm = LG*Math.sqrt(1 + (a/GG)*(a/GG));
+        /* 作用点：S は糸と小球の接触点（小球の表面）、mg は小球の中心。糸がまっすぐ下がっているときは同じ作用線の上に一直線（2026-10-13 千葉さん） */
         arr(bx-ux*rb, by-uy*rb, bx-ux*(rb+Sm), by-uy*(rb+Sm), K.S, 2.6, null, true);
-        sym("S", bx-ux*(rb+Sm*0.55) + 11, by-uy*(rb+Sm*0.55), K.S, 15);
-        arr(bx-2, by, bx-2, by+LG, K.g, 2.6, null, true); sym("mg", bx-2, by+LG+10, K.g, 13);
+        { let px=uy, py=-ux; if(py<0){ px=-px; py=-py; } vsym("S", bx-ux*(rb+Sm*0.55) + px*14 + (Math.abs(ux)<0.05? 13 : 0), by-uy*(rb+Sm*0.55) + py*14, K.S, 15); }   /* 記号は矢印の線からはなす（線と重ねない） */
+        arr(bx, by, bx, by+LG, K.g, 2.6, null, true); vsym("mg", bx + 14, by+LG*0.6, K.g, 14, "m");
         if(rot && Math.abs(a) > 0.01){ const L2 = LG*Math.abs(a)/GG; arr(bx, by-1, bx-(a>0?1:-1)*L2*1.0, by-1, K.a, 4.2, [6,3], true); text("慣性力 ma", bx-(a>0?1:-1)*(L2+30), by-14, K.a, narrow? 10 : 11.5, "center", true); }
         /* 一緒に加速する観測者（電車の中・左がわ） */
         stick(tx + 0.5*ppm, yb, so*0.8, rot? K.obsA : K.obsB, rot? 2.4 : 1.6);
