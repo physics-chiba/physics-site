@@ -1936,7 +1936,7 @@ var M3 = {
         tb = r2.t;
       }
     }
-    return { pts: out, ev: ev, sec: 7, done: r.why, th0: hK, geo: { xj: xj, alpha: al, hTop: Math.max(h, r.why === 'back' ? hTop : h) } };
+    return { pts: out, ev: ev, sec: 7, done: r.why, th0: hK, geo: { xj: xj, alpha: al, hTop: Math.max(hK <= 3 ? 3 * R : h, r.why === 'back' ? hTop : h) } };   /* h ≤ 3r では斜面の高さは 3r に固定（小球を置く位置だけが変わる。2026-10-14 千葉さん） */
   },
   /* 4-2 糸による円運動（最下点から）：最下点で右向きに v0。S < 0 になったら糸がたるんで放物運動（糸がまた張ったら止める）。
      1 周したら止める。v0 ≤ √(2gr) はふりこのように往復する */
@@ -5411,6 +5411,17 @@ var M3CFG = {
 /* ③-3：斜面の上はし（いちばん高い所より少し上）までが図に入る範囲 */
 function m3SlopeTop(tr) { var g = tr.geo, R = M3.R, hT = g.hTop + 0.10; return { x: g.xj - hT / Math.tan(g.alpha), y: -R + hT }; }
 function m3BoxH(tr) { var tp = m3SlopeTop(tr); return { x0: Math.min(-1.55, tp.x - 0.12), x1: 1.85, y0: -0.82, y1: Math.max(0.62, tp.y + 0.10) }; }   /* 右は外の観測者のぶん */
+var M3LOOPBOX = { x0: -0.82, x1: 0.82, y0: -0.72, y1: 0.66 };   /* ③-3 非慣性系で円運動中に映す範囲（ループのまわり） */
+function m3ZoomK(s, tr) {
+  if (tr.tc === undefined) {                                     /* 円運動に入る時刻・（滑り戻るとき）円から出る時刻 */
+    tr.tc = null; tr.tcOut = null;
+    for (var i = 0; i < tr.pts.length; i++) { var p = tr.pts[i]; if (tr.tc === null && p.kind === 'circle') tr.tc = p.t; if (tr.tc !== null && tr.done === 'back' && p.kind !== 'circle' && p.x < -1e-3) { tr.tcOut = p.t; break; } }
+  }
+  if (tr.tc === null) return 0;
+  var k = clamp((s.t - tr.tc) / 0.3, 0, 1);
+  if (tr.tcOut !== null) k = Math.min(k, clamp((tr.tcOut + 0.3 - s.t) / 0.3, 0, 1));
+  return k;
+}
 function m3IsLoop(sec) { return sec === 4 || sec === 7; }   /* 3 次元のループコースター（3-2・3-3） */
 function m3GS(sec) { return M3CFG[sec].gs || sec; }
 var M3RB = 0.045;
@@ -5576,7 +5587,14 @@ function drawM3(s, ctx, W, H) {
   var al = s.rot ? C.sgn * (q.ang - m3Ref(s)) : 0, ca = Math.cos(al), sa = Math.sin(al);
   /* ③-5（sec 6）：釘 C に触れたあとは C を中心に回る。cq＝いまの円の中心、Rq＝半径。非慣性系では、その中心のまわりに絵を回す */
   var S6 = sec === 6, r6 = M3.R / 2, onC = S6 && q.cir === 'C', cq = onC ? [0, -r6] : [0, 0], Rq = onC ? r6 : R, pv = s.rot ? cq : [0, 0];
-  var B = sec === 7 ? m3BoxH(tr) : (SN ? M3SNAPBOX[sec] : C.box), mg = SN ? { t: 8, b: 6, x: 6 } : { t: sec === 7 ? 100 : 40, b: 16, x: 10 };   /* ③-3 は点 A の「手を放す」の吹き出しが状態の札と重ならないよう上をあける */   /* コマ図は小球のまわりだけを大きく */
+  var B = sec === 7 ? m3BoxH(tr) : (SN ? M3SNAPBOX[sec] : C.box), mg = SN ? { t: 8, b: 6, x: 6 } : { t: sec === 7 ? 100 : 40, b: 16, x: 10 };
+  /* ③-3：一緒に回る観測者から見るときは、円運動に入ったらループのまわりだけを大きく（0.3 秒かけて。滑り戻ったら元にもどす） */
+  var kz = (sec === 7 && s.rot && !SN) ? m3ZoomK(s, tr) : 0;
+  if (kz > 0) {
+    var BL = M3LOOPBOX, lz = function (a, b) { return a + (b - a) * kz; };
+    B = { x0: lz(B.x0, BL.x0), x1: lz(B.x1, BL.x1), y0: lz(B.y0, BL.y0), y1: lz(B.y1, BL.y1) };
+    mg = { t: lz(mg.t, 40), b: mg.b, x: mg.x };
+  }   /* ③-3 は点 A の「手を放す」の吹き出しが状態の札と重ならないよう上をあける */   /* コマ図は小球のまわりだけを大きく */
   /* 3-2（sec 4）：3 次元のループコースター。s.cam3＝{az, el}（度）。真横（0, 0）なら今までの 2 次元の図と同じ */
   var cam = (m3IsLoop(sec) && !SN && s.cam3) ? m3CamNow(s) : null, D3 = !!cam && (Math.abs(cam.az) > 0.2 || cam.el > 0.2);
   var caz = 1, saz = 0, cel = 1, sel = 0;
@@ -5586,7 +5604,7 @@ function drawM3(s, ctx, W, H) {
   if (!D3) { S = Math.min((W - 2 * mg.x) / (B.x1 - B.x0), (H - mg.t - mg.b) / (B.y1 - B.y0)); ox = W / 2 - S * (B.x0 + B.x1) / 2; oy = mg.t + (H - mg.t - mg.b) / 2 + S * (B.y0 + B.y1) / 2; }
   else {                                                         /* 見る向きを変えても、全体が図に入るように */
     var bb = [1e9, -1e9, 1e9, -1e9], ZF = M3LOOP.floorZ;
-    (sec === 7 ? [[m3SlopeTop(tr).x, B.y1, M3LOOP.w / 2], [m3SlopeTop(tr).x, -R, M3LOOP.w / 2]] : []).concat([[B.x0, B.y0, 0], [B.x1, B.y0, 0], [B.x0, B.y1, 0], [B.x1, B.y1, 0], [B.x0, -R, ZF], [B.x1, -R, ZF], [B.x0, -R, -ZF], [B.x1, -R, -ZF], [0, R + 0.12, M3LOOP.w / 2], [0, R + 0.12, -M3LOOP.w / 2]]).forEach(function (p3) {
+    (sec === 7 ? [[m3SlopeTop(tr).x + (B.x0 - m3SlopeTop(tr).x) * kz, B.y1, M3LOOP.w / 2], [m3SlopeTop(tr).x + (B.x0 - m3SlopeTop(tr).x) * kz, -R, M3LOOP.w / 2]] : []).concat([[B.x0, B.y0, 0], [B.x1, B.y0, 0], [B.x0, B.y1, 0], [B.x1, B.y1, 0], [B.x0, -R, ZF], [B.x1, -R, ZF], [B.x0, -R, -ZF], [B.x1, -R, -ZF], [0, R + 0.12, M3LOOP.w / 2], [0, R + 0.12, -M3LOOP.w / 2]]).forEach(function (p3) {
       var u = pj0(p3[0], p3[1], p3[2]); bb[0] = Math.min(bb[0], u[0]); bb[1] = Math.max(bb[1], u[0]); bb[2] = Math.min(bb[2], u[1]); bb[3] = Math.max(bb[3], u[1]); });
     S = Math.min((W - 2 * mg.x) / (bb[1] - bb[0]), (H - mg.t - mg.b) / (bb[3] - bb[2])); ox = W / 2 - S * (bb[0] + bb[1]) / 2; oy = mg.t + (H - mg.t - mg.b) / 2 + S * (bb[2] + bb[3]) / 2;
   }
@@ -5647,9 +5665,10 @@ function drawM3(s, ctx, W, H) {
   } else {                                                   /* 糸：中心の手。円の道すじ（破線） */
     ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = '#8a929c'; ctx.lineWidth = 1.2; ctx.beginPath();
     if (S6) {                                                    /* ③-5：O のまわりの左半分（半径 2r）と、釘 C のまわりの円（半径 r） */
-      for (var k6 = 0; k6 <= 60; k6++) { var a6 = Math.PI * k6 / 60, p6 = P(-R * Math.sin(a6), -R * Math.cos(a6)); k6 ? ctx.lineTo(p6.x, p6.y) : ctx.moveTo(p6.x, p6.y); }
+      var aT6 = m3Th0(s) * Math.PI / 180;                       /* 大きい円は、手を放す位置（θ0）から最下点まで（それより高い部分は消す） */
+      for (var k6 = 0; k6 <= 60; k6++) { var a6 = aT6 * k6 / 60, p6 = P(-R * Math.sin(a6), -R * Math.cos(a6)); k6 ? ctx.lineTo(p6.x, p6.y) : ctx.moveTo(p6.x, p6.y); }
       ctx.stroke(); ctx.beginPath();
-      for (var k7 = 0; k7 <= 72; k7++) { var a7 = TAU * k7 / 72, p7 = P(r6 * Math.sin(a7), -r6 - r6 * Math.cos(a7)); k7 ? ctx.lineTo(p7.x, p7.y) : ctx.moveTo(p7.x, p7.y); }
+      for (var k7 = 0; k7 <= 36; k7++) { var a7 = Math.PI * k7 / 36, p7 = P(r6 * Math.sin(a7), -r6 - r6 * Math.cos(a7)); k7 ? ctx.lineTo(p7.x, p7.y) : ctx.moveTo(p7.x, p7.y); }   /* 小さい円は右半分だけ */
     } else ctx.arc(O.x, O.y, R * S, 0, TAU);
     ctx.stroke(); ctx.restore();
   }
@@ -5806,10 +5825,27 @@ function drawM3(s, ctx, W, H) {
       var Cq = P(0, -r6); bubble(ctx, kS % 2 === 0 ? '釘に触れた！' : '釘から離れた', Cq.x - 46, Cq.y - 14, { size: 13, bg: '#dff2ee', border: '#0f8a8a', color: '#0a5c5c' });
     }
   }
+  if (!SN && m3After(s, tr) && (tr.ev.kind === 'off' || tr.ev.kind === 'slack')) m3EvNote(ctx, s, tr, W, H);   /* 離れた／たるんだ角（それ以降ずっと） */
   pill(ctx, '状態：' + m3Phase(q, tr), 10, 10, { size: 12 });
 
 }
 
+/* 面から離れた／糸がたるんだときの cosθ を、図のあいている所（真ん中の右か左）に出す（2026-10-14 千葉さん）。θ はそのセクションの θ（3-4 は最高点から、ほかは最下点から） */
+var M3EVSIDE = { 1: 'L', 2: 'L', 3: 'R', 4: 'R', 5: 'R', 6: 'R', 7: 'R' };
+function m3EvNote(ctx, s, tr, W, H) {
+  var t1 = tr.ev.kind === 'off' ? '面から離れたとき' : '糸がたるんだとき', c = Math.cos(tr.ev.ang), ct = ' = ' + (c < -0.0005 ? '−' : '') + Math.abs(c).toFixed(2);
+  var parts = [['cos ', '17px ' + MATH], ['θ', 'italic 17px ' + MATH], [ct, '17px ' + MATH]];   /* cos と数字は立体、θ は斜体 */
+  ctx.save();
+  ctx.font = 'bold 14px ' + FONT; var w1 = ctx.measureText(t1).width, w2 = 0;
+  parts.forEach(function (p) { ctx.font = p[1]; p[2] = ctx.measureText(p[0]).width; w2 += p[2]; });
+  var w = Math.max(w1, w2) + 26, h = 58, L = M3EVSIDE[s.def.sec] === 'L', x = L ? 14 : W - w - 14, y = L ? 46 : Math.round(H * 0.40 - h / 2);   /* 左に出すセクション（3-1・3-4）は、外の観測者の吹き出しと重ならないよう上に */
+  ctx.fillStyle = 'rgba(255,255,255,.93)'; ctx.strokeStyle = COL.vel; ctx.lineWidth = 1.6;
+  ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, 9); else ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#123f73'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 14px ' + FONT; ctx.fillText(t1, x + 13, y + 17);
+  var xx = x + 13; parts.forEach(function (p) { ctx.font = p[1]; ctx.fillText(p[0], xx, y + 40); xx += p[2]; });
+  ctx.restore();
+}
 /* ===================== 式（図の下の 2 つの箱） ===================== */
 function m3Eqs(sec, q, tr) {
   var GS = m3GS(sec), m = M3.m, R = (sec === 6 && q.cir === 'C') ? M3.R / 2 : M3.R, v = q.v, F = q.F, th = Math.abs(q.ang), fn = GS === 3 ? 'S' : 'N';
