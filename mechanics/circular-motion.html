@@ -1478,6 +1478,11 @@ button.b.instb.nope{text-decoration:line-through;text-decoration-thickness:2px;o
 .ctrls .row1b .seg button.obs{font-size:.66rem;padding:.28em .6em}
 .ctrls .row1b{flex-wrap:wrap}
 
+/* モード③④：面から離れた／糸がたるんだときの cosθ の札（図の上に重ねる。2026-10-14 千葉さん） */
+.m3evn{position:absolute;right:14px;top:40%;transform:translateY(-50%);background:rgba(255,255,255,.94);border:1.6px solid #1663b5;border-radius:9px;padding:.35em .8em .45em;color:#123f73;font-size:.86rem;line-height:1.35;pointer-events:none;z-index:3;display:flex;flex-direction:column;gap:.15em;max-width:46%}
+.m3evn.lft{right:auto;left:14px;top:46px;transform:none}
+.m3evn .katex{font-size:1.12em}
+
 </style>
 </head>
 <body id="top">
@@ -5590,6 +5595,7 @@ function drawM3(s, ctx, W, H) {
   var B = sec === 7 ? m3BoxH(tr) : (SN ? M3SNAPBOX[sec] : C.box), mg = SN ? { t: 8, b: 6, x: 6 } : { t: sec === 7 ? 100 : 40, b: 16, x: 10 };
   /* ③-3：一緒に回る観測者から見るときは、円運動に入ったらループのまわりだけを大きく（0.3 秒かけて。滑り戻ったら元にもどす） */
   var kz = (sec === 7 && s.rot && !SN) ? m3ZoomK(s, tr) : 0;
+  if (sec === 7 && SN && (s._snapIdx === 1 || s._snapIdx === 2)) B = M3LOOPBOX;   /* ③-3 のコマ図：2・3 コマ目はループのまわりだけ */
   if (kz > 0) {
     var BL = M3LOOPBOX, lz = function (a, b) { return a + (b - a) * kz; };
     B = { x0: lz(B.x0, BL.x0), x1: lz(B.x1, BL.x1), y0: lz(B.y0, BL.y0), y1: lz(B.y1, BL.y1) };
@@ -5718,6 +5724,8 @@ function drawM3(s, ctx, W, H) {
     ctx.save(); ctx.setLineDash([6, 4]); ctx.strokeStyle = COL.vel; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.6; ctx.beginPath();
     var fst = true; tr.pts.forEach(function (p) { if (p.t < tr.ev.t || p.t > s.t) return; var o2 = offOf(p), pp = P(p.x + o2[0], p.y + o2[1]); fst ? ctx.moveTo(pp.x, pp.y) : ctx.lineTo(pp.x, pp.y); fst = false; });
     ctx.stroke(); ctx.restore();
+    var ec = (S6 && tr.ev.cir === 'C') ? P(0, -r6) : P(0, 0);   /* 中心から、離れた／たるんだ点まで点線（2026-10-14 千葉さん） */
+    ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = COL.vel; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(ec.x, ec.y); ctx.lineTo(ep.x, ep.y); ctx.stroke(); ctx.restore();
     ctx.save(); ctx.fillStyle = COL.vel; ctx.beginPath(); ctx.arc(ep.x, ep.y, 3, 0, TAU); ctx.fill(); ctx.restore();
     if (!(tr.ev.kind === 'top' && s.mode === 'mode4')) label(ctx, tr.ev.kind === 'slack' ? 'たるんだ点' : (tr.ev.kind === 'top' ? '最高点' : '離れた点'), ep.x + 14, ep.y + 14, { size: 10.5, color: COL.vel, align: 'left' });
   }
@@ -5825,26 +5833,44 @@ function drawM3(s, ctx, W, H) {
       var Cq = P(0, -r6); bubble(ctx, kS % 2 === 0 ? '釘に触れた！' : '釘から離れた', Cq.x - 46, Cq.y - 14, { size: 13, bg: '#dff2ee', border: '#0f8a8a', color: '#0a5c5c' });
     }
   }
-  if (!SN && m3After(s, tr) && (tr.ev.kind === 'off' || tr.ev.kind === 'slack')) m3EvNote(ctx, s, tr, W, H);   /* 離れた／たるんだ角（それ以降ずっと） */
+  if (!SN) m3EvNote(s, tr, m3After(s, tr) && (tr.ev.kind === 'off' || tr.ev.kind === 'slack'));   /* 離れた／たるんだ角（それ以降、アニメの終わりまで） */
   pill(ctx, '状態：' + m3Phase(q, tr), 10, 10, { size: 12 });
 
 }
 
 /* 面から離れた／糸がたるんだときの cosθ を、図のあいている所（真ん中の右か左）に出す（2026-10-14 千葉さん）。θ はそのセクションの θ（3-4 は最高点から、ほかは最下点から） */
 var M3EVSIDE = { 1: 'L', 2: 'L', 3: 'R', 4: 'R', 5: 'R', 6: 'R', 7: 'R' };
-function m3EvNote(ctx, s, tr, W, H) {
-  var t1 = tr.ev.kind === 'off' ? '面から離れたとき' : '糸がたるんだとき', c = Math.cos(tr.ev.ang), ct = ' = ' + (c < -0.0005 ? '−' : '') + Math.abs(c).toFixed(2);
-  var parts = [['cos ', '17px ' + MATH], ['θ', 'italic 17px ' + MATH], [ct, '17px ' + MATH]];   /* cos と数字は立体、θ は斜体 */
-  ctx.save();
-  ctx.font = 'bold 14px ' + FONT; var w1 = ctx.measureText(t1).width, w2 = 0;
-  parts.forEach(function (p) { ctx.font = p[1]; p[2] = ctx.measureText(p[0]).width; w2 += p[2]; });
-  var w = Math.max(w1, w2) + 26, h = 58, L = M3EVSIDE[s.def.sec] === 'L', x = L ? 14 : W - w - 14, y = L ? 46 : Math.round(H * 0.40 - h / 2);   /* 左に出すセクション（3-1・3-4）は、外の観測者の吹き出しと重ならないよう上に */
-  ctx.fillStyle = 'rgba(255,255,255,.93)'; ctx.strokeStyle = COL.vel; ctx.lineWidth = 1.6;
-  ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, 9); else ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#123f73'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.font = 'bold 14px ' + FONT; ctx.fillText(t1, x + 13, y + 17);
-  var xx = x + 13; parts.forEach(function (p) { ctx.font = p[1]; ctx.fillText(p[0], xx, y + 40); xx += p[2]; });
-  ctx.restore();
+/* cos θ の値を、分数・文字式で（0.667 ではなく 2/3。入試ではこの形の出題が多い。2026-10-14 千葉さん）。
+   ふつう cosθ = c0 − v0²/(3gr) の形。c0 は h・θ0 で決まる定数（v0 = 0 なら c0 だけ） */
+function m3Frac(n, d) {                                         /* n/d（整数）を TeX の分数に */
+  var g = function (a, b) { return b ? g(b, a % b) : a; }, k = g(Math.abs(n), Math.abs(d)) || 1; n /= k; d /= k;
+  if (d < 0) { n = -n; d = -d; }
+  if (n === 0) return '0';
+  return (n < 0 ? '-' : '') + (d === 1 ? String(Math.abs(n)) : '\\dfrac{' + Math.abs(n) + '}{' + d + '}');
+}
+function m3EvCosTex(s, tr) {
+  var sec = s.def.sec, v0 = s.v.v0 || 0, t0 = m3Th0(s), c0, sg = '-';
+  if (tr.ev.t <= 1e-9) return '-1';                              /* 最高点で、はじめからたるむ */
+  if (sec === 2) { c0 = '\\dfrac{2}{3}'; sg = '+'; }
+  else if (sec === 3) c0 = { 0: '\\dfrac{2}{3}', 30: '\\dfrac{\\sqrt{3}}{3}', 90: '0', 180: '-\\dfrac{2}{3}' }[t0];
+  else if (sec === 6) c0 = { 0: '\\dfrac{2}{3}', 30: '\\dfrac{2\\sqrt{3}-2}{3}', 90: '-\\dfrac{2}{3}', 180: '-2' }[t0];
+  else if (sec === 7) c0 = m3Frac(Math.round(2 * (2 - 2 * s.v.h)), 6);
+  else c0 = '\\dfrac{2}{3}';
+  var vt = '\\dfrac{v_0^{\\,2}}{3gr}';
+  if (v0 < 1e-9) return c0;
+  return c0 === '0' ? (sg === '-' ? '-' : '') + vt : c0 + ' ' + sg + ' ' + vt;
+}
+/* 面から離れた／糸がたるんだときの cosθ を、図のあいている所（真ん中の右か左）に。canvas の上に重ねた HTML（KaTeX） */
+var M3EVSIDE = { 1: 'L', 2: 'L', 3: 'R', 4: 'R', 5: 'R', 6: 'R', 7: 'R' };
+function m3EvNote(s, tr, on) {
+  if (!s._evn) { s._evn = el('div', 'm3evn'); s._evn.setAttribute('aria-live', 'polite'); s.cw.appendChild(s._evn); }
+  var d = s._evn;
+  if (!on) { if (d._k !== '') { d._k = ''; d.style.display = 'none'; } return; }
+  var L = M3EVSIDE[s.def.sec] === 'L', key = tr.key + '|' + (L ? 'L' : 'R');
+  if (d._k === key) return;
+  d._k = key; d.style.display = '';
+  d.classList.toggle('lft', L);
+  d.innerHTML = '<b>' + (tr.ev.kind === 'off' ? '面から離れたとき' : '糸がたるんだとき') + '</b>' + tex('\\cos\\theta = ' + m3EvCosTex(s, tr));
 }
 /* ===================== 式（図の下の 2 つの箱） ===================== */
 function m3Eqs(sec, q, tr) {
@@ -6081,7 +6107,7 @@ DEFS.m3s3 = m3Base({
     if (v0 >= c.v) return '$v_0 \\ge ' + c.tex + ' = ' + fmt(c.v, 2) + '$ m/s なので、最高点でも $S \\ge 0$。糸がたるまずに回り続ける。';
     if (v0 === 0) {
       if (t0 === 0) return '最下点で $v_0 = 0$ では動かない。$v_0$ を大きくしてみよう。';
-      return '$v_0 = 0$ では、反対がわの同じ高さ（$\\theta = ' + t0 + '^\\circ$）まで上がって戻る（振り子）。$v_0$ を大きくしてみよう。';
+      return '$v_0 = 0$ では、反対側の同じ高さ（$\\theta = ' + t0 + '^\\circ$）まで上がって戻る（振り子）。$v_0$ を大きくしてみよう。';
     }
     if (lo && v0 <= Math.sqrt(lo.k * G * M3.R)) return '$v_0 \\le ' + lo.tex + ' = ' + fmt(Math.sqrt(lo.k * G * M3.R), 2) + '$ m/s なので、中心の高さまで上がらない。糸はたるまずに往復する（振り子）。';
     return '▶ スタート。$v_0 < ' + c.tex + '$ なので、中心より高いところで糸がたるむ。';
@@ -6120,7 +6146,7 @@ function m3S5Hint(s) {
 }
 DEFS.m3s5 = m3Base({
   id: 'm3s5', num: 6, sec: 6, title: '糸による円運動（釘）',
-  desc: '長さ $2r = 0.50$ m の糸の一端を点 O に固定し、O の真下 $r = 0.25$ m の点 C に釘を打つ。最下点 B から角 $\\theta_0$ の位置（左がわ）で小球（$m=0.20$ kg）をデコピンで円の接線方向（反時計回り）に弾く（速さ $v_0$）。小球が B を通る瞬間に糸が釘に触れ、そのあとは <b>C を中心とする半径 $r$ の円運動</b>になる。<span class="todo">$\\theta_0$ と $v_0$ を変えて ▶ スタートし、釘に触れたあと最高点まで糸がたるまずに回れるか見よう。</span>',
+  desc: '長さ $2r = 0.50$ m の糸の一端を点 O に固定し、O の真下 $r = 0.25$ m の点 C に釘を打つ。最下点 B から角 $\\theta_0$ の位置（左側）で小球（$m=0.20$ kg）をそっと放すか、円の接線方向（反時計回り）に弾く（速さ $v_0$）。小球が B を通る瞬間に糸が釘に触れ、そのあとは <b>C を中心とする半径 $r$ の円運動</b>になる。<span class="todo">$\\theta_0$ と $v_0$ を変えて ▶ スタートし、釘に触れたあと最高点まで糸がたるまずに回れるか見よう。</span>',
   varCols: [['v0'], ['th0']],                /* ③-4 と同じスライダー */
   vars: [{ k: 'v0', label: '初速 $v_0$', aria: '初速', min: 0, max: 5.0, step: 0.1, def: 0, dec: 1, unit: 'm/s',
     allow: function (s) { return { lo: m3Th0(s) === 180 ? M3S3.v0min180 : 0, hi: 5.0 }; },
@@ -6293,19 +6319,19 @@ var M3SNAP = { pw: 280, k: 3 };                                     /* コマ 1 
 function m3DrawSnaps(s) {
   if (!s.snapCv || !s.snapBox) return;
   var BW = Math.floor(s.snapBox.clientWidth - 8); if (BW < 120) return;
-  var tr = m3Tr(s), key = BW + '|' + s.v.v0 + '|' + (s.v.th0 === undefined ? '' : s.v.th0);   /* ③-4 は初期角度でもコマが変わる */
+  var tr = m3Tr(s), key = BW + '|' + s.v.v0 + '|' + (s.v.th0 === undefined ? '' : s.v.th0) + '|' + (s.v.h === undefined ? '' : s.v.h);   /* ③-4 は初期角度でもコマが変わる */
   if (s._snapKey === key) return; s._snapKey = key;
   var list = m3SnapList(s.def.sec, tr), n = list.length;
   var cols = BW < 470 ? 2 : n, rows = Math.ceil(n / cols);
-  var bx = s.def.sec === 7 ? m3BoxH(tr) : M3SNAPBOX[s.def.sec],   /* ③-3 は斜面の高さで範囲が変わる */
+  var bx = s.def.sec === 7 ? M3LOOPBOX : M3SNAPBOX[s.def.sec],   /* ③-3 はコマの縦横の比をループのまわりに合わせる（2・3 コマ目を大きく） */
     pw0 = M3SNAP.pw, ph0 = Math.round((pw0 - 12) * (bx.y1 - bx.y0) / (bx.x1 - bx.x0) + 14);   /* 小球のまわりの範囲の縦横の比 */
   var keep = { t: s.t, rot: s.rot, trail: s.trail, at: s.autoTrail, hits: s.hits, cw: CVW, ch: CVH, id: CVID };
-  s.snapImgs = list.map(function (sn) {
+  s.snapImgs = list.map(function (sn, si) {
     var cv = document.createElement('canvas'), K = M3SNAP.k;
     cv.width = pw0 * K; cv.height = ph0 * K;
     var ctx = cv.getContext('2d'); ctx.setTransform(K, 0, 0, K, 0, 0);
     CVW = pw0; CVH = ph0; CVID = ''; _fArrows.length = 0;
-    s.t = clamp(sn.t, 0, tr.tEnd); s.rot = false; s._snap = true; s._snapEv = !!sn.ev;
+    s.t = clamp(sn.t, 0, tr.tEnd); s.rot = false; s._snap = true; s._snapEv = !!sn.ev; s._snapIdx = si;
     try { drawM3(s, ctx, pw0, ph0); } catch (e) { /* 描けないコマは空白 */ }
     s._snap = false; s._snapEv = false;
     return { cv: cv, label: sn.label, ev: !!sn.ev };
@@ -6396,8 +6422,7 @@ function m4GDraw(s, cv, kind) {
     ctx.save(); ctx.fillStyle = fill; ctx.fillRect(X(a), pad.t, X(b) - X(a), H - pad.t - pad.b); ctx.restore();
     label(ctx, txt, (X(a) + X(b)) / 2, pad.t - 8, { size: 10, bold: true, color: tc });
   };
-  if (kind === 'v') { band(0, D90, 'rgba(22,99,181,.07)', 'θ ≤ 90°：v ≥ 0 を見る', '#1c4f8f'); if (xMax > Math.PI) band(3 * D90, TAU, 'rgba(22,99,181,.07)', 'v ≥ 0 を見る', '#1c4f8f'); }
-  else band(D90, xMax > Math.PI ? 3 * D90 : Math.PI, 'rgba(123,63,212,.07)', '90° ≤ θ：' + K.F + ' ≥ 0 を見る', '#5b2fa0');
+  /* θ = 90° の左右の塗り分けと「〜を見る」の文字はやめた（2026-10-14 千葉さん） */
   /* 目盛り */
   ctx.save(); ctx.font = '600 10px ' + FONT; ctx.fillStyle = '#5d6875'; ctx.strokeStyle = '#eef0f2'; ctx.lineWidth = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
@@ -6792,8 +6817,9 @@ var MODES = [
     lead: '摩擦力・弾性力・張力などの「中心向きの合力」が向心力のはたらきをしている。外（慣性系）から見れば<span class="t-eom">運動方程式</span>、一緒に回る観測者（非慣性系）から見れば遠心力を加えた<span class="t-bal">力のつり合いの式</span>になる。' },
   { id: 'mode3', name: '等速ではない円運動', secs: ['m3s1', 'm3sL', 'm3sH', 'm3s2', 'm3s3', 'm3s5'], rotSwitch: true,
     en: 'Circular Motion with Changing Speed',
-    lead: '速さが変わっても、中心方向には $m\\dfrac{v^2}{r}=$（中心向きの合力）が成り立つ。最高点に達する条件、面から離れる条件を理解しよう。' },
-  { id: 'mode4', name: '最高点まで昇る条件', secs: ['m4s1', 'm4s2'], rotSwitch: true,
+    lead: '運動の途中で速さが変わる円運動でも、各点で運動方程式は成り立つ（一緒に円運動する立場なら力のつり合い）。主に円筒面の内側を滑るか外側を滑るか、糸につながった運動かの 3 パターン。最高点に達する条件、面から離れる条件、糸がたるむ条件を理解しよう。' },
+  { id: 'mode4', name: '最高点まで昇る条件', title: '最高点まで昇る条件は「最高点で $N \\ge 0$（$S \\ge 0$）」',   /* タブはそのまま、章の題だけ（2026-10-14 千葉さん） */
+    secs: ['m4s1', 'm4s2'], rotSwitch: true,
     en: 'Conditions for Reaching the Top',
     lead: '面の内側を回るなら垂直抗力 $N \\ge 0$、糸で回るなら張力 $S \\ge 0$ が「円運動を続けられる」条件。$N$・$S$ は最高点で一番小さいので、「最高点まで円運動を続けられる」条件は、「最高点で $N \\ge 0$（糸なら $S \\ge 0$）」が成り立てば最高点に到達できる。これを、シミュレーションを通して理解しよう。' }
 ];
@@ -6835,7 +6861,7 @@ function buildPage() {
   MODES.forEach(function (m, i) {
     h += '<section class="mode" id="' + m.id + '">' +
       '<header class="modehead"><div class="mh-num" aria-hidden="true"><span>' + (i + 1) + '</span></div><div class="mh-body"><p class="mh-en">Chapter ' + String(i + 1).padStart(2, '0') + ' — ' + m.en + '</p>' +
-      '<h2><span class="mh-c">' + CIRC[i] + '</span>' + m.name + '</h2><p class="mh-lead">' + m.lead + '</p></div></header>' +
+      '<h2><span class="mh-c">' + CIRC[i] + '</span>' + (m.title || m.name) + '</h2><p class="mh-lead">' + m.lead + '</p></div></header>' +
       (m.secs.filter(function (sid) { return DEFS[sid]; }).length < 2 ? '' :          /* セクションが 1 つだけのモード（①）は、セクションへのリンクを出さない（2026-10-12 千葉さん） */
       '<div class="seclinks">' + m.secs.filter(function (sid) { return DEFS[sid]; }).map(function (sid) {
         return '<a href="#' + (i + 1) + '-' + DEFS[sid].num + '" data-toc="' + sid + '">' + CIRC[i] + '-' + DEFS[sid].num + '　' + (DEFS[sid].short || DEFS[sid].title) + '</a>'; }).join('') + '</div>') +
