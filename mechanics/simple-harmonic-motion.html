@@ -1762,7 +1762,7 @@ details.m4ans > summary { cursor: pointer; font-weight: 700; color: #a85c0c; }
 details.m4ans[open] > summary { margin-bottom: 6px; }
 details.m4ans p { margin: 6px 0; line-height: 1.8; }
 /* ③-1 見出しの注記・表のタイトル（2026-10-18） */
-.sechead h2 small.ttnote{font-size:.62em;font-weight:700;color:#b35c00;margin-left:.8em;letter-spacing:0}
+.sechead h2 small.ttnote{font-size:1em;font-weight:700;color:#b35c00;margin-left:.8em;letter-spacing:0}
 .m3cap{margin:18px 0 8px;font-weight:800;font-size:1.02rem;color:var(--ink,#14171c);border-left:5px solid var(--brand,#e07b18);padding-left:9px}
 /* ②-8 地球トンネル（2026-10-18） */
 .qcard.m2tfx{margin-top:10px}
@@ -1846,7 +1846,10 @@ a.problink:hover{filter:brightness(1.07)}
 .sec.widehead .sechead .exbtns{margin:0 0 0 auto}
 .secdesc.desc2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;background:#f4f7fb;border:1px solid #d7e0ea;border-radius:8px;padding:.6em 1em;margin-bottom:8px}
 .secdesc.desc2 > div > p{margin:.3em 0}
-@media(max-width:880px){.secdesc.desc2{grid-template-columns:1fr}.sec.widehead .shead{padding:18px 16px 4px}}
+.secdesc.desc2 > div + div{border-left:1.5px solid #b9c6d6;padding-left:14px}   /* 左右の仕切り線（2026-10-19 千葉さん） */
+.m4tl{margin:.2em 0 .4em;padding-left:1.2em}.m4tl li{margin:.25em 0}
+.m4miss{margin:.3em 0 0;padding:.45em .7em;background:#fff4e5;border-left:3px solid #e08a1e;border-radius:4px;font-size:.95em}
+@media(max-width:880px){.secdesc.desc2{grid-template-columns:1fr}.secdesc.desc2 > div + div{border-left:0;padding-left:0;border-top:1.5px solid #b9c6d6;padding-top:6px}.sec.widehead .shead{padding:18px 16px 4px}}
 .row2.sliders.onerow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
 .row2.sliders.onerow > .varbox{flex:1 1 260px;min-width:0}
 .row2.sliders.onerow > .trow{flex:1 1 300px;min-width:0;margin:0}
@@ -1888,6 +1891,20 @@ h3.m4point{margin:0 0 .4em;font-size:1.08rem;font-weight:800;color:#a85c0c;borde
 .ctrls .row2.sliders.onerow .vrow{gap:6px}
 .ctrls.side .cleft .playbar{flex-wrap:wrap}
 .ctrls.side .cleft .playbar .trow{flex:1 1 360px;min-width:0}
+.cvwrap .cvbtns button.b.m4press.done{background:#1f8a4c;border-color:#1f8a4c;color:#fff}
+.cvwrap .cvbtns button.b.m4press.done::before{content:"✓ "}
+/* ④-3：視点のボタンは小さく 1 行に */
+#m4s2 .cvwrap .cvbtns button.b.m4only{font-size:.62rem;padding:.2em .55em;white-space:nowrap}
+.ctrls.side > *{min-width:0}
+.ctrls.side .cleft .row1,.ctrls.side .cleft .row1b{flex-wrap:wrap}
+.ctrls.side .row2.sliders .vrow{flex-wrap:wrap}
+/* スマホ：①-1 のボタン列は折り返す、①-2 の対応表の長い式は小さく（2026-10-18） */
+@media(max-width:520px){
+  #m1s1 .ctrls .playbar .row1 .btns{flex-wrap:wrap}
+  table.reltab.cmptab td .katex{font-size:.86em}
+  table.reltab.cmptab{table-layout:auto;width:100%}
+  table.reltab.cmptab td{word-break:break-all}
+}
 
 </style>
 </head>
@@ -2219,7 +2236,7 @@ function stickman(ctx, x, y, ux, uy, s, color, lw) {
   return { x: hd[0], y: hd[1], r: s * 0.13 };                  /* 頭（吹き出しのしっぽを向ける） */
 }
 /* 真上から見た人（頭と肩）。プロジェクト「真上から見た観測者の描き方ルール.md」と同じ（inertia-force.html モード③ と同じ描き方）。
-   肩＝横長の楕円（2.1r × 1.1r）、頭＝白い円（r）。いまの視点は青・太線・うすい青のぬり、もう一方はグレー・細線。
+   肩＝横長の楕円（2.1r × 1.1r）、頭＝白い円（r）。いまの視点は青・太線・薄い青のぬり、もう一方はグレー・細線。
    rot：肩の楕円の長い軸の向き（回転台の上の人は、中心から人への向きに垂直＝肩が接線の向き）。戻り値は棒人間の頭と同じ形 */
 function topHead(ctx, x, y, active, r, rot) {
   r = Math.max(6, r);
@@ -2234,7 +2251,7 @@ var OBS_DIM = 0.42;
 function observer(ctx, x, y, ux, uy, name, active, s, lab) {
   var col = active ? COL.vel : '#9aa3ac';
   lab = lab || {};
-  ctx.save(); if (!active) ctx.globalAlpha *= OBS_DIM;          /* いまの視点でない観測者は、うすく（2026-10-06 千葉さん） */
+  ctx.save(); if (!active) ctx.globalAlpha *= OBS_DIM;          /* いまの視点でない観測者は、薄く（2026-10-06 千葉さん） */
   var hd = stickman(ctx, x, y, ux, uy, s || 30, col, active ? 2.4 : 1.7);
   var txt = name + (active ? '（いまの視点）' : '');
   var lx = x + (lab.dx || 0), ly = (uy < -0.2) ? y + 14 + (lab.dy || 0) : y + uy * (s || 30) * 1.15 + (lab.dy || 0);
@@ -2395,7 +2412,7 @@ function flickStart(ctx, t, v0, cx, cy, ang, up, noBub) {        /* noBub：吹�
    ・ハッチ（斜線）は必ず面の線分の内がわにおさめる
    ========================================================================= */
 'use strict';
-function eqTag(kind) { return kind ? '<span class="eqtag ' + kind + '">' + (kind === 'eom' ? '運動方程式' : '力のつり合いの式') + '</span>' : ''; }
+function eqTag(kind) { return kind ? '<span class="eqtag ' + kind + '">' + (kind === 'eom' ? '運動方程式' : '力のつりあいの式') + '</span>' : ''; }
 
 /* ばね：(x1,y1) → (x2,y2)。o = { n 巻き数, r 太さの半分, b 楕円の横半径, lead 引き出し線, col, lw }。
    伸び縮みしても n・r・b・lead は変えない（間隔だけが詰まる） */
@@ -2494,14 +2511,12 @@ function springDense(ctx, x1, y1, x2, y2, L0, o) {
 }
 /* 半径の横に、両矢印と「A」（止まっているときだけ。①-1・①-2。2026-10-16 千葉さん）。side：半径のどちら側にずらすか（±1） */
 /* 同じ長さを表す「＝」の印（変位・速度の「‖」と区別する。加速度用。2026-10-18 千葉さん）。始点 (x, y)・向き (ux, uy)・長さ L の矢印の 45 % の所の横に */
+/* 同じ大きさの印「＝」。速度の等長マークと同じく、矢印の上に（矢印を横切る 2 本の線で）書く（2026-10-19 千葉さん）。side は使わない */
 function eqSign(ctx, x, y, ux, uy, L, col, side) {
   var n = Math.hypot(ux, uy) || 1; ux /= n; uy /= n;
-  var mx = x + ux * L * 0.45, my = y + uy * L * 0.45, px = -uy, py = ux, w = 5.5;
-  if (px < 0 || (px === 0 && py < 0)) { px = -px; py = -py; }       /* いつも右がわ（下がわ）に。side = −1 なら反対がわ */
-  if (side === -1) { px = -px; py = -py; }
-  var cx = mx + px * 11, cy = my + py * 11;
-  ctx.save(); ctx.strokeStyle = col || COL.acc; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-  [-2.6, 2.6].forEach(function (d) { ctx.beginPath(); ctx.moveTo(cx - w, cy + d); ctx.lineTo(cx + w, cy + d); ctx.stroke(); });
+  var pos = Math.max(6, Math.min(L * 0.42, L - 13)), mx = x + ux * pos, my = y + uy * pos, px = -uy, py = ux, w = 5.6;
+  ctx.save(); ctx.strokeStyle = col || COL.acc; ctx.lineWidth = 2.1; ctx.lineCap = 'round'; ctx.setLineDash([]);
+  [-2.3, 2.3].forEach(function (d) { var cx = mx + ux * d, cy = my + uy * d; ctx.beginPath(); ctx.moveTo(cx - px * w, cy - py * w); ctx.lineTo(cx + px * w, cy + py * w); ctx.stroke(); });
   ctx.restore();
 }
 function radiusA(ctx, cx, cy, px, py, side, col) {
@@ -2510,7 +2525,7 @@ function radiusA(ctx, cx, cy, px, py, side, col) {
   dimLine(ctx, cx + nx * o, cy + ny * o, px + nx * o, py + ny * o, col || '#14171c');
   sym(ctx, 'A', (cx + px) / 2 + nx * (o + 11), (cy + py) / 2 + ny * (o + 11), { size: 15, color: col || '#14171c' });
 }
-/* エネルギーの量を表す矢印（力の矢印とちがい、作用点の「・」をつけない・等長マークの対象にしない） */
+/* エネルギーの量を表す矢印（力の矢印と違い、作用点の「・」をつけない・等長マークの対象にしない） */
 function eArrow(ctx, x1, y1, x2, y2, col) {
   var L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
   var ux = (x2 - x1) / L, uy = (y2 - y1) / L, h = Math.min(10, L * 0.5), bx = x2 - ux * h, by = y2 - uy * h;
@@ -2914,7 +2929,7 @@ Sim.prototype.syncSliders = function (force) {
       var cn = vd.canNudge ? [vd.canNudge(self, -1), vd.canNudge(self, 1)] : (vd.stops ? [s.idxOf(x) > 0, s.idxOf(x) < vd.stops.length - 1] : [true, true]);
       s.dn.disabled = !cn[0]; s.up.disabled = !cn[1];
     }
-    if (vd.allow && s.rw) {                                /* vd.allow：選べる範囲だけ。範囲の外はスライダーの線をうすく（4-1・4-2） */
+    if (vd.allow && s.rw) {                                /* vd.allow：選べる範囲だけ。範囲の外はスライダーの線を薄く（4-1・4-2） */
       var al = vd.allow(self);
       if (!s.dis) { s.dis = [el('i', 'vdis'), el('i', 'vdis')]; s.dis.forEach(function (sp) { sp.setAttribute('aria-hidden', 'true'); s.rw.insertBefore(sp, s.inp); }); }
       var f0 = (al.lo - vd.min) / (vd.max - vd.min), f1 = (al.hi - vd.min) / (vd.max - vd.min);
@@ -2958,7 +2973,7 @@ Sim.prototype.lockNote = function (html) {
   clearTimeout(this._lmT); var lm = this.lockmsg;
   this._lmT = setTimeout(function () { lm.innerHTML = ''; }, 6000);
 };
-/* 変数が変わった：最初から（θ = ωt を保つため、時刻を 0 にもどす。動いていたら続けて動かす） */
+/* 変数が変わった：最初から（θ = ωt を保つため、時刻を 0 に戻す。動いていたら続けて動かす） */
 Sim.prototype.changed = function (k) {
   var was = this.playing, keep = false, res = this.def.onChanged ? this.def.onChanged(this, k) : null;
   if (k === 'phi') res = 'stop';                                /* 初期位相を変えたら、止めて最初から（2026-10-16 千葉さん） */
@@ -3121,7 +3136,7 @@ Sim.prototype.setRoll = function (q) {
 };
 
 /* ---------- 軌跡（モード2・3 の「軌跡を表示」） ----------
-   毎回の描画で物体の位置を記録し、少し前（def.trailSec 秒）までの道すじを、古いほどうすく描く。
+   毎回の描画で物体の位置を記録し、少し前（def.trailSec 秒）までの道すじを、古いほど薄く描く。
    p＝慣性系での位置（描画関数に渡す座標）、fr＝そのときの絵の回転角、pr＝回転の中心から見た位置（ふつうは p と同じ）。
    proj(x, y, z) は「いまの絵」で座標 → 画面。非慣性系では、記録したときの回転のぶんを戻して描く（＝回る観測者から見た道すじ）。
    fr の向きは proj の回転と同じ（いまの絵が R(fr_now) をかけるなら、R(fr_then − fr_now) をかけた点を渡す） */
@@ -3170,7 +3185,7 @@ function ctlSide(s) {
 /* =========================================================================
    47_graph.js … x–t・v–t・a–t（とエネルギー–t）のグラフを縦に重ねる（spring-launch.html と同じ考え）
    ・グラフはあらかじめ描かず、アニメと同時に描いていく。右端（窓の長さ Tw）まで行ったら、
-     左にもどって、それまでのグラフを太い線でなぞる（前の回の線はそのまま残す）
+     左に戻って、それまでのグラフを太い線でなぞる（前の回の線はそのまま残す）
    ・3 つのグラフに、いまの時刻の縦線（灰色の破線）。t 軸の目盛りは T/4・T/2・3T/4・T …
    ・experiment-graph-ui：枠の中をドラッグ＝移動（横はグラフ全部で共有、縦はそのグラフだけ）、
      縦軸の目盛り＝縦の拡大縮小、横軸の目盛り＝横の拡大縮小、「スケールをリセット」。ホイールは使わない
@@ -3216,7 +3231,7 @@ function shmGraphs(s, defs) {
   });
   shmGraphReset(s);
 }
-/* 窓の長さ・縦の範囲を最初にもどす（量を変えたときも呼ぶ） */
+/* 窓の長さ・縦の範囲を最初に戻す（量を変えたときも呼ぶ） */
 function shmGraphReset(s) {
   var Tw = s.def.gWin(s);
   s.gx = { lo: 0, hi: Tw }; s._gTw = Tw;
@@ -3448,8 +3463,8 @@ function phiVar(def0, five) {
     eqLine: function (s) { return five ? '$x = A\\sin(\\omega t + \\phi)$<br>$\\phantom{x} = ' + PHISUB[phiIdx(s.v.phi)] + '$'   /* ボタンのときは小さく 2 行 */
       : '$x = A\\sin(\\omega t + \\phi) = ' + PHISUB[phiIdx(s.v.phi)] + '$'; } };
 }
-/* スタートの手：t = 0 で速度が 0 なら指でつまんで「そっと放す」。速度があればデコピンで「初速度をあたえる」（向きは初速の向き）。
-   スタート前（t = 0 で止まっている）は、手の位置に吹き出しで「そっと放す」「初速度をあたえる」と書く（2026-10-16 千葉さん）。
+/* スタートの手：t = 0 で速度が 0 なら指でつまんで「そっと放す」。速度があればデコピンで「初速度を与える」（向きは初速の向き）。
+   スタート前（t = 0 で止まっている）は、手の位置に吹き出しで「そっと放す」「初速度を与える」と書く（2026-10-16 千葉さん）。
    時間は見た目の時間（再生の速さ base で割る）で考える。
    ・そっと放す：指を開くのに 0.08 s、そのあと 0.14 s で消える
    ・デコピン：手の位置は動かさず、0.05 s ではじき、0.27 s で消える（前の 80 %）
@@ -3461,16 +3476,22 @@ function startHand(s, ctx, bx, by, rb, dir, v0, opt) {
   if (Math.abs(v0) > 1e-9) {
     if (t >= 0.27) return;
     var k = clamp(t / 0.05, 0, 1), a = (t <= 0.07) ? 1 : Math.max(0, 1 - (t - 0.07) / 0.2); if (a <= 0.02) return;
-    var hx, hy, ang, dr;
-    if (dir === 'up') {                                     /* 縦：上向きなら下から、下向きなら上から（横にずらしてばねと重ねない） */
-      if (v0 > 0) { hx = bx; hy = by + rv + 34; ang = -Math.PI / 2; dr = 1; }
-      else { hx = bx + rb + 30; hy = by - rv - 4; ang = Math.PI / 2; dr = -1; }
+    /* はじく向き u と、指が当たる物体の表面の点 C を決め、はじく前の指先が C のすぐ手前に来るように手の中心を置く。
+       はじいた指先は物体の裏に少しもぐる（物体はあとから描くので隠れる）。2026-10-19 千葉さん */
+    var hx, hy, ang, dr, ux, uy, cx, cy;
+    if (dir === 'up') {                                     /* 縦：上向きなら下から、下向きなら右上から（ばねと重ねない） */
+      if (v0 > 0) { ux = 0; uy = -1; dr = 1; cx = bx; cy = by + rv; }
+      else { ux = -Math.sin(0.35); uy = Math.cos(0.35); dr = -1; cx = bx + rb * 0.8; cy = by - rv; }
     } else {                                                /* 横：ばねと重ならないよう上からななめに */
-      if (v0 > 0) { hx = bx - rb - 24; hy = by - rb - 16; ang = 0.55; dr = 1; }
-      else { hx = bx + rb + 24; hy = by - rb - 16; ang = -0.55; dr = -1; }
+      if (v0 > 0) { ux = Math.cos(0.55); uy = Math.sin(0.55); dr = 1; }
+      else { ux = -Math.cos(0.55); uy = Math.sin(0.55); dr = -1; }
+      cx = bx - ux * rb; cy = by - uy * rb;
     }
+    ang = Math.atan2(uy, ux) + (dr < 0 ? Math.PI : 0);
+    var ca = Math.cos(ang), sa = Math.sin(ang), lx = dr * 52, ly = -16;   /* はじく前の指先（手の中心から。flickHand の座標） */
+    hx = cx - (lx * ca - ly * sa) * 0.42 - ux * 2; hy = cy - (lx * sa + ly * ca) * 0.42 - uy * 2;
     flickHand(ctx, hx, hy, ang, k, dr, 0.42, a);
-    if (pre) { if (hx < bx - 1) handBubble(ctx, '初速度をあたえる', hx - 34, hy, 'l', opt.bubGap); else handBubble(ctx, '初速度をあたえる', hx + 32, hy, 'r', opt.bubGap); }
+    if (pre) { if (hx < bx - 1) handBubble(ctx, '初速度を与える', hx - 34, hy, 'l', opt.bubGap); else handBubble(ctx, '初速度を与える', hx + 32, hy, 'r', opt.bubGap); }
     return;
   }
   if (t > 0.22) return;
@@ -3514,7 +3535,7 @@ function m1s1Geo(W, H) {
 DEFS.m1s1 = {
   id: 'm1s1', mode: 'mode1', num: 1,
   title: '単振動と等速円運動の関係',
-  desc: '等速円運動をしている小球に、真横からライトの光を当てて、壁に映る影を見る。ライトをつけた時刻を $t = 0$ として、影の位置を記録する。<span class="todo">スタートで円運動が始まる。いろいろなタイミングで「ライトを点灯」を押して、記録されるグラフの形と式 $x = A\\sin(\\omega t + \\phi)$ の $\\phi$ を見くらべよう。</span>',
+  desc: '等速円運動をしている小球に、真横からライトの光を当てて、壁に映る影を見る。ライトをつけた時刻を $t = 0$ として、影の位置を記録する。<span class="todo">スタートで円運動が始まる。いろいろなタイミングで「ライトを点灯」を押して、記録されるグラフの形と式 $x = A\\sin(\\omega t + \\phi)$ の $\\phi$ を見比べよう。</span>',
   strobe: false, noDefBtn: true,
   tEnd: function () { return tBarOf(2); },
   init: function (s) { s.light = false; s.tOn = null; },
@@ -3583,7 +3604,7 @@ function drawM1S1(s, ctx, W, H) {
   }
   if (!s.playing) radiusA(ctx, g.cx, g.cy, px, py, Math.sin(th) >= 0 ? -1 : 1);   /* 止まっているときだけ、半径に両矢印と A */
   ballShape(ctx, px, py, rb, '#d9b77a');
-  /* 壁の右：影の位置の記録（x–t グラフ）。窓は 2 周期ぶん。右端まで行ったら、左にもどってなぞる */
+  /* 壁の右：影の位置の記録（x–t グラフ）。窓は 2 周期ぶん。右端まで行ったら、左に戻ってなぞる */
   var gw = g.g1 - g.g0, Tw = 2 * T, X = function (tt) { return g.g0 + tt / Tw * gw; }, Y = function (x) { return g.cy - x * S; };
   ctx.save(); ctx.strokeStyle = 'rgba(20,23,28,.10)'; ctx.lineWidth = 1;
   [A, -A].forEach(function (x) { ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(g.g0, Y(x)); ctx.lineTo(g.g1, Y(x)); ctx.stroke(); });
@@ -3595,7 +3616,7 @@ function drawM1S1(s, ctx, W, H) {
   sym(ctx, 'A', g.g0 - 5, Y(A), { size: 13, align: 'right' }); sym(ctx, '−A', g.g0 - 5, Y(-A), { size: 13, align: 'right' });
   label(ctx, 'O', g.g0 - 9, g.cy + 9, { size: 11, halo: false });
   for (var n = 1; n <= 8; n++) { var xx = X(n * T / 4); ctx.save(); ctx.strokeStyle = '#2b323c'; ctx.beginPath(); ctx.moveTo(xx, g.cy - 3); ctx.lineTo(xx, g.cy + 3); ctx.stroke(); ctx.restore(); if (n % 2 === 0) tFracLabel(ctx, n, xx, g.cy + 4); }
-  /* グラフの t は、ライトをつけた時刻 tOn からはかる（t′ = t − tOn）。だから cos 型・−sin 型などにもなる */
+  /* グラフの t は、ライトをつけた時刻 tOn から測る（t′ = t − tOn）。だから cos 型・−sin 型などにもなる */
   if (s.light && s.tOn !== null && s.t > s.tOn) {
     var el1 = s.t - s.tOn, pass = Math.floor(el1 / Tw + 1e-9);
     for (var k = 0; k <= pass; k++) {
@@ -3649,7 +3670,7 @@ function m1s2Q(s) {
 DEFS.m1s2 = {
   id: 'm1s2', mode: 'mode1', num: 2,
   title: '単振動の基本的な物理量',
-  desc: '左は半径 $A$ の等速円運動、右はばね振り子の単振動。変位・速度・加速度のベクトルと、それぞれのグラフ（右）を見くらべる。<span class="todo">振幅 $A$・ばね定数 $k$・おもりの数（質量 $m$）・初期位相 $\\phi$ を変えて、他の量がどう変わるか見よう。スタート前におもりをドラッグして振幅を変えることもできる。</span>',
+  desc: '左は半径 $A$ の等速円運動、右はばね振り子の単振動。変位・速度・加速度のベクトルと、それぞれのグラフ（右）を見比べる。<span class="todo">振幅 $A$・ばね定数 $k$・おもりの数（質量 $m$）・初期位相 $\\phi$ を変えて、他の量がどう変わるか見よう。スタート前におもりをドラッグして振幅を変えることもできる。</span>',
   strobe: false, showFBtn: true, fDefault: 'net', vecBtn: 'x, v, a を消す', graphs: true, stgCls: 'solo', belowCanvas: true,
   varCols: [['A', 'k', 'm'], ['vm', 'am', 'w', 'T', 'f']], varWide: ['phi'],   /* φ のスライダーは ①-3 の前のスライダーの半分くらいの長さ（CSS で幅をおさえる） */
   varColNote: { 1: '以下の 5 つは、左の値で決まる（直接は変えられない）' },
@@ -3837,9 +3858,9 @@ function drawM1S2(s, ctx, W, H) {
 }
 /* 「さらに詳しく」：教科書の図のように、角 ωt（ϕ があれば ωt + ϕ）と、x 軸への成分を書きこむ */
 function m1s2DetailDraw(ctx, G2, q, th, px, py, R, fk, Lv, La) {
-  var thn = th - TAU * Math.floor(th / TAU);                      /* 角は 0〜2π にもどす（1 周したあとに円が重なって描かれないように。2026-10-18 千葉さん） */
+  var thn = th - TAU * Math.floor(th / TAU);                      /* 角は 0〜2π に戻す（1 周したあとに円が重なって描かれないように。2026-10-18 千葉さん） */
   var tl = Math.abs(q.phi) < 1e-9 ? 'ωt' : 'ωt+ϕ', xa = G2.xa, GR = 'rgba(46,160,90,.22)', GL = '#1c8f4a';
-  /* 中心の角（うすい緑のおうぎ形） */
+  /* 中心の角（薄い緑のおうぎ形） */
   ctx.save(); ctx.fillStyle = GR; ctx.beginPath(); ctx.moveTo(G2.cx, G2.cy); ctx.arc(G2.cx, G2.cy, 28, 0, -thn, true); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = GL; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(G2.cx, G2.cy, 28, 0, -thn, true); ctx.stroke(); ctx.restore();
   dotted(ctx, G2.cx, G2.cy, G2.cx + R + 8, G2.cy, 'rgba(20,23,28,.45)', [4, 3]);
@@ -4357,14 +4378,14 @@ function m2Card(c) {
   return '<details class="qcard m2card"><summary class="qt">' + c.ttl + 'の運動方程式と周期</summary>' +
     '<div class="stp"><p class="sh"><b>①</b> 小球にはたらく力を書く</p>' + c.f + '</div>' +
     '<div class="stp"><p class="sh"><b>②</b> 運動方程式を $ma = -K(x - x_0)$ の形にする</p>' + c.eq + '</div>' +
-    '<div class="stp"><p class="sh"><b>③</b> $a$ と $x$ の関係式を作り、$a = -\\omega^2x$ とくらべて $\\omega$・$T$ を求める</p>' + c.read + '</div>' +
+    '<div class="stp"><p class="sh"><b>③</b> $a$ と $x$ の関係式を作り、$a = -\\omega^2x$ と比べて $\\omega$・$T$ を求める</p>' + c.read + '</div>' +
     (c.note || '') + '</details>';
 }
-/* ③：運動方程式から a と x の関係式を作り、単振動の式 a = −ω²x とくらべて ω を求める（2026-10-16 千葉さん）。
-   aRhs：a = の右辺、wTex：ω、TTex：T、note：あとに書く文、shifted：x − x₀ の形（くらべるのは a = −ω²(x − x₀)）、approx：≒ */
+/* ③：運動方程式から a と x の関係式を作り、単振動の式 a = −ω²x と比べて ω を求める（2026-10-16 千葉さん）。
+   aRhs：a = の右辺、wTex：ω、TTex：T、note：あとに書く文、shifted：x − x₀ の形（比べるのは a = −ω²(x − x₀)）、approx：≒ */
 function m2Read(aRhs, wTex, TTex, note, shifted, approx) {
   return '<p>運動方程式の両辺を $m$ でわって、$a$ と $x$ の関係式を作ると</p><div class="qeq">$$a ' + (approx ? '' : '= ') + aRhs + '$$</div>' +
-    '<p>これを単振動の加速度の式 $a = -\\omega^2 ' + (shifted ? '(x - x_0)' : 'x') + '$ とくらべると</p>' +
+    '<p>これを単振動の加速度の式 $a = -\\omega^2 ' + (shifted ? '(x - x_0)' : 'x') + '$ と比べると</p>' +
     '<div class="qeq">$$\\omega = ' + wTex + ',\\qquad T = \\dfrac{2\\pi}{\\omega} = ' + TTex + '$$</div>' + (note ? '<p>' + note + '</p>' : '');
 }
 function eqL(tag, body) { return '<p class="eqline">' + eqTag(tag) + body + '</p>'; }
@@ -4409,7 +4430,7 @@ DEFS.m2s1 = m2Def({
   },
   card: function (s) {
     var Q = DEFS.m2s1.O.Q(s);
-    return m2Card({ ttl: '水平ばね振り子', f: '<p>水平方向の力は弾性力 $-kx$ だけ（重力 $mg$ と垂直抗力 $N$ は鉛直方向でつり合う）。</p>',
+    return m2Card({ ttl: '水平ばね振り子', f: '<p>水平方向の力は弾性力 $-kx$ だけ（重力 $mg$ と垂直抗力 $N$ は鉛直方向でつりあう）。</p>',
       eq: eqL('eom', '$ma = -kx$') + '<p>$K = k$、$x_0 = 0$ の形になっている。</p>',
       read: m2Read('-\\dfrac{k}{m}x', '\\sqrt{\\dfrac{k}{m}}', '2\\pi\\sqrt{\\dfrac{m}{k}}', '振動の中心は $x_0 = 0$（自然の長さの位置＝つりあいの位置）。') +
         '<p class="qnow"><span class="qtag now">いまの値</span>$m = ' + Q.m.toFixed(2) + '$ kg、$k = ' + Q.K + '$ N/m なので $T = ' + sig2(Q.T) + '$ s</p>' });
@@ -4611,7 +4632,7 @@ DEFS.m2s4 = m2Def({
     var eq = nat ? eqL('eom', '$ma = -kx + mg\\sin\\theta = -k\\left(x - \\dfrac{mg\\sin\\theta}{k}\\right)$') + '<p>$K = k$、$x_0 = d = \\dfrac{mg\\sin\\theta}{k}$。</p>'
       : '<p class="eqline">' + eqTag('bal') + '$-kd + mg\\sin\\theta = 0$</p>' + eqL('eom', '$ma = -k(x + d) + mg\\sin\\theta = -kx$') + '<p>$K = k$、$x_0 = 0$。</p>';
     return m2Card({ ttl: '斜面のばね振り子（' + (nat ? '自然長の位置を $x = 0$' : 'つりあいの位置を $x = 0$') + '）',
-      f: '<p>斜面方向には、重力の斜面方向の成分 $mg\\sin\\theta$（下向き）と、ばねの弾性力（上向き）。垂直抗力 $N$ と $mg\\cos\\theta$ は斜面に垂直な方向でつり合う。</p>',
+      f: '<p>斜面方向には、重力の斜面方向の成分 $mg\\sin\\theta$（下向き）と、ばねの弾性力（上向き）。垂直抗力 $N$ と $mg\\cos\\theta$ は斜面に垂直な方向でつりあう。</p>',
       eq: eq,
       read: (s.org ? m2Read('-\\dfrac{k}{m}(x - d)', '\\sqrt{\\dfrac{k}{m}}', '2\\pi\\sqrt{\\dfrac{m}{k}}', '振動の中心は $x_0 = d$（つりあいの位置）。周期は $\\theta$ によらない。', true) : m2Read('-\\dfrac{k}{m}x', '\\sqrt{\\dfrac{k}{m}}', '2\\pi\\sqrt{\\dfrac{m}{k}}', '振動の中心はつりあいの位置。周期は $\\theta$ によらない。')) + '<p class="qnow"><span class="qtag now">いまの値</span>$\\theta = ' + s.v.th + '^\\circ$：$d = ' + fmt(Q.d, 3) + '$ m、$T = ' + sig2(Q.T) + '$ s</p>',
       note: '<p class="rednote">$\\theta$ を変えても、変わるのはつりあいの位置だけ。単振動は必ず、つりあいの位置を中心として振動する。</p>' });
@@ -4711,7 +4732,7 @@ function fScene(s, ctx, g, st, opt) {
   springDense(ctx, g.xW, b.y, b.x - g.bw / 2, b.y, g.xO - g.bw / 2 - g.xW, { r: sm ? 4 : 7, lead: sm ? 3 : 8, k: Q.K, thin: sm ? 0.6 : 1 });
   dotted(ctx, g.xO, g.yF - (sm ? 30 : 50), g.xO, g.yF + (snap ? 0 : 30), 'rgba(20,23,28,.35)', [4, 3]);
   if (!snap) {
-    /* 振動の中心 ±μ′mg/k は x 軸の下に（物体のまわりの矢印・記号と重ならないように） */
+    /* 振動の中心 ±μ′mg/k は x 軸の下に（物体の周りの矢印・記号と重ならないように） */
     var F = m2s5F(s); [F.xf, -F.xf].forEach(function (c, i) { var X = g.xO + c * g.S; dotted(ctx, X, g.yF + 4, X, g.yF + 52, 'rgba(15,138,138,.6)', [2, 3]); label(ctx, i ? '−μ′mg/k' : '+μ′mg/k', X + (i ? -3 : 3), g.yF + 61, { size: 9.5, color: '#0f8a8a', align: i ? 'right' : 'left' }); });
     eqLabel(ctx, g.xO, g.yF + 75, 'center', 'つりあいの位置（動く向きで ±μ′mg/k が入れかわる）');
   }
@@ -5006,7 +5027,7 @@ function drawM2T(s, ctx, W, H) {
   if (!s.hideVec && Math.abs(st.v) > 0.02 * vref) vArrowAt(ctx, bx, cy, 0, -1, 26, 1, 0, st.v / vref * 46, true);
   if (s.fmode) { var L = -st.x / q.R * 52; if (Math.abs(L) > 2) fArrow(ctx, bx, cy, 1, 0, L, COL.force, 'F', { ly: 16, noShift: true }); }
   var hf = s.t === 0 && !s.playing ? 1 : clamp(1 - s.t / (0.05 * q.T), 0, 1);   /* 手で持っていて、放すと手が消えていく */
-  if (hf > 0) { ctx.save(); ctx.globalAlpha = hf; dropHand(ctx, X(q.A) + 3, cy - 6 - (1 - hf) * 30, 0.34, hf, 1); ctx.restore(); }
+  if (hf > 0) { ctx.save(); ctx.globalAlpha = hf; dropHand(ctx, X(q.A) + 4, cy + 1 - (1 - hf) * 30, 0.34, 1, 1);   /* 指先が小球の上にふれる位置。放すと上へ離れて消える */ ctx.restore(); }
   if (s.t === 0 && !s.playing) handBubble(ctx, 'ここから静かに放す', xs + 30, cy - 46, 'r');
   label(ctx, '半径 |x| の球の内がわの質量だけが、中心に集まっているとみなせる', cx, H - 12, { size: 10.5, color: '#1f5fa8' });
   drawEqualTicks(ctx);
@@ -5032,7 +5053,7 @@ function rightM2T(s, R) {
     '<p class="qt">② 運動方程式を $ma = -Kx$ の形にする</p>' + '<p class="eqline">' + eqTag('eom') + '$ma = -\\dfrac{mg}{R}x$</p><p>$K = \\dfrac{mg}{R}$。振動の中心は $x = 0$（地球の中心）。</p>' +
     '<p class="qt">③ $\\omega$・$T$ を読みとる</p>' + '<div class="qeq">$$\\omega = \\sqrt{\\frac{g}{R}},\\qquad T = 2\\pi\\sqrt{\\frac{R}{g}}$$</div>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>$R = 6.37 \\times 10^6$ m、$g = 9.8$ m/s² より　$T = ' + sig2(q.T / 1000) + ' \\times 10^3$ s（約 ' + Math.round(q.T / 60) + ' 分）。放す位置 $x_0$ にはよらない。</p></div>' +
-    '<div class="qcard"><p>地表より外から落とした場合や、初速度をあたえた場合は、万有引力のページで扱っている。</p><p><a class="xlink" href="celestial-mechanics.html#m3-2">詳しくはこちら（万有引力・ケプラーの法則と天体物理学 ③-2 地球トンネル）</a></p></div>';
+    '<div class="qcard"><p>地表より外から落とした場合や、初速度を与えた場合は、万有引力のページで扱っている。</p><p><a class="xlink" href="celestial-mechanics.html#m3-2">詳しくはこちら（万有引力・ケプラーの法則と天体物理学 ③-2 地球トンネル）</a></p></div>';
   R.innerHTML = mathify(h);
 }
 
@@ -5073,13 +5094,13 @@ var M3S1TAB = [
 DEFS.m3s1 = {
   id: 'm3s1', mode: 'mode3', num: 1, title: '周期がどの物理量に依存するのか<small class="ttnote">※暗記事項ではない</small>', short: '周期は何で決まる？', custom: true,
   html: function () {
-    var t = mathify('<div class="m3tabwrap"><table class="reltab m3tab"><thead><tr><th>単振動</th><th>運動方程式</th><th>$K$</th><th>$\\omega$</th><th>$T$</th><th>つりあいの位置</th></tr></thead><tbody>' +
+    var t = mathify('<div class="m3tabwrap"><table class="reltab m3tab"><thead><tr><th>単振動</th><th>運動方程式</th><th>$K$</th><th>$\\omega = \\sqrt{\\dfrac{K}{m}}$</th><th>$T = 2\\pi\\sqrt{\\dfrac{m}{K}}$</th><th>つりあいの位置</th></tr></thead><tbody>' +
       M3S1TAB.map(function (r) { return '<tr><th><a class="xlink" href="#' + r.a + '">' + r.n + '</a>　' + r.t + '</th><td>$' + r.eq + '$</td><td>$' + r.K + '$</td><td>$\\omega = ' + r.w + '$</td><td>$T = ' + r.T + '$</td><td class="l">' + r.c + '</td></tr>'; }).join('') +
       '</tbody></table></div>' +
       '<p class="m3tabnote">$x$ は、つりあいの位置（振動の中心）からの変位（②-5 は自然の長さの位置から）。</p>' +
       '<div class="qcard keybox m3key"><p>$K$ とは、その単振動における「ばね定数」にあたる量であり、$F = -\\bigcirc x$ の形に変形したときの「$\\bigcirc$」に当たる量。覚えるのではなく、各単振動について力を書き合力の式を導くことにより、自分で求められるようになろう。つりあいの位置も自分で求めること。</p>' +
       '<p><b>ばねによる振動と単振り子の $\\omega$、$T$ はうっすら覚えておこう。</b></p></div>');
-    return t + '<p class="m3cap">例：3 つの振り子の比較</p><div class="secdesc">水平ばね振り子・鉛直ばね振り子・単振り子を、振幅・質量・重力加速度だけを変えて「基準」とくらべる。どれも端で静かに放す。<span class="todo">スライダーやボタンで 1 つの量だけを変えてスタートし、周期（右上）が変わるもの・変わらないものを見分けよう。</span></div>' +
+    return t + '<p class="m3cap">例：3 つの振り子の比較</p><div class="secdesc">水平ばね振り子・鉛直ばね振り子・単振り子を、振幅・質量・重力加速度だけを変えて「基準」と比べる。どれも端で静かに放す。<span class="todo">スライダーやボタンで 1 つの量だけを変えてスタートし、周期（右上）が変わるもの・変わらないものを見分けよう。</span></div>' +
       '<div class="s8wrap"><div class="sL s8L"></div><div class="sR s8R"></div></div>';
   },
   build: function (art) { SIM_BY_ID.m3s1 = new M2S8Sim(art.querySelector('.s8L'), art.querySelector('.s8R')); }
@@ -5095,7 +5116,7 @@ function M2S8Sim(L, R) {
   requestAnimationFrame(function () { self.draw(); });
   if (window.IntersectionObserver) new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting && self.playing) { self.playing = false; self.sync(); } }); }).observe(this.grid);   /* 画面から消えたら止める */
 }
-/* 行ごとの条件（その行で変えた量だけが基準とちがう） */
+/* 行ごとの条件（その行で変えた量だけが基準と違う） */
 M2S8Sim.prototype.cond = function (row) {
   var c = { A: M2S8.A, m: M2S8.m, g: M2S8.g, gk: 'earth' };
   if (row === 'A') c.A = this.v.A;
@@ -5154,10 +5175,10 @@ M2S8Sim.prototype.sync = function () {
   this.starts.forEach(function (b) { if (b.textContent !== txt) b.textContent = txt; });
   var ch = [];
   if (this.v.A !== M2S8.A) ch.push('振幅'); if (this.v.m !== M2S8.m) ch.push('質量'); if (this.v.g !== 'earth') ch.push('重力加速度');
-  var m = ch.length ? 'いま基準とちがうのは「' + ch.join('」「') + '」の行。<b>右上の周期が基準と同じ（灰色）か、ちがう（オレンジ）か</b>を見よう。' : 'いまは全部の行が基準と同じ。スライダーやボタンで 1 つの量だけを変えてみよう。';
+  var m = ch.length ? 'いま基準と違うのは「' + ch.join('」「') + '」の行。<b>右上の周期が基準と同じ（灰色）か、違う（オレンジ）か</b>を見よう。' : 'いまは全部の行が基準と同じ。スライダーやボタンで 1 つの量だけを変えてみよう。';
   if (m !== this._m) { this._m = m; this.msg.innerHTML = mathify(m); }
 };
-/* 量を変えたら、全部を最初の時刻からいっしょに（くらべやすいように） */
+/* 量を変えたら、全部を最初の時刻からいっしょに（比べやすいように） */
 M2S8Sim.prototype.changed = function () { this.t = 0; this.sync(); this.draw(); };
 M2S8Sim.prototype.toggle = function () {
   var self = this;
@@ -5414,7 +5435,7 @@ function m3s2Live(s) {
    ===================================================================== */
 DEFS.m3s3 = {
   id: 'm3s3', mode: 'mode3', num: 3, title: '$x$ 座標の原点について', short: '$x$ 座標の原点',
-  desc: '②-3 と同じ鉛直ばね振り子（鉛直下向きが $x$ の正の向き）。<span class="todo">「つりあいの位置を $x = 0$」「自然長の位置を $x = 0$」を切りかえて、運動そのものは同じでも、$x$–$t$ グラフと運動方程式の形がどう変わるかを見くらべよう。</span>',
+  desc: '②-3 と同じ鉛直ばね振り子（鉛直下向きが $x$ の正の向き）。<span class="todo">「つりあいの位置を $x = 0$」「自然長の位置を $x = 0$」を切りかえて、運動そのものは同じでも、$x$–$t$ グラフと運動方程式の形がどう変わるかを見比べよう。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', graphs: true, stgCls: 'solo', baseRate: 0.5,
   buttons: orgButtons(),                                            /* 振幅・初期位相のスライダーはなくし、その場所に x = 0 の切りかえを大きく（光らせる）。2026-10-18 千葉さん */
   init: function (s) { s.org = 0; s.v.A = M2.s3.A; s.v.phi = Math.PI / 2; },
@@ -5448,11 +5469,11 @@ function rightM3S3(s, R) {
   var h = '<div class="qcard m33c' + (nat ? '' : ' on') + '"><p class="qt">つりあいの位置を $x = 0$</p>' +
     '<p>重力 $mg$（下向き）、弾性力は伸び $x + d$ なので $k(x + d)$（上向き）。つりあいの式 $kd = mg$。</p>' +
     eqL('eom', '$ma = -k(x + d) + mg = -kx$') +
-    '<p>$a = -\\dfrac{k}{m}x$ を $a = -\\omega^2 x$ とくらべて　$\\omega = \\sqrt{\\dfrac{k}{m}},\\ T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。振動の中心は $x = 0$。</p></div>' +
+    '<p>$a = -\\dfrac{k}{m}x$ を $a = -\\omega^2 x$ と比べて　$\\omega = \\sqrt{\\dfrac{k}{m}},\\ T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。振動の中心は $x = 0$。</p></div>' +
     '<div class="qcard m33c' + (nat ? ' on' : '') + '"><p class="qt">自然長の位置を $x = 0$</p>' +
     '<p>重力 $mg$（下向き）、弾性力は伸び $x$ なので $kx$（上向き）。</p>' +
     eqL('eom', '$ma = -kx + mg = -k\\left(x - \\dfrac{mg}{k}\\right) = -k(x - d)$') +
-    '<p>$X = x - d$ とおくと $a = -\\dfrac{k}{m}X$。$a = -\\omega^2 X$ とくらべて　$\\omega = \\sqrt{\\dfrac{k}{m}},\\ T = 2\\pi\\sqrt{\\dfrac{m}{k}}$（同じ）。振動の中心は $x = d$。</p></div>' +
+    '<p>$X = x - d$ とおくと $a = -\\dfrac{k}{m}X$。$a = -\\omega^2 X$ と比べて　$\\omega = \\sqrt{\\dfrac{k}{m}},\\ T = 2\\pi\\sqrt{\\dfrac{m}{k}}$（同じ）。振動の中心は $x = d$。</p></div>' +
     '<div class="qcard keybox"><p class="qt">＜まとめ＞</p>' +
     '<p><b>つりあいの位置を $x = 0$ にした方が楽。</b>合力がすぐに $-kx$ の形になる。</p>' +
     '<p>また、<a class="xlink" href="#3-2">③-2</a> の単振動のエネルギー $U = \\dfrac{1}{2}kx^2$ の $x$ は、つりあいの位置からの変位である。だから、つりあいの位置を $x = 0$ にしておけば、その $x$ 座標が<b>そのまま単振動のエネルギーの $x$ に使える</b>（自然長の位置を $x = 0$ にすると $U = \\dfrac{1}{2}k(x - d)^2$ と書き直す必要がある）。</p></div>' +
@@ -5567,7 +5588,7 @@ function m4Circle(ctx, cx, cy, Rp, th, opt) {
 /* ===================== ④-1 台と一緒に単振動する物体（2016 広島大） =====================
    x：一体のときのつりあいの位置を原点、鉛直上向きが正。小物体を上から手で押して、台を s だけ押し下げてから放す。
    一体のあいだ：x = −s cos ωt（ω = √(k/(M+m))）。小物体が受ける垂直抗力 N = Mg(1 − x/d)。
-   s > d なら x = d（ばねが自然の長さ）で N = 0 になって小物体が台から離れ、そのあとは小物体は投げ上げ、台は台だけのつりあいの位置のまわりで単振動。
+   s > d なら x = d（ばねが自然の長さ）で N = 0 になって小物体が台から離れ、そのあとは小物体は投げ上げ、台は台だけのつりあいの位置の周りで単振動。
    小物体がふたたび台にのったら止める（そのあとは扱わない）。 */
 var M4 = { s1: { M: 1.0, m: 1.0, k: 100, Ln: 1.3, sr: [0.5, 1.0, 1.5, 2.0], sr0: 2.0, pre: 1.6 } };
 function m4s1Q(s) {
@@ -5593,7 +5614,7 @@ function m4s1State(s, t) { return m4s1At(m4s1Q(s), t); }
 var M4S1EASE = function (p) { p = clamp(p, 0, 1); return p * p * (3 - 2 * p); };
 DEFS.m4s1 = {
   id: 'm4s1', mode: 'mode4', num: 2, title: '台と一緒に単振動する物体（2016 広島大）', short: '台と一緒に単振動する物体', custom: true,
-  desc: 'ばね定数 $k$ の軽いばねを鉛直に立て、上端に質量 $m$ の薄い台をつける。台の上に質量 $M$ の小物体をのせると、ばねは自然の長さから $d$ だけ縮んでつりあった（この位置を原点 O、鉛直上向きを $x$ の正の向きとする）。小物体を上から手で押して台を $s$ だけ押し下げ、静かに放す。<span class="todo">「(1)(2) 手で押し下げる」で放す前のようすを見てから、「(3)〜(9) 手を放す」。「小物体と台を一体として見る」「小物体のみ見る」「台のみ見る」の 3 つの図と、右の対応する円運動を見くらべよう。</span>',
+  desc: 'ばね定数 $k$ の軽いばねを鉛直に立て、上端に質量 $m$ の薄い台をつける。台の上に質量 $M$ の小物体を載せると、ばねは自然の長さから $d$ だけ縮んでつりあった（この位置を原点 O、鉛直上向きを $x$ の正の向きとする）。小物体を上から手で押して台を $s$ だけ押し下げ、静かに放す。<span class="todo">「(1)(2) 手で押し下げる」で放す前のようすを見てから、「(3)〜(9) 手を放す」。「小物体と台を一体として見る」「小物体のみ見る」「台のみ見る」の 3 つの図と、右の対応する円運動を見比べよう。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', baseRate: 0.5, stgCls: 'solo',
   exam: { src: '2016 広島大（一部を書きかえています）', pdf: 'shm-platform', prob: function () { return m4s1Prob(); }, ans: function () { return m4s1Ans(); }, fig: function (k, ctx, W, H) { m4s1Fig(k, ctx, W, H); } },
   buttons: [
@@ -5609,7 +5630,7 @@ DEFS.m4s1 = {
   },
   build: function (art) { SIM_BY_ID.m4s1 = new Sim(DEFS.m4s1, art.querySelector('#simL_m4s1'), art.querySelector('#simR_m4s1')); },
   init: function (s) { s.pre = null; },
-  onDefaults: function (s) { s.pre = null; },
+  onDefaults: function (s) { s.pre = null; if (s.extra.press) { s.extra.press.classList.remove('done'); s.extra.press.classList.add('glow'); } if (s.extra.go) s.extra.go.classList.remove('glow'); },
   onChanged: function (s) { s.pre = null; return 'stop'; },
   tEnd: function (s) { var q = m4s1Q(s); return q.sep ? q.t2 + 0.3 : 2 * q.T; },
   tInfo: function (s) { return periodInfo(m4s1Q(s).T) + '<span class="tnote">（一体のとき）</span>'; },
@@ -5635,17 +5656,17 @@ DEFS.m4s1 = {
     if (s.t === 0 && !s.playing) return '(2) 手で $s$ だけ押し下げて支えている。「(3)〜(9) 手を放す」（▶ スタートと同じ）で手を放す。';
     if (!q.sep) return '$s \\le d$ なので、小物体は台から離れず、台と一体のまま単振動する。';
     if (st.together) return '小物体と台は一体となって単振動している。小物体が受ける $N = Mg\\left(1 - \\dfrac{x}{d}\\right)$ は、$x$ が大きくなるほど小さくなる。';
-    if (s.t < q.t2) return '<b>$x = d$（ばねが自然の長さ）で $N = 0$ になり、小物体が台から離れた。</b>離れる瞬間の速さ $v_0 = ' + fmt(q.v0, 2) + '$ m/s。小物体は投げ上げ、台は台だけのつりあいの位置のまわりで単振動する。';
-    return '小物体がふたたび台にのった（このあとは扱わない）。';
+    if (s.t < q.t2) return '<b>$x = d$（ばねが自然の長さ）で $N = 0$ になり、小物体が台から離れた。</b>離れる瞬間の速さ $v_0 = ' + fmt(q.v0, 2) + '$ m/s。小物体は投げ上げ、台は台だけのつりあいの位置の周りで単振動する。';
+    return '小物体がふたたび台に乗った（このあとは扱わない）。';
   },
   right: function (s, R) { m4s1Right(s, R); }
 };
-/* (1)(2)：つりあいの位置から、手で上から押して s まで押し下げる（1.2 s）→ 0.6 s 支える。そのあと t = 0（放す直前）にもどる */
+/* (1)(2)：つりあいの位置から、手で上から押して s まで押し下げる（1.2 s）→ 0.6 s 支える。そのあと t = 0（放す直前）に戻る */
 function m4s1Press(s) {
   if (s.playing) s.togglePlay();
   s.resetT();
   var t0 = performance.now(), dur = M4.s1.pre * 1000;
-  s.pre = 0; if (s.extra.press) s.extra.press.classList.remove('glow'); if (s.extra.go) s.extra.go.classList.add('glow');
+  s.pre = 0; if (s.extra.press) { s.extra.press.classList.remove('glow'); s.extra.press.classList.add('done'); } if (s.extra.go) s.extra.go.classList.add('glow');   /* 押したことが分かるように（2026-10-18 千葉さん） */
   var step = function (now) {
     if (s.pre === null) return;
     s.pre = Math.min(1, (now - t0) / dur); s.draw();
@@ -5699,14 +5720,16 @@ function drawM4S1(s, ctx, W, H) {
   axisArrow(ctx, g.ax, yg - 2, g.ax, 30); sym(ctx, 'x', g.ax - 9, 34, { size: 14, align: 'right' });
   /* 3 つの図（一体／小物体のみ／台のみ） */
   var yp = Y(st.xp), yo = Y(st.xo), fs = 22 / (q.M * G), vref = q.s * q.w || 1;
-  /* 3 つの図の仕切り線と、「小物体のみ」「台のみ」の背景（うすい灰色） */
+  /* 3 つの図の仕切り線と、「小物体のみ」「台のみ」の背景（薄い灰色） */
   var hg = g.pan.length > 1 ? (g.pan[1] - g.pan[0]) / 2 : 60;
   ctx.save(); ctx.fillStyle = 'rgba(120,128,140,.08)';
   g.pan.forEach(function (cx, i) { if (i > 0) ctx.fillRect(cx - hg, 30, 2 * hg, yg - 30); }); ctx.restore();
   g.pan.forEach(function (cx, i) { dotted(ctx, cx + hg, 30, cx + hg, yg + 6, 'rgba(20,23,28,.35)', [2, 0]); if (i === 0) dotted(ctx, cx - hg, 30, cx - hg, yg + 6, 'rgba(20,23,28,.35)', [2, 0]); });
   var st1 = (!st.held && !st.together) ? m4s1At(q, q.t1) : st, yp1 = Y(st1.xp), yo1 = Y(st1.xo);   /* 一体の図は、離れたら止める */
   var titles = g.nar ? ['一体として見る', '小物体のみ見る'] : ['小物体と台を一体として見る', '小物体のみ見る', '台のみ見る'];
+  _fArrows.length = 0;
   g.pan.forEach(function (cx, i) {
+    drawEqualTicks(ctx); _fArrows.length = 0;                       /* 同じ大きさの印は、それぞれの図の中だけでつける（図をまたいでつけない。2026-10-18 千葉さん） */
     label(ctx, titles[i], cx, 46, { size: 11, bold: true, color: COL.ink2 });
     var fP = i === 1 ? 0.22 : 1, fO = i === 2 ? 0.22 : 1;
     if (st.held) fP = fO = 1;
@@ -5715,6 +5738,11 @@ function drawM4S1(s, ctx, W, H) {
     if (st.held) {
       dropHand(ctx, cx + 4, yo - g.bh + 4, 0.34, 1, 1);
       if (i === 0) m4s1HeldForces(ctx, cx, yo, yp, g, q, st.x, s);
+      else if (fAll(s)) {                                         /* 押さえているときも、小物体・台にはたらく力を書く */
+        var fh = 14 / (q.M * G), Fh = q.k * (-st.x), Nh = q.M * G + Fh;
+        if (i === 1) { fArrow(ctx, cx - 9, yo - g.bh, 0, 1, Fh * fh, '#1f8a4c', 'F', { lx: -14, noShift: true }); fArrow(ctx, cx - 2, yo - g.bh / 2, 0, 1, q.M * G * fh, COL.force, 'Mg', { lx: -18, ly: 8, noShift: true }); fArrow(ctx, cx + 9, yo, 0, -1, Nh * fh, COL.norm, 'N', { lx: 12, noShift: true }); }
+        else { fArrow(ctx, cx - 12, yp + g.ph / 2, 0, 1, q.m * G * fh, COL.force, 'mg', { lx: -14, noShift: true }); fArrow(ctx, cx - 2, yp, 0, 1, Nh * fh, COL.norm, 'N', { lx: -12, ly: 8, noShift: true }); fArrow(ctx, cx + 12, yp + g.ph, 0, -1, q.k * (q.d - st.x) * fh, COL.hand, 'k(d + s)', { lx: 34, noShift: true }); }
+      }
       return;
     }
     if (i === 0) {                                              /* 一体：重力 (M+m)g（全体の中心から）と弾性力 k(d − x)（ばねとの接点から）。離れたら別々 */
@@ -5792,7 +5820,7 @@ function drawM4S1NX(s) {
   ctx.save(); ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.arc(X(clamp(px, xl, xr)), Yn(st.N), 5, 0, TAU); ctx.fill(); ctx.restore();
   label(ctx, 'N = ' + fmt(st.N, 1) + ' N', x1, y1 + 2, { size: 11, bold: true, color: COL.norm, align: 'right' });
 }
-/* 下の左：エネルギー − t（一体のあいだ。離れたあとはうすい灰色の帯。押すと説明） */
+/* 下の左：エネルギー − t（一体のあいだ。離れたあとは薄い灰色の帯。押すと説明） */
 function drawM4S1E(s) {
   var q = m4s1Q(s), M = q.M + q.m, tEndG = q.sep ? q.t1 * 1.3 : q.T, held = m4s1Now(s, q).held, E0 = 0.5 * q.k * q.s * q.s;
   m4EnergyT(s.eCv, { t0: 0, t1: tEndG, Emax: 0.5 * q.k * Math.pow(2 * q.d, 2) * 1.08, cur: held ? 0 : s.t,
@@ -5809,7 +5837,7 @@ function m4s1Right(s, R) {
     '<p class="qt">② 垂直抗力 $N$（(5)〜(8)）</p><p class="eqline">' + eqTag('eom') + '小物体：$Ma = N - Mg$</p><p>$a = -\\dfrac{k}{M + m}x = -\\dfrac{g}{d}x$ を入れて $N = Mg\\left(1 - \\dfrac{x}{d}\\right)$。$N = 0$ となる $x = d$（ばねの自然の長さ）で離れる。</p>' +
     '<p class="qt">③ (9) 単振動のエネルギー保存で $v_0$ を求める</p>' +
     '<p>小物体と台が一体で単振動している間（$-s \\le x \\le d$）は、つりあいの位置からの変位 $x$ を使って</p><div class="qeq">$$\\frac{1}{2}(M + m)v^2 + \\frac{1}{2}kx^2 = \\text{一定}$$</div>' +
-    '<p>が成りたつ。ここで $\\dfrac{1}{2}kx^2$ は、重力と弾性力の<b>合力</b>による位置エネルギー（<a class="xlink" href="#3-2">③-2</a>）なので、重力の位置エネルギーを別に足してはいけない。放した位置（$x = -s$、$v = 0$）と離れる位置（$x = d$、$v = v_0$）でくらべると</p>' +
+    '<p>が成りたつ。ここで $\\dfrac{1}{2}kx^2$ は、重力と弾性力の<b>合力</b>による位置エネルギー（<a class="xlink" href="#3-2">③-2</a>）なので、重力の位置エネルギーを別に足してはいけない。放した位置（$x = -s$、$v = 0$）と離れる位置（$x = d$、$v = v_0$）で比べると</p>' +
     '<div class="qeq">$$\\frac{1}{2}k s^2 = \\frac{1}{2}(M + m)v_0^2 + \\frac{1}{2}kd^2 \\quad\\Rightarrow\\quad v_0 = \\sqrt{\\frac{k(s^2 - d^2)}{M + m}}$$</div>' +
     '<p>$m = M$、$s = 2d$ のとき $v_0 = \\sqrt{\\dfrac{3kd^2}{2M}}$。$d = \\dfrac{2Mg}{k}$ を入れて <b>$v_0 = g\\sqrt{\\dfrac{6M}{k}}$</b>。</p>' +
     '<p class="qnote">対応する円運動で見ると：半径 $s$ の円の上の点が $x = d$ の高さにあるとき、速さの $x$ 成分は $\\omega\\sqrt{s^2 - d^2}$（$\\omega = \\sqrt{\\dfrac{k}{M + m}}$）。同じ式になる。</p>' +
@@ -5818,7 +5846,7 @@ function m4s1Right(s, R) {
 /* ---------- 問題・解答 ---------- */
 function m4s1Prob() {
   return '<h4 class="exh">問題の設定</h4><div class="exbox">' +
-    '<p>図のように、ばね定数 $k$ の軽いばねを床の上に鉛直に立て、上端に質量 $m$ の薄い台を取りつけた。台の上に質量 $M$ の小物体を静かにのせると、ばねは自然の長さから $d$ だけ縮み、台と小物体は静止した。この位置をつりあいの位置とする。ばねは鉛直方向にだけ伸び縮みし、重力加速度の大きさを $g$ とする。</p></div>' +
+    '<p>図のように、ばね定数 $k$ の軽いばねを床の上に鉛直に立て、上端に質量 $m$ の薄い台を取りつけた。台の上に質量 $M$ の小物体を静かに載せると、ばねは自然の長さから $d$ だけ縮み、台と小物体は静止した。この位置をつりあいの位置とする。ばねは鉛直方向にだけ伸び縮みし、重力加速度の大きさを $g$ とする。</p></div>' +
     '<h4 class="exh">図</h4><div class="exfig"><canvas data-fig="setup" data-h="250"></canvas><p class="excap">図　(a) 自然の長さ　(b) つりあい　(c) 手で $s$ 押し下げたとき</p></div>' +
     '<h4 class="exh">問</h4><ol class="exol">' +
     '<li>$d$ を $k$、$M$、$m$、$g$ で表せ。</li>' +
@@ -5840,14 +5868,14 @@ function m4s1Ans() {
     exQA('(1) ばねの縮み $d$', '$d = \\dfrac{(M + m)g}{k}$', '<p>小物体と台をひとまとめにすると、重力 $(M + m)g$ とばねの弾性力 $kd$ がつりあう：' + eqTag('bal') + '$kd = (M + m)g$。</p>') +
     exQA('(2) 手が押す力 $F_s$', '$F_s = ks$', '<p>ひとまとめにした物体には、手の力 $F_s$（下向き）・重力 $(M + m)g$（下向き）・弾性力 $k(d + s)$（上向き）。' + eqTag('bal') + '$k(d + s) = (M + m)g + F_s$ に (1) を使うと $F_s = ks$。</p>') +
     exQA('(3) 変位 $x$ での合力 $F$', '$F = -kx$', '<p>ばねの縮みは $d - x$ なので　$F = k(d - x) - (M + m)g = -kx$（(1) を使った）。つりあいの位置を原点にしたので、重力が消えて $-kx$ だけが残る（<a class="xlink" href="#3-3">③-3</a>）。</p>') +
-    exQA('(4) 周期 $T$', '$T = 2\\pi\\sqrt{\\dfrac{M + m}{k}}$', '<p>' + eqTag('eom') + '$(M + m)a = -kx$ より $a = -\\dfrac{k}{M + m}x$。$a = -\\omega^2 x$ とくらべて $\\omega = \\sqrt{\\dfrac{k}{M + m}}$。</p>') +
+    exQA('(4) 周期 $T$', '$T = 2\\pi\\sqrt{\\dfrac{M + m}{k}}$', '<p>' + eqTag('eom') + '$(M + m)a = -kx$ より $a = -\\dfrac{k}{M + m}x$。$a = -\\omega^2 x$ と比べて $\\omega = \\sqrt{\\dfrac{k}{M + m}}$。</p>') +
     exQA('(5) 運動方程式', '小物体：$Ma = N - Mg$　　台：$ma = k(d - x) - mg - N$', '<p>台は小物体から、垂直抗力の反作用 $N$（下向き）を受ける。</p>') +
     exQA('(6) 垂直抗力 $N$', '$N = Mg\\left(1 - \\dfrac{x}{d}\\right)$', '<p>2 式を足すと $(M + m)a = -kx$。$k = \\dfrac{(M + m)g}{d}$ なので $a = -\\dfrac{g}{d}x$。小物体の式に入れて $N = M(g + a) = Mg\\left(1 - \\dfrac{x}{d}\\right)$。</p>') +
     exQA('(7) $N$–$x$ グラフ', '傾きが負の直線（下の図）', '<div class="exfig"><canvas data-fig="nx" data-h="200"></canvas></div><p>$x = -s$ で $Mg\\left(1 + \\dfrac{s}{d}\\right)$、$x = 0$ で $Mg$、$x = d$ で $0$。$x > d$ では離れているので $N = 0$。</p>') +
     exQA('(8) 離れる位置 $x_0$', '$x_0 = d$', '<p>$N = 0$ より $x = d$。<b>ばねが自然の長さになる位置</b>で離れる。台だけのつりあいの位置（自然の長さより $\\dfrac{mg}{k}$ 下）を過ぎると、台の加速度は小物体（$-g$）より大きく下向きになるので、ここから先はいっしょに動けない。</p>') +
     exQA('(9) 離れる瞬間の速さ $v_0$', '$v_0 = g\\sqrt{\\dfrac{6M}{k}}$',
       '<p><b>単振動のエネルギー保存を使う。</b>小物体と台が一体で単振動している間（$-s \\le x \\le d$）は、つりあいの位置からの変位 $x$ を使って</p><p style="text-align:center">$\\dfrac{1}{2}(M + m)v^2 + \\dfrac{1}{2}kx^2 = $ 一定</p>' +
-      '<p>が成りたつ。$\\dfrac{1}{2}kx^2$ は重力と弾性力の<b>合力</b>による位置エネルギー（③-2）なので、重力の位置エネルギーを別に足してはいけない。放した位置（$x = -s$、$v = 0$）と離れる位置（$x = d$、$v = v_0$）でくらべると</p>' +
+      '<p>が成りたつ。$\\dfrac{1}{2}kx^2$ は重力と弾性力の<b>合力</b>による位置エネルギー（③-2）なので、重力の位置エネルギーを別に足してはいけない。放した位置（$x = -s$、$v = 0$）と離れる位置（$x = d$、$v = v_0$）で比べると</p>' +
       '<p style="text-align:center">$\\dfrac{1}{2}ks^2 = \\dfrac{1}{2}(M + m)v_0^2 + \\dfrac{1}{2}kd^2$　より　$v_0 = \\sqrt{\\dfrac{k(s^2 - d^2)}{M + m}}$</p>' +
       '<p>$m = M$、$s = 2d$ を入れると $v_0^2 = \\dfrac{3kd^2}{2M}$。(1) より $d = \\dfrac{2Mg}{k}$ なので $v_0^2 = \\dfrac{3k}{2M}\\cdot\\dfrac{4M^2g^2}{k^2} = \\dfrac{6Mg^2}{k}$、$v_0 = g\\sqrt{\\dfrac{6M}{k}}$。</p>' +
       '<p>（別解）重力・弾性力の位置エネルギーを別々に使っても同じ答えになるが、計算はずっと長くなる。対応する円運動で見ると：半径 $s$ の円の上の点が $x = d$ の高さにあるとき、速さの $x$ 成分は $\\omega\\sqrt{s^2 - d^2}$（$\\omega = \\sqrt{\\dfrac{k}{M + m}}$）。</p>');
@@ -5904,8 +5932,8 @@ function drawM4S1NXStatic(ctx, W, H, q) {
 /* ===== 59_mode4b.js ===== */
 /* =========================================================================
    59_mode4b.js … モード④ ④-2〜④-5（2026-10-18 千葉さん）
-   ④-2 ばねでつながれた 2 球（3 つの視点）／④-3 ベルトコンベア（すべるだけ）／
-   ④-4 ベルトコンベア（すべったりくっついたり。観測者 A・B）／④-5 ゴムひも
+   ④-2 ばねでつながれた 2 球（3 つの視点）／④-3 ベルトコンベア（滑るだけ）／
+   ④-4 ベルトコンベア（滑ったりくっついたり。観測者 A・B）／④-5 ゴムひも
    形は ④-1 と同じ：見出しの右に問題・解答のボタン、右の列にグラフ。
    ========================================================================= */
 'use strict';
@@ -5938,7 +5966,7 @@ function m4Plot(cv, o) {
   if (o.legend) { var lx = x0 + 6; o.legend.forEach(function (lg) { ctx.save(); ctx.strokeStyle = lg.col; ctx.lineWidth = 2.4; if (lg.dash) ctx.setLineDash(lg.dash); ctx.beginPath(); ctx.moveTo(lx, H - 6); ctx.lineTo(lx + 14, H - 6); ctx.stroke(); ctx.restore(); var b = label(ctx, lg.txt, lx + 18, H - 6, { size: 10, align: 'left', color: '#3a414c' }); lx += 26 + b.w; }); }
 }
 /* スタート前に、これから動く向きに動かないように押さえている手（dir：手が押す向き。指先が (x, y)）。スタートしたら消す */
-function m4Hand(ctx, x, y, dx, dy, sc) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2); dropHand(ctx, 0, 12 * (sc || 0.4), sc || 0.4, 1, 1); ctx.restore(); }
+function m4Hand(ctx, x, y, dx, dy, sc, flip) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2); if (flip) ctx.scale(-1, 1); dropHand(ctx, 0, 12 * (sc || 0.4), sc || 0.4, 1, 1); ctx.restore(); }   /* flip：左右を反転した手 */
 function m4Held(s) { return s.t === 0 && !s.playing; }
 function m4Card(s, html) { var c = el('div', 'qcard m4card'); c.innerHTML = mathify(html); s.R.appendChild(c); return c; }
 /* 図の左上のボタンを「どれか 1 つ」にそろえる */
@@ -5953,7 +5981,7 @@ function m4FloorMarks(ctx, xa, xb, y, off, step) {
 }
 
 /* ===================== ④-2 ばねでつながれた 2 球 =====================
-   なめらかな床の上で、質量 m₁（左 A）・m₂（右 B）をばね（k、自然の長さ L）でつなぎ、ばねを a だけ伸ばして放す。B に初速度 v₀（右向き）をあたえることもできる。
+   なめらかな床の上で、質量 m₁（左 A）・m₂（右 B）をばね（k、自然の長さ L）でつなぎ、ばねを a だけ伸ばして放す。B に初速度 v₀（右向き）を与えることもできる。
    u ＝ ばねの伸び：u = a cos ωt + (u̇₀/ω) sin ωt、ω = √(k/μ)、μ = m₁m₂/(m₁+m₂)。重心は Vc で等速。
    視点：外（慣性系）／A の上の観測者（非慣性系：B に慣性力 −m₂a₁）／重心とともに動く観測者（慣性系） */
 var M42 = { k: 20, L: 1.3, a: 0.5, ms: [0.5, 1.0, 2.0], v0s: [0, 0.6], r: 0.13 };
@@ -5969,13 +5997,13 @@ function m4s2At(q, t) {
   var M = q.m1 + q.m2;
   if (q.seq && t < q.tH) {                                       /* B は手で押さえている。A だけが単振動（ω₁ = √(k/m₁)） */
     var u0 = q.a * Math.cos(q.w1 * t), x1h = q.X2 - (q.L + u0), v1h = q.a * q.w1 * Math.sin(q.w1 * t);
-    return { u: u0, Xc: (q.m1 * x1h + q.m2 * q.X2) / M, vc: q.m1 * v1h / M, x1: x1h, x2: q.X2, v1: v1h, v2: 0, a1: q.k * u0 / q.m1, a2: 0, hold: true };
+    return { u: u0, Xc: (q.m1 * x1h + q.m2 * q.X2) / M, vc: q.m1 * v1h / M, ac: q.k * u0 / M, x1: x1h, x2: q.X2, v1: v1h, v2: 0, a1: q.k * u0 / q.m1, a2: 0, hold: true };
   }
   var tau = t - q.tH, u, du;
   if (q.seq) { u = -q.vH / q.w * Math.sin(q.w * tau); du = -q.vH * Math.cos(q.w * tau); }
   else { u = q.a * Math.cos(q.w * tau); du = -q.a * q.w * Math.sin(q.w * tau); }
   var Xc = q.XcH + q.Vc * tau, len = q.L + u;
-  return { u: u, du: du, Xc: Xc, vc: q.Vc, x1: Xc - q.m2 / M * len, x2: Xc + q.m1 / M * len, v1: q.Vc - q.m2 / M * du, v2: q.Vc + q.m1 / M * du, a1: q.k * u / q.m1, a2: -q.k * u / q.m2, hold: false };
+  return { u: u, du: du, Xc: Xc, vc: q.Vc, ac: 0, x1: Xc - q.m2 / M * len, x2: Xc + q.m1 / M * len, v1: q.Vc - q.m2 / M * du, v2: q.Vc + q.m1 / M * du, a1: q.k * u / q.m1, a2: -q.k * u / q.m2, hold: false };
 }
 DEFS.m4s2 = {
   id: 'm4s2', mode: 'mode4', num: 3, title: 'ばねでつながれた 2 球（入試頻出）', short: 'ばねでつながれた 2 球',
@@ -6000,11 +6028,13 @@ DEFS.m4s2 = {
   tEnd: function (s) { var q = m4s2Q(s); return q.seq ? q.tH + 1.6 * q.T : 3 * q.T; },
   tInfo: function (s) { return periodInfo(m4s2Q(s).T); },
   gT: function (s) { return m4s2Q(s).T; },
-  height: function (s, w) { return Math.round(clamp(w * 0.50, 270, 360)); },
+  height: function (s, w) { return w < 560 ? 400 : Math.round(clamp(w * 0.50, 270, 360)); },   /* せまい画面ではボタンが 3 段になるので高く */
   afterBuild: function (s) {
     s.R.innerHTML = '';
     var cb = s.cv.parentNode.querySelector('.cvbtns'), rr = el('div', 'm4relrow'); [s.extra.rSim, s.extra.rSeq].forEach(function (b) { rr.appendChild(b); }); cb.insertBefore(rr, cb.firstChild);   /* 放し方のボタンは、視点のボタンの上に */
-    m4Card(s, '<p class="qt">いまの視点から見た位置（$x$–$t$ グラフ）</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    s.xT = m4Card(s, '<p class="qt"></p>').firstChild; s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    s.vT = m4Card(s, '<p class="qt"></p>').firstChild; s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
+    m4s2Titles(s);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
   draw: function (s, ctx, W, H) { drawM4S2(s, ctx, W, H); drawM4S2X(s); },
@@ -6012,14 +6042,19 @@ DEFS.m4s2 = {
     var q = m4s2Q(s);
     if (q.seq && s.t < q.tH) return 'B を手で押さえたまま A だけを放した。A は B を壁とした水平ばね振り子（$\\omega_1 = \\sqrt{\\dfrac{k}{m_1}}$）。A がつりあいの位置（ばねが自然の長さ）に来たら B を放す。';
     return { out: '外から見ると、重心は' + (q.seq ? '一定の速さ $V = \\dfrac{m_1v}{m_1 + m_2}$（$v$：B を放したときの A の速さ）で動き' : '動かず') + '、2 球は重心に対して逆向きに振動する。',
-      A: 'A の上の観測者から見ると、A は止まって見え、B は A のまわりで単振動する。B には慣性力 $-m_2a_1$（破線）がはたらく。',
+      A: 'A の上の観測者から見ると、A は止まって見え、B は A の周りで単振動する。B には慣性力 $-m_2a_1$（破線）がはたらく。',
       G: '重心とともに動く観測者から見ると、重心は止まり、A と B はそれぞれ重心をはさんで逆向きに単振動する。' }[s.view];
   },
   right: function (s, R) { m4s2Right(s, R); }
 };
 function m4s2Rel(s, k) { s.rel = k; m4Seg(s, [['sim', 'rSim'], ['seq', 'rSeq']], k); if (s.cv) { s.resetT(); s.draw(); s.renderRight(); } }
-function m4s2View(s, k) { s.view = k; m4Seg(s, [['out', 'vOut'], ['A', 'vA'], ['G', 'vG']], k); if (s.cv) { s.draw(); s.renderRight(); } }
-function m4s2Frame(s, q, st) { var s0 = m4s2At(q, 0); return s.view === 'A' ? { x: st.x1 - s0.x1, v: st.v1 } : (s.view === 'G' ? { x: st.Xc - s0.Xc, v: st.vc } : { x: 0, v: 0 }); }
+function m4s2View(s, k) { s.view = k; m4Seg(s, [['out', 'vOut'], ['A', 'vA'], ['G', 'vG']], k); m4s2Titles(s); if (s.cv) { s.draw(); s.renderRight(); } }
+/* グラフの題は視点ごとに「外（慣性系）から見た x–t グラフ」のように（2026-10-18 千葉さん） */
+function m4s2Titles(s) {
+  if (!s.xT) return; var who = { out: '外（慣性系）', A: '小球 A の上の観測者（非慣性系）', G: '重心とともに動く観測者（慣性系）' }[s.view || 'out'];
+  s.xT.innerHTML = mathify(who + 'から見た $x$–$t$ グラフ'); s.vT.innerHTML = mathify(who + 'から見た $v$–$t$ グラフ');
+}
+function m4s2Frame(s, q, st) { var s0 = m4s2At(q, 0); return s.view === 'A' ? { x: st.x1 - s0.x1, v: st.v1, a: st.a1 } : (s.view === 'G' ? { x: st.Xc - s0.Xc, v: st.vc, a: st.ac } : { x: 0, v: 0, a: 0 }); }
 function drawM4S2(s, ctx, W, H) {
   var q = m4s2Q(s), st = m4s2At(q, s.t), fr = m4s2Frame(s, q, st), S = W / 4.4, cx = W * 0.47, yF = H * 0.70, X = function (x) { return cx + (x - fr.x) * S; };
   var rA = M42.r * S * Math.cbrt(q.m1), rB = M42.r * S * Math.cbrt(q.m2);
@@ -6037,11 +6072,17 @@ function drawM4S2(s, ctx, W, H) {
   observer(ctx, x1, yA - rA - 2, 0, -1, '', s.view === 'A', 26);
   observer(ctx, xg, H - 8, 0, -1, '', s.view === 'G', 22);
   observer(ctx, W - 40, yF, 0, -1, '', s.view === 'out', 26);
-  label(ctx, { out: '外の観測者', A: 'A の上の観測者', G: '重心の観測者' }[s.view] + '（いまの視点）', 12, 16, { size: 11, bold: true, color: COL.vel, align: 'left' });
-  /* 速度（その視点から見た速度。小球の上に離して） */
-  var vref = q.seq ? q.vH : q.a * q.w * Math.max(q.m1, q.m2) / (q.m1 + q.m2);
+  /* 速度と加速度（その視点から見たもの。小球の上に離して：速度、その上に加速度）。外から見るときは v₁・a₁、
+     A の上・重心の観測者から見るときは相対速度・相対加速度を v_{A→B} のように書く（inertia-force.html ②-3 と同じ書き方。2026-10-18 千葉さん） */
+  var vref = q.seq ? q.vH : q.a * q.w * Math.max(q.m1, q.m2) / (q.m1 + q.m2), aref = q.k * q.a / Math.min(q.m1, q.m2);
   if (!s.hideVec) {
-    [[x1, yA - rA, st.v1 - fr.v, 'A'], [x2, yB - rB, st.v2 - fr.v, 'B']].forEach(function (b) { if (Math.abs(b[2]) > 0.02 && !(s.view === 'A' && b[3] === 'A')) vArrowAt(ctx, b[0], b[1], 0, -1, 40, 1, 0, b[2] / vref * 46, true); });
+    var ob = { out: null, A: 'A', G: 'G' }[s.view];
+    [[x1, yA - rA, st.v1 - fr.v, st.a1 - fr.a, 'A', '1'], [x2, yB - rB, st.v2 - fr.v, st.a2 - fr.a, 'B', '2']].forEach(function (b) {
+      if (s.view === 'A' && b[4] === 'A') return;                  /* A の上の観測者から見ると A は止まっている */
+      var sub = ob ? ob + '→' + b[4] : b[5], yv = b[1] - 40, ya = b[1] - 78;
+      if (Math.abs(b[2]) > 0.02) { var L = b[2] / vref * 46; vArrowAt(ctx, b[0], b[1], 0, -1, 40, 1, 0, L, false); sym(ctx, 'v', b[0] + Math.abs(L) / 2 + 10, yv - 2, { size: 13.5, color: COL.vel, sub: sub, align: 'left' }); }
+      if (Math.abs(b[3]) > 0.05) { var La = b[3] / aref * 40; arrow(ctx, b[0] - La / 2, ya, b[0] + La / 2, ya, 'acc'); sym(ctx, 'a', b[0] + Math.abs(La) / 2 + 10, ya - 2, { size: 13.5, color: COL.acc, sub: sub, align: 'left' }); }
+    });
   }
   /* 力：ばねの弾性力（接点から）。A の上の観測者なら、慣性力 −m·a₁（破線）も */
   if (s.fmode) {
@@ -6054,9 +6095,9 @@ function drawM4S2(s, ctx, W, H) {
       arrow(ctx, x1, yA + rA * 0.45, x1 - q.m1 * st.a1 * fs, yA + rA * 0.45, 'fict', COL.inert || '#3f4a54', { noShift: true });
     }
   }
-  if (!m4Held(s) && st.hold) m4Hand(ctx, x2, yB - rB, 0, 1, 0.36);   /* B を押さえている間 */
+  if (!m4Held(s) && st.hold) m4Hand(ctx, x2, yB - rB, 0, 1, 0.36, true);   /* B を押さえている間（B の手は左右反転） */
   if (m4Held(s)) {                                               /* 2 つの手で、縮まないように押さえている（スタートで消える） */
-    m4Hand(ctx, x1, yA - rA, 0, 1, 0.36); m4Hand(ctx, x2, yB - rB, 0, 1, 0.36);
+    m4Hand(ctx, x1, yA - rA, 0, 1, 0.36); m4Hand(ctx, x2, yB - rB, 0, 1, 0.36, true);
     bubble(ctx, '自然の長さから a 伸ばして押さえる → 放す', (x1 + x2) / 2, yS + 40, { size: 12, bg: '#fff5e8', border: '#e07b18', color: '#a85c0c', side: 'up' });
   }
   drawEqualTicks(ctx);
@@ -6066,13 +6107,27 @@ function drawM4S2X(s) {
   m4Plot(s.xCv, { t0: 0, t1: q.seq ? q.tH + 1.6 * q.T : 3 * q.T, lo: -span, hi: span, cur: s.t, ylab: 'x', yunit: 'm', H: 190,
     ser: [{ col: '#3f7fc1', f: function (t) { return m4s2At(q, t).x1 - fr0(t); } }, { col: '#d0801f', f: function (t) { return m4s2At(q, t).x2 - fr0(t); } }, { col: '#c0392b', dash: [5, 4], w: 1.6, f: function (t) { return m4s2At(q, t).Xc - fr0(t); } }],
     legend: [{ col: '#3f7fc1', txt: 'A' }, { col: '#d0801f', txt: 'B' }, { col: '#c0392b', dash: [5, 4], txt: '重心' }] });
+  var fv = function (t) { return m4s2Frame(s, q, m4s2At(q, t)).v; }, vr = (q.seq ? q.vH : q.a * q.w) * 1.15;
+  m4Plot(s.vCv, { t0: 0, t1: q.seq ? q.tH + 1.6 * q.T : 3 * q.T, lo: -vr, hi: vr, cur: s.t, ylab: 'v', yunit: 'm/s', H: 170,
+    ser: [{ col: '#3f7fc1', f: function (t) { return m4s2At(q, t).v1 - fv(t); } }, { col: '#d0801f', f: function (t) { return m4s2At(q, t).v2 - fv(t); } }, { col: '#c0392b', dash: [5, 4], w: 1.6, f: function (t) { return m4s2At(q, t).vc - fv(t); } }],
+    legend: [{ col: '#3f7fc1', txt: 'A' }, { col: '#d0801f', txt: 'B' }, { col: '#c0392b', dash: [5, 4], txt: '重心' }] });
 }
 function m4s2Right(s, R) {
-  var q = m4s2Q(s), h;
-  if (s.view === 'out') h = '<p class="qt">外（慣性系）から見る</p><p class="eqline">' + eqTag('eom') + 'A：$m_1a_1 = ku$　B：$m_2a_2 = -ku$</p><p>（$u$：ばねの伸び）。外力がないので運動量の和は一定 ⇒ 重心は等速（はじめ静止なら動かない）。</p>';
-  else if (s.view === 'A') h = '<p class="qt">A の上の観測者（非慣性系）から見る</p><p>A は加速度 $a_1 = \\dfrac{ku}{m_1}$ で動くので、B には慣性力 $-m_2a_1$ がはたらく。B の加速度を $a\'$ とすると</p><p class="eqline">' + eqTag('eom') + '$m_2a\' = -ku - m_2a_1 = -k\\left(1 + \\dfrac{m_2}{m_1}\\right)u$</p>';
-  else h = '<p class="qt">重心とともに動く観測者（慣性系）から見る</p><p>重心は止まって見える。A は重心から $\\dfrac{m_2}{m_1 + m_2}(L + u)$ の所にあるので、A の変位は $u$ の $\\dfrac{m_2}{m_1 + m_2}$ 倍。</p><p class="eqline">' + eqTag('eom') + '$m_1a_1 = ku$ を A の重心からの変位で書きなおすと、同じ $\\omega$ の単振動。</p>';
-  h += '<div class="qeq">$$\\omega = \\sqrt{\\frac{k}{\\mu}},\\quad \\mu = \\frac{m_1m_2}{m_1 + m_2},\\quad T = 2\\pi\\sqrt{\\frac{m_1m_2}{k(m_1 + m_2)}}$$</div>' +
+  var q = m4s2Q(s), h, seqTxt = q.seq ? '<p class="qnote">「A を放してから…」のとき：B を押さえている間は、A だけが B を壁とした単振動（$\\omega_1 = \\sqrt{\\dfrac{k}{m_1}}$）。B を放した瞬間、ばねは自然の長さで、A の速さは $v = a\\omega_1$、B は静止。ここから下の説明があてはまる（重心の速さは $V = \\dfrac{m_1v}{m_1 + m_2}$）。</p>' : '';
+  if (s.view === 'out') h = '<p class="qt">外（慣性系）から見る</p><p class="eqline">' + eqTag('eom') + 'A：$m_1a_1 = ku$　B：$m_2a_2 = -ku$</p>' +
+    '<p>（$u$：ばねの伸び）。外力がないので運動量の和は一定で、<b>重心は' + (q.seq ? '一定の速度 $V$ で右へ動く' : '動かない') + '</b>。</p>' +
+    '<p><b>動き</b>：A と B は、重心をはさんで<b>いつも逆向きに</b>動く。ばねが伸びているときは引き合って近づき、縮んでいるときは押し合って離れる。' + (q.seq ? '外から見ると、A・B の運動は「重心の等速運動 ＋ 単振動」で、波打ちながら右へ進む（$x$–$t$ グラフ）。' : '重心は止まっているので、A・B はそれぞれ定まった位置を中心に往復する。') + '</p>' +
+    '<p><b>速度</b>：運動量保存より $m_1v_1 + m_2v_2 = ' + (q.seq ? '(m_1 + m_2)V' : '0') + '$。ばねが自然の長さのとき、A・B の速さ（重心から見た速さ）は最大。ばねが最も伸びた・縮んだとき、A・B の速度は' + (q.seq ? 'どちらも $V$（重心から見ると 0）' : 'どちらも 0') + '。</p>';
+  else if (s.view === 'A') h = '<p class="qt">小球 A の上の観測者（非慣性系）から見る</p>' +
+    '<p>A は加速度 $a_1 = \\dfrac{ku}{m_1}$ で動くので、A の上の観測者から見ると、B には慣性力 $-m_2a_1$ がはたらく。B の相対加速度を $a_{\\mathrm{A}\\to\\mathrm{B}} = a_2 - a_1$ とすると</p>' +
+    '<p class="eqline">' + eqTag('eom') + '$m_2a_{\\mathrm{A}\\to\\mathrm{B}} = -ku - m_2a_1 = -k\\left(1 + \\dfrac{m_2}{m_1}\\right)u$</p>' +
+    '<p><b>動き</b>：この観測者には <b>A は止まって見え</b>、床は A と逆向きに動いて見える。B は、A から距離 $L$（ばねが自然の長さ）の位置を中心に、<b>A に近づいたり離れたりする単振動</b>をする。振幅はばねの伸び縮みと同じ $a$（「A を放してから…」のときは $\\dfrac{v}{\\omega}$）。</p>' +
+    '<p><b>速度</b>：B の相対速度 $v_{\\mathrm{A}\\to\\mathrm{B}} = v_2 - v_1$ は、ばねの長さが変わる速さそのもの。ばねが自然の長さのとき最大、最も伸びた・縮んだときに 0。重心は A に対して前後に動いて見える。</p>';
+  else h = '<p class="qt">重心とともに動く観測者（慣性系）から見る</p>' +
+    '<p>重心は等速（または静止）なので、この観測者は慣性系。慣性力は考えなくてよい。A・B の重心からの相対速度を $v_{\\mathrm{G}\\to\\mathrm{A}}$、$v_{\\mathrm{G}\\to\\mathrm{B}}$ とすると、運動量の和は 0：$m_1v_{\\mathrm{G}\\to\\mathrm{A}} + m_2v_{\\mathrm{G}\\to\\mathrm{B}} = 0$。</p>' +
+    '<p><b>動き</b>：<b>重心は止まって見え</b>、A と B は重心をはさんで<b>左右対称に（質量に反比例した振幅で）逆向きに単振動</b>する。A の振幅はばねの伸び縮みの $\\dfrac{m_2}{m_1 + m_2}$ 倍、B は $\\dfrac{m_1}{m_1 + m_2}$ 倍（重い方が小さく動く）。</p>' +
+    '<p><b>速度</b>：$v_{\\mathrm{G}\\to\\mathrm{A}}$ と $v_{\\mathrm{G}\\to\\mathrm{B}}$ はいつも逆向きで、大きさの比は $m_2 : m_1$。ばねが自然の長さのとき最大、最も伸びた・縮んだときに 0。相対加速度も同じ比で逆向き。</p>';
+  h += seqTxt + '<div class="qeq">$$\\omega = \\sqrt{\\frac{k}{\\mu}},\\quad \\mu = \\frac{m_1m_2}{m_1 + m_2},\\quad T = 2\\pi\\sqrt{\\frac{m_1m_2}{k(m_1 + m_2)}}$$</div>' +
     '<p class="qnow"><span class="qtag now">いまの値</span>$k = ' + q.k + '$ N/m、$\\mu = ' + fmt(q.mu, 3) + '$ kg、$T = ' + sig2(q.T) + '$ s（どの視点でも同じ）</p>';
   R.innerHTML = mathify('<div class="qcard">' + h + '</div>');
 }
@@ -6094,7 +6149,7 @@ function m4s2Ans() {
     exQA('(1) 重心の運動', '静止したまま（動かない）', '<p>A・B が受ける水平方向の力は、ばねの弾性力（内力）だけ。外力の和が 0 なので運動量の和は一定で、はじめ 0 だから重心の速度は 0 のまま。</p>') +
     exQA('(2) 加速度', '$a_1 = \\dfrac{ku}{m_1}$、$a_2 = -\\dfrac{ku}{m_2}$', '<p>' + eqTag('eom') + 'A：$m_1a_1 = ku$（右向き）、B：$m_2a_2 = -ku$（左向き）。</p>') +
     exQA('(3) A の上の観測者から見た B', '$m_2a\' = -ku - m_2a_1 = -k\\left(1 + \\dfrac{m_2}{m_1}\\right)u$', '<p>A は加速度 $a_1$ で動くので、A の上の観測者から見ると B には慣性力 $-m_2a_1$ がはたらく。A から見た B の変位はばねの伸び $u$ と同じだけ変わるので、$a\'$ は $u$ の加速度。</p>') +
-    exQA('(4) 周期', '$T = 2\\pi\\sqrt{\\dfrac{m_1m_2}{k(m_1 + m_2)}}$', '<p>(3) を $a\' = -\\dfrac{k(m_1 + m_2)}{m_1m_2}u$ と変形し、$a\' = -\\omega^2u$ とくらべる。$\\mu = \\dfrac{m_1m_2}{m_1 + m_2}$（換算質量）とおくと $T = 2\\pi\\sqrt{\\dfrac{\\mu}{k}}$。どの視点で見ても周期は同じ。</p>') +
+    exQA('(4) 周期', '$T = 2\\pi\\sqrt{\\dfrac{m_1m_2}{k(m_1 + m_2)}}$', '<p>(3) を $a\' = -\\dfrac{k(m_1 + m_2)}{m_1m_2}u$ と変形し、$a\' = -\\omega^2u$ と比べる。$\\mu = \\dfrac{m_1m_2}{m_1 + m_2}$（換算質量）とおくと $T = 2\\pi\\sqrt{\\dfrac{\\mu}{k}}$。どの視点で見ても周期は同じ。</p>') +
     exQA('(5) 自然の長さでの A の速さ', '$v = a\\sqrt{\\dfrac{k}{2m}}$', '<p>重心は動かないので A・B は同じ速さ $v$ で逆向き。力学的エネルギー保存：$\\dfrac{1}{2}ka^2 = \\dfrac{1}{2}mv^2 \\times 2$。</p>') +
     exQA('(6) 重心から見た A の運動', '重心から左へ $\\dfrac{m_2}{m_1 + m_2}L$ の位置を中心に、振幅 $\\dfrac{m_2}{m_1 + m_2}a$ の単振動', '<p>重心から A までの距離は、つねにばねの長さの $\\dfrac{m_2}{m_1 + m_2}$ 倍。ばねの長さは $L$ を中心に振幅 $a$ で振動するので、A の振動はその $\\dfrac{m_2}{m_1 + m_2}$ 倍。周期は (4) と同じ。</p>');
 }
@@ -6115,15 +6170,15 @@ function m4s2Fig(key, ctx, W, H) {
   drawEqualTicks(ctx);
 }
 
-/* ===================== ④-3 ベルトコンベア（すべるだけ） =====================
-   左の壁にばね（k）、ばねの先に小物体（m）。ベルトは右へ速さ V。小物体はいつもベルトに対して左へすべるので、動摩擦力 μ′mg はいつも右向き。
+/* ===================== ④-3 ベルトコンベア（滑るだけ） =====================
+   左の壁にばね（k）、ばねの先に小物体（m）。ベルトは右へ速さ V。小物体はいつもベルトに対して左へ滑るので、動摩擦力 μ′mg はいつも右向き。
    自然の長さの位置で、床に対して静止した状態から始める：x = x₀(1 − cos ωt)、x₀ = μ′mg/k。最大の速さ x₀ω < V ならこのとおり。 */
 var M43 = { m: 0.5, k: 20, mu2: 0.4, Vs: [1.0, 2.0, 3.0], L: 0.9 };
 function m4s3Q(s) { var w = Math.sqrt(M43.k / M43.m), x0 = M43.mu2 * M43.m * G / M43.k; return { m: M43.m, k: M43.k, mu2: M43.mu2, w: w, T: TAU / w, x0: x0, V: s.v.V, vmax: x0 * w }; }
 function m4s3At(q, t) { return { x: q.x0 * (1 - Math.cos(q.w * t)), v: q.x0 * q.w * Math.sin(q.w * t) }; }
 DEFS.m4s3 = {
-  id: 'm4s3', mode: 'mode4', num: 4, title: 'ベルトコンベアの上の単振動（すべるだけ）', short: 'ベルトコンベア（すべるだけ）',
-  desc: '左の壁につけたばね（ばね定数 $k$）の先に、質量 $m$ の小物体をつける。小物体は、右へ一定の速さ $V$ で動くベルトの上にある（動摩擦係数 $\\mu\'$）。ばねが自然の長さの位置で、床に対して静止した状態から運動が始まる。<span class="todo">ベルトの速さ $V$ を変えても、小物体の運動が変わらないことを確かめよう。</span>',
+  id: 'm4s3', mode: 'mode4', num: 4, title: 'ベルトコンベアの上の単振動（ベルトが速いため必ず滑る）', short: 'ベルトコンベア（必ず滑る）',
+  desc: 'ばね（ばね定数 $k$）の先に、質量 $m$ の小物体をつける。小物体は、右へ一定の速さ $V$ で動くベルトの上にある（動摩擦係数 $\\mu\'$）。小物体が床に対して静止した状態、ばねが自然の長さの位置から運動を始めるとする。すると、小物体は置いた瞬間からベルトに対して左へ滑る。<span class="todo">ベルトの速さ $V$ を変えても、小物体の運動が変わらないことを確かめよう。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', belowCanvas: true, baseRate: 0.5,
   exam: { src: '典型問題（参考：physicmath.net の解説。数値・言いまわしを変えて作り直したもの）', pdf: 'shm-belt-slip', prob: function () { return m4s3Prob(); }, ans: function () { return m4s3Ans(); }, fig: function (k, ctx, W, H) { m4s3Fig(k, ctx, W, H); } },
   vars: [{ k: 'V', label: 'ベルトの速さ $V$', stops: M43.Vs, stopLabels: ['1.0', '2.0', '3.0 m/s'], def: 2.0, aria: 'ベルトの速さ', fmt: function (x) { return x.toFixed(1) + ' m/s'; } }],
@@ -6139,8 +6194,8 @@ DEFS.m4s3 = {
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
   draw: function (s, ctx, W, H) { var q = m4s3Q(s), st = m4s3At(q, s.t); drawBelt(s, ctx, W, H, { L: M43.L, k: q.k, x: st.x, v: st.v, V: q.V, vs: 40, slip: true, mu2: q.mu2, m: q.m, xs: [[0, '自然の長さ', '#5d6875'], [q.x0, '振動の中心 x₀', '#c0392b'], [2 * q.x0, '最も伸びた所 2x₀', '#5d6875']], S: 1.0 }); drawM4S3G(s); },
-  msg: function (s) { var q = m4s3Q(s); return '小物体の速さはいつも $V$ より小さい（最大 $' + fmt(q.vmax, 2) + '$ m/s）ので、ベルトに対していつも左へすべり、動摩擦力 $\\mu\'mg$ はいつも右向き。だから、振動の中心 $x_0 = \\dfrac{\\mu\'mg}{k}$ の単振動になる。'; },
-  right: function (s, R) { var q = m4s3Q(s); R.innerHTML = mathify('<div class="qcard"><p class="eqline">' + eqTag('eom') + '$ma = -kx + \\mu\'mg = -k\\left(x - \\dfrac{\\mu\'mg}{k}\\right)$</p><p>振動の中心 $x_0 = \\dfrac{\\mu\'mg}{k}$、周期 $T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。<b>$V$ は式に入らない</b>（動摩擦力は、すべる速さによらない）。</p><p class="qnow"><span class="qtag now">この図では</span>$m = ' + q.m + '$ kg、$k = ' + q.k + '$ N/m、$\\mu\' = ' + q.mu2 + '$：$x_0 = ' + fmt(q.x0, 3) + '$ m、最大の速さ $' + fmt(q.vmax, 2) + '$ m/s $< V$</p></div>'); }
+  msg: function (s) { var q = m4s3Q(s); return '小物体の速さはいつも $V$ より小さい（最大 $' + fmt(q.vmax, 2) + '$ m/s）ので、ベルトに対していつも左へ滑り、動摩擦力 $\\mu\'mg$ はいつも右向き。だから、振動の中心 $x_0 = \\dfrac{\\mu\'mg}{k}$ の単振動になる。'; },
+  right: function (s, R) { var q = m4s3Q(s); R.innerHTML = mathify('<div class="qcard"><p class="eqline">' + eqTag('eom') + '$ma = -kx + \\mu\'mg = -k\\left(x - \\dfrac{\\mu\'mg}{k}\\right)$</p><p>振動の中心 $x_0 = \\dfrac{\\mu\'mg}{k}$、周期 $T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。<b>$V$ は式に入らない</b>（動摩擦力は、滑る速さによらない）。</p><p class="qnow"><span class="qtag now">この図では</span>$m = ' + q.m + '$ kg、$k = ' + q.k + '$ N/m、$\\mu\' = ' + q.mu2 + '$：$x_0 = ' + fmt(q.x0, 3) + '$ m、最大の速さ $' + fmt(q.vmax, 2) + '$ m/s $< V$</p></div>'); }
 };
 /* ベルトコンベアの図（④-3・④-4 共通）。o = { L, k, x, v, V, slip, f（摩擦力。右向き正）, view, xs: [[x, 名前, 色]] } */
 function drawBelt(s, ctx, W, H, o) {
@@ -6164,7 +6219,8 @@ function drawBelt(s, ctx, W, H, o) {
   springDense(ctx, xw, yB - bh / 2, xb - bw / 2, yB - bh / 2, o.L * S - bw / 2, { r: 9, lead: 6, k: o.k, Lmin: (o.L - 0.05) * S - bw / 2 });
   ctx.save(); ctx.fillStyle = o.slip ? '#e4d3b4' : '#cfe3d4'; ctx.strokeStyle = '#6b5532'; ctx.lineWidth = 1.4; ctx.fillRect(xb - bw / 2, yB - bh, bw, bh); ctx.strokeRect(xb - bw / 2, yB - bh, bw, bh); ctx.restore();
   label(ctx, 'm', xb, yB - bh / 2, { size: 12, bold: true });
-  pill(ctx, o.slip ? 'すべっている' : 'ベルトと一緒（くっついている）', W - 120, 46, { bg: o.slip ? '#fff2e0' : '#e3f4e8', color: o.slip ? '#a85c0c' : '#1f7a3f', size: 11 });
+  var ptxt = o.slip ? '滑っている' : 'ベルトと一緒（くっついている）'; ctx.save(); ctx.font = '700 11px ' + FONT; var pw2 = ctx.measureText(ptxt).width / 2 + 16; ctx.restore();   /* 右に切れないように */
+  pill(ctx, ptxt, W - 12 - pw2, 46, { bg: o.slip ? '#fff2e0' : '#e3f4e8', color: o.slip ? '#a85c0c' : '#1f7a3f', size: 11 });
   /* 速度（その観測者から見た速度。小物体の上に離して）・力 */
   var vrel = o.v - Vview;
   if (!s.hideVec && Math.abs(vrel) > 0.01) vArrowAt(ctx, xb, yB - bh, 0, -1, 14, 1, 0, vrel * vs, true);
@@ -6180,10 +6236,10 @@ function drawBelt(s, ctx, W, H, o) {
 function drawM4S3G(s) {
   var q = m4s3Q(s);
   m4Plot(s.xCv, { t0: 0, t1: 3 * q.T, lo: -0.02, hi: 2.4 * q.x0, cur: s.t, ylab: 'x', yunit: 'm', H: 160, hl: [{ y: q.x0, txt: '振動の中心 x₀' }], ser: [{ col: XCOL, f: function (t) { return m4s3At(q, t).x; } }] });
-  m4Plot(s.vCv, { t0: 0, t1: 3 * q.T, lo: -1.2 * q.vmax, hi: Math.max(1.2 * q.V, 1.2 * q.vmax), cur: s.t, ylab: 'v', yunit: 'm/s', H: 160, hl: [{ y: q.V, txt: 'ベルトの速さ V', col: COL.vel }], ser: [{ col: COL.vel, f: function (t) { return m4s3At(q, t).v; } }] });
+  m4Plot(s.vCv, { t0: 0, t1: 3 * q.T, lo: -1.2 * q.vmax, hi: 1.12 * M43.Vs[M43.Vs.length - 1],   /* 縦軸は V を変えても同じ（2026-10-18 千葉さん） */ cur: s.t, ylab: 'v', yunit: 'm/s', H: 160, hl: [{ y: q.V, txt: 'ベルトの速さ V', col: COL.vel }], ser: [{ col: COL.vel, f: function (t) { return m4s3At(q, t).v; } }] });
 }
 function m4s3Prob() {
-  return '<h4 class="exh">問題の設定</h4><div class="exbox"><p>図のように、左の壁に一端を固定したばね定数 $k$ の軽いばねの他端に、質量 $m$ の小物体をつける。小物体は、右へ一定の速さ $V$ で動くベルトコンベアの上にのっている。小物体とベルトの間の動摩擦係数を $\\mu\'$、重力加速度の大きさを $g$ とする。ばねが自然の長さになる位置で、小物体を床に対して静止させてから放した。ばねの自然の長さからの伸びを $x$（右向きを正）とする。$V$ は十分に大きく、小物体はいつもベルトに対してすべっているものとする。</p></div>' +
+  return '<h4 class="exh">問題の設定</h4><div class="exbox"><p>図のように、左の壁に一端を固定したばね定数 $k$ の軽いばねの他端に、質量 $m$ の小物体をつける。小物体は、右へ一定の速さ $V$ で動くベルトコンベアの上に乗っている。小物体とベルトの間の動摩擦係数を $\\mu\'$、重力加速度の大きさを $g$ とする。ばねが自然の長さになる位置で、小物体を床に対して静止させてから放した。ばねの自然の長さからの伸びを $x$（右向きを正）とする。$V$ は十分に大きく、小物体はいつもベルトに対して滑っているものとする。</p></div>' +
     '<h4 class="exh">図</h4><div class="exfig"><canvas data-fig="setup" data-h="150"></canvas></div>' +
     '<h4 class="exh">問</h4><ol class="exol">' +
     '<li>小物体がベルトから受ける摩擦力の向きと大きさを答えよ。</li>' +
@@ -6195,14 +6251,14 @@ function m4s3Prob() {
 }
 function m4s3Ans() {
   return '<h4 class="exh">時間の流れで見る</h4>' +
-    exStrip([['a', 'ⓐ 放した直後', '$x = 0$、$v = 0$'], ['b', 'ⓑ 振動の中心', '$x = x_0$、速さ最大'], ['c', 'ⓒ 最も伸びた所', '$x = 2x_0$、$v = 0$'], ['d', 'ⓓ もどる途中', '左向きに動く'], ['e', 'ⓔ 1 周期後', '$x = 0$、$v = 0$']], 110, true) +
+    exStrip([['a', 'ⓐ 放した直後', '$x = 0$、$v = 0$'], ['b', 'ⓑ 振動の中心', '$x = x_0$、速さ最大'], ['c', 'ⓒ 最も伸びた所', '$x = 2x_0$、$v = 0$'], ['d', 'ⓓ 戻る途中', '左向きに動く'], ['e', 'ⓔ 1 周期後', '$x = 0$、$v = 0$']], 110, true) +
     '<h4 class="exh">解答と解き方</h4>' +
-    exQA('(1) 摩擦力', '右向きに $\\mu\'mg$', '<p>小物体の速さはいつも $V$ より小さいので、<b>ベルトから見ると小物体はいつも左へすべっている</b>。動摩擦力は相対速度と逆向き（右向き）で、大きさ $\\mu\'mg$。</p>') +
+    exQA('(1) 摩擦力', '右向きに $\\mu\'mg$', '<p>小物体の速さはいつも $V$ より小さいので、<b>ベルトから見ると小物体はいつも左へ滑っている</b>。動摩擦力は相対速度と逆向き（右向き）で、大きさ $\\mu\'mg$。</p>') +
     exQA('(2) 運動方程式', '$ma = -kx + \\mu\'mg$', '') +
     exQA('(3) 振動の中心と周期', '$x_0 = \\dfrac{\\mu\'mg}{k}$、$T = 2\\pi\\sqrt{\\dfrac{m}{k}}$', '<p>$ma = -k\\left(x - \\dfrac{\\mu\'mg}{k}\\right)$ と変形する。振動の中心は、弾性力と動摩擦力がつりあう位置。</p>') +
     exQA('(4) 最大の伸び', '$2x_0 = \\dfrac{2\\mu\'mg}{k}$', '<p>$x = 0$ で速さ 0 なので、そこが振動の端。振幅は $x_0$、反対の端は $2x_0$。$x = x_0(1 - \\cos\\omega t)$。</p>') +
-    exQA('(5) 最大の速さと条件', '$v_{\\max} = x_0\\omega = \\mu\'g\\sqrt{\\dfrac{m}{k}}$、条件 $V > \\mu\'g\\sqrt{\\dfrac{m}{k}}$', '<p>小物体がベルトより速くならなければ、すべる向きは変わらない。</p>') +
-    exQA('(6) $V$ を 2 倍にすると', '変わらない', '<p>動摩擦力の大きさ $\\mu\'mg$ は、すべる速さによらない。(5) の条件を満たすかぎり、運動はまったく同じ。</p>');
+    exQA('(5) 最大の速さと条件', '$v_{\\max} = x_0\\omega = \\mu\'g\\sqrt{\\dfrac{m}{k}}$、条件 $V > \\mu\'g\\sqrt{\\dfrac{m}{k}}$', '<p>小物体がベルトより速くならなければ、滑る向きは変わらない。</p>') +
+    exQA('(6) $V$ を 2 倍にすると', '変わらない', '<p>動摩擦力の大きさ $\\mu\'mg$ は、滑る速さによらない。(5) の条件を満たすかぎり、運動はまったく同じ。</p>');
 }
 function m4s3Fig(key, ctx, W, H) {
   var q = m4s3Q({ v: { V: 2.0 } }), t = { setup: 0, a: 0, b: q.T / 4, c: q.T / 2, d: 3 * q.T / 4, e: q.T }[key], st = m4s3At(q, t);
@@ -6227,10 +6283,10 @@ function m4BeltMini(ctx, W, H, q, st, setup) {
   drawEqualTicks(ctx);
 }
 
-/* ===================== ④-4 ベルトコンベア（すべったりくっついたり） =====================
+/* ===================== ④-4 ベルトコンベア（滑ったりくっついたり） =====================
    ベルトの速さ V は小さい。静止摩擦係数 μ > 動摩擦係数 μ′。自然の長さの位置で、ベルトに対して静止した状態から始める。
-   ① ベルトと一緒に速さ V で右へ（静止摩擦力 kx）→ ② x₁ = μmg/k ですべり出す → ③ 中心 x₀ = μ′mg/k の単振動 →
-   ④ 速度がふたたび V になる x₂ = 2x₀ − x₁ でくっつく → ① にもどる。すべっている間の振幅 A = √((m/k)V² + ((μ−μ′)mg/k)²) */
+   ① ベルトと一緒に速さ V で右へ（静止摩擦力 kx）→ ② x₁ = μmg/k で滑り出す → ③ 中心 x₀ = μ′mg/k の単振動 →
+   ④ 速度がふたたび V になる x₂ = 2x₀ − x₁ でくっつく → ① に戻る。滑っている間の振幅 A = √((m/k)V² + ((μ−μ′)mg/k)²) */
 var M44 = { m: 0.5, k: 20, mu: 0.5, mu2: 0.3, Vs: [0.2, 0.3, 0.4], L: 0.9 };
 function m4s4Q(s) {
   var m = M44.m, k = M44.k, w = Math.sqrt(k / m), x1 = M44.mu * m * G / k, x0 = M44.mu2 * m * G / k, V = s.v.V, D = x1 - x0;
@@ -6244,8 +6300,8 @@ function m4s4At(q, t) {
   var x = q.x2 + q.V * (tt - q.tSl); return { x: x, v: q.V, slip: false, f: q.k * x };
 }
 DEFS.m4s4 = {
-  id: 'm4s4', mode: 'mode4', num: 5, title: 'ベルトコンベアの上の単振動（すべったりくっついたり）', short: 'ベルトコンベア（すべったりくっついたり）',
-  desc: '④-3 と同じ装置で、ベルトの速さ $V$ を小さくする。静止摩擦係数を $\\mu$、動摩擦係数を $\\mu\'$（$\\mu \\gt \\mu\'$）とする。ばねが自然の長さの位置で、小物体がベルトに対して静止した状態から運動が始まる。<span class="todo">「くっついている」「すべっている」の札とグラフの色を見くらべよう。観測者 B（ベルト）から見ると、摩擦力の向きは B から見た速度（相対速度）で決まることが分かる。</span>',
+  id: 'm4s4', mode: 'mode4', num: 5, title: 'ベルトコンベアの上の単振動（滑ったりくっついたり）', short: 'ベルトコンベア（滑ったりくっついたり）',
+  desc: '④-3 と同じ装置で、ベルトの速さ $V$ を小さくする。静止摩擦係数を $\\mu$、動摩擦係数を $\\mu\'$（$\\mu \\gt \\mu\'$）とする。ばねが自然の長さの位置で、小物体がベルトに対して静止した状態から運動が始まる。<span class="todo">「くっついている」「滑っている」の札とグラフの色を見比べよう。観測者 B（ベルト）から見ると、摩擦力の向きは B から見た速度（相対速度）で決まることが分かる。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', belowCanvas: true, baseRate: 0.5,
   exam: { src: '典型問題（参考：physicmath.net の解説。数値・言いまわしを変えて作り直したもの）', pdf: 'shm-belt-stickslip', prob: function () { return m4s4Prob(); }, ans: function () { return m4s4Ans(); }, fig: function (k, ctx, W, H) { m4s4Fig(k, ctx, W, H); } },
   buttons: [
@@ -6260,7 +6316,7 @@ DEFS.m4s4 = {
   height: function (s, w) { return Math.round(clamp(w * 0.46, 250, 320)); },
   afterBuild: function (s) {
     s.R.innerHTML = '';
-    m4Card(s, '<p class="qt">$x$–$t$ グラフ（<span style="color:#1f7a3f">緑：くっついている</span>／<span style="color:#d0801f">オレンジ：すべっている</span>）</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    m4Card(s, '<p class="qt">$x$–$t$ グラフ（<span style="color:#1f7a3f">緑：くっついている</span>／<span style="color:#d0801f">オレンジ：滑っている</span>）</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
     m4Card(s, '<p class="qt">$v$–$t$ グラフ（床から見た速度）</p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
@@ -6275,15 +6331,15 @@ DEFS.m4s4 = {
     observer(ctx, xA, H - 8, 0, -1, '', s.view === 'A', 26); label(ctx, 'A（床）', xA + 14, H - 22, { size: 10.5, color: s.view === 'A' ? COL.vel : '#9aa3ac', align: 'left', bold: s.view === 'A' });
     observer(ctx, xB, g.yB, 0, -1, '', s.view === 'B', 26); label(ctx, 'B（ベルト）', xB, g.yB - 36, { size: 10.5, color: s.view === 'B' ? COL.vel : '#9aa3ac', bold: s.view === 'B' });
     if (!s.hideVec) vArrowAt(ctx, s.view === 'B' ? xA : xB, s.view === 'B' ? H - 8 - 30 : g.yB - 30, 0, -1, 18, 1, 0, (s.view === 'B' ? -1 : 1) * q.V * 130, false);
-    if (s.view === 'B') label(ctx, st.slip ? 'B から見ると小物体は左へすべる → 動摩擦力は右向き' : 'B から見ると小物体は止まっている → 静止摩擦力', W / 2, 16, { size: 11, bold: true, color: COL.vel });
+    if (s.view === 'B') label(ctx, st.slip ? 'B から見ると小物体は左へ滑る → 動摩擦力は右向き' : 'B から見ると小物体は止まっている → 静止摩擦力', W / 2, 16, { size: 11, bold: true, color: COL.vel });
     drawM4S4G(s);
   },
   msg: function (s) {
     var q = m4s4Q(s), st = m4s4At(q, s.t);
-    return st.slip ? 'すべっている：動摩擦力 $\\mu\'mg$（右向き）とばねの力で、中心 $x_0 = \\dfrac{\\mu\'mg}{k}$ の単振動。速度がふたたび $V$ になる $x_2 = 2x_0 - x_1$ でベルトにくっつく。'
-      : 'くっついている：小物体はベルトと一緒に速さ $V$ で動く。静止摩擦力 $f = kx$ がばねの力とつりあう。$f$ が最大摩擦力 $\\mu mg$ に達する $x_1 = \\dfrac{\\mu mg}{k}$ ですべり出す。';
+    return st.slip ? '滑っている：動摩擦力 $\\mu\'mg$（右向き）とばねの力で、中心 $x_0 = \\dfrac{\\mu\'mg}{k}$ の単振動。速度がふたたび $V$ になる $x_2 = 2x_0 - x_1$ でベルトにくっつく。'
+      : 'くっついている：小物体はベルトと一緒に速さ $V$ で動く。静止摩擦力 $f = kx$ がばねの力とつりあう。$f$ が最大摩擦力 $\\mu mg$ に達する $x_1 = \\dfrac{\\mu mg}{k}$ で滑り出す。';
   },
-  right: function (s, R) { var q = m4s4Q(s); R.innerHTML = mathify('<div class="qcard"><p class="qnow"><span class="qtag now">この図では</span>$m = ' + q.m + '$ kg、$k = ' + q.k + '$ N/m、$\\mu = ' + q.mu + '$、$\\mu\' = ' + q.mu2 + '$：$x_1 = ' + fmt(q.x1, 3) + '$ m、$x_0 = ' + fmt(q.x0, 3) + '$ m、$x_2 = ' + fmt(q.x2, 3) + '$ m、すべる間の振幅 $A = ' + fmt(q.A, 3) + '$ m</p><div class="qeq">$$A = \\sqrt{\\frac{m}{k}V^2 + \\left\\{\\frac{(\\mu - \\mu\')mg}{k}\\right\\}^2}$$</div></div>'); }
+  right: function (s, R) { var q = m4s4Q(s); R.innerHTML = mathify('<div class="qcard"><p class="qnow"><span class="qtag now">この図では</span>$m = ' + q.m + '$ kg、$k = ' + q.k + '$ N/m、$\\mu = ' + q.mu + '$、$\\mu\' = ' + q.mu2 + '$：$x_1 = ' + fmt(q.x1, 3) + '$ m、$x_0 = ' + fmt(q.x0, 3) + '$ m、$x_2 = ' + fmt(q.x2, 3) + '$ m、滑る間の振幅 $A = ' + fmt(q.A, 3) + '$ m</p><div class="qeq">$$A = \\sqrt{\\frac{m}{k}V^2 + \\left\\{\\frac{(\\mu - \\mu\')mg}{k}\\right\\}^2}$$</div></div>'); }
 };
 function drawM4S4G(s) {
   var q = m4s4Q(s), t1 = q.tS0 + 2 * q.cyc, seg = function (t) { return m4s4At(q, t).slip ? '#d0801f' : '#1f7a3f'; };
@@ -6294,19 +6350,19 @@ function m4s4Prob() {
   return '<h4 class="exh">問題の設定</h4><div class="exbox"><p>④-3 と同じ装置で、ベルトの速さ $V$ を小さくした。小物体とベルトの間の静止摩擦係数を $\\mu$、動摩擦係数を $\\mu\'$（$\\mu \\gt \\mu\'$）とする。ばねが自然の長さの位置で、小物体がベルトに対して静止した状態から運動が始まった。ばねの伸びを $x$（右向きを正）とする。</p></div>' +
     '<h4 class="exh">問</h4><ol class="exol">' +
     '<li>小物体がベルトと一緒に動いているとき、小物体がベルトから受ける摩擦力の種類・向き・大きさを $x$ で答えよ。</li>' +
-    '<li>小物体がベルトに対してすべり始めるときの伸び $x_1$ を求めよ。</li>' +
-    '<li>すべっている間の運動方程式を書き、振動の中心 $x_0$ と周期 $T$ を求めよ。</li>' +
-    '<li>すべり始めた瞬間の小物体の速さは $V$ である。すべっている間の振幅 $A$ を求めよ。</li>' +
+    '<li>小物体がベルトに対して滑り始めるときの伸び $x_1$ を求めよ。</li>' +
+    '<li>滑っている間の運動方程式を書き、振動の中心 $x_0$ と周期 $T$ を求めよ。</li>' +
+    '<li>滑り始めた瞬間の小物体の速さは $V$ である。滑っている間の振幅 $A$ を求めよ。</li>' +
     '<li>小物体がふたたびベルトに対して静止するときの伸び $x_2$ を、$x_0$・$x_1$ で表せ。</li>' +
     '<li>この後、小物体はどのような運動をくり返すか。</li></ol>';
 }
 function m4s4Ans() {
   return '<h4 class="exh">時間の流れで見る（1 往復）</h4>' +
-    exStrip([['a', 'ⓐ くっついて右へ', '静止摩擦力 $kx$'], ['b', 'ⓑ $x = x_1$', 'すべり出す'], ['c', 'ⓒ すべる', '中心 $x_0$ の単振動'], ['d', 'ⓓ $x = x_2$', '速度 $V$ にもどる'], ['e', 'ⓔ ふたたび一緒に', '①にもどる']], 110, true) +
+    exStrip([['a', 'ⓐ くっついて右へ', '静止摩擦力 $kx$'], ['b', 'ⓑ $x = x_1$', '滑り出す'], ['c', 'ⓒ 滑る', '中心 $x_0$ の単振動'], ['d', 'ⓓ $x = x_2$', '速度 $V$ に戻る'], ['e', 'ⓔ ふたたび一緒に', '①に戻る']], 110, true) +
     '<h4 class="exh">解答と解き方</h4>' +
     exQA('(1) 一緒に動いているとき', '静止摩擦力、右向き、大きさ $kx$', '<p>速さ $V$ 一定なので合力は 0：静止摩擦力 $f$ がばねの弾性力 $kx$（左向き）とつりあう。</p>') +
-    exQA('(2) すべり始める伸び', '$x_1 = \\dfrac{\\mu mg}{k}$', '<p>$f = kx$ が最大摩擦力 $\\mu mg$ に達したとき。</p>') +
-    exQA('(3) すべっている間', '$ma = -kx + \\mu\'mg$、$x_0 = \\dfrac{\\mu\'mg}{k}$、$T = 2\\pi\\sqrt{\\dfrac{m}{k}}$', '<p>小物体の速さは $V$ より小さく、ベルトから見ると左へすべるので、動摩擦力は右向き。</p>') +
+    exQA('(2) 滑り始める伸び', '$x_1 = \\dfrac{\\mu mg}{k}$', '<p>$f = kx$ が最大摩擦力 $\\mu mg$ に達したとき。</p>') +
+    exQA('(3) 滑っている間', '$ma = -kx + \\mu\'mg$、$x_0 = \\dfrac{\\mu\'mg}{k}$、$T = 2\\pi\\sqrt{\\dfrac{m}{k}}$', '<p>小物体の速さは $V$ より小さく、ベルトから見ると左へ滑るので、動摩擦力は右向き。</p>') +
     exQA('(4) 振幅', '$A = \\sqrt{\\dfrac{m}{k}V^2 + \\left\\{\\dfrac{(\\mu - \\mu\')mg}{k}\\right\\}^2}$', '<p>中心 $x_0$ からの変位 $X = x - x_0$ で単振動のエネルギー：$\\dfrac{1}{2}mV^2 + \\dfrac{1}{2}k(x_1 - x_0)^2 = \\dfrac{1}{2}kA^2$。</p>') +
     exQA('(5) ふたたびくっつく位置', '$x_2 = 2x_0 - x_1$', '<p>単振動では、中心について対称な位置で速さが等しい。$x_1$ で速度 $V$ だった小物体は、中心 $x_0$ について反対がわの $x_2$ で、ふたたび速度 $V$（右向き）になる。そこでベルトと速度がそろってくっつく。</p>') +
     exQA('(6) その後の運動', '①〜④をくり返す', '<p>$x_2$ から $x_1$ まではベルトと一緒に速さ $V$（グラフでは直線）、$x_1$ から $x_2$ までは中心 $x_0$ の単振動（グラフでは正弦曲線の一部）。$x_2 < x_1$ では静止摩擦力 $kx_2 < \\mu mg$ なので、くっついたままでいられる。</p>');
@@ -6323,7 +6379,7 @@ function m4s4Fig(key, ctx, W, H) {
   var fs = 22 / (q.k * q.x1);
   fArrow(ctx, xb, yB, 1, 0, st.f * fs, COL.fric, null, { noShift: true }); fArrow(ctx, xb - bw / 2, yB - bh / 2, 1, 0, -q.k * st.x * fs, COL.hand, null, { noShift: true });
   if (Math.abs(st.v) > 0.01) vArrowAt(ctx, xb, yB - bh, 0, -1, 6, 1, 0, st.v / q.V * 14, false);
-  label(ctx, st.slip ? 'すべる' : 'くっつく', W / 2, 12, { size: 10.5, bold: true, color: st.slip ? '#a85c0c' : '#1f7a3f' });
+  label(ctx, st.slip ? '滑る' : 'くっつく', W / 2, 12, { size: 10.5, bold: true, color: st.slip ? '#a85c0c' : '#1f7a3f' });
   drawEqualTicks(ctx);
 }
 
@@ -6346,10 +6402,10 @@ function m4s5At(q, t) {
 function m4s5Spring(q, t) { return { x: -q.A * Math.cos(q.w * t), v: q.A * q.w * Math.sin(q.w * t) }; }   /* もしもばねだったら */
 DEFS.m4s5 = {
   id: 'm4s5', mode: 'mode4', num: 6, title: 'ゴムひもでつるした小球', short: 'ゴムひも',
-  desc: '天井からゴムひもで質量 $m$ の小球をつるす。ゴムひもは伸びているときだけ、ばね定数 $k$ のばねと同じ力をおよぼし、たるむと力は 0 になる。つりあいの位置から、さらに $2l_1$（$l_1$ はつりあいでの伸び）引き下げて放す。<span class="todo">ゴムがたるむと、小球は投げ上げの運動になる。「ばねだったら」を表示して、単振動とのちがいを見よう。</span>',
+  desc: '天井からゴムひもで質量 $m$ の小球をつるす。ゴムひもは伸びているときだけ、ばね定数 $k$ のばねと同じ力をおよぼし、たるむと力は 0 になる。つりあいの位置から、さらに $2l_1$（$l_1$ はつりあいでの伸び）引き下げて放す。<span class="todo">ゴムがたるむと、小球は投げ上げの運動になる。「ばねだったら」を表示して、単振動との違いを見よう。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', belowCanvas: true, baseRate: 0.4,
   exam: { src: '典型問題（参考：physicmath.net の解説。数値・言いまわしを変えて作り直したもの）', pdf: 'shm-rubber', prob: function () { return m4s5Prob(); }, ans: function () { return m4s5Ans(); }, fig: function (k, ctx, W, H) { m4s5Fig(k, ctx, W, H); } },
-  buttons: [{ k: 'ghost', label: 'もしもばねだったら（点線）を表示', cls: 'm4only on', inCanvas: true, onClick: function (s, b) { s.ghost = !s.ghost; b.classList.toggle('on', s.ghost); s.draw(); } }],
+  buttons: [{ k: 'ghost', label: 'もしもばねだったら（点線）を表示', cls: 'chkb on', onClick: function (s, b) { s.ghost = !s.ghost; b.classList.toggle('on', s.ghost); s.draw(); } }],
   init: function (s) { s.ghost = true; },                           /* 「ばねだったら」は最初から表示（2026-10-18 千葉さん） */
   onDefaults: function (s) { s.ghost = true; if (s.extra.ghost) s.extra.ghost.classList.add('on'); },
   tEnd: function () { return 2 * m4s5Q().T; },
@@ -6369,21 +6425,29 @@ DEFS.m4s5 = {
   right: function (s, R) { var q = m4s5Q(); R.innerHTML = mathify('<div class="qcard"><p class="qt">実際の周期</p><div class="qeq">$$T = \\underbrace{\\frac{4\\pi}{3}\\sqrt{\\frac{m}{k}}}_{\\text{単振動の部分}} + \\underbrace{2\\sqrt{\\frac{3m}{k}}}_{\\text{投げ上げの部分}}$$</div><p>ばねなら $T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。</p><p class="qnow"><span class="qtag now">この図では</span>$m = ' + q.m + '$ kg、$k = ' + q.k + '$ N/m、$l_1 = ' + fmt(q.l1, 3) + '$ m：$T = ' + sig2(q.T) + '$ s（ばねなら ' + sig2(q.Ts) + ' s）</p></div>'); }
 };
 function drawM4S5(s, ctx, W, H) {
-  var q = m4s5Q(), st = m4s5At(q, s.t), top = 22, cx = W * 0.45, xTop = q.l1 + q.hmax + 0.03, xBot = -q.A - 0.05, S = (H - top - 26) / (M45.L0 + q.l1 - xBot), Y = function (x) { return top + (M45.L0 + q.l1 - x) * S; }, rb = 12;
+  var q = m4s5Q(), st = m4s5At(q, s.t), top = 22, cx = W * 0.50, xTop = q.l1 + q.hmax + 0.03, xBot = -q.A - 0.05, S = (H - top - 26) / (M45.L0 + q.l1 - xBot), Y = function (x) { return top + (M45.L0 + q.l1 - x) * S; }, rb = 12;
   ceilingAt(ctx, cx - 50, cx + 50, top);
   var yb = Y(st.x), yN = Y(q.l1);
+  /* 左に「自然の長さ」「つりあいの位置」（②-3 と同じ。2026-10-18 千葉さん） */
+  [[W * 0.10, null, '自然の長さ'], [W * 0.25, 0, 'つりあいの位置']].forEach(function (r) {
+    ceilingAt(ctx, r[0] - 22, r[0] + 22, top);
+    ctx.save(); ctx.strokeStyle = '#7a4a2a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(r[0], top);
+    if (r[1] === null) { ctx.lineTo(r[0], yN - rb); ctx.stroke(); ctx.restore(); ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(20,23,28,.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(r[0], yN, rb, 0, TAU); ctx.stroke(); ctx.restore(); }   /* 小球の中心が自然の長さの線の上 */
+    else { ctx.lineTo(r[0], Y(0) - rb); ctx.stroke(); ctx.restore(); ballShape(ctx, r[0], Y(0), rb, '#d9b77a'); }
+    label(ctx, r[2], r[0], H - 12, { size: 10.5, color: r[1] === null ? '#5d6875' : '#c0392b', bold: r[1] !== null });
+  });
   /* ゴムひも：伸びていれば直線（太さは伸びで少し細く）、たるんでいれば波線 */
   ctx.save(); ctx.strokeStyle = '#7a4a2a'; ctx.lineCap = 'round';
   if (!st.slack) { ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, yb - rb); ctx.stroke(); }
   else { ctx.lineWidth = 2.4; var Ls = yN - rb - top, Lc = Math.max(4, yb - rb - top); ctx.beginPath(); ctx.moveTo(cx, top); for (var i = 1; i <= 40; i++) { var f = i / 40, amp = Math.sqrt(Math.max(0, Ls * Ls - Lc * Lc)) * 0.18; ctx.lineTo(cx + amp * Math.sin(f * Math.PI * 3), top + f * Lc); } ctx.stroke(); }
   ctx.restore();
   /* 目印の線 */
-  [[q.l1, '自然の長さ（x = l₁）', '#5d6875'], [0, 'つりあいの位置 O', '#c0392b'], [-q.A, '放す位置（x = −2l₁）', '#5d6875'], [q.l1 + q.hmax, '最高点（自然の長さから 3mg/2k 上）', '#a85c0c']].forEach(function (r) { var y = Y(r[0]); dotted(ctx, cx - 70, y, W - 16, y, r[2] === '#c0392b' ? 'rgba(192,57,43,.55)' : 'rgba(20,23,28,.28)', [4, 3]); label(ctx, r[1], cx + 64, y - 8, { size: 10.5, color: r[2], align: 'left', bold: r[2] === '#c0392b' }); });
+  [[q.l1, '自然の長さ（x = l₁）', '#5d6875'], [0, 'つりあいの位置 O', '#c0392b'], [-q.A, '放す位置（x = −2l₁）', '#5d6875'], [q.l1 + q.hmax, '最高点（自然の長さから 3mg/2k 上）', '#a85c0c']].forEach(function (r) { var y = Y(r[0]); dotted(ctx, W * 0.04, y, W - 16, y, r[2] === '#c0392b' ? 'rgba(192,57,43,.55)' : 'rgba(20,23,28,.28)', [4, 3]); label(ctx, r[1], cx + 64, y - 8, { size: 10.5, color: r[2], align: 'left', bold: r[2] === '#c0392b' }); });
   dimLine(ctx, cx - 48, Y(q.l1), cx - 48, Y(0)); sym(ctx, 'l₁', cx - 56, (Y(q.l1) + Y(0)) / 2, { size: 13, align: 'right' });
   if (s.ghost) { var sg = m4s5Spring(q, s.t); ctx.save(); ctx.globalAlpha = 0.3; springDense(ctx, cx + 34, top, cx + 34, Y(sg.x) - rb, M45.L0 * S, { r: 7, lead: 6, k: q.k, thin: 0.8 }); ctx.restore(); ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(20,23,28,.55)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(cx + 34, Y(sg.x), rb, 0, TAU); ctx.stroke(); ctx.restore(); label(ctx, 'ばね', cx + 34, Y(sg.x) + rb + 10, { size: 10, color: '#5d6875' }); }
   ballShape(ctx, cx, yb, rb, '#d9b77a');
   if (s.t === 0 && !s.playing) { m4Hand(ctx, cx + 5, yb - rb + 2, 0, 1, 0.34); handBubble(ctx, '2l₁ 引き下げて押さえる → 放す', cx + rb + 4, yb + 18, 'r'); }
-  pill(ctx, st.slack ? 'ゴムがたるむ：投げ上げ' : '単振動', 70, 40, { bg: st.slack ? '#fff2e0' : '#e3f4e8', color: st.slack ? '#a85c0c' : '#1f7a3f', size: 11.5 });
+  pill(ctx, st.slack ? 'ゴムがたるむ：投げ上げ' : '単振動', W - 90, 40, { bg: st.slack ? '#fff2e0' : '#e3f4e8', color: st.slack ? '#a85c0c' : '#1f7a3f', size: 11.5 });
   var vref = q.A * q.w;
   if (!s.hideVec && Math.abs(st.v) > 0.03) vArrowAt(ctx, cx, yb, 1, 0, rb + 24, 0, -1, st.v / vref * 44, true);
   if (s.fmode) {
@@ -6394,18 +6458,18 @@ function drawM4S5(s, ctx, W, H) {
   drawEqualTicks(ctx);
 }
 function m4s5Prob() {
-  return '<h4 class="exh">問題の設定</h4><div class="exbox"><p>天井に一端を固定した軽いゴムひもの他端に、質量 $m$ の小球をつるす。ゴムひもは、自然の長さより伸びているときはばね定数 $k$ のばねと同じ弾性力をおよぼし、たるんでいるときは力をおよぼさない。重力加速度の大きさを $g$ とする。つりあいの位置から、さらに $2l_1$（$l_1$ はつりあいでのゴムの伸び）だけ小球を引き下げて、静かに放した。小球は鉛直方向にだけ動き、天井にはとどかないものとする。</p></div>' +
+  return '<h4 class="exh">問題の設定</h4><div class="exbox"><p>天井に一端を固定した軽いゴムひもの他端に、質量 $m$ の小球をつるす。ゴムひもは、自然の長さより伸びているときはばね定数 $k$ のばねと同じ弾性力をおよぼし、たるんでいるときは力をおよぼさない。重力加速度の大きさを $g$ とする。つりあいの位置から、さらに $2l_1$（$l_1$ はつりあいでのゴムの伸び）だけ小球を引き下げて、静かに放した。小球は鉛直方向にだけ動き、天井には届かないものとする。</p></div>' +
     '<h4 class="exh">図</h4><div class="exfig"><canvas data-fig="setup" data-h="230"></canvas></div>' +
     '<h4 class="exh">問</h4><ol class="exol">' +
     '<li>$l_1$ を求めよ。</li>' +
     '<li>放してから、ゴムひもが自然の長さになるまでの運動は単振動である。その中心・振幅・角振動数を答えよ。</li>' +
     '<li>ゴムひもが自然の長さになる瞬間の小球の速さ $v_1$ を求めよ。</li>' +
     '<li>小球は、自然の長さの位置からどれだけ上まで上がるか。</li>' +
-    '<li>小球が放した位置にもどるまでの時間（この運動の周期）$T$ を求めよ。</li></ol>';
+    '<li>小球が放した位置に戻るまでの時間（この運動の周期）$T$ を求めよ。</li></ol>';
 }
 function m4s5Ans() {
   return '<h4 class="exh">時間の流れで見る</h4>' +
-    exStrip([['a', 'ⓐ 放した直後', '下の端'], ['b', 'ⓑ つりあいの位置', '速さ最大'], ['c', 'ⓒ 自然の長さ', 'ゴムがたるみ始める'], ['d', 'ⓓ 最高点', '速さ 0'], ['e', 'ⓔ ふたたび自然の長さ', '単振動にもどる']], 210) +
+    exStrip([['a', 'ⓐ 放した直後', '下の端'], ['b', 'ⓑ つりあいの位置', '速さ最大'], ['c', 'ⓒ 自然の長さ', 'ゴムがたるみ始める'], ['d', 'ⓓ 最高点', '速さ 0'], ['e', 'ⓔ ふたたび自然の長さ', '単振動に戻る']], 210) +
     '<h4 class="exh">解答と解き方</h4>' +
     exQA('(1) つりあいでの伸び', '$l_1 = \\dfrac{mg}{k}$', '<p>' + eqTag('bal') + '$kl_1 = mg$</p>') +
     exQA('(2) 単振動の中心・振幅・角振動数', '中心：つりあいの位置、振幅 $2l_1$、角振動数 $\\omega = \\sqrt{\\dfrac{k}{m}}$', '<p>ゴムが伸びている間は、ばねと同じ。つりあいの位置を原点に上向きを正とすると $ma = -kx$。</p>') +
@@ -6437,7 +6501,7 @@ function m4s5Fig(key, ctx, W, H) {
    ========================================================================= */
 'use strict';
 var M40 = { m: 1.0, k: 50, L0: 0.55, ds: [0.10, 0.15, 0.20], d0: 0.20 };
-function m4s0Q(s) { var w = Math.sqrt(M40.k / M40.m), d = s.v.d; return { m: M40.m, k: M40.k, w: w, T: TAU / w, d: d, v0: d * w, tq: Math.PI / 2 / w, th: Math.PI / 3 / w, p2: s.prob === 2 }; }
+function m4s0Q(s) { var w = Math.sqrt(M40.k / M40.m), d = s.v.d; return { m: M40.m, k: M40.k, w: w, T: TAU / w, d: d, v0: d * w, tq: Math.PI / 2 / w, th: 2 * Math.PI / 3 / w, p2: s.prob === 2 }; }
 function m4s0At(q, t) {
   if (q.p2 || t <= q.tq) return { x: -q.d * Math.cos(q.w * t), v: q.d * q.w * Math.sin(q.w * t), on: true };
   return { x: q.v0 * (t - q.tq), v: q.v0, on: false };
@@ -6446,14 +6510,14 @@ DEFS.m4s0 = {
   id: 'm4s0', mode: 'mode4', num: 1, title: 'ばねで打ち出される小球', short: 'ばねで打ち出される小球',
   wideHead: true,                                                 /* 問題文は左右の列をまとめて横いっぱい・2 列（2026-10-18 千葉さん） */
   desc2: ['<p>なめらかな水平面の上で、左の壁に固定したばね定数 $k$ の軽いばねの右端に、質量 $m$ の小球をおく。自然の長さの位置を原点 O とし、右向きを $x$ の正の向きとする。ばねを自然の長さから $d$ だけ縮めてから、静かに放す。</p>' +
-    '<p class="m4pq"><b>問1</b>　ばねが自然の長さの位置まで来たら、小球はばねからはなれるとする。<br>(1) 放してから自然の長さに至るまでの時間はいくらか。<br>(2) $x = -\\dfrac{1}{2}d$ のときの小球の速さはいくらか。</p>',
-    '<p class="m4pq"><b>問2</b>　ばねが自然の長さの位置まで来ても、小球ははなれないとする。<br>(1) 放してから $x = -\\dfrac{1}{2}d$ に至るまでの時間はいくらか。<br>(2) $x = -\\dfrac{1}{2}d$ のときの小球の速さはいくらか。</p>'],
-  desc: '<span class="todo">図の左上で問1・問2を切りかえて、自然の長さを過ぎたあとの運動のちがいと、$x = -\\dfrac{1}{2}d$ を通る時刻を確かめよう。</span>',
+    '<p class="m4pq"><b>問1</b>　ばねが自然の長さの位置まで来たら、小球はばねから離れるとする。<br>(1) 放してから自然の長さに至るまでの時間はいくらか。<br>(2) $x = \\dfrac{1}{2}d$ のときの小球の速さはいくらか。</p>',
+    '<p class="m4pq"><b>問2</b>　ばねと小球がくっついており、ばねが自然の長さの位置まで来ても<b>小球は離れない</b>とする。<br>(1) 放してから $x = \\dfrac{1}{2}d$ に至るまでの時間はいくらか。<br>(2) $x = \\dfrac{1}{2}d$ のときの小球の速さはいくらか。</p>'],
+  desc: '<span class="todo">図の左上で問1・問2を切りかえて、自然の長さを過ぎたあとの運動の違いと、$x = \\dfrac{1}{2}d$ を通る時刻を確かめよう。</span>',
   strobe: false, showFBtn: true, fDefault: 'net', vecBtn: 'v を消す', belowCanvas: true, baseRate: 0.4,
   exam: { src: '', pdf: 'shm-launch', noProb: true, prob: function () { return ''; }, ans: function () { return m4s0Ans(); }, fig: function (k, ctx, W, H) { m4s0Fig(k, ctx, W, H); } },
   buttons: [
-    { k: 'p1', label: '問1 自然の長さではなれる', cls: 'm4only on', inCanvas: true, onClick: function (s) { m4s0Prob(s, 1); } },
-    { k: 'p2', label: '問2 はなれない', cls: 'm4only', inCanvas: true, onClick: function (s) { m4s0Prob(s, 2); } }],
+    { k: 'p1', label: '問1 自然の長さで離れる', cls: 'm4only on', inCanvas: true, onClick: function (s) { m4s0Prob(s, 1); } },
+    { k: 'p2', label: '問2 離れない', cls: 'm4only', inCanvas: true, onClick: function (s) { m4s0Prob(s, 2); } }],
   vars: [{ k: 'd', label: '縮める長さ $d$', stops: M40.ds, stopLabels: ['0.10', '0.15', '0.20 m'], def: M40.d0, aria: '縮める長さ', fmt: function (x) { return x.toFixed(2) + ' m'; } }],
   init: function (s) { s.prob = 1; },
   onDefaults: function (s) { m4s0Prob(s, 1); },
@@ -6466,6 +6530,10 @@ DEFS.m4s0 = {
     s.R.innerHTML = '';
     ctlOneRow(s);                                                 /* 縮める長さの右に時間バー */
     var cc = el('div', 'qcard m4card m4circ'); cc.innerHTML = mathify('<p class="qt">対応する等速円運動（半径 $d$）</p>'); s.cCv = el('canvas', 'm4cv'); cc.appendChild(s.cCv); s.below.appendChild(cc);
+    m4Card(s, '<p class="qt">かかる時間は、対応する等速円運動で考える</p>' +       /* x–t グラフの上の解説（2026-10-19 千葉さん） */
+      '<ul class="m4tl"><li><b>問1(1)</b>　左の端 → 自然の長さの位置（中心）は、円運動で $\\dfrac{\\pi}{2}$ 回るので <b>$\\dfrac{1}{4}$ 周期</b>。</li>' +
+      '<li><b>問2(1)</b>　左の端 → $x = \\dfrac{1}{2}d$ は、円運動で $\\dfrac{2\\pi}{3}$ 回るので <b>$\\dfrac{1}{3}$ 周期</b>。</li></ul>' +
+      '<p class="m4miss"><b>ありがちなミス</b>　小球が等速で動くと考えて「$2d$ を $\\dfrac{1}{2}$ 周期で進むから、$\\dfrac{3}{2}d$ なら $\\dfrac{3}{8}$ 周期」と書いてしまう人が多い。単振動は中心で速く、端で遅いので、時間は進んだ距離に比例しない。アニメの下の等速円運動で、点がどれだけの角度を回ったかをよくイメージしよう。</p>');
     m4Card(s, '<p class="qt">$x$–$t$ グラフ</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
     m4Card(s, '<p class="qt">$v$–$t$ グラフ</p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
@@ -6474,7 +6542,7 @@ DEFS.m4s0 = {
   msg: function (s) {
     var q = m4s0Q(s), st = m4s0At(q, s.t);
     if (s.t === 0 && !s.playing) return 'ばねを $d$ 縮めて、手で押さえている。▶ スタートで放す。';
-    if (!st.on) return '自然の長さで弾性力が 0 になり、小球ははなれた。そのあとは速さ $v_0 = d\\sqrt{\\dfrac{k}{m}} = ' + fmt(q.v0, 2) + '$ m/s の等速直線運動。';
+    if (!st.on) return '自然の長さで弾性力が 0 になり、小球は離れた。そのあとは速さ $v_0 = d\\sqrt{\\dfrac{k}{m}} = ' + fmt(q.v0, 2) + '$ m/s の等速直線運動。';
     return q.p2 ? '小球はばねにつながれたまま、自然の長さの位置（O）を中心に振幅 $d$ の単振動を続ける。' : 'ばねが自然の長さになるまでは、O を中心とする単振動（の一部）。';
   },
   right: function () { }
@@ -6490,10 +6558,10 @@ function drawM4S0C(s) {
   dotted(ctx, X0, cy, p0.x, p0.y, 'rgba(20,23,28,.55)', [3, 3]); label(ctx, '始まり', p0.x - 6, p0.y, { size: 10, color: '#5d6875', align: 'right' });
   ctx.save(); ctx.strokeStyle = '#3a414c'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X0, cy); ctx.lineTo(P.x, P.y); ctx.stroke(); ctx.restore();
   if (tc > 0.005) { var ra = Math.min(26, R * 0.55), a0 = Math.PI, a1 = Math.PI - q.w * tc; ctx.save(); ctx.strokeStyle = '#3a414c'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(X0, cy, ra, a0, a1, true); ctx.stroke(); ctx.restore(); sym(ctx, 'ωt', X0 + (ra + 12) * Math.cos(Math.PI - q.w * tc / 2), cy + (ra + 12) * Math.sin(Math.PI - q.w * tc / 2), { size: 12 }); }
-  var xh = X0 - q.d / 2 * S; dotted(ctx, xh, 4, xh, H - 4, 'rgba(192,57,43,.55)', [4, 3]); label(ctx, 'x = −d/2', xh - 4, H - 10, { size: 10, color: '#c0392b', align: 'right' });
+  var xh = X0 + q.d / 2 * S; dotted(ctx, xh, 4, xh, H - 4, 'rgba(192,57,43,.55)', [4, 3]); label(ctx, 'x = d/2', xh + 4, H - 10, { size: 10, color: '#c0392b', align: 'left' });
   dotted(ctx, P.x, P.y, P.x, 0, 'rgba(22,99,181,.6)', [3, 4]);                                     /* 真上の小球へ（正射影） */
   ballShape(ctx, P.x, P.y, 5.5, M2BALL);
-  if (!q.p2 && !st.on) label(ctx, 'はなれたあとは、円運動と対応しない（等速直線運動）', X0 + R + 14, cy, { size: 10.5, color: '#a85c0c', bold: true, align: 'left' });
+  if (!q.p2 && !st.on) label(ctx, '離れたあとは、円運動と対応しない（等速直線運動）', X0 + R + 14, cy, { size: 10.5, color: '#a85c0c', bold: true, align: 'left' });
 }
 /* 右の列のいちばん上（グラフ）を、アニメの上のはしにそろえる */
 function m4AlignTop(s) {
@@ -6506,13 +6574,13 @@ function m4s0Scene(ctx, W, H, q, st, o) {
   o = o || {};
   var S = (W - 60) / (M40.L0 + 0.95 + 0.06), xw = 24, yF = H - (o.mini ? 26 : 50), rb = o.mini ? 10 : 15, X = function (x) { return xw + (M40.L0 + x) * S; };
   floorAt(ctx, xw, W - 10, yF); wallLeftAt(ctx, xw, yF - (o.mini ? 46 : 70), yF);
-  var yc = yF - rb, xb = X(st.x), xs = st.on ? xb - rb : X(0) - rb;  /* はなれたあとのばねの端は自然の長さで止まる（ばねは軽い） */
+  var yc = yF - rb, xb = X(st.x), xs = st.on ? xb - rb : X(0) - rb;  /* 離れたあとのばねの端は自然の長さで止まる（ばねは軽い） */
   springDense(ctx, xw, yc, xs, yc, M40.L0 * S - rb, { r: o.mini ? 6 : 9, lead: 5, k: q.k, thin: o.mini ? 0.7 : 1, Lmin: (M40.L0 - 0.2) * S - rb });
   dotted(ctx, X(0), yF - (o.mini ? 40 : 66), X(0), yF + (o.mini ? 6 : 18), 'rgba(20,23,28,.4)', [4, 3]);
-  dotted(ctx, X(-q.d / 2), yF - (o.mini ? 40 : 66), X(-q.d / 2), yF + (o.mini ? 6 : 18), 'rgba(192,57,43,.6)', [4, 3]);
+  dotted(ctx, X(q.d / 2), yF - (o.mini ? 40 : 66), X(q.d / 2), yF + (o.mini ? 6 : 18), 'rgba(192,57,43,.6)', [4, 3]);
   if (!o.mini) {
-    label(ctx, 'O（自然の長さ）', X(0) + 4, yF + 30, { size: 10.5, color: '#5d6875', align: 'left' });
-    label(ctx, 'x = −d/2', X(-q.d / 2) - 4, yF + 30, { size: 10.5, color: '#c0392b', bold: true, align: 'right' });
+    label(ctx, 'O（自然の長さ）', X(0) - 4, yF + 30, { size: 10.5, color: '#5d6875', align: 'right' });
+    label(ctx, 'x = d/2', X(q.d / 2) + 4, yF + 30, { size: 10.5, color: '#c0392b', bold: true, align: 'left' });
     axisArrow(ctx, X(-0.3), yF + 14, W - 14, yF + 14); sym(ctx, 'x', W - 16, yF + 2, { size: 13 });
   }
   ballShape(ctx, xb, yc, rb, '#d9b77a');
@@ -6520,7 +6588,7 @@ function m4s0Scene(ctx, W, H, q, st, o) {
 }
 function drawM4S0(s, ctx, W, H) {
   var q = m4s0Q(s), st = m4s0At(q, s.t), g = m4s0Scene(ctx, W, H, q, st), held = s.t === 0 && !s.playing;
-  label(ctx, q.p2 ? '問2：はなれない（単振動を続ける）' : '問1：自然の長さではなれる', W - 12, 16, { size: 11.5, bold: true, color: '#1f4f8a', align: 'right' });
+  if (W > 520) label(ctx, q.p2 ? '問2：離れない（単振動を続ける）' : '問1：自然の長さで離れる', W - 12, 16, { size: 11.5, bold: true, color: '#1f4f8a', align: 'right' });
   if (held) { m4Hand(ctx, g.xb + g.rb, g.yc, -1, 0, 0.34); }
   if (!s.hideVec && Math.abs(st.v) > 0.02) vArrowAt(ctx, g.xb, g.yc - g.rb, 0, -1, 30, 1, 0, st.v / q.v0 * 46, true);
   if (s.fmode) {
@@ -6531,11 +6599,11 @@ function drawM4S0(s, ctx, W, H) {
       fArrow(ctx, g.xb - 5, g.yc, 0, 1, fv, COL.force, 'mg', { lx: -12, noShift: true }); fArrow(ctx, g.xb + 5, g.yF, 0, -1, fv, COL.norm, 'N', { lx: 12, noShift: true });
     }
   }
-  if (!st.on) label(ctx, 'はなれた → 等速直線運動', g.xb, g.yc - g.rb - 60, { size: 11.5, bold: true, color: '#a85c0c' });
+  if (!st.on) label(ctx, '離れた → 等速直線運動', g.xb, g.yc - g.rb - 60, { size: 11.5, bold: true, color: '#a85c0c' });
   drawEqualTicks(ctx);
 }
 function drawM4S0G(s) {
-  var q = m4s0Q(s), t1 = q.p2 ? 2 * q.T : q.tq + 0.55, hl = [{ y: -q.d / 2, txt: 'x = −d/2', col: '#c0392b' }];
+  var q = m4s0Q(s), t1 = q.p2 ? 2 * q.T : q.tq + 0.55, hl = [{ y: q.d / 2, txt: 'x = d/2', col: '#c0392b' }];
   var mk = function (cv) { return cv; };
   m4Plot(s.xCv, { t0: 0, t1: t1, lo: -q.d * 1.15, hi: q.p2 ? q.d * 1.15 : q.v0 * 0.55 * 1.05, cur: s.t, ylab: 'x', yunit: 'm', H: 170, hl: hl,
     ser: [{ col: XCOL, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? XCOL : '#d0801f'; }, f: function (t) { return m4s0At(q, t).x; } }] });
@@ -6543,26 +6611,28 @@ function drawM4S0G(s) {
     ser: [{ col: COL.vel, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? COL.vel : '#d0801f'; }, f: function (t) { return m4s0At(q, t).v; } }] });
   [s.xCv, s.vCv].forEach(function (cv) { if (!cv || !cv.offsetParent) return; var ctx = cv.getContext('2d'), W = Math.max(240, Math.floor(cv.clientWidth)), x0 = 44, x1 = W - 18, Hh = cv.height / (window.devicePixelRatio || 1);
     ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
-    [[q.th, 'T/6', '#c0392b'], [q.tq, 'T/4', '#5d6875']].forEach(function (r) { var xx = x0 + r[0] / t1 * (x1 - x0); dotted(ctx, xx, 14, xx, Hh - 22, r[2] === '#c0392b' ? 'rgba(192,57,43,.55)' : 'rgba(20,23,28,.3)', [3, 3]); label(ctx, r[1], xx, Hh - 8, { size: 10, color: r[2], bold: true }); });
+    (q.p2 ? [[q.th, 'T/3', '#c0392b'], [q.tq, 'T/4', '#5d6875']] : [[q.tq, 'T/4', '#5d6875']]).forEach(function (r) { var xx = x0 + r[0] / t1 * (x1 - x0); dotted(ctx, xx, 14, xx, Hh - 22, r[2] === '#c0392b' ? 'rgba(192,57,43,.55)' : 'rgba(20,23,28,.3)', [3, 3]); label(ctx, r[1], xx + (r[1] === 'T/3' ? 3 : -3), Hh - 8, { size: 10, color: r[2], bold: true, align: r[1] === 'T/3' ? 'left' : 'right' }); });   /* T/4 は線の左、T/3 は右に（重ならないように） */
     ctx.restore(); });
 }
 function m4s0Ans() {
   return '<h4 class="exh">時間の流れで見る</h4>' +
-    exStrip([['a', 'ⓐ 放す直前', '$x = -d$、$v = 0$'], ['b', 'ⓑ $x = -\\dfrac{1}{2}d$', '$t = \\dfrac{T}{6}$'], ['c', 'ⓒ 自然の長さ', '$t = \\dfrac{T}{4}$、速さ最大 $d\\omega$'], ['d', 'ⓓ 問1：はなれたあと', '等速直線運動'], ['e', 'ⓔ 問2：はなれない', '$x = d$ まで行って戻る']], 90, true) +
-    '<h4 class="exh">考え方</h4><div class="exbox"><p>ばねにふれている間、小球は O（自然の長さの位置）を中心とする振幅 $d$ の単振動をする。$\\omega = \\sqrt{\\dfrac{k}{m}}$、$T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。$t = 0$ で $x = -d$（左の端）から静かに放すので、初期位相 $\\phi = -\\dfrac{\\pi}{2}$：</p>' +
+    exStrip([['a', 'ⓐ 放す直前', '$x = -d$、$v = 0$'], ['b', 'ⓑ 自然の長さ', '$t = \\dfrac{T}{4}$、速さ最大 $d\\omega$'], ['c', 'ⓒ 問1：$x = \\dfrac{1}{2}d$', '離れたあと。等速 $d\\omega$'], ['d', 'ⓓ 問2：$x = \\dfrac{1}{2}d$', '$t = \\dfrac{T}{3}$'], ['e', 'ⓔ 問2：$x = d$', '$t = \\dfrac{T}{2}$。ここで戻る']], 90, true) +
+    '<h4 class="exh">考え方</h4><div class="exbox"><p>ばねに触れている間、小球は O（自然の長さの位置）を中心とする振幅 $d$ の単振動をする。$\\omega = \\sqrt{\\dfrac{k}{m}}$、$T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。$t = 0$ で $x = -d$（左の端）から静かに放すので、初期位相 $\\phi = -\\dfrac{\\pi}{2}$：</p>' +
     '<p style="text-align:center">$x = d\\sin\\left(\\omega t - \\dfrac{\\pi}{2}\\right) = -d\\cos\\omega t$、　$v = d\\omega\\cos\\left(\\omega t - \\dfrac{\\pi}{2}\\right) = d\\omega\\sin\\omega t$</p></div>' +
-    '<h4 class="exh">問1（自然の長さではなれる）</h4>' +
+    '<h4 class="exh">問1（自然の長さで離れる）</h4>' +
     exQA('(1) 自然の長さに至るまでの時間', '$t = \\dfrac{T}{4} = \\dfrac{\\pi}{2}\\sqrt{\\dfrac{m}{k}}$', '<p>$x = -d\\cos\\omega t = 0$ となるのは $\\omega t = \\dfrac{\\pi}{2}$。左の端から中心までは $\\dfrac{1}{4}$ 周期。</p>') +
-    exQA('(2) $x = -\\dfrac{1}{2}d$ での速さ', '$v = \\dfrac{\\sqrt{3}}{2}d\\sqrt{\\dfrac{k}{m}}$', '<p>まだばねにふれているので、問2(2) と同じ（下を見よ）。</p>') +
-    '<h4 class="exh">問2（はなれない）</h4>' +
-    exQA('(1) $x = -\\dfrac{1}{2}d$ に至るまでの時間', '$t = \\dfrac{T}{6} = \\dfrac{\\pi}{3}\\sqrt{\\dfrac{m}{k}}$', '<p>$-d\\cos\\omega t = -\\dfrac{1}{2}d$ より $\\cos\\omega t = \\dfrac{1}{2}$、はじめて成りたつのは $\\omega t = \\dfrac{\\pi}{3}$。対応する円運動で、点が $\\dfrac{\\pi}{3}$ だけ回ったとき（$\\dfrac{1}{6}$ 周）。</p>') +
-    exQA('(2) $x = -\\dfrac{1}{2}d$ での速さ', '$v = \\dfrac{\\sqrt{3}}{2}d\\sqrt{\\dfrac{k}{m}}$',
-      '<p><b>解法 A（速度の式を使う）</b>　$v = d\\omega\\sin\\omega t$ に $\\omega t = \\dfrac{\\pi}{3}$ を入れて $v = d\\omega \\cdot \\dfrac{\\sqrt{3}}{2} = \\dfrac{\\sqrt{3}}{2}d\\sqrt{\\dfrac{k}{m}}$。（$x = A\\sin(\\omega t + \\phi)$ のとき $v = A\\omega\\cos(\\omega t + \\phi)$ を使った。）</p>' +
+    exQA('(2) $x = \\dfrac{1}{2}d$ での速さ', '$v = d\\sqrt{\\dfrac{k}{m}}$', '<p>$x = \\dfrac{1}{2}d$ は自然の長さの位置 O より右。小球は O でばねから離れ、そのあとは力を受けないので、O での速さ（単振動の速さの最大値）$v_0 = d\\omega = d\\sqrt{\\dfrac{k}{m}}$ のまま等速直線運動をする。</p>' +
+      '<p>エネルギー保存則で求めてもよい：$\\dfrac{1}{2}kd^2 = \\dfrac{1}{2}mv^2$（離れたあと、ばねの弾性エネルギーは 0）。</p>') +
+    '<h4 class="exh">問2（離れない）</h4>' +
+    exQA('(1) $x = \\dfrac{1}{2}d$ に至るまでの時間', '$t = \\dfrac{T}{3} = \\dfrac{2\\pi}{3}\\sqrt{\\dfrac{m}{k}}$', '<p>$-d\\cos\\omega t = \\dfrac{1}{2}d$ より $\\cos\\omega t = -\\dfrac{1}{2}$、はじめて成りたつのは $\\omega t = \\dfrac{2\\pi}{3}$。対応する円運動で、点が $\\dfrac{2\\pi}{3}$ だけ回ったとき（$\\dfrac{1}{3}$ 周）。</p>' +
+      '<p><b>ありがちなミス</b>　「$-d$ から $d$ までの $2d$ を半周期 $\\dfrac{T}{2}$ で進むから、$\\dfrac{3}{2}d$ 進むのは $\\dfrac{3}{4} \\times \\dfrac{T}{2} = \\dfrac{3}{8}T$」としてしまう。これは小球が<b>等速</b>で動くと考えたときの答え。単振動では中心ほど速く、端ほど遅いので、時間は距離に比例しない。対応する等速円運動で、回った角度 $\\dfrac{2\\pi}{3}$ から求める。</p>') +
+    exQA('(2) $x = \\dfrac{1}{2}d$ での速さ', '$v = \\dfrac{\\sqrt{3}}{2}d\\sqrt{\\dfrac{k}{m}}$',
+      '<p><b>解法 A（速度の式を使う）</b>　$v = d\\omega\\sin\\omega t$ に $\\omega t = \\dfrac{2\\pi}{3}$ を入れて $v = d\\omega \\cdot \\dfrac{\\sqrt{3}}{2} = \\dfrac{\\sqrt{3}}{2}d\\sqrt{\\dfrac{k}{m}}$。（$x = A\\sin(\\omega t + \\phi)$ のとき $v = A\\omega\\cos(\\omega t + \\phi)$ を使った。）</p>' +
       '<p><b>解法 B（エネルギー保存則を使う）</b>　$\\dfrac{1}{2}kd^2 = \\dfrac{1}{2}mv^2 + \\dfrac{1}{2}k\\left(\\dfrac{d}{2}\\right)^2$ より $v^2 = \\dfrac{3kd^2}{4m}$、$v = \\dfrac{\\sqrt{3}}{2}d\\sqrt{\\dfrac{k}{m}}$。</p>' +
-      '<p>時間を聞かれていなければ、解法 B のほうが速い。時間が必要なら、解法 A（または対応する円運動）を使う。</p>');
+      '<p>時間を聞かれていなければ、解法 B のほうが速い。時間が必要なら、解法 A（または対応する円運動）を使う。問1(2) との違い（ばねにつながっているので、$x > 0$ ではばねが伸びて小球を引き戻し、遅くなる）にも注意。</p>');
 }
 function m4s0Fig(key, ctx, W, H) {
-  var q = m4s0Q({ v: { d: 0.20 }, prob: key === 'e' ? 2 : 1 }), t = { a: 0, b: q.th, c: q.tq, d: q.tq + 0.25, e: q.T / 2 }[key], st = m4s0At(q, t);
+  var q = m4s0Q({ v: { d: 0.20 }, prob: (key === 'd' || key === 'e') ? 2 : 1 }), t = { a: 0, b: q.tq, c: q.tq + 0.5 / q.w, d: q.th, e: q.T / 2 }[key], st = m4s0At(q, t);
   var g = m4s0Scene(ctx, W, H, q, st, { mini: true });
   if (key === 'a') m4Hand(ctx, g.xb + g.rb, g.yc, -1, 0, 0.24);
   if (Math.abs(st.v) > 0.02) vArrowAt(ctx, g.xb, g.yc - g.rb, 0, -1, 8, 1, 0, st.v / q.v0 * 26, false);
@@ -6579,11 +6649,11 @@ function m4s0Fig(key, ctx, W, H) {
 var MODES = [
   { id: 'mode1', name: '単振動の基本的な物理量', secs: ['m1s1', 'm1s2', 'm1s3'], rotSwitch: false,
     en: 'Describing Simple Harmonic Motion',
-    lead: '一直線上の往復振動を単振動という。単振動は、等速円運動を真横から見た影（数学的には正射影と呼ぶ）で理解することができる。変位 $x$・速度 $v$・加速度 $a$ が常に変わり、正負が変化する運動である。単振動を理解するために、等速円運動と見くらべ、グラフを元に考えよう。円運動がまだ理解不十分な人は <a class="xlink" href="circular-motion.html#mode1">等速円運動のページ（モード①）</a> を参照。' },
+    lead: '一直線上の往復振動を単振動という。単振動は、等速円運動を真横から見た影（数学的には正射影と呼ぶ）で理解することができる。変位 $x$・速度 $v$・加速度 $a$ が常に変わり、正負が変化する運動である。単振動を理解するために、等速円運動と見比べ、グラフを元に考えよう。円運動がまだ理解不十分な人は <a class="xlink" href="circular-motion.html#mode1">等速円運動のページ（モード①）</a> を参照。' },
   { id: 'mode2', name: '色んな単振動', secs: ['m2s1', 'm2s2', 'm2s3', 'm2s4', 'm2s5', 'm2s6', 'm2s7', 'm2s8'], rotSwitch: false,
     en: 'Oscillations in Various Settings',
     lead: 'ばね・振り子・浮力など、いろいろな単振動がある。どれも ① 力を書き、② 運動方程式を $ma=-K(x-x_0)$ の形にすれば、③ 振動の中心 $x_0$・角振動数 $\\omega=\\sqrt{\\dfrac{K}{m}}$・周期 $T=2\\pi\\sqrt{\\dfrac{m}{K}}$ が読み取れる。単振動は必ず、<b>つりあいの位置を中心として</b>振動する。' },
-  { id: 'mode3', name: '入試レベルで理解しなくてはいけないこと', secs: ['m3s1', 'm3s2', 'm3s3'], rotSwitch: false,
+  { id: 'mode3', name: '入試に向けて理解しなくてはいけないこと', secs: ['m3s1', 'm3s2', 'm3s3'], rotSwitch: false,
     en: 'Essentials for Exam-Level Problems',
     lead: '入試問題を解くときに、必ず理解しておきたいことをまとめる。周期が何で決まるか、つりあいの位置からの変位 $x$ を使った単振動のエネルギー $U=\\dfrac{1}{2}Kx^2$、そして $x$ 座標の原点のとり方。' },
   { id: 'mode4', name: '入試物理', secs: ['m4s0', 'm4s1', 'm4s2', 'm4s3', 'm4s4', 'm4s5'], rotSwitch: false,
@@ -7149,7 +7219,7 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
    90_boot.js … 自動テスト用の窓口（window.TEST）と検算
    ========================================================================= */
 'use strict';
-/* x(t) の上向きのゼロ点の間かく（グラフの山と山の間と同じ）から周期をはかる */
+/* x(t) の上向きのゼロ点の間かく（グラフの山と山の間と同じ）から周期を測る */
 function measurePeriod(f, T) {
   var dt = T / 2000, ups = [];
   for (var t = 0; t < 3.2 * T; t += dt) { var a = f(t), b = f(t + dt); if (a < 0 && b >= 0) ups.push(t + dt * (-a) / (b - a)); }
