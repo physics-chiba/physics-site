@@ -1748,6 +1748,9 @@ details.m2card > summary.qt::before{display:inline-block;margin-right:.4em;verti
 .reltab.s8tab tr.s8f td{font-size:.86rem;background:#fbf8f2}
 .reltab.s8tab tr.s8f .katex{font-size:1em}
 .m31box{margin-top:12px}
+.m3pdfov{position:fixed;inset:0;z-index:9500;background:rgba(20,23,28,.72);overflow:auto;cursor:zoom-out;padding:12px;text-align:center}
+.m3pdfov img{display:block;margin:0 auto;max-width:min(100%,1100px);height:auto;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35)}
+.m3pdfbar{color:#fff;font-weight:700;margin:0 0 8px;font-size:.9rem}
 figure.m3pdf .m3cap{display:inline-block;margin-left:.6em;color:#c0392b;font-weight:800}
 .m3easy{color:var(--ink);font-weight:800;text-decoration:underline;text-decoration-color:#d1352b;text-decoration-thickness:2.5px;text-underline-offset:3px}
 /* グラフの見出しが長いとき：数値は折り返さず右に */
@@ -1821,6 +1824,9 @@ h4.exh{margin:18px 0 8px;padding-left:.55em;border-left:5px solid #b08a5a;font-s
 .exqa .exfig canvas{max-width:420px}
 /* モード④の図の左上のボタン・右の列のグラフ */
 .cvwrap .cvbtns button.b.m4only,.cvwrap .cvbtns button.b.m4press{font-size:.72rem;padding:.24em .7em;background:#fff}
+.cvwrap .cvbtns.m4s0q{flex-wrap:wrap;max-width:calc(100% - 20px)}
+.cvwrap .cvbtns .cvbrk{flex-basis:100%;height:0}
+.cvwrap .cvbtns button.b.m4qb{font-size:.7rem;padding:.2em .6em}
 .cvwrap .cvbtns button.b.m4only.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .qcard.m4card{margin-bottom:10px}
 .qcard.m4card canvas.m4cv{display:block;width:100%}
@@ -4416,7 +4422,9 @@ function m2SnapZoom(s, i) {
   else {
     var W0 = Math.round(Math.min(340, 460 / asp)), H0 = Math.round(W0 * asp);   /* 前の拡大図（W0 の幅で全体）を 1.3 倍に。切り出した幅が入らなければ小さく */
     var c0 = m2SnapFrac(o, kind, W0, H0, [m2SnapBBox(m2SnapOff(s, k.f, W0, H0), W0, H0)]);
-    W = Math.round(Math.min(W0 * 1.3, zw / (c0.x1 - c0.x0))); H = Math.round(W * asp); off = m2SnapOff(s, k.f, W, H); c = m2SnapFrac(o, kind, W, H, [m2SnapBBox(off, W, H)]);
+    /* 高さの上限：小さいタブレット（画面の高さ 760 px ほど）で、並べた図と拡大図がいっしょに画面に入る大きさ（2026-10-19 千葉さん） */
+    var vh = Math.min(window.innerHeight || 760, 760), rowH = s.snapBox.querySelector('.snaprow').offsetHeight || 300, hMax = Math.max(180, vh - rowH - 150);
+    W = Math.round(Math.min(W0 * 1.3, zw / (c0.x1 - c0.x0), hMax / asp)); H = Math.round(W * asp); off = m2SnapOff(s, k.f, W, H); c = m2SnapFrac(o, kind, W, H, [m2SnapBBox(off, W, H)]);
   }
   var sz = m2SnapBlit(zc, off, W, H, c); zc.style.width = Math.min(zw, Math.round(sz.w)) + 'px'; zc.style.height = 'auto';
   zin.querySelector('p').innerHTML = mathify(k.f.cap + (k.f.eq ? '<br>' + k.f.eq : ''));
@@ -4668,7 +4676,7 @@ function vScene(s, ctx, g, st, opt, Q) {
   }
   springDense(ctx, g.xs, g.top, g.xs, b.y - g.rb, g.yE - g.top - g.rb, { r: sm ? 4 : 8, lead: sm ? 3 : 8, k: Q.K, thin: sm ? 0.6 : 1, Lmin: g.yE - g.top - g.rb - Q.Amax * g.S });
   /* 手は下から支える（上から持つとばねと重なる。2026-10-16 千葉さん） */
-  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'up', -Math.cos(Q.phi), st.X < 0 ? { flip: true, bubPos: 'd' } : { flip: true, bubPos: 'l', bubDy: 4 });   /* 右は x 軸なので、左か下に */
+  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'up', -Math.cos(Q.phi), st.X < 0 ? { flip: true, bubPos: 'd' } : { flip: true, bubPos: 'l', bubDy: 14 });   /* 右は x 軸なので、左か下に */
   if (opt.frame && opt.frame.hand) dropHandAt(ctx, b.x, b.y, (big ? 0.42 : 0.2) * g.rb / 13, 0, 1, true);
   ballShape(ctx, b.x, b.y, g.rb, M2BALL);
   var vref = Q.A * Q.w || 1, vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / vref;
@@ -4798,8 +4806,8 @@ DEFS.m2s5 = m2Def({
     return u >= 0 ? { c: g.c, R: u, th: ph } : { c: g.c, R: -u, th: ph + Math.PI };
   },
   onChanged: function (s, k) { if (k === 'mu' && s.v.mu <= s.v.mu2) s.v.mu = 0.30; if (k === 'mu2' && s.v.mu <= s.v.mu2) s.v.mu = 0.30; },
-  height: function (w) { return Math.round(clamp(w * 0.28, w < 480 ? 206 : 172, 206)); },     /* 前の 60 %。せまい画面では上に吹き出しの場所 */
-  geo: function (s, box, small) { var g = hGeo(s, box, 0.42, small); g.bw = small ? 12 : 36; g.bh = small ? 10 : 30; var xO = g.xO, S = g.S, yF = g.yF, bh = g.bh; g.rb = g.bw / 2; g.pos = function (X) { return { x: xO + X * S, y: yF - bh / 2 }; }; return g; },
+  height: function (w) { return Math.round(clamp(w * 0.30, w < 480 ? 226 : 212, 232)); },     /* x 軸の下の「±μ′mg/k」「つりあいの位置」が入る高さ（低いと下の字が上に寄せられて、緑の字を隠していた。2026-10-19） */
+  geo: function (s, box, small) { var g = hGeo(s, box, 0.42, small); g.bw = small ? 24 : 36; g.bh = small ? 20 : 30;   /* 並べた図でも物体を大きめに（摩擦力が床との接点から出ているのが分かるように） */ var xO = g.xO, S = g.S, yF = g.yF, bh = g.bh; g.rb = g.bw / 2; g.pos = function (X) { return { x: xO + X * S, y: yF - bh / 2 }; }; return g; },
   scene: function (s, ctx, g, st, opt) { fScene(s, ctx, g, st, opt); },
   snapAsp: 0.62,
   snaps: function (s) { var F = m2s5F(s); var a = F.segs[0] ? F.segs[0].x0 : 0.4; return [{ cap: 'ⓐ 静かに放す', X: a, hand: true }, { cap: 'ⓑ 左へ動く', X: a * 0.4, v: -1, eq: '$ma = -kx + \\mu\'mg$' }, { cap: 'ⓒ 右へ動く', X: -a * 0.3, v: 1, eq: '$ma = -kx - \\mu\'mg$' }, { cap: 'ⓓ 止まる', X: F.xStop, eq: '$|kx| \\le \\mu mg$' }]; },
@@ -4841,15 +4849,17 @@ function fScene(s, ctx, g, st, opt) {
     netArrow(ctx, b.x - g.bw / 2, b.y, 1, 0, (-Q.K * st.X + frN) * 70 / (Q.K * 0.42), 'F', { ly: -12 });
   }
   if (showF) {
-    var fh = (sm ? 30 : 70) / (Q.K * 0.42);                          /* 横向きの力（弾性力・摩擦力）は合力と同じ縮尺。重力と垂直抗力は縮めて描く（2026-10-18：摩擦力が 3 px しかなく見えなかった） */
-    fArrow(ctx, b.x - g.bw / 2, b.y, 1, 0, -Q.K * st.X * fh, COL.hand, sm ? null : '−kx', { ly: -12 });
+    var fh = (sm ? 30 : 70) / (Q.K * 0.42);
+    if (snap) { var F5 = m2s5F(s), a5 = F5.segs[0] ? F5.segs[0].x0 : 0.4; fh = Math.min(26 / (s.v.mu2 * Q.m * G), 110 / (Q.K * a5)); fs *= 0.6; }   /* 並べた図：摩擦力が 22 px ほどに見える縮尺（弾性力も同じ縮尺。2026-10-19） */                          /* 横向きの力（弾性力・摩擦力）は合力と同じ縮尺。重力と垂直抗力は縮めて描く（2026-10-18：摩擦力が 3 px しかなく見えなかった） */
     var vv = snap ? (opt.frame.v || 0) : st.v, moving = Math.abs(vv) > 1e-9, fr = 0;
     if (moving) fr = -Math.sign(vv) * s.v.mu2 * Q.m * G;           /* 動摩擦力：動く向きと逆向き */
     else if (snap ? !opt.frame.hand : s.t > 0) fr = Q.K * st.X;     /* 止まっているとき：静止摩擦力が弾性力とつり合う（放す前は手が支える） */
     var dx = sm ? 2.5 : 6;                                           /* 重力と垂直抗力は同じ線上に来るので左右にずらす */
-    fArrow(ctx, b.x, g.yF, 1, 0, fr * fh, COL.fric, sm ? null : (moving ? 'μ′mg' : 'f'), { ly: 14, lx: fr < 0 ? -8 : 8 });
     fArrow(ctx, b.x - dx, b.y, 0, 1, Q.m * G * fs, COL.force, sm ? null : 'mg', { lx: -8 });
     fArrow(ctx, b.x + dx, g.yF, 0, -1, Q.m * G * fs, COL.norm, sm ? null : 'N', { lx: 10 });
+    /* 弾性力と摩擦力は、重力・垂直抗力のあとに描いて前に出す（かくれないように。2026-10-19 千葉さん）。摩擦力は床と物体の接点（底面）から */
+    fArrow(ctx, b.x - g.bw / 2, b.y, 1, 0, -Q.K * st.X * fh, COL.hand, sm ? null : '−kx', { ly: -12 });
+    fArrow(ctx, b.x + (fr < 0 ? -1 : 1) * g.bw * 0.25, g.yF, 1, 0, fr * fh, COL.fric, sm ? null : (moving ? 'μ′mg' : 'f'), { ly: snap ? 20 : 14, lx: (fr < 0 ? -1 : 1) * (snap ? 18 : 8) });   /* 並べた図では mg の記号と重ねない */
     if (!snap) label(ctx, '※ mg と N は縮めて描いている', W - 12, g.yF - 64, { size: 10, color: '#8d9097', align: 'right' });
   }
   if (!snap) {
@@ -5484,7 +5494,7 @@ DEFS.m3s2 = {
     var fig = el('figure', 'm3pdf');
     fig.innerHTML = mathify('<figcaption>解説プリント「単振動のエネルギーを用いた解き方の解説」（押すと大きく表示）<span class="m3cap">↓ $v$ を求める際に（ア）の方がはるかに楽</span></figcaption><img alt="解説プリント：単振動のエネルギーを用いた解き方の解説（例題と、（ア）（イ）2 通りの解き方）" width="' + M3_PDF_WH[0] + '" height="' + M3_PDF_WH[1] + '">');
     fig.querySelector('img').src = M3_PDF_IMG;
-    fig.addEventListener('click', function () { fig.classList.toggle('big'); });
+    fig.addEventListener('click', function () { m3PdfOpen(fig.querySelector('img').src); });   /* 大きく表示は body 直下の重ね画面で（セクションの中の position: fixed は、ページの部品にとじこめられて真っ白になっていた。2026-10-19） */
     s.below.appendChild(fig);
   },
   tEnd: function (s) { return tBarOf(m3s2Q(s).T); },
@@ -5574,7 +5584,7 @@ DEFS.m3s3 = {
   afterBuild: function (s) {
     var D = xvaDefs()[0];
     D.range = function (s) { var Q = m2s3Q(s), c = Q.off || 0; return { lo: Math.min(c - Q.A, -Q.A * 0.2), hi: Math.max(c + Q.A, Q.A * 0.2) }; };
-    D.H = function () { return 170; };
+    D.H = function () { return 120; };                                 /* 前の 70 %（2026-10-19 千葉さん） */
     shmGraphs(s, [D]); syncOrg(s);
     var seg = s.extra.oEq.parentNode, big = el('div', 'row2 orgbig'), ctr = s.L.querySelector('.ctrls');
     big.appendChild(seg); ctr.insertBefore(big, ctr.firstChild);
@@ -5613,6 +5623,15 @@ function rightM3S3(s, R) {
     '<li>問題文で $x$ 軸の原点が<b>自然長の位置</b>ならば、合力の式が $x = 0$ で $0$ にならない $-k(x - x_0)$ の形になる（$x_0$ はつりあいの位置）。</li></ul>' +
     '<p class="qnote">いま：$d = \\dfrac{mg}{k} = ' + fmt(Q.d, 2) + '$ m。グラフは、自然長の位置を $x = 0$ にすると $d$ だけ上下にずれる（形は同じ）。</p></div>';
   R.innerHTML = mathify(h);
+}
+
+/* 解説プリントを画面いっぱいに大きく表示（クリック・Esc で閉じる） */
+function m3PdfOpen(src) {
+  var ov = el('div', 'm3pdfov'); ov.innerHTML = '<p class="m3pdfbar">解説プリント（どこかを押すか Esc で閉じる）</p><img alt="解説プリント（拡大）">';
+  ov.querySelector('img').src = src; document.body.appendChild(ov); document.body.style.overflow = 'hidden';
+  var close = function () { ov.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', key); };
+  var key = function (e) { if (e.key === 'Escape') close(); };
+  ov.addEventListener('click', close); document.addEventListener('keydown', key);
 }
 
 /* ===== 57_m3img.js ===== */
@@ -6350,7 +6369,7 @@ function drawBelt(s, ctx, W, H, o) {
   ctx.save(); ctx.fillStyle = o.slip ? '#e4d3b4' : '#cfe3d4'; ctx.strokeStyle = '#6b5532'; ctx.lineWidth = 1.4; ctx.fillRect(xb - bw / 2, yB - bh, bw, bh); ctx.strokeRect(xb - bw / 2, yB - bh, bw, bh); ctx.restore();
   label(ctx, 'm', xb, yB - bh / 2, { size: 12, bold: true });
   var ptxt = o.slip ? '滑っている' : 'ベルトと一緒（くっついている）'; ctx.save(); ctx.font = '700 11px ' + FONT; var pw2 = ctx.measureText(ptxt).width / 2 + 16; ctx.restore();   /* 右に切れないように */
-  pill(ctx, ptxt, W - 12 - pw2, 46, { bg: o.slip ? '#fff2e0' : '#e3f4e8', color: o.slip ? '#a85c0c' : '#1f7a3f', size: 11 });
+  pill(ctx, ptxt, W - 12, 46, { align: 'right', bg: o.slip ? '#fff2e0' : '#e3f4e8', color: o.slip ? '#a85c0c' : '#1f7a3f', size: 11 });
   /* 速度（その観測者から見た速度。小物体の上に離して）・力 */
   var vrel = o.v - Vview;
   if (!s.hideVec && Math.abs(vrel) > 0.01) vArrowAt(ctx, xb, yB - bh, 0, -1, 14, 1, 0, vrel * vs, true);
@@ -6577,7 +6596,7 @@ function drawM4S5(s, ctx, W, H) {
   if (s.ghost) { var sg = m4s5Spring(q, s.t); ctx.save(); ctx.globalAlpha = 0.3; springDense(ctx, cx + 34, top, cx + 34, Y(sg.x) - rb, M45.L0 * S, { r: 7, lead: 6, k: q.k, thin: 0.8 }); ctx.restore(); ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(20,23,28,.55)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(cx + 34, Y(sg.x), rb, 0, TAU); ctx.stroke(); ctx.restore(); label(ctx, 'ばね', cx + 34, Y(sg.x) + rb + 10, { size: 10, color: '#5d6875' }); }
   ballShape(ctx, cx, yb, rb, '#d9b77a');
   if (s.t === 0 && !s.playing) { m4Hand(ctx, cx + 5, yb - rb + 2, 0, 1, 0.34); handBubble(ctx, '2l₁ 引き下げて押さえる → 放す', cx + rb + 4, yb + 18, 'r'); }
-  pill(ctx, st.slack ? 'ゴムがたるむ：投げ上げ' : '単振動', W - 90, 40, { bg: st.slack ? '#fff2e0' : '#e3f4e8', color: st.slack ? '#a85c0c' : '#1f7a3f', size: 11.5 });
+  pill(ctx, st.slack ? 'ゴムがたるむ：投げ上げ' : '単振動', W - 12, 40, { align: 'right', bg: st.slack ? '#fff2e0' : '#e3f4e8', color: st.slack ? '#a85c0c' : '#1f7a3f', size: 11.5 });
   var vref = q.A * q.w;
   if (!s.hideVec && Math.abs(st.v) > 0.03) vArrowAt(ctx, cx, yb, 1, 0, rb + 24, 0, -1, st.v / vref * 44, true);
   if (s.fmode) {
@@ -6667,8 +6686,16 @@ DEFS.m4s0 = {
     m4Card(s, '<p class="qt">$x$–$t$ グラフ</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
     m4Card(s, '<p class="qt">$v$–$t$ グラフ</p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
+    /* 問1・問2 の下に、小問ごとのボタン：押すと最初から再生して、その場面で止まる（2026-10-19 千葉さん） */
+    var tl = s.cw.querySelector('.cvbtns'); tl.classList.add('m4s0q'); tl.appendChild(el('span', 'cvbrk'));
+    s.qBtns = [];
+    [[1, 1, '問1 (1)'], [1, 2, '問1 (2)'], [2, 1, '問2 (1)'], [2, 2, '問2 (2)']].forEach(function (p) {
+      var b = el('button', 'b m4only m4qb'); b.type = 'button'; b.textContent = p[2];
+      b.title = p[0] === 1 && p[1] === 1 ? '自然の長さに至るまで' : 'x = d/2 に至るまで';
+      b.addEventListener('click', function () { m4s0Go(s, p[0], p[1], b); }); tl.appendChild(b); s.qBtns.push(b);
+    });
   },
-  draw: function (s, ctx, W, H) { drawM4S0(s, ctx, W, H); drawM4S0G(s); drawM4S0C(s); m4AlignTop(s); },
+  draw: function (s, ctx, W, H) { drawM4S0(s, ctx, W, H); drawM4S0G(s); drawM4S0C(s); }   /* 右の列は上に詰める（アニメの上のはしにはそろえない。2026-10-19 千葉さん） */,
   msg: function (s) {
     var q = m4s0Q(s), st = m4s0At(q, s.t);
     if (s.t === 0 && !s.playing) return 'ばねを $d$ 縮めて、手で押さえている。▶ スタートで放す。';
@@ -6699,7 +6726,13 @@ function m4AlignTop(s) {
   first.style.marginTop = '0px'; var d = s.cw.getBoundingClientRect().top - first.getBoundingClientRect().top;
   if (window.innerWidth > 880 && d > 0) first.style.marginTop = Math.round(d) + 'px';
 }
-function m4s0Prob(s, k) { s.prob = k; m4Seg(s, [[1, 'p1'], [2, 'p2']], k); if (s.cv) { s.resetT(); s.draw(); } }
+function m4s0Prob(s, k) { s.prob = k; m4Seg(s, [[1, 'p1'], [2, 'p2']], k); (s.qBtns || []).forEach(function (b) { b.classList.remove('on'); }); if (s.cv) { s.resetT(); s.draw(); } }
+/* 小問のボタン：問1(1) は自然の長さまで、問1(2)・問2(1)(2) は x = d/2 まで再生して止める */
+function m4s0Go(s, p, part, btn) {
+  m4s0Prob(s, p); btn.classList.add('on');
+  var q = m4s0Q(s), t1 = p === 1 ? (part === 1 ? q.tq : q.tq + 0.5 / q.w) : q.th;
+  s.playWindow(0, t1, s.base * (s.slow ? 0.3 : 1));
+}
 function m4s0Scene(ctx, W, H, q, st, o) {
   o = o || {};
   var S = (W - 60) / (M40.L0 + 0.95 + 0.06), xw = 24, yF = H - (o.mini ? 26 : 50), rb = o.mini ? 10 : 15, X = function (x) { return xw + (M40.L0 + x) * S; };
@@ -6735,9 +6768,9 @@ function drawM4S0(s, ctx, W, H) {
 function drawM4S0G(s) {
   var q = m4s0Q(s), t1 = q.p2 ? 2 * q.T : q.tq + 0.55, hl = [{ y: q.d / 2, txt: 'x = d/2', col: '#c0392b' }];
   var mk = function (cv) { return cv; };
-  m4Plot(s.xCv, { t0: 0, t1: t1, lo: -q.d * 1.15, hi: q.p2 ? q.d * 1.15 : q.v0 * 0.55 * 1.05, cur: s.t, ylab: 'x', yunit: 'm', H: 170, hl: hl,
+  m4Plot(s.xCv, { t0: 0, t1: t1, lo: -q.d * 1.15, hi: q.p2 ? q.d * 1.15 : q.v0 * 0.55 * 1.05, cur: s.t, ylab: 'x', yunit: 'm', H: 136, hl: hl,   /* 前の 80 % */
     ser: [{ col: XCOL, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? XCOL : '#d0801f'; }, f: function (t) { return m4s0At(q, t).x; } }] });
-  m4Plot(s.vCv, { t0: 0, t1: t1, lo: q.p2 ? -q.v0 * 1.15 : -0.05, hi: q.v0 * 1.15, cur: s.t, ylab: 'v', yunit: 'm/s', H: 160, hl: [{ y: q.v0, txt: 'v₀ = dω', col: COL.vel }],
+  m4Plot(s.vCv, { t0: 0, t1: t1, lo: q.p2 ? -q.v0 * 1.15 : -0.05, hi: q.v0 * 1.15, cur: s.t, ylab: 'v', yunit: 'm/s', H: 128, hl: [{ y: q.v0, txt: 'v₀ = dω', col: COL.vel }],
     ser: [{ col: COL.vel, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? COL.vel : '#d0801f'; }, f: function (t) { return m4s0At(q, t).v; } }] });
   [s.xCv, s.vCv].forEach(function (cv) { if (!cv || !cv.offsetParent) return; var ctx = cv.getContext('2d'), W = Math.max(240, Math.floor(cv.clientWidth)), x0 = 44, x1 = W - 18, Hh = cv.height / (window.devicePixelRatio || 1);
     ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
