@@ -1726,6 +1726,22 @@ details.gdet[open] > summary{color:var(--ink)}
 .snaprow.n4{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr))}
 .snaprow.n5,.snaprow.n6{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}
 .snapcap{font-size:.76rem}
+/* 振動の様子を並べた図：横長は縦に並べて右に拡大図、縦長は横に並べて下に拡大図（2026-10-19 千葉さん） */
+.snapttl .snaphint{font-weight:500;font-size:.78em;color:var(--ink-2);margin-left:.4em}
+.snapwrap{display:block}
+.snapbox.kh .snapwrap{display:grid;grid-template-columns:minmax(0,.4fr) minmax(0,.6fr);gap:12px;align-items:start}
+.snapbox.kh .snaprow{display:flex;flex-direction:column}
+.snapbox.kv .snaprow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-columns:none}
+.snapcell.on{background:var(--brand-50)}
+.snapcell.sel{box-shadow:-1px 0 0 #cfc8ba,0 -1px 0 #cfc8ba,inset 0 0 0 2px #e8b878}
+.snapeq{color:var(--ink);display:inline-block;white-space:nowrap;transform-origin:center top}
+.snapzin{background:#fff;border-radius:var(--r);box-shadow:0 0 0 1px var(--rule);padding:.5em .4em .45em;text-align:center}
+.snapbox.kh .snapzin{position:sticky;top:70px}
+.snapbox.kv .snapzin{margin-top:10px}
+.snapzin canvas{display:block;margin:0 auto;max-width:100%}
+.snapzin p{margin:.35em 0 0;font-size:.86rem;color:var(--ink-2)}
+.snapnarrow{display:none}
+@media(max-width:600px){.snapbox.kh .snapnarrow{display:inline}.snapbox.kv .snaprow{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr))}.snapbox.kh .snapwrap{grid-template-columns:1fr}.snapbox.kh .snapzin{position:static}.snapttl .snaphint{display:block;margin:0}}
 /* 折りたたみの見出し（KaTeX が入っても 1 行の文として流す） */
 details.m2card > summary.qt{display:block}
 details.m2card > summary.qt::before{display:inline-block;margin-right:.4em;vertical-align:.1em}
@@ -3498,7 +3514,14 @@ function startHand(s, ctx, bx, by, rb, dir, v0, opt) {
   var open = clamp(t / 0.08, 0, 1), al = t <= 0.08 ? 1 : Math.max(0, 1 - (t - 0.08) / 0.14), sc = 0.42 * rb / 13;
   var ay = by + (opt.hh ? (opt.flip ? 1 : -1) * (opt.hh - 7) : 0);
   dropHandAt(ctx, bx, ay, sc, open, al, opt.flip);
-  if (pre) handBubble(ctx, 'そっと放す', bx + 98 * sc, ay + (opt.flip ? 1 : -1) * 62 * sc, 'r', opt.bubGap);   /* 手の右に（矢印は手を指す） */
+  if (pre) {                                                       /* opt.bubPos：'r'（手の右・ふつう）／'l'（手の左）／'d'（手の下）。ほかの絵と重ならない所を選ぶ（2026-10-19 千葉さん） */
+    var fy = opt.flip ? 1 : -1, pos = opt.bubPos || 'r', gp = 9 + (opt.bubGap || 0), bw = handBubbleW(ctx, HOLD_TXT);
+    if (pos === 'r' && CVW && bx + 98 * sc + gp + bw > CVW - 4) pos = 'l';          /* 右に入らなければ手の左へ（手や物体に重ねない） */
+    else if (pos === 'l' && bx - 75 * sc - gp - bw < 4) pos = 'r';
+    if (pos === 'l') handBubble(ctx, HOLD_TXT, bx - 75 * sc, ay + fy * 45 * sc + (opt.bubDy || 0), 'l', opt.bubGap);
+    else if (pos === 'd') handBubble(ctx, HOLD_TXT, bx + 30 * sc, ay + (opt.flip ? 100 : 30) * sc + (opt.bubDy || 0), 'd', opt.bubGap);
+    else handBubble(ctx, HOLD_TXT, bx + 98 * sc, ay + fy * 62 * sc + (opt.bubDy || 0), 'r', opt.bubGap);
+  }   /* 手の右に（矢印は手を指す） */
 }
 /* 指でつまむ手。flip なら上下を逆に（小球の下から支える） */
 function dropHandAt(ctx, x, y, sc, open, al, flip) {
@@ -3507,9 +3530,24 @@ function dropHandAt(ctx, x, y, sc, open, al, flip) {
 }
 /* 手の位置の吹き出し（スタート前だけ）。(x, y)＝手のはし。side 'r'：吹き出しは右、矢印は左（手）を指す／'l'：その逆。
    ばね・物体・力の矢印と重ならないよう、手の横に出す（2026-10-16 千葉さん） */
+var HOLD_TXT = 'つりあいから\nずらしてから\nそっと放す';   /* スタート前の吹き出し（2026-10-19 千葉さん） */
+function handBubbleFont() { return CVW && CVW < 480 ? 11 : 12; }   /* せまい画面では少し小さく */
+function handBubbleW(ctx, txt) { ctx.save(); ctx.font = 'bold ' + handBubbleFont() + 'px ' + FONT; var w = Math.max.apply(null, String(txt).split('\n').map(function (t) { return ctx.measureText(t).width; })) + 18; ctx.restore(); return w; }
 function handBubble(ctx, txt, x, y, side, gap) {
-  ctx.save(); ctx.font = 'bold 12px ' + FONT;
-  var w = ctx.measureText(txt).width + 18, h = 26, T = 9 + (gap || 0), r = side !== 'l';   /* gap：横の矢印などをよけて、吹き出しを遠くに（矢印は長くなる） */
+  ctx.save(); ctx.font = 'bold ' + handBubbleFont() + 'px ' + FONT;
+  var lines = String(txt).split('\n'), lh = handBubbleFont() + 3;                   /* 改行（\n）で複数行に（2026-10-19 千葉さん） */
+  var w = Math.max.apply(null, lines.map(function (t) { return ctx.measureText(t).width; })) + 18, h = 11 + lh * lines.length, T = 9 + (gap || 0), r = side !== 'l';
+  if (side === 'd') {                                               /* 下に出す（矢印は上へ） */
+    var dx = clamp(x - w / 2, 4, Math.max(4, (CVW || 999) - 4 - w)), dy = Math.min(y + T, Math.max(4, (CVH || 999) - 4 - h)), tx = clamp(x, dx + 10, dx + w - 10);
+    ctx.fillStyle = '#fff5e8'; ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(dx, dy, w, h, 10); else ctx.rect(dx, dy, w, h);
+    ctx.save(); ctx.shadowColor = 'rgba(20,23,28,.16)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3; ctx.fill(); ctx.restore(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx - 6, dy); ctx.lineTo(x, y); ctx.lineTo(tx + 6, dy); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx - 6, dy); ctx.lineTo(x, y); ctx.lineTo(tx + 6, dy); ctx.stroke();
+    ctx.fillStyle = '#a85c0c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    lines.forEach(function (t, i) { ctx.fillText(t, dx + w / 2, dy + h / 2 + 0.5 + (i - (lines.length - 1) / 2) * lh); });
+    ctx.restore(); return;
+  }   /* gap：横の矢印などをよけて、吹き出しを遠くに（矢印は長くなる） */
   if (r && CVW && x + T + w > CVW - 4) r = false;                  /* 右に場所がなければ左へ */
   if (!r && x - T - w < 4) r = true;
   var bx = r ? x + T : x - T - w, by = clamp(y - h / 2, 4, Math.max(4, (CVH || 999) - 4 - h)), ty = clamp(y, by + 7, by + h - 7);
@@ -3519,7 +3557,8 @@ function handBubble(ctx, txt, x, y, side, gap) {
   var ex = r ? bx : bx + w;                                         /* 矢印（手の向き） */
   ctx.beginPath(); ctx.moveTo(ex, ty - 6); ctx.lineTo(x, y); ctx.lineTo(ex, ty + 6); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(ex, ty - 6); ctx.lineTo(x, y); ctx.lineTo(ex, ty + 6); ctx.stroke();
-  ctx.fillStyle = '#a85c0c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, bx + w / 2, by + h / 2 + 0.5);
+  ctx.fillStyle = '#a85c0c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach(function (t, i) { ctx.fillText(t, bx + w / 2, by + h / 2 + 0.5 + (i - (lines.length - 1) / 2) * lh); });
   ctx.restore();
 }
 
@@ -3715,7 +3754,7 @@ DEFS.m1s2 = {
   gWin: function (s) { return 2 * m1s2Q(s).T; },
   gT: function (s) { return m1s2Q(s).T; },
   gAmp: function (s) { var q = m1s2Q(s); return { x: q.A, v: q.A * q.w, a: q.A * q.w * q.w }; },
-  height: function (s, w) { return Math.round(clamp(w * 0.62, 300, 430)); },
+  height: function (s, w) { return Math.round(clamp(w * 0.62, w < 480 ? 360 : 300, 430)); },   /* せまい画面では、スタート前の吹き出しの場所を下にとる */
   dragHit: function (s, x, y) { var G2 = m1s2Geo(s.W, s.H), b = m1s2Ball(s, G2); return Math.abs(x - G2.xs) < b.rb + 10 && Math.abs(y - b.y) < b.hh + 10; },
   dragMove: function (s, x, y) { var G2 = m1s2Geo(s.W, s.H), xv = clamp((G2.cy - y) / G2.S, -0.14, 0.14); if (Math.abs(xv) < 0.02) xv = xv < 0 ? -0.02 : 0.02; s.dragX = xv; },
   dragEnd: function (s) { if (s.dragX === undefined) return; s.v.A = Math.abs(s.dragX); s.v.phi = s.dragX < 0 ? -Math.PI / 2 : Math.PI / 2; s.dragX = undefined; },
@@ -3820,9 +3859,9 @@ function drawM1S2(s, ctx, W, H) {
   /* 右：鉛直ばね振り子 */
   ceilingAt(ctx, G2.xs - 34, G2.xs + 34, G2.top);
   springDense(ctx, G2.xs, G2.top, G2.xs, B.y - B.hh, G2.cy - G2.top - 12, { r: 8, k: q.k, Lmin: G2.cy - G2.top - 0.14 * G2.S - 30 });
-  if (s.t < 0.5 && s.dragX === undefined && !fk) startHand(s, ctx, G2.xs, B.y, B.rb, 'up', Math.cos(q.phi), { hh: B.hh, flip: true, bubGap: 34 });   /* 吹き出しは速度・加速度の矢印より右に */
+  if (s.t < 0.5 && s.dragX === undefined && !fk) startHand(s, ctx, G2.xs, B.y, B.rb, 'up', Math.cos(q.phi), { hh: B.hh, flip: true, bubGap: 34, bubPos: B.y > G2.cy && W >= 480 ? 'l' : 'd' });   /* 吹き出し：おもりが上なら手の下、下なら手の左（ほかの矢印・文字と重ねない） */
   weightStack(ctx, G2.xs, B.y, B.n, B.rb);
-  label(ctx, '単振動', G2.xs, Math.min(H - 10, G2.cy + G2.Rmax + 36), { size: 11.5, color: COL.ink2 });
+  if (!(W < 480 && s.t === 0 && !s.playing)) label(ctx, '単振動', G2.xs,   /* せまい画面のスタート前は、吹き出しの場所なので出さない */ Math.min(H - 10, G2.cy + G2.Rmax + 36), { size: 11.5, color: COL.ink2 });
   /* 小球の変位（左、O から）・速度（右）・加速度（さらに右）。長さは円の上の点の x 成分と同じ */
   var xL = G2.xs - B.rb - 14;
   if (showX && Math.abs(B.y - G2.cy) > 3) { var bxv = arrow(ctx, xL, G2.cy, xL, B.y, 'vel', XCOL); xArrowRestyle(ctx, xL, G2.cy, xL, B.y); s.addHitSeg('x', bxv); sym(ctx, 'x', xL - 12, (G2.cy + B.y) / 2, { size: 14, color: hi('x') || XCOL }); }
@@ -4019,7 +4058,7 @@ DEFS.m1s3 = {
   gT: function (s) { return m1s3Q(s).T; },
   gH: function () { return 150; },
   gAmp: function (s) { var q = m1s3Q(s); return { E: 0.5 * q.k * M1.s3.Amax * M1.s3.Amax }; },   /* 縦軸は最大の振幅で固定（振幅を大きくすると、エネルギーが大きくなるのが見える。2026-10-16 千葉さん） */
-  height: function (s, w) { return Math.round(clamp(w * 0.74, 330, 470)); },
+  height: function (s, w) { return Math.round(clamp(w * 0.74, w < 480 ? 370 : 330, 470)); },   /* せまい画面では、上に吹き出しの場所をとる */
   dragHit: function (s, x, y) { var g = m1s3Geo(s.W, s.H), b = m1s3Ball(s, g); return Math.hypot(x - b.x, y - b.y) < b.rb + 10; },
   dragMove: function (s, x) { var g = m1s3Geo(s.W, s.H), xv = clamp((x - g.xO) / g.S, -M1.s3.Amax, M1.s3.Amax); if (Math.abs(xv) < 0.04) xv = xv < 0 ? -0.04 : 0.04; s.dragX = xv; },
   dragEnd: function (s) { if (s.dragX === undefined) return; s.v.A = Math.round(Math.abs(s.dragX) * 100) / 100; s.v.phi = s.dragX < 0 ? -Math.PI / 2 : Math.PI / 2; s.dragX = undefined; },
@@ -4034,7 +4073,7 @@ DEFS.m1s3 = {
 };
 
 function m1s3Geo(W, H) {
-  var S = Math.min(W * 0.36, 300) / M1.s3.Amax, xO = W * 0.52, yF = Math.round(H * 0.25);
+  var S = Math.min(W * 0.36, 300) / M1.s3.Amax, xO = W * 0.52, yF = Math.round(H * 0.25 + (W < 480 ? 40 : 0));
   return { S: S, xO: xO, yF: yF, xW: Math.max(14, xO - 0.30 * S - 30), e0: H - 34, eTop: yF + 64 };
 }
 function m1s3Ball(s, g) {
@@ -4051,7 +4090,7 @@ function drawM1S3(s, ctx, W, H) {
   springDense(ctx, g.xW, b.y, b.x - b.rb, b.y, g.xO - 14 - g.xW, { r: 8, k: q.k });
   dotted(ctx, g.xO, g.yF - 54, g.xO, g.yF, 'rgba(20,23,28,.35)', [4, 3]);
   label(ctx, '自然の長さの位置', g.xO + 5, g.yF + 18, { size: 10.5, color: '#5d6875', align: 'left' });   /* 床の下へ（速度の矢印と重ねない。2026-10-18） */
-  if (s.t < 0.5 && s.dragX === undefined) startHand(s, ctx, b.x, b.y, b.rb, 'right', Math.cos(q.phi));
+  if (s.t < 0.5 && s.dragX === undefined) startHand(s, ctx, b.x, b.y, b.rb, 'right', Math.cos(q.phi), Math.sin(q.phi) < 0 ? { bubPos: 'l', bubDy: W < 480 ? -34 : -14 } : { bubDy: W < 480 ? -34 : 0 });   /* 左の端では、合力の名前と重ならないよう手の左に */
   ballShape(ctx, b.x, b.y, b.rb, '#d9b77a');
   label(ctx, 'なめらかな水平面', W - 70, g.yF + 16, { size: 10.5, color: '#8d9097' });
   /* 速度（小球の上に離して）・弾性力（ばねとの接点から） */
@@ -4249,6 +4288,7 @@ function m2Draw(s, ctx, W, H) {
   if (s.circOn) m2Circle(s, ctx, g, st);
   if (s.dragging) { var b = g.pos(st.X); label(ctx, '離すと、この位置から静かに放す', b.x, Math.max(14, b.y - g.rb - 30), { size: 11.5, bold: true, color: '#9c4e06' }); }
   drawEqualTicks(ctx);
+  m2SnapCheck(s);
 }
 /* 斜面：円の中心は、つりあいの位置から斜面に垂直に、x 軸（斜面から rb + 50）より外がわへ */
 function m2NormOff(Q, g) { return Q.Amax * g.S + g.rb + 50 + 22; }
@@ -4287,48 +4327,103 @@ function m2Circle(s, ctx, g, st) {
   label(ctx, '対応する等速円運動', ctr.x, ctr.y + Math.max(R, 10) + 14, { size: 11, color: COL.ink2 });
 }
 
-/* ---------- 振動の様子を並べた図（教科書 図 137 のように）。マウスをかざす／タップで拡大 ---------- */
+/* ---------- 振動の様子を並べた図（教科書 図 137 のように）。2026-10-19 千葉さん：
+   ・それぞれの場面は、前に拡大図で見せていたくわしい図（力の名前・式つき）を、もとから描く。
+   ・横長の図（②-1・②-2・②-5・②-8）は、上下の余白を半分につめて縦に並べ、右の空いた所に拡大図。
+   ・縦長の図（②-3・②-4・②-6・②-7）は、左右の余白を半分につめて横に並べ、下の空いた所に拡大図（前の 1.3 倍）。
+   ・拡大図は、マウスをかざした（タップした）場面。はじめは ⓐ。
+   ・o.snapCrop＝[左, 右]（横の割合）のときは、その範囲だけ切り出す（②-7 は水のまわりだけ）。 ---------- */
+function m2SnapO(s) { return s.def.O || s.def.snapO; }
+function m2SnapKind(o) { return o.snapKind || ((o.snapAsp || 1.35) >= 1 ? 'v' : 'h'); }
 function m2Snaps(s) {
-  var o = s.def.O; if (!s.snapBox || !o.snaps) return;
-  var list = o.snaps(s);
-  s.snapBox.innerHTML = '<p class="snapttl">振動の様子を並べた図</p><div class="snaprow n' + list.length + '"></div>';
-  var row = s.snapBox.querySelector('.snaprow'), z = m2SnapZoomEl();   /* 拡大図はいちばん上の層（body 直下・position: fixed）に出す（2026-10-18：アニメの下にかくれていた） */
+  var o = m2SnapO(s); if (!s.snapBox || !o || !o.snaps) return;
+  var list = o.snaps(s), kind = m2SnapKind(o);
+  s.snapBox.className = 'snapbox k' + kind;
+  s.snapBox.innerHTML = '<p class="snapttl">振動の様子を並べた図<span class="snaphint">（図にマウスをかざす・タップすると、' + (kind === 'h' ? '右' : '下') + '<span class="snapnarrow">（スマホでは下）</span>に大きく出る）</span></p><div class="snapwrap"><div class="snaprow n' + list.length + '"></div><div class="snapzin"><canvas></canvas><p></p></div></div>';
+  var row = s.snapBox.querySelector('.snaprow');
+  s._snapList = list; s._snapCells = []; s._snapSel = 0;
   list.forEach(function (f, i) {
-    var cell = el('div', 'snapcell'); var cv = el('canvas'); cell.appendChild(cv);
-    cell.appendChild(el('p', 'snapcap', mathify(f.cap))); row.appendChild(cell);
-    var show = function () {
-      /* セルの上（下段なら上段のあたり）に、入る大きさで出す。上に場所がなければセルの下（2026-10-18 千葉さん） */
-      var rc = cell.getBoundingClientRect(), up = rc.top - 66, dn = window.innerHeight - rc.bottom - 66, room = Math.max(up, dn), asp = o.snapAsp || 1.35;
-      z.hidden = false; z._below = up < 200 && dn > up;
-      var zc = z.querySelector('canvas'), w = Math.max(120, Math.min(340, s.snapBox.clientWidth - 16, Math.min(460, room) / asp));
-      m2SnapDraw(s, zc, f, w, Math.round(w * asp), true);
-      z.querySelector('p').innerHTML = mathify(f.cap + (f.eq ? '<br>' + f.eq : ''));
-      m2SnapPlace(z, s.snapBox, cell);
-    };
+    var cell = el('div', 'snapcell' + (i === 0 ? ' sel' : '')), cv = el('canvas'); cell.appendChild(cv);
+    cell.appendChild(el('p', 'snapcap', mathify(f.cap + (f.eq ? '<br><span class="snapeq">' + f.eq + '</span>' : '')))); row.appendChild(cell);
+    cell.tabIndex = 0; s._snapCells.push({ cell: cell, cv: cv, f: f });
+    var show = function () { m2SnapZoom(s, i); };
     cell.addEventListener('mouseenter', show); cell.addEventListener('focus', show);
-    cell.addEventListener('mouseleave', function () { z.hidden = true; });
-    cell.addEventListener('click', function () { z.hidden = !z.hidden; if (!z.hidden) show(); });
-    cell.tabIndex = 0;
-    requestAnimationFrame(function () { var w = Math.max(54, Math.floor(cell.clientWidth)); m2SnapDraw(s, cv, f, w, Math.min(230, Math.round(w * (o.snapAsp || 1.35))), false); });
+    cell.addEventListener('mouseleave', function () { m2SnapZoom(s, s._snapSel); });
+    cell.addEventListener('click', function () { s._snapSel = i; s._snapCells.forEach(function (c, j) { c.cell.classList.toggle('sel', j === i); }); m2SnapZoom(s, i); });
   });
+  s._snapW = 0; requestAnimationFrame(function () { m2SnapRenderAll(s); });
 }
-/* 拡大図の入れ物（ページに 1 つ）。上の段のセルは図の上に、下の段のセルは上の段のあたりに重ねて出す（セル自身はかくさない） */
-function m2SnapZoomEl() {
-  var z = document.getElementById('snapzoom');
-  if (!z) {
-    z = el('div', 'snapz'); z.id = 'snapzoom'; z.hidden = true; z.innerHTML = '<canvas></canvas><p></p>'; document.body.appendChild(z);
-    window.addEventListener('scroll', function () { z.hidden = true; }, { passive: true });
+/* 図が見えていて幅が変わったら描きなおす（m2Draw などから毎回よぶ。軽い） */
+function m2SnapCheck(s) {
+  if (!s.snapBox || !s._snapCells) return;
+  var w = s.snapBox.clientWidth; if (w > 50 && Math.abs(w - (s._snapW || 0)) > 16) m2SnapRenderAll(s);
+}
+/* 描いてから、色のある所（透明でない所）の範囲を調べる（css px） */
+function m2SnapBBox(cv, W, H) {
+  var r = cv.width / W, d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data, w = cv.width, h = cv.height, x0 = w, x1 = -1, y0 = h, y1 = -1;
+  for (var y = 0; y < h; y += 2) for (var x = 0; x < w; x += 2) if (d[(y * w + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return { x0: 0, y0: 0, x1: W, y1: H };
+  return { x0: x0 / r, y0: y0 / r, x1: (x1 + 2) / r, y1: (y1 + 2) / r };
+}
+function m2SnapOff(s, f, W, H) { var cv = document.createElement('canvas'); m2SnapDraw(s, cv, f, W, H, true); return cv; }
+/* 切り出す範囲（W×H の図の中の割合）。kind h：上下の余白を半分に／v：左右の余白を半分に */
+function m2SnapFrac(o, kind, W, H, bbs) {
+  var u = bbs.reduce(function (a, b) { return { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) }; });
+  var pad = 4, c = { x0: 0, x1: 1, y0: 0, y1: 1 };
+  if (kind === 'h') { c.y0 = Math.max(0, (u.y0 - pad) * 0.5) / H; c.y1 = (H - Math.max(0, (H - u.y1 - pad) * 0.5)) / H; }
+  else { c.x0 = Math.max(0, (u.x0 - pad) * 0.5) / W; c.x1 = (W - Math.max(0, (W - u.x1 - pad) * 0.5)) / W; }
+  if (o.snapCrop) { c.x0 = o.snapCrop[0]; c.x1 = o.snapCrop[1]; }
+  return c;
+}
+/* 図をかき、切り出した範囲を見える canvas へ写す */
+function m2SnapBlit(dst, src, W, H, c) {
+  var r = src.width / W, sx = Math.round(c.x0 * W * r), sy = Math.round(c.y0 * H * r), sw = Math.round((c.x1 - c.x0) * W * r), sh = Math.round((c.y1 - c.y0) * H * r);
+  dst.width = sw; dst.height = sh; var ctx = dst.getContext('2d'); ctx.clearRect(0, 0, sw, sh); ctx.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh);
+  return { w: sw / r, h: sh / r };
+}
+function m2SnapRenderAll(s) {
+  var o = m2SnapO(s), kind = m2SnapKind(o), asp = o.snapAsp || 1.35, box = s.snapBox, cells = s._snapCells; if (!cells || !cells.length) return;
+  var bw = box.clientWidth; if (bw < 50) return; s._snapW = bw;
+  var cw0 = Math.max(60, Math.floor(cells[0].cell.clientWidth - 6));
+  var W, H, c;
+  if (kind === 'h') {                                             /* 列の幅でそのまま描く（文字の大きさはそのまま） */
+    W = cw0; H = Math.round(W * asp);
+    var offs = cells.map(function (k) { return m2SnapOff(s, k.f, W, H); });
+    c = m2SnapFrac(o, kind, W, H, offs.map(function (cv) { return m2SnapBBox(cv, W, H); }));
+    cells.forEach(function (k, i) { m2SnapBlit(k.cv, offs[i], W, H, c); k.cv.style.width = '100%'; k.cv.style.height = 'auto'; });
+  } else {                                                        /* 前の拡大図の大きさで一度描いて、左右をつめた割合を求め、セルの幅に合うように描きなおす */
+    var W0 = Math.round(Math.min(340, 460 / asp)), H0 = Math.round(W0 * asp);
+    var c0 = m2SnapFrac(o, kind, W0, H0, cells.map(function (k) { return m2SnapBBox(m2SnapOff(s, k.f, W0, H0), W0, H0); }));
+    W = Math.round(cw0 / (c0.x1 - c0.x0)); W = Math.max(W, Math.round(W0 * 0.75)); H = Math.round(W * asp);
+    var offs2 = cells.map(function (k) { return m2SnapOff(s, k.f, W, H); });
+    c = m2SnapFrac(o, kind, W, H, offs2.map(function (cv) { return m2SnapBBox(cv, W, H); }));
+    cells.forEach(function (k, i) { m2SnapBlit(k.cv, offs2[i], W, H, c); k.cv.style.width = '100%'; k.cv.style.height = 'auto'; });
+    s._snapZ0 = W0;
   }
-  return z;
+  var fit = function () { cells.forEach(function (k) {             /* 式がセルの幅に入らなければ、小さくする（数式の字体が読みこまれたあとにもう一度） */
+    var e = k.cell.querySelector('.snapeq'); if (!e) return; e.style.transform = ''; e.style.margin = '';
+    var room = k.cell.clientWidth - 6, w = e.offsetWidth; if (w > room) { var sc = Math.max(0.5, room / w); e.style.transform = 'scale(' + sc.toFixed(3) + ')'; e.style.margin = '0 ' + (-(w - room) / 2).toFixed(1) + 'px'; }
+  }); };
+  fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit); setTimeout(fit, 800);
+  m2SnapZoom(s, s._snapSel || 0);
 }
-function m2SnapPlace(z, box, cell) {
-  var rb = box.getBoundingClientRect(), rc = cell.getBoundingClientRect(), zw = z.offsetWidth, zh = z.offsetHeight;
-  var x = clamp(rb.left + rb.width / 2 - zw / 2, 8, window.innerWidth - zw - 8), y = z._below ? rc.bottom + 6 : rc.top - zh - 6;
-  y = clamp(y, 64, Math.max(64, window.innerHeight - zh - 8));                /* タブ列の下から、画面の中に */
-  z.style.left = Math.round(x) + 'px'; z.style.top = Math.round(Math.max(8, y)) + 'px';
+/* 拡大図（箱の中の空いた所）。横長：右の列の幅いっぱい／縦長：前の拡大図の 1.3 倍 */
+function m2SnapZoom(s, i) {
+  var o = m2SnapO(s), kind = m2SnapKind(o), asp = o.snapAsp || 1.35, k = s._snapCells && s._snapCells[i]; if (!k) return;
+  var zin = s.snapBox.querySelector('.snapzin'), zc = zin.querySelector('canvas'), zw = Math.max(120, Math.floor(zin.clientWidth - 12)); if (zin.clientWidth < 50) return;
+  var W, H, c, off;
+  if (kind === 'h') { W = zw; H = Math.round(W * asp); off = m2SnapOff(s, k.f, W, H); c = m2SnapFrac(o, kind, W, H, [m2SnapBBox(off, W, H)]); }
+  else {
+    var W0 = Math.round(Math.min(340, 460 / asp)), H0 = Math.round(W0 * asp);   /* 前の拡大図（W0 の幅で全体）を 1.3 倍に。切り出した幅が入らなければ小さく */
+    var c0 = m2SnapFrac(o, kind, W0, H0, [m2SnapBBox(m2SnapOff(s, k.f, W0, H0), W0, H0)]);
+    W = Math.round(Math.min(W0 * 1.3, zw / (c0.x1 - c0.x0))); H = Math.round(W * asp); off = m2SnapOff(s, k.f, W, H); c = m2SnapFrac(o, kind, W, H, [m2SnapBBox(off, W, H)]);
+  }
+  var sz = m2SnapBlit(zc, off, W, H, c); zc.style.width = Math.min(zw, Math.round(sz.w)) + 'px'; zc.style.height = 'auto';
+  zin.querySelector('p').innerHTML = mathify(k.f.cap + (k.f.eq ? '<br>' + k.f.eq : ''));
+  s._snapCells.forEach(function (c2, j) { c2.cell.classList.toggle('on', j === i); });
 }
 function m2SnapDraw(s, cv, f, W, H, big) {
-  var o = s.def.O, ctx = prep(cv, W, H), box = { x0: 0, y0: 0, w: W, h: H }, g = o.geo(s, box, true);
+  var o = m2SnapO(s), ctx = prep(cv, W, H), box = { x0: 0, y0: 0, w: W, h: H }, g = o.geo(s, box, true);
   var Q = o.Q(s), X = f.X, r = { X: X, v: f.v || 0, a: -Q.w * Q.w * X, x: X + (Q.off || 0) };
   o.scene(s, ctx, g, r, { snap: true, big: big, frame: f });
   drawEqualTicks(ctx);
@@ -4420,7 +4515,7 @@ DEFS.m2s1 = m2Def({
   varCols: [['A'], ['phi']],
   Q: function (s) { var m = M2.s1.m, K = M2.s1.k, w = Math.sqrt(K / m); return { m: m, K: K, w: w, T: TAU / w, A: s.v.A, phi: s.v.phi, Amax: M2.s1.Amax, Amin: 0.02 }; },
   setAmp: m2SetAmp,
-  height: function (w) { return Math.round(clamp(w * 0.24, 140, 180)); },
+  height: function (w) { return Math.round(clamp(w * 0.24, w < 480 ? 180 : 140, 180)); },   /* せまい画面では、上に吹き出しの場所をとる */
   geo: function (s, box, small) { return hGeo(s, box, M2.s1.Amax, small); },
   snapAsp: 0.62,
   scene: function (s, ctx, g, st, opt) { hScene(s, ctx, g, st, opt, [{ k: M2.s1.k, side: -1, name: '−kx' }]); },
@@ -4452,8 +4547,8 @@ function hScene(s, ctx, g, st, opt, springs) {
     else springDense(ctx, b.x + g.rb, b.y, right, b.y, L0, o2);
   });
   dotted(ctx, g.xO, g.yF - (sm ? 30 : 50), g.xO, g.yF + (snap ? 0 : 26), 'rgba(20,23,28,.35)', [4, 3]);
-  if (!snap) { label(ctx, '＝ 自然の長さの位置', g.xO + 12, g.yF + 41, { size: 10.5, color: '#5d6875', align: 'left' }); eqLabel(ctx, g.xO - 5, g.yF - 46, 'right'); }   /* 点線の上の左に赤字 */
-  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'right', Math.cos(Q.phi));
+  if (!snap) { label(ctx, '＝ 自然の長さの位置', g.xO + 12, g.yF + 41, { size: 10.5, color: '#5d6875', align: 'left' }); var lR = s.t === 0 && !s.playing && st.X < 0; if (!(lR && s.W < 480 && springs.length > 1)) eqLabel(ctx, g.xO + (lR ? 5 : -5), g.yF - 46, lR ? 'left' : 'right'); }   /* スタート前に左の端で手を出すときは、点線の右に（手と重ねない） */   /* 点線の上の左に赤字 */
+  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'right', Math.cos(Q.phi), st.X < 0 ? { bubPos: 'l', bubDy: s.W < 480 ? -24 : -14 } : { bubDy: s.W < 480 ? -24 : 0 });   /* x < 0 では O の点線と重ならないよう手の左に */
   if (opt.frame && opt.frame.hand) dropHand(ctx, b.x, b.y, (big ? 0.42 : 0.2) * g.rb / 13, 0, 1);
   ballShape(ctx, b.x, b.y, g.rb, M2BALL);
   /* 速度（小球の上）・力 */
@@ -4488,11 +4583,11 @@ DEFS.m2s2 = m2Def({
   varCols: [['k1', 'k2'], ['A', 'phi']],
   Q: function (s) { var m = M2.s2.m, K = s.v.k1 + s.v.k2, w = Math.sqrt(K / m); return { m: m, K: K, w: w, T: TAU / w, A: s.v.A, phi: s.v.phi, Amax: M2.s2.Amax, Amin: 0.02 }; },
   setAmp: m2SetAmp,
-  height: function (w) { return Math.round(clamp(w * 0.24, 140, 180)); },
+  height: function (w) { return Math.round(clamp(w * 0.24, w < 480 ? 180 : 140, 180)); },   /* せまい画面では、上に吹き出しの場所をとる */
   geo: function (s, box, small) { var g = hGeo(s, { x0: box.x0, y0: box.y0, w: box.w, h: box.h }, M2.s2.Amax, small); g.xO = box.x0 + box.w * 0.5; g.xW = Math.max(box.x0 + (small ? 6 : 10), g.xO - M2.s2.Amax * g.S - (small ? 34 : 0.27 * box.w)); var xO = g.xO, S = g.S, rb = g.rb, yF = g.yF; g.pos = function (X) { return { x: xO + X * S, y: yF - rb }; }; return g; },
   scene: function (s, ctx, g, st, opt) {
     hScene(s, ctx, g, st, opt, [{ k: s.v.k1, side: -1, name: '−k₁x' }, { k: s.v.k2, side: 1, name: '−k₂x' }]);
-    if (!opt.snap) { var b = g.pos(st.X), yl = g.yF - 58; label(ctx, 'ばね定数 k₁', (g.xW + g.xO) / 2 - 20, yl, { size: 11, color: COL.ink2 }); label(ctx, 'ばね定数 k₂', (g.xO + g.xO + (g.xO - g.xW)) / 2 + 20, yl, { size: 11, color: COL.ink2 }); }   /* 速度の矢印より上・小球から離して */
+    if (!opt.snap) { var b = g.pos(st.X), yl = g.yF + 15; label(ctx, 'ばね定数 k₁', (g.xW + g.xO) / 2 - 20, yl, { size: 11, color: COL.ink2 }); label(ctx, 'ばね定数 k₂', (g.xO + g.xO + (g.xO - g.xW)) / 2 + 20, yl, { size: 11, color: COL.ink2 }); }   /* 床の下（x 軸の上）に。上は手と吹き出しを置く（2026-10-19 千葉さん） */
   },
   snapAsp: 0.62,
   snaps: function (s) { var A = M2.s2.Amax * 0.8; return [{ cap: 'ⓐ つりあいの位置', X: 0 }, { cap: 'ⓑ 手をはなす', X: A, hand: true }, { cap: 'ⓒ $x>0$ のとき', X: A * 0.5, v: -1, eq: '$F = -k_1x - k_2x < 0$' }, { cap: 'ⓓ $x<0$ のとき', X: -A * 0.5, v: -1, eq: '$F = -k_1x - k_2x > 0$' }]; },
@@ -4573,7 +4668,7 @@ function vScene(s, ctx, g, st, opt, Q) {
   }
   springDense(ctx, g.xs, g.top, g.xs, b.y - g.rb, g.yE - g.top - g.rb, { r: sm ? 4 : 8, lead: sm ? 3 : 8, k: Q.K, thin: sm ? 0.6 : 1, Lmin: g.yE - g.top - g.rb - Q.Amax * g.S });
   /* 手は下から支える（上から持つとばねと重なる。2026-10-16 千葉さん） */
-  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'up', -Math.cos(Q.phi), { flip: true });
+  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'up', -Math.cos(Q.phi), st.X < 0 ? { flip: true, bubPos: 'd' } : { flip: true, bubPos: 'l', bubDy: 4 });   /* 右は x 軸なので、左か下に */
   if (opt.frame && opt.frame.hand) dropHandAt(ctx, b.x, b.y, (big ? 0.42 : 0.2) * g.rb / 13, 0, 1, true);
   ballShape(ctx, b.x, b.y, g.rb, M2BALL);
   var vref = Q.A * Q.w || 1, vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / vref;
@@ -4652,7 +4747,7 @@ function sScene(s, ctx, g, st, opt) {
   var st0 = g.P(0, g.rb);
   springDense(ctx, st0.x, st0.y, b.x - g.u[0] * g.rb, b.y - g.u[1] * g.rb, g.sE - g.rb, { r: sm ? 4 : 7, lead: sm ? 3 : 8, k: Q.K, thin: sm ? 0.6 : 1, Lmin: g.sE - g.rb - Q.Amax * g.S });
   /* 手は下から支える（上下逆。2026-10-16 千葉さん） */
-  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'right', Math.cos(Q.phi), { flip: true });
+  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'right', Math.cos(Q.phi), { flip: true, bubDy: st.X < 0 ? 38 : 0 });   /* x < 0 では x 軸の矢印をよけて下へ */
   if (opt.frame && opt.frame.hand) dropHandAt(ctx, b.x, b.y, (big ? 0.42 : 0.2) * g.rb / 13, 0, 1, true);
   ballShape(ctx, b.x, b.y, g.rb, M2BALL);
   var vref = Q.A * Q.w || 1, vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / vref;
@@ -4703,7 +4798,7 @@ DEFS.m2s5 = m2Def({
     return u >= 0 ? { c: g.c, R: u, th: ph } : { c: g.c, R: -u, th: ph + Math.PI };
   },
   onChanged: function (s, k) { if (k === 'mu' && s.v.mu <= s.v.mu2) s.v.mu = 0.30; if (k === 'mu2' && s.v.mu <= s.v.mu2) s.v.mu = 0.30; },
-  height: function (w) { return Math.round(clamp(w * 0.28, 172, 206)); },     /* 前の 60 % */
+  height: function (w) { return Math.round(clamp(w * 0.28, w < 480 ? 206 : 172, 206)); },     /* 前の 60 %。せまい画面では上に吹き出しの場所 */
   geo: function (s, box, small) { var g = hGeo(s, box, 0.42, small); g.bw = small ? 12 : 36; g.bh = small ? 10 : 30; var xO = g.xO, S = g.S, yF = g.yF, bh = g.bh; g.rb = g.bw / 2; g.pos = function (X) { return { x: xO + X * S, y: yF - bh / 2 }; }; return g; },
   scene: function (s, ctx, g, st, opt) { fScene(s, ctx, g, st, opt); },
   snapAsp: 0.62,
@@ -4737,7 +4832,7 @@ function fScene(s, ctx, g, st, opt) {
     eqLabel(ctx, g.xO, g.yF + 75, 'center', 'つりあいの位置（動く向きで ±μ′mg/k が入れかわる）');
   }
   if (opt.frame && opt.frame.hand) dropHand(ctx, b.x, b.y, (big ? 0.42 : 0.2), 0, 1);
-  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.bh / 2, 'right', 0);
+  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.bh / 2, 'right', 0, { bubDy: s.W < 480 ? -24 : 0 });
   ctx.save(); ctx.fillStyle = '#e4d3b4'; ctx.strokeStyle = '#6b5532'; ctx.lineWidth = 1.3; ctx.fillRect(b.x - g.bw / 2, b.y - g.bh / 2, g.bw, g.bh); ctx.strokeRect(b.x - g.bw / 2, b.y - g.bh / 2, g.bw, g.bh); ctx.restore();
   var vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / (Q.A * Q.w);
   if (Math.abs(vs) > 0.02) vArrowAt(ctx, b.x, b.y, 0, -1, (showF && !sm) ? Q.m * G * fs - g.bh / 2 + 30 : g.bh / 2 + (sm ? 8 : 14), 1, 0, vs * (sm ? 28 : 40), !sm);
@@ -4899,7 +4994,7 @@ DEFS.m2s7 = m2Def({
   height: function (w) { return Math.round(clamp(w * 0.36, 186, 252)); },     /* 前の 60 % */
   geo: function (s, box, small) { return bGeo(s, box, small); },
   scene: function (s, ctx, g, st, opt) { bScene(s, ctx, g, st, opt); },
-  snapAsp: 1.1,
+  snapAsp: 1.1, snapCrop: [0.16, 0.64],                          /* 並べた図は水のまわりだけ（2026-10-19 千葉さん） */
   snaps: function (s) { var Q = m2s7Q(s); return [{ cap: 'ⓐ つりあいの位置', X: 0, eq: '$\\rho hSg = mg$' }, { cap: 'ⓑ $d$ 押し下げて放す', X: Q.A, hand: true }, { cap: 'ⓒ $x>0$', X: Q.A * 0.5, v: -1, eq: '$F = mg - \\rho(h+x)Sg = -\\rho Sg\\,x$' }, { cap: 'ⓓ $x<0$', X: -Q.A * 0.6, v: -1, eq: '$F = -\\rho Sg\\,x > 0$' }]; },
   live: function (s) { },
   card: function (s) {
@@ -4954,7 +5049,7 @@ function bScene(s, ctx, g, st, opt) {
   if (!snap) {                                                     /* 押し下げていた手を、そっと放す（見た目の時間で 0.22 s で消える） */
     var tr = s.t / (s.base || 1);
     if (tr < 0.22) { var al = tr <= 0.08 ? 1 : Math.max(0, 1 - (tr - 0.08) / 0.14); dropHand(ctx, g.xc, topY, 0.42, clamp(tr / 0.08, 0, 1), al); }
-    if (s.t === 0 && !s.playing) handBubble(ctx, 'そっと放す', g.xc + 98 * 0.42, topY - 62 * 0.42, 'r');
+    if (s.t === 0 && !s.playing) handBubble(ctx, HOLD_TXT, g.xc + 98 * 0.42, topY - 62 * 0.42, 'r');
   }
   var vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / (Q.A * Q.w);
   if (Math.abs(vs) > 0.03) vArrowAt(ctx, g.xc, (topY + bot) / 2, 1, 0, g.bw / 2 + (sm ? 10 : 22), 0, 1, vs * (sm ? 28 : 40), !sm);
@@ -4996,8 +5091,9 @@ DEFS.m2s8 = {
     ctlOneRow(s);                                                 /* 放す位置のバーを半分にして、右に時間バー（2026-10-18 千葉さん） */
     if (s.extra && s.extra.fNet) s.extra.fNet.hidden = true;        /* 力は万有引力 1 つだけなので「合力のみ」は出さない */
     var nb = el('div', 'qcard m2tfx'); nb.innerHTML = mathify('<p class="qt">小球が受ける力 $F$ と位置 $x$ の関係（$F$–$x$ グラフ）</p>'); s.fxCv = el('canvas'); nb.appendChild(s.fxCv); s.below.appendChild(nb);
+    s.snapBox = el('div', 'snapbox'); s.below.appendChild(s.snapBox); m2Snaps(s);   /* 振動の様子を並べた図（2026-10-19 千葉さん） */
   },
-  draw: function (s, ctx, W, H) { drawM2T(s, ctx, W, H); drawM2TFx(s); },
+  draw: function (s, ctx, W, H) { drawM2T(s, ctx, W, H); drawM2TFx(s); m2SnapCheck(s); },
   msg: function (s) { var q = m2tQ(s); return '放す位置によらず、周期は $T = 2\\pi\\sqrt{\\dfrac{R}{g}} \\fallingdotseq ' + Math.round(q.T / 60) + '$ 分。地表から放すと、約 ' + Math.round(q.T / 120) + ' 分で地球の反対がわに着く。'; },
   right: function (s, R) { rightM2T(s, R); }
 };
@@ -5056,6 +5152,40 @@ function rightM2T(s, R) {
     '<div class="qcard"><p>地表より外から落とした場合や、初速度を与えた場合は、万有引力のページで扱っている。</p><p><a class="xlink" href="celestial-mechanics.html#m3-2">詳しくはこちら（万有引力・ケプラーの法則と天体物理学 ③-2 地球トンネル）</a></p></div>';
   R.innerHTML = mathify(h);
 }
+/* ---------- ②-8 振動の様子を並べた図（穴のまわりだけ・横長。2026-10-19 千葉さん） ----------
+   ②-1 などと同じしくみ（m2Snaps）で描く。X は R を 1 とした位置。 */
+DEFS.m2s8.snapO = {
+  snapAsp: 0.5, snapKind: 'h',
+  Q: function () { return { w: 1, off: 0 }; },
+  snaps: function () {
+    return [{ cap: 'ⓐ 静かに放す（$x = x_0$）', X: 0.8, hand: true, eq: '$F = -\\dfrac{mg}{R}x_0$' },
+      { cap: 'ⓑ $x>0$ のとき（左へ）', X: 0.4, v: -0.87, eq: '$F = -\\dfrac{mg}{R}x < 0$' },
+      { cap: 'ⓒ 中心 O を通る', X: 0, v: -1, eq: '$F = 0$（速さが最大）' },
+      { cap: 'ⓓ $x<0$ のとき（左へ）', X: -0.4, v: -0.87, eq: '$F = -\\dfrac{mg}{R}x > 0$' }];
+  },
+  geo: function (s, box) {
+    var W = box.w, H = box.h, S = (W - 40) / 2.25;
+    return { W: W, H: H, cx: box.x0 + W / 2, cy: box.y0 + H * 0.52, S: S, X: function (x) { return box.x0 + W / 2 + x * S; } };
+  },
+  scene: function (s, ctx, g, st, opt) {
+    var cy = g.cy, xl = g.X(-1), xr = g.X(1), bh = 24, th = 7, big = opt.big;
+    ctx.save(); ctx.fillStyle = '#c6dbf1'; ctx.fillRect(xl, cy - bh, xr - xl, 2 * bh);           /* 地球の中（穴のまわりだけ） */
+    ctx.fillStyle = '#f7f3ea'; ctx.fillRect(xl - 8, cy - th, xr - xl + 16, 2 * th);
+    ctx.strokeStyle = '#6b7a8c'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(xl, cy - th); ctx.lineTo(xr, cy - th); ctx.moveTo(xl, cy + th); ctx.lineTo(xr, cy + th); ctx.stroke();
+    ctx.strokeStyle = '#3f74a8'; ctx.lineWidth = 1.6; [xl, xr].forEach(function (x) { ctx.beginPath(); ctx.moveTo(x, cy - bh); ctx.lineTo(x, cy - th); ctx.moveTo(x, cy + th); ctx.lineTo(x, cy + bh); ctx.stroke(); });
+    ctx.restore();
+    label(ctx, '地表', xl - 3, cy - bh + 7, { size: 10, color: '#2f5f8f', align: 'right' }); label(ctx, '地表', xr + 3, cy - bh + 7, { size: 10, color: '#2f5f8f', align: 'left' });   /* 地表の外がわに（手と重ねない） */
+    dotted(ctx, g.cx, cy - bh - 4, g.cx, cy + bh + 18, 'rgba(192,57,43,.6)', [4, 3]);
+    axisArrow(ctx, xl - 6, cy + bh + 14, xr + 14, cy + bh + 14); sym(ctx, 'x', xr + 16, cy + bh + 3, { size: 13 });
+    label(ctx, 'O', g.cx - 7, cy + bh + 25, { size: 10.5 });
+    var bx = g.X(st.X), rb = big ? 7 : 6;
+    if (opt.frame && opt.frame.hand) dropHand(ctx, bx + 4, cy + 1, big ? 0.34 : 0.3, 1, 1);
+    ballShape(ctx, bx, cy, rb, '#c0392b');
+    var L = -st.X * (big ? 52 : 44);
+    if (Math.abs(L) > 2) fArrow(ctx, bx, cy, 1, 0, L, COL.force, 'F', { ly: 15, noShift: true });
+    if (st.v) vArrowAt(ctx, bx, cy, 0, -1, bh + 6, 1, 0, st.v * 0.7 * (big ? 50 : 42), true);
+  }
+};
 
 /* ===== 54_mode2s8.js ===== */
 /* =========================================================================
@@ -5378,7 +5508,7 @@ function drawM3S2(s, ctx, W, H) {
   label(ctx, 'つりあいの位置', xs - 74, yE, { size: 10.5, bold: true, color: '#c0392b', align: 'right' });
   dimLine(ctx, xs - 44, yN, xs - 44, yE); sym(ctx, 'l₀', xs - 56, (yN + yE) / 2, { size: 13 });
   springDense(ctx, xs, top, xs, by - rb, yE - top - rb, { r: 8, k: q.k, Lmin: yN - top - rb });
-  if (s.t < 0.5) startHand(s, ctx, xs, by, rb, 'up', 0, { flip: true });
+  if (s.t < 0.5) startHand(s, ctx, xs, by, rb, 'up', 0, s.W < 480 ? { flip: true, bubPos: 'd', bubDy: 50 } : { flip: true, bubDy: 26 });   /* 吹き出しは「自然の長さ」の点線より下に（2026-10-19） */
   ballShape(ctx, xs, by, rb, '#d9b77a');
   if (!s.hideVec && Math.abs(st.v) > 0.03 * q.l0 * q.w) vArrowAt(ctx, xs, by, 1, 0, rb + 30, 0, 1, st.v / (q.l0 * q.w) * 40, true);
   var fs = 40 / (q.m * G);
