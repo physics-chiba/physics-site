@@ -1543,6 +1543,39 @@ html.drawer-open{overflow:hidden}
 .cvnote{margin:8px 2px 0;font-size:.82rem;line-height:1.75;color:var(--ink-2)}
 @media (max-width:640px){ .cvnote{font-size:.78rem} }
 
+/* ===== ★1つのモードの中のシムを縦につなぐ★（先生の指示・2026-10-21）=====
+   circular-motion.html と同じ形。シムのタブ列は消して、1つのモードの中は
+   <article class="sec"> を上から下へならべる。 */
+#simhost{padding:0;background:none;border:0;box-shadow:none;border-radius:0}
+.sec{background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--sh-2);
+  padding:24px 26px 26px;margin:0 0 26px;
+  /* ★タブの帯は画面に貼りついている★ 飛び先リンクやアドレスで飛んだとき、
+     シムの頭が帯の下にもぐらないように、その高さぶん空けておく。 */
+  scroll-margin-top:calc(var(--navh) + 14px)}
+.sec:last-child{margin-bottom:0}
+.sec .sechead{display:flex;align-items:center;gap:10px;margin:0 0 6px}
+.sec .secnum{font-family:var(--f-serif);font-size:.86rem;font-weight:700;letter-spacing:.06em;
+  color:var(--brand-700);background:var(--brand-50);border-radius:999px;padding:2px 12px}
+/* モードの先頭の飛び先リンク（シムのタブ列のかわり） */
+.modejump{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 22px;padding:10px 14px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:var(--r);box-shadow:var(--sh-1)}
+.modejump button{font-family:var(--f-jph);font-size:.78rem;font-weight:600;line-height:1.3;
+  padding:6px 13px;border-radius:999px;border:1px solid var(--rule-2);background:var(--paper);
+  color:var(--ink-2);cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,color .14s}
+.modejump button:hover{background:var(--paper-2);border-color:var(--ink-4);color:var(--ink)}
+.modejump button.game{color:var(--brand-700);border-color:rgba(224,123,24,.45);background:var(--brand-50)}
+.modejump button.game:hover{background:var(--brand-100);border-color:var(--brand)}
+.modejump button.intro{color:#4a5f75;border-color:var(--rule-2);background:var(--paper-2)}
+@media (max-width:640px){
+  .sec{padding:18px 16px 20px;border-radius:var(--r-l);margin-bottom:18px}
+  .modejump{gap:6px;padding:8px 10px;margin-bottom:16px}
+  .modejump button{font-size:.72rem;padding:5px 10px}
+}
+@media print{
+  .modejump{display:none}
+  .sec{box-shadow:none;border:1px solid #ccc;break-inside:avoid;margin-bottom:14px}
+}
+
 </style>
 </head>
 <body>
@@ -1583,8 +1616,10 @@ html.drawer-open{overflow:hidden}
   <div class="tabs-in">
     <div class="navsite" id="navsite"></div>
     <div class="tabcols">
+      <!-- ★シムのタブ列（#simtabs）は消した★（先生の指示・2026-10-21）
+           1つのモードの中は縦につながったので、タブで飛ぶ必要がなくなった。
+           モードの中の飛び先は、モードの先頭の .modejump（飛び先リンク）にある。 -->
       <div class="tabs" id="modetabs"></div>
-      <div class="tabs sub" id="simtabs"></div>
     </div>
   </div>
   <span class="tprog" aria-hidden="true"></span>
@@ -13393,7 +13428,41 @@ function m45Panel3(ctx, s, v, t, W, y0, y1, HALO) {
 
 /* sysKind … 1-1〜1-4 で共通の「描画対象」（'sun' ＝ 太陽と惑星／'earth' ＝ 地球と人工衛星）。
    ★ここ1か所だけが正★ 各シムの v.sys / v.sys14 は applySysKind() が書きうつす。 */
-var st = { cur: 'm1-1', sims: {}, bigFml: false, probKind: 'prob', sysKind: 'sun' };
+var st = { cur: 'm1-1', mode: 0, sims: {}, bigFml: false, probKind: 'prob', sysKind: 'sun' };
+
+/* ===== ★1つのモードの中のシムは、縦に全部ならべる★（先生の指示・2026-10-21）=====
+   circular-motion.html と同じ形。モードのタブ（①〜④）で章を切りかえ、
+   その章の中のシムは <article id="sec__m1-1"> … と上から下へつながっている。
+   ★同じ id が何個も出る★——どのシムにも bPlay・mainCv・resbar …があるため。
+     そこで、いま相手にしているシムの <article> の中だけを探すようにした。
+       UIC    … いま相手にしているシムの id（さわった瞬間・描くときに切りかわる）
+       secEl  … そのシムの <article>
+       $(id)  … まず UIC の中を探し、無ければページ全体から探す
+     ★UIC を変えたら、かならず戻すこと★（withSim を使う）。
+       戻し忘れると、別のシムの DOM を書きかえてしまう。 */
+var UIC = null, SECC = {};
+function secEl(sid) {
+  sid = sid || UIC;
+  var e = SECC[sid];
+  if (e && e.isConnected) return e;
+  e = document.getElementById('sec__' + sid);
+  SECC[sid] = e;
+  return e;
+}
+function CS() { return UIC || st.cur; }
+function withSim(sid, fn) {
+  var old = UIC; UIC = sid;
+  try { return fn(); } finally { UIC = old; }
+}
+/* いまのモードに出ているシムの id（並び順） */
+function modeIds(mi) {
+  var M = MODES[mi === undefined ? st.mode : mi];
+  return M ? M.ids.slice() : [];
+}
+function modeOf(id) {
+  for (var i = 0; i < MODES.length; i++) if (MODES[i].ids.indexOf(id) >= 0) return i;
+  return 0;
+}
 
 /* 表示チェックボックスの名前と既定（力は最初オフ） */
 var VIS_LABEL = {
@@ -13410,7 +13479,26 @@ function V(s) {
   return o;
 }
 
-function $(id) { return document.getElementById(id); }
+/* ★id の引き方★ いま相手にしているシム（UIC）の <article> の中を先に探す。
+   #simhost・#tabbar・#modetip などページに1つしかないものは、中に無いので
+   最後の getElementById で見つかる。 */
+/* ★引いた結果は覚えておく★ この関数は1コマに何十回も呼ばれる。
+   毎回 querySelector でページの中を探すと、縦につないだぶん（DOM が大きい）
+   それだけで重くなる。シムを作り直すと古い節点は外れる（isConnected が false）ので、
+   そのときだけ引き直せばよい。 */
+function $(id) {
+  if (UIC) {
+    var sec = secEl(UIC);
+    if (sec) {
+      var m = sec._idc || (sec._idc = {});
+      var e = m[id];
+      if (e && e.isConnected) return e;
+      e = sec.querySelector('[id="' + id + '"]');
+      if (e) { m[id] = e; return e; }
+    }
+  }
+  return document.getElementById(id);
+}
 
 /* いま出す変数だけを返す。変数に when(v) を書くと、その条件のときだけ出る
    （太陽系と地球まわりで「半長軸 a」の単位・範囲が変わるので、2本立てにしている）。 */
@@ -13463,7 +13551,15 @@ function initState() {
     var d = DEFS[id];
     var s = {
       v: {}, o: {}, t: 0, playing: false, slow: false, sign: 1,
-      open: {}, gview: {}, view: null, _eq: null, pick: null, ui: {}
+      open: {}, gview: {}, view: null, _eq: null, pick: null, ui: {},
+      /* _vis  … いま画面に入っているか（入っているシムだけ描く・進める）
+         _want … 「このシムを動かしたい」か。画面に入ったとき、これが true の
+                 ものだけ動きだす。
+         ★自動で動きだすのはモード①（ケプラーの法則）だけ★（先生の指示・2026-10-21）
+           モード②③④は、生徒が「▶ スタート」を押すまで動かない。
+           入試問題（モード③）は、まず問題を読んでほしいところなので、
+           勝手に動きだすとじゃまになる。 */
+      _vis: false, _want: (d.mode === 1)
     };
     (d.vars || []).forEach(function (vd) { s.v[vd.k] = vd.def; });
     (d.toggles || []).forEach(function (td) { s.o[td.k] = td.def; });
@@ -13500,25 +13596,24 @@ function drawLegend() {
    1回 25 ms ほどかかっていた。タブを押すたびにこれが走るので、
    実機では「押すと固まる」と感じる（先生の指摘）。
    移っただけのときは、濃く塗るボタンを付けかえるだけで済む。 */
+/* ★タブの帯に残るのはモードのタブ（①〜④）だけ★（先生の指示・2026-10-21）
+   シムのタブ列は消した。モードの中は縦につながっているので、
+   飛び先はモードの先頭の .modejump（飛び先リンク）にある。 */
 function buildTabs() {
-  var cur0 = DEFS[st.cur];
-  if (st._tabMode === cur0.mode) {
-    var stb0 = $('simtabs'), ids0 = null, i0;
-    MODES.forEach(function (M) { if (M.n === cur0.mode) ids0 = M.ids; });
-    if (ids0) {
-      var bs = stb0.children;
-      for (i0 = 0; i0 < bs.length && i0 < ids0.length; i0++) {
-        var id0 = ids0[i0], d0 = DEFS[id0];
-        if (!d0) continue;
-        setCls(bs[i0], (d0.read ? 'game' : (d0.intro ? 'intro' : '')) +
-          (id0 === st.cur ? ' on' : ''));
-      }
-      centerTabs();
-      return;
-    }
-  }
-  st._tabMode = cur0.mode;
-  buildTabsFull();
+  if (!st._tabsMade) { buildTabsFull(); st._tabsMade = true; return; }
+  var mt = $('modetabs');
+  if (!mt) return;
+  Array.prototype.forEach.call(mt.children, function (b, i) {
+    setCls(b, i === st.mode ? 'on' : '');
+  });
+  centerTabs();
+}
+/* 章の扉（#modetip）の中身を、いまのモードのものにする */
+function fillModeTip() {
+  var tip = $('modetip'); if (!tip) return;
+  var M = MODES[st.mode];
+  tip.innerHTML = M ? modeHeadHtml(M) : '';
+  renderMath(tip);
 }
 
 /* ===== コンテンツ一覧（目次のパネル）=====
@@ -13585,14 +13680,15 @@ function buildToc() {
         var sb = TOC_SUBS[id][+js], s2 = st.sims[id];
         if (sb && s2) {
           Object.keys(sb.v).forEach(function (k) { s2.v[k] = sb.v[k]; });
-          buildPanel(); renderActive();
+          rebuildSim(id);
         }
       }
-      /* 図が、上に貼りついたタブの帯の下にもぐらないようにする */
-      scrollSimIntoView(true);
+      /* 図が、上に貼りついたタブの帯の下にもぐらないようにする。
+         ★描き直すと高さが変わるので、2コマ待ってからもう一度そろえ直す★ */
+      scrollSimIntoView(id);
       if (window.requestAnimationFrame) {
         requestAnimationFrame(function () {
-          requestAnimationFrame(function () { scrollSimIntoView(true); });
+          requestAnimationFrame(function () { scrollSimIntoView(id); });
         });
       }
     });
@@ -13609,10 +13705,8 @@ function centerTab(box, b) {
   box.scrollLeft += (r.left - br.left) - (box.clientWidth - r.width) / 2;
 }
 function centerTabs() {
-  [['modetabs'], ['simtabs']].forEach(function (k) {
-    var box = $(k[0]);
-    if (box) centerTab(box, box.querySelector('button.on'));
-  });
+  var box = $('modetabs');
+  if (box) centerTab(box, box.querySelector('button.on'));
 }
 
 /* ===== タブを押したあと、図が帯の下にもぐらないようにする =====
@@ -13620,65 +13714,56 @@ function centerTabs() {
    新しい図が帯の上（画面の外）に隠れてしまう。
    ★なめらかスクロール（behavior:'smooth'）は使わない★——
    下のほうから押すと画面がゆっくり流れてきて目が回る（スキルの決めごと）。 */
-function scrollSimIntoView(force) {
-  var host = $('simhost'), bar = $('tabbar');
-  if (!host) return;
-  var barH = bar ? bar.offsetHeight : 0;
-  var top = host.getBoundingClientRect().top + window.pageYOffset - barH - 10;
-  /* force … ページの中のリンク（「→ 2-2 を見てください」など）で飛んできたとき。
-     どこから来ても、飛んだ先の図が画面のいちばん上（帯のすぐ下）に来るようにする。 */
-  if (force || window.pageYOffset > top) window.scrollTo(0, Math.max(0, top));
+/* ★縦につないだので、「そのシムの <article> の上」へスクロールする★（2026-10-21）
+   sid を書かなければ、いまのシム（st.cur）のところへ行く。 */
+function scrollSimIntoView(sid) {
+  sid = sid || st.cur;
+  var e = secEl(sid) || $('simhost');
+  if (!e) return;
+  var top = e.getBoundingClientRect().top + window.pageYOffset - tabBarH() - 10;
+  window.scrollTo(0, Math.max(0, top));
+  /* ★飛んだ先を「いまのシム」にして、少しのあいだ動かさない★
+     スクロールでいちばん上のシムを選び直す仕組み（noteTopSim）が
+     高さの計算し直しのタイミングでとなりのシムを選んでしまうことがあり、
+     自動テストの結果が回ごとに変わっていた（実際にそうなった）。 */
+  st.cur = sid;
+  st._lockUntil = Date.now() + 800;
 }
 
 function buildTabsFull() {
-  var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[st.cur];
+  var mt = $('modetabs');
+  if (!mt) return;
   mt.innerHTML = '';
-  var curBtn = null, curMode = null;
   MODES.forEach(function (M, i) {
     var b = document.createElement('button');
     /* ★番号（①②③④）は CSS の ::before で出す★（デザイン移植・2026-10）
        文字（M.label）からは番号を取りのぞいて、名前だけにする。 */
     b.textContent = String(M.label).replace(/^\d+\s*/, '');
     b.setAttribute('data-n', '①②③④⑤⑥⑦⑧⑨'.charAt(i));
-    if (M.n === cur.mode) { b.className = 'on'; curBtn = b; curMode = M; }
-    b.addEventListener('click', function () {
-      if (M.n !== DEFS[st.cur].mode) gotoSim(M.ids[0]);
-      scrollSimIntoView();
-    });
+    if (i === st.mode) b.className = 'on';
+    /* ★押したら、そのモードの一番上へ★（先生の指示・2026-10-21） */
+    b.addEventListener('click', function () { gotoMode(i); });
     mt.appendChild(b);
   });
-  /* 選んでいるモードのひとこと（青いボタンの真下に表示する）。
-     ★#modetip は 20_body.html に、タブの帯（#tabbar）の「外」に置いてある★
-     帯の中に入れると、文が2〜3行になったときに帯が急に高くなるため。 */
-  var tip = $('modetip');
-  if (!tip) {
-    tip = document.createElement('div');
-    tip.id = 'modetip';
-    var bar = $('tabbar') || mt;
-    bar.parentNode.insertBefore(tip, bar.nextSibling);
-  }
-  /* ★章の扉★（デザイン移植・2026-10）
-     丸の中の章番号（serif）＋「Chapter 01 — 英字」＋モード名＋ひとこと。
-     文言（M.label・M.tip）は1文字も変えていない。 */
-  tip.innerHTML = curMode ? modeHeadHtml(curMode) : '';
-  renderMath(tip);
-  st._tipBtn = curBtn;
-  stb.innerHTML = '';
-  MODES.forEach(function (M) {
-    if (M.n !== cur.mode) return;
-    M.ids.forEach(function (id) {
-      if (!DEFS[id]) return;
-      var b = document.createElement('button');
-      b.textContent = DEFS[id].tab;
-      /* read … 読み物（補足）はオレンジ、intro … 入り口のシムは灰青。
-         どちらでもないシムはふつうの青。色でグループが分かるようにしている。 */
-      b.className = (DEFS[id].read ? 'game' : (DEFS[id].intro ? 'intro' : '')) +
-        (id === st.cur ? ' on' : '');
-      b.addEventListener('click', function () { gotoSim(id); scrollSimIntoView(); });
-      stb.appendChild(b);
-    });
-  });
   centerTabs();
+}
+
+/* モードを切りかえて、そのモードの一番上（章の扉）へスクロールする */
+function gotoMode(mi) {
+  if (mi === st.mode && secEl(modeIds()[0])) { scrollModeTop(); return; }
+  st.mode = mi;
+  st.cur = modeIds()[0];
+  buildTabs();
+  buildMode();
+  renderLegend(DEFS[st.cur]);
+  quietHash();
+  scrollModeTop();
+}
+function scrollModeTop() {
+  var tip = $('modetip');
+  if (!tip) return;
+  var y = window.pageYOffset + tip.getBoundingClientRect().top - tabBarH() - 10;
+  window.scrollTo(0, Math.max(0, y));
 }
 
 /* 矢印・色の説明（#legend）は、いまのシミュレーションで実際に出てくるものだけを出す。
@@ -13840,19 +13925,23 @@ var CVPOOL = {};
 function cvSlot(id, cls) {
   return '<div class="cvslot" data-cv="' + id + '" data-cvcls="' + (cls || '') + '"></div>';
 }
-function fillCvSlots() {
-  Array.prototype.forEach.call($('simhost').querySelectorAll('.cvslot'), function (slot) {
-    var id = slot.getAttribute('data-cv'), cv = CVPOOL[id];
-    if (!cv) { cv = document.createElement('canvas'); cv.id = id; CVPOOL[id] = cv; }
+/* ★canvas はシムごとに1枚ずつ覚えておく★（2026-10-21）
+   縦につないだので、同じ名前の canvas（mainCv など）がシムの数だけある。
+   覚えておく箱の鍵は「シムの id ＋ 名前」にすること。
+   canvas 自身の id は名前のまま（＝重なる）で、探すときは <article> の中だけ見る。 */
+function fillCvSlots(root, sid) {
+  Array.prototype.forEach.call(root.querySelectorAll('.cvslot'), function (slot) {
+    var id = slot.getAttribute('data-cv'), key = sid + '|' + id, cv = CVPOOL[key];
+    if (!cv) { cv = document.createElement('canvas'); cv.id = id; CVPOOL[key] = cv; }
     setCls(cv, slot.getAttribute('data-cvcls') || '');
     slot.parentNode.replaceChild(cv, slot);
   });
 }
 
 /* ===== パネルの組み立て ===== */
-function buildPanel() {
-  var d = DEFS[st.cur], s = st.sims[st.cur];
-  closeProbImg();                     /* 別のシミュレーションへ移ったら問題文は閉じる */
+function simPanelHtml(sid) {
+  var d = DEFS[sid], s = st.sims[sid];
+  UIC = sid;
   s._eq = null;                       /* DOM を作り直すのでキャッシュを捨てる */
   var h = [];
   /* タイトルは関数にもできる（描画対象で法則の文が変わる 1-1〜1-3 で使っている） */
@@ -14119,8 +14208,21 @@ function buildPanel() {
   /* 右列 ⑤ 読み出しの表（d.info を書かないシムでは出さない） */
   if (d.info) h.push('<table class="read" id="readout"></table>');
   h.push('</div></div>');
-  $('simhost').innerHTML = h.join('');
-  fillCvSlots();                      /* ★覚えておいた canvas を差しこむ（作り直さない）★ */
+  return h.join('');
+}
+
+/* ===== 1つのシムに、聞き手（イベント）をつける =====
+   ★「いま相手にしているシム」は UIC★。さわった瞬間に capture でまず切りかえるので、
+   この下のハンドラの中は、これまでの「1画面に1シム」のときのまま書ける。 */
+function wireSim(sid) {
+  var d = DEFS[sid], s = st.sims[sid];
+  var sec = secEl(sid); if (!sec) return;
+  function $host() { return sec; }
+  ['pointerdown', 'click', 'input', 'change', 'wheel', 'dblclick'].forEach(function (ev) {
+    sec.addEventListener(ev, function () { UIC = sid; st.cur = sid; }, true);
+  });
+  UIC = sid;
+  fillCvSlots(sec, sid);                      /* ★覚えておいた canvas を差しこむ（作り直さない）★ */
   /* 詳しい解説は、パネルを差しかえた「あと」に出す
      （中で renderActive() が走るので、先に呼ぶと運動方程式の欄が空になる） */
   renderLong(d);
@@ -14141,12 +14243,16 @@ function buildPanel() {
     $('bAnsImg').addEventListener('click', function () { openProbImg(d, 'ans'); });
   }
   /* 描画対象の共通切りかえ。押したら4つのシムぜんぶに書きこんでから作り直す */
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-sys]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-sys]'), function (b) {
     b.addEventListener('click', function () {
       if (st.sysKind === b.getAttribute('data-sys')) return;
       applySysKind(b.getAttribute('data-sys'));
-      buildPanel(); renderActive(); renderLegend(DEFS[st.cur]);
-      autoPlayOn(st.cur);
+      /* ★描画対象は 1-1〜1-4 の4つで共通★なので、モードまるごと作り直す
+         （そのシムだけ作り直すと、下に並んでいる仲間が古い対象のまま残る）。 */
+      st.cur = sid;
+      buildMode();
+      renderLegend(DEFS[sid]);
+      scrollSimIntoView(sid);
     });
   });
   $('tBar').addEventListener('input', function (e) {
@@ -14157,14 +14263,14 @@ function buildPanel() {
     $('bBigFml').addEventListener('click', function () { toggleBigFml(); });
     if (st.bigFml) $('bBigFml').className = '';
   }
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-gsw]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-gsw]'), function (b) {
     b.addEventListener('click', function () {
       s.o[b.getAttribute('data-gsw')] = b.getAttribute('data-gswv');
-      buildPanel(); renderActive();
+      rebuildSim(sid); renderActive();
     });
   });
 
-  Array.prototype.forEach.call($('simhost').querySelectorAll('.ghead'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('.ghead'), function (b) {
     b.addEventListener('click', function () {
       var k = b.getAttribute('data-g');
       s.open[k] = !s.open[k];
@@ -14174,40 +14280,41 @@ function buildPanel() {
       renderActive();
     });
   });
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-tact]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-tact]'), function (b) {
     b.addEventListener('click', function () {
       var a = d.topActions[+b.getAttribute('data-tact')];
       a.fn(s);
       if (!a.keepT) resetSim();
-      if (a.rebuild) { buildPanel(); }
+      if (a.rebuild) { rebuildSim(sid); }
       /* play: true を書いたボタンは、押すと同時に再生も始める
-         （「値を変えたのに動かない」と思われないように） */
-      if (a.play) { s.playing = true; setPlayLabel(); }
+         （「値を変えたのに動かない」と思われないように）。
+         ★_want も立てる★ 立てないと、画面を出入りしたとたんに止まってしまう。 */
+      if (a.play) { s.playing = true; s._want = true; setPlayLabel(); }
       syncVarVals(); renderActive();
     });
   });
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-act]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-act]'), function (b) {
     b.addEventListener('click', function () {
       var a = d.actions[+b.getAttribute('data-act')];
       a.fn(s);
       if (!a.keepT) resetSim();
-      if (a.rebuild) { buildPanel(); }
+      if (a.rebuild) { rebuildSim(sid); }
       /* topActions と同じで、play: true のボタンは押すと再生も始まる */
-      if (a.play) { s.playing = true; setPlayLabel(); }
+      if (a.play) { s.playing = true; s._want = true; setPlayLabel(); }
       syncVarVals(); renderActive();
     });
   });
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-sel]'), function (el) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-sel]'), function (el) {
     el.addEventListener('change', function () {
       var sk = el.getAttribute('data-sel');
       s.o[sk] = el.value;
       if (d.onSelect) d.onSelect(s, sk, el.value);
       resetSim();
-      buildPanel();            /* 選択でグラフや変数の顔ぶれが変わることがある */
+      rebuildSim(sid);            /* 選択でグラフや変数の顔ぶれが変わることがある */
       renderActive();
     });
   });
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-tog]'), function (el) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-tog]'), function (el) {
     el.addEventListener('change', function () {
       var k = el.getAttribute('data-tog');
       s.o[k] = el.checked;
@@ -14215,11 +14322,11 @@ function buildPanel() {
       renderActive();
     });
   });
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-vis]'), function (el) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-vis]'), function (el) {
     el.addEventListener('change', function () {
       var k = el.getAttribute('data-vis');
       s.o[k] = el.checked;
-      if (d.visFocus && k === 'show' + d.visFocus) buildPanel();   /* 誘導の強調を消す */
+      if (d.visFocus && k === 'show' + d.visFocus) rebuildSim(sid);   /* 誘導の強調を消す */
       renderActive();
     });
   });
@@ -14229,15 +14336,15 @@ function buildPanel() {
   function inProbs(el) { return !!(el.closest && el.closest('.card.probs')); }
   function autoPlay(el) {
     if (!inProbs(el)) return;
-    if (!s.playing) { s.playing = true; setPlayLabel(); }
+    if (!s.playing) { s.playing = true; s._want = true; setPlayLabel(); }
   }
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-vsl]'), function (r) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-vsl]'), function (r) {
     r.addEventListener('input', function () {
       setVar(r.getAttribute('data-vsl'), +r.value);
       autoPlay(r);
     });
   });
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-var]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-var]'), function (b) {
     b.addEventListener('click', function () {
       stepVar(b.getAttribute('data-var'), +b.getAttribute('data-dir'));
       autoPlay(b);
@@ -14245,46 +14352,46 @@ function buildPanel() {
   });
   /* ===== 「入試問題の読み解き」の中の部品 ===== */
   /* ① 「計算結果を表示」の該当する数字まで飛んで光らせる */
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-reskey]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-reskey]'), function (b) {
     b.addEventListener('click', function () {
       jumpToRes(b.getAttribute('data-reskey'));
       /* 押したリンク自身も「いま選んでいる」色にする（どれを見ているか分かるように） */
-      Array.prototype.forEach.call($('simhost').querySelectorAll('[data-reskey]'), function (o) {
+      Array.prototype.forEach.call($host().querySelectorAll('[data-reskey]'), function (o) {
         o.classList.remove('on');
       });
       b.classList.add('on');
     });
   });
   /* ② 図の左上のオレンジのボタンと同じことをする（id が重ならないよう data-ptact） */
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-ptact]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-ptact]'), function (b) {
     b.addEventListener('click', function () {
       var a = (d.topActions || [])[+b.getAttribute('data-ptact')];
       if (!a) return;
       a.fn(s);
       if (!a.keepT) resetSim();
       /* 解説の中から押したときは、いつでも再生を始める（生徒の手間を減らすため） */
-      s.playing = true; setPlayLabel();
+      s.playing = true; s._want = true; setPlayLabel();
       syncVarVals(); renderActive();
       flashEl($('cvtop'));
     });
   });
   /* ③ 変数をその値にする（例 data-pset="x0R=1,v0=0"） */
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-pset]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-pset]'), function (b) {
     b.addEventListener('click', function () {
       b.getAttribute('data-pset').split(',').forEach(function (kv) {
         var q = kv.split('=');
         if (q.length === 2) s.v[q[0].trim()] = +q[1];
       });
-      resetSim(); s.playing = true; setPlayLabel();
+      resetSim(); s.playing = true; s._want = true; setPlayLabel();
       syncVarVals(); renderActive();
       flashEl($('cvtop'));
     });
   });
   /* ④ グラフを開いて、そこまで飛ぶ */
-  Array.prototype.forEach.call($('simhost').querySelectorAll('[data-pgraph]'), function (b) {
+  Array.prototype.forEach.call($host().querySelectorAll('[data-pgraph]'), function (b) {
     b.addEventListener('click', function () {
       var gk = b.getAttribute('data-pgraph');
-      if (!s.open[gk]) { s.open[gk] = true; buildPanel(); renderActive(); }
+      if (!s.open[gk]) { s.open[gk] = true; rebuildSim(sid); renderActive(); }
       var el = $('gb_' + gk);
       if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       flashEl(el && el.parentNode);
@@ -14306,7 +14413,157 @@ function buildPanel() {
   $('bSlow').className = s.slow ? '' : 'sub';
   $('bSlow').textContent = s.slow ? 'スロー再生 中' : 'スロー再生';
   syncVarVals();
-  renderMath($('simhost'));
+  renderMath($host());
+  UIC = null;
+}
+
+/* ===== そのシムだけ作り直す（値を変えて変数やグラフの顔ぶれが変わったとき）===== */
+function rebuildSim(sid) {
+  var sec = secEl(sid); if (!sec) return;
+  closeProbImg();
+  sec.innerHTML = secInnerHtml(sid);
+  wireSim(sid);
+  withSim(sid, function () { renderSim(sid); });
+}
+
+/* ===== 1つのシムの <article> の中身 ===== */
+function secInnerHtml(sid) {
+  /* ★番号の小さなバッジは出さない★ このページのタイトルは
+     「1-0　太陽系の様子」のように、もともと番号から始まっている。
+     バッジを足すと「1-0」が上下に2つならんで、しまりがなくなる。 */
+  return simPanelHtml(sid);
+}
+
+/* ===== モードまるごと組み立てる（章の扉 → 飛び先リンク → シムを縦に全部）===== */
+function buildMode(mi) {
+  if (mi !== undefined) st.mode = mi;
+  var ids = modeIds(), host = $('simhost');
+  if (!host) return;
+  closeProbImg();
+  /* ★#modetip（章の扉）は 20_body.html に、#simhost の「外」に置いてある★
+     ここで作り直してはいけない。中身を入れかえるだけ（fillModeTip）。 */
+  var h = [jumpHtml()];
+  ids.forEach(function (id) {
+    h.push('<article class="sec" id="sec__' + id + '" data-sim="' + id + '">'
+      + secInnerHtml(id) + '</article>');
+  });
+  host.innerHTML = h.join('');
+  ids.forEach(function (id) { wireSim(id); });
+  /* 飛び先リンク（モードの先頭） */
+  Array.prototype.forEach.call(host.querySelectorAll('[data-jump]'), function (b) {
+    b.addEventListener('click', function () { scrollSimIntoView(b.getAttribute('data-jump')); });
+  });
+  renderMath(host.querySelector('.modejump') || host);
+  fillModeTip();
+  observeSecs();
+  renderVisible();
+}
+
+/* モードの先頭に置く「このモードの中身」への飛び先リンク（★シムのタブ列のかわり★） */
+function jumpHtml() {
+  var ids = modeIds();
+  if (ids.length < 2) return '';
+  return '<nav class="modejump" aria-label="このモードの中身">'
+    + ids.map(function (id) {
+      var d = DEFS[id], tb = String(d.tab || '');
+      var cls = 'jmp' + (d.intro ? ' intro' : '') + (d.read ? ' game' : '');
+      return '<button type="button" class="' + cls + '" data-jump="' + id + '">'
+        + mathHtml(tb) + '</button>';
+    }).join('') + '</nav>';
+}
+
+/* ===== どのシムが画面に入っているかを見張る =====
+   ★見えているシムだけ描く・進める★（先生の指示・2026-10-21）。
+   こうしないと、1つのモードに6つのシム（canvas 20枚近く）が同時に出るので、
+   見ていない絵のために毎コマ働くことになり、とても重くなる。
+   いちばん上に見えているシムを st.cur にして、アドレス（#m1-3）もそれに合わせる。 */
+var SECOBS = null, PLAYOBS = null;
+function observeSecs() {
+  if (!('IntersectionObserver' in window)) {
+    modeIds().forEach(function (id) { st.sims[id]._vis = true; });
+    return;
+  }
+  if (SECOBS) SECOBS.disconnect();
+  if (PLAYOBS) PLAYOBS.disconnect();
+  /* ① 描くかどうか（_vis）。★少し手前から用意する★
+     rootMargin のぶんだけ画面の外でも描いておくと、
+     スクロールして入ってきたときに白い板が見えない。 */
+  SECOBS = new IntersectionObserver(function (es) {
+    es.forEach(function (en) {
+      var id = en.target.getAttribute('data-sim'), s = st.sims[id];
+      if (!s) return;
+      var was = s._vis;
+      s._vis = en.isIntersecting;
+      /* ★入ってきた瞬間に1枚描く★
+         tick は「再生中のシム」しか描かないので、ここで描かないと
+         止まっているシムが真っ白のままになる（実際そうなった）。 */
+      if (en.isIntersecting && !was) withSim(id, function () { setPlayLabel(); renderSim(id); });
+      /* ★遠くへ行ったシムの canvas は、大きさを 0 に戻して場所を空ける★
+         canvas は「はば×2・たて×2」の絵を持っているので、19枚ぶん持ったままだと
+         それだけで毎コマの合成が重くなる（実測：いちばん重い 補足：地球と月 で
+         58 → 43 fps まで落ちた）。戻ってきたときは prep が入れ直すので、
+         白いままにはならない。 */
+      if (!en.isIntersecting && was) freeCanvases(en.target);
+    });
+    noteTopSim();
+  }, { rootMargin: '220px 0px 220px 0px', threshold: 0 });
+
+  /* ② 動かすかどうか（playing）。★「いま見ているシム」だけ★
+     ★描く範囲より ずっとせまく とること★——ここを広げると、
+     同時に3つのシムが動いて fps が 58 → 28 まで落ちた（実測）。
+     上は帯のぶん、下は画面の 3割 を切り落として、
+     ふだん動くのが 1〜2 個になるようにしてある。
+     ★動きだすのは s._want が true のものだけ★——
+       モード①は最初から true、モード②③④は「▶ スタート」を押すと true になる。
+       「一時停止」を押すと false に戻るので、画面に入り直しても動かない。 */
+  PLAYOBS = new IntersectionObserver(function (es) {
+    es.forEach(function (en) {
+      var id = en.target.getAttribute('data-sim'), s = st.sims[id];
+      if (!s) return;
+      s.playing = !!(en.isIntersecting && s._want);
+      withSim(id, setPlayLabel);
+    });
+  }, { rootMargin: '-56px 0px -30% 0px', threshold: 0 });
+
+  modeIds().forEach(function (id) {
+    var e = secEl(id); if (e) { SECOBS.observe(e); PLAYOBS.observe(e); }
+  });
+}
+/* 画面から遠ざかったシムの canvas を、いったん 0×0 にする（場所を空ける） */
+function freeCanvases(sec) {
+  Array.prototype.forEach.call(sec.querySelectorAll('canvas'), function (cv) {
+    if (cv.width > 1) { cv.width = 0; cv.height = 0; }
+  });
+}
+
+/* いちばん上に見えているシムを「いまのシム」にする（アドレスと凡例をそれに合わせる） */
+function noteTopSim() {
+  if (st._lockUntil && Date.now() < st._lockUntil) return;
+  var ids = modeIds(), top = null, best = 1e9, barH = tabBarH();
+  ids.forEach(function (id) {
+    var e = secEl(id); if (!e) return;
+    var r = e.getBoundingClientRect();
+    if (r.bottom < barH + 10) return;              /* もう上へ流れていった */
+    var dy = Math.abs(r.top - barH);
+    if (dy < best) { best = dy; top = id; }
+  });
+  if (top && top !== st.cur) {
+    st.cur = top;
+    renderLegend(DEFS[top]);
+    quietHash();
+  }
+}
+function tabBarH() {
+  var b = $('tabbar');
+  return b ? b.getBoundingClientRect().height : 58;
+}
+/* ★アドレスは replaceState で書きかえる★ location.hash に入れると、
+   スクロールするたびに「戻る」の履歴がたまってしまう。 */
+function quietHash() {
+  var want = '#' + st.cur;
+  if (location.hash === want) return;
+  if (history && history.replaceState) history.replaceState(null, '', want);
+  else { st._skipHash = true; location.hash = want; }
 }
 
 /* 「よく変える変数」＝図の上のカードに置くもの */
@@ -14390,10 +14647,13 @@ function renderLong(d) {
 
 /* ===== 再生ボタン ===== */
 function onPlay() {
-  var d = DEFS[st.cur], s = st.sims[st.cur];
+  var sid = CS(), d = DEFS[sid], s = st.sims[sid];
   var T = d.tEnd(V(s), s);
   if (s.t >= T - 1e-9) s.t = 0;
   s.playing = !s.playing;
+  /* ★押した結果をそのまま覚えておく★（2026-10-21）
+     こうしないと、スクロールで出入りするたびに勝手に動きだす／止まってしまう。 */
+  s._want = s.playing;
   setPlayLabel();
   renderActive();
 }
@@ -14411,7 +14671,7 @@ function tactCls(a, v, s, on) {
 
 /* いまの状態がすでに条件を満たしているボタンを、少し濃く見せる */
 function refreshActs() {
-  var d = DEFS[st.cur], s = st.sims[st.cur], v = V(s);
+  var sid = CS(), d = DEFS[sid], s = st.sims[sid], v = V(s);
   (d.actions || []).forEach(function (a, i) {
     var b = $('act_' + i);
     if (!b) return;
@@ -14440,7 +14700,7 @@ function jumpToRes(key) {
   st.flashRes = key;
   /* ★飛び先は折りたたみの中にある★ 閉じていたら、まず開く（開かないと見えない） */
   setResOpen(true);
-  renderResult(DEFS[st.cur], st.sims[st.cur], st.sims[st.cur].t);
+  renderResult(DEFS[CS()], st.sims[CS()], st.sims[CS()].t);
   var hit = host.querySelector('.ritem.flash');
   if (hit && hit.scrollIntoView) hit.scrollIntoView({ block: 'center', behavior: 'smooth' });
   else if (host.scrollIntoView) host.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -14457,7 +14717,7 @@ function flashEl(el) {
 
 /* ===== 「まだ閉じているグラフ」をまとめて開くボタン ===== */
 function openAllLabel() {
-  var d = DEFS[st.cur], s = st.sims[st.cur];
+  var d = DEFS[CS()], s = st.sims[CS()];
   var closed = [];
   graphsOf(d, s).forEach(function (g) { if (!s.open[g.key]) closed.push(g.short || g.title); });
   if (!closed.length) return '最初の表示に戻す';
@@ -14477,7 +14737,7 @@ function toggleBigFml() {
 }
 
 function toggleAllGraphs() {
-  var d = DEFS[st.cur], s = st.sims[st.cur];
+  var d = DEFS[CS()], s = st.sims[CS()];
   var closed = graphsOf(d, s).some(function (g) { return !s.open[g.key]; });
   /* 見えていないグラフも一緒に開閉する（選択を変えても状態が続くように） */
   (d.graphs || []).forEach(function (g) { s.open[g.key] = closed ? true : !!g.open; });
@@ -14506,7 +14766,7 @@ function attachGraphPick(cv) {
     var moved = down && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 6;
     down = null;
     if (moved) return;
-    var d = DEFS[st.cur], s = st.sims[st.cur];
+    var d = DEFS[CS()], s = st.sims[CS()];
     if (!d || !d.pickMark || !s || !cv._marks || !cv._marks.length) return;
     var r = cv.getBoundingClientRect();
     if (!r.width || !r.height) return;
@@ -14532,7 +14792,7 @@ function attachGraphDrag(cv, key) {
     return { x: (e.clientX - r.left) / r.width * mp.W, y: (e.clientY - r.top) / r.height * mp.H };
   }
   function cur() {
-    var s = st.sims[st.cur];
+    var s = st.sims[CS()];
     if (s.gview[key]) return s.gview[key];
     var mp = cv._map;
     return { xmin: mp.xmin, xmax: mp.xmax, ymin: mp.ymin, ymax: mp.ymax };
@@ -14549,7 +14809,7 @@ function attachGraphDrag(cv, key) {
   });
   cv.addEventListener('pointermove', function (e) {
     if (!drag || !cv._map) return;
-    var s = st.sims[st.cur], mp = cv._map, p = local(e);
+    var s = st.sims[CS()], mp = cv._map, p = local(e);
     var dx = p.x - drag.p.x, dy = p.y - drag.p.y, v0 = drag.view, nv;
     if (drag.mode === 'pan') {
       var kx = (v0.xmax - v0.xmin) / mp.gw, ky = (v0.ymax - v0.ymin) / mp.gh;
@@ -14570,7 +14830,7 @@ function attachGraphDrag(cv, key) {
   cv.addEventListener('pointercancel', end);
   cv.addEventListener('wheel', function (e) {
     if (!cv._map) return;
-    var s = st.sims[st.cur], mp = cv._map, p = local(e), v0 = cur();
+    var s = st.sims[CS()], mp = cv._map, p = local(e), v0 = cur();
     var f = Math.exp(e.deltaY * 0.0014);
     var px = v0.xmin + (p.x - mp.pad.l) / mp.gw * (v0.xmax - v0.xmin);
     var py = v0.ymax - (p.y - mp.pad.t) / mp.gh * (v0.ymax - v0.ymin);
@@ -14582,7 +14842,7 @@ function attachGraphDrag(cv, key) {
     e.preventDefault();
   }, { passive: false });
   cv.addEventListener('dblclick', function () {
-    delete st.sims[st.cur].gview[key];
+    delete st.sims[CS()].gview[key];
     renderActive();
   });
 }
@@ -14601,7 +14861,7 @@ function attach3dDrag() {
      ★下（3次元の図）だけをドラッグで回す★。上（軌道の絵）は d.drag にゆずる。
      d.drag3dFrom に「この y より下だけ」を書く（canvas の論理座標）。 */
   function on3d() {
-    var d = DEFS[st.cur], s = st.sims[st.cur];
+    var d = DEFS[CS()], s = st.sims[CS()];
     return (d && d.drag3d && s && s.cam) ? { d: d, s: s } : null;
   }
   function inZone(ev, c) {
@@ -14700,7 +14960,7 @@ function attachCvHits() {
   var cv = $('mainCv');
   if (!cv) return;
   function pick(ev) {
-    var d = DEFS[st.cur], s = st.sims[st.cur];
+    var d = DEFS[CS()], s = st.sims[CS()];
     if (!d || !d.cvHits || !s) return null;
     var r = cv.getBoundingClientRect();
     if (!r.width || !r.height) return null;
@@ -14724,12 +14984,12 @@ function attachCvHits() {
     if (moved) return;
     var h = pick(ev);
     if (!h) return;
-    h.fn(st.sims[st.cur]);
+    h.fn(st.sims[CS()]);
     renderActive();
   });
   /* 押せる場所では指のかたちにする（どこが押せるか分かるように） */
   cv.addEventListener('pointermove', function (ev) {
-    var d = DEFS[st.cur];
+    var d = DEFS[CS()];
     if (!d || !d.cvHits) return;
     var want = pick(ev) ? 'pointer' : '';
     if (cv.style.cursor !== want) cv.style.cursor = want;
@@ -14740,7 +15000,7 @@ function attachSimDrag() {
   var cv = $('mainCv'), dragging = false;
   if (!cv) return;
   function onDrag() {
-    var d = DEFS[st.cur], s = st.sims[st.cur];
+    var d = DEFS[CS()], s = st.sims[CS()];
     return (d && d.drag && s) ? { d: d, s: s } : null;
   }
   function toWorld(ev, c) {
@@ -14774,7 +15034,7 @@ function attachSimDrag() {
 }
 
 function setPlayLabel() {
-  var s = st.sims[st.cur], b = $('bPlay');
+  var s = st.sims[CS()], b = $('bPlay');
   if (!b) return;
   b.disabled = false;
   b.className = '';
@@ -14782,14 +15042,14 @@ function setPlayLabel() {
 }
 
 function resetSim() {
-  var s = st.sims[st.cur];
-  s.t = 0; s.playing = false; s.gview = {};
+  var s = st.sims[CS()];
+  s.t = 0; s.playing = false; s.gview = {}; s._want = false;
   setPlayLabel();
 }
 
 /* スライダーなどから値を直接セットする */
 function setVar(k, val) {
-  var d = DEFS[st.cur], s = st.sims[st.cur], vd = null;
+  var sid = CS(), d = DEFS[sid], s = st.sims[sid], vd = null;
   (d.vars || []).forEach(function (x) { if (x.k === k) vd = x; });
   if (!vd) return;
   var nv = clamp(Math.round(val / vd.step) * vd.step, vd.min, vd.max);
@@ -14801,7 +15061,7 @@ function setVar(k, val) {
 }
 
 function stepVar(k, dir) {
-  var d = DEFS[st.cur], s = st.sims[st.cur], vd = null;
+  var sid = CS(), d = DEFS[sid], s = st.sims[sid], vd = null;
   (d.vars || []).forEach(function (x) { if (x.k === k) vd = x; });
   if (!vd) return;
   var nv = s.v[k] + dir * vd.step;
@@ -14813,7 +15073,7 @@ function stepVar(k, dir) {
 }
 
 function syncVarVals() {
-  var d = DEFS[st.cur], s = st.sims[st.cur], host = $('simhost');
+  var sid = CS(), d = DEFS[sid], s = st.sims[sid], host = secEl(sid) || $('simhost');
   if (!host) return;
   (d.vars || []).forEach(function (vd) {
     var txt = (vd.fmt ? vd.fmt(s.v[vd.k]) : fmt(s.v[vd.k], vd.dec)) + vd.unit;
@@ -15014,13 +15274,19 @@ function unitNoteHtml(d, s) {
 var resOpen = false;         /* ★ページ全体で1つ。シムを切りかえても覚えておく★ */
 function setResOpen(on) {
   resOpen = !!on;
-  var el = $('resbar'); if (!el) return;
-  var b = el.querySelector('.rtog'), bd = el.querySelector('.rbody');
-  if (b) b.setAttribute('aria-expanded', resOpen ? 'true' : 'false');
-  if (bd) bd.hidden = !resOpen;
-  el.className = 'resbar' + (resOpen ? ' open' : '');
-  /* 開いた瞬間に数字を入れる（止まっているシムでも空のまま出さないため） */
-  if (resOpen && DEFS[st.cur]) renderResult(DEFS[st.cur], st.sims[st.cur], st.sims[st.cur].t);
+  /* ★開け閉めはページで1つ★。縦につないだので、同じモードの中の
+     どのシムの帯も、いっしょに開け閉めする（1つだけ開くと見くらべにくい）。 */
+  modeIds().forEach(function (sid) {
+    withSim(sid, function () {
+      var el = $('resbar'); if (!el) return;
+      var b = el.querySelector('.rtog'), bd = el.querySelector('.rbody');
+      if (b) b.setAttribute('aria-expanded', resOpen ? 'true' : 'false');
+      if (bd) bd.hidden = !resOpen;
+      el.className = 'resbar' + (resOpen ? ' open' : '');
+      /* 開いた瞬間に数字を入れる（止まっているシムでも空のまま出さないため） */
+      if (resOpen && DEFS[sid]) renderResult(DEFS[sid], st.sims[sid], st.sims[sid].t);
+    });
+  });
 }
 function toggleRes() { setResOpen(!resOpen); }
 
@@ -15186,8 +15452,12 @@ function chOf(d, s) {
   return (typeof d.ch === 'function') ? Math.round(d.ch(V(s), s)) : d.ch;
 }
 
-function renderActive() {
-  var d = DEFS[st.cur], s = st.sims[st.cur];
+/* ===== 1つのシムを描き直す =====
+   ★UIC（いま相手にしているシム）を立ててから中へ入ること★。
+   この中の $('mainCv') などは、そのシムの <article> の中だけを探す。 */
+function renderSim(sid) {
+  var d = DEFS[sid], s = st.sims[sid];
+  if (!d || !s) return;
   var cv = $('mainCv');
   if (!cv) return;
   var v = V(s);
@@ -15258,6 +15528,24 @@ function renderActive() {
   }
 }
 
+/* ===== 見えているシムだけ描き直す =====
+   ★見えていないシムのために毎コマ働かない★（先生の指示・2026-10-21）。
+   1つのモードに6つのシム（canvas 20枚近く）が同時に出るので、
+   ここで絞らないと重くて動かなくなる。 */
+function renderVisible() {
+  modeIds().forEach(function (id) {
+    var s = st.sims[id];
+    if (!s || s._vis === false) return;
+    withSim(id, function () { renderSim(id); });
+  });
+}
+/* これまでどおりの名前。呼ぶと「見えているシム全部」を描き直す。
+   いまのシム（UIC）が立っているときは、そのシムだけでよい。 */
+function renderActive() {
+  if (UIC) { renderSim(UIC); return; }
+  renderVisible();
+}
+
 /* ===== .tex の中身を KaTeX で組む =====
    ★★組みあがった HTML を式ごとに覚えておいて、2回目からは使い回す★★
    タブを移るたびに `buildPanel()` が #simhost を作り直すので、
@@ -15317,22 +15605,26 @@ function autoPlayOn(id) {
   if (!d || !s || !d.autoplay) return;
   s.t = 0; s.playing = true;
 }
+/* ★縦つなぎなので「そのシムまでスクロールする」が仕事★（2026-10-21）
+   別のモードのシムなら、まずモードを組み立て直してから飛ぶ。 */
 function gotoSim(id) {
   if (!DEFS[id]) return;
   st.flashRes = null;          /* シムを変えたら、強調はいったん消す */
+  var mi = modeOf(id);
+  if (mi !== st.mode || !secEl(id)) {
+    st.mode = mi;
+    buildTabs();
+    buildMode();
+  }
   st.cur = id;
-  autoPlayOn(id);
-  buildTabs();
-  buildPanel();
-  renderActive();
-  syncHash();
-  renderLegend(DEFS[st.cur]);
+  quietHash();
+  renderLegend(DEFS[id]);
+  scrollSimIntoView(id);
 }
 
 /* ===== アニメーション ===== */
 var lastTs = null;
 function tick(ts) {
-  var s = st.sims[st.cur], d = DEFS[st.cur];
   if (lastTs === null) lastTs = ts;
   /* ★時間の進みは「実時間そのもの」を使う★
      前は 0.033 秒（＝30 fps ぶん）で頭を打たせていたので、
@@ -15343,6 +15635,15 @@ function tick(ts) {
      0.25 秒にしておく。こうすると、おそい機械でも<b>速さは正しいまま</b>になる。 */
   var dt = clamp((ts - lastTs) / 1000, 0, 0.25);
   lastTs = ts;
+  /* ★見えているシムだけ進めて、見えているシムだけ描く★（2026-10-21）
+     縦につないだので、1つのモードに最大6つのシムが同時にページに出ている。
+     ぜんぶ進めると、見ていない絵のために毎コマ働くことになる。 */
+  modeIds().forEach(function (sid) { withSim(sid, function () { tickSim(sid, dt); }); });
+  requestAnimationFrame(tick);
+}
+function tickSim(sid, dt) {
+  var s = st.sims[sid], d = DEFS[sid];
+  if (!s || !d || s._vis === false) return;
   /* ★「スタートを押してから何秒たったか」をためておく★
      2-1（補足：ケプラー則の本質）で「2秒たってから帯を出す」ために使う。
      シムの時間 t ではなく〈実時間〉なので、シムごとの rate に左右されない。
@@ -15362,9 +15663,8 @@ function tick(ts) {
       var lp = (typeof d.loop === 'function') ? d.loop(v, s) : d.loop;
       if (lp) s.t = 0; else { s.playing = false; setPlayLabel(); }
     }
-    renderActive();
+    renderSim(sid);
   }
-  requestAnimationFrame(tick);
 }
 
 /* ===== 85_design.js ===== */
@@ -15915,8 +16215,8 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
   var hp = parseHash(location.hash);
   if (!DEFS[hp.id]) hp.id = 'm1-1';
   st.cur = hp.id;
+  st.mode = modeOf(hp.id);     /* ★縦つなぎ★ そのシムが入っているモードを開く */
   applySysKind(st.sysKind);    /* 描画対象（太陽と惑星／地球と人工衛星）を4つのシムにそろえる */
-  autoPlayOn(st.cur);          /* ★開いた瞬間に動きだすシム（autoplay: true）★ */
   initProbOverlay();           /* 入試問題の問題文（画像）の重ね窓 */
   /* ★「計算結果を表示」の開け閉め★（2026-10-03）
      #resbar は毎フレーム作り直されることがあるので、ボタンに直接ではなく
@@ -15927,9 +16227,14 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
   });
   buildTabs();
   buildToc();
-  buildPanel();
-  renderActive();
+  buildMode();                 /* ★そのモードのシムを縦に全部ならべる★ */
   renderLegend(DEFS[st.cur]);
+  /* アドレスつきで開いたときは、そのシムのところまで送る */
+  if (hp.id !== modeIds()[0]) {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { scrollSimIntoView(hp.id); });
+    });
+  }
 
   window.addEventListener('hashchange', function () {
     if (st._skipHash) { st._skipHash = false; return; }
@@ -15937,11 +16242,9 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
     if (!DEFS[q.id]) return;
     if (q.id !== st.cur) {
       gotoSim(q.id);
-      /* ページの中のリンクで飛んできたとき、図が帯の下にもぐらないようにする。
-         ★描き直すと高さが変わるので、もう一度そろえ直す★ */
-      scrollSimIntoView(true);
+      /* ★描き直すと高さが変わるので、もう一度そろえ直す★ */
       requestAnimationFrame(function () {
-        requestAnimationFrame(function () { scrollSimIntoView(true); });
+        requestAnimationFrame(function () { scrollSimIntoView(q.id); });
       });
     }
   });
@@ -15954,7 +16257,7 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
     /* ★画面のはばを覚え直してから描き直す★
        4-5 は、このはばで「3つの図を よこ一列 か たて一列 か」を決めている。 */
     noteWinW();
-    refitFormulas(); placeModeTip(); centerTabs(); renderActive();
+    refitFormulas(); placeModeTip(); centerTabs(); renderVisible();
   });
   requestAnimationFrame(tick);
 
@@ -15965,34 +16268,27 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
       var s = st.sims[st.cur];
       return { sim: st.cur, v: JSON.parse(JSON.stringify(s.v)), o: JSON.parse(JSON.stringify(s.o)), t: +s.t.toFixed(4) };
     },
-    /* ★テストは必ず「止まった状態」から始める★
-       autoplay のシムをそのままにすると、時刻が進んで結果が毎回変わってしまう。
-       ページを開きなおしたとき（location.hash で移動したとき）は
-       TEST.pause() を呼ぶこと。 */
-    pause: function () {
-      var s = st.sims[st.cur];
-      s.playing = false; s.t = 0;
-      setPlayLabel(); renderActive();
-      return st.cur;
-    },
     goto: function (id) {
       gotoSim(id);
       return window.TEST.pause();
     },
     gview: function (key, view) {
-      var s = st.sims[st.cur];
-      if (view === undefined) return s.gview[key] || null;
-      if (view === null) delete s.gview[key]; else s.gview[key] = view;
-      renderActive();
-      return s.gview[key] || null;
+      return withSim(st.cur, function () {
+        var s = st.sims[st.cur];
+        if (view === undefined) return s.gview[key] || null;
+        if (view === null) delete s.gview[key]; else s.gview[key] = view;
+        renderActive();
+        return s.gview[key] || null;
+      });
     },
     graphMap: function (key) {
-      var cv = document.getElementById('gc_' + key);
+      var sec = secEl(st.cur);
+      var cv = sec ? sec.querySelector('[id="gc_' + key + '"]') : null;
       if (!cv || !cv._map) return null;
       var m = cv._map;
       return { xmin: +m.xmin.toFixed(4), xmax: +m.xmax.toFixed(4), ymin: +m.ymin.toFixed(4), ymax: +m.ymax.toFixed(4) };
     },
-    openAll: function () { toggleAllGraphs(); return window.TEST.graphsOpen(); },
+    openAll: function () { return withSim(st.cur, function () { toggleAllGraphs(); return window.TEST.graphsOpen(); }); },
     graphsOpen: function () { return JSON.parse(JSON.stringify(st.sims[st.cur].open)); },
     formulas: function () {
       var d = DEFS[st.cur], s = st.sims[st.cur], out = {};
@@ -16000,8 +16296,8 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
       return out;
     },
     /* 計算結果の帯（DOM の文言） */
-    result: function () {
-      var el = document.getElementById('resbar');
+    result: function () { return withSim(st.cur, function () {
+      var el = $('resbar');
       if (!el) return null;
       /* ★計算結果は ふだん閉じている★（2026-10-03）。テストから読むときだけ
          いったん開いて数字を入れ、読み終えたらもとの状態に戻す。 */
@@ -16017,47 +16313,60 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
       });
       setResOpen(was);
       return { items: items, table: rows };
-    },
+    }); },
     readout: function () {
-      return Array.prototype.map.call(document.querySelectorAll('#readout tr'), function (tr) {
+      var sec = secEl(st.cur); if (!sec) return [];
+      return Array.prototype.map.call(sec.querySelectorAll('#readout tr'), function (tr) {
         return tr.children[0].textContent + '=' + tr.children[1].textContent;
       });
     },
     acts: function () {
-      return Array.prototype.map.call(document.querySelectorAll('[data-act],[data-tact]'), function (b) {
+      var sec = secEl(st.cur); if (!sec) return [];
+      return Array.prototype.map.call(sec.querySelectorAll('[data-act],[data-tact]'), function (b) {
         return b.textContent + ':' + (b.className.indexOf('on') >= 0 ? 'on' : 'off');
       });
     },
     act: function (i) {
-      var b = document.getElementById('act_' + i);
+      var sec = secEl(st.cur), b = sec && sec.querySelector('[id="act_' + i + '"]');
       if (b) b.click();
       return window.TEST.state();
     },
     tact: function (i) {
-      var b = document.getElementById('tact_' + i);
+      var sec = secEl(st.cur), b = sec && sec.querySelector('[id="tact_' + i + '"]');
       if (b) b.click();
       return window.TEST.state();
     },
     /* 再生を止めて時刻をそろえる。
        play: true のボタン（押すと再生も始まるボタン）を押したあとの状態を
        テストで読むときに使う。止めないと、読む時刻がそのつどずれてしまう。 */
+    /* ★テストは必ず「止まった状態」から始める★
+       縦つなぎにしたので、画面に入ったシムは自動で動きだす。
+       ★見えているシムを全部止める★（_want を false にしないと、スクロールで
+       画面に入り直したときにまた動きだしてしまう）。 */
     pause: function (t) {
-      var s = st.sims[st.cur];
-      s.playing = false;
-      s.t = (t === undefined) ? 0 : t;
-      setPlayLabel();
-      renderActive();
-      return window.TEST.state();
+      Object.keys(st.sims).forEach(function (id) {
+        var x = st.sims[id];
+        x.playing = false; x._want = false;
+        if (id !== st.cur) x.t = 0;
+      });
+      return withSim(st.cur, function () {
+        var s = st.sims[st.cur];
+        s.t = (t === undefined) ? 0 : t;
+        setPlayLabel();
+        renderVisible();
+        return window.TEST.state();
+      });
     },
     set: function (o) {
-      var s = st.sims[st.cur];
-      if (o.vars) Object.keys(o.vars).forEach(function (k) { if (k in s.v) s.v[k] = o.vars[k]; });
-      if (o.opts) Object.keys(o.opts).forEach(function (k) { s.o[k] = o.opts[k]; });
-      if (o.t !== undefined) s.t = o.t; else s.t = 0;
-      s.playing = false;
-      buildPanel();
-      renderActive();
-      return window.TEST.state();
+      return withSim(st.cur, function () {
+        var s = st.sims[st.cur];
+        if (o.vars) Object.keys(o.vars).forEach(function (k) { if (k in s.v) s.v[k] = o.vars[k]; });
+        if (o.opts) Object.keys(o.opts).forEach(function (k) { s.o[k] = o.opts[k]; });
+        if (o.t !== undefined) s.t = o.t; else s.t = 0;
+        s.playing = false; s._want = false;
+        rebuildSim(st.cur);
+        return window.TEST.state();
+      });
     },
 
     /* ===== 物理の検算（UI の状態によらない固定の計算） ===== */

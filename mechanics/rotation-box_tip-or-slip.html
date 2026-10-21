@@ -1678,7 +1678,8 @@ footer.sitefoot{margin:56px 0 0;padding:0;border:0;background:var(--night);color
   <button id="rotx" type="button" aria-label="閉じる">×</button>
 </div>
 
-<div class="card" id="simhost"></div>
+<!-- 第 64 回：同じモードのセクションを縦に並べる（circular-motion.html と同じ）。中身は 82_stack.js が作る -->
+<div class="secstack" id="secstack"></div>
 
 
 
@@ -8773,22 +8774,9 @@ function buildTabs() {
     });
     centerTab(mtb, mOn);
   }
-  /* 下の段：そのモードのセクション */
-  var stb = $('simtabs'), sOn = null;
-  stb.innerHTML = '';
-  mode.ids.forEach(function (id) {
-    if (!DEFS[id]) return;
-    var b = document.createElement('button');
-    b.textContent = DEFS[id].tab;
-    b.className = (id === st.cur ? 'on' : '');
-    if (id === st.cur) sOn = b;
-    b.addEventListener('click', function () {
-      gotoSim(id);
-      window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });   /* タブを押したら一気に本文の頭へ（smooth は使わない。第 58 回：ページの一番上ではなくヒーローの下） */
-    });
-    stb.appendChild(b);
-  });
-  centerTab(stb, sOn);
+  /* 下の段：そのモードのセクション → 第 64 回：セクションは縦に並べるので、2 段目のタブは出さない（circular-motion.html と同じ） */
+  var stb = $('simtabs');
+  if (stb) { stb.innerHTML = ''; stb.style.display = 'none'; }
   var tip = $('modetip');
   if (tip) tip.innerHTML = mode.tip || '';          /* tip は HTML（<br> で改行） */
   /* 第 58 回：章の扉（丸の番号・Chapter 0n — 英字・正式名称）と、セクションへのピル */
@@ -8803,8 +8791,9 @@ function buildTabs() {
       var a = document.createElement('a');
       a.href = '#' + prettyOf(id);
       a.textContent = DEFS[id].tab;
+      a.setAttribute('data-sim', id);
       if (id === st.cur) { a.className = 'on'; a.setAttribute('aria-current', 'true'); }
-      a.addEventListener('click', function (ev) { ev.preventDefault(); if (id !== st.cur) gotoSim(id); });
+      a.addEventListener('click', function (ev) { ev.preventDefault(); gotoSim(id); scrollToSub(1); });   /* 第 64 回：下に並んだそのセクションへ */
       sl.appendChild(a);
     });
   }
@@ -9634,11 +9623,12 @@ function buildToc() {
 function gotoSim(id, sub) {
   if (!DEFS[id]) return;
   st.sub = sub || 0;
-  if (id === st.cur && st.sub) { syncHash(); scrollToSub(st.sub); return; }
-  st.cur = id;
-  buildTabs();
-  buildPanel();
-  renderActive();
+  var m = modeOf(id);
+  /* 第 64 回：別のモードなら、そのモードのセクションを全部縦に並べ直す。同じモードなら、そのセクションを生かすだけ */
+  if (STK.mode !== m) { st.cur = id; buildTabs(); buildStack(m, id); }
+  else stkActivate(id);
+  STK.hold = performance.now();
+  if (st.sub) scrollToSub(st.sub);
   syncHash();
 }
 
@@ -9691,6 +9681,161 @@ function tick(ts) {
   requestAnimationFrame(tick);
 }
 
+/* ===== 82_stack.js ===== */
+/* ===== 第 64 回：同じモードのセクションを、縦につなげて並べる（circular-motion.html と同じ） =====
+   ・モードのタブを押すと、そのモードのセクションが全部、上から順に並ぶ。セクションのタブ（2 段目）はやめた。
+   ・このページの作り（1 つのシムを #simhost に描く・st.cur）はそのまま生かす：
+     ふだん「生きている」（動かせる）のは、画面のまん中あたりにある 1 つのセクションだけ。
+     ほかのセクションは、最後の見た目のまま、影の DOM（shadow root）にしまっておく（id がぶつからない・押しても反応しない）。
+   ・スクロールして別のセクションがまん中に来たら、そちらを生かし、前のものは止めてしまう。
+     止めたセクションも、DOM ごとしまうので、開いた解答・チェック・図はそのまま残る。
+   ・しまってあるセクションを押したときは、そこを生かしてから、押したボタンを押し直す。 */
+var STK = { mode: null, art: {}, panel: {}, fz: {}, building: false, hold: 0, down: false, sheet: null };
+
+/* しまっておくセクション用のスタイル（ページの <style> を全部そのまま。@font-face はページ側で読みこみ済みなので除く） */
+function stkSheetText() {
+  return Array.prototype.map.call(document.querySelectorAll('style'), function (e) { return e.textContent; }).join('\n')
+    .replace(/@font-face\s*\{[^}]*\}/g, '');
+}
+function stkStyle(root) {
+  try {
+    if (!STK.sheet && window.CSSStyleSheet && 'adoptedStyleSheets' in Document.prototype) {
+      STK.sheet = new CSSStyleSheet(); STK.sheet.replaceSync(stkSheetText());
+    }
+  } catch (e) { STK.sheet = false; }
+  if (STK.sheet) { root.adoptedStyleSheets = [STK.sheet]; return; }
+  var el = document.createElement('style'); el.textContent = stkSheetText(); root.appendChild(el);
+}
+
+/* いま動いているもの（再生・解答のアニメ・傾く瞬間のスロー）を止める */
+function stkStop() {
+  var s = st.sims[st.cur];
+  if (!s) return;
+  if (typeof soloList === 'function') soloList().forEach(function (x) { x.stop(); });
+  if (s.anim && s.anim.kind !== 'push' && s.anim.k) { s.v[s.anim.k] = s.anim.to; s.anim = null; syncVarVals(); refreshActs(); renderActive(); }
+}
+
+/* 生きているセクションを、影の DOM にしまう */
+function stkFreeze(id) {
+  var p = STK.panel[id], fz = STK.fz[id];
+  if (!p || !fz) return;
+  p.querySelectorAll('.sg-glow').forEach(function (e) { e.classList.remove('sg-glow'); });
+  fz.shadowRoot.appendChild(p);
+  fz.inert = true;
+}
+/* しまってあるセクションを出して、生かす */
+function stkThaw(id) {
+  var p = STK.panel[id], art = STK.art[id];
+  if (!p || !art) return;
+  art.appendChild(p);
+  st.cur = id;
+  var d = DEFS[id], s = st.sims[id];
+  if (d.linkOnly) return;
+  syncVarVals(); refreshActs(); setPlayLabel();
+  renderActive();
+  if (d.drawBelow) d.drawBelow(s);
+}
+
+/* モードのセクションを全部並べる。first … 最後に生かしておくセクション */
+function buildStack(mode, first) {
+  var box = $('secstack');
+  if (!box) return;
+  if (STK.mode) stkStop();
+  STK.building = true;
+  STK.mode = mode; STK.art = {}; STK.panel = {}; STK.fz = {};
+  box.innerHTML = '';
+  var ids = mode.ids.filter(function (q) { return !!DEFS[q]; });
+  ids.forEach(function (id) {
+    var art = document.createElement('section');
+    art.className = 'secbox'; art.id = 'sec_' + id; art.setAttribute('data-sim', id);
+    art.setAttribute('aria-label', String(DEFS[id].tab || DEFS[id].title).replace(/<[^>]+>/g, ''));
+    var fz = document.createElement('div');
+    fz.className = 'secfz';
+    fz.attachShadow({ mode: 'open' });
+    stkStyle(fz.shadowRoot);
+    art.appendChild(fz);
+    var p = document.createElement('div');
+    p.className = 'card'; p.id = 'simhost';
+    art.appendChild(p);
+    box.appendChild(art);
+    STK.art[id] = art; STK.panel[id] = p; STK.fz[id] = fz;
+    st.cur = id;
+    buildPanel();
+    if (!DEFS[id].linkOnly) renderActive();
+    stkFreeze(id);                   /* 次のセクションを作る前にしまう（id がぶつからないように） */
+    art.addEventListener('click', function (ev) { stkClickFrozen(id, ev); });
+  });
+  document.documentElement.classList.toggle('linkonly', ids.every(function (q) { return !!DEFS[q].linkOnly; }));
+  var h3d = $('hint3d');
+  if (h3d) h3d.style.display = ids.some(function (q) { return !!DEFS[q].drag3d; }) ? '' : 'none';
+  if (ids.indexOf(first) < 0) first = ids[0];
+  stkThaw(first);
+  STK.building = false;
+  stkMark();
+}
+
+/* セクションを切りかえる（スクロール・リンク・押したとき）。見ている所が動かないように、ずれたぶんをもどす */
+function stkActivate(id) {
+  if (!STK.art[id] || id === st.cur) return;
+  var ref = STK.art[id], y0 = ref.getBoundingClientRect().top;
+  stkStop();
+  stkFreeze(st.cur);
+  stkThaw(id);
+  var y1 = ref.getBoundingClientRect().top;
+  if (Math.abs(y1 - y0) > 0.5) window.scrollBy(0, y1 - y0);
+  stkMark();
+}
+
+/* 章の扉のセクションへのリンク：いま生きているものに印 */
+function stkMark() {
+  Array.prototype.forEach.call(document.querySelectorAll('#seclinks a[data-sim]'), function (a) {
+    var on = a.getAttribute('data-sim') === st.cur;
+    a.classList.toggle('on', on);
+    if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+  });
+}
+
+/* しまってあるセクションを押した → 生かしてから、そこにあるボタン・チェックを押し直す */
+function stkClickFrozen(id, ev) {
+  if (id === st.cur || STK.building) return;
+  var x = ev.clientX, y = ev.clientY;
+  stkActivate(id);
+  STK.hold = performance.now();
+  var el = document.elementFromPoint(x, y);
+  var c = el && el.closest ? el.closest('button, label, a[href], input[type=checkbox], input[type=radio]') : null;
+  if (c && STK.art[id].contains(c)) c.click();
+}
+
+/* スクロールしたら、画面のまん中あたり（上の固定タブより下の 4 割の高さ）にあるセクションを生かす */
+function stkFocusY() {
+  var tb = $('tabbar'), top = tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
+  return top + (window.innerHeight - top) * 0.4;
+}
+function stkWatch() {
+  if (STK.building || STK.down || !STK.mode) return;
+  if (performance.now() - STK.hold < 700) return;          /* リンクで飛んだ直後は、飛んだ先のまま */
+  var s = st.sims[st.cur];
+  if (s && s._dragging) return;
+  var y = stkFocusY(), cur = STK.art[st.cur];
+  if (cur) { var r = cur.getBoundingClientRect(); if (r.top <= y && r.bottom >= y) return; }
+  var hit = null;
+  Object.keys(STK.art).forEach(function (id) {
+    var r2 = STK.art[id].getBoundingClientRect();
+    if (r2.top <= y && r2.bottom >= y) hit = id;
+  });
+  if (!hit || hit === st.cur) return;
+  stkActivate(hit);
+  st.sub = 0;
+  if (window.history && history.replaceState) history.replaceState(null, '', '#' + hashOf());
+}
+var _stkRaf = 0;
+window.addEventListener('scroll', function () {
+  if (_stkRaf) return;
+  _stkRaf = requestAnimationFrame(function () { _stkRaf = 0; stkWatch(); });
+}, { passive: true });
+document.addEventListener('pointerdown', function () { STK.down = true; }, true);
+document.addEventListener('pointerup', function () { STK.down = false; setTimeout(stkWatch, 0); }, true);
+document.addEventListener('pointercancel', function () { STK.down = false; }, true);
 /* ===== 84_sitenav.js ===== */
 /* =========================================================================
    サイト全体へのナビ（momentum-and-collision.html 第 28 回の部品を、剛体と力のモーメント 第 55 回で移植）
@@ -10164,7 +10309,7 @@ setInterval(function () {
     /* 下の図（#simhost）を押したりドラッグしたら止める（再生ボタンがないシミュレーションもあるので、押したらいつでも） */
     document.addEventListener('pointerdown', function (ev) {
       var tg = ev.target; if (!tg || !tg.closest) return;
-      if (tg.closest('#simhost')) { stop(); if (!RM && !paused) still(); }
+      if (tg.closest('#simhost, .secbox')) { stop(); if (!RM && !paused) still(); }
     }, true);
   }
 
@@ -10213,8 +10358,7 @@ function initStuck() {
   st.cur = hp.id; st.sub = hp.sub || 0;
   buildToc();
   buildTabs();
-  buildPanel();
-  renderActive();
+  buildStack(modeOf(st.cur), st.cur);   /* 第 64 回：モードのセクションを縦に並べる */
   if (location.hash && location.hash !== '#' + hashOf() && window.history && history.replaceState) history.replaceState(null, '', '#' + hashOf());   /* 古い書き方のアドレスは #1-1 の形に直す */
   if (st.sub > 1) scrollToSub(st.sub);             /* #1-2-3 などで開いたら、そのカードへ */
   else if (okId && location.hash.length > 1) scrollToSub(1);   /* 第 58 回：#4-2 などで開いたら、ヒーローの下のそのセクションを固定タブの下に */
@@ -10223,8 +10367,7 @@ function initStuck() {
     if (st._skipHash) { st._skipHash = false; return; }
     var q = parseHash(location.hash);
     if (!DEFS[q.id] || !MODES.some(function (m) { return m.ids.indexOf(q.id) >= 0; })) return;
-    if (q.id !== st.cur) { gotoSim(q.id, q.sub); scrollToSub(q.sub || 1); }   /* 第 58 回：ヒーローの下のセクションへ */
-    else if (q.sub) gotoSim(q.id, q.sub);
+    gotoSim(q.id, q.sub); scrollToSub(q.sub || 1);   /* 第 64 回：縦に並んだそのセクションへ（いま生きているセクションでも） */
   });
   /* たて置きのスマホ・タブレットには「横置きをおすすめします」と出す（×で閉じられる） */
   var rotHidden = false;
