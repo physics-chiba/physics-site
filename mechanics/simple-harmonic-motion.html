@@ -1607,7 +1607,8 @@ button.b.vsegb.on{background:var(--ink);border-color:var(--ink);color:#fff}
 #m1s2 .vrow.cell.meter{padding:.22em .5em}
 #m1s2 .vrow.hasnotes .vbar{margin-bottom:2.15em}
 #m1s2 .stoptk.stopnote{top:calc(100% + 1em);height:2em}
-#m1s2 .vrow .veq{font-size:.74rem}
+#m1s2 .vhead{height:28px;align-items:center}   /* φ の値（分数）で行の高さが変わらないように */
+#m1s2 .vrow .veq{font-size:.74rem;height:34px;display:flex;align-items:center;overflow:hidden}   /* φ で式の高さが変わって画面が上下に動かないように（2026-10-25 千葉さん） */
 #m1s2 .vrow.cell .vbar input[type=range]{height:18px}
 .vrow.cell.grpA{background:#fdeedd;padding-left:.5em;padding-right:.5em;border-radius:9px}
 /* ②-8 まとめ：4 × 4 の表 */
@@ -1750,7 +1751,12 @@ details.m2card > summary.qt::before{display:inline-block;margin-right:.4em;verti
 .m31box{margin-top:12px}
 .m3pdfov{position:fixed;inset:0;z-index:9500;background:rgba(20,23,28,.72);overflow:auto;cursor:zoom-out;padding:12px;text-align:center}
 .m3pdfov img{display:block;margin:0 auto;max-width:min(100%,1100px);height:auto;background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.35)}
+.m3tab{margin-left:.8em;font:inherit;font-size:.82rem;font-weight:700;padding:.15em .7em;border-radius:999px;border:1.5px solid #1f4f8a;background:#fff;color:#1f4f8a;cursor:pointer}
+.m3tab:hover{background:#eaf1fa}
 .m3pdfbar{color:#fff;font-weight:700;margin:0 0 8px;font-size:.9rem}
+figure.m3pdf .m3row{display:flex;align-items:center;gap:.6em;flex-wrap:wrap;margin-top:.2em}
+figure.m3pdf .m3row .m3tab{margin-left:auto}   /* 「別のページで開く」は行の右はし（2026-10-25 千葉さん） */
+figure.m3pdf .m3row .m3cap{margin-left:0}
 figure.m3pdf .m3cap{display:inline-block;margin-left:.6em;color:#c0392b;font-weight:800}
 .m3easy{color:var(--ink);font-weight:800;text-decoration:underline;text-decoration-color:#d1352b;text-decoration-thickness:2.5px;text-underline-offset:3px}
 /* グラフの見出しが長いとき：数値は折り返さず右に */
@@ -1927,6 +1933,10 @@ h3.m4point{margin:0 0 .4em;font-size:1.08rem;font-weight:800;color:#a85c0c;borde
   table.reltab.cmptab{table-layout:auto;width:100%}
   table.reltab.cmptab td{word-break:break-all}
 }
+
+/* モード④のグラフの題のうしろの説明（ ）は小さく、1 行に（2026-10-25 千葉さん） */
+.qcard .qt .qtsub{font-size:.7em;font-weight:700;white-space:nowrap;margin-left:.15em}
+@media(max-width:600px){.qcard .qt .qtsub{white-space:normal}}
 
 </style>
 </head>
@@ -2483,6 +2493,15 @@ function compArrow(ctx, x1, y1, x2, y2, col) {
   ctx.lineWidth = 1.4; ctx.stroke(); ctx.restore();
 }
 /* 細い点線 */
+/* 参考の図（つりあいの位置など）のエリア：背景を薄い色でぬり、スタートで動くアニメとの境に実線（2026-10-25 千葉さん）。
+   参考の図より先に描く。(x0, y0)–(x1, y1) の長方形。side：境の線を引く辺（'r' 右・'b' 下） */
+function refArea(ctx, x0, y0, x1, y1, side) {
+  ctx.save(); ctx.fillStyle = '#f1efe8'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.strokeStyle = 'rgba(20,23,28,.30)'; ctx.lineWidth = 1.2; ctx.beginPath();
+  if (side === 'b') { ctx.moveTo(x0, y1); ctx.lineTo(x1, y1); } else if (side !== 'n') { ctx.moveTo(x1, y0); ctx.lineTo(x1, y1); }   /* 'n'：線は引かない（あとで refLine） */
+  ctx.stroke(); ctx.restore();
+}
+function refLine(ctx, x, y0, y1) { ctx.save(); ctx.strokeStyle = 'rgba(20,23,28,.30)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke(); ctx.restore(); }
 function dotted(ctx, x1, y1, x2, y2, col, dash) {
   ctx.save(); ctx.strokeStyle = col || 'rgba(60,70,80,.55)'; ctx.lineWidth = 1.1; ctx.setLineDash(dash || [2, 3]);
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
@@ -2945,7 +2964,7 @@ Sim.prototype.syncSliders = function (force) {
     var html = vd.fmt ? vd.fmt(x, self) : (fmt(x, vd.dec) + (vd.unit ? ' ' + vd.unit : ''));
     if (s._html !== html) { s._html = html; s.val.innerHTML = vd.fmt ? mathify(html) : html; }
     s.inp.style.setProperty('--p', p.toFixed(1) + '%');
-    if (s.seg) { var si = s.idxOf(x); [].forEach.call(s.seg.querySelectorAll('.vsegb'), function (b, i) { var on = i === si; if (b.classList.contains('on') !== on) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); } }); }
+    if (s.seg) { var si = s.idxOf(x); [].forEach.call(s.seg.querySelectorAll('.vsegb'), function (b, i) { var on = i === si || (vd.modTau && Math.abs(Math.cos(vd.stops[i]) - Math.cos(vd.stops[si])) < 1e-9 && Math.abs(Math.sin(vd.stops[i]) - Math.sin(vd.stops[si])) < 1e-9); if (b.classList.contains('on') !== on) { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); } }); }
     if (s.eq) { var eh = vd.eqLine(self); if (s._eh !== eh) { s._eh = eh; s.eq.innerHTML = mathify(eh); } }
     if (vd.btnOnly && !self.busy) {                        /* 端の段ではボタンを押せない */
       var cn = vd.canNudge ? [vd.canNudge(self, -1), vd.canNudge(self, 1)] : (vd.stops ? [s.idxOf(x) > 0, s.idxOf(x) < vd.stops.length - 1] : [true, true]);
@@ -3478,7 +3497,8 @@ function phiIdx(p) { var b = 0; PHI.forEach(function (q, i) { if (Math.abs(q - p
 function phiVar(def0, five) {
   var ids = five ? PHI5 : PHI.map(function (q, i) { return i; });
   var i0 = ids.indexOf(4), i2 = ids.indexOf(6);
-  return { k: 'phi', label: '初期位相 $\\phi$', aria: '初期位相', stops: ids.map(function (i) { return PHI[i]; }), prop: !five, seg: !!five, def: def0,
+  return { k: 'phi', label: '初期位相 $\\phi$', aria: '初期位相', stops: ids.map(function (i) { return PHI[i]; }), prop: !five, seg: !!five, modTau: !!five, def: def0,   /* modTau：π と −π は同じ角なので、両方のボタンを ON に見せる（2026-10-25 千葉さん） */
+   
     stopLabels: ids.map(function (i) { return '$' + (five ? PHITEX[i] : PHITEX[i].replace(/\\dfrac/g, '\\tfrac')) + '$'; }),
     stopNotes: five ? [] : [{ i: i0, html: '中心で<br>初速度' }, { i: i2, html: '端で<br>放す' }],   /* ボタンのときは注記なし（2026-10-16 千葉さん） */
     fmt: function (x) { return '$\\phi = ' + PHITEX[phiIdx(x)] + '$'; },
@@ -3894,7 +3914,16 @@ function drawM1S2(s, ctx, W, H) {
   label(ctx, 'O', G2.xa + 10, G2.cy, { size: 11.5, align: 'left' });
   [[q.A, 'A'], [-q.A, '−A']].forEach(function (p) { var y = G2.cy - p[0] * G2.S; ctx.save(); ctx.strokeStyle = '#2b323c'; ctx.beginPath(); ctx.moveTo(G2.xa - 4, y); ctx.lineTo(G2.xa + 4, y); ctx.stroke(); ctx.restore(); label(ctx, p[1], G2.xa + 9, y, { size: 11, align: 'left', color: '#5d6875' }); });
   if (fk && s.dragX === undefined) m1s2DetailDraw(ctx, G2, q, th, px, py, R, fk, Lv, La);   /* 注目したら、成分の分解・x 軸への映し・色ぬりを（動いている間も）出す（2026-10-18 千葉さん） */
-  if (showA && s.dragX === undefined && Math.abs(Math.cos(th)) < 0.02) {   /* ωt + ϕ = ±π/2（端）：円の加速度ベクトルと、x 軸の上の映し（注目しないときは小球の a）が同じ長さ ⇒「＝」の印 */
+  if (fk && s.dragX === undefined) {                               /* 注目したときの同じ大きさの印は 3 つの注目でそろえる（2026-10-25 千葉さん）：
+       円の上のベクトルの x 成分（縦）・小球のベクトル・x 軸に映したもの の 3 本に、同じ印（1 本線）をつける */
+    _fArrows.forEach(function (a) { a.noTick = true; });
+    var segs = fk === 'x' ? [[px, G2.cy, py], [xL, G2.cy, B.y], [G2.xa - 16, G2.cy, py]]
+      : fk === 'v' ? [[px, py, py + ty * Lv], [G2.xs + B.rb + 14, B.y, B.y + ty * Lv], [G2.xa, py, py + ty * Lv]]
+      : [[px + ox, py + oy, py + oy - ny * La], [x2, B.y, B.y + ay], [G2.xa, py, py - ny * La]];
+    var mcol = fk === 'x' ? XCOL : fk === 'v' ? COL.vel : COL.acc;
+    segs.forEach(function (g) { var L = g[2] - g[1]; if (Math.abs(L) > 14) equalTick(ctx, { x: g[0], y: g[1], ux: 0, uy: L > 0 ? 1 : -1, len: Math.abs(L), color: mcol }, 1); });
+  }
+  if (!fk && showA && s.dragX === undefined && Math.abs(Math.cos(th)) < 0.02) {   /* ωt + ϕ = ±π/2（端）：円の加速度ベクトルと、x 軸の上の映し（注目しないときは小球の a）が同じ長さ ⇒「＝」の印 */
     eqSign(ctx, px + ox, py + oy, -nx, -ny, La, COL.acc);
     if (fk === 'a') eqSign(ctx, G2.xa, py, 0, -ny, La, COL.acc, -1); else eqSign(ctx, x2, B.y, 0, -ny, La, COL.acc);
   }
@@ -4222,7 +4251,7 @@ function m2Def(o) {
       var h = o.height(w, s), Q = o.Q(s);
       if (s.circOn && o.circ === 'below') { var g = o.geo(s, { x0: 0, y0: 0, w: w, h: h }); h += Math.round(2 * Q.Amax * g.S + 44); }
       if (s.circOn && o.circ === 'normal') h += o.circExtra(w, h, s);
-      return h;
+      return h + (o.topRef || 0);                                   /* 上に「つりあいの位置」の参考の図（②-1・②-2） */
     },
     dragHit: o.noDrag ? null : function (s, x, y) { var g = m2Geo(s), b = g.pos(m2State(s, s.t).X); return Math.hypot(x - b.x, y - b.y) < g.rb + 10; },
     dragMove: function (s, x, y) {
@@ -4281,9 +4310,10 @@ function m2State(s, t) {
 }
 /* 図の大きさ（円を右に出すときは、図の部分をせまくする） */
 function m2Box(s) {
-  var o = s.def.O, W = s.W, H = s.H;
+  var o = s.def.O, W = s.W, H = s.H, tr = o.topRef || 0;           /* tr：上の参考の図の高さ（その下から描く） */
   if (s.circOn && o.circ === 'right') return { x0: 0, y0: 0, w: W * 0.66, h: H };
-  if (s.circOn && o.circ === 'below') return { x0: 0, y0: 0, w: W, h: o.height(W, s) };
+  if (s.circOn && o.circ === 'below') return { x0: 0, y0: tr, w: W, h: o.height(W, s) };
+  if (tr) return { x0: 0, y0: tr, w: W, h: H - tr };
   if (s.circOn && o.circ === 'normal') { var h0 = o.height(W, s), ex = o.circExtra(W, h0, s); return { x0: 0, y0: ex, w: W, h: h0 }; }   /* 斜面：上に場所をあけ、斜面に垂直な向きに円を置く */
   return { x0: 0, y0: 0, w: W, h: H };
 }
@@ -4473,7 +4503,7 @@ function m2Axis(ctx, p0, u, a0, a1, lab, o) {
   ctx.save(); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(p0.x + n[0] * 4, p0.y + n[1] * 4); ctx.lineTo(p0.x - n[0] * 4, p0.y - n[1] * 4); ctx.stroke(); ctx.restore();
   label(ctx, 'O', p0.x + (o.oDx || n[0] * 12), p0.y + (o.oDy || n[1] * 12), { size: 11.5, bold: true });
   sym(ctx, 'x', p0.x + u[0] * (a1 + 10) + (o.xDx || 0), p0.y + u[1] * (a1 + 10) + (o.xDy || 0), { size: 14 });
-  if (lab) label(ctx, lab, p0.x + u[0] * (a1 + 10) + (o.lDx || 0), p0.y + u[1] * (a1 + 10) + (o.lDy || 16), { size: 10.5, color: '#5d6875', align: o.lAl || 'center' });
+  if (lab) label(ctx, lab, p0.x + u[0] * (a1 + 10) + (o.lDx || 0), p0.y + u[1] * (a1 + 10) + (o.lDy !== undefined ? o.lDy : 16), { size: 10.5, color: '#5d6875', align: o.lAl || 'center' });
 }
 /* 立式カード（① 力 → ② 運動方程式 → ③ 振動の中心・ω・T） */
 function m2Card(c) {
@@ -4525,7 +4555,7 @@ DEFS.m2s1 = m2Def({
   setAmp: m2SetAmp,
   height: function (w) { return Math.round(clamp(w * 0.24, w < 480 ? 180 : 140, 180)); },   /* せまい画面では、上に吹き出しの場所をとる */
   geo: function (s, box, small) { return hGeo(s, box, M2.s1.Amax, small); },
-  snapAsp: 0.62,
+  snapAsp: 0.62, topRef: 64,                                     /* 上に「つりあいの位置」の参考の図（2026-10-25 千葉さん） */
   scene: function (s, ctx, g, st, opt) { hScene(s, ctx, g, st, opt, [{ k: M2.s1.k, side: -1, name: '−kx' }]); },
   snaps: function (s) {
     var A = M2.s1.Amax * 0.8;
@@ -4539,12 +4569,28 @@ DEFS.m2s1 = m2Def({
         '<p class="qnow"><span class="qtag now">いまの値</span>$m = ' + Q.m.toFixed(2) + '$ kg、$k = ' + Q.K + '$ N/m なので $T = ' + sig2(Q.T) + '$ s</p>' });
   }
 });
+/* ②-1・②-2 の上の参考の図：つりあいの位置（＝自然の長さの位置）で小球が止まっているようす。横の位置は下のアニメと同じ（2026-10-25 千葉さん） */
+function hRef(s, ctx, g, springs, Q, right, xR) {
+  var tr = s.def.O.topRef, yF = tr - 14, yb = yF - g.rb;
+  refArea(ctx, 0, 0, s.W, tr, 'b');
+  wallLeftAt(ctx, g.xW, yF - 40, yF);
+  if (springs.length > 1) hatchSeg(ctx, right, yF, right, yF - 40, 1, 8);
+  floorAt(ctx, g.xW, xR, yF);
+  springs.forEach(function (sp) {
+    var L0 = g.xO - g.rb - g.xW, o2 = { r: 8, lead: 8, k: sp.k, thin: 1, Lmin: L0 - Q.Amax * g.S };
+    if (sp.side < 0) springDense(ctx, g.xW, yb, g.xO - g.rb, yb, L0, o2); else springDense(ctx, g.xO + g.rb, yb, right, yb, L0, o2);
+  });
+  ballShape(ctx, g.xO, yb, g.rb, M2BALL);
+  label(ctx, 'つりあいの位置', g.xO - 4, 13, { size: 10.5, bold: true, color: '#c0392b', align: 'right' });
+  if (s.W >= 560) label(ctx, springs.length > 1 ? '（2 本のばねがどちらも自然の長さ）' : '（ばねは自然の長さ）', g.xO + 4, 13,   /* せまい画面では（ ）は出さない */ { size: 10, color: '#5d6875', align: 'left' });
+}
 /* 水平の振り子の図（②-1・②-2）。springs：[{ k, side（−1 左のかべ・+1 右のかべ）, name }] */
 function hScene(s, ctx, g, st, opt, springs) {
   var snap = opt.snap, big = opt.big, sm = snap && !big, b = g.pos(st.X), W = s.W, right = g.xO + (g.xO - g.xW);
   var kMax = Math.max.apply(null, springs.map(function (sp) { return sp.k; }));
   var Q = s.def.O.Q(s), showF = snap || fAll(s), net = !snap && fNet(s), fs = (sm ? 16 : 50) / Math.max(kMax * Q.Amax, Q.m * G);   /* 縮尺：1 本のばねの最大の弾性力（または重力）が 50 px */
   var xR = springs.length > 1 ? right : (snap ? g.xO + (g.xO - g.xW) * 0.9 : Math.min(W - 10, right + 80));
+  if (!snap && s.def.O.topRef) hRef(s, ctx, g, springs, Q, right, xR);
   wallLeftAt(ctx, g.xW, g.yF - (sm ? 26 : 52), g.yF);
   if (springs.length > 1) hatchSeg(ctx, right, g.yF, right, g.yF - (sm ? 26 : 52), 1, sm ? 5 : 8);
   floorAt(ctx, g.xW, xR, g.yF);
@@ -4597,7 +4643,7 @@ DEFS.m2s2 = m2Def({
     hScene(s, ctx, g, st, opt, [{ k: s.v.k1, side: -1, name: '−k₁x' }, { k: s.v.k2, side: 1, name: '−k₂x' }]);
     if (!opt.snap) { var b = g.pos(st.X), yl = g.yF + 15; label(ctx, 'ばね定数 k₁', (g.xW + g.xO) / 2 - 20, yl, { size: 11, color: COL.ink2 }); label(ctx, 'ばね定数 k₂', (g.xO + g.xO + (g.xO - g.xW)) / 2 + 20, yl, { size: 11, color: COL.ink2 }); }   /* 床の下（x 軸の上）に。上は手と吹き出しを置く（2026-10-19 千葉さん） */
   },
-  snapAsp: 0.62,
+  snapAsp: 0.62, topRef: 64,                                     /* 上に「つりあいの位置」の参考の図（2026-10-25 千葉さん） */
   snaps: function (s) { var A = M2.s2.Amax * 0.8; return [{ cap: 'ⓐ つりあいの位置', X: 0 }, { cap: 'ⓑ 手をはなす', X: A, hand: true }, { cap: 'ⓒ $x>0$ のとき', X: A * 0.5, v: -1, eq: '$F = -k_1x - k_2x < 0$' }, { cap: 'ⓓ $x<0$ のとき', X: -A * 0.5, v: -1, eq: '$F = -k_1x - k_2x > 0$' }]; },
   card: function (s) {
     var Q = DEFS.m2s2.O.Q(s);
@@ -4613,7 +4659,8 @@ DEFS.m2s2 = m2Def({
 function m2s3Q(s) { var m = M2.s3.m, K = M2.s3.k, w = Math.sqrt(K / m), d = m * G / K; return { m: m, K: K, w: w, T: TAU / w, A: s.v.A, phi: s.v.phi, Amax: M2.s3.Amax, Amin: 0.03, d: d, off: s.org ? d : 0 }; }
 function vGeo(s, box, small) {
   var Q = m2s3Q(s), Ltot = M2.s3.L0 + Q.d + Q.Amax + 0.08, top = box.y0 + (small ? 8 : 18);
-  var S = (box.h - (small ? 18 : 40)) / Ltot, xs = box.x0 + box.w * (small ? 0.42 : 0.42), rb = small ? 7 : 13;
+  var ex = (!small && !s.circOn) ? 64 : 0;                        /* 下に、左の図の名前と吹き出しの場所をとる（2026-10-25） */
+  var S = (box.h - (small ? 18 : 40) - ex) / Ltot, xs = box.x0 + box.w * (small ? 0.42 : 0.42), rb = small ? 7 : 13;
   var yN = top + M2.s3.L0 * S, yE = yN + Q.d * S;
   return { S: S, top: top, xs: xs, rb: rb, yN: yN, yE: yE, u: [0, 1], nCirc: [1, 0], circOff: box.w * 0.62, pos: function (X) { return { x: xs, y: yE + X * S }; } };
 }
@@ -4628,7 +4675,7 @@ DEFS.m2s3 = m2Def({
   sync: function (s) { syncOrg(s); },
   Q: m2s3Q, setAmp: m2SetAmp,
   energy: function (s, r) { var Q = m2s3Q(s); return { K: 0.5 * Q.m * r.v * r.v, U: 0.5 * Q.K * r.X * r.X }; },
-  height: function (w) { return Math.round(clamp(w * 0.47, 216, 312)); },     /* 前の 60 %（2026-10-16 千葉さん） */
+  height: function (w) { return Math.round(clamp(w * 0.47, 216, 312)) + 64; },     /* 前の 60 %（2026-10-16 千葉さん）＋下の名前と吹き出しの場所 */
   geo: function (s, box, small) { return vGeo(s, box, small); },
   scene: function (s, ctx, g, st, opt) { vScene(s, ctx, g, st, opt, m2s3Q(s)); },
   snapAsp: 2.1,
@@ -4654,8 +4701,9 @@ DEFS.m2s3 = m2Def({
 function vScene(s, ctx, g, st, opt, Q) {
   var snap = opt.snap, big = opt.big, sm = snap && !big, b = g.pos(st.X), showF = snap || fAll(s), net = !snap && fNet(s), fs = (sm ? 14 : 30) / (Q.m * G);
   ceilingAt(ctx, g.xs - (sm ? 16 : 34), g.xs + (sm ? 16 : 34), g.top);
-  if (!snap && !s.circOn) {                                       /* 左に「自然長のときのばね」と「つりあっている状態のばね」（対応する円運動を出すときは消す。2026-10-16 千葉さん） */
-    [[g.xs * 0.22, g.yN, false, '自然長'], [g.xs * 0.52, g.yE, true, 'つりあい']].forEach(function (r) {
+  if (!snap && !s.circOn && s.W >= 480) {                         /* 左に「自然長のときのばね」と「つりあっている状態のばね」（対応する円運動を出すとき・せまい画面では消す。2026-10-16 千葉さん） */
+    refArea(ctx, 0, 0, (g.xs * 0.52 + 26 + g.xs - 60) / 2, s.H, 'r');   /* 参考の図のエリア（背景と境の実線） */
+    [[g.xs * 0.22, g.yN, false, '自然長の位置'], [g.xs * 0.52, g.yE, true, 'つりあいの位置']].forEach(function (r) {   /* 名前は「〜の位置」で、3 行ほど下に（2026-10-25 千葉さん） */
       ceilingAt(ctx, r[0] - 18, r[0] + 18, g.top);
       springDense(ctx, r[0], g.top, r[0], r[1] - (r[2] ? g.rb : 0), g.yE - g.top - g.rb, { r: 8, lead: 8, k: Q.K, Lmin: g.yE - g.top - g.rb - Q.Amax * g.S });   /* 右のばねと同じ巻き数（同じばね） */
       if (r[2]) ballShape(ctx, r[0], r[1], g.rb, M2BALL);
@@ -4663,7 +4711,7 @@ function vScene(s, ctx, g, st, opt, Q) {
         fArrow(ctx, r[0] - 5, r[1] - g.rb, 0, -1, Q.K * Q.d * fs, COL.hand, 'kd', { lx: -16, noShift: true });
         fArrow(ctx, r[0] + 5, r[1], 0, 1, Q.m * G * fs, COL.force, 'mg', { lx: 14, noShift: true });
       }
-      label(ctx, r[3], r[0], r[1] + (r[2] ? g.rb + 13 : 12), { size: 10.5, color: r[2] ? '#c0392b' : '#5d6875', bold: r[2] });
+      label(ctx, r[3], r[0], r[1] + (r[2] ? g.rb + 13 : 12) + 40, { size: 10.5, color: r[2] ? '#c0392b' : '#5d6875', bold: r[2] });
     });
   }
   var dl = sm ? g.xs - 22 : (snap || s.circOn ? g.xs - 60 : g.xs * 0.1);   /* 左のばねの絵とつながるように */
@@ -4676,7 +4724,7 @@ function vScene(s, ctx, g, st, opt, Q) {
   }
   springDense(ctx, g.xs, g.top, g.xs, b.y - g.rb, g.yE - g.top - g.rb, { r: sm ? 4 : 8, lead: sm ? 3 : 8, k: Q.K, thin: sm ? 0.6 : 1, Lmin: g.yE - g.top - g.rb - Q.Amax * g.S });
   /* 手は下から支える（上から持つとばねと重なる。2026-10-16 千葉さん） */
-  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'up', -Math.cos(Q.phi), st.X < 0 ? { flip: true, bubPos: 'd' } : { flip: true, bubPos: 'l', bubDy: 14 });   /* 右は x 軸なので、左か下に */
+  if (!snap && s.t < 0.5) startHand(s, ctx, b.x, b.y, g.rb, 'up', -Math.cos(Q.phi), s.circOn ? (st.X < 0 ? { flip: true, bubPos: 'd' } : { flip: true, bubPos: 'l', bubDy: 14 }) : { flip: true, bubPos: 'd' });   /* 吹き出しは手の下（下に場所をとってある）。円運動を出すときは左か下 */
   if (opt.frame && opt.frame.hand) dropHandAt(ctx, b.x, b.y, (big ? 0.42 : 0.2) * g.rb / 13, 0, 1, true);
   ballShape(ctx, b.x, b.y, g.rb, M2BALL);
   var vref = Q.A * Q.w || 1, vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / vref;
@@ -4689,7 +4737,7 @@ function vScene(s, ctx, g, st, opt, Q) {
   }
   if (!snap) {
     var p0 = { x: g.xs + 104, y: s.org ? g.yN : g.yE };
-    m2Axis(ctx, p0, [0, 1], -(p0.y - g.top) + 8, (g.yE - p0.y) + Q.Amax * g.S + 24, '（下向きが正）', { oDx: -12, oDy: 0, xDx: 10, lDx: 10, lDy: 0, lAl: 'left' });
+    m2Axis(ctx, p0, [0, 1], -(p0.y - g.top) + 8, (g.yE - p0.y) + Q.Amax * g.S + 24, '（下向きが正）', { oDx: -12, oDy: 0, xDx: 10, lDx: 18, lDy: 0, lAl: 'left' });
   }
 }
 
@@ -4875,7 +4923,7 @@ function fScene(s, ctx, g, st, opt) {
    ===================================================================== */
 function m2s6Q(s) { var l = s.v.l, m = s.v.m, w = Math.sqrt(G / l), th0 = s.v.th * Math.PI / 180, A = l * th0; return { m: m, K: m * G / l, w: w, T: TAU / w, A: A, phi: s.v.phi, Amax: l * 15 * Math.PI / 180, Amin: l * 2 * Math.PI / 180, l: l, th0: th0 }; }
 function pGeo(s, box, small) {
-  var Q = m2s6Q(s), top = box.y0 + (small ? 8 : 22), S = (box.h - (small ? 26 : 70)) / (2.0 + 0.06), px = box.x0 + box.w * 0.48, rb = small ? 6 : 12;
+  var Q = m2s6Q(s), top = box.y0 + (small ? 8 : 22), S = (box.h - (small ? 26 : 70)) / (2.0 + 0.06), px = box.x0 + box.w * (small || s.W < 480 ? 0.48 : 0.58), rb = small ? 6 : 12;   /* 左に参考の図があるので右へ（2026-10-25） */
   S = Math.min(S, (box.w * 0.45) / (2.0 * Math.sin(15 * Math.PI / 180)));
   var L = Q.l * S;
   var pos = function (X) { var th = X / Q.l; return { x: px + L * Math.sin(th), y: top + L * Math.cos(th) }; };
@@ -4949,6 +4997,14 @@ function pScene(s, ctx, g, st, opt) {
   var Q = m2s6Q(s), snap = opt.snap, big = opt.big, sm = snap && !big, b = g.pos(st.X), showF = snap || fAll(s), net = !snap && fNet(s), fs = (sm ? 16 : 30) / (Q.m * G);
   var th = st.X / Q.l, rb = g.rb * Math.cbrt(Q.m / 0.5);
   if (sm) rb = g.rb;
+  if (!snap && s.W >= 480) {                                       /* 左に参考の図：つりあいの位置（糸が鉛直で小球が止まっている。2026-10-25 千葉さん）。せまい画面では出さない */
+    var xr = s.W * 0.14, rr = rb;
+    refArea(ctx, 0, 0, s.W * 0.28, s.H, 'r');
+    ceilingAt(ctx, xr - 30, xr + 30, g.top);
+    ctx.save(); ctx.strokeStyle = '#6b5532'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(xr, g.top); ctx.lineTo(xr, g.top + g.L - rr); ctx.stroke(); ctx.restore();
+    ballShape(ctx, xr, g.top + g.L, rr, M2BALL);
+    label(ctx, 'つりあいの位置', xr, Math.min(s.H - 10, g.top + g.L + rr + 40), { size: 10.5, bold: true, color: '#c0392b' });
+  }
   ceilingAt(ctx, g.px - (sm ? 18 : 40), g.px + (sm ? 18 : 40), g.top);
   dotted(ctx, g.px, g.top, g.px, g.top + g.L + (sm ? 10 : 44), 'rgba(20,23,28,.35)', [4, 3]);
   if (!snap) eqLabel(ctx, g.px + 14, Math.min(s.H - 10, g.top + g.L + 54), 'left');      /* 最下点がつりあいの位置（点線の下のはし） */
@@ -5018,15 +5074,18 @@ DEFS.m2s7 = m2Def({
 });
 function bScene(s, ctx, g, st, opt) {
   var Q = m2s7Q(s), snap = opt.snap, big = opt.big, sm = snap && !big, showF = snap || fAll(s), net = !snap && fNet(s), fs = (sm ? 16 : 30) / (Q.m * G);
-  var box = g.box, x0 = box.x0 + (sm ? 4 : 14), x1 = box.x0 + box.w * (snap ? 0.94 : (s.circOn ? 0.90 : (g.side ? 0.86 : 0.80))), yBot = box.y0 + box.h - (sm ? 6 : 30);
+  var box = g.box, x0 = box.x0 + (sm ? 4 : 14), x1 = box.x0 + box.w * (snap ? 0.94 : (s.circOn ? 0.90 : (g.side ? 0.86 : 0.80))), yBot = box.y0 + box.h - (sm ? 6 : (!snap && g.side ? 48 : 30));   /* 左の図があるときは、水槽の下に名前を書く場所をとる */
   var bot = g.yBot0 + st.X * g.S, topY = bot - Q.Hb * g.S, xl = g.xc - g.bw / 2;
+  var xSep = (box.x0 + box.w * 0.33 + g.bw * 0.6 + g.xc - g.bw / 2 - 34) / 2;   /* 左の参考の図のエリアの右はし */
+  if (!snap && g.side) refArea(ctx, 0, 0, xSep, s.H, 'n');
   /* 容器と液体 */
   ctx.save(); ctx.fillStyle = 'rgba(90,167,255,.16)'; ctx.fillRect(x0, g.yW, x1 - x0, yBot - g.yW);
   ctx.strokeStyle = '#3f74a8'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x0, g.yW); ctx.lineTo(x1, g.yW); ctx.stroke();
   ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x0, g.yW - (sm ? 12 : 40)); ctx.lineTo(x0, yBot); ctx.lineTo(x1, yBot); ctx.lineTo(x1, g.yW - (sm ? 12 : 40)); ctx.stroke(); ctx.restore();
   if (!sm) label(ctx, '液体（密度 ρ）', x1 - 8, yBot - 14, { size: 10.5, color: '#3f74a8', align: 'right' });
   if (!snap && g.side) {                                         /* 左の 2 つの図：底面が液面と同じ高さ／つりあい（同じ水槽の中に） */
-    [[box.x0 + box.w * 0.13, g.yW, '底面が液面と', '同じ高さのとき', false], [box.x0 + box.w * 0.33, g.yBot0, 'つりあいのとき', '', true]].forEach(function (r) {
+    refLine(ctx, xSep, 0, s.H);                                   /* 境の実線（水の上にも見えるように、水槽のあとに） */
+    [[box.x0 + box.w * 0.13, g.yW, '底面が液面と', '同じ高さの位置', false], [box.x0 + box.w * 0.33, g.yBot0, 'つりあいの位置', '', true]].forEach(function (r) {   /* 名前は「〜の位置」で、水槽の下に（2026-10-25 千葉さん） */
       var bb = r[1], tt = bb - Q.Hb * g.S, l = r[0] - g.bw / 2;
       ctx.save(); ctx.fillStyle = '#ead9b8'; ctx.fillRect(l, tt, g.bw, bb - tt);
       if (bb > g.yW) { ctx.fillStyle = 'rgba(31,111,214,.30)'; ctx.fillRect(l, g.yW, g.bw, bb - g.yW); }
@@ -5036,8 +5095,7 @@ function bScene(s, ctx, g, st, opt) {
         fArrow(ctx, r[0] - 6, cyy, 0, 1, Q.m * G * fs, COL.force, 'mg', { noShift: true, lx: -10 });
         if (r[4]) fArrow(ctx, r[0] + 6, (g.yW + bb) / 2, 0, -1, Q.m * G * fs, '#b58900', 'ρhSg', { noShift: true, lx: 22 });
       }
-      label(ctx, r[2], r[0], yBot - (r[3] ? 30 : 18), { size: 10.5, color: r[4] ? '#c0392b' : '#5d6875', bold: r[4] });
-      if (r[3]) label(ctx, r[3], r[0], yBot - 16, { size: 10.5, color: '#5d6875' });
+      label(ctx, r[2], r[0], yBot + 16, { size: 10.5, color: r[4] ? '#c0392b' : '#5d6875', bold: r[4] }); if (r[3]) label(ctx, r[3], r[0], yBot + 30, { size: 10.5, color: '#5d6875' });
     });
   }
   /* 物体：液体の外は木の色、液体の中は青くぬって「液体中の体積」を見せる */
@@ -5232,7 +5290,7 @@ var M3S1TAB = [
   { n: '②-8', a: '2-8', t: '地球トンネルの単振動', eq: 'ma = -\\dfrac{mg}{R}x', K: '\\dfrac{mg}{R}', w: '\\sqrt{\\dfrac{g}{R}}', T: '2\\pi\\sqrt{\\dfrac{R}{g}}', c: '地球の中心' }   /* 2026-10-18 千葉さん */
 ];
 DEFS.m3s1 = {
-  id: 'm3s1', mode: 'mode3', num: 1, title: '周期がどの物理量に依存するのか<small class="ttnote">※暗記事項ではない</small>', short: '周期は何で決まる？', custom: true,
+  id: 'm3s1', mode: 'mode3', num: 1, title: '各単振動の周期は、ある物理量に依存して変わる<small class="ttnote">※暗記事項ではない</small>', short: '周期は何で決まる？', custom: true,
   html: function () {
     var t = mathify('<div class="m3tabwrap"><table class="reltab m3tab"><thead><tr><th>単振動</th><th>運動方程式</th><th>$K$</th><th>$\\omega = \\sqrt{\\dfrac{K}{m}}$</th><th>$T = 2\\pi\\sqrt{\\dfrac{m}{K}}$</th><th>つりあいの位置</th></tr></thead><tbody>' +
       M3S1TAB.map(function (r) { return '<tr><th><a class="xlink" href="#' + r.a + '">' + r.n + '</a>　' + r.t + '</th><td>$' + r.eq + '$</td><td>$' + r.K + '$</td><td>$\\omega = ' + r.w + '$</td><td>$T = ' + r.T + '$</td><td class="l">' + r.c + '</td></tr>'; }).join('') +
@@ -5492,8 +5550,9 @@ DEFS.m3s2 = {
     var srow = s.R.querySelector('.row2.sliders.inR'); s.varbox.classList.remove('inR'); ctlOneRow(s); if (srow) srow.remove();
     /* 図の下：解説プリント（千葉さんの PDF を画像にしてはる）。押すと大きく */
     var fig = el('figure', 'm3pdf');
-    fig.innerHTML = mathify('<figcaption>解説プリント「単振動のエネルギーを用いた解き方の解説」（押すと大きく表示）<span class="m3cap">↓ $v$ を求める際に（ア）の方がはるかに楽</span></figcaption><img alt="解説プリント：単振動のエネルギーを用いた解き方の解説（例題と、（ア）（イ）2 通りの解き方）" width="' + M3_PDF_WH[0] + '" height="' + M3_PDF_WH[1] + '">');
+    fig.innerHTML = mathify('<figcaption>解説プリント「単振動のエネルギーを用いた解き方の解説」（押すと大きく表示）<span class="m3row"><span class="m3cap">↓ $v$ を求める際に（ア）の方がはるかに楽</span><button type="button" class="m3tab">別のページで開く ↗</button></span></figcaption><img alt="解説プリント：単振動のエネルギーを用いた解き方の解説（例題と、（ア）（イ）2 通りの解き方）" width="' + M3_PDF_WH[0] + '" height="' + M3_PDF_WH[1] + '">');
     fig.querySelector('img').src = M3_PDF_IMG;
+    fig.querySelector('.m3tab').addEventListener('click', function (e) { e.stopPropagation(); m3PdfTab(fig.querySelector('img').src); });   /* 別のタブで（2026-10-25 千葉さん） */
     fig.addEventListener('click', function () { m3PdfOpen(fig.querySelector('img').src); });   /* 大きく表示は body 直下の重ね画面で（セクションの中の position: fixed は、ページの部品にとじこめられて真っ白になっていた。2026-10-19） */
     s.below.appendChild(fig);
   },
@@ -5596,7 +5655,7 @@ DEFS.m3s3 = {
   gWin: function (s) { return 2 * m2s3Q(s).T; },
   gT: function (s) { return m2s3Q(s).T; },
   gAmp: function (s) { var Q = m2s3Q(s); return { x: Q.off + Q.A, v: Q.A * Q.w, a: Q.A * Q.w * Q.w }; },
-  height: function (s, w) { return Math.round(clamp(w * 0.58, 260, 380)); },
+  height: function (s, w) { return Math.round(clamp(w * 0.58, 260, 380)) + 64; },   /* 下に、左の図の名前と吹き出しの場所 */
   draw: function (s, ctx, W, H) {
     var Q = m2s3Q(s), g = vGeo(s, { x0: 0, y0: 0, w: W, h: H }), st = SHM.st(Q.A, Q.w, Q.phi, s.t);
     vScene(s, ctx, g, { X: st.x, v: st.v, a: st.a, x: st.x + Q.off }, {}, Q);
@@ -5627,11 +5686,22 @@ function rightM3S3(s, R) {
 
 /* 解説プリントを画面いっぱいに大きく表示（クリック・Esc で閉じる） */
 function m3PdfOpen(src) {
-  var ov = el('div', 'm3pdfov'); ov.innerHTML = '<p class="m3pdfbar">解説プリント（どこかを押すか Esc で閉じる）</p><img alt="解説プリント（拡大）">';
+  var ov = el('div', 'm3pdfov'); ov.innerHTML = '<p class="m3pdfbar">解説プリント（どこかを押すか Esc で閉じる）<button type="button" class="m3tab">別のページで開く ↗</button></p><img alt="解説プリント（拡大）">';
+  ov.querySelector('.m3tab').addEventListener('click', function (e) { e.stopPropagation(); m3PdfTab(src); });
   ov.querySelector('img').src = src; document.body.appendChild(ov); document.body.style.overflow = 'hidden';
   var close = function () { ov.remove(); document.body.style.overflow = ''; document.removeEventListener('keydown', key); };
   var key = function (e) { if (e.key === 'Escape') close(); };
   ov.addEventListener('click', close); document.addEventListener('keydown', key);
+}
+
+/* 解説プリントを別のページ（新しいタブ）で開く。画像は data: URL なので、blob: URL にして開く（data: のままだとブラウザが開かない） */
+function m3PdfTab(src) {
+  try {
+    var b64 = src.split(',')[1], mime = (src.match(/^data:([^;]+);/) || [])[1] || 'image/jpeg', bin = atob(b64), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([u8], { type: mime }));
+    var w = window.open(url, '_blank'); if (!w) m3PdfOpen(src);
+  } catch (e) { m3PdfOpen(src); }
 }
 
 /* ===== 57_m3img.js ===== */
@@ -5784,11 +5854,11 @@ DEFS.m4s1 = {
   tEnd: function (s) { var q = m4s1Q(s); return q.sep ? q.t2 + 0.3 : 2 * q.T; },
   tInfo: function (s) { return periodInfo(m4s1Q(s).T) + '<span class="tnote">（一体のとき）</span>'; },
   gT: function (s) { return m4s1Q(s).T; },
-  height: function (s, w) { return w < 700 ? 520 : Math.round(clamp(w * 0.40, 400, 480)); },
+  height: function (s, w) { return w < 700 ? 520 : Math.round(clamp(w * 0.40, 400, 480)) + 40; },
   afterBuild: function (s) {
     ctlSide(s);                                                   /* 左：すべて最初の設定に戻す…・▶ スタート・時間バー／右：押し下げる長さ */
     var bl = s.L.closest('article').querySelector('.m4bL');
-    var c2 = el('div', 'qcard m4card m4ecard'); c2.innerHTML = mathify('<p class="qt">エネルギー − $t$ グラフ（小物体と台をひとまとめに）</p><p class="qnote">$E = \\dfrac{1}{2}(M + m)v^2 + \\dfrac{1}{2}kx^2$。$x$ はつりあいの位置からの変位で、$U = \\dfrac{1}{2}kx^2$ は重力と弾性力の合力による位置エネルギー（<a class="xlink" href="#3-2">③-2</a>）。</p>');
+    var c2 = el('div', 'qcard m4card m4ecard'); c2.innerHTML = mathify('<p class="qt">エネルギー − $t$ グラフ<span class="qtsub">（小物体と台をひとまとめに）</span></p><p class="qnote">$E = \\dfrac{1}{2}(M + m)v^2 + \\dfrac{1}{2}kx^2$。$x$ はつりあいの位置からの変位で、$U = \\dfrac{1}{2}kx^2$ は重力と弾性力の合力による位置エネルギー（<a class="xlink" href="#3-2">③-2</a>）。</p>');
     s.eCv = el('canvas', 'm4cv'); c2.appendChild(s.eCv);
     s.ePop = el('div', 'm4pop'); s.ePop.hidden = true;
     s.ePop.innerHTML = mathify('<button type="button" class="m4popx" aria-label="閉じる">×</button><p class="qt">離れたあと</p><p>小物体は重力だけを受けて<b>投げ上げ</b>の運動、台は<b>台だけのつりあいの位置</b>を中心とする単振動になる。小物体と台をひとまとめにした単振動ではないので、$U = \\dfrac{1}{2}kx^2$ は使えない。重力の位置エネルギーと、ばねの弾性力による位置エネルギーを<b>別々に</b>使う。</p><p>それでも<b>力学的エネルギーは保存している</b>（重力も弾性力も保存力で、垂直抗力は 0）：</p><p>小物体：$\\dfrac{1}{2}Mv^2 + Mgh = $ 一定　台：$\\dfrac{1}{2}mv^2 + mgh + \\dfrac{1}{2}k(\\text{縮み})^2 = $ 一定</p>');
@@ -5796,7 +5866,7 @@ DEFS.m4s1 = {
     s.eCv.addEventListener('click', function (ev) { var r = s.eCv.getBoundingClientRect(); if (s._shadeX !== undefined && ev.clientX - r.left >= s._shadeX) s.ePop.hidden = !s.ePop.hidden; });
     s.eCv.addEventListener('mousemove', function (ev) { var r = s.eCv.getBoundingClientRect(); s.eCv.style.cursor = (s._shadeX !== undefined && ev.clientX - r.left >= s._shadeX) ? 'pointer' : ''; });
     bl.appendChild(c2);
-    var c1 = el('div', 'qcard m4card'); c1.innerHTML = mathify('<p class="qt">$N$–$x$ グラフ（小物体が台から受ける垂直抗力）</p>'); s.nxCv = el('canvas', 'm4cv'); c1.appendChild(s.nxCv); bl.appendChild(c1);
+    var c1 = el('div', 'qcard m4card'); c1.innerHTML = mathify('<p class="qt">$N$–$x$ グラフ<span class="qtsub">（小物体が台から受ける垂直抗力）</span></p>'); s.nxCv = el('canvas', 'm4cv'); c1.appendChild(s.nxCv); bl.appendChild(c1);
   },
   draw: function (s, ctx, W, H) { drawM4S1(s, ctx, W, H); drawM4S1NX(s); drawM4S1E(s); },
   msg: function (s) {
@@ -5825,8 +5895,8 @@ function m4s1Press(s) {
 }
 /* 図の座標。x は台の上の面（＝小物体の底・ばねの上の端）の位置。左から：参考の 3 図／一体／小物体のみ／台のみ／x 軸／対応する円運動 */
 function m4s1Geo(W, H, q) {
-  var Ln = M4.s1.Ln, xg = q.d - Ln, xTop = 0.56, S = (H - 46 - 60) / (xTop - xg), nar = W < 700;
-  var g = { Ln: Ln, xg: xg, S: S, nar: nar, Y: function (x) { return H - 46 - (x - xg) * S; }, pw: 48, ph: 7, bw: 34, bh: 24 };
+  var nar = W < 700, yb = nar ? 46 : 86, Ln = M4.s1.Ln, xg = q.d - Ln, xTop = 0.56, S = (H - yb - 60) / (xTop - xg);   /* 広い画面：床の下に、左の図の名前の場所（3 行ほど下。2026-10-25） */
+  var g = { Ln: Ln, xg: xg, S: S, nar: nar, Y: function (x) { return H - yb - (x - xg) * S; }, pw: 48, ph: 7, bw: 34, bh: 24 };
   if (nar) { g.refs = []; g.pan = [W * 0.17, W * 0.42]; g.ax = W * 0.60; g.cc = null; }   /* せまい画面：参考の図と円運動は出さない */
   else { g.refs = [W * 0.035, W * 0.095, W * 0.155]; g.pan = [W * 0.27, W * 0.42, W * 0.57]; g.ax = W * 0.67; g.cc = W * 0.86; }
   return g;
@@ -5853,14 +5923,14 @@ function m4s1Now(s, q) {
 function drawM4S1(s, ctx, W, H) {
   var q = m4s1Q(s), g = m4s1Geo(W, H, q), Y = g.Y, st = m4s1Now(s, q), yg = Y(g.xg), xpe = q.d - q.m * G / q.k;
   var xL = g.nar ? 8 : g.refs[0] - 26;
+  if (!g.nar) refArea(ctx, 0, 0, g.refs[2] + 62, H, 'r');          /* 左の参考の図のエリア（背景と境の実線。2026-10-25 千葉さん） */
   floorAt(ctx, xL, g.pan[g.pan.length - 1] + 40, yg);
   /* 左の 3 つの図 */
-  if (!g.nar) [[g.refs[0], q.d, '自然の長さ', false, false], [g.refs[1], xpe, '台だけの', true, false, 'つりあい'], [g.refs[2], 0, 'つりあい', true, true]].forEach(function (r) {
+  if (!g.nar) [[g.refs[0], q.d, ['自然の長さ', 'の位置'], false, false], [g.refs[1], xpe, ['台だけの', 'つりあい', 'の位置'], true, false], [g.refs[2], 0, ['つりあい', 'の位置'], true, true]].forEach(function (r) {   /* 名前は「〜の位置」（2026-10-25） */
     var yt = Y(r[1]);
     if (r[3]) m4s1Set(ctx, r[0], yg, yt, r[4] ? yt : null, g, q);
     else { m4s1Spring(ctx, r[0], yg, yt, g, q); ctx.save(); ctx.strokeStyle = '#3a414c'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(r[0] - 10, yt); ctx.lineTo(r[0] + 10, yt); ctx.stroke(); ctx.restore(); }
-    label(ctx, r[2], r[0], yg + 14, { size: 10.5, color: r[4] ? '#c0392b' : '#5d6875', bold: r[4] });
-    if (r[5]) label(ctx, r[5], r[0], yg + 27, { size: 10.5, color: '#5d6875' });
+    r[2].forEach(function (t, i) { label(ctx, t, r[0], yg + 44 + i * 13, { size: 10.5, color: r[4] ? '#c0392b' : '#5d6875', bold: r[4] }); });   /* 図の間がせまいので行を分ける */
   });
   /* 基準の線（台の上の面の高さ）と x 軸 */
   var lines = [[q.d, '自然の長さ（x = d）', '#5d6875'], [xpe, '台だけのつりあい', '#8d9097'], [0, 'O（つりあいの位置）', '#c0392b'], [-q.s, 'x = −s（始まりの位置）', '#5d6875']];
@@ -6090,17 +6160,23 @@ function drawM4S1NXStatic(ctx, W, H, q) {
 function m4Plot(cv, o) {
   if (!cv || !cv.offsetParent) return;
   var W = Math.max(240, Math.floor(cv.clientWidth || 300)), H = o.H || 170, ctx = prep(cv, W, H);
-  var x0 = 44, x1 = W - 18, y0 = H - 22, y1 = 14, X = function (t) { return x0 + (t - o.t0) / (o.t1 - o.t0) * (x1 - x0); }, Y = function (v) { return y0 - (v - o.lo) / (o.hi - o.lo) * (y0 - y1); };
+  var x0 = 44, x1 = W - 18, y0 = H - 22, y1 = o.zones ? 46 : 14, X = function (t) { return x0 + (t - o.t0) / (o.t1 - o.t0) * (x1 - x0); }, Y = function (v) { return y0 - (v - o.lo) / (o.hi - o.lo) * (y0 - y1); };
   var yz = clamp(Y(0), y1, y0);
   axisArrow(ctx, x0, yz, x1 + 8, yz); axisArrow(ctx, x0, y0 + 2, x0, y1 - 8);
   sym(ctx, 't', x1 + 8, yz - 10, { size: 13 }); sym(ctx, o.ylab || 'x', x0 - 8, y1 - 2, { size: 13, align: 'right' });
   if (o.yunit) label(ctx, '〔' + o.yunit + '〕', x0 + 6, y1 - 2, { size: 9.5, align: 'left', color: '#69717d' });
   label(ctx, '0', x0 - 6, yz, { size: 10, align: 'right' });
+  if (o.zones) m4Zones(ctx, o.zones, X, x0, x1, y1, y0);
   (o.hl || []).forEach(function (h) { var y = Y(h.y); dotted(ctx, x0, y, x1, y, h.col || 'rgba(192,57,43,.6)', [5, 3]); label(ctx, h.txt, x1, y - 8, { size: 10, color: h.col || '#c0392b', align: 'right', bold: true }); });
   var tc = clamp(o.cur, o.t0, o.t1);
   o.ser.forEach(function (sr) {
     var N = 300, prev = null, pc = null;
     ctx.save(); ctx.lineWidth = sr.w || 2.2; if (sr.dash) ctx.setLineDash(sr.dash);
+    if (sr.dash && !sr.seg) {                                        /* 点線は 1 本の線として描く（短い線分ごとに描くと点線にならず、実線に見えていた。2026-10-25） */
+      ctx.strokeStyle = sr.col; ctx.beginPath(); var on = false;
+      for (var k = 0; k <= N; k++) { var tk = o.t0 + (tc - o.t0) * k / N, vk = sr.f(tk); if (vk === null || vk === undefined) { on = false; continue; } var px = X(tk), py = Y(clamp(vk, o.lo - (o.hi - o.lo) * 0.05, o.hi + (o.hi - o.lo) * 0.05)); if (on) ctx.lineTo(px, py); else ctx.moveTo(px, py); on = true; }
+      ctx.stroke(); ctx.restore(); return;
+    }
     for (var i = 0; i <= N; i++) {
       var t = o.t0 + (tc - o.t0) * i / N, v = sr.f(t), c = sr.seg ? sr.seg(t) : sr.col;
       if (v === null || v === undefined) { prev = null; continue; }
@@ -6113,6 +6189,22 @@ function m4Plot(cv, o) {
   });
   dotted(ctx, X(tc), y1, X(tc), y0, 'rgba(20,23,28,.35)', [4, 4]);
   if (o.legend) { var lx = x0 + 6; o.legend.forEach(function (lg) { ctx.save(); ctx.strokeStyle = lg.col; ctx.lineWidth = 2.4; if (lg.dash) ctx.setLineDash(lg.dash); ctx.beginPath(); ctx.moveTo(lx, H - 6); ctx.lineTo(lx + 14, H - 6); ctx.stroke(); ctx.restore(); var b = label(ctx, lg.txt, lx + 18, H - 6, { size: 10, align: 'left', color: '#3a414c' }); lx += 26 + b.w; }); }
+}
+/* グラフの上のはしに、区間ごとの運動の名前（両矢印＋横書き）。運動が切りかわる時刻に縦の線（2026-10-25 千葉さん）。
+   zones：[{ t0, t1, txt, col }]。区間が字より狭いときは 2 行に分ける（txt2 があればそれを使う） */
+function m4Zones(ctx, zones, X, x0, x1, y1, y0) {
+  var ya = y1 - 9;
+  zones.forEach(function (z, i) {
+    var a = clamp(X(z.t0), x0, x1), b = clamp(X(z.t1), x0, x1), col = z.col || '#3a414c'; if (b - a < 6) return;
+    if (i > 0) { ctx.save(); ctx.strokeStyle = 'rgba(20,23,28,.45)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(a, ya - 30); ctx.lineTo(a, y0); ctx.stroke(); ctx.restore(); }
+    var h = Math.min(6, (b - a) / 4);
+    ctx.save(); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(a + 2, ya); ctx.lineTo(b - 2, ya); ctx.stroke();
+    [[a + 2, 1], [b - 2, -1]].forEach(function (p) { ctx.beginPath(); ctx.moveTo(p[0], ya); ctx.lineTo(p[0] + p[1] * h, ya - 3.2); ctx.lineTo(p[0] + p[1] * h, ya + 3.2); ctx.closePath(); ctx.fill(); });
+    ctx.font = '700 10px ' + FONT; var one = ctx.measureText(z.txt).width <= b - a - 4; ctx.restore();
+    var lines = one ? [z.txt] : (z.txt2 || [z.txt.slice(0, Math.ceil(z.txt.length / 2)), z.txt.slice(Math.ceil(z.txt.length / 2))]);
+    lines.forEach(function (t, j) { label(ctx, t, (a + b) / 2, ya - 8 - (lines.length - 1 - j) * 12, { size: 10, bold: true, color: col }); });
+  });
 }
 /* スタート前に、これから動く向きに動かないように押さえている手（dir：手が押す向き。指先が (x, y)）。スタートしたら消す */
 function m4Hand(ctx, x, y, dx, dy, sc, flip) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2); if (flip) ctx.scale(-1, 1); dropHand(ctx, 0, 12 * (sc || 0.4), sc || 0.4, 1, 1); ctx.restore(); }   /* flip：左右を反転した手 */
@@ -6156,7 +6248,7 @@ function m4s2At(q, t) {
 }
 DEFS.m4s2 = {
   id: 'm4s2', mode: 'mode4', num: 3, title: 'ばねでつながれた 2 球（入試頻出）', short: 'ばねでつながれた 2 球',
-  desc: 'なめらかな水平面の上で、小球 A（質量 $m_1$）と小球 B（質量 $m_2$）を、ばね定数 $k$ の軽いばねでつなぐ。ばねを自然の長さから $a$ だけ伸ばして、手で押さえてから放す。<span class="todo">図の左上で放し方と視点を切りかえて、どの視点でも「いまの周期」が同じことを確かめよう。「A を放してから…B を放す」では、B を放したあと重心が等速で動き、外から見た運動は「重心の等速運動 ＋ 単振動」になる。</span>',
+  desc: 'なめらかな水平面の上で、小球 A（質量 $m_1$）と小球 B（質量 $m_2$）を、ばね定数 $k$ の軽いばねでつなぐ。ばねを自然の長さから $a$ だけ伸ばして、手で押さえてから放す。<span class="todo">図の左上で放し方と視点を切りかえて、どの視点でも「周期」が同じことを確かめよう。「A を放してから…B を放す」では、B を放したあと重心が等速で動き、外から見た運動は「重心の等速運動 ＋ 単振動」になる。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', belowCanvas: true, baseRate: 0.5,
   exam: { src: '入試頻出問題（数値・言いまわしを変えて作り直したもの）', pdf: 'shm-two-balls', prob: function () { return m4s2Prob(); }, ans: function () { return m4s2Ans(); }, fig: function (k, ctx, W, H) { m4s2Fig(k, ctx, W, H); } },
   buttons: [
@@ -6338,8 +6430,8 @@ DEFS.m4s3 = {
   height: function (s, w) { return Math.round(clamp(w * 0.42, 230, 300)); },
   afterBuild: function (s) {
     s.R.innerHTML = '';
-    m4Card(s, '<p class="qt">$x$–$t$ グラフ（$x$：自然の長さからの伸び）</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
-    m4Card(s, '<p class="qt">$v$–$t$ グラフ（床から見た速度）</p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
+    m4Card(s, '<p class="qt">$x$–$t$ グラフ<span class="qtsub">（$x$：自然の長さからの伸び）</span></p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    m4Card(s, '<p class="qt">$v$–$t$ グラフ<span class="qtsub">（床から見た速度）</span></p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
   draw: function (s, ctx, W, H) { var q = m4s3Q(s), st = m4s3At(q, s.t); drawBelt(s, ctx, W, H, { L: M43.L, k: q.k, x: st.x, v: st.v, V: q.V, vs: 40, slip: true, mu2: q.mu2, m: q.m, xs: [[0, '自然の長さ', '#5d6875'], [q.x0, '振動の中心 x₀', '#c0392b'], [2 * q.x0, '最も伸びた所 2x₀', '#5d6875']], S: 1.0 }); drawM4S3G(s); },
@@ -6450,7 +6542,7 @@ function m4s4At(q, t) {
 }
 DEFS.m4s4 = {
   id: 'm4s4', mode: 'mode4', num: 5, title: 'ベルトコンベアの上の単振動（滑ったりくっついたり）', short: 'ベルトコンベア（滑ったりくっついたり）',
-  desc: '④-3 と同じ装置で、ベルトの速さ $V$ を小さくする。静止摩擦係数を $\\mu$、動摩擦係数を $\\mu\'$（$\\mu \\gt \\mu\'$）とする。ばねが自然の長さの位置で、小物体がベルトに対して静止した状態から運動が始まる。<span class="todo">「くっついている」「滑っている」の札とグラフの色を見比べよう。観測者 B（ベルト）から見ると、摩擦力の向きは B から見た速度（相対速度）で決まることが分かる。</span>',
+  desc: '④-3 と同じ装置で、ベルトの速さ $V$ を小さくする。静止摩擦係数を $\\mu$、動摩擦係数を $\\mu\'$（$\\mu \\gt \\mu\'$）とする。ばねが自然の長さの位置で、小物体がベルトに対して静止した状態から運動が始まる。<span class="todo">小物体がベルトに対して静止した状態（ベルトと同じ速度）なら両者はくっついて一緒に動くので小物体は等速直線運動するが、最大摩擦力を越えると滑り出し、単振動をする。このように 2 つの運動が切り替わるのを、右の $x$–$t$ グラフからも確認しよう。</span>',
   strobe: false, showFBtn: true, fDefault: 'all', vecBtn: 'v を消す', belowCanvas: true, baseRate: 0.5,
   exam: { src: '典型問題（参考：physicmath.net の解説。数値・言いまわしを変えて作り直したもの）', pdf: 'shm-belt-stickslip', prob: function () { return m4s4Prob(); }, ans: function () { return m4s4Ans(); }, fig: function (k, ctx, W, H) { m4s4Fig(k, ctx, W, H); } },
   buttons: [
@@ -6465,8 +6557,8 @@ DEFS.m4s4 = {
   height: function (s, w) { return Math.round(clamp(w * 0.46, 250, 320)); },
   afterBuild: function (s) {
     s.R.innerHTML = '';
-    m4Card(s, '<p class="qt">$x$–$t$ グラフ（<span style="color:#1f7a3f">緑：くっついている</span>／<span style="color:#d0801f">オレンジ：滑っている</span>）</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
-    m4Card(s, '<p class="qt">$v$–$t$ グラフ（床から見た速度）</p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
+    m4Card(s, '<p class="qt">$x$–$t$ グラフ<span class="qtsub">（<span style="color:#1f7a3f">緑：くっついている</span>／<span style="color:#d0801f">オレンジ：滑っている</span>）</span></p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    m4Card(s, '<p class="qt">$v$–$t$ グラフ<span class="qtsub">（床から見た速度）</span></p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
   draw: function (s, ctx, W, H) {
@@ -6492,7 +6584,9 @@ DEFS.m4s4 = {
 };
 function drawM4S4G(s) {
   var q = m4s4Q(s), t1 = q.tS0 + 2 * q.cyc, seg = function (t) { return m4s4At(q, t).slip ? '#d0801f' : '#1f7a3f'; };
-  m4Plot(s.xCv, { t0: 0, t1: t1, lo: -0.01, hi: q.x0 + q.A * 1.15, cur: s.t, ylab: 'x', yunit: 'm', H: 160, hl: [{ y: q.x1, txt: 'x₁ = μmg/k', col: '#5d6875' }, { y: q.x0, txt: '中心 x₀' }, { y: q.x2, txt: 'x₂', col: '#5d6875' }], ser: [{ col: '#1f7a3f', w: 2.6, seg: seg, f: function (t) { return m4s4At(q, t).x; } }] });
+  var zs = [{ t0: 0, t1: q.tS0, txt: '等速直線運動', txt2: ['等速直線', '運動'], col: '#1f7a3f' }];   /* くっついている＝ベルトと一緒に等速、滑っている＝単振動 */
+  for (var c = 0, tc0 = q.tS0; tc0 < t1; c++) { zs.push({ t0: tc0, t1: Math.min(t1, tc0 + q.tSl), txt: '単振動', col: '#d0801f' }); zs.push({ t0: tc0 + q.tSl, t1: Math.min(t1, tc0 + q.cyc), txt: '等速直線運動', txt2: ['等速直線', '運動'], col: '#1f7a3f' }); tc0 += q.cyc; }
+  m4Plot(s.xCv, { t0: 0, t1: t1, lo: -0.01, hi: q.x0 + q.A * 1.15, cur: s.t, ylab: 'x', yunit: 'm', H: 190, zones: zs, hl: [{ y: q.x1, txt: 'x₁ = μmg/k', col: '#5d6875' }, { y: q.x0, txt: '中心 x₀' }, { y: q.x2, txt: 'x₂', col: '#5d6875' }], ser: [{ col: '#1f7a3f', w: 2.6, seg: seg, f: function (t) { return m4s4At(q, t).x; } }] });
   m4Plot(s.vCv, { t0: 0, t1: t1, lo: -q.A * q.w * 1.1, hi: Math.max(q.A * q.w, q.V) * 1.15, cur: s.t, ylab: 'v', yunit: 'm/s', H: 150, hl: [{ y: q.V, txt: 'V', col: COL.vel }], ser: [{ col: COL.vel, w: 2.4, seg: function (t) { return m4s4At(q, t).slip ? '#d0801f' : '#1f7a3f'; }, f: function (t) { return m4s4At(q, t).v; } }] });
 }
 function m4s4Prob() {
@@ -6560,10 +6654,10 @@ DEFS.m4s5 = {
   tEnd: function () { return 2 * m4s5Q().T; },
   tInfo: function () { var q = m4s5Q(); return '<span class="tpl">周期</span><b>' + tex('T =') + ' ' + sig2(q.T) + '</b> s<span class="tnote">（ばねなら ' + sig2(q.Ts) + ' s）</span>'; },
   gT: function () { return m4s5Q().T; },
-  height: function (s, w) { return Math.round(clamp(w * 0.66, 340, 460)); },
+  height: function (s, w) { return Math.round(clamp(w * 0.66, 340, 460)) + 40; },
   afterBuild: function (s) {
     s.R.innerHTML = '';
-    m4Card(s, '<p class="qt">$x$–$t$ グラフ（<span style="color:#1f8a4c">緑：単振動</span>／<span style="color:#d0801f">オレンジ：投げ上げ</span>／点線：ばねだったら）</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    m4Card(s, '<p class="qt">$x$–$t$ グラフ<span class="qtsub">（<span style="color:#1f8a4c">緑：単振動</span>／<span style="color:#d0801f">オレンジ：投げ上げ</span>／点線：ばねだったら）</span></p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
   draw: function (s, ctx, W, H) { drawM4S5(s, ctx, W, H); var q = m4s5Q();
@@ -6574,16 +6668,18 @@ DEFS.m4s5 = {
   right: function (s, R) { var q = m4s5Q(); R.innerHTML = mathify('<div class="qcard"><p class="qt">実際の周期</p><div class="qeq">$$T = \\underbrace{\\frac{4\\pi}{3}\\sqrt{\\frac{m}{k}}}_{\\text{単振動の部分}} + \\underbrace{2\\sqrt{\\frac{3m}{k}}}_{\\text{投げ上げの部分}}$$</div><p>ばねなら $T = 2\\pi\\sqrt{\\dfrac{m}{k}}$。</p><p class="qnow"><span class="qtag now">この図では</span>$m = ' + q.m + '$ kg、$k = ' + q.k + '$ N/m、$l_1 = ' + fmt(q.l1, 3) + '$ m：$T = ' + sig2(q.T) + '$ s（ばねなら ' + sig2(q.Ts) + ' s）</p></div>'); }
 };
 function drawM4S5(s, ctx, W, H) {
-  var q = m4s5Q(), st = m4s5At(q, s.t), top = 22, cx = W * 0.50, xTop = q.l1 + q.hmax + 0.03, xBot = -q.A - 0.05, S = (H - top - 26) / (M45.L0 + q.l1 - xBot), Y = function (x) { return top + (M45.L0 + q.l1 - x) * S; }, rb = 12;
+  var q = m4s5Q(), st = m4s5At(q, s.t), top = 22, cx = W * 0.50, xTop = q.l1 + q.hmax + 0.03, xBot = -q.A - 0.05, S = (H - top - 66) / (M45.L0 + q.l1 - xBot), Y = function (x) { return top + (M45.L0 + q.l1 - x) * S; }, rb = 12;   /* 下に、左の図の名前の場所（2026-10-25） */
+  refArea(ctx, 0, 0, W * 0.36, H, 'r');                             /* 左の参考の図のエリア（背景と境の実線。2026-10-25 千葉さん） */
   ceilingAt(ctx, cx - 50, cx + 50, top);
   var yb = Y(st.x), yN = Y(q.l1);
   /* 左に「自然の長さ」「つりあいの位置」（②-3 と同じ。2026-10-18 千葉さん） */
-  [[W * 0.10, null, '自然の長さ'], [W * 0.25, 0, 'つりあいの位置']].forEach(function (r) {
+  [[W * 0.10, null, '自然の長さの位置'], [W * 0.25, 0, 'つりあいの位置']].forEach(function (r) {
     ceilingAt(ctx, r[0] - 22, r[0] + 22, top);
     ctx.save(); ctx.strokeStyle = '#7a4a2a'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(r[0], top);
     if (r[1] === null) { ctx.lineTo(r[0], yN - rb); ctx.stroke(); ctx.restore(); ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(20,23,28,.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(r[0], yN, rb, 0, TAU); ctx.stroke(); ctx.restore(); }   /* 小球の中心が自然の長さの線の上 */
     else { ctx.lineTo(r[0], Y(0) - rb); ctx.stroke(); ctx.restore(); ballShape(ctx, r[0], Y(0), rb, '#d9b77a'); }
-    label(ctx, r[2], r[0], H - 12, { size: 10.5, color: r[1] === null ? '#5d6875' : '#c0392b', bold: r[1] !== null });
+    var lt = W < 480 ? [r[2].replace('の位置', ''), 'の位置'] : [r[2]];   /* せまい画面では 2 行に */
+    lt.forEach(function (t, j) { label(ctx, t, r[0], H - 12 - (lt.length - 1 - j) * 13, { size: 10.5, color: r[1] === null ? '#5d6875' : '#c0392b', bold: r[1] !== null }); });
   });
   /* ゴムひも：伸びていれば直線（太さは伸びで少し細く）、たるんでいれば波線 */
   ctx.save(); ctx.strokeStyle = '#7a4a2a'; ctx.lineCap = 'round';
@@ -6649,6 +6745,7 @@ function m4s5Fig(key, ctx, W, H) {
    左上に問題文、右上に「解説はこちら」（PDF）だけ。
    ========================================================================= */
 'use strict';
+var M4G = '#1f7a3f', M4O = '#d0801f';                               /* ④-5 と同じ：緑＝単振動、オレンジ＝等速直線運動 */
 var M40 = { m: 1.0, k: 50, L0: 0.55, ds: [0.10, 0.15, 0.20], d0: 0.20 };
 function m4s0Q(s) { var w = Math.sqrt(M40.k / M40.m), d = s.v.d; return { m: M40.m, k: M40.k, w: w, T: TAU / w, d: d, v0: d * w, tq: Math.PI / 2 / w, th: 2 * Math.PI / 3 / w, p2: s.prob === 2 }; }
 function m4s0At(q, t) {
@@ -6683,8 +6780,8 @@ DEFS.m4s0 = {
       '<ul class="m4tl"><li><b>問1(1)</b>　左の端 → 自然の長さの位置（中心）は、円運動で $\\dfrac{\\pi}{2}$ 回るので <b>$\\dfrac{1}{4}$ 周期</b>。</li>' +
       '<li><b>問2(1)</b>　左の端 → $x = \\dfrac{1}{2}d$ は、円運動で $\\dfrac{2\\pi}{3}$ 回るので <b>$\\dfrac{1}{3}$ 周期</b>。</li></ul>' +
       '<p class="m4miss"><b>ありがちなミス</b>　小球が等速で動くと考えて「$2d$ を $\\dfrac{1}{2}$ 周期で進むから、$\\dfrac{3}{2}d$ なら $\\dfrac{3}{8}$ 周期」と書いてしまう人が多い。単振動は中心で速く、端で遅いので、時間は進んだ距離に比例しない。アニメの下の等速円運動で、点がどれだけの角度を回ったかをよくイメージしよう。</p>');
-    m4Card(s, '<p class="qt">$x$–$t$ グラフ</p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
-    m4Card(s, '<p class="qt">$v$–$t$ グラフ</p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
+    m4Card(s, '<p class="qt">$x$–$t$ グラフ<span class="qtsub">（<span style="color:#1f7a3f">緑：単振動</span>／<span style="color:#d0801f">オレンジ：等速直線運動</span>）</span></p>'); s.xCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.xCv);
+    m4Card(s, '<p class="qt">$v$–$t$ グラフ<span class="qtsub">（<span style="color:#1f7a3f">緑：単振動</span>／<span style="color:#d0801f">オレンジ：等速直線運動</span>）</span></p>'); s.vCv = el('canvas', 'm4cv'); s.R.lastChild.appendChild(s.vCv);
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
     /* 問1・問2 の下に、小問ごとのボタン：押すと最初から再生して、その場面で止まる（2026-10-19 千葉さん） */
     var tl = s.cw.querySelector('.cvbtns'); tl.classList.add('m4s0q'); tl.appendChild(el('span', 'cvbrk'));
@@ -6768,13 +6865,14 @@ function drawM4S0(s, ctx, W, H) {
 function drawM4S0G(s) {
   var q = m4s0Q(s), t1 = q.p2 ? 2 * q.T : q.tq + 0.55, hl = [{ y: q.d / 2, txt: 'x = d/2', col: '#c0392b' }];
   var mk = function (cv) { return cv; };
-  m4Plot(s.xCv, { t0: 0, t1: t1, lo: -q.d * 1.15, hi: q.p2 ? q.d * 1.15 : q.v0 * 0.55 * 1.05, cur: s.t, ylab: 'x', yunit: 'm', H: 136, hl: hl,   /* 前の 80 % */
-    ser: [{ col: XCOL, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? XCOL : '#d0801f'; }, f: function (t) { return m4s0At(q, t).x; } }] });
+  m4Plot(s.xCv, { t0: 0, t1: t1, lo: -q.d * 1.15, hi: q.p2 ? q.d * 1.15 : q.v0 * 0.55 * 1.05, cur: s.t, ylab: 'x', yunit: 'm', H: 166, hl: hl,   /* 前の 80 %＋上の運動の名前の場所 */
+    zones: q.p2 ? [{ t0: 0, t1: t1, txt: '単振動（ばねとくっついたまま）', col: M4G }] : [{ t0: 0, t1: q.tq, txt: '単振動', col: M4G }, { t0: q.tq, t1: t1, txt: '等速直線運動', col: M4O }],
+    ser: [{ col: M4G, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? M4G : M4O; }, f: function (t) { return m4s0At(q, t).x; } }] });
   m4Plot(s.vCv, { t0: 0, t1: t1, lo: q.p2 ? -q.v0 * 1.15 : -0.05, hi: q.v0 * 1.15, cur: s.t, ylab: 'v', yunit: 'm/s', H: 128, hl: [{ y: q.v0, txt: 'v₀ = dω', col: COL.vel }],
-    ser: [{ col: COL.vel, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? COL.vel : '#d0801f'; }, f: function (t) { return m4s0At(q, t).v; } }] });
+    ser: [{ col: M4G, w: 2.6, seg: function (t) { return m4s0At(q, t).on ? M4G : M4O; }, f: function (t) { return m4s0At(q, t).v; } }] });   /* ④-5 と同じ色分け（緑：単振動／オレンジ：等速直線運動。2026-10-25 千葉さん） */
   [s.xCv, s.vCv].forEach(function (cv) { if (!cv || !cv.offsetParent) return; var ctx = cv.getContext('2d'), W = Math.max(240, Math.floor(cv.clientWidth)), x0 = 44, x1 = W - 18, Hh = cv.height / (window.devicePixelRatio || 1);
     ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
-    (q.p2 ? [[q.th, 'T/3', '#c0392b'], [q.tq, 'T/4', '#5d6875']] : [[q.tq, 'T/4', '#5d6875']]).forEach(function (r) { var xx = x0 + r[0] / t1 * (x1 - x0); dotted(ctx, xx, 14, xx, Hh - 22, r[2] === '#c0392b' ? 'rgba(192,57,43,.55)' : 'rgba(20,23,28,.3)', [3, 3]); label(ctx, r[1], xx + (r[1] === 'T/3' ? 3 : -3), Hh - 8, { size: 10, color: r[2], bold: true, align: r[1] === 'T/3' ? 'left' : 'right' }); });   /* T/4 は線の左、T/3 は右に（重ならないように） */
+    (q.p2 ? [[q.th, 'T/3', '#c0392b'], [q.tq, 'T/4', '#5d6875']] : [[q.tq, 'T/4', '#5d6875']]).forEach(function (r) { var xx = x0 + r[0] / t1 * (x1 - x0); dotted(ctx, xx, cv === s.xCv ? 46 : 14, xx, Hh - 22, r[2] === '#c0392b' ? 'rgba(192,57,43,.55)' : 'rgba(20,23,28,.3)', [3, 3]); label(ctx, r[1], xx + (r[1] === 'T/3' ? 3 : -3), Hh - 8, { size: 10, color: r[2], bold: true, align: r[1] === 'T/3' ? 'left' : 'right' }); });   /* T/4 は線の左、T/3 は右に（重ならないように） */
     ctx.restore(); });
 }
 function m4s0Ans() {
