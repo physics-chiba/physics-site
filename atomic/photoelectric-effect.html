@@ -2039,17 +2039,36 @@ h3.m4point{margin:0 0 .4em;font-size:1.08rem;font-weight:800;color:#a85c0c;borde
 /* スライダー（図の下）。値の欄は 2 行まで */
 .pesliders{margin:0 0 10px}
 /* 2 列に並べる：1 行目 hν ｜ ν、2 行目 光の強さ ｜ 金属 */
-.pesliders .varbox .pegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:1.4em;row-gap:.1em;align-items:start}
+.pesliders .varbox .pegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"e n" "i l" "m m";column-gap:1.1em;row-gap:0;align-items:start}
+.pesliders .pegrid > [data-k="E"]{grid-area:e}
+.pesliders .pegrid > [data-k="nu"]{grid-area:n}
+.pesliders .pegrid > [data-k="lam"]{grid-area:l}
+.pesliders .pegrid > [data-k="I"]{grid-area:i;align-self:end}
+.pesliders .pegrid > .metalrow{grid-area:m}
+/* hν・ν・λ は連動：同じ薄い色でぬる。ν と λ はつなげて 1 つの箱に見せる */
+.pesliders .pegrid > .vrow.linked{background:#e8f1fb;padding-left:.55em;padding-right:.55em}
+.pesliders .pegrid > [data-k="E"].linked{border-radius:10px}
+.pesliders .pegrid > [data-k="nu"].linked{border-radius:10px 10px 0 0}
+.pesliders .pegrid > [data-k="lam"].linked{border-radius:0 0 10px 10px}
+/* λ：つまみの行が上、名前と値が下（光の色の帯を ν と λ のつまみではさむ） */
+.pesliders .vrow.cell.lamrow{display:flex;flex-direction:column;padding-top:.15em;padding-bottom:.3em}
+.pesliders .vrow.cell.lamrow .vbar{order:1}
+.pesliders .vrow.cell.lamrow .vhead{order:2;margin-top:1.05em;width:100%;justify-content:flex-start}   /* 名前は左、値は右（振動数と同じ並び） */
+.pesliders .vrow.cell.lamrow .vbar{width:100%}
+.pesliders .vrow.cell .vhead button.b.nu0b{margin-left:2em}
+.pesliders .lamtk{position:absolute;left:0;right:0;top:100%;height:1em;pointer-events:none}
+.pesliders .lamtk span{position:absolute;top:1px;transform:translateX(-50%);font-size:.6rem;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.pesliders .vrow.lamrow .vmark .katex{bottom:auto;top:-1.25em}
 .pesliders .pegrid > .vrow.cell + .vrow.cell{border-top:0}
 .pesliders .pegrid > .metalrow{margin-top:0;padding-top:.35em;border-top:0}
 .pesliders .pegrid .vrow.cell .vhead{flex-wrap:wrap;row-gap:0}
 .pesliders .pegrid .vrow.cell .vhead .vv{margin-left:auto}
-@container (max-width:440px){ .pesliders .varbox .pegrid{grid-template-columns:minmax(0,1fr)} }
+@container (max-width:440px){ .pesliders .varbox .pegrid{grid-template-columns:minmax(0,1fr);grid-template-areas:"e" "n" "l" "i" "m"} }
 /* ▶ スタートの行：スタート・スロー・リセット・すべて最初の設定に戻す・最大の K₀ … を 1 行。右はしに「束縛の様子」 */
 .ctrls .playbar .row1{flex:1 1 auto}
 .ctrls .playbar .row1 .btns{flex-wrap:wrap;row-gap:.35em}
 .ctrls .playbar .row1 .btns button.b.chkb{font-size:.72rem;padding:.34em .6em;white-space:nowrap}
-.ctrls .playbar .row1 .btns button.b.resetall{margin-left:.45em}
+.ctrls .playbar .row1 .btns button.b.resetall{margin-left:.45em;font-size:.56rem;line-height:1.12;padding:.12em .6em;align-self:center}   /* 字を小さくして、ほかのボタンと同じ高さに */
 .ctrls .playbar .row1 .btns button.bindb{margin-left:auto}
 .pesliders .varbox{min-width:0;flex:1 1 100%;width:100%;box-sizing:border-box}
 @container (max-width:640px){ .pesliders .varbox.cols2{grid-template-columns:minmax(0,1fr)} }
@@ -2059,31 +2078,41 @@ h3.m4point{margin:0 0 .4em;font-size:1.08rem;font-weight:800;color:#a85c0c;borde
 .pesliders .rw{position:relative;display:flex;align-items:center;flex:1 1 auto;min-width:0}
 .pesliders .rw input[type=range]{flex:1 1 auto;min-width:0;width:100%}
 /* 目印の線はサイト共通（.sliders .vmark：青緑の縦線）。名前は線の下に（上はスライダーの名前と重なるため） */
-.pesliders .vmark .katex{top:auto;bottom:-1.3em;font-size:.8rem}
+.pesliders .vmark .katex{top:auto;bottom:-1.3em;left:0;transform:translateX(-50%);font-size:.8rem;padding:0 1px}   /* 字のまん中を線にそろえる（2026-10-26 千葉さん：ずれていた） */
+/* 「最初の設定」の目印（2 だけ）：灰色の小さな ▼（スライダーの線の上） */
+.pesliders .vmark.defm{border-left:0;top:-9px;bottom:auto;width:0;height:0}
+.pesliders .vmark.defm::before{content:"";position:absolute;left:-5px;top:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #7d8794}
+.pesliders .defnote{font-size:.7rem;color:var(--ink-3);margin:.15em 0 0}
 .pesliders .vrow.cell{padding-bottom:1.15em}
 /* 振動数の下の、光の色の帯 */
-.pesliders .vrow.hasspec{padding-bottom:2.9em}
-.specbar{position:absolute;left:9px;right:9px;top:100%;margin-top:21px;height:7px;border-radius:3px;background:repeating-linear-gradient(135deg,#d8d2e6 0 4px,#ece8f4 4px 8px)}
+.pesliders .vrow.hasspec{padding-bottom:2.75em}
+.specbar{position:absolute;left:9px;right:9px;top:100%;margin-top:21px;height:14px;border-radius:4px;background:repeating-linear-gradient(135deg,#d8d2e6 0 4px,#ece8f4 4px 8px)}
 .specbar .spv{position:absolute;left:0;top:0;bottom:0;border-radius:3px 0 0 3px}
 .specbar .spu{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px dashed #6a5a9a}
-.specbar span{position:absolute;top:9px;font-size:.62rem;font-weight:700;color:var(--ink-3);white-space:nowrap;line-height:1.2}
-.specbar .spl1{left:0}
-.specbar .spl2{margin-left:4px;color:#5c4c8c}
+.specbar span{position:absolute;top:0;height:14px;line-height:14px;font-size:.58rem;font-weight:700;white-space:nowrap}
+.specbar .spl1{left:0;text-align:center;color:#fff;text-shadow:0 0 2px rgba(0,0,0,.6)}
+.specbar .spl2{margin-left:5px;color:#4b3c7c}
 button.b.nu0b{font-size:.7rem;font-weight:700;padding:.25em .55em;border-radius:8px;white-space:nowrap;flex:0 0 auto;background:var(--brand-50);border:1px solid rgba(224,123,24,.45);color:var(--brand-700)}
 button.b.nu0b .katex{font-size:1em}
 /* 金属のボタン */
-.metalrow{display:flex;flex-wrap:wrap;align-items:center;gap:.35em .5em;margin-top:.55em;padding-top:.5em;border-top:1px solid rgba(20,23,28,.06)}
+.metalrow{display:flex;flex-wrap:wrap;align-items:center;gap:.35em .6em;margin-top:.55em;padding-top:.5em;border-top:1px solid rgba(20,23,28,.06)}
 .metalrow .mlab{font-size:.8rem;font-weight:700;color:var(--ink-2);min-width:2.4em}
 .metalrow .seg.metalseg{display:inline-flex;flex-wrap:wrap;gap:4px}
 .metalrow button.b.metalb{font-size:.78rem;padding:.38em .75em}
 .metalrow button.b.metalb .msym{font-family:"KaTeX_Main",serif;font-weight:700;margin-left:.15em}
-.metalrow .mW{flex:1 1 100%;font-size:.76rem;color:var(--ink-3)}
+.metalrow .mW{flex:0 1 auto;font-size:.76rem;color:var(--ink-3);white-space:nowrap}
 .metalrow .mW .katex{font-size:1em}
 .ctrls .row1b button.kmaxb .katex{font-size:1em}
-/* 「束縛の様子」 */
-.bindrow{display:flex;flex-wrap:wrap;align-items:center;gap:.4em .7em;margin-top:12px}
-.bindrow .bindnote{font-size:.78rem;color:var(--ink-3)}
-.bindbox{margin-top:10px;padding:12px;border-radius:var(--r-l);background:var(--paper)}
+/* 「自由電子の束縛の様子」（いつも表示） */
+.bindbox{margin-top:12px;padding:.95em 1.1em 1em;border-radius:var(--r);background:var(--surface);box-shadow:0 0 0 1px var(--rule) inset}
+/* たたむ：「現在の値」と同じ見た目 */
+details.bindbox > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:.2em}
+details.bindbox > summary::-webkit-details-marker{display:none}
+details.bindbox > summary::before{content:"▶";font-size:.72rem;color:var(--brand-700);margin-right:.35em;transition:transform .15s}
+details.bindbox[open] > summary::before{transform:rotate(90deg)}
+details.bindbox .bindttl{font-family:var(--f-jph);font-weight:800;font-size:1.08rem;color:var(--ink)}
+details.bindbox .qopen{font-size:.8rem;font-weight:600;color:var(--ink-3)}
+details.bindbox .bindin{margin-top:.6em}
 .bindcells{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 .bindcells figure{margin:0;background:#fff;border-radius:10px;box-shadow:inset 0 0 0 1px var(--rule);overflow:hidden}
 .bindcells canvas{display:block;width:100%}
@@ -2098,14 +2127,18 @@ button.b.nu0b .katex{font-size:1em}
 .pplot .ghead .gt .katex{font-size:1.05em}
 .pplot .ghead .gsel{text-align:right}
 .pplot .ghead .gsel .katex{font-size:1em}
-.pplot canvas.gcv{height:auto}
-button.tiny.greset{font-size:.68rem;padding:.15em .55em;color:var(--ink-3)}
-button.tiny.greset.on{color:var(--brand-700);border-color:rgba(224,123,24,.5);background:var(--brand-50)}
-.pplot .gtip{margin:.15em 0 0;font-size:.66rem;color:var(--ink-4);text-align:right}
+.pplot canvas.gcv{height:auto;cursor:default;touch-action:auto}   /* ドラッグはなくした（2026-10-26 千葉さん） */
 .pplot .gleg{justify-content:flex-start}
 
 /* ---- 解説エリア ---- */
 .rdyn{margin-top:12px}
+/* 「現在の値（クリックして開く）」：最初はたたむ */
+.qcard.pex details.pevals > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:.2em;margin:0 0 .2em}
+.qcard.pex details.pevals > summary::-webkit-details-marker{display:none}
+.qcard.pex details.pevals > summary::before{content:"▶";font-size:.72rem;color:var(--brand-700);margin-right:.35em;transition:transform .15s}
+.qcard.pex details.pevals[open] > summary::before{transform:rotate(90deg)}
+.qcard.pex details.pevals > summary .qt{margin:0}
+.qcard.pex details.pevals > summary .qopen{font-size:.8rem;font-weight:600;color:var(--ink-3)}   /* （ ）の中は 2 段階小さく */
 .qcard.pex{line-height:1.7}
 .qcard.pex .eqr{margin:.3em 0;padding:.25em .6em;border-radius:8px;background:var(--paper);overflow-x:auto;font-variant-numeric:tabular-nums}
 .qcard.pex .eqr .eql{display:block;font-size:.72rem;font-weight:700;color:var(--ink-3);letter-spacing:.02em}
@@ -2160,7 +2193,7 @@ var PE = {
   e: 1.60e-19,            /* 電気素量〔C〕 */
   c: 3.00e8,              /* 真空中の光の速さ〔m/s〕 */
   m: 9.11e-31,            /* 電子の質量〔kg〕 */
-  NU_MIN: 4.0, NU_MAX: 16.0, NU_STEP: 0.1,      /* 振動数のスライダー〔×10¹⁴ Hz〕（2026-10-26 千葉さん） */
+  NU_MIN: 4.0, NU_MAX: 12.0, NU_STEP: 0.1,      /* 振動数のスライダー〔×10¹⁴ Hz〕（2026-10-26 千葉さん。最大は 16 → 12 に） */
   V_MIN: -5.0, V_MAX: 5.0, V_STEP: 0.1,         /* 陽極の電位〔V〕 */
   ISAT100: 10.0,          /* 光の強さ 100 % のときの飽和電流〔μA〕 */
   C0: 0.85,               /* 陽極の電位が 0 のとき、陽極に届く電子の割合（図 10 の形） */
@@ -2685,9 +2718,12 @@ function eArrow(ctx, x1, y1, x2, y2, col, w) {
   ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(bx - uy * wa, by + ux * wa); ctx.lineTo(bx + uy * wa, by - ux * wa); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
+/* 振動数 ν〔×10¹⁴ Hz〕→ 光子の波の数（4.0 で 1.5 個 … 12.0 で 5.0 個。0.5 個ずつの 8 段階）。波長が短いほど細かい波 */
+function photonCycles(nu) { return 1.5 + 0.5 * Math.round(clamp((nu - PE.NU_MIN) / (PE.NU_MAX - PE.NU_MIN), 0, 1) * 7); }
 /* 波のような線の光子（画像 2 の波線）。(x, y)＝先頭、(ux, uy)＝進む向き、L＝長さ、col＝色、uv＝紫外線（白いふちを点線に） */
-function photonWave(ctx, x, y, ux, uy, L, col, alpha, uv) {
-  var px = -uy, py = ux, amp = 3.2, n = 2.5, N = 26;
+/* cyc：波の数（光の振動数が大きい＝波長が短いほど多い。photonCycles(ν) で 8 段階） */
+function photonWave(ctx, x, y, ux, uy, L, col, alpha, uv, cyc) {
+  var px = -uy, py = ux, amp = 3.2, n = cyc || 2.5, N = Math.max(26, Math.round(n * 14));
   ctx.save(); ctx.globalAlpha = alpha === undefined ? 1 : alpha; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   var path = function () {
     ctx.beginPath();
@@ -3117,7 +3153,7 @@ Sim.prototype.syncSliders = function (force) {
       s.mk.forEach(function (sp, i) {
         var q = qs[i], on = q && q.x >= vd.min && q.x <= vd.max;
         sp.style.display = on ? '' : 'none';
-        if (on) { sp.style.setProperty('--m', ((q.x - vd.min) / (vd.max - vd.min)).toFixed(4)); var mh = mathify(q.label); if (sp._h !== mh) { sp._h = mh; sp.innerHTML = mh; } }
+        if (on) { sp.style.setProperty('--m', ((q.x - vd.min) / (vd.max - vd.min)).toFixed(4)); var mh = mathify(q.label); if (sp._h !== mh) { sp._h = mh; sp.innerHTML = mh; } sp.className = 'vmark' + (q.cls ? ' ' + q.cls : ''); }   /* q.cls：目印の種類（光電効果の「最初の設定」defm） */
       });
     }
   });
@@ -3360,12 +3396,10 @@ function ctlSide(s) {
 
 /* ===== 47_plot.js ===== */
 /* =========================================================================
-   47_plot.js … ドラッグできるグラフ（skill experiment-graph-ui と同じ操作）
-   ・枠の中をドラッグ＝移動、縦軸の目盛り（左）をドラッグ＝縦の拡大縮小、横軸の目盛り（下）をドラッグ＝横の拡大縮小
-   ・「スケールをリセット」で最初の範囲へ。ホイールは使わない
+   47_plot.js … グラフ（ドラッグでの移動・拡大縮小と「スケールをリセット」はつけない。2026-10-26 千葉さん）
    ・軸には矢印。目盛りはきりのいいきざみ（1・2・5×10ⁿ）で 0 を含み、薄い格子線。枠の外は描かない（clip）
    o = { host, title, H(W), xr0() / yr0() → {lo, hi}, xs: 軸の記号の描き方 fn(ctx,x,y), ys: 同,
-         xunit, yunit, draw(ctx, P)（枠の中）, over(ctx, P)（枠の外も可）}
+         draw(ctx, P)（枠の中）, over(ctx, P)（枠の外も可）}
    ========================================================================= */
 'use strict';
 var PLOTS = [];
@@ -3390,53 +3424,18 @@ function niceRange(lo, hi, target) {
 }
 var PPAD = { l: 44, r: 30, t: 30, b: 26 };
 function Plot(o) {
-  var self = this; this.o = o;
+  this.o = o;
   var box = el('div', 'gbox pplot'), hd = el('div', 'ghead');
   hd.appendChild(el('span', 'gt', mathify(o.title)));
   hd.appendChild(el('span', 'gsel', ''));
-  var rb = el('button', 'tiny greset', 'スケールをリセット'); rb.type = 'button'; rb.title = 'グラフの範囲を最初にもどす';
-  rb.addEventListener('click', function () { self.reset(); self.render(); });
-  hd.appendChild(rb);
   box.appendChild(hd);
   this.cv = el('canvas', 'gcv'); box.appendChild(this.cv);
   if (o.legend) { this.leg = el('div', 'gleg'); box.appendChild(this.leg); }
-  box.appendChild(el('p', 'gtip', 'ドラッグで移動・目盛りをドラッグで拡大縮小'));
-  o.host.appendChild(box); this.box = box; this.rb = rb;
-  this.reset(); this.bind(); PLOTS.push(this);
+  o.host.appendChild(box); this.box = box;
+  this.reset(); PLOTS.push(this);
 }
-Plot.prototype.reset = function () { this.xr = this.o.xr0(); this.yr = this.o.yr0(); this.user = false; this.rb.classList.remove('on'); };
+Plot.prototype.reset = function () { this.xr = this.o.xr0(); this.yr = this.o.yr0(); };
 Plot.prototype.rect = function () { return { x0: PPAD.l, x1: this.W - PPAD.r, y0: PPAD.t, y1: this.H - PPAD.b }; };
-Plot.prototype.bind = function () {
-  var self = this, down = null, cv = this.cv;
-  cv.addEventListener('pointerdown', function (ev) {
-    if (!self.W) return;
-    var b = cv.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top, R = self.rect();
-    var zone = (x < R.x0) ? 'y' : (y > R.y1 ? 'x' : 'pan');
-    down = { x: ev.clientX, y: ev.clientY, zone: zone, moved: false, xr: { lo: self.xr.lo, hi: self.xr.hi }, yr: { lo: self.yr.lo, hi: self.yr.hi } };
-    cv.setPointerCapture(ev.pointerId); ev.preventDefault();
-  });
-  cv.addEventListener('pointermove', function (ev) {
-    if (!down) return;
-    var dx = ev.clientX - down.x, dy = ev.clientY - down.y, R = self.rect();
-    if (Math.hypot(dx, dy) > 3) down.moved = true;
-    if (!down.moved) return;
-    self.user = true; self.rb.classList.add('on');
-    var sx = (down.xr.hi - down.xr.lo) / (R.x1 - R.x0), sy = (down.yr.hi - down.yr.lo) / (R.y1 - R.y0);
-    if (down.zone === 'pan') {
-      self.xr = { lo: down.xr.lo - dx * sx, hi: down.xr.hi - dx * sx };
-      self.yr = { lo: down.yr.lo + dy * sy, hi: down.yr.hi + dy * sy };
-    } else if (down.zone === 'x') {
-      var f = Math.exp(-dx * 0.01), c = (down.xr.lo + down.xr.hi) / 2, h = (down.xr.hi - down.xr.lo) / 2 * f;
-      self.xr = { lo: c - h, hi: c + h };
-    } else {
-      var f2 = Math.exp(dy * 0.01), c2 = (down.yr.lo + down.yr.hi) / 2, h2 = (down.yr.hi - down.yr.lo) / 2 * f2;
-      self.yr = { lo: c2 - h2, hi: c2 + h2 };
-    }
-    self.render();
-  });
-  var up = function () { down = null; };
-  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-};
 Plot.prototype.render = function () {
   var cv = this.cv, o = this.o; if (!cv.isConnected || !cv.offsetParent) return;
   var W = Math.max(220, Math.floor(cv.clientWidth || 300)), H = o.H ? o.H(W) : 220;
@@ -3524,27 +3523,37 @@ function peBase(d) {
   var base = {
     mode: 'main', strobe: false, noTime: true, noStep: true, baseRate: 1,
     vars: [
-      { k: 'E', label: '光子のエネルギー $h\\nu$', min: +photonE(PE.NU_MIN).toFixed(2), max: +photonE(PE.NU_MAX).toFixed(2), step: 0.01,   /* 2.65〜10.61（×10⁻¹⁹ J）。はしの ν は 4.0・16.0 にそろえる */ def: photonE(PE_DEF.nu), aria: '光子のエネルギー',
+      { k: 'E', label: '光子のエネルギー $h\\nu$', min: +photonE(PE.NU_MIN).toFixed(2), max: +photonE(PE.NU_MAX).toFixed(2), step: 0.01,   /* 2.65〜7.96（×10⁻¹⁹ J）。はしの ν は 4.0・12.0 にそろえる */ def: photonE(PE_DEF.nu), aria: '光子のエネルギー',
         fmt: function (x) { return f2(x) + '×10<sup>−19</sup> J<small>（' + f2(toEV(x)) + ' eV）</small>'; },
-        mark: function (s) { return [{ x: workW(s.metal), label: '$W$' }]; } },
+        mark: function (s) { return [{ x: workW(s.metal), label: '$W$' }].concat(d.defMarks ? [{ x: photonE(PE_DEF.nu), label: '', cls: 'defm' }] : []); } },
       { k: 'nu', label: '振動数 $\\nu$', min: PE.NU_MIN, max: PE.NU_MAX, step: PE.NU_STEP, def: PE_DEF.nu, aria: '振動数',
         fmt: function (x) { return f2(x) + '×10<sup>14</sup> Hz'; },
-        mark: function (s) { return [{ x: nu0Of(s.metal), label: '$\\nu_0$' }]; } },
-      { k: 'I', label: '光の強さ', min: 0, max: 100, step: 10, def: PE_DEF.I, aria: '光の強さ', fmt: function (x) { return Math.round(x) + ' %'; } }
+        mark: function (s) { return [{ x: nu0Of(s.metal), label: '$\\nu_0$' }].concat(d.defMarks ? [{ x: PE_DEF.nu, label: '', cls: 'defm' }] : []); } },
+      /* 波長 λ = c/ν（2026-10-26 千葉さん）。スライダーの位置は ν と同じ（右ほど短い波長）にして、ν のスライダーと光の色の帯をはさんで上下にそろえる */
+      { k: 'lam', label: '波長 $\\lambda$', min: PE.NU_MIN, max: PE.NU_MAX, step: 0.01, def: PE_DEF.nu, aria: '波長', cls: 'lamrow',
+        fmt: function (x) { return Math.round(lambdaNm(x)) + ' nm'; },
+        nudge: function (s, sg) { var L = Math.round(lambdaNm(s.v.nu)) - sg; s.v.nu = clamp(PE.c / (L * 1e-9) / 1e14, PE.NU_MIN, PE.NU_MAX); return true; },   /* ＋（右）は波長を 1 nm 短く */
+        mark: function (s) { return [{ x: nu0Of(s.metal), label: '' }].concat(d.defMarks ? [{ x: PE_DEF.nu, label: '', cls: 'defm' }] : []); } },
+      { k: 'I', label: '光の強さ', min: 0, max: 100, step: 10, def: PE_DEF.I, aria: '光の強さ', fmt: function (x) { return Math.round(x) + ' %'; },
+        mark: function () { return d.defMarks ? [{ x: PE_DEF.I, label: '', cls: 'defm' }] : []; } }
     ],
-    varCols: [['E', 'nu'], ['I']],
+    varCols: [['E', 'nu', 'lam'], ['I']],
     varColNote: [null, null],
-    disp: function (s, k) { return k === 'E' ? photonE(s.v.nu) : s.v[k]; },
+    disp: function (s, k) { return k === 'E' ? photonE(s.v.nu) : (k === 'lam' ? s.v.nu : s.v[k]); },
     onVar: function (s, k, x) {
       if (d.onVarX) d.onVarX(s, k, x);                                  /* 値を変える前に（2 の「前の曲線」を残すため） */
       if (k === 'E') s.v.nu = clamp(nuOfE(x), PE.NU_MIN, PE.NU_MAX);    /* hν を動かしたら ν も（hν = h × ν） */
+      else if (k === 'lam') s.v.nu = clamp(x, PE.NU_MIN, PE.NU_MAX);    /* λ のスライダーの位置は ν と同じ（λ = c/ν） */
       else s.v[k] = x;
       return true;
     },
     onChanged: function (s, k) { if (d.onChangedX) d.onChangedX(s, k); return 'keepT'; },
     tEnd: function () { return 1e9; },
     buttons: [
-      { k: 'kmax', label: '最大の $K_0$ の電子だけ見る', cls: 'chkb kmaxb', onClick: function (s, b) { s.kmode = s.kmode === 'max' ? 'dist' : 'max'; peSyncBtns(s); s.changed('kmode'); } }
+      { k: 'kmax', label: '最大の $K_0$ の電子だけ見る', cls: 'chkb kmaxb', onClick: function (s, b) {
+        s.kmode = s.kmode === 'max' ? 'dist' : 'max';
+        if (s.kmode === 'max' && d.onKmax) d.onKmax(s);                 /* ON にした瞬間、K₀ でない電子は消す（2026-10-26 千葉さん） */
+        peSyncBtns(s); s.changed('kmode'); } }
     ]
   };
   Object.keys(base).forEach(function (key) { if (d[key] === undefined) d[key] = base[key]; });
@@ -3553,7 +3562,7 @@ function peBase(d) {
   var init0 = d.init;
   d.init = function (s) { s.metal = PE_DEF.metal; s.kmode = 'dist'; s.P = peParticlesNew(s); if (init0) init0(s); };
   var def0 = d.onDefaults;
-  d.onDefaults = function (s) { peSyncBtns(s); if (s.plotK) s.plotK.reset(); if (def0) def0(s); peRenderPlots(s); };
+  d.onDefaults = function (s) { peSyncBtns(s); if (def0) def0(s); peRenderPlots(s); };
   var res0 = d.onReset;
   d.onReset = function (s) { s.P = peParticlesNew(s); if (res0) res0(s); };
   return d;
@@ -3567,7 +3576,15 @@ function peArrange(s) {
   ctr.insertBefore(sl, ctr.firstChild);
   sl.classList.add('pesliders');
   var grid = el('div', 'pegrid'); s.varbox.innerHTML = ''; s.varbox.classList.remove('cols2'); s.varbox.appendChild(grid);
-  ['E', 'nu', 'I'].forEach(function (k) { grid.appendChild(s.sl[k].row); });
+  /* 並び：1 行目 hν ｜ ν、2 行目 光の強さ ｜ λ（ν と λ の間に光の色の帯）、3 行目 金属（横いっぱい）。
+     hν・ν・λ は連動するので、同じ薄い色でぬる（2026-10-26 千葉さん） */
+  ['E', 'nu', 'I', 'lam'].forEach(function (k) { grid.appendChild(s.sl[k].row); });
+  ['E', 'nu', 'lam'].forEach(function (k) { s.sl[k].row.classList.add('linked'); });
+  /* λ の目盛り（右ほど短い波長。位置は ν と同じ） */
+  var lt = el('div', 'lamtk'); lt.setAttribute('aria-hidden', 'true');
+  [700, 500, 400, 300, 250].forEach(function (L) { var nu = PE.c / (L * 1e-9) / 1e14; if (nu < PE.NU_MIN || nu > PE.NU_MAX) return; var sp = el('span', '', String(L)); sp.style.left = 'calc(9px + (100% - 18px) * ' + ((nu - PE.NU_MIN) / (PE.NU_MAX - PE.NU_MIN)).toFixed(4) + ')'; lt.appendChild(sp); });
+  (s.sl.lam.rw || s.sl.lam.row).appendChild(lt);
+  s.sl.lam.dn.title = '波長を 1 nm 長く'; s.sl.lam.up.title = '波長を 1 nm 短く';
   var btns = ctr.querySelector('.playbar .btns'), r1b = s.row1b;
   [s.bDef, s.extra.kmax].forEach(function (b) { if (b) { b.classList.remove('gapL'); btns.appendChild(b); } });
   s.bDef.classList.add('gapL');
@@ -3583,19 +3600,20 @@ function peArrange(s) {
     sg.appendChild(b); return b;
   });
   row.appendChild(sg); col.appendChild(row);
-  row.appendChild(el('span', 'mW', ''));
+  row.appendChild(el('span', 'mW', ''));                               /* 仕事関数はボタンの右（1 行に収める） */
   s.mW = row.lastChild;
   /* 「ν₀ に合わせる」（ν のスライダーの右） */
   var nr = s.sl.nu.row, nb = el('button', 'b nu0b', mathify('$\\nu_0$ に合わせる')); nb.type = 'button'; nb.title = 'いまの金属の限界振動数 ν₀ ちょうどにする（K₀ = 0）';
   nb.addEventListener('click', function () { s.v.nu = nu0Of(s.metal); s.changed('nu'); });
-  (nr.querySelector('.vbar') || nr).appendChild(nb); s.nu0b = nb;
+  var hd = nr.querySelector('.vhead'), lb = hd && hd.querySelector('.vl');                /* 「振動数 ν」の 2 文字あと（名前の行）に置く。つまみの行は λ と同じ長さにそろえる（2026-10-26 千葉さん 5 回目） */
+  if (lb) lb.insertAdjacentElement('afterend', nb); else nr.appendChild(nb); s.nu0b = nb;
   /* ν のスライダーの下に、光の色の帯（可視光は色、紫外線は「紫外線」と分かる帯） */
   var sp = el('div', 'specbar'); sp.setAttribute('aria-hidden', 'true');
   var stops = [], N = 24;
   for (var i = 0; i <= N; i++) { var nu = PE.NU_MIN + (PE.NU_MAX - PE.NU_MIN) * i / N; stops.push(rgbStr(lightRGB(nu)) + ' ' + (i / N * 100).toFixed(1) + '%'); }
   var fUV = (PE.c / 380e-9 / 1e14 - PE.NU_MIN) / (PE.NU_MAX - PE.NU_MIN);
   sp.innerHTML = '<i class="spv" style="width:' + (fUV * 100).toFixed(1) + '%;background:linear-gradient(90deg,' + stops.filter(function (q, j) { return j / N <= fUV + 1e-9; }).map(function (q) { var a = q.split(' '); return a[0] + ' ' + (parseFloat(a[1]) / fUV).toFixed(1) + '%'; }).join(',') + ')"></i>' +
-    '<i class="spu" style="left:' + (fUV * 100).toFixed(1) + '%"></i><span class="spl1">可視光</span><span class="spl2" style="left:' + (fUV * 100).toFixed(1) + '%">紫外線（目に見えない）</span>';
+    '<i class="spu" style="left:' + (fUV * 100).toFixed(1) + '%"></i><span class="spl1" style="width:' + (fUV * 100).toFixed(1) + '%">可視光</span><span class="spl2" style="left:' + (fUV * 100).toFixed(1) + '%">紫外線（目に見えない）</span>';
   (s.sl.nu.rw || nr).appendChild(sp); nr.classList.add('hasspec');
   peSyncBtns(s);
 }
@@ -3613,8 +3631,8 @@ function peMakePlotK(s, host) {
   var p = new Plot({
     host: host, title: '$K_0$–$\\nu$ グラフ',
     H: function (W) { return clamp(Math.round(W * 0.66), 230, 330); },
-    xr0: function () { return { lo: -0.6, hi: 17.4 }; },
-    yr0: function () { return { lo: -9, hi: 9 }; },
+    xr0: function () { return { lo: -0.6, hi: 12.8 }; },
+    yr0: function () { return { lo: -8.5, hi: 6.5 }; },
     xs: function (ctx, x, y) { sym(ctx, 'ν', x - 2, y - 11, { size: 15, align: 'right', clamp: false }); label(ctx, '〔×10¹⁴ Hz〕', x + 6, y + 14, { size: 9.5, align: 'right', color: '#69717d' }); },
     ys: function (ctx, x, y) { sym(ctx, 'K', x + 6, y + 3, { size: 15, sub: '0', align: 'left', clamp: false }); label(ctx, '〔×10⁻¹⁹ J〕', x + 30, y + 3, { size: 9.5, align: 'left', color: '#69717d' }); },
     avoidY: function (P) { return X0in(P) ? [P.Y(-workW(s.metal))] : []; },
@@ -3635,10 +3653,6 @@ function peDrawK0(s, ctx, P) {
     ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(X(n0), Y(0)); ctx.lineTo(X(x1), Y(PE.H * x1 - W)); ctx.stroke();
     ctx.restore();
   });
-  /* 傾き h（一定）：選んでいる直線に三角形 */
-  var W0 = q.W, a = clamp(q.nu0 + 3.2, q.nu0 + 1.5, 13), b = a + 2.5;
-  ctx.save(); ctx.strokeStyle = '#5d4a8c'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]);
-  ctx.beginPath(); ctx.moveTo(X(a), Y(PE.H * a - W0)); ctx.lineTo(X(b), Y(PE.H * a - W0)); ctx.lineTo(X(b), Y(PE.H * b - W0)); ctx.stroke(); ctx.restore();
   /* いまの ν の点（飛び出さないときは ν 軸の上に白抜き） */
   var px = X(q.nu), py = Y(q.em || q.eq ? q.d : 0);
   dotted(ctx, px, py, px, Y(0), 'rgba(20,23,28,.45)', [3, 3]);
@@ -3655,9 +3669,6 @@ function peOverK0(s, ctx, P) {
     var sel = mm.k === q.k, xe = Math.min(P.xr.hi, PE.NU_MAX), ye = PE.H * xe - workW(mm.k), x = X(xe), y = Y(ye);
     if (inR(x, y)) label(ctx, mm.sym, x - 4, y - 10, { size: sel ? 12 : 10.5, bold: sel, color: sel ? mm.col : fade(mm.col, 0.55), align: 'right' });
   });
-  /* 傾き h（一定） */
-  var a = clamp(q.nu0 + 3.2, q.nu0 + 1.5, 13), b = a + 2.5, xb = X(b) + 6, yb = Y(PE.H * (a + b) / 2 - q.W);
-  if (inR(X(b), yb)) pill2(ctx, '傾き h（一定）', xb, yb, '#5d4a8c', 'left');
   /* 限界振動数 ν₀（ν 軸の下、交点の右） */
   var xn = X(q.nu0), x0 = X(0), yW = Y(-q.W), yz = Y(0), nb = null;
   if (inR(xn, yz)) {
@@ -3684,6 +3695,34 @@ function peOverK0(s, ctx, P) {
   var g = s.plotK && s.plotK.box.querySelector('.gsel');
   if (g) { var h = mathify(q.em || q.eq ? '$K_0 = h\\nu - W$' : '$h\\nu < W$'); if (g._h !== h) { g._h = h; g.innerHTML = h; } }
 }
+/* 「可視光」の字：光の色で（明るい色でも読めるよう、うすい黒のふちどり） */
+function peLightLabel(ctx, text, x, y, rgb, al) {
+  ctx.save(); ctx.font = '800 13px ' + FONT; ctx.textBaseline = 'middle'; ctx.textAlign = al || 'left';
+  ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 4.5; ctx.strokeText(text, x, y);
+  ctx.strokeStyle = 'rgba(30,30,40,.45)'; ctx.lineWidth = 1.1; ctx.strokeText(text, x, y);
+  ctx.fillStyle = rgbStr(rgb); ctx.fillText(text, x, y); ctx.restore();
+}
+/* いまの設定が 10 秒続いたときの数：金属に当たる光子 p、飛び出す光電子 e（光子 1 個で電子 1 個）、陽極に届く光電子 a */
+function peCount10(q, V) {
+  var p = Math.round(PH_RATE * q.I / 100 * 10), e = q.em ? p : 0;
+  var a = V === undefined || !q.em ? e : Math.round(e * currentI(V, q.nu, q.k, q.I, q.mode) / IsatOf(q.nu, q.k, q.I));
+  return { p: p, e: e, a: a };
+}
+/* 分数の形の文字：右はしが xr、分数の線が y。pre は左の「現在」 */
+function peFrac(ctx, xr, y, pre, num, den, size) {
+  size = size || 10;
+  ctx.save(); ctx.font = '700 ' + size + 'px ' + FONT;
+  var w = Math.max(ctx.measureText(num).width, ctx.measureText(den).width) + 8, wp = pre ? ctx.measureText(pre).width + 8 : 0;
+  var x1 = xr, x0 = xr - w, xp = x0 - wp;
+  ctx.fillStyle = 'rgba(255,255,255,.88)'; rrect(ctx, xp - 5, y - size * 1.55 - 3, w + wp + 10, size * 3.1 + 6, 6); ctx.fill();
+  ctx.strokeStyle = 'rgba(20,23,28,.15)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#2b323c'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  ctx.fillText(num, (x0 + x1) / 2, y - size * 0.8); ctx.fillText(den, (x0 + x1) / 2, y + size * 0.85);
+  ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x0 + 2, y); ctx.lineTo(x1 - 2, y); ctx.stroke();
+  if (pre) { ctx.textAlign = 'left'; ctx.fillStyle = '#b35a00'; ctx.fillText(pre, xp, y); }
+  ctx.restore();
+  return { x: xp - 5, w: w + wp + 10 };
+}
 /* 小さな札（白地・色の文字） */
 function pill2(ctx, text, x, y, col, al) {
   ctx.save(); ctx.font = '700 10.5px ' + FONT; var w = ctx.measureText(text).width + 10, h = 17;
@@ -3705,6 +3744,16 @@ function dimV(ctx, x, y1, y2, col) {
   ctx.restore();
 }
 function peRenderPlots(s) { (s.plots || []).forEach(function (p) { p.render(); }); }
+/* K₀–ν グラフ（右の列のいちばん上のグラフ）の上のはしを、左のスライダーの箱の上のはしにそろえる（2 列のときだけ。2026-10-26 千葉さん） */
+function peAlignTop(s) {
+  var gh = s.R && s.R.querySelector('.pgraphs'); if (!gh || !s.cw) return;
+  gh.style.marginTop = '';
+  if (!s.cw.offsetParent || s.R.getBoundingClientRect().left < s.L.getBoundingClientRect().right - 10) return;   /* 1 列（右の列が下）のときはそろえない */
+  var tg = s.L.querySelector('.pesliders .varbox') || s.cw;                /* スライダーの箱の上のはしにそろえる（2026-10-26 千葉さん 4 回目） */
+  var d = Math.round(tg.getBoundingClientRect().top - gh.getBoundingClientRect().top);
+  if (d > 0) gh.style.marginTop = d + 'px';
+}
+window.addEventListener('resize', function () { clearTimeout(window.__peAl); window.__peAl = setTimeout(function () { SIMS.forEach(peAlignTop); PLOTS.forEach(function (p) { p.render(); }); }, 120); });
 
 /* ---------- 解説エリア ---------- */
 function pePointHTML(q) {
@@ -3730,17 +3779,26 @@ function peValuesHTML(q) {
   h += '<p class="eqr"><span class="eql">限界振動数</span>$\\nu_0 = \\dfrac{W}{h}$ $= \\dfrac{' + jTex(q.W) + '}{' + sciTex(PE.h, 3) + '}$ $= ' + sciTex(q.nu0 * 1e14, 3) + '$ Hz</p>';
   return h;
 }
+/* 「現在の値」：最初はたたんでおく（2026-10-26 千葉さん）。開いたかどうかは s.valOpen に覚えておく（書きかえても閉じない） */
+function peValuesBox(s, inner) {
+  return '<details class="pevals"' + (s.valOpen ? ' open' : '') + '><summary><span class="qt">現在の値</span><span class="qopen">（クリックして' + (s.valOpen ? '閉じる' : '開く') + '）</span></summary>' + inner + '</details>';
+}
+function peBindValues(s, R) {
+  var dt = R.querySelector('details.pevals'); if (!dt) return;
+  dt.addEventListener('toggle', function () { s.valOpen = dt.open; var o = dt.querySelector('.qopen'); if (o) o.textContent = '（クリックして' + (dt.open ? '閉じる' : '開く') + '）'; });
+}
 function peEVnote() { return '<p class="evnote">※ 1 eV（電子ボルト）＝ $1.60\\times10^{-19}$ J。（　）の中は eV で表した値。</p>'; }
 
 /* ===== 50_sec1.js ===== */
 /* =========================================================================
    50_sec1.js … 1　光電効果の基礎
-   左上：金属の表面に光子が当たるアニメ（右に「電子のエネルギー」の図）。その下にスライダーと金属のボタン、「束縛の様子」。
-   右上：K₀–ν グラフ、右下：解説エリア。
+   上からスライダー → ▶ スタートの行 → アニメ（右に「電子のエネルギー」の図）→ ひとこと → 自由電子の束縛の様子（いつも表示）。
+   右上：K₀–ν グラフ（上のはしをアニメにそろえる）、右下：解説エリア。
    ・光子（波のような線の小さな粒、光の色）が金属の中の電子に当たる。
      hν ≧ W：電子はすぐに飛び出す（速さは K = ½mv² から。図の上の速さは √K に比例）
      hν < W：電子は少しゆれるだけ。光子のエネルギーは金属の中で熱になる（オレンジのにじみ）
    ・光の強さ＝1 秒あたりに当たる光子の数。強くすると飛び出す電子の数が増えるが、速さ（K₀）は変わらない
+     光の当たる幅も光の強さに比例させる（幅あたりの光子の数は同じ。2026-10-26 千葉さん）
    ========================================================================= */
 'use strict';
 var S1_ANG = 56 * Math.PI / 180;                 /* 光の向き（水平から下へ 56°。右上から左下へ進む） */
@@ -3749,9 +3807,9 @@ var S1_NROW = 6;                                 /* 金属の中の電子の段�
 function s1Geo(s, W, H) {
   var wide = W >= 520, dw = wide ? clamp(Math.round(W * 0.27), 150, 196) : 0;
   var aw = W - dw, ah = wide ? H : H - 178;
-  var ys = Math.round(ah * 0.47);
+  var ys = Math.round(ah * 0.47), xc = aw * 0.42, hw = aw * 0.24 * clamp(s.v.I, 0, 100) / 100;   /* 光の当たる幅は光の強さに比例 */
   return { W: W, H: H, wide: wide, aw: aw, ah: ah, ys: ys, ux: -Math.cos(S1_ANG), uy: Math.sin(S1_ANG),
-    xa: aw * 0.18, xb: aw * 0.66,
+    xa: xc - hw, xb: xc + hw, xc: xc,
     ebox: wide ? { x0: aw, y0: 0, x1: W, y1: H } : { x0: 0, y0: ah, x1: W, y1: H } };
 }
 /* 金属の中の電子（ならびは図の大きさで決める。乱数は種つき） */
@@ -3808,7 +3866,11 @@ function s1Spawn(s, g, lat) {
     var xs = e.hx - g.ux * (e.hy - g.ys) / g.uy;                            /* この電子に向かう光子が表面に入る位置 */
     return xs >= g.xa && xs <= g.xb;
   });
-  if (!c.length) return;
+  if (!c.length) {                                                         /* 幅がせまくて電子がないときは、まん中にいちばん近い電子 */
+    var best = null, bd = 1e9;
+    lat.els.forEach(function (e) { if (e.st !== 'home' || e.row > 3) return; var d = Math.abs(e.hx - g.ux * (e.hy - g.ys) / g.uy - g.xc); if (d < bd) { bd = d; best = e; } });
+    if (!best) return; c = [best];
+  }
   var e = c[Math.floor(P.rnd() * c.length)], L = (e.hy + 30) / g.uy;
   e.st = 'target';
   P.ph.push({ e: e, L: L, d: 0, x0: e.hx - g.ux * L, y0: e.hy - g.uy * L });
@@ -3843,7 +3905,7 @@ function drawS1(s, ctx, W, H) {
   var rgb = q.rgb;
   var ta = { x: g.xa + g.ux * ((-40 - g.ys) / g.uy), y: -40 }, tb = { x: g.xb + g.ux * ((-40 - g.ys) / g.uy), y: -40 };
   ctx.save(); ctx.beginPath(); ctx.moveTo(ta.x, ta.y); ctx.lineTo(tb.x, tb.y); ctx.lineTo(g.xb, g.ys); ctx.lineTo(g.xa, g.ys); ctx.closePath();
-  ctx.fillStyle = rgbStr(rgb, on ? (q.uv ? 0.10 : 0.16) * (0.35 + 0.65 * q.I / 100) : 0.05); ctx.fill();
+  ctx.fillStyle = rgbStr(rgb, on ? (q.uv ? 0.11 : 0.17) : 0.06); ctx.fill();     /* 光の強さは幅で表す（濃さは同じ） */
   if (q.uv) { ctx.setLineDash([5, 5]); ctx.strokeStyle = rgbStr(rgb, 0.55); ctx.lineWidth = 1; ctx.stroke(); }
   ctx.restore();
   /* 熱（オレンジのにじみ） */
@@ -3872,28 +3934,31 @@ function drawS1(s, ctx, W, H) {
   /* 光子 */
   P.ph.forEach(function (p) {
     var x = p.x0 + g.ux * p.d, y = p.y0 + g.uy * p.d;
-    photonWave(ctx, x, y, g.ux, g.uy, 30, rgbStr(q.uv ? [92, 76, 140] : q.rgb), y > g.ys ? 0.55 : 1, q.uv);
+    photonWave(ctx, x, y, g.ux, g.uy, 34, rgbStr(q.uv ? [92, 76, 140] : q.rgb), y > g.ys ? 0.55 : 1, q.uv, photonCycles(q.nu));
   });
   ctx.restore();
   /* 文字 */
-  var lab = q.uv ? '紫外線（目に見えない光）' : '光';
-  label(ctx, lab, Math.min(g.aw - 10, tb.x + g.ux * -60), 20, { size: 12.5, bold: true, color: q.uv ? '#5c4c8c' : '#3a414c', align: 'right' });
+  if (q.uv) label(ctx, '紫外線（目に見えない光）', Math.min(g.aw - 10, tb.x + g.ux * -60), 20, { size: 12.5, bold: true, color: '#5c4c8c', align: 'right' });
+  else peLightLabel(ctx, '可視光', Math.min(g.aw - 10, tb.x + g.ux * -60), 20, q.rgb, 'right');      /* 字の色は光の色（2026-10-26 千葉さん） */
   label(ctx, '金属', 12, g.ah - 14, { size: 12, bold: true, color: '#5a3d14', align: 'left' });
   label(ctx, '真空', 12, 16, { size: 11, color: '#8a939d', align: 'left' });
   s1Legend(ctx, g, q);
+  /* 境界面の上：10 秒あたりの数（いまの設定が 10 秒続いたとき） */
+  var c10 = peCount10(q);
+  peFrac(ctx, g.aw - 8, g.ys - 50, '現在', '10 秒あたりに飛び出した光電子 ' + c10.e + ' 個', '10 秒あたりに金属に当たった光子 ' + c10.p + ' 個', 9.5);
   if (!on) label(ctx, '▶ スタートで光を当てる', g.aw / 2, g.ys / 2 + 10, { size: 13, bold: true, color: '#b35a00' });
   if (q.I === 0 && on) label(ctx, '光の強さが 0（光子が来ない）', g.aw / 2, g.ys / 2 + 10, { size: 12.5, bold: true, color: '#69717d' });
   /* 電子のエネルギーの図 */
-  s1Energy(ctx, g.ebox, q, g.wide);
+  s1Energy(ctx, g.ebox, q, g.wide, g.ys);
 }
+/* 凡例：左上（「真空」の下）に 2 行で「電子」「光子」（2026-10-26 千葉さん 5 回目） */
 function s1Legend(ctx, g, q) {
-  var x = 12, y = g.ys - 16;
-  if (g.aw < 380) return;
-  electronDot(ctx, x + 4, y, 4, 1, true); label(ctx, '電子', x + 13, y, { size: 10.5, align: 'left', color: '#3a414c' });
-  photonWave(ctx, x + 78, y, 1, 0, 26, rgbStr(q.uv ? [92, 76, 140] : q.rgb), 1, q.uv); label(ctx, '光子（1 個のエネルギー hν）', x + 84, y, { size: 10.5, align: 'left', color: '#3a414c' });
+  var x = 12, y = 38;
+  electronDot(ctx, x + 14, y, 4, 1, true); label(ctx, '電子', x + 34, y, { size: 10.5, align: 'left', color: '#3a414c' });
+  photonWave(ctx, x + 28, y + 18, 1, 0, 28, rgbStr(q.uv ? [92, 76, 140] : q.rgb), 1, q.uv, photonCycles(q.nu)); label(ctx, '光子', x + 34, y + 18, { size: 10.5, align: 'left', color: '#3a414c' });
 }
 /* 電子のエネルギーの図（教科書の図と同じ形：hν を受け取り、W を使って外へ。残りが K₀） */
-function s1Energy(ctx, b, q, wide) {
+function s1Energy(ctx, b, q, wide, ysurf) {
   var w = b.x1 - b.x0, h = b.y1 - b.y0;
   ctx.save();
   ctx.fillStyle = '#faf8f3'; ctx.fillRect(b.x0, b.y0, w, h);
@@ -3901,7 +3966,11 @@ function s1Energy(ctx, b, q, wide) {
   if (wide) { ctx.moveTo(b.x0 + 0.5, b.y0); ctx.lineTo(b.x0 + 0.5, b.y1); } else { ctx.moveTo(b.x0, b.y0 + 0.5); ctx.lineTo(b.x1, b.y0 + 0.5); }
   ctx.stroke(); ctx.restore();
   label(ctx, '電子のエネルギー', b.x0 + w / 2, b.y0 + 15, { size: 11.5, bold: true, color: '#3a414c' });
-  var top = b.y0 + 40, yb = b.y1 - 30, sc = (yb - top) / 10.8, yv = yb - q.W * sc, yE = yb - q.E * sc;
+  var top = b.y0 + 40, yb = b.y1 - 30, sc = (yb - top) / 10.8;
+  /* 横に並ぶとき（wide）：金属の外と中の境（破線）を、左のアニメの金属の表面と同じ高さに（2026-10-26 千葉さん 5 回目）。
+     縮尺は金属で変わる。hν が図の上をこえるときは、矢印を上で切って ≈ の印 */
+  if (wide && ysurf) sc = (yb - ysurf) / q.W;
+  var yv = yb - q.W * sc, yE0 = yb - q.E * sc, cut = yE0 < top - 6, yE = cut ? top - 6 : yE0;
   var xa = b.x0 + Math.max(w * 0.46, 70), xw = b.x0 + Math.max(w * 0.74, 120);
   if (!wide) { xa = b.x0 + w * 0.42; xw = b.x0 + w * 0.6; }
   /* 金属の中（灰色）と、金属の外の境（破線）。名前は左のはし */
@@ -3921,14 +3990,15 @@ function s1Energy(ctx, b, q, wide) {
     eArrow(ctx, xw, yv - 1, xw, yE, '#1663b5', 5);
     if (yv - yE > 14) sym(ctx, 'K', xw + 9, (yv + yE) / 2, { size: 15, sub: '0', color: '#1663b5', align: 'left' });
     dotted(ctx, xa, yE, xw + 4, yE, 'rgba(224,123,24,.6)', [3, 3]);
-    label(ctx, '外へ飛び出せる', (xa + xw) / 2, Math.min(yE, yv) - 16, { size: 10.5, bold: true, color: '#1663b5' });
+    label(ctx, '外へ飛び出せる', (xa + xw) / 2, Math.max(b.y0 + 32, Math.min(yE, yv) - 16), { size: 10.5, bold: true, color: '#1663b5' });
   } else if (q.eq) {
     label(ctx, 'ちょうど K₀ = 0', (xa + xw) / 2, yv - 16, { size: 10.5, bold: true, color: '#1663b5' });
   } else {
     dotted(ctx, xa, yE, xw + 4, yE, 'rgba(224,123,24,.6)', [3, 3]);
-    label(ctx, 'W に足りない', (xa + xw) / 2, yv - 30, { size: 10.5, bold: true, color: '#c0392b' });
-    label(ctx, '→ 熱になる', (xa + xw) / 2, yv - 15, { size: 10.5, bold: true, color: '#c0392b' });
+    label(ctx, 'W より小さい', (xa + xw) / 2, yv - 38, { size: 10.5, bold: true, color: '#c0392b' });
+    label(ctx, '→ 電子は脱出できない', (xa + xw) / 2, yv - 23, { size: 10.5, bold: true, color: '#c0392b' });
   }
+  if (cut) [xa, xw].forEach(function (x) { if (x === xw && q.d <= 1e-9) return; var yc = Math.max(top + 14, (yv + yE) / 2 + (x === xa ? 30 : 0)); ctx.save(); ctx.strokeStyle = '#faf8f3'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x - 7, yc + 3); ctx.lineTo(x + 7, yc - 3); ctx.moveTo(x - 7, yc + 9); ctx.lineTo(x + 7, yc + 3); ctx.stroke(); ctx.strokeStyle = '#3a414c'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x - 7, yc + 2); ctx.lineTo(x + 7, yc - 4); ctx.moveTo(x - 7, yc + 10); ctx.lineTo(x + 7, yc + 4); ctx.stroke(); ctx.restore(); });   /* 途中を省いた印 */
 }
 
 DEFS.s1 = peBase({
@@ -3938,19 +4008,17 @@ DEFS.s1 = peBase({
   height: function (s, w) { return w >= 520 ? Math.round(clamp(Math.min(w * 0.6, innerHeight - 70), 300, 420)) : Math.round(w * 0.82) + 178; },
   afterBuild: function (s) {
     peArrange(s);
-    /* 「束縛の様子」スイッチ（スライダーの下） */
-    var bb = el('button', 'b chkb bindb', '束縛の様子'); bb.type = 'button'; bb.setAttribute('aria-pressed', 'false');
-    bb.title = '金属の中の電子が、どのように束縛されているかを見る';
-    s.btnRow.appendChild(bb);                                       /* ▶ スタートの行の右はし */
-    var bx = el('div', 'bindbox'); bx.hidden = true; s.L.appendChild(bx); s.bindBox = bx; s.bindBtn = bb;
-    bb.addEventListener('click', function () { s1Bind(s, bx.hidden); });
+    /* 自由電子の束縛の様子（チェックなしで、いつも表示。ひとことの下） */
+    s1BindBuild(s);
     /* 右：K₀–ν グラフ と 解説 */
     s.R.innerHTML = '';
     var gh = el('div', 'pgraphs'); s.R.appendChild(gh);
     s.plotK = peMakePlotK(s, gh); s.plots = [s.plotK];
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
-  onDefaults: function (s) { s1Bind(s, false); s1ResetLattice(s); },
+  onDefaults: function (s) { s1ResetLattice(s); },
+  /* 「最大の K₀ の電子だけ見る」を ON にした瞬間：K₀ でない（遅い）電子は消す */
+  onKmax: function (s) { var K0 = peQ(s).K0; if (s.lat) s.lat.els.forEach(function (e) { if ((e.st === 'out' || e.st === 'surf') && Math.abs(e.K - K0) > 1e-9) { e.st = 'gone'; e.t0 = s.P.time || 0; } }); s.draw(); },
   onReset: function (s) { s1ResetLattice(s); },
   beforeStep: function (s, t0, t1) { s1Step(s, t1 - t0); },
   draw: function (s, ctx, W, H) { drawS1(s, ctx, W, H); },
@@ -3958,97 +4026,149 @@ DEFS.s1 = peBase({
     var q = peQ(s);
     if (q.em) return '$h\\nu > W$：光子が当たった電子は、<b>すぐに</b>飛び出す（光が弱くても）。飛び出す電子の運動エネルギーは最大で $K_0 = h\\nu - W$。';
     if (q.eq) return '$h\\nu = W$（$\\nu = \\nu_0$）：電子は表面までは出られるが、運動エネルギーは $0$。';
-    return '$h\\nu < W$：光をどれだけ強くしても、電子は飛び出さない。電子は少しゆれるだけで、光子のエネルギーは金属の中で<b>熱</b>になる。';
+    return '$h\\nu < W$：光をどれだけ強くしても、電子は飛び出さない。電子は少し揺れるだけで、光子のエネルギーは金属の中で熱になる。';
   },
   right: function (s, R) {
     var q = peQ(s);
-    R.innerHTML = mathify('<div class="qcard pex"><p class="qt">いまの値</p>' + peValuesHTML(q) + pePointHTML(q) +
+    R.innerHTML = mathify('<div class="qcard pex">' + peValuesBox(s, peValuesHTML(q)) + pePointHTML(q) +
       '<p class="qnote">光の強さ＝1 秒あたりに当たる光子の数。強くすると、飛び出す電子の<b>数</b>が増える。光子 1 個のエネルギー $h\\nu$ は変わらないので、$K_0$ は変わらない。' +
       (s.kmode === 'max' ? '<br>（いまは、どの電子も最大の $K_0$ で飛び出すとして描いている）' : '<br>（金属の深い所の電子は、外へ出るまでにエネルギーの一部を失うので、$K_0$ より遅く飛び出す）') + '</p>' +
       peEVnote() + '</div>');
-    peRenderPlots(s);
+    peBindValues(s, R);
+    peRenderPlots(s); peAlignTop(s);
   }
 });
 
-/* ---------- 「束縛の様子」：2 つの図を並べる（もう一度押すと閉じる） ---------- */
-function s1Bind(s, open) {
-  var bx = s.bindBox, bb = s.bindBtn; if (!bx) return;
-  bx.hidden = !open; bb.classList.toggle('on', open); bb.setAttribute('aria-pressed', open ? 'true' : 'false');
-  if (open) {
-    if (!bx.firstChild) {
-      bx.innerHTML = '<div class="bindcells"><figure><canvas></canvas><figcaption>原子核のまわりを回る電子として見ると</figcaption></figure>' +
-        '<figure><canvas></canvas><figcaption>ばねのように束縛された電子として見ると</figcaption></figure></div>' +
-        '<p class="bindcap">' + mathify('どちらの見方でも、電子は金属に<b>束縛</b>されている。電子が金属の外へ出るには、束縛を切るだけのエネルギーが要る。その最小値が<b>仕事関数 $W$</b>（金属ごとに決まっている）。光子 1 個のエネルギー $h\\nu$ が $W$ より大きいときだけ、電子は外へ飛び出せる。') + '</p>';
-    }
-    s.bindT0 = performance.now();
-    s1DrawBind(bx, 0.8);                                           /* 開いたらすぐに 1 枚描く（画面の外でも絵がある） */
-    if (s.bindLoop) return;
-    s.bindLoop = true;
-    var loop = function (ts) {
-      if (bx.hidden) { s.bindLoop = false; return; }
-      var r = bx.getBoundingClientRect();
-      if (r.bottom > 0 && r.top < innerHeight) s1DrawBind(bx, 0.8 + (ts - s.bindT0) / 1000);   /* 見えているときだけ動かす */
-      requestAnimationFrame(loop);
-    };
+/* ---------- 自由電子の束縛の様子：2 つの図を並べる（いつも表示。2026-10-26 千葉さん） ----------
+   左右とも、ときどき光子が飛んできて電子にぶつかり、電子が外へ飛んでいく（1 回 3.2 秒）。
+   0〜0.35：光子が近づく → 0.35〜0.45：ぶつかる（黄色の光）→ 0.45〜1：電子が外へ（右はばねが切れる） */
+var BIND_T = 3.2;
+function s1BindBuild(s) {
+  /* 最初はたたんでおき、クリックで開く（「現在の値」と同じ見た目。2026-10-26 千葉さん 4 回目） */
+  var dt = el('details', 'bindbox'); s.L.appendChild(dt); s.bindDet = dt;
+  dt.innerHTML = '<summary><span class="bindttl">＜自由電子の束縛の様子＞</span><span class="qopen">（クリックして開く）</span></summary><div class="bindin"></div>';
+  var bx = dt.querySelector('.bindin'); s.bindBox = bx;
+  dt.addEventListener('toggle', function () { dt.querySelector('.qopen').textContent = '（クリックして' + (dt.open ? '閉じる' : '開く') + '）'; if (dt.open) s1DrawBind(bx, 0.9 + (performance.now() - t0) / 1000, s); });
+  bx.innerHTML = '' +
+    '<div class="bindcells"><figure><canvas></canvas><figcaption>原子核のまわりを回る電子として見ると</figcaption></figure>' +
+    '<figure><canvas></canvas><figcaption>ばねのように束縛された電子として見ると</figcaption></figure></div>' +
+    '<p class="bindcap">' + mathify('どちらの見方でも、電子は金属に<b>束縛</b>されている。電子が金属の外へ出るには、束縛を切るだけのエネルギーが要る。その最小値が<b>仕事関数 $W$</b>（金属ごとに決まっている）。光子 1 個のエネルギー $h\\nu$ が $W$ より大きいときだけ、電子は外へ飛び出せる。') + '</p>';
+  var t0 = performance.now();
+  var loop = function (ts) {
+    var r = bx.getBoundingClientRect();
+    if (dt.open && r.bottom > 0 && r.top < innerHeight && !document.hidden) s1DrawBind(bx, 0.9 + (ts - t0) / 1000, s);   /* 開いていて見えているときだけ動かす */
     requestAnimationFrame(loop);
-  }
+  };
+  requestAnimationFrame(loop);
+  window.addEventListener('resize', function () { if (dt.open) s1DrawBind(bx, 0.9 + (performance.now() - t0) / 1000, s); });
 }
-function s1DrawBind(bx, t) {
-  var cvs = bx.querySelectorAll('canvas');
+/* 上のアニメと連動：hν > W なら飛び出す（'out'）、hν = W なら表面まで（'surf'）、hν < W なら飛び出せない（'stay'） */
+function s1BindMode(s) { var q = peQ(s); return q.em ? 'out' : (q.eq ? 'surf' : 'stay'); }
+function s1DrawBind(bx, t, s) {
+  var cvs = bx.querySelectorAll('canvas'), m = s ? s1BindMode(s) : 'out';
   [s1BindAtoms, s1BindSprings].forEach(function (f, i) {
-    var cv = cvs[i], W = Math.max(150, Math.floor(cv.clientWidth || 260)), H = Math.round(clamp(W * 0.72, 150, 230));
-    var ctx = prep(cv, W, H); f(ctx, W, H, t);
+    var cv = cvs[i]; if (!cv.offsetParent) return;
+    var W = Math.max(150, Math.floor(cv.clientWidth || 260)), H = Math.round(clamp(W * 0.72, 160, 230));
+    var ctx = prep(cv, W, H); f(ctx, W, H, t + i * BIND_T / 2, m);   /* 左右で、ぶつかる時をずらす */
   });
 }
-/* 左：原子核のまわりを回る電子。上の 1 個が光子を受けて外へ（赤い曲がった矢印） */
-function s1BindAtoms(ctx, W, H, t) {
-  var ys = H * 0.42, r0 = Math.min(W / 9.5, 20);
+/* 飛び出せないとき：ぶつかった電子は少し揺れて、オレンジのにじみ（熱） */
+function s1BindStay(ctx, x, y, k, txt) {
+  var f = clamp((k - 0.35) / 0.65, 0, 1), a = 1 - f;
+  var gr = ctx.createRadialGradient(x, y, 1, x, y, 10 + 14 * f); gr.addColorStop(0, 'rgba(240,110,30,' + (0.55 * a).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(240,110,30,0)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 10 + 14 * f, 0, TAU); ctx.fill();
+  if (f > 0.05 && f < 0.9) label(ctx, txt, x, y - 24, { size: 10, align: 'center', color: '#b02a20' });
+}
+/* 1 回ぶんの進み具合 */
+function s1BindPhase(t) { var c = Math.floor(t / BIND_T); return { c: c, k: (t - c * BIND_T) / BIND_T }; }
+function s1Metal(ctx, W, H, ys) {
   ctx.fillStyle = '#f2d4a6'; ctx.fillRect(0, ys, W, H - ys);
   ctx.strokeStyle = '#3a2a14'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, ys); ctx.lineTo(W, ys); ctx.stroke();
-  var n = Math.max(3, Math.floor(W / (2.3 * r0))), dx = W / n;
+}
+/* 光子が右上から (x, y) に近づき、ぶつかる。k は 1 回ぶんの進み具合 */
+function s1BindPhoton(ctx, x, y, k, W) {
+  var ux = -0.55, uy = 0.835, L = 34;
+  if (k < 0.35) {
+    var f = k / 0.35, d = (1 - f) * Math.min(150, W * 0.55), hx = x - ux * d, hy = y - uy * d;
+    photonWave(ctx, hx, hy, ux, uy, L, '#2f6fd0', 1, false, 3);
+    if (f < 0.75) label(ctx, '光子', hx + 14, hy - 4, { size: 10, align: 'left', color: '#2f6fd0' });
+  } else if (k < 0.47) {
+    var a = 1 - (k - 0.35) / 0.12;
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = '#ffd34d'; ctx.strokeStyle = '#e0a400'; ctx.lineWidth = 1;
+    ctx.beginPath(); for (var i = 0; i < 12; i++) { var an = i * Math.PI / 6, rr = i % 2 ? 4.5 : 11; ctx.lineTo(x + rr * Math.cos(an), y + rr * Math.sin(an)); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+}
+/* 左：原子核のまわりを回る電子 */
+function s1BindAtoms(ctx, W, H, t, m) {
+  var ys = H * 0.4, r0 = Math.min(W / 9.5, 19), ph = s1BindPhase(t);
+  s1Metal(ctx, W, H, ys);
+  var n = Math.max(3, Math.floor(W / (2.3 * r0))), dx = W / n, top = [];
   for (var row = 0; row < 2; row++) for (var i = 0; i < n; i++) {
     var cx = dx * (i + 0.5) + (row ? dx / 2 : 0), cy = ys + r0 + 6 + row * (2 * r0 + 6); if (cx > W - 4 || cy > H - 4) continue;
-    ctx.strokeStyle = 'rgba(58,42,20,.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r0, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(58,42,20,.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r0, 0, TAU); ctx.stroke();
     ctx.fillStyle = '#2b2b2b'; ctx.beginPath(); ctx.arc(cx, cy, 3.4, 0, TAU); ctx.fill();
-    var a = t * 2.2 + i * 1.3 + row;
+    var a = t * 2.2 + i * 1.3 + row, tgt = row === 0 && i === 1 + (ph.c % Math.max(1, n - 2));
+    if (tgt) { a = -Math.PI / 2 - 2.2 * (0.35 - ph.k) * BIND_T; top.push({ cx: cx, cy: cy }); }   /* ぶつかる時刻に、ちょうど軌道のいちばん上に来る */
+    if (tgt && ph.k >= 0.35 && m !== 'stay') continue;                  /* ぶつかったあとは、この電子は軌道を離れる */
+    if (tgt && ph.k >= 0.35) { var sh = clamp((ph.k - 0.35) / 0.65, 0, 1); a = -Math.PI / 2 + 2.2 * (ph.k - 0.35) * BIND_T; electronDot(ctx, cx + r0 * Math.cos(a) + 3 * Math.sin(40 * sh) * (1 - sh), cy + r0 * Math.sin(a), 3, 1, false); continue; }   /* 飛び出せない：揺れるだけ */
     electronDot(ctx, cx + r0 * Math.cos(a), cy + r0 * Math.sin(a), 3, 1, false);
   }
-  /* 外へ出ていく電子 */
-  var ex = dx * 1.5, k = (t % 2.6) / 2.6, p0 = { x: ex, y: ys + 6 }, p1 = { x: ex - dx * 0.9, y: ys - H * 0.3 };
-  ctx.save(); ctx.strokeStyle = '#d1352b'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(ex + 6, ys - H * 0.28, p1.x + 6, p1.y + 4); ctx.stroke(); ctx.restore();
-  eArrow(ctx, p1.x + 12, p1.y + 4, p1.x + 2, p1.y + 2, '#d1352b', 1.6);
-  electronDot(ctx, p0.x + (p1.x - p0.x) * k, p0.y + (p1.y - p0.y) * k - Math.sin(Math.PI * k) * 14, 3.4, 1, true);
-  photonWave(ctx, ex + 8, ys - 4, -0.55, 0.83, 26, '#3a7bd5', 1, false);
-  label(ctx, '電子', p1.x - 2, p1.y - 12, { size: 10.5, align: 'center' });
+  var T = top[0]; if (!T) return;
+  /* ぶつかる点：軌道のいちばん上（光子はそこへ向かう） */
+  var hx = T.cx, hy = T.cy - r0;
+  s1BindPhoton(ctx, hx, hy, ph.k, W);
+  if (ph.k >= 0.35 && m === 'stay') s1BindStay(ctx, hx, hy, ph.k, '飛び出せない（熱になる）');
+  else if (ph.k >= 0.35 && m === 'surf') {
+    var fs = clamp((ph.k - 0.4) / 0.3, 0, 1), sy0 = hy + (ys - 2 - hy) * fs;
+    electronDot(ctx, hx, sy0, 3.6, 1 - clamp((ph.k - 0.85) / 0.15, 0, 1), true);
+    label(ctx, '表面で止まる（K₀ = 0）', hx, ys - 16, { size: 10, align: 'center', color: '#b02a20' });
+  } else if (ph.k >= 0.35) {
+    var f = clamp((ph.k - 0.4) / 0.6, 0, 1), ex = hx - f * W * 0.32, ey = hy - f * H * 0.42 - Math.sin(Math.PI * f) * 10;
+    ctx.save(); ctx.strokeStyle = 'rgba(209,53,43,.85)'; ctx.lineWidth = 1.6; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(hx, hy);
+    for (var j = 1; j <= 12; j++) { var g = f * j / 12; ctx.lineTo(hx - g * W * 0.32, hy - g * H * 0.42 - Math.sin(Math.PI * g) * 10); } ctx.stroke(); ctx.restore();
+    electronDot(ctx, ex, ey, 3.6, 1 - clamp((f - 0.85) / 0.15, 0, 1), true);
+    if (f > 0.15) label(ctx, '飛び出す電子', ex, ey - 13, { size: 10, align: 'center', color: '#b02a20' });
+  }
   label(ctx, '原子核', 30, H - 10, { size: 10, align: 'center', color: '#3a2a14' });
 }
-/* 右：ばねのように束縛された電子。光子を受けた 1 個は束縛が切れて外へ */
-function s1BindSprings(ctx, W, H, t) {
-  var ys = H * 0.42;
-  ctx.fillStyle = '#f2d4a6'; ctx.fillRect(0, ys, W, H - ys);
-  ctx.strokeStyle = '#3a2a14'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, ys); ctx.lineTo(W, ys); ctx.stroke();
-  var nuc = [{ x: W * 0.22, y: ys + (H - ys) * 0.6 }, { x: W * 0.74, y: ys + (H - ys) * 0.55 }];
-  nuc.forEach(function (n) { ctx.fillStyle = '#1e1e1e'; ctx.beginPath(); ctx.arc(n.x, n.y, 7, 0, TAU); ctx.fill(); });
-  var zig = function (x1, y1, x2, y2) {
-    var L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L, N = 9;
-    ctx.save(); ctx.strokeStyle = '#6b6f75'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x1, y1);
-    for (var i = 1; i < N * 2; i++) { var s = i / (N * 2), w = 3.2 * Math.sin(i * Math.PI / 2 * 2) ; ctx.lineTo(x1 + ux * L * s - uy * w * (i % 2 ? 1 : -1), y1 + uy * L * s + ux * w * (i % 2 ? 1 : -1)); }
+/* 右：ばねのように束縛された電子 */
+function s1BindSprings(ctx, W, H, t, m) {
+  var ys = H * 0.4, ph = s1BindPhase(t);
+  s1Metal(ctx, W, H, ys);
+  var zig = function (x1, y1, x2, y2, col) {
+    var L = Math.hypot(x2 - x1, y2 - y1); if (L < 4) return;
+    var ux = (x2 - x1) / L, uy = (y2 - y1) / L, N = Math.max(4, Math.round(L / 5));
+    ctx.save(); ctx.strokeStyle = col || '#6b6f75'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x1, y1);
+    for (var i = 1; i < N; i++) { var sgn = i % 2 ? 1 : -1; ctx.lineTo(x1 + ux * L * i / N - uy * 3 * sgn, y1 + uy * L * i / N + ux * 3 * sgn); }
     ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
   };
-  var els = [{ n: 0, a: -1.9, r: 34 }, { n: 0, a: -0.3, r: 32 }, { n: 0, a: 2.6, r: 30 }, { n: 1, a: -1.2, r: 34 }, { n: 1, a: 0.6, r: 32 }, { n: 1, a: 3.6, r: 30 }];
-  els.forEach(function (e, i) {
-    var n = nuc[e.n], j = Math.sin(t * 5 + i) * 2, x = n.x + (e.r + j) * Math.cos(e.a), y = n.y + (e.r + j) * Math.sin(e.a);
-    if (y < ys + 4) y = ys + 4;
-    zig(n.x, n.y, x, y); electronDot(ctx, x, y, 3.2, 1, false);
+  var nN = W < 230 ? 2 : 3, nuc = [];
+  var R = Math.min(30, (H - ys) * 0.38, W / nN * 0.36);
+  for (var i = 0; i < nN; i++) nuc.push({ x: W * (i + 0.5) / nN, y: ys + R + 12 });          /* 上の電子が表面のすぐ下に来る深さ */
+  var arms = [-Math.PI / 2, -0.25, Math.PI - 0.25, Math.PI / 2 + 0.2];
+  var tn = ph.c % nN, hit = ph.k >= 0.35 && m !== 'stay', hitS = ph.k >= 0.35 && m === 'stay';
+  nuc.forEach(function (n, ni) {
+    arms.forEach(function (a, ai) {
+      var j = Math.sin(t * 6 + ni * 2 + ai) * 2.2, x = n.x + (R + j) * Math.cos(a), y = Math.max(ys + 5, n.y + (R + j) * Math.sin(a));
+      var isT = ni === tn && ai === 0;
+      if (isT && hit) {                                                 /* ばねが切れた */
+        zig(n.x, n.y, n.x, n.y - R * 0.45, '#9aa1ab');
+        return;
+      }
+      if (isT && hitS) { var sh = clamp((ph.k - 0.35) / 0.65, 0, 1); x += 4 * Math.sin(45 * sh) * (1 - sh); }   /* 飛び出せない：強く揺れるだけ */
+      zig(n.x, n.y, x, y); electronDot(ctx, x, y, 3.2, 1, false);
+    });
+    ctx.fillStyle = '#1e1e1e'; ctx.beginPath(); ctx.arc(n.x, n.y, 6.5, 0, TAU); ctx.fill();
   });
-  /* 束縛が切れて外へ */
-  var k = (t % 2.6) / 2.6, sx = W * 0.5, sy = ys + 10, ex = W * 0.4, ey = ys - H * 0.32;
-  zig(nuc[0].x, nuc[0].y, nuc[0].x + 18, nuc[0].y - 26);
-  ctx.save(); ctx.strokeStyle = '#6b6f75'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - 6, sy + 10); ctx.stroke(); ctx.restore();
-  ctx.save(); ctx.fillStyle = '#ffd34d'; ctx.beginPath(); for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5, rr = i % 2 ? 4 : 9; ctx.lineTo(sx + rr * Math.cos(a), sy - 8 + rr * Math.sin(a)); } ctx.closePath(); ctx.fill(); ctx.restore();
-  electronDot(ctx, sx + (ex - sx) * k, sy + (ey - sy) * k, 3.4, 1, true);
-  photonWave(ctx, sx + 6, sy - 10, -0.5, 0.86, 28, '#3a7bd5', 1, false);
-  label(ctx, '束縛が切れて外に飛び出す電子', clamp(ex, 70, W - 70), ey - 12, { size: 10, align: 'center' });
+  var T = nuc[tn], hx = T.x, hy = Math.max(ys + 5, T.y - R);
+  s1BindPhoton(ctx, hx, hy, ph.k, W);
+  if (hitS) s1BindStay(ctx, hx, hy, ph.k, '束縛を切れない（熱になる）');
+  if (hit) {
+    var f = clamp((ph.k - 0.4) / 0.6, 0, 1), ex = hx - f * W * 0.16, ey = m === 'surf' ? hy + (ys - 2 - hy) * clamp(f * 2, 0, 1) : hy - f * (hy - 16);
+    zig(hx, hy, hx + 2, hy + R * 0.3, f < 0.15 ? '#9aa1ab' : 'rgba(154,161,171,' + (1 - f).toFixed(2) + ')');   /* 切れたばねの先 */
+    electronDot(ctx, ex, ey, 3.6, 1 - clamp((f - 0.85) / 0.15, 0, 1), true);
+    if (f > 0.15) label(ctx, m === 'surf' ? '表面で止まる（K₀ = 0）' : '束縛が切れて外に飛び出す電子', clamp(ex, 80, W - 80), ey - 13, { size: 10, align: 'center', color: '#b02a20' });
+  }
   label(ctx, '束縛されている電子', W * 0.5, H - 10, { size: 10, align: 'center', color: '#3a2a14' });
 }
 
@@ -4058,12 +4178,14 @@ function s1BindSprings(ctx, W, H, t) {
    装置は教科書の光電管の図にそろえる：曲がった陰極（電位 0）と、中の陽極。陽極の電位 V は電源（電池を入れかえて正にも負にも）。
    ・陽極の電位 V のスライダーだけは、図の中の電源の位置に置く（ほかのスライダーと金属のボタンは 1 と同じ場所・同じ形）
    ・V > 0：電子は加速され、ほぼすべて陽極に届く。V < 0：減速され、運動エネルギーが e|V| に足りない電子はもどる。V = −V₀ で光電流 0
-   ・右上に K₀–ν グラフと光電流–V グラフ。光の強さを変えたら、前の曲線を破線で残す
+   ・右上に K₀–ν グラフ、その下に光電流–V グラフ。最初の設定（その金属・ν = 7.50×10¹⁴ Hz・光の強さ 50 %）の曲線をいつも破線で
+   ・光電子が陽極に届いた瞬間、電流計の上に「光電流が流れた」の吹き出し（0.2 秒）
    電子の動き：陰極の点 P から陽極の点 T へ一直線（距離 D）。加速度は一定（一様な電場）で、
    画面の上で a = KAPPA²·eV/(2D)。止まるまでに進む距離は D·K/(e|V|) なので、K ≧ e|V| のときだけ陽極に届く（式と同じ）。
    ========================================================================= */
 'use strict';
-var S2_DEF_V = 1.0;                                    /* 最初の陽極の電位〔V〕 */
+var S2_DEF_V = 0;                                      /* 最初の陽極の電位〔V〕（2026-10-26 千葉さん：0 V） */
+var S2_BUB = 0.2;                                      /* 「光電流が流れた」の吹き出しを出す時間〔s〕 */
 function s2Rg(W) { return clamp(Math.min(W * 0.2, 120, (innerHeight - 70 - 196) / 2), 62, 120); }   /* 横置きのスマホでも図が 1 画面に入るように */
 function s2Geo(s, W, H) {
   var Rg = s2Rg(W), cx = Math.max(W * 0.38, Rg + 70), cy = Rg + 34, Rc = Rg * 0.84;
@@ -4101,7 +4223,7 @@ function s2Step(s, dt) {
     }
     var a = KAPPA * KAPPA * PE.E * V / (2 * e.D);
     e.v += a * dt; e.s += e.v * dt;
-    if (e.s >= e.D) { e.s = e.D; e.st = 'hit'; e.t0 = tt; P.nHitA++; }
+    if (e.s >= e.D) { e.s = e.D; e.st = 'hit'; e.t0 = tt; P.nHitA++; P.lastHitT = tt; }
     else if (e.s <= 0 && (e.v < 0 || tt - e.t0 > 0.6)) { e.s = 0; e.st = 'back'; e.t0 = tt; P.nBack++; }
     return true;
   });
@@ -4139,7 +4261,7 @@ function drawS2(s, ctx, W, H) {
   /* 光の帯（左から入り、陰極に当たる） */
   var a0 = Math.asin(-g.band), a1 = Math.asin(g.band), yt = g.cy - g.Rc * g.band, yb = g.cy + g.Rc * g.band, on = lit || P.ph.length;
   ctx.save(); ctx.beginPath(); ctx.moveTo(0, yt); ctx.lineTo(g.cx + g.Rc * Math.cos(a0), yt); ctx.arc(g.cx, g.cy, g.Rc, a0, a1); ctx.lineTo(0, yb); ctx.closePath();
-  ctx.fillStyle = rgbStr(q.rgb, on ? (q.uv ? 0.10 : 0.17) * (0.35 + 0.65 * q.I / 100) : 0.05); ctx.fill();
+  ctx.fillStyle = rgbStr(q.rgb, on ? (q.uv ? 0.10 : 0.17) * (0.35 + 0.65 * q.I / 100) : 0.05); ctx.fill();   /* 2 は光の強さを濃さで（光の当たる幅は陰極に合わせて同じ） */
   if (q.uv) { ctx.setLineDash([5, 5]); ctx.strokeStyle = rgbStr(q.rgb, 0.5); ctx.lineWidth = 1; ctx.stroke(); }
   ctx.restore();
   /* 陰極（曲がった金属の板）。内がわに金属の色 */
@@ -4163,26 +4285,43 @@ function drawS2(s, ctx, W, H) {
     }
   });
   /* 光子 */
-  P.ph.forEach(function (p) { photonWave(ctx, p.x, p.y, 1, 0, 30, rgbStr(q.uv ? [92, 76, 140] : q.rgb), 1, q.uv); });
+  P.ph.forEach(function (p) { photonWave(ctx, p.x, p.y, 1, 0, 34, rgbStr(q.uv ? [92, 76, 140] : q.rgb), 1, q.uv, photonCycles(q.nu)); });
   /* 電流計 A */
   var I = lit ? currentI(s.V, q.nu, q.k, q.I, q.mode) : 0;
   s2Meter(ctx, g.xA, g.cy, 'A');
   ctx.save(); ctx.font = '700 12px ' + FONT; var itw = ctx.measureText('光電流 I = 00.0 μA').width; ctx.restore();
   label(ctx, '光電流 I = ' + f1(I) + ' μA', Math.max(g.xA, g.cx + g.Rg + 6 + itw / 2), g.cy + 30, { size: 12, bold: true, color: '#1c6b3a' });   /* ガラスと重ねない */
   eArrow(ctx, g.cx + g.Rg + 6, g.cy - 11, g.xA - 18, g.cy - 11, '#e07b18', 2);
-  label(ctx, 'I', (g.cx + g.Rg + g.xA) / 2 - 3, g.cy - 22, { size: 12, bold: true, color: '#c0610a' });
+  label(ctx, 'I の正の向き', g.xA + 16, g.cy - 15, { size: 10.5, bold: true, color: '#c0610a', align: 'left' });   /* 電流計の右（2026-10-26 千葉さん） */
+  /* 光電子が陽極に届いた瞬間：電流計の上に下向きの吹き出し */
+  if (lit && P.lastHitT !== undefined && tt - P.lastHitT < S2_BUB) s2Bubble(ctx, g.xA, g.cy - 15, '光電流が流れた');
   /* 電圧計 V */
   s2Meter(ctx, g.xm, g.yV, 'V');
   label(ctx, '電圧計', g.xm + 22, g.yV - 12, { size: 10, color: '#69717d', align: 'left' });
   /* 電源（電池の向きは V の符号で入れかわる） */
   s2Battery(ctx, g.xm, g.yB, s.V, wire);
   /* 文字 */
-  label(ctx, q.uv ? '紫外線' : '光', 14, yt - 12, { size: 12.5, bold: true, color: q.uv ? '#5c4c8c' : '#3a414c', align: 'left' });
+  if (q.uv) label(ctx, '紫外線', 14, yt - 12, { size: 12.5, bold: true, color: '#5c4c8c', align: 'left' });
+  else peLightLabel(ctx, '可視光', 14, yt - 12, q.rgb, 'left');
+  /* 右上：10 秒あたりの数（いまの設定が 10 秒続いたとき）。光電流に比例するのは「陽極に届いた」数 */
+  var c10 = peCount10(q, s.V), fr = peFrac(ctx, W - 8, 30, '現在', '10 秒あたりに飛び出した光電子 ' + c10.e + ' 個', '10 秒あたりに金属に当たった光子 ' + c10.p + ' 個', 10);
+  label(ctx, 'そのうち陽極に届いた光電子 ' + c10.a + ' 個 ∝ 光電流の大きさ', W - 8, 30 + 26, { size: 10, bold: true, color: '#1c6b3a', align: 'right' });
   label(ctx, '陽極', g.ax - 8, g.cy - g.ah - 10, { size: 11.5, bold: true, align: 'right' });
-  label(ctx, '陰極（電位 0）', Math.min(W - 6, g.cx + g.Rg * 0.7), g.cy - g.Rg - 14, { size: 11.5, bold: true, align: 'left' });
+  label(ctx, '陰極（電位 0）', g.cx + g.Rg * 0.75, g.cy - g.Rg - 14, { size: 11.5, bold: true, align: 'right' });   /* 右上の数の箱と重ねない */
   label(ctx, '光電管', g.cx - g.Rg * 0.72, g.cy + g.Rg + 4, { size: 11, color: '#3d5a78', align: 'right' });
   if (!lit && !P.ph.length) label(ctx, '▶ スタートで光を当てる', g.cx, g.cy - g.Rg - 14 < 14 ? 14 : 16, { size: 12.5, bold: true, color: '#b35a00', align: 'right' });
   s2PlaceVin(s, g);
+}
+/* 下向きの吹き出し（とがった先が (x, y)） */
+function s2Bubble(ctx, x, y, text) {
+  ctx.save(); ctx.font = '700 12px ' + FONT; var w = ctx.measureText(text).width + 16, h = 24, cx = clamp(x + 16, w / 2 + 3, CVW - w / 2 - 3), top = y - 26 - h;   /* 「I の正の向き」の字より上に */
+  ctx.fillStyle = '#fff8e6'; ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(cx - w / 2 + 6, top); ctx.lineTo(cx + w / 2 - 6, top); ctx.quadraticCurveTo(cx + w / 2, top, cx + w / 2, top + 6); ctx.lineTo(cx + w / 2, top + h - 6); ctx.quadraticCurveTo(cx + w / 2, top + h, cx + w / 2 - 6, top + h);
+  ctx.lineTo(x + 6, top + h); ctx.lineTo(x, y); ctx.lineTo(x - 4, top + h);
+  ctx.lineTo(cx - w / 2 + 6, top + h); ctx.quadraticCurveTo(cx - w / 2, top + h, cx - w / 2, top + h - 6); ctx.lineTo(cx - w / 2, top + 6); ctx.quadraticCurveTo(cx - w / 2, top, cx - w / 2 + 6, top); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#8a4300'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, cx, top + h / 2 + 0.5);
+  ctx.restore();
 }
 function s2Meter(ctx, x, y, t) {
   ctx.save(); ctx.beginPath(); ctx.arc(x, y, 13, 0, TAU); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#3b414a'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
@@ -4248,8 +4387,14 @@ function s2Curve(ctx, P, nu, k, inten, mode, col, w, dash) {
   ctx.stroke(); ctx.restore();
 }
 function s2DrawIV(s, ctx, P) {
-  var q = peQ(s), pv = s.prevC;
-  if (pv) s2Curve(ctx, P, pv.nu, pv.k, pv.I, pv.mode, '#8a93a0', 2.2, [7, 5]);
+  var q = peQ(s);
+  if (q.mode === 'max') {                                              /* 「最大の K₀ の電子だけ見る」のとき：選んでいないときのグラフを薄く（2026-10-26 千葉さん） */
+    ctx.save(); ctx.globalAlpha = 0.25;
+    s2Curve(ctx, P, PE_DEF.nu, q.k, PE_DEF.I, 'dist', '#8a93a0', 2.2, [7, 5]);
+    s2Curve(ctx, P, q.nu, q.k, q.I, 'dist', metalOf(q.k).col, 2.8);
+    ctx.restore(); return;
+  }
+  s2Curve(ctx, P, PE_DEF.nu, q.k, PE_DEF.I, q.mode, '#8a93a0', 2.2, [7, 5]);     /* 最初の設定（その金属）の曲線：いつも破線で */
   s2Curve(ctx, P, q.nu, q.k, q.I, q.mode, metalOf(q.k).col, 2.8);
   /* −V₀ の点 */
   if (q.em) { var x = P.X(-q.V0), y = P.Y(0); dotted(ctx, x, y, x, P.Y(-1.4), 'rgba(20,23,28,.4)', [3, 3]); ctx.save(); ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.arc(x, y, 3.6, 0, TAU); ctx.fill(); ctx.restore(); }
@@ -4260,6 +4405,14 @@ function s2DrawIV(s, ctx, P) {
 }
 function s2OverIV(s, ctx, P) {
   var q = peQ(s), R = P.R, X = P.X, Y = P.Y, y0 = Y(0);
+  if (q.mode === 'max') {
+    var cy = (R.y0 + R.y1) / 2, cx = (R.x0 + R.x1) / 2;
+    ctx.save(); ctx.font = '700 12px ' + FONT; var tw = Math.max(ctx.measureText('最大の K₀ の電子だけ見ているので、').width, ctx.measureText('表示できません').width) + 24;
+    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = 'rgba(192,57,43,.5)'; rrect(ctx, cx - tw / 2, cy - 24, tw, 48, 8); ctx.fill(); ctx.stroke(); ctx.restore();
+    label(ctx, '最大の K₀ の電子だけ見ているので、', cx, cy - 9, { size: 12, bold: true, color: '#c0392b' });
+    label(ctx, '表示できません', cx, cy + 10, { size: 12, bold: true, color: '#c0392b' });
+    return;
+  }
   var inX = function (x) { return x >= R.x0 && x <= R.x1; };
   /* 下の帯：電子の流れを妨げる電圧／加速する電圧 */
   if (y0 > R.y0 && y0 < R.y1 - 30) {
@@ -4281,26 +4434,20 @@ function s2OverIV(s, ctx, P) {
   /* 見出しの横、凡例 */
   var gs = s.plotI.box.querySelector('.gsel'), t = mathify('$V = ' + (s.V > 0.0005 ? '+' : '') + f2(s.V).replace('−', '-') + '$ V');
   if (gs._h !== t) { gs._h = t; gs.innerHTML = t; }
-  var lg = s.plotI.leg, lh = '<span><i style="border-top:3px solid ' + metalOf(q.k).col + '"></i>いま（光の強さ ' + Math.round(q.I) + ' %）</span>' +
-    (s.prevC ? '<span><i style="border-top:2px dashed #8a93a0"></i>前（光の強さ ' + Math.round(s.prevC.I) + ' %）</span><button type="button" class="tiny prevx">破線を消す</button>' : '<span class="lgn">光の強さを変えると、前の曲線が破線で残る</span>');
-  if (lg._h !== lh) { lg._h = lh; lg.innerHTML = lh; var bx = lg.querySelector('.prevx'); if (bx) bx.addEventListener('click', function () { s.prevC = null; peRenderPlots(s); }); }
+  var lg = s.plotI.leg, lh = '<span><i style="border-top:3px solid ' + metalOf(q.k).col + '"></i>現在の設定</span>' +
+    '<span><i style="border-top:2px dashed #8a93a0"></i>最初の設定（' + metalOf(q.k).name + '・' + mathify('$\\nu = ' + f2(PE_DEF.nu) + '\\times10^{14}$') + ' Hz・光の強さ ' + PE_DEF.I + ' %）</span>';
+  if (lg._h !== lh) { lg._h = lh; lg.innerHTML = lh; }
 }
 
 DEFS.s2 = peBase({
   id: 's2', num: 2, title: '光電効果の実験',
   desc: '光電管（ほぼ真空のガラス管に陽極と陰極を封入したもの）の陰極に光を当てる。飛び出した光電子が陽極に流れこむと、回路に電流（<b>光電流</b> $I$）が流れる。電源で陽極の電位 $V$ を変えて、光電流がどう変わるかを調べる。<span class="todo">図の中の電源の下のスライダーで陽極の電位を負にしていき、光電流が 0 になる電位 $-V_0$（阻止電圧 $V_0$）を探そう。光の強さ・振動数を変えると $V_0$ は変わるだろうか。</span>',
   height: function (s, w) { return Math.round(2 * s2Rg(w) + 196); },
-  init: function (s) { s.V = S2_DEF_V; s.prevC = null; s.metal = 'Cs'; },     /* 最初はセシウム（可視光で V₀ ≒ 1 V。光電流が 0 になる所を見つけやすい） */
-  onVarX: function (s, k, x) {
-    if (k === 'I') {                                                   /* 光の強さを変えはじめたら、その前の曲線を破線で残す */
-      var now = performance.now();
-      if (!s._iT || now - s._iT > 700) s.prevC = { nu: s.v.nu, k: s.metal, I: s.v.I, mode: s.kmode };
-      s._iT = now;
-    } else s.prevC = null;                                             /* 振動数を変えたら、破線は消す（光の強さだけを比べるため） */
-  },
-  onChangedX: function (s, k) { if (k === 'metal' || k === 'kmode') s.prevC = null; },
+  init: function (s) { s.V = S2_DEF_V; s.metal = 'Cs'; },     /* 最初はセシウム（可視光で V₀ ≒ 1 V。光電流が 0 になる所を見つけやすい） */
+  defMarks: true,                                                       /* スライダーの中に最初の設定の ▼ */
   afterBuild: function (s) {
     peArrange(s);
+    s.varbox.appendChild(el('p', 'defnote', '▼ は最初の設定（光電流–V グラフの破線の値）'));
     s.cw.classList.add('s2wrap');
     /* 陽極の電位 V のスライダー（図の中、電源の位置） */
     var vin = el('div', 'vin'); vin.innerHTML = '<span class="vinl">' + mathify('陽極の電位 $V$') + '</span>';
@@ -4323,6 +4470,8 @@ DEFS.s2 = peBase({
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
   },
   onDefaults: function (s) { s2SyncVin(s); if (s.plotI) s.plotI.reset(); },
+  /* 「最大の K₀ の電子だけ見る」を ON にした瞬間：K₀ でない電子は消す */
+  onKmax: function (s) { var K0 = peQ(s).K0; s.P.el = s.P.el.filter(function (e) { return Math.abs(e.K - K0) < 1e-9; }); s.draw(); },
   beforeStep: function (s, t0, t1) { s2Step(s, t1 - t0); },
   draw: function (s, ctx, W, H) { drawS2(s, ctx, W, H); },
   msg: function (s) {
@@ -4339,12 +4488,13 @@ DEFS.s2 = peBase({
     var st = V >= 0 ? '陽極が正：電子は加速され、ほぼすべて陽極に届く。' :
       (q.em && V > -q.V0 ? '陽極に届くのは、運動エネルギーが $e|V| = ' + jTex(PE.E * -V) + '$ J 以上の電子だけ。' : '陽極に届く電子はない。');
     h += '<p class="vstate">陽極の電位 $V = ' + (V > 0.0005 ? '+' : '') + f2(V).replace('−', '-') + '$ V：' + st + '<br>光電流 $I = ' + f1(I) + '$ μA（飽和電流 ' + f1(Is) + ' μA）</p>';
-    R.innerHTML = mathify('<div class="qcard pex"><p class="qt">いまの値</p>' + h + pePointHTML(q) +
+    R.innerHTML = mathify('<div class="qcard pex">' + peValuesBox(s, h) + pePointHTML(q) +
       '<p class="qnote">振動数は変えずに光を強くすると、光電流（飽和電流）は大きくなるが、阻止電圧 $V_0$ は変わらない（$K_0$ が変わらないから）。振動数を大きくすると $K_0$ が大きくなり、$V_0$ も大きくなる。' +
       (s.kmode === 'max' ? '<br>（いまは、どの電子も $K_0$ で飛び出すとして描いている。このとき光電流は $-V_0$ で急に 0 になる）' : '') + '</p>' +
       peEVnote() + '</div>');
+    peBindValues(s, R);
     s2SyncVin(s);
-    peRenderPlots(s);
+    peRenderPlots(s); peAlignTop(s);
   }
 });
 
@@ -4356,7 +4506,6 @@ DEFS.s2 = peBase({
    ========================================================================= */
 'use strict';
 var SECS = ['s1', 's2'];
-var GLOBAL = { hideEq: false };
 var SIM_BY_ID = {};
 var MODES = [];                                   /* 45_sim.js などとの互換のため（モードはない） */
 
@@ -4366,8 +4515,7 @@ function buildPage() {
     '<div class="hero-in">' +
       '<div class="hero-top">' +
         '<nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="' + SITE_HOME + '" title="楽楽（らくらく）高校物理のトップページへ"><svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg><span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="' + SITE_HOME + '">原子</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">光電効果</span><span class="kdot"></span><span class="en">Photoelectric Effect</span></nav>' +
-        '<div class="topbtns" role="group" aria-label="ページ全体の表示"><button id="btnEq" type="button"></button></div>' +
-      '</div>' +
+      '</div>' +                                      /* 「式・考え方エリアを閉じる」はなくした（2026-10-26 千葉さん） */
       '<h1 class="hero-title"><span class="t1">光電効果</span></h1>' +
       '<div class="introrow"><p class="lead2">' + mathify('光を、エネルギー $h\\nu$ の粒（光子）の集まりと考えると、光電効果のふしぎな性質がすべて説明できる。振動数・光の強さ・金属を変えて確かめよう。') + '</p></div>' +
     '</div>';
@@ -4386,7 +4534,6 @@ function buildPage() {
   wrap.innerHTML = h;
   document.title = '光電効果';
   wrap.querySelectorAll('.secdesc,.sechead h2').forEach(function (e) { e.innerHTML = mathify(e.innerHTML); });
-  setupGlobalButtons();
   SECS.forEach(function (sid) {
     var d = DEFS[sid]; if (!d) return;
     SIM_BY_ID[sid] = new Sim(d, document.getElementById('simL_' + sid), document.getElementById('simR_' + sid));
@@ -4395,21 +4542,6 @@ function buildPage() {
   if (document.fonts && document.fonts.load) {
     Promise.all(['italic 17px KaTeX_Math', '16px KaTeX_Main'].map(function (f) { return document.fonts.load(f); })).then(function () { SIMS.forEach(function (s) { s.draw(); }); PLOTS.forEach(function (p) { p.render(); }); });
   }
-}
-function syncGlobalButtons() {
-  var bE = document.getElementById('btnEq');
-  bE.innerHTML = '<span class="sw" aria-hidden="true"><i></i></span><span class="swl">式・考え方エリアを閉じる</span><span class="swv">' + (GLOBAL.hideEq ? 'ON' : 'OFF') + '</span>';
-  bE.setAttribute('aria-pressed', GLOBAL.hideEq ? 'true' : 'false'); bE.classList.toggle('off', !GLOBAL.hideEq);
-  document.body.classList.toggle('hideeq', GLOBAL.hideEq);
-}
-function setupGlobalButtons() {
-  var bE = document.getElementById('btnEq');
-  bE.addEventListener('click', function () {
-    GLOBAL.hideEq = !GLOBAL.hideEq; syncGlobalButtons();
-    SIMS.forEach(function (s) { if (s.cv.offsetParent) { s.resize(); s.draw(); } });
-    PLOTS.forEach(function (p) { p.render(); });
-  });
-  syncGlobalButtons();
 }
 function contentTop() { var h = document.getElementById('hero'); return h ? h.offsetTop + h.offsetHeight : 0; }
 function tabbarH() { var tb = document.getElementById('tabs'); if (!tb) return 0; return (getComputedStyle(tb).position === 'sticky') ? tb.getBoundingClientRect().height : 0; }
