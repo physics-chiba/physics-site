@@ -2752,7 +2752,8 @@ function photonWave(ctx, x, y, ux, uy, L, col, alpha, uv, cyc) {
   };
   path(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 4.2; if (uv) ctx.setLineDash([3, 2]); ctx.stroke(); ctx.setLineDash([]);
   path(); ctx.strokeStyle = col; ctx.lineWidth = 2.0; ctx.stroke();
-  ctx.beginPath(); ctx.arc(x, y, 2.6, 0, TAU); ctx.fillStyle = col; ctx.fill();          /* 先頭の粒 */
+  var wm = amp * Math.sin(TAU * n * 0.5);                                   /* まん中での波のふれ（粒を波の線の上に置く） */
+  ctx.beginPath(); ctx.arc(x - ux * L * 0.5 + px * wm, y - uy * L * 0.5 + py * wm, 2.6, 0, TAU); ctx.fillStyle = col; ctx.fill();   /* 粒は波のまん中（試し。2026-10-28 千葉さん。前は先頭 (x, y)） */
   ctx.restore();
 }
 /* 電子（小さな点）。hot：飛び出した電子（濃い青）、fade：うすさ */
@@ -4000,8 +4001,9 @@ function s1Energy(ctx, b, q, wide, ysurf) {
   ctx.strokeStyle = 'rgba(20,23,28,.14)'; ctx.lineWidth = 1; ctx.beginPath();
   if (wide) { ctx.moveTo(b.x0 + 0.5, b.y0); ctx.lineTo(b.x0 + 0.5, b.y1); } else { ctx.moveTo(b.x0, b.y0 + 0.5); ctx.lineTo(b.x1, b.y0 + 0.5); }
   ctx.stroke(); ctx.restore();
-  label(ctx, '電子のエネルギー', b.x0 + w / 2, b.y0 + 15, { size: 11.5, bold: true, color: '#3a414c' });
-  var top = b.y0 + 40, yb = b.y1 - 30, sc = (yb - top) / 10.8;
+  label(ctx, '電子のエネルギーの', b.x0 + w / 2, b.y0 + 13, { size: 11.5, bold: true, color: '#3a414c' });
+  label(ctx, 'イメージ図', b.x0 + w / 2, b.y0 + 28, { size: 11.5, bold: true, color: '#3a414c' });   /* 2 行（2026-10-28 千葉さん） */
+  var top = b.y0 + 57, yb = b.y1 - 30, sc = (yb - top) / 10.8;
   /* 横に並ぶとき（wide）：金属の外と中の境（破線）を、左のアニメの金属の表面と同じ高さに（2026-10-26 千葉さん 5 回目）。
      縮尺は金属で変わる。hν が図の上をこえるときは、矢印を上で切って ≈ の印 */
   if (wide && ysurf) sc = (yb - ysurf) / q.W;
@@ -4025,7 +4027,7 @@ function s1Energy(ctx, b, q, wide, ysurf) {
     eArrow(ctx, xw, yv - 1, xw, yE, '#1663b5', 5);
     if (yv - yE > 14) sym(ctx, 'K', xw + 9, (yv + yE) / 2, { size: 15, sub: '0', color: '#1663b5', align: 'left' });
     dotted(ctx, xa, yE, xw + 4, yE, 'rgba(224,123,24,.6)', [3, 3]);
-    label(ctx, '外へ飛び出せる', (xa + xw) / 2, Math.max(b.y0 + 32, Math.min(yE, yv) - 16), { size: 10.5, bold: true, color: '#1663b5' });
+    label(ctx, '外へ飛び出せる', (xa + xw) / 2, Math.max(b.y0 + 40, Math.min(yE, yv) - 16), { size: 10.5, bold: true, color: '#1663b5' });
   } else if (q.eq) {
     label(ctx, 'ちょうど K₀ = 0', (xa + xw) / 2, yv - 16, { size: 10.5, bold: true, color: '#1663b5' });
   } else {

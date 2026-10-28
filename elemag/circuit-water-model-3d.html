@@ -959,6 +959,18 @@ table.result .empty{color:var(--ink-4)}
 @media(prefers-reduced-motion:reduce){#btn-convert.sg-glow::after,#btn-convert2.sg-glow::after,#btn-play.sg-glow::after{animation:none;opacity:.8}}
 /* 保存・共有の見出し：ほかの枠の見出し（13px）より 2 段大きく（2026-10-27 千葉さん） */
 .savebox .panel-title.savettl{font-size:16px;margin-bottom:10px}
+/* ヒーローのコンテンツ一覧（2026-10-28）：章（1・2・3）は見出しの形のリンク、タブ ①②③ は太字、その下にプリセットを 2 列で */
+#hero .tocpanel a.tocmode{display:block;margin:14px 0 4px;padding:.3em .6em .45em;border-radius:10px 10px 0 0;border-bottom:1px dashed var(--rule);
+  font-family:var(--f-jph);font-weight:800;font-size:.95rem;color:var(--ink)}
+#hero .tocpanel a.tocmode:hover{background:var(--paper)}
+#hero .tocpanel .toctab{margin:6px 0 2px 0}
+#hero .tocpanel .toctab > a{font-family:var(--f-jph);font-weight:800;color:var(--ink);font-size:.9rem}
+#hero .tocpanel .toctab > a:hover{color:var(--brand-700)}
+#hero .tocpanel ul.tocpre{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 6px;margin:0 0 4px 1.1em;padding:0}
+#hero .tocpanel ul.tocpre a{padding:.28em .6em;font-size:.84rem}
+@media(max-width:520px){#hero .tocpanel ul.tocpre{grid-template-columns:1fr;margin-left:.6em}}
+/* 一覧のパネルはヒーローの中（下はしで切れる）なので、ヒーローの中に収まる高さまで。あふれたらパネルの中でスクロール */
+#hero #tocpanel.tocpanel{max-height:min(calc(100vh - 100px), calc(100% - 120px));overflow:auto;overscroll-behavior:contain}   /* hero-css より強い指定 */
 
 </style>
 <style id="hero-css">
@@ -6613,7 +6625,8 @@ table.result .empty{color:var(--ink-4)}
     });
   }
 
-  global.Presets = { make: make, buildButtons: buildButtons, gridFor: gridFor, explainFor: explainFor, titleFor: titleFor, columnFor: columnFor };
+  global.Presets = { make: make, buildButtons: buildButtons, gridFor: gridFor, explainFor: explainFor, titleFor: titleFor, columnFor: columnFor,
+    groups: GROUPS };   // groups：ヒーローのコンテンツ一覧がプリセットの並びを読む（読むだけ。2026-10-28）
 })(typeof window !== 'undefined' ? window : this);
 
 ;
@@ -7352,15 +7365,26 @@ window.MIZU_IMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQDAwMD
 (function(){
   function build(){
     var p = document.getElementById('tocpanel'), b = document.getElementById('bToc'); if (!p || !b) return;
-    var A = function (href, txt, tab) { return '<li><a href="' + href + '"' + (tab ? ' data-tab="' + tab + '"' : '') + '>' + txt + '</a></li>'; };
-    p.innerHTML = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>' +
-      '<div class="tocmode">1　シミュレーション</div><ul>' + A('#dc', '①　抵抗の直流回路', 'dc') + A('#cl', '②　コンデンサー・コイルの直流回路', 'cl') + A('#ac', '③　交流回路', 'ac') + '</ul>' +
-      '<div class="tocmode">2　このシミュレーションで注目してほしいこと</div><ul>' + A('#ch2', '注目してほしいこと') + '</ul>' +
-      '<div class="tocmode">3　補足：もっと深く知りたい人へ</div><ul>' + A('#sup-1', '3-1　この「水路モデル」で気をつけること') + A('#sup-2', '3-2　交流の実効値') + A('#sup-3', '3-3　RLC の共振') + '</ul>';
-    /* 押したら：タブなら click() してからシミュレーションへ、それ以外はその場所へ（タブ列の高さぶん下げる：html の scroll-padding-top） */
+    /* 中身（2026-10-28 千葉さん）：1 はタブ ①②③ とそのプリセットを全部（Presets.groups から作る＝プリセットを足せば一覧にも出る）。2・3 は章だけ */
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var TABS = [['dc', '①', '抵抗の直流回路'], ['cl', '②', 'コンデンサー・コイルの直流回路'], ['ac', '③', '交流回路']];
+    var G = (window.Presets && window.Presets.groups) || {};
+    var h = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>' +
+      '<a class="tocmode" href="#ch1">1　シミュレーション</a>';
+    TABS.forEach(function (t) {
+      h += '<div class="toctab"><a href="#' + t[0] + '" data-tab="' + t[0] + '">' + t[1] + '　' + t[2] + '</a><ul class="tocpre">' +
+        (G[t[0]] || []).map(function (g) { return '<li><a href="#preset=' + esc(g[0]) + '" data-tab="' + t[0] + '" data-preset="' + esc(g[0]) + '">' + esc(g[1]) + '</a></li>'; }).join('') + '</ul></div>';
+    });
+    h += '<a class="tocmode" href="#ch2">2　このシミュレーションで注目してほしいこと</a>' +
+         '<a class="tocmode" href="#ch3">3　補足：もっと深く知りたい人へ</a>';
+    p.innerHTML = h;
+    /* 押したら：タブ・プリセットは、そのタブを開いて（プリセットはボタンを押したのと同じに選んで）シミュレーションへ。章はその場所へ（タブ列の高さぶん下げる：html の scroll-padding-top） */
     p.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function (ev) {
-      var tab = a.getAttribute('data-tab'); p.hidden = true; b.setAttribute('aria-expanded', 'false');
-      if (tab && window.CWM_NAV) { ev.preventDefault(); window.CWM_NAV.gotoTab(tab); }
+      var tab = a.getAttribute('data-tab'), pre = a.getAttribute('data-preset'); p.hidden = true; b.setAttribute('aria-expanded', 'false');
+      if (tab && window.CWM_NAV) {
+        ev.preventDefault(); window.CWM_NAV.gotoTab(tab);
+        if (pre) { var pb = document.querySelector('#presetbtns .pbtn[data-preset="' + pre + '"]'); if (pb) pb.click(); window.scrollTo({ top: window.CWM_NAV.contentTop(), behavior: 'auto' }); }
+      }
     }); });
     var close = function () { p.hidden = true; b.setAttribute('aria-expanded', 'false'); };
     b.addEventListener('click', function (ev) { ev.stopPropagation(); p.hidden = !p.hidden; b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true'); });
