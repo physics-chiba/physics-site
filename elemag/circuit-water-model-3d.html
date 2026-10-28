@@ -1271,7 +1271,6 @@ table.result .empty{color:var(--ink-4)}
         </div>
         <div class="gridtools">
           <button class="expandbtn" id="btn-expand" title="回路を組む領域の広さを切りかえる"><svg class="ei" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l6 6M3 3v5M3 3h5M21 3l-6 6M21 3v5M21 3h-5M3 21l6-6M3 21v-5M3 21h5M21 21l-6-6M21 21v-5M21 21h-5"/></svg><span class="exlabel">エリアを広くする</span></button>
-          <label class="simplechk"><input type="checkbox" id="chk-simple">シンプル回路図</label>
         </div>
         <div id="trash" class="trash" title="ここにドラッグで削除">🗑</div>
         <span class="solidhint" id="solidhint">↓ 素子とスイッチをクリック！変更できます</span>
@@ -3802,7 +3801,7 @@ table.result .empty{color:var(--ink-4)}
     hist: { u: [], r: [] },  // undo/redo 履歴
     maxParts: 120, // 全部品（導線含む）合計の上限（暴走防止）
     maxActive: 16, // 素子（抵抗・電池・コンデンサー・コイル・ダイオード・豆電球）だけの上限。導線・スイッチは数えない
-    simple: false, // 「回路図をシンプルに」：矢印・抵抗の太さを一定に
+    simple: false, // 「シンプル回路図」の機能は 2026-10-28 に外した（スイッチなし）。いつも false（回路図の描き方はふだんのまま）
     ground: null,  // アース（電位0の基準）ノード {x,y,v}
     probe: null,   // 立体図に電位を表示するノード {x,y,v}
     probeOverride: null, // ユーザーが○をドラッグして選んだ表示ノード 'x_y'（無ければ右上）
@@ -5508,9 +5507,6 @@ table.result .empty{color:var(--ink-4)}
     bindView3Rotate();
     el['btn-convert'].addEventListener('click', onConvertClick);
     if (el['btn-convert2']) el['btn-convert2'].addEventListener('click', onConvertClick);
-    if (el['chk-simple']) el['chk-simple'].addEventListener('change', function () {
-      ST.simple = el['chk-simple'].checked; draw2d();
-    });
     el['btn-clear'].addEventListener('click', clearAll);
     if (el['btn-clearparts']) el['btn-clearparts'].addEventListener('click', clearNonSource);
     if (el['btn-expand']) el['btn-expand'].addEventListener('click', toggleGrid);
@@ -6073,7 +6069,6 @@ table.result .empty{color:var(--ink-4)}
         var pass = (iL0 < 0.05) && (iR0 > 0.28 && iR0 < 0.38) && (iL1 > 0.45) && (iR1 < 0.05);
         return (pass ? 'PASS' : 'FAIL') + ' コイル自己誘導：はじめ5Ωへ→あとからコイルへ電流が移る\n' + L.join('\n');
       },
-      simple: function (on) { ST.simple = !!on; if (el['chk-simple']) el['chk-simple'].checked = !!on; draw2d(); },
       openSwitch: function () { var sw = parts().filter(function (p) { return p.type === 'SW'; })[0]; if (sw && sw.closed) toggleSwitch(sw.id); return sw ? sw.closed : null; },
       hoverSwitch: function () { var sw = parts().filter(function (p) { return p.type === 'SW'; })[0]; if (sw) { ST.hoverSwitch = sw.id; draw2d(); } },
       selectFirst: function (type) { var pp = parts().filter(function (p) { return p.type === type; })[0]; if (pp) select(pp.id); return !!pp; },
@@ -7043,7 +7038,6 @@ window.MIZU_IMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQDAwMD
       var vm = /view=(-?[\d.]+)_(-?[\d.]+)/.exec(location.hash);
       if (vm && global.TEST.setView) global.TEST.setView(+vm[1], +vm[2]);
       if (/conv/.test(location.hash) && global.TEST.convert) global.TEST.convert();
-      if (/simple/.test(location.hash) && global.TEST.simple) global.TEST.simple(true);
       var rm = /[#&]rval=([\d.]+)/.exec(location.hash);
       if (rm && global.TEST.setFirstR) global.TEST.setFirstR(+rm[1]);
       var tm = /[#&]t=([\d.]+)/.exec(location.hash);

@@ -2163,6 +2163,13 @@ details.bindbox .bindin{margin-top:.6em}
 .vin .vinl{font-size:.74rem;font-weight:700;color:#5b3d8c;white-space:nowrap}
 .vin .vinl .katex{font-size:1em}
 .vin .vrw{position:relative;display:flex;align-items:center}
+.vin{flex-direction:column;align-items:stretch;row-gap:2px}
+.vin .vinh{display:flex;align-items:center;gap:6px}
+.vin .vinh .vsp{flex:1 1 auto}
+.vin .vinb{display:flex;align-items:center;gap:4px}
+.vin .vinb .vrw{flex:1 1 auto}
+.vin .vinb .vrw input[type=range]{width:100%}
+.vin .vinh .vinl{margin-right:1em}
 .vin .v0mk{position:absolute;left:calc(9px + (100% - 18px) * .5);top:1px;bottom:1px;width:0;border-left:2px solid #0f8a8a;pointer-events:none}
 .vin .v0mk b{position:absolute;left:-1px;bottom:-11px;transform:translateX(-50%);white-space:nowrap;font:700 .6rem/1 var(--f-jph);color:#0a5c5c}
 .vin{padding-bottom:12px}
@@ -2171,7 +2178,12 @@ details.bindbox .bindin{margin-top:.6em}
 .vin .vinv{font-variant-numeric:tabular-nums;font-weight:800;font-size:.86rem;min-width:4.4em;text-align:center;color:var(--ink)}
 .vin button.tiny.v0b{height:26px;padding:0 .45em;font-size:.74rem;font-weight:700;color:#c0392b;border-color:rgba(192,57,43,.4);background:#fff5f3}
 .vin button.tiny.v0b .katex{font-size:1em}
-@media(max-width:520px){ .vin input[type=range]{width:92px} .vin .vinl{display:none} }
+.vin button.tiny.v00b{height:22px;padding:0 .4em;font-size:.64rem;font-weight:700;color:#0a5c5c;border-color:rgba(15,138,138,.4);background:#f0fafa}   /* 0 V：−V₀ より 1 サイズ小さく */
+.vin .v0mk.vV0{border-left-color:#c0392b}
+.vin .v0mk.vV0 b{left:auto;right:3px;transform:none;color:#c0392b}   /* 「−V₀」の字は線の左（0 V の字と重ねない） */
+.vin .v0mk.vV0 b .katex{font-size:1.1em}
+.vin{width:290px;box-sizing:border-box}
+@media(max-width:520px){ .vin .vinh .vinl{font-size:.66rem;margin-right:.3em} }
 .pplot .gleg .lgn{color:var(--ink-4)}
 .pplot .gleg button.tiny.prevx{font-size:.66rem;padding:.05em .5em}
 @container (min-width:620px){ .pgraphs.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
@@ -2753,7 +2765,7 @@ function photonWave(ctx, x, y, ux, uy, L, col, alpha, uv, cyc) {
   path(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 4.2; if (uv) ctx.setLineDash([3, 2]); ctx.stroke(); ctx.setLineDash([]);
   path(); ctx.strokeStyle = col; ctx.lineWidth = 2.0; ctx.stroke();
   var wm = amp * Math.sin(TAU * n * 0.5);                                   /* まん中での波のふれ（粒を波の線の上に置く） */
-  ctx.beginPath(); ctx.arc(x - ux * L * 0.5 + px * wm, y - uy * L * 0.5 + py * wm, 2.6, 0, TAU); ctx.fillStyle = col; ctx.fill();   /* 粒は波のまん中（試し。2026-10-28 千葉さん。前は先頭 (x, y)） */
+  ctx.beginPath(); ctx.arc(x - ux * L * 0.5 + px * wm, y - uy * L * 0.5 + py * wm, 4.2, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1; ctx.stroke();   /* 粒は波のまん中、大きさは電子くらい（半径 4.2。試し。2026-10-28 千葉さん。前は先頭 (x, y)・半径 2.6） */
   ctx.restore();
 }
 /* 電子（小さな点）。hot：飛び出した電子（濃い青）、fade：うすさ */
@@ -4344,8 +4356,9 @@ function drawS2(s, ctx, W, H) {
   else peLightLabel(ctx, '可視光', 14, yt - 12, q.rgb, 'left');
   /* 右上：10 秒あたりの数（いまの設定が 10 秒続いたとき）。光電流に比例するのは「陽極に届いた」数 */
   var c10 = peCount10(q, s.V);
-  peCountBox(ctx, W - 8, 8, [[{ t: '金属に当たった光子 ' + c10.p + ' 個' }], [{ t: '→ 飛び出した光電子 ' + c10.e + ' 個', col: '#1663b5' }],
-    [{ t: 'そのうち陽極に届いた光電子 ' + c10.a + ' 個 ', col: '#1c6b3a' }, { t: '∝', size: 14, col: '#1c6b3a' }, { t: ' 光電流の大きさ', col: '#1c6b3a' }]], 10.5);
+  var cs = W < 420 ? 8.5 : 10.5;                                       /* せまい画面では小さい字（箱が図からはみ出さないように） */
+  peCountBox(ctx, W - 4, 6, [[{ t: '金属に当たった光子 ' + c10.p + ' 個' }], [{ t: '→ 飛び出した光電子 ' + c10.e + ' 個', col: '#1663b5' }],
+    [{ t: 'そのうち陽極に届いた光電子 ' + c10.a + ' 個 ', col: '#1c6b3a' }, { t: '∝', size: cs + 3.5, col: '#1c6b3a' }, { t: ' 光電流の大きさ', col: '#1c6b3a' }]], cs);
   label(ctx, '陽極', g.ax - 8, g.cy - g.ah - 10, { size: 11.5, bold: true, align: 'right' });
   label(ctx, '陰極（電位 0）', g.cx + g.Rg * 0.75, g.cy - g.Rg - 14, { size: 11.5, bold: true, align: 'right' });   /* 右上の数の箱と重ねない */
   label(ctx, '光電管', g.cx - g.Rg * 0.72, g.cy + g.Rg + 4, { size: 11, color: '#3d5a78', align: 'right' });
@@ -4391,6 +4404,7 @@ function s2Battery(ctx, x, y, V, col) {
 /* 図の中の「陽極の電位 V」のスライダーを、電源の真下に置く */
 function s2PlaceVin(s, g) {
   var v = s.vin; if (!v) return;
+  v.style.maxWidth = (g.W - 8) + 'px';                                  /* 図の幅に収める（せまいときはボタンが 2 段目へ） */
   var w = v.offsetWidth || 240, left = clamp(g.xm - w / 2, 4, Math.max(4, g.W - w - 4));
   v.style.left = Math.round(left) + 'px'; v.style.top = Math.round(g.yB + 18) + 'px';
 }
@@ -4404,6 +4418,7 @@ function s2SyncVin(s) {
   if (document.activeElement !== r) r.value = String(s.V);
   r.style.setProperty('--p', ((s.V - PE.V_MIN) / (PE.V_MAX - PE.V_MIN) * 100).toFixed(1) + '%');
   vv.textContent = (s.V > 0.0005 ? '+' : '') + f2(s.V) + ' V';
+  if (s.vV0mk) { var q = peQ(s), on = q.em && -q.V0 >= PE.V_MIN; s.vV0mk.style.display = on ? '' : 'none'; if (on) s.vV0mk.style.left = 'calc(9px + (100% - 18px) * ' + ((-q.V0 - PE.V_MIN) / (PE.V_MAX - PE.V_MIN)).toFixed(4) + ')'; }
 }
 
 /* ---------- 光電流–V グラフ ---------- */
@@ -4482,7 +4497,7 @@ function s2OverIV(s, ctx, P) {
 DEFS.s2 = peBase({
   id: 's2', num: 2, title: '光電効果の実験',
   desc: '光電管（ほぼ真空のガラス管に陽極と陰極を封入したもの）の陰極に光を当てる。飛び出した光電子が陽極に流れこむと、回路に電流（<b>光電流</b> $I$）が流れる。電源で陽極の電位 $V$ を変えて、光電流がどう変わるかを調べる。<span class="todo">図の中の電源の下のスライダーで陽極の電位を負にしていき、光電流が 0 になる電位 $-V_0$（阻止電圧 $V_0$）を探そう。光の強さ・振動数を変えると $V_0$ は変わるだろうか。</span>',
-  height: function (s, w) { return Math.round(2 * s2Rg(w) + 196); },
+  height: function (s, w) { return Math.round(2 * s2Rg(w) + 196 + 30); },   /* V のスライダーの箱が 2 段（名前とボタンの行・スライダーの行）のぶん高く */
   init: function (s) { s.V = S2_DEF_V; s.metal = 'Cs'; },     /* 最初はセシウム（可視光で V₀ ≒ 1 V。光電流が 0 になる所を見つけやすい） */
   defMarks: true,                                                       /* スライダーの中に最初の設定の ▼ */
   afterBuild: function (s) {
@@ -4495,7 +4510,14 @@ DEFS.s2 = peBase({
     dn.type = up.type = z.type = 'button'; dn.title = '0.1 V 下げる'; up.title = '0.1 V 上げる'; z.title = '−V₀ ちょうどにする（光電流が 0 になる電位）';
     r.type = 'range'; r.min = String(PE.V_MIN); r.max = String(PE.V_MAX); r.step = String(PE.V_STEP); r.setAttribute('aria-label', '陽極の電位 V');
     var rw = el('span', 'vrw'); rw.appendChild(r); rw.appendChild(el('i', 'v0mk', '<b>0 V</b>'));   /* 0 V の位置に目印（2026-10-26 千葉さん） */
-    [dn, rw, val, up, z].forEach(function (e) { vin.appendChild(e); });
+    var vm = el('i', 'v0mk vV0', '<b>' + mathify('$-V_0$') + '</b>'); rw.appendChild(vm); s.vV0mk = vm;   /* −V₀ の位置にも目印（振動数の ν₀ と同じ。2026-10-28 千葉さん） */
+    var zz = el('button', 'tiny v00b', '0 V'); zz.type = 'button'; zz.title = '陽極の電位を 0 V にする';   /* 「−V₀」より 1 サイズ小さい */
+    /* 振動数のスライダーと同じ並び：上の行に「陽極の電位 V」・−V₀・0 V のボタン・値、下の行に − スライダー ＋（2026-10-28 千葉さん） */
+    var vh = el('div', 'vinh'), vb = el('div', 'vinb');
+    vh.appendChild(vin.querySelector('.vinl')); [z, zz].forEach(function (e) { vh.appendChild(e); }); vh.appendChild(el('span', 'vsp')); vh.appendChild(val);
+    [dn, rw, up].forEach(function (e) { vb.appendChild(e); });
+    vin.appendChild(vh); vin.appendChild(vb);
+    zz.addEventListener('click', function () { s2SetV(s, 0); });
     s.cw.appendChild(vin); s.vin = vin;
     r.addEventListener('input', function () { s2SetV(s, parseFloat(r.value)); });
     dn.addEventListener('click', function () { s2SetV(s, roundTo(s.V, PE.V_STEP) - PE.V_STEP); });
