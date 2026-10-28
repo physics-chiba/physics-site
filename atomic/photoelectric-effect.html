@@ -2087,15 +2087,22 @@ h3.m4point{margin:0 0 .4em;font-size:1.08rem;font-weight:800;color:#a85c0c;borde
 .pesliders .vrow.cell{padding-bottom:1.15em}
 /* 振動数の下の、光の色の帯 */
 .pesliders .vrow.hasspec{padding-bottom:2.75em}
-.specbar{position:absolute;left:9px;right:9px;top:100%;margin-top:21px;height:14px;border-radius:4px;background:repeating-linear-gradient(135deg,#d8d2e6 0 4px,#ece8f4 4px 8px)}
-.specbar .spv{position:absolute;left:0;top:0;bottom:0;border-radius:3px 0 0 3px}
-.specbar .spu{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px dashed #6a5a9a}
-.specbar span{position:absolute;top:0;height:14px;line-height:14px;font-size:.58rem;font-weight:700;white-space:nowrap}
-.specbar .spl1{left:0;text-align:center;color:#fff;text-shadow:0 0 2px rgba(0,0,0,.6)}
-.specbar .spl2{margin-left:5px;color:#4b3c7c}
+.specbar{position:absolute;left:9px;right:9px;top:100%;margin-top:21px;height:14px;border-radius:4px;overflow:hidden}
+.specbar .spv,.specbar .spz{position:absolute;top:0;bottom:0}
+.specbar .spz.uv{background:repeating-linear-gradient(135deg,#d8d2e6 0 4px,#ece8f4 4px 8px)}      /* 紫外線：紫の斜線 */
+.specbar .spz.ir{background:repeating-linear-gradient(45deg,#e8cfcb 0 4px,#f5e9e7 4px 8px)}       /* 赤外線：赤の斜線 */
+.specbar .spu{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed #6a5a7a}
+.specbar span{position:absolute;top:0;height:14px;line-height:14px;font-size:.58rem;font-weight:700;white-space:nowrap;text-align:center;overflow:hidden}
+.specbar .spl.vis{color:#fff;text-shadow:0 0 2px rgba(0,0,0,.6)}
+.specbar .spl.uv{color:#4b3c7c}
+.specbar .spl.ir{color:#7c2f28}
+/* 「波長 λ」と値の間の光子（ちょうどまん中） */
+.pesliders .vrow.cell.lamrow .vhead .lamph{display:block;margin:0 auto;flex:0 0 auto}
+.pesliders .vrow.cell.lamrow .vhead .vv{margin-left:0}
 /* λ の帯：λ のつまみの行のすぐ上 */
-.specbar.lambar{top:auto;bottom:100%;margin-top:0;margin-bottom:3px}
-.pesliders .vrow.cell.lamrow.haslspec{padding-top:27px}
+/* λ の帯も、ν と同じく λ のつまみの行の下（λ₀ の目印の下）。名前と値はその下（2026-10-28 千葉さん） */
+.pesliders .vrow.cell.lamrow.haslspec .vhead{margin-top:2.85em}
+.pesliders .vrow.cell.lamrow.haslspec{padding-top:.5em}
 .pesliders .vrow.hasspec{padding-bottom:2.35em}
 button.b.nu0b{font-size:.7rem;font-weight:700;padding:.25em .55em;border-radius:8px;white-space:nowrap;flex:0 0 auto;background:var(--brand-50);border:1px solid rgba(224,123,24,.45);color:var(--brand-700)}
 button.b.nu0b .katex{font-size:1em}
@@ -2192,6 +2199,7 @@ details.bindbox .bindin{margin-top:.6em}
 .pplot .gleg button.tiny.prevx{font-size:.66rem;padding:.05em .5em}
 @container (min-width:620px){ .pgraphs.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
 .sR{container-type:inline-size}
+.pesliders .vrow.cell.lamrow .vhead .vsp{display:none}
 
 </style>
 </head>
@@ -2215,7 +2223,9 @@ var PE = {
   e: 1.60e-19,            /* 電気素量〔C〕 */
   c: 3.00e8,              /* 真空中の光の速さ〔m/s〕 */
   m: 9.11e-31,            /* 電子の質量〔kg〕 */
-  NU_MIN: 4.0, NU_MAX: 12.0, NU_STEP: 0.1,      /* 振動数のスライダー〔×10¹⁴ Hz〕（2026-10-26 千葉さん。最大は 16 → 12 に） */
+  NU_MIN: 3.3, NU_MAX: 12.0, NU_STEP: 0.1,      /* 振動数のスライダー〔×10¹⁴ Hz〕（2026-10-26 千葉さん。最大は 16 → 12 に。2026-10-28：最小 4.0 → 3.3（波長 約 910 nm。900 nm まで出す）） */
+  LAM_MIN: 250, LAM_MAX: 910,                     /* 波長のスライダー〔nm〕（ν = 3.3 が 909 nm） */
+  VIS_LO: 380, VIS_HI: 780,                       /* 可視光の範囲〔nm〕（2026-10-28：上を 750 → 780 に） */
   V_MIN: -5.0, V_MAX: 5.0, V_STEP: 0.1,         /* 陽極の電位〔V〕 */
   ISAT100: 10.0,          /* 光の強さ 100 % のときの飽和電流〔μA〕 */
   C0: 0.85,               /* 陽極の電位が 0 のとき、陽極に届く電子の割合（図 10 の形） */
@@ -2249,8 +2259,8 @@ function V0Of(nu, k) { return K0Of(nu, k) / PE.E; }
 function speedOfK(K) { return Math.sqrt(2 * K * 1e-19 / PE.m); }
 /* 波長〔nm〕 */
 function lambdaNm(nu) { return PE.c / (nu * 1e14) * 1e9; }
-function isUV(nu) { return lambdaNm(nu) < 380; }
-function isIR(nu) { return lambdaNm(nu) > 750; }
+function isUV(nu) { return lambdaNm(nu) < PE.VIS_LO; }
+function isIR(nu) { return lambdaNm(nu) > PE.VIS_HI; }   /* 赤外線（目に見えない） */
 
 /* 飛び出す電子の運動エネルギーの分け方。
    'dist'：0〜K₀ に分布（深い所の電子ほど途中でエネルギーを失う）。K = K₀(1 − √u)、u は 0〜1 の一様乱数。
@@ -2281,20 +2291,22 @@ function currentI(V, nu, k, inten, mode) {
 
 /* 波長〔nm〕→ 色（可視光の範囲。外は端の色）。よく使う近似式 */
 function nmToRGB(nm) {
-  var r = 0, g = 0, b = 0, L = clamp(nm, 380, 750);
+  var r = 0, g = 0, b = 0, L = clamp(nm, PE.VIS_LO, PE.VIS_HI);
   if (L < 440) { r = -(L - 440) / 60; b = 1; }
   else if (L < 490) { g = (L - 440) / 50; b = 1; }
   else if (L < 510) { g = 1; b = -(L - 510) / 20; }
   else if (L < 580) { r = (L - 510) / 70; g = 1; }
   else if (L < 645) { r = 1; g = -(L - 645) / 65; }
   else { r = 1; }
-  var f = L < 420 ? 0.45 + 0.55 * (L - 380) / 40 : (L > 700 ? 0.45 + 0.55 * (750 - L) / 50 : 1);
+  var f = L < 420 ? 0.45 + 0.55 * (L - 380) / 40 : (L > 700 ? 0.45 + 0.55 * (PE.VIS_HI - L) / (PE.VIS_HI - 700) : 1);
   var c = function (x) { return Math.round(255 * Math.pow(x * f, 0.8)); };
   return [c(r), c(g), c(b)];
 }
 /* 光（光子）の色。紫外線は灰色がかった紫（目に見えない光だと分かるように、図では点線のふちもつける） */
-var UV_RGB = [124, 108, 160];
-function lightRGB(nu) { return isUV(nu) ? UV_RGB.slice() : nmToRGB(lambdaNm(nu)); }
+var UV_RGB = [124, 108, 160], IR_RGB = [150, 92, 86];          /* 赤外線は灰色がかった赤（同じく点線のふち） */
+function lightRGB(nu) { return isUV(nu) ? UV_RGB.slice() : (isIR(nu) ? IR_RGB.slice() : nmToRGB(lambdaNm(nu))); }
+/* 光子の線の色（図の中。紫外線・赤外線は少し濃く） */
+function photonCol(q) { return rgbStr(q.uv ? [92, 76, 140] : (q.ir ? [128, 62, 56] : q.rgb)); }
 function rgbStr(c, a) { return a === undefined ? 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')' : 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
 
 /* 数字の書き方 */
@@ -2751,7 +2763,7 @@ function velArrow(ctx, x1, y1, x2, y2) {
   ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(bx - uy * wa, by + ux * wa); ctx.lineTo(bx + uy * wa, by - ux * wa); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.restore();
 }
-/* 振動数 ν〔×10¹⁴ Hz〕→ 光子の波の数（4.0 で 1.5 個 … 12.0 で 5.0 個。0.5 個ずつの 8 段階）。波長が短いほど細かい波 */
+/* 振動数 ν〔×10¹⁴ Hz〕→ 光子の波の数（3.3 で 1.5 個 … 12.0 で 5.0 個。0.5 個ずつの 8 段階）。波長が短いほど細かい波 */
 function photonCycles(nu) { return 1.5 + 0.5 * Math.round(clamp((nu - PE.NU_MIN) / (PE.NU_MAX - PE.NU_MIN), 0, 1) * 7); }
 /* 波のような線の光子（画像 2 の波線）。(x, y)＝先頭、(ux, uy)＝進む向き、L＝長さ、col＝色、uv＝紫外線（白いふちを点線に） */
 /* cyc：波の数（光の振動数が大きい＝波長が短いほど多い。photonCycles(ν) で 8 段階） */
@@ -2761,15 +2773,14 @@ function photonWave(ctx, x, y, ux, uy, L, col, alpha, uv, cyc) {
   var path = function () {
     ctx.beginPath();
     for (var i = 0; i <= N; i++) {
-      var s = i / N, env = Math.sin(Math.PI * s), w = amp * env * Math.sin(TAU * n * s);
+      var s = i / N, env = Math.sin(Math.PI * s), w = amp * env * Math.sin(TAU * n * (s - 0.5));   /* まん中で波が軸を横ぎる位相（粒がいつも軸のまん中に来る。2026-10-28 千葉さん） */
       var qx = x - ux * L * s + px * w, qy = y - uy * L * s + py * w;
       i ? ctx.lineTo(qx, qy) : ctx.moveTo(qx, qy);
     }
   };
   path(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 4.2; if (uv) ctx.setLineDash([3, 2]); ctx.stroke(); ctx.setLineDash([]);
   path(); ctx.strokeStyle = col; ctx.lineWidth = 2.0; ctx.stroke();
-  var wm = amp * Math.sin(TAU * n * 0.5);                                   /* まん中での波のふれ（粒を波の線の上に置く） */
-  ctx.beginPath(); ctx.arc(x - ux * L * 0.5 + px * wm, y - uy * L * 0.5 + py * wm, 4.2, 0, TAU); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1; ctx.stroke();   /* 粒は波のまん中、大きさは電子くらい（半径 4.2。試し。2026-10-28 千葉さん。前は先頭 (x, y)・半径 2.6） */
+  ctx.beginPath(); ctx.arc(x - ux * L * 0.5, y - uy * L * 0.5, 4.2, 0, TAU);   /* 粒はいつも軸のまん中（波の数が変わっても上下に動かない） */ ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1; ctx.stroke();   /* 粒は波のまん中、大きさは電子くらい（半径 4.2。試し。2026-10-28 千葉さん。前は先頭 (x, y)・半径 2.6） */
   ctx.restore();
 }
 /* 電子（小さな点）。hot：飛び出した電子（濃い青）、fade：うすさ */
@@ -3550,7 +3561,7 @@ function eVtxt(v) { return f2(toEV(v)) + '\\ \\mathrm{eV}'; }
 function peNu(s) { return s.v.nu; }
 function peQ(s) {
   var nu = s.v.nu, k = s.metal, E = photonE(nu), W = workW(k), d = E - W;
-  return { nu: nu, k: k, E: E, W: W, d: d, K0: K0Of(nu, k), nu0: nu0Of(k), V0: V0Of(nu, k), em: emits(nu, k), eq: Math.abs(d) < 1e-9, I: s.v.I, uv: isUV(nu), lam: lambdaNm(nu), rgb: lightRGB(nu), mode: s.kmode };
+  return { nu: nu, k: k, E: E, W: W, d: d, K0: K0Of(nu, k), nu0: nu0Of(k), V0: V0Of(nu, k), em: emits(nu, k), eq: Math.abs(d) < 1e-9, I: s.v.I, uv: isUV(nu), ir: isIR(nu), inv: isUV(nu) || isIR(nu), lam: lambdaNm(nu), rgb: lightRGB(nu), mode: s.kmode };
 }
 
 /* ---------- 共通の定義（セクションの def に足す） ---------- */
@@ -3564,8 +3575,8 @@ function peBase(d) {
       { k: 'nu', label: '振動数 $\\nu$', min: PE.NU_MIN, max: PE.NU_MAX, step: PE.NU_STEP, def: PE_DEF.nu, aria: '振動数',
         fmt: function (x) { return f2(x) + '×10<sup>14</sup> Hz'; },
         mark: function (s) { return [{ x: nu0Of(s.metal), label: '$\\nu_0$' }].concat(d.defMarks ? [{ x: PE_DEF.nu, label: '', cls: 'defm' }] : []); } },
-      /* 波長 λ = c/ν〔nm〕。ふつうに左が短い波長（250〜750 nm、1 nm きざみ。2026-10-26 千葉さん 6 回目）。ν₀ に対応する λ₀（限界波長）に目印 */
-      { k: 'lam', label: '波長 $\\lambda$', min: 250, max: 750, step: 1, def: lambdaNm(PE_DEF.nu), aria: '波長', cls: 'lamrow',
+      /* 波長 λ = c/ν〔nm〕。ふつうに左が短い波長（250〜910 nm、1 nm きざみ。2026-10-26 千葉さん 6 回目、10-28 に 910 nm まで）。ν₀ に対応する λ₀（限界波長）に目印 */
+      { k: 'lam', label: '波長 $\\lambda$', min: PE.LAM_MIN, max: PE.LAM_MAX, step: 1, def: lambdaNm(PE_DEF.nu), aria: '波長', cls: 'lamrow',
         fmt: function (x) { return Math.round(x) + ' nm'; },
         mark: function (s) { return [{ x: lambdaNm(nu0Of(s.metal)), label: '$\\lambda_0$' }].concat(d.defMarks ? [{ x: lambdaNm(PE_DEF.nu), label: '', cls: 'defm' }] : []); } },
       { k: 'I', label: '光の強さ', min: 0, max: 100, step: 10, def: PE_DEF.I, aria: '光の強さ', fmt: function (x) { return Math.round(x) + ' %'; },
@@ -3581,7 +3592,7 @@ function peBase(d) {
       else s.v[k] = x;
       return true;
     },
-    onChanged: function (s, k) { if (d.onChangedX) d.onChangedX(s, k); return 'keepT'; },
+    onChanged: function (s, k) { peDrawLamPh(s); if (d.onChangedX) d.onChangedX(s, k); return 'keepT'; },
     tEnd: function () { return 1e9; },
     buttons: [
       { k: 'kmax', label: '最大の $K_0$ の電子だけ見る', cls: 'chkb kmaxb', onClick: function (s, b) {
@@ -3637,23 +3648,45 @@ function peArrange(s) {
   nb.addEventListener('click', function () { s.v.nu = nu0Of(s.metal); s.changed('nu'); });
   var hd = nr.querySelector('.vhead'), lb = hd && hd.querySelector('.vl');                /* 「振動数 ν」の 2 文字あと（名前の行）に置く。つまみの行は λ と同じ長さにそろえる（2026-10-26 千葉さん 5 回目） */
   if (lb) lb.insertAdjacentElement('afterend', nb); else nr.appendChild(nb); s.nu0b = nb;
-  /* ν のスライダーの下に、光の色の帯（可視光は色、紫外線は「紫外線」と分かる帯） */
-  var sp = el('div', 'specbar'); sp.setAttribute('aria-hidden', 'true');
-  var stops = [], N = 24;
-  for (var i = 0; i <= N; i++) { var nu = PE.NU_MIN + (PE.NU_MAX - PE.NU_MIN) * i / N; stops.push(rgbStr(lightRGB(nu)) + ' ' + (i / N * 100).toFixed(1) + '%'); }
-  var fUV = (PE.c / 380e-9 / 1e14 - PE.NU_MIN) / (PE.NU_MAX - PE.NU_MIN);
-  sp.innerHTML = '<i class="spv" style="width:' + (fUV * 100).toFixed(1) + '%;background:linear-gradient(90deg,' + stops.filter(function (q, j) { return j / N <= fUV + 1e-9; }).map(function (q) { var a = q.split(' '); return a[0] + ' ' + (parseFloat(a[1]) / fUV).toFixed(1) + '%'; }).join(',') + ')"></i>' +
-    '<i class="spu" style="left:' + (fUV * 100).toFixed(1) + '%"></i><span class="spl1" style="width:' + (fUV * 100).toFixed(1) + '%">可視光</span><span class="spl2" style="left:' + (fUV * 100).toFixed(1) + '%">紫外線（目に見えない）</span>';
-  (s.sl.nu.rw || nr).appendChild(sp); nr.classList.add('hasspec');
-  /* λ のスライダーにも、λ の目盛りにそろえた光の色の帯（左が短い波長：紫外線 → 紫 … 赤）。
-     ν の帯は ν の目盛り、λ の帯は λ の目盛りにそろう（λ = c/ν なので、2 本の帯は左右が逆で、のび方もちがう。2026-10-28 千葉さん） */
-  var lv = s.sl.lam.vd, fV = (380 - lv.min) / (lv.max - lv.min), lsp = el('div', 'specbar lambar'), lst = [];
-  for (var j = 0; j <= 24; j++) { var L = 380 + (lv.max - 380) * j / 24; lst.push(rgbStr(nmToRGB(L)) + ' ' + (j / 24 * 100).toFixed(1) + '%'); }
-  lsp.setAttribute('aria-hidden', 'true');
-  lsp.innerHTML = '<i class="spv" style="left:' + (fV * 100).toFixed(1) + '%;right:0;width:auto;border-radius:0 3px 3px 0;background:linear-gradient(90deg,' + lst.join(',') + ')"></i>' +
-    '<i class="spu" style="left:' + (fV * 100).toFixed(1) + '%"></i><span class="spl2" style="left:0;margin-left:5px">紫外線</span><span class="spl1" style="left:' + (fV * 100).toFixed(1) + '%;right:0">可視光</span>';
-  (s.sl.lam.rw || s.sl.lam.row).appendChild(lsp); s.sl.lam.row.classList.add('haslspec');
+  /* 光の色の帯（2 本）。ν の帯は ν の目盛り、λ の帯は λ の目盛りにそろう（λ = c/ν なので、2 本の帯は左右が逆で、のび方もちがう。2026-10-28 千葉さん）。
+     可視光は色、紫外線・赤外線は斜線（目に見えない） */
+  var fNu = function (nu) { return (nu - PE.NU_MIN) / (PE.NU_MAX - PE.NU_MIN); }, lv = s.sl.lam.vd, fLam = function (L) { return (L - lv.min) / (lv.max - lv.min); };
+  var nuOfL = function (L) { return PE.c / (L * 1e-9) / 1e14; };
+  var bar = function (cls, f, zones) {          /* zones：[{ a, b, t:'uv'|'vis'|'ir', lab }]（a < b は 0〜1）。f(L)：波長 L〔nm〕の位置 */
+    var sp = el('div', 'specbar' + (cls ? ' ' + cls : '')), h = ''; sp.setAttribute('aria-hidden', 'true');
+    zones.forEach(function (z) {
+      var st = 'left:' + (z.a * 100).toFixed(2) + '%;width:' + ((z.b - z.a) * 100).toFixed(2) + '%';
+      if (z.t === 'vis') {
+        var stops = [];
+        for (var j = 0; j <= 24; j++) { var L = PE.VIS_LO + (PE.VIS_HI - PE.VIS_LO) * j / 24; stops.push(rgbStr(nmToRGB(L)) + ' ' + ((f(L) - z.a) / (z.b - z.a) * 100).toFixed(1) + '%'); }
+        stops.sort(function (p, q) { return parseFloat(p.split(' ')[1]) - parseFloat(q.split(' ')[1]); });
+        h += '<i class="spv" style="' + st + ';background:linear-gradient(90deg,' + stops.join(',') + ')"></i>';
+      } else h += '<i class="spz ' + z.t + '" style="' + st + '"></i>';
+      if (z.lab) h += '<span class="spl ' + z.t + '" style="' + st + '">' + z.lab + '</span>';
+    });
+    [PE.VIS_LO, PE.VIS_HI].forEach(function (L) { var x = f(L); if (x > 0 && x < 1) h += '<i class="spu" style="left:' + (x * 100).toFixed(2) + '%"></i>'; });
+    sp.innerHTML = h; return sp;
+  };
+  var nIR = fNu(nuOfL(PE.VIS_HI)), nUV = fNu(nuOfL(PE.VIS_LO));
+  (s.sl.nu.rw || nr).appendChild(bar('', function (L) { return fNu(nuOfL(L)); },
+    [{ a: 0, b: nIR, t: 'ir' }, { a: nIR, b: nUV, t: 'vis', lab: '可視光' }, { a: nUV, b: 1, t: 'uv', lab: '紫外線（目に見えない）' }]));
+  nr.classList.add('hasspec');
+  var lUV = fLam(PE.VIS_LO), lIR = fLam(PE.VIS_HI);
+  (s.sl.lam.rw || s.sl.lam.row).appendChild(bar('lambar', fLam,
+    [{ a: 0, b: lUV, t: 'uv', lab: '紫外線' }, { a: lUV, b: lIR, t: 'vis', lab: '可視光' }, { a: lIR, b: 1, t: 'ir', lab: '赤外線' }]));
+  s.sl.lam.row.classList.add('haslspec');
+  /* 「波長 λ」と「〇 nm」の間に、アニメの左上と同じ光子（波長の変化が見えるように。2026-10-28 千葉さん） */
+  var lh = s.sl.lam.row.querySelector('.vhead'), ll = lh && lh.querySelector('.vl');
+  if (ll) { var pc = el('canvas', 'lamph'); pc.setAttribute('aria-hidden', 'true'); ll.insertAdjacentElement('afterend', pc); s.lamPh = pc; peDrawLamPh(s); }
   peSyncBtns(s);
+}
+/* λ の名前と値の間の光子（アニメの左上の凡例と同じ形・同じ大きさ） */
+function peDrawLamPh(s) {
+  var c = s.lamPh; if (!c) return;
+  var W = 52, H = 18, dpr = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px'; }
+  var ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  var q = peQ(s); photonWave(ctx, W / 2 + 14, H / 2, 1, 0, 28, photonCol(q), 1, q.inv, photonCycles(q.nu));
 }
 function peSyncBtns(s) {
   (s.mBtns || []).forEach(function (b) { var on = b.dataset.k === s.metal; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
@@ -3964,8 +3997,8 @@ function drawS1(s, ctx, W, H) {
   var rgb = q.rgb;
   var ta = { x: g.xa + g.ux * ((-40 - g.ys) / g.uy), y: -40 }, tb = { x: g.xb + g.ux * ((-40 - g.ys) / g.uy), y: -40 };
   ctx.save(); ctx.beginPath(); ctx.moveTo(ta.x, ta.y); ctx.lineTo(tb.x, tb.y); ctx.lineTo(g.xb, g.ys); ctx.lineTo(g.xa, g.ys); ctx.closePath();
-  ctx.fillStyle = rgbStr(rgb, on ? (q.uv ? 0.11 : 0.17) : 0.06); ctx.fill();     /* 光の強さは幅で表す（濃さは同じ） */
-  if (q.uv) { ctx.setLineDash([5, 5]); ctx.strokeStyle = rgbStr(rgb, 0.55); ctx.lineWidth = 1; ctx.stroke(); }
+  ctx.fillStyle = rgbStr(rgb, on ? (q.inv ? 0.11 : 0.17) : 0.06); ctx.fill();     /* 光の強さは幅で表す（濃さは同じ） */
+  if (q.inv) { ctx.setLineDash([5, 5]); ctx.strokeStyle = rgbStr(rgb, 0.55); ctx.lineWidth = 1; ctx.stroke(); }
   ctx.restore();
   /* 熱（オレンジのにじみ） */
   P.fx.forEach(function (f) {
@@ -3993,11 +4026,12 @@ function drawS1(s, ctx, W, H) {
   /* 光子 */
   P.ph.forEach(function (p) {
     var x = p.x0 + g.ux * p.d, y = p.y0 + g.uy * p.d;
-    photonWave(ctx, x, y, g.ux, g.uy, 34, rgbStr(q.uv ? [92, 76, 140] : q.rgb), y > g.ys ? 0.55 : 1, q.uv, photonCycles(q.nu));
+    photonWave(ctx, x, y, g.ux, g.uy, 34, photonCol(q), y > g.ys ? 0.55 : 1, q.inv, photonCycles(q.nu));
   });
   ctx.restore();
   /* 文字 */
   if (q.uv) label(ctx, '紫外線（目に見えない光）', Math.min(g.aw - 10, tb.x + g.ux * -60), 20, { size: 12.5, bold: true, color: '#5c4c8c', align: 'right' });
+  else if (q.ir) label(ctx, '赤外線（目に見えない光）', Math.min(g.aw - 10, tb.x + g.ux * -60), 20, { size: 12.5, bold: true, color: '#8a3c34', align: 'right' });
   else peLightLabel(ctx, '可視光', Math.min(g.aw - 10, tb.x + g.ux * -60), 20, q.rgb, 'right');      /* 字の色は光の色（2026-10-26 千葉さん） */
   /* 「真空」「金属」は境界面のすぐ上と下（右の「金属の外」「金属の中」と同じ書き方） */
   label(ctx, '真空', 12, g.ys - 9, { size: 10.5, color: '#69717d', align: 'left' });
@@ -4015,7 +4049,7 @@ function drawS1(s, ctx, W, H) {
 function s1Legend(ctx, g, q) {
   var x = 12, y = 38;
   electronDot(ctx, x + 14, y, 4, 1, true); label(ctx, '電子', x + 34, y, { size: 10.5, align: 'left', color: '#3a414c' });
-  photonWave(ctx, x + 28, y + 18, 1, 0, 28, rgbStr(q.uv ? [92, 76, 140] : q.rgb), 1, q.uv, photonCycles(q.nu)); label(ctx, '光子', x + 34, y + 18, { size: 10.5, align: 'left', color: '#3a414c' });
+  photonWave(ctx, x + 28, y + 18, 1, 0, 28, photonCol(q), 1, q.inv, photonCycles(q.nu)); label(ctx, '光子', x + 34, y + 18, { size: 10.5, align: 'left', color: '#3a414c' });
 }
 /* 電子のエネルギーの図（教科書の図と同じ形：hν を受け取り、W を使って外へ。残りが K₀） */
 function s1Energy(ctx, b, q, wide, ysurf) {
@@ -4322,8 +4356,8 @@ function drawS2(s, ctx, W, H) {
   /* 光の帯（左から入り、陰極に当たる） */
   var a0 = Math.asin(-g.band), a1 = Math.asin(g.band), yt = g.cy - g.Rc * g.band, yb = g.cy + g.Rc * g.band, on = lit || P.ph.length;
   ctx.save(); ctx.beginPath(); ctx.moveTo(0, yt); ctx.lineTo(g.cx + g.Rc * Math.cos(a0), yt); ctx.arc(g.cx, g.cy, g.Rc, a0, a1); ctx.lineTo(0, yb); ctx.closePath();
-  ctx.fillStyle = rgbStr(q.rgb, on ? (q.uv ? 0.10 : 0.17) * (0.35 + 0.65 * q.I / 100) : 0.05); ctx.fill();   /* 2 は光の強さを濃さで（光の当たる幅は陰極に合わせて同じ） */
-  if (q.uv) { ctx.setLineDash([5, 5]); ctx.strokeStyle = rgbStr(q.rgb, 0.5); ctx.lineWidth = 1; ctx.stroke(); }
+  ctx.fillStyle = rgbStr(q.rgb, on ? (q.inv ? 0.10 : 0.17) * (0.35 + 0.65 * q.I / 100) : 0.05); ctx.fill();   /* 2 は光の強さを濃さで（光の当たる幅は陰極に合わせて同じ） */
+  if (q.inv) { ctx.setLineDash([5, 5]); ctx.strokeStyle = rgbStr(q.rgb, 0.5); ctx.lineWidth = 1; ctx.stroke(); }
   ctx.restore();
   /* 陰極（曲がった金属の板）。内がわに金属の色 */
   ctx.save(); ctx.lineCap = 'round';
@@ -4346,7 +4380,7 @@ function drawS2(s, ctx, W, H) {
     }
   });
   /* 光子 */
-  P.ph.forEach(function (p) { photonWave(ctx, p.x, p.y, 1, 0, 34, rgbStr(q.uv ? [92, 76, 140] : q.rgb), 1, q.uv, photonCycles(q.nu)); });
+  P.ph.forEach(function (p) { photonWave(ctx, p.x, p.y, 1, 0, 34, photonCol(q), 1, q.inv, photonCycles(q.nu)); });
   /* 電流計 A */
   var I = lit ? currentI(s.V, q.nu, q.k, q.I, q.mode) : 0;
   s2Meter(ctx, g.xA, g.cy, 'A');
@@ -4365,6 +4399,7 @@ function drawS2(s, ctx, W, H) {
   s2Battery(ctx, g.xm, g.yB, s.V, wire);
   /* 文字 */
   if (q.uv) label(ctx, '紫外線', 14, yt - 12, { size: 12.5, bold: true, color: '#5c4c8c', align: 'left' });
+  else if (q.ir) label(ctx, '赤外線', 14, yt - 12, { size: 12.5, bold: true, color: '#8a3c34', align: 'left' });
   else peLightLabel(ctx, '可視光', 14, yt - 12, q.rgb, 'left');
   /* 右上：10 秒あたりの数（いまの設定が 10 秒続いたとき）。光電流に比例するのは「陽極に届いた」数 */
   var c10 = peCount10(q, s.V);
