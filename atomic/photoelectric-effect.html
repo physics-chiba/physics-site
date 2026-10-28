@@ -2093,6 +2093,10 @@ h3.m4point{margin:0 0 .4em;font-size:1.08rem;font-weight:800;color:#a85c0c;borde
 .specbar span{position:absolute;top:0;height:14px;line-height:14px;font-size:.58rem;font-weight:700;white-space:nowrap}
 .specbar .spl1{left:0;text-align:center;color:#fff;text-shadow:0 0 2px rgba(0,0,0,.6)}
 .specbar .spl2{margin-left:5px;color:#4b3c7c}
+/* λ の帯：λ のつまみの行のすぐ上 */
+.specbar.lambar{top:auto;bottom:100%;margin-top:0;margin-bottom:3px}
+.pesliders .vrow.cell.lamrow.haslspec{padding-top:27px}
+.pesliders .vrow.hasspec{padding-bottom:2.35em}
 button.b.nu0b{font-size:.7rem;font-weight:700;padding:.25em .55em;border-radius:8px;white-space:nowrap;flex:0 0 auto;background:var(--brand-50);border:1px solid rgba(224,123,24,.45);color:var(--brand-700)}
 button.b.nu0b .katex{font-size:1em}
 /* 金属のボタン */
@@ -3641,6 +3645,14 @@ function peArrange(s) {
   sp.innerHTML = '<i class="spv" style="width:' + (fUV * 100).toFixed(1) + '%;background:linear-gradient(90deg,' + stops.filter(function (q, j) { return j / N <= fUV + 1e-9; }).map(function (q) { var a = q.split(' '); return a[0] + ' ' + (parseFloat(a[1]) / fUV).toFixed(1) + '%'; }).join(',') + ')"></i>' +
     '<i class="spu" style="left:' + (fUV * 100).toFixed(1) + '%"></i><span class="spl1" style="width:' + (fUV * 100).toFixed(1) + '%">可視光</span><span class="spl2" style="left:' + (fUV * 100).toFixed(1) + '%">紫外線（目に見えない）</span>';
   (s.sl.nu.rw || nr).appendChild(sp); nr.classList.add('hasspec');
+  /* λ のスライダーにも、λ の目盛りにそろえた光の色の帯（左が短い波長：紫外線 → 紫 … 赤）。
+     ν の帯は ν の目盛り、λ の帯は λ の目盛りにそろう（λ = c/ν なので、2 本の帯は左右が逆で、のび方もちがう。2026-10-28 千葉さん） */
+  var lv = s.sl.lam.vd, fV = (380 - lv.min) / (lv.max - lv.min), lsp = el('div', 'specbar lambar'), lst = [];
+  for (var j = 0; j <= 24; j++) { var L = 380 + (lv.max - 380) * j / 24; lst.push(rgbStr(nmToRGB(L)) + ' ' + (j / 24 * 100).toFixed(1) + '%'); }
+  lsp.setAttribute('aria-hidden', 'true');
+  lsp.innerHTML = '<i class="spv" style="left:' + (fV * 100).toFixed(1) + '%;right:0;width:auto;border-radius:0 3px 3px 0;background:linear-gradient(90deg,' + lst.join(',') + ')"></i>' +
+    '<i class="spu" style="left:' + (fV * 100).toFixed(1) + '%"></i><span class="spl2" style="left:0;margin-left:5px">紫外線</span><span class="spl1" style="left:' + (fV * 100).toFixed(1) + '%;right:0">可視光</span>';
+  (s.sl.lam.rw || s.sl.lam.row).appendChild(lsp); s.sl.lam.row.classList.add('haslspec');
   peSyncBtns(s);
 }
 function peSyncBtns(s) {
@@ -3751,7 +3763,7 @@ function peCountBox(ctx, xr, y, lines, size) {
     var x = x0 + 7, yy = y + 5 + lh * (i + 0.5);
     ln.forEach(function (sg) { ctx.font = '700 ' + (sg.size || size) + 'px ' + FONT; ctx.fillStyle = sg.col || '#2b323c'; ctx.fillText(sg.t, x, yy); x += ctx.measureText(sg.t).width; });
   });
-  ctx.font = ns + 'px ' + SERIF_JP; ctx.fillStyle = '#69717d'; ctx.fillText(note, x0 + 7, y + 5 + lh * lines.length + ns * 0.75);
+  ctx.font = ns + 'px ' + SERIF_JP; ctx.fillStyle = '#69717d'; ctx.textAlign = 'right'; ctx.fillText(note, xr - 7, y + 5 + lh * lines.length + ns * 0.75);   /* 右寄せ（2026-10-28 千葉さん） */
   ctx.restore();
   return { x: x0, y: y, w: w, h: h };
 }
