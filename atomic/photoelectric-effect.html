@@ -2200,6 +2200,20 @@ details.bindbox .bindin{margin-top:.6em}
 @container (min-width:620px){ .pgraphs.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} }
 .sR{container-type:inline-size}
 .pesliders .vrow.cell.lamrow .vhead .vsp{display:none}
+.specbar .spx{font-style:normal}
+@media(max-width:480px){ .specbar .spx{display:none} }   /* スマホでは「紫外線」だけ（帯にはいりきらないので） */
+/* 帯そのものの幅で決める（横置きのスマホなど、画面は広くてもスライダーの欄がせまいとき） */
+.specbar{container-type:inline-size}
+@container (max-width:260px){ .specbar .spx{display:none} }
+@container (max-width:170px){ .specbar span{font-size:.5rem;letter-spacing:-.04em} }
+/* ▶ スタートと、2 の陽極の電位 V の箱を光らせる（circuit-water-model-3d と同じ：輪の不透明度と大きさだけを動かす。軽い） */
+button.b.play.peglow{position:relative;background:var(--brand) !important;border-color:var(--brand) !important;color:#fff !important}
+button.b.play.peglow::after,.vin.peglow::after{content:"";position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;
+  box-shadow:0 0 0 4px rgba(224,123,24,.55),0 0 24px 6px rgba(224,123,24,.6);opacity:0;animation:ringPulse 1.4s ease-in-out infinite;will-change:opacity,transform}
+.vin.peglow{box-shadow:0 0 0 2px rgba(224,123,24,.75),0 4px 12px -6px rgba(20,23,28,.35)}
+.vin.peglow::after{inset:-4px;box-shadow:0 0 0 4px rgba(224,123,24,.6),0 0 24px 6px rgba(224,123,24,.6)}
+@media(prefers-reduced-motion:reduce){button.b.play.peglow::after,.vin.peglow::after{animation:none;opacity:.8}}
+@media print{button.b.play.peglow::after,.vin.peglow::after{display:none}}
 
 </style>
 </head>
@@ -3616,6 +3630,23 @@ function peBase(d) {
 /* 操作の並び（2026-10-26 千葉さん 2 回目）：
    スライダーは ▶ スタートの上。2 列に並べる（1 行目：光子のエネルギー hν ｜ 振動数 ν、2 行目：光の強さ ｜ 金属）。
    ▶ スタート・スロー・リセットの右に「すべて最初の設定に戻す」「最大の K₀ の電子だけ見る」を 1 行で。その行の右はしに「束縛の様子」（1 のみ） */
+/* ▶ スタートを光らせて「押してみたい」と思わせる（circuit-water-model-3d と同じ光の輪。2026-10-28 千葉さん）。
+   ・セクションごとに、▶ スタートを 1 回押すまで光る（「すべて最初の設定に戻す」でまた光る）
+   ・2 は、▶ スタートを押したあと、陽極の電位 V のスライダーの箱が光る（V をさわるまで） */
+function peGlow(s) {
+  var on = function (e, f) { if (e) e.classList.toggle('peglow', !!f); };
+  s.glowArm = function () { s.glowStarted = false; s.vinDone = false; on(s.bPlay, true); on(s.vin, false); };
+  s.bPlay.addEventListener('click', function () {
+    on(s.bPlay, false);
+    if (!s.glowStarted) { s.glowStarted = true; if (s.vin && !s.vinDone) on(s.vin, true); }
+  });
+  var td = s.toDefaults; s.toDefaults = function () { var r = td.apply(this, arguments); s.glowArm(); return r; };
+  s.glowArm();
+}
+function peGlowVin(s) {                     /* V の箱の中をさわったら、もう光らせない */
+  var done = function () { s.vinDone = true; s.vin.classList.remove('peglow'); };
+  ['pointerdown', 'input', 'click', 'keydown'].forEach(function (ev) { s.vin.addEventListener(ev, done, true); });
+}
 function peArrange(s) {
   var ctr = s.L.querySelector('.ctrls'), sl = ctr.querySelector('.row2.sliders');
   ctr.insertBefore(sl, ctr.firstChild);
@@ -3669,7 +3700,7 @@ function peArrange(s) {
   };
   var nIR = fNu(nuOfL(PE.VIS_HI)), nUV = fNu(nuOfL(PE.VIS_LO));
   (s.sl.nu.rw || nr).appendChild(bar('', function (L) { return fNu(nuOfL(L)); },
-    [{ a: 0, b: nIR, t: 'ir' }, { a: nIR, b: nUV, t: 'vis', lab: '可視光' }, { a: nUV, b: 1, t: 'uv', lab: '紫外線（目に見えない）' }]));
+    [{ a: 0, b: nIR, t: 'ir' }, { a: nIR, b: nUV, t: 'vis', lab: '可視光' }, { a: nUV, b: 1, t: 'uv', lab: '紫外線<em class="spx">（目に見えない）</em>' }]));
   nr.classList.add('hasspec');
   var lUV = fLam(PE.VIS_LO), lIR = fLam(PE.VIS_HI);
   (s.sl.lam.rw || s.sl.lam.row).appendChild(bar('lambar', fLam,
@@ -3744,7 +3775,9 @@ function peOverK0(s, ctx, P) {
   var xn = X(q.nu0), x0 = X(0), yW = Y(-q.W), yz = Y(0), nb = null;
   if (inR(xn, yz)) {
     ctx.save(); ctx.fillStyle = PE_SEL; ctx.beginPath(); ctx.arc(xn, yz, 3.4, 0, TAU); ctx.fill(); ctx.restore();
-    nb = pill2(ctx, '限界振動数 ν₀', xn + 6, clamp(yz + 16, R.y0 + 10, R.y1 - 8), '#3a414c', 'left');
+    ctx.save(); ctx.font = '700 10.5px ' + FONT; var nw = ctx.measureText('限界振動数 ν₀').width + 10; ctx.font = '9.5px ' + FONT; var uw = ctx.measureText('〔×10¹⁴ Hz〕').width; ctx.restore();
+    var ny = yz + 16; if (xn + 6 + nw > R.x1 + 18 - uw - 4) ny = yz + 35;     /* 右はしの「〔×10¹⁴ Hz〕」と重なるときは 1 段下へ（スマホの幅。2026-10-28） */
+    nb = pill2(ctx, '限界振動数 ν₀', xn + 6, clamp(ny, R.y0 + 10, R.y1 - 8), '#3a414c', 'left');
   }
   /* 仕事関数 W：縦軸の 0 から −W まで（ν₀ の札と重なるときは下へずらす） */
   if (inR(x0, yW)) {
@@ -3896,8 +3929,10 @@ function peEVnote() { return '<p class="evnote">※ 1 eV（電子ボルト）＝
 var S1_ANG = 56 * Math.PI / 180;                 /* 光の向き（水平から下へ 56°。右上から左下へ進む） */
 var S1_NROW = 6;                                 /* 金属の中の電子の段の数（上の 4 段に光子が当たる） */
 
+/* 横ならび（左にアニメ、右にエネルギーの図）にするか。横置きのスマホ（高さが低い）では幅が 420 からでも横ならびにして、1 画面に入れる（2026-10-28） */
+function s1Wide(W) { return W >= 520 || (W >= 420 && innerHeight < 560); }
 function s1Geo(s, W, H) {
-  var wide = W >= 520, dw = wide ? clamp(Math.round(W * 0.27), 150, 196) : 0;
+  var wide = s1Wide(W), dw = wide ? clamp(Math.round(W * 0.27), 150, 196) : 0;
   var aw = W - dw, ah = wide ? H : H - 178;
   var ys = Math.round(ah * 0.47), xc = aw * 0.42, hw = aw * 0.24 * clamp(s.v.I, 0, 100) / 100;   /* 光の当たる幅は光の強さに比例 */
   return { W: W, H: H, wide: wide, aw: aw, ah: ah, ys: ys, ux: -Math.cos(S1_ANG), uy: Math.sin(S1_ANG),
@@ -4100,9 +4135,9 @@ DEFS.s1 = peBase({
   id: 's1', num: 1, title: '光電効果の基礎',
   desc: '金属の表面に光を当てる。光は、エネルギー $h\\nu$ をもつ粒（光子）の集まりである。光子 1 個が金属の中の電子 1 個にエネルギー $h\\nu$ を与え、それが仕事関数 $W$ より大きいと、電子は金属の外へ飛び出す（光電子）。<span class="todo">振動数 $\\nu$ を変えて、電子が飛び出す／飛び出さないの境目（限界振動数 $\\nu_0$）を探そう。光の強さを変えると、何が変わって何が変わらないかも確かめよう。</span>',
   /* 横置きのスマホ（高さ 390 など）でも図が 1 画面に入るように、画面の高さでおさえる */
-  height: function (s, w) { return w >= 520 ? Math.round(clamp(Math.min(w * 0.6, innerHeight - 70), 300, 420)) : Math.round(w * 0.82) + 178; },
+  height: function (s, w) { return s1Wide(w) ? Math.round(clamp(Math.min(w * 0.6, innerHeight - 70), 300, 420)) : Math.round(w * 0.82) + 178; },
   afterBuild: function (s) {
-    peArrange(s);
+    peArrange(s); peGlow(s);
     /* 自由電子の束縛の様子（チェックなしで、いつも表示。ひとことの下） */
     s1BindBuild(s);
     /* 右：K₀–ν グラフ と 解説 */
@@ -4282,11 +4317,45 @@ function s1BindSprings(ctx, W, H, t, m) {
 var S2_DEF_V = 1.0;                                    /* 最初の陽極の電位〔V〕（2026-10-26 千葉さん：1.0 V） */
 var S2_BUB = 0.2;                                      /* 「光電流が流れた」の吹き出しを出す時間〔s〕 */
 function s2Rg(W) { return clamp(Math.min(W * 0.2, 120, (innerHeight - 70 - 196) / 2), 62, 120); }   /* 横置きのスマホでも図が 1 画面に入るように */
+/* 右上の「10 秒あたりの数」の箱の行（数は c10） */
+function s2CountLines(c10, cs) {
+  return [[{ t: '金属に当たった光子 ' + c10.p + ' 個' }], [{ t: '→ 飛び出した光電子 ' + c10.e + ' 個', col: '#1663b5' }],
+    [{ t: 'そのうち陽極に届いた光電子 ' + c10.a + ' 個 ', col: '#1c6b3a' }, { t: '∝', size: cs + 3.5, col: '#1c6b3a' }, { t: ' 光電流の大きさ', col: '#1c6b3a' }]];
+}
+function s2CountSize(W) { return W < 420 || innerHeight < 560 ? 8.5 : 10.5; }   /* せまい画面・横置きのスマホでは小さい字 */
+var S2_MCTX = null;
+/* 数の箱の置き場所：右上 → （だめなら）左上 → （それもだめなら）箱のぶん図を下げて右上。
+   光電管・「陰極（電位 0）」・電流計の上の吹き出しと「I の正の向き」・「可視光」と重ならないように（2026-10-28 スマホの確認） */
+var S2_BOX = {};
+function s2Box(W) {
+  var key = W + 'x' + innerHeight; if (S2_BOX[key]) return S2_BOX[key];
+  var cs = s2CountSize(W), Rg = s2RgT(W, 0), cx = Math.max(W * 0.38, Rg + 70), cy = Rg + 34, Rc = Rg * 0.84;
+  var xR = Math.min(W - 34, cx + Rg + Math.max(64, W * 0.17)), xA = (cx + Rg + xR) / 2;
+  if (!S2_MCTX) S2_MCTX = document.createElement('canvas').getContext('2d');
+  var ctx = S2_MCTX, lh = cs * 1.55, ns = cs - 1.5;
+  var wid = s2CountLines({ p: 90, e: 90, a: 90 }, cs).map(function (ln) { return ln.reduce(function (a, sg) { ctx.font = '700 ' + (sg.size || cs) + 'px ' + FONT; return a + ctx.measureText(sg.t).width; }, 0); });
+  ctx.font = ns + 'px ' + SERIF_JP; wid.push(ctx.measureText('（個数は 10 秒あたりの数）').width);
+  var w = Math.max.apply(null, wid) + 14, h = lh * 3 + ns * 1.5 + 10, yb = 6 + h + 3;
+  var hit = function (x0, x1) {
+    var dy = cy - yb, hw = dy < Rg ? Math.sqrt(Rg * Rg - Math.max(0, dy) * Math.max(0, dy)) : -1;   /* 箱の下のはしの高さでの光電管の幅 */
+    if (hw >= 0 && x0 < cx + hw + 4 && x1 > cx - hw - 4) return true;
+    if (yb > cy - Rg - 24 && x0 < cx + Rg * 0.75 + 4 && x1 > cx + Rg * 0.75 - 90) return true;     /* 「陰極（電位 0）」 */
+    if (yb > cy - 66 && x1 > xA - 46 && x0 < Math.max(xA + 90, xR + 24)) return true;                   /* 吹き出し・「I の正の向き」・接地の記号 */
+    if (yb > cy - Rc * 0.55 - 22 && x0 < 70) return true;                                             /* 「可視光」 */
+    return false;
+  };
+  var r = !hit(W - 4 - w, W - 4) ? { top: 0, left: false } : (!hit(4, 4 + w) ? { top: 0, left: true } : { top: Math.ceil(h) + 4, left: false });
+  r.w = w; r.h = h;
+  return (S2_BOX[key] = r);
+}
+function s2Top(W) { return s2Box(W).top; }
+/* 図を下げたぶん、横置きのスマホでは光電管を小さくして 1 画面に入れる */
+function s2RgT(W, top) { return clamp(Math.min(W * 0.2, 120, (innerHeight - 70 - 196 - top) / 2), 62, 120); }
 function s2Geo(s, W, H) {
-  var Rg = s2Rg(W), cx = Math.max(W * 0.38, Rg + 70), cy = Rg + 34, Rc = Rg * 0.84;
+  var top = s2Top(W), Rg = s2RgT(W, top), cx = Math.max(W * 0.38, Rg + 70), cy = Rg + 34 + top, Rc = Rg * 0.84;
   var xR = Math.min(W - 34, cx + Rg + Math.max(64, W * 0.17)), ax = cx - Rg * 0.16, ah = Rg * 0.24;
   var yV = cy + Rg + 34, yB = yV + 52;
-  return { W: W, H: H, Rg: Rg, cx: cx, cy: cy, Rc: Rc, xR: xR, ax: ax, ah: ah, yV: yV, yB: yB, band: 0.55,
+  return { W: W, H: H, top: top, Rg: Rg, cx: cx, cy: cy, Rc: Rc, xR: xR, ax: ax, ah: ah, yV: yV, yB: yB, band: 0.55,
     xA: (cx + Rg + xR) / 2, xm: (ax + xR) / 2 };
 }
 function s2Lit(s) { return !!(s.P && s.P.lit); }
@@ -4403,13 +4472,14 @@ function drawS2(s, ctx, W, H) {
   else peLightLabel(ctx, '可視光', 14, yt - 12, q.rgb, 'left');
   /* 右上：10 秒あたりの数（いまの設定が 10 秒続いたとき）。光電流に比例するのは「陽極に届いた」数 */
   var c10 = peCount10(q, s.V);
-  var cs = W < 420 ? 8.5 : 10.5;                                       /* せまい画面では小さい字（箱が図からはみ出さないように） */
-  peCountBox(ctx, W - 4, 6, [[{ t: '金属に当たった光子 ' + c10.p + ' 個' }], [{ t: '→ 飛び出した光電子 ' + c10.e + ' 個', col: '#1663b5' }],
-    [{ t: 'そのうち陽極に届いた光電子 ' + c10.a + ' 個 ', col: '#1c6b3a' }, { t: '∝', size: cs + 3.5, col: '#1c6b3a' }, { t: ' 光電流の大きさ', col: '#1c6b3a' }]], cs);
+  var cs = s2CountSize(W);
+  var bx = s2Box(W);
+  peCountBox(ctx, bx.left ? 4 + bx.w : W - 4, 6, s2CountLines(c10, cs), cs);
   label(ctx, '陽極', g.ax - 8, g.cy - g.ah - 10, { size: 11.5, bold: true, align: 'right' });
   label(ctx, '陰極（電位 0）', g.cx + g.Rg * 0.75, g.cy - g.Rg - 14, { size: 11.5, bold: true, align: 'right' });   /* 右上の数の箱と重ねない */
   label(ctx, '光電管', g.cx - g.Rg * 0.72, g.cy + g.Rg + 4, { size: 11, color: '#3d5a78', align: 'right' });
-  if (!lit && !P.ph.length) label(ctx, '▶ スタートで光を当てる', g.cx, g.cy - g.Rg - 14 < 14 ? 14 : 16, { size: 12.5, bold: true, color: '#b35a00', align: 'right' });
+  if (!lit && !P.ph.length) { if (s2Box(W).left) label(ctx, '▶ スタートで光を当てる', W - 6, 16, { size: 12.5, bold: true, color: '#b35a00', align: 'right' });   /* 数の箱が左上のときは右上に */
+    else label(ctx, '▶ スタートで光を当てる', g.cx, g.cy - g.Rg - 14 < 14 ? 14 : 16, { size: 12.5, bold: true, color: '#b35a00', align: 'right' }); }
   s2PlaceVin(s, g);
 }
 /* 下向きの吹き出し（とがった先が (x, y)） */
@@ -4525,7 +4595,7 @@ function s2OverIV(s, ctx, P) {
   /* −V₀ と 阻止電圧 V₀ */
   if (q.em && inX(X(-q.V0))) {
     var x = X(-q.V0);
-    label(ctx, '−V₀', x, y0 + 13, { size: 11, bold: true, color: '#c0392b' });
+    label(ctx, '−V₀', Math.min(x, X(0) - 25), y0 + 13, { size: 11, bold: true, color: '#c0392b' });   /* 原点の「O」と重ねない（スマホの幅で V₀ が小さいとき。2026-10-28） */
     pill2(ctx, '阻止電圧 V₀ = ' + f2(q.V0) + ' V', x - 6, Math.max(R.y0 + 12, y0 - 24), '#c0392b', 'right');
   } else if (!q.em && !q.eq) {
     label(ctx, 'hν < W：光電流はいつも 0', (R.x0 + R.x1) / 2, Y(4), { size: 11.5, bold: true, color: '#c0392b' });
@@ -4544,11 +4614,11 @@ function s2OverIV(s, ctx, P) {
 DEFS.s2 = peBase({
   id: 's2', num: 2, title: '光電効果の実験',
   desc: '光電管（ほぼ真空のガラス管に陽極と陰極を封入したもの）の陰極に光を当てる。飛び出した光電子が陽極に流れこむと、回路に電流（<b>光電流</b> $I$）が流れる。電源で陽極の電位 $V$ を変えて、光電流がどう変わるかを調べる。<span class="todo">図の中の電源の下のスライダーで陽極の電位を負にしていき、光電流が 0 になる電位 $-V_0$（阻止電圧 $V_0$）を探そう。光の強さ・振動数を変えると $V_0$ は変わるだろうか。</span>',
-  height: function (s, w) { return Math.round(2 * s2Rg(w) + 196 + 30); },   /* V のスライダーの箱が 2 段（名前とボタンの行・スライダーの行）のぶん高く */
+  height: function (s, w) { var t = s2Top(w); return Math.round(2 * s2RgT(w, t) + 196 + 30 + t); },   /* V のスライダーの箱が 2 段（名前とボタンの行・スライダーの行）のぶん高く */
   init: function (s) { s.V = S2_DEF_V; s.metal = 'Cs'; },     /* 最初はセシウム（可視光で V₀ ≒ 1 V。光電流が 0 になる所を見つけやすい） */
   defMarks: true,                                                       /* スライダーの中に最初の設定の ▼ */
   afterBuild: function (s) {
-    peArrange(s);
+    peArrange(s); peGlow(s);
     s.varbox.querySelector('.pegrid').appendChild(el('p', 'defnote', '▼ は光電流–V グラフの破線の設定'));   /* 金属のエリアの上（2026-10-26 千葉さん 6 回目） */
     s.cw.classList.add('s2wrap');
     /* 陽極の電位 V のスライダー（図の中、電源の位置） */
@@ -4565,7 +4635,7 @@ DEFS.s2 = peBase({
     [dn, rw, up].forEach(function (e) { vb.appendChild(e); });
     vin.appendChild(vh); vin.appendChild(vb);
     zz.addEventListener('click', function () { s2SetV(s, 0); });
-    s.cw.appendChild(vin); s.vin = vin;
+    s.cw.appendChild(vin); s.vin = vin; peGlowVin(s);
     r.addEventListener('input', function () { s2SetV(s, parseFloat(r.value)); });
     dn.addEventListener('click', function () { s2SetV(s, roundTo(s.V, PE.V_STEP) - PE.V_STEP); });
     up.addEventListener('click', function () { s2SetV(s, roundTo(s.V, PE.V_STEP) + PE.V_STEP); });
