@@ -23,7 +23,7 @@
   document.documentElement.style.setProperty('--hdh', (hd?hd.offsetHeight:50)+'px');
 
   var restored=loadLocal();
-  bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries();
+  bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries(); bindDragMsgs();
   addAgainButtons(); bindEditEnd(); buildCG(); bindCG();
   refreshExpUI();
   setMenuPos(APP.menuPos);

@@ -1772,7 +1772,8 @@ function onVideoReady(name){
      （前の動画のグラフのまま、新しい動画が動いてしまうため） */
   if(APP.m2mode==='live') setM2Mode('side', true);
   if(APP.tab!=='1') setTab('1');
-  UI.autoLost=false; autoMsgHide(); tblFrom=null;
+  UI.autoLost=false; UI.autoOthers=null; autoMsgHide(); tblFrom=null;
+  resetAllMsgPos();                /* 動かした知らせの場所は、新しい動画では元にもどす */
   UI.calPend=null; setCalHint(null); calMsg('');
   clearStrobe();
   resetCG();                       /* 新しい動画を読んだら、自由選択グラフは既定にもどす */
@@ -2180,7 +2181,11 @@ function openHelp(){
   '矢印キーで最後の点を1pxずつ動かせます</li>'+
   '<li><b>色で自動追跡</b>：動画の上に大きな案内が出ます（［この表示を最小化］でたためます）。マーカーを1回クリックすると、始点と色を覚えます。円をドラッグして探索半径を決め、案内の <b>［自動追跡を開始する］</b>（か［最後まで自動追跡］）で終わりまで追いかけ、'+
   '見失ったら止まります。手でクリックして見つけ直すと <b>「見つけました！ 最後まで追跡 しますか？」</b> が出るので、'+
-  'その知らせを押せばそのまま続きます</li>'+
+  'その知らせを押せばそのまま続きます。'+
+  '次のコマでは、<b>これまでの点の動きから次の位置を予測</b>して、そのまわりを探します。予測の式は 1 つで、落下・投射のような放物線も、<b>単振動や円運動</b>も、最近の点に合わせて自動で切りかわります（スイッチはありません）。'+
+  'はじめの 2〜3 点は動きがまだ分からないので、探す円を広げて探します。近くに<b>同じ色の物</b>（止まっている印など）があってどちらか決められないときは、まちがった物を追わずに「見失いました」と止まります</li>'+
+  '<li>動画の上に出る知らせ（「スケールを設定してください」など）は、<b>左はしの点々の帯（つまみ）をドラッグすると脇によけられます</b>。はい／いいえ のボタンがある知らせは、ボタン以外の所をつかんでも動きます。'+
+  'よけた場所は、次に出る知らせにも使います。つまみをダブルクリックすると元の場所にもどります</li>'+
   '<li>右上の <b>［複数物体の運動］</b> を ON にすると、4 に入ったとき N のつぎに<b>物体の数（2 か 3）</b>を聞き、物体1 → 物体2 → 物体3 の順に追いかけられます（衝突など）。ストロボ画像に描く点は物体1だけです。'+
   '物体には名前をつけます（同じ名前は不可）。撮るときは<b>物体ごとにちがう色</b>のマーカーをつけておくと、色で自動追跡できます。'+
   '画面の外に出るなどで最後まで追えない物体は、4 のカードの <b>［この物体はここで終わり］</b> を押すと、そこまでで完了になり次の物体へ進めます</li>'+
@@ -2667,6 +2672,8 @@ function bindUI(){
        ここで消してしまうと click が届かない。そのまま通す。 */
     var am=$('autoMsg');
     if(am && am.__act && ev.target && ev.target.closest && ev.target.closest('#autoMsg')) return;
+    /* 知らせのつまみをつかんだときは、消さずに動かす */
+    if(ev.target && ev.target.closest && ev.target.closest('.dragmsg-grip')) return;
     var inVideo = ev.target && ev.target.closest && ev.target.closest('#videobox');
     closeBigMsg();
     if(inVideo && !(ev.target.tagName==='BUTTON' || (ev.target.closest && ev.target.closest('button')))){
@@ -3553,6 +3560,101 @@ function calAsk(html, btns, opt){
   });
   var vh=$('vhint'); if(vh) vh.classList.add('hide');
   if(opt.after) opt.after(m);
+}
+/* ---------- 動画エリアに出る知らせを、ドラッグで脇によけられるようにする ----------
+   左はしの「つまみ」（⋮⋮ の帯）をドラッグすると動く。押せる知らせ（はい／いいえ など）は、ボタン以外の所でもドラッグできる。
+   動かした場所は覚えておき、次に同じ知らせが出たときもそこに出す（新しい動画を読むと元にもどる）。
+   つまみをダブルクリックすると元の場所にもどる */
+var DRAG_MSGS=['calMsg','autoMsg','vhint','trkChoice','doneMsg','btnTrkStart'];
+function bindDragMsgs(){
+  UI.msgPos=UI.msgPos||{};
+  DRAG_MSGS.forEach(function(id){
+    var m=$(id); if(!m || m.__drag) return;
+    m.__drag=true;
+    var ensureGrip=function(){
+      if(m.querySelector(':scope>.dragmsg-grip')) return;
+      var g=document.createElement('span');
+      g.className='dragmsg-grip'; g.title='ドラッグして動かせます（ダブルクリックで元の場所）';
+      g.setAttribute('aria-hidden','true');
+      m.insertBefore(g, m.firstChild);
+    };
+    ensureGrip();
+    new MutationObserver(function(){ ensureGrip(); if(m.style.left && !m.classList.contains('dragging')) m.style.width=''; clampMsg(m); }).observe(m, { childList:true });
+    new MutationObserver(function(){ if(!m.classList.contains('hide')) clampMsg(m); }).observe(m, { attributes:true, attributeFilter:['class'] });
+    m.addEventListener('pointerdown', function(ev){
+      var grip=ev.target.closest && ev.target.closest('.dragmsg-grip');
+      var act=getComputedStyle(m).pointerEvents!=='none';
+      if(!grip){
+        if(!act) return;                                   /* 素通しの知らせは、つまみだけで動かす */
+        if(ev.target.closest('button,input,select,textarea,a,label')) return;   /* ボタンなどは、ふつうに押せる */
+      }
+      ev.preventDefault(); ev.stopPropagation();
+      var box=$('videobox'); if(!box) return;
+      var br=box.getBoundingClientRect(), r=m.getBoundingClientRect();
+      var st={ x:ev.clientX, y:ev.clientY, l:r.left-br.left, t:r.top-br.top, moved:false };
+      m.classList.add('dragging');
+      m.style.width=Math.ceil(r.width)+'px';               /* 動かしても幅が変わらないように（左に寄せると横に広がるため） */
+      clearTimeout(m.__t);                                 /* 動かしている間は、時間で消さない */
+      if(id==='autoMsg') clearTimeout(m.__to);
+      try{ (grip||m).setPointerCapture(ev.pointerId); }catch(e){}
+      var move=function(e){
+        var dx=e.clientX-st.x, dy=e.clientY-st.y;
+        if(!st.moved && Math.hypot(dx,dy)<3) return;
+        st.moved=true;
+        setMsgPos(m, st.l+dx, st.t+dy);
+      };
+      var up=function(){
+        if(!st.moved && !m.style.left) m.style.width='';   /* 動かさなかったときは、幅も元のまま */
+        document.removeEventListener('pointermove', move, true);
+        document.removeEventListener('pointerup', up, true);
+        document.removeEventListener('pointercancel', up, true);
+        m.classList.remove('dragging');
+        if(st.moved){
+          UI.msgPos[id]={ x:parseFloat(m.style.left)||0, y:parseFloat(m.style.top)||0 };
+          /* 時間で消える知らせは、動かしたあと、もう一度しばらく出しておく */
+          if(id==='calMsg' && !m.classList.contains('ask')) m.__t=setTimeout(function(){ m.classList.add('hide'); }, 6700);
+          if(id==='autoMsg' && !UI.autoLost) m.__to=setTimeout(function(){ m.classList.add('hide'); }, 4000);
+        }
+      };
+      document.addEventListener('pointermove', move, true);
+      document.addEventListener('pointerup', up, true);
+      document.addEventListener('pointercancel', up, true);
+    });
+    /* つまみを押しても、下のボタン（解析終了→②へ、トラッキング開始 など）は押されないように */
+    m.addEventListener('click', function(ev){
+      if(ev.target.closest && ev.target.closest('.dragmsg-grip')){ ev.preventDefault(); ev.stopPropagation(); }
+    }, true);
+    m.addEventListener('dblclick', function(ev){
+      if(!(ev.target.closest && ev.target.closest('.dragmsg-grip'))) return;
+      ev.preventDefault(); ev.stopPropagation();
+      delete UI.msgPos[id]; resetMsgPos(m);
+    });
+    if(UI.msgPos[id]) setMsgPos(m, UI.msgPos[id].x, UI.msgPos[id].y);
+  });
+}
+function setMsgPos(m, x, y){
+  m.style.left=x+'px'; m.style.top=y+'px';
+  m.style.right='auto'; m.style.bottom='auto'; m.style.transform='none';
+  clampMsg(m);
+}
+function resetMsgPos(m){
+  m.style.left=''; m.style.top=''; m.style.right=''; m.style.bottom=''; m.style.transform=''; m.style.width='';
+}
+/* 動かした知らせが、動画エリアの外にはみ出さないように */
+function clampMsg(m){
+  if(!m.style.left) return;
+  var box=$('videobox'); if(!box) return;
+  var W=box.clientWidth, H=box.clientHeight;
+  var w=m.offsetWidth, h=m.offsetHeight;
+  if(!w && !h) return;                                     /* かくれているときは、出たときに直す */
+  var x=parseFloat(m.style.left)||0, y=parseFloat(m.style.top)||0;
+  x=Math.max(0, Math.min(Math.max(0,W-w), x));
+  y=Math.max(0, Math.min(Math.max(0,H-h), y));
+  m.style.left=x+'px'; m.style.top=y+'px';
+}
+function resetAllMsgPos(){
+  UI.msgPos={};
+  DRAG_MSGS.forEach(function(id){ var m=$(id); if(m) resetMsgPos(m); });
 }
 function calAskOpen(){ var m=$('calMsg'); return !!(m && !m.classList.contains('hide') && m.classList.contains('ask')); }
 /* 左のカードの「↓やり直しはここ」 */

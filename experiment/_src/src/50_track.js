@@ -711,14 +711,39 @@ function afterSeek(){
 
 /* ---------- 色マーカーの自動追跡 ---------- */
 /* 次の点の「予測位置」：探索はいまの点ではなく、この予測点を中心に行う。
-   点が 2 つ → 前の点からいまの点への動き（速度）で外挿。
-   点が 3 つ以上 → 速度の変わり方（加速度）も入れて外挿（落下・投射で遅れないように）。
-   ただし加速度のぶんは 1 回の動きの半分までに抑え、クリックのずれで予測が暴れないようにする */
-function predictPos(obj, tNow){
+
+   ① N コマずつ同じ間隔で記録しているとき（ふつうはこちら）は、どんな運動にも合う 1 つの式で予測する。
+        x[n+1] ＝ x[n−2] ＋ (c＋1)・(x[n] − x[n−1])         （y も同じ c で）
+      c ＝ 2 …… 放物線（等速・等加速度。落下・投射・台車）
+      c ＝ 2cos(ωΔt) …… 単振動・等速円運動（つり合いの位置や円の中心がどこにあってもよい）
+      c は「最近の点がこの式にいちばんよく合う値」を最小二乗で求める（スイッチは要らない）。
+      動きが小さい・点が少ないときは c ＝ 2 に引きよせて、クリックのずれで暴れないようにする。
+      ※ 前は放物線の式だけで、しかも加速度の補正を「1 回の動きの半分まで」に抑えていた。
+        単振動は折り返し点で速さ 0・加速度が最大なので、この抑えがちょうど裏目に出て、毎回見失っていた。
+   ② 間隔がそろっていないとき（見失って手でクリックした直後など）は、時刻を使った放物線の外挿 */
+function predictPos(obj, tNow, forceC){
   var exp=EXP(), arr=exp.objs[obj].slice().sort(function(a,b){return a.t-b.t;});
   if(!arr.length) return null;
   if(tNow===undefined) tNow=VID.cur;
-  var last=arr[arr.length-1];
+  var last=arr[arr.length-1], n=arr.length;
+  /* ① 同じ間隔で並んだ、最後の点の列 */
+  if(n>=3){
+    var dt1=last.t-arr[n-2].t, tau1=tNow-last.t;
+    if(dt1>0 && Math.abs(tau1-dt1)<=0.3*dt1){
+      var run=[last];
+      for(var k=n-2; k>=0 && run.length<9; k--){
+        var dd=run[0].t-arr[k].t;
+        if(Math.abs(dd-dt1)<=0.3*dt1) run.unshift(arr[k]); else break;
+      }
+      var m=run.length;
+      if(m>=3){
+        var c=(forceC!==undefined)? forceC : (m>=4)? motionC(run) : 2;
+        var A=run[m-1], B=run[m-2], Q=run[m-3];
+        return { x:Q.x+(c+1)*(A.x-B.x), y:Q.y+(c+1)*(A.y-B.y), c:c };
+      }
+    }
+  }
+  /* ② 時刻を使った外挿 */
   if(arr.length>=2){
     var p=arr[arr.length-2], dt=last.t-p.t;
     if(dt>0){
@@ -730,18 +755,28 @@ function predictPos(obj, tNow){
         if(dt0>0){
           var vx0=(p.x-q.x)/dt0, vy0=(p.y-q.y)/dt0, dtm=(dt0+dt)/2;
           ax=(vx-vx0)/dtm; ay=(vy-vy0)/dtm;
-          /* vx・vy は「区間の真ん中」の速さなので、いまの点での速さは a·dt/2 だけ大きい。
-             加速度による補正（a·dt/2·τ ＋ ½a·τ²）は、1 回の動きの半分までに抑える */
-          var step=Math.hypot(last.x-p.x, last.y-p.y), k=dt/2*tau+0.5*tau*tau;
-          var corr=Math.hypot(ax,ay)*Math.abs(k), lim=0.5*step;
-          if(corr>lim && corr>0){ ax*=lim/corr; ay*=lim/corr; }
-          return { x:last.x+vx*tau+ax*k, y:last.y+vy*tau+ay*k };
+          /* vx・vy は「区間の真ん中」の速さなので、いまの点での速さは a·dt/2 だけ大きい */
+          var k2=dt/2*tau+0.5*tau*tau;
+          return { x:last.x+vx*tau+ax*k2, y:last.y+vy*tau+ay*k2 };
         }
       }
       return { x:last.x+vx*tau, y:last.y+vy*tau };
     }
   }
   return { x:last.x, y:last.y };
+}
+/* 予測の式の c を、同じ間隔で並んだ点の列 run から求める（x と y で共通の c）。
+   式 x[k] − x[k−3] ＝ (c＋1)(x[k−1] − x[k−2]) を、列の中のすべての k で最小二乗。
+   LAM は「c ＝ 2（放物線）らしさ」の重み：動き（x[k−1] − x[k−2]）が 12 px くらいより小さいと、ほぼ c ＝ 2 */
+function motionC(run){
+  var suy=0, suu=0, LAM=144;
+  for(var k=3;k<run.length;k++){
+    var ux=run[k-1].x-run[k-2].x, uy=run[k-1].y-run[k-2].y;
+    var wx=run[k].x-run[k-3].x,   wy=run[k].y-run[k-3].y;
+    suy+=ux*wx+uy*wy; suu+=ux*ux+uy*uy;
+  }
+  var c=(suy+3*LAM)/(suu+LAM)-1;
+  return Math.max(-2, Math.min(2.3, c));
 }
 /* 探索半径の中から、追いかけている色の「かたまり」を1つだけ見つける。
    ① 円の中だけを見る（四角のすみは見ない）
@@ -794,9 +829,121 @@ function autoJumpBad(obj, f, pr){
   if(arr.length<2 || !f || !pr) return false;
   var last=arr[arr.length-1], prev=arr[arr.length-2];
   var stepPx=Math.hypot(last.x-prev.x, last.y-prev.y);
+  /* 単振動の折り返し点のように、いまの 1 回の動きだけが小さいこともあるので、少し前の動きも見る */
+  for(var i=Math.max(1, arr.length-3); i<arr.length-1; i++)
+    stepPx=Math.max(stepPx, 0.5*Math.hypot(arr[i].x-arr[i-1].x, arr[i].y-arr[i-1].y));
   var off=Math.hypot(f.x-pr.x, f.y-pr.y);          /* 予測した位置からのずれ */
-  var lim=Math.max(8, stepPx*1.8+6);               /* 1コマの動きの2倍くらいまでは許す */
+  var lim=Math.max(10, stepPx*1.8+6);              /* 1コマの動きの2倍くらいまでは許す */
   return off>lim;
+}
+/* 次のコマで、追いかけている色の点をさがす（予測した位置のまわり）。
+   はじめの数点は、まだ速さ・運動の様子が分からず予測が外れやすいので、
+   見つからなければ探す円を 2 倍・3 倍に広げてもう一度さがす（予測した位置に近いものほど優先） */
+function autoFind(obj){
+  var pr=predictPos(obj); if(!pr) return null;
+  var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
+  var f=findColor(pr.x,pr.y,R,TH);
+  if(f && isStaticOther(f, obj)) f=null;
+  if(f && !autoJumpBad(obj,f,pr)) return f;
+  var n=EXP().objs[obj].length;
+  /* 点が 3 つ：c がまだ求められないので、放物線（c=2）から振動（c=1.5〜−1.5）までの予測を全部ためし、
+     予測にいちばん近いところで見つかったものを使う */
+  if(n===3 && pr.c!==undefined){
+    var best=null, bo=1e9;
+    [1.5, 1, 0.5, 0, -0.5, -1, -1.5].forEach(function(cc){
+      var p2=predictPos(obj, undefined, cc); if(!p2) return;
+      var g=findColor(p2.x,p2.y,R,TH); if(!g) return;
+      var o=Math.hypot(g.x-p2.x, g.y-p2.y);
+      if(o<bo && o<=Math.max(10, R*0.6)){ bo=o; best=g; }
+    });
+    if(best) return best;
+  }
+  if(n<4){
+    for(var mult=2; mult<=3; mult++){
+      var f2=findColor(pr.x,pr.y,R*mult,TH);
+      if(f2 && isStaticOther(f2, obj)) return null;
+      if(f2){
+        /* 広げた円の中に、同じ色のかたまりがほかにもあるときは、どれが本物か決められないので使わない
+           （まちがった物を追いかけるより、「見失いました」で手でクリックしてもらうほうがよい） */
+        if(colorBlobCount(pr.x,pr.y,R*mult,TH,f2)>1) return null;
+        return f2;
+      }
+    }
+  }
+  return null;
+}
+/* 「止まっている同じ色の物」：前のコマで、追いかけている物とは別の場所にあった同じ色のかたまり。
+   次のコマでそこに見つかったものは、追いかけている物ではない（壁の印・ものさしの色・もう 1 つのマーカーなど）。
+   自動追跡で次のコマへ進む前に、いまの点のまわり（探す円の 4 倍）を調べて覚えておく */
+function rememberOthers(obj){
+  UI.autoOthers=null;
+  var arr=EXP().objs[obj]; if(!arr.length || !APP.trackColor) return;
+  var last=arr.slice().sort(function(a,b){return a.t-b.t;})[arr.length-1];
+  if(Math.abs(last.t-VID.cur)>0.4/(VID.fps||30)) return;      /* いまのコマの点でなければ調べない */
+  var R=(parseInt($('inSearchR').value)||40)*4, TH=parseInt($('inColTh').value)||60;
+  UI.autoOthers={ t:VID.cur, obj:obj, list:colorBlobsAround(last.x, last.y, R, TH, last) };
+}
+function isStaticOther(f, obj){
+  var o=UI.autoOthers; if(!o || o.obj!==obj || !o.list.length) return false;
+  for(var i=0;i<o.list.length;i++){ var b=o.list[i]; if(Math.hypot(f.x-b.x, f.y-b.y) <= Math.max(6, b.r*0.6)) return true; }
+  return false;
+}
+/* 円の中の、同じ色のかたまり（me＝追いかけている物のまわりは除く）の中心と大きさ */
+function colorBlobsAround(cx, cy, R, TH, me){
+  var col=APP.trackColor; if(!col) return [];
+  if(VID.fullStale) vidDrawFull();
+  var g=$('cvFull').getContext('2d',{willReadFrequently:true});
+  var x0=Math.max(0,Math.round(cx-R)), y0=Math.max(0,Math.round(cy-R));
+  var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
+  if(x1-x0<2||y1-y0<2) return [];
+  var d=g.getImageData(x0,y0,x1-x0,y1-y0).data, W=x1-x0, H=y1-y0, R2=R*R;
+  /* 2 画素ごとのます目に「同じ色か」を入れて、つながったます目をかたまりとする（ます目の数に比例する手間だけ） */
+  var GW=Math.ceil(W/2), GH=Math.ceil(H/2), cell=new Uint8Array(GW*GH), lab=new Int32Array(GW*GH);
+  for(var gj=0;gj<GH;gj++) for(var gi=0;gi<GW;gi++){
+    var i=gi*2, j=gj*2, px=x0+i+0.5, py=y0+j+0.5;
+    if((px-cx)*(px-cx)+(py-cy)*(py-cy)>R2) continue;
+    var k=(j*W+i)*4, dr=d[k]-col.r, dg=d[k+1]-col.g, db=d[k+2]-col.b;
+    if(dr*dr+dg*dg+db*db<TH*TH) cell[gj*GW+gi]=1;
+  }
+  var blobs=[], nl=0, stack=new Int32Array(GW*GH);
+  for(var c0=0;c0<GW*GH;c0++){
+    if(!cell[c0] || lab[c0]) continue;
+    nl++; var sp=0, n=0, sx=0, sy=0; stack[sp++]=c0; lab[c0]=nl;
+    while(sp){ var c=stack[--sp], ci=c%GW, cj=(c-ci)/GW; n++; sx+=ci; sy+=cj;
+      for(var dj=-1;dj<=1;dj++) for(var di=-1;di<=1;di++){
+        var ni=ci+di, nj=cj+dj; if(ni<0||nj<0||ni>=GW||nj>=GH) continue;
+        var nc=nj*GW+ni; if(cell[nc] && !lab[nc]){ lab[nc]=nl; stack[sp++]=nc; } } }
+    if(n<3) continue;                                          /* ごく小さいもの（ノイズ）は数えない */
+    var bx=x0+(sx/n)*2+0.5, by=y0+(sy/n)*2+0.5;
+    blobs.push({ x:bx, y:by, r:Math.sqrt(n*4/Math.PI), lab:nl });
+  }
+  /* 追いかけている物のかたまり（me にいちばん近います目のかたまり）を除く */
+  if(me){
+    var mi=Math.round((me.x-0.5-x0)/2), mj=Math.round((me.y-0.5-y0)/2), ml=0, bd=1e9;
+    for(var qj=Math.max(0,mj-7); qj<=Math.min(GH-1,mj+7); qj++) for(var qi=Math.max(0,mi-7); qi<=Math.min(GW-1,mi+7); qi++){
+      var L2=lab[qj*GW+qi]; if(!L2) continue; var dq=(qi-mi)*(qi-mi)+(qj-mj)*(qj-mj); if(dq<bd){ bd=dq; ml=L2; } }
+    if(ml) blobs=blobs.filter(function(b){ return b.lab!==ml; });
+  }
+  return blobs.slice(0,20);
+}
+/* 円の中にある、追いかけている色のかたまりの数（f＝見つけた 1 つ目。そのまわりを除いて、まだ同じ色が残っているか） */
+function colorBlobCount(cx, cy, R, TH, f){
+  var col=APP.trackColor; if(!col || !f) return 0;
+  var g=$('cvFull').getContext('2d',{willReadFrequently:true});
+  var x0=Math.max(0,Math.round(cx-R)), y0=Math.max(0,Math.round(cy-R));
+  var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
+  if(x1-x0<2||y1-y0<2) return 0;
+  var d=g.getImageData(x0,y0,x1-x0,y1-y0).data, W=x1-x0, H=y1-y0, R2=R*R;
+  var ex=Math.max(12, Math.sqrt(f.n||1)*1.6), ex2=ex*ex;     /* 1 つ目のかたまりとみなす広さ */
+  var own=0, other=0;
+  for(var j=0;j<H;j++) for(var i=0;i<W;i++){
+    var px=x0+i+0.5, py=y0+j+0.5;
+    if((px-cx)*(px-cx)+(py-cy)*(py-cy)>R2) continue;
+    var k=(j*W+i)*4, dr=d[k]-col.r, dg=d[k+1]-col.g, db=d[k+2]-col.b;
+    if(dr*dr+dg*dg+db*db>=TH*TH) continue;
+    if((px-f.x)*(px-f.x)+(py-f.y)*(py-f.y)<=ex2) own++; else other++;
+  }
+  return 1 + (other>Math.max(12, own*0.15)? 1 : 0);
 }
 function tryAutoPlace(){
   if(Date.now() < (UI.noAutoUntil||0)) return;     /* 取り消した直後は置かない */
@@ -811,11 +958,8 @@ function tryAutoPlace(){
   /* そのコマにもう点があるなら、上書きしない（手で打った点を消さないため） */
   var arr0=exp.objs[obj], hf=0.4/(VID.fps||30);
   for(var q0=0;q0<arr0.length;q0++) if(Math.abs(arr0[q0].t-VID.cur)<hf) return;
-  var pr=predictPos(obj);
-  if(!pr) return;
-  var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
-  var f=findColor(pr.x,pr.y,R,TH);
-  if(f && !autoJumpBad(obj,f,pr)){ addPoint(obj, f.x, f.y, true); render(); }
+  var f=autoFind(obj);
+  if(f){ addPoint(obj, f.x, f.y, true); render(); }
 }
 /* 自動追跡を止める（範囲を変えた・タブを移した・リセットした…どこからでも呼べる） */
 function stopAuto(){ UI.autoStop=true; UI.autoRunning=false; }
@@ -839,6 +983,7 @@ function autoRunAll(){
     if(EXP()!==exp || exp.rangeB===null || UI.obj!==obj){ stop(); return; }
     if(VID.cur >= endT-1e-6){ stop('終わりまで追跡しました'); return; }
     var was=VID.cur;
+    rememberOthers(obj);                             /* 進む前に、まわりの「止まっている同じ色の物」を覚えておく */
     stepFrames(N).then(function(){
       if(mySeq!==UI.autoSeq) return;
       if(UI.autoStop || EXP()!==exp || exp.rangeB===null){ stop(); return; }
@@ -851,10 +996,7 @@ function autoRunAll(){
              '2 の［コマごとの時刻を測る］をやり直すか、fps を確かめてください');
         return;
       }
-      var pr=predictPos(obj);
-      var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
-      var f=pr? findColor(pr.x,pr.y,R,TH) : null;
-      if(f && autoJumpBad(obj,f,pr)) f=null;       /* 変な所へ飛んだときは「見失った」とみなす */
+      var f=autoFind(obj);                           /* 変な所へ飛んだときは「見失った」とみなす（null） */
       if(f){ addPoint(obj,f.x,f.y,true); render();
              setTimeout(loop, 0); }
       else { stop(); autoLost(); render(); }

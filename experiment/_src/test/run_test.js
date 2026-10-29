@@ -258,6 +258,102 @@ async function setMovSource(page, type) {
     await p.context().close();
   }
 
+  console.log('J. 動画エリアの知らせをドラッグで脇によける');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p);
+    /* 3 のスケールの案内（押せる知らせ）を出す */
+    await p.evaluate(() => { calAsk('<span class="q">スケールを設定してください</span>画面内の 10 cm が、どこからどこまでかを 2 か所クリックしてください。',
+      [{ label: 'この表示を最小化', fn: () => { window.__minimized = true; } }]); });
+    await p.waitForTimeout(150);
+    const g0 = await p.evaluate(() => { const m = document.getElementById('calMsg'), g = m.querySelector('.dragmsg-grip'), r = m.getBoundingClientRect(), gr = g && g.getBoundingClientRect();
+      return { has: !!g, mx: r.left, my: r.top, gx: gr && gr.left + gr.width / 2, gy: gr && gr.top + gr.height / 2 }; });
+    check('知らせの左はしに「つまみ」がある', g0.has, g0);
+    await p.mouse.move(g0.gx, g0.gy); await p.mouse.down(); await p.mouse.move(g0.gx - 120, g0.gy + 150, { steps: 6 }); await p.mouse.up();
+    await p.waitForTimeout(150);
+    const g1 = await p.evaluate(() => { const m = document.getElementById('calMsg'), r = m.getBoundingClientRect(); return { shown: !m.classList.contains('hide'), mx: r.left, my: r.top, act: m.classList.contains('ask') }; });
+    check('つまみをドラッグすると動く（消えない）', g1.shown && g1.act && Math.abs((g1.mx - g0.mx) + 120) < 6 && Math.abs((g1.my - g0.my) - 150) < 6, { g0, g1 });
+    /* ボタン以外の所（文字の上）をつかんでも動く */
+    const tb = await p.evaluate(() => { const q = document.querySelector('#calMsg .q').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; });
+    await p.mouse.move(tb.x, tb.y); await p.mouse.down(); await p.mouse.move(tb.x + 60, tb.y - 40, { steps: 4 }); await p.mouse.up();
+    const g2 = await p.evaluate(() => document.getElementById('calMsg').getBoundingClientRect().left);
+    check('押せる知らせは、文字の所をつかんでも動く', Math.abs(g2 - g1.mx - 60) < 6, { g2, g1: g1.mx });
+    await p.click('#calMsg .btn');
+    check('動かしたあともボタンは押せる', await p.evaluate(() => window.__minimized === true));
+    /* 次に出た知らせも、動かした場所に出る */
+    await p.evaluate(() => { calAsk('<span class="q">スケールはこれでいいですか？</span>', [{ label: 'はい', fn: () => {} }]); });
+    const g3 = await p.evaluate(() => document.getElementById('calMsg').getBoundingClientRect().left);
+    check('次の知らせも、よけた場所に出る', Math.abs(g3 - g2) < 6, { g3, g2 });
+    /* 動画エリアの外へは出ない */
+    const gg = await p.evaluate(() => { const g = document.querySelector('#calMsg .dragmsg-grip').getBoundingClientRect(); return { x: g.left + 6, y: g.top + 10 }; });
+    await p.mouse.move(gg.x, gg.y); await p.mouse.down(); await p.mouse.move(gg.x - 2000, gg.y + 2000, { steps: 5 }); await p.mouse.up();
+    const inb = await p.evaluate(() => { const b = document.getElementById('videobox').getBoundingClientRect(), r = document.getElementById('calMsg').getBoundingClientRect();
+      return r.left >= b.left - 1 && r.bottom <= b.bottom + 1; });
+    check('動画エリアの外には出ない', inb);
+    /* ダブルクリックで元の場所 */
+    const gd = await p.evaluate(() => { const g = document.querySelector('#calMsg .dragmsg-grip').getBoundingClientRect(); return { x: g.left + 6, y: g.top + 10 }; });
+    await p.mouse.dblclick(gd.x, gd.y);
+    check('つまみのダブルクリックで元の場所にもどる', await p.evaluate(() => document.getElementById('calMsg').style.left === '' && !UI.msgPos.calMsg));
+    /* 時間で消える知らせ（素通し）も、つまみなら動かせて、消えない */
+    await p.evaluate(() => calMsg('原点はこの位置でいいですか？<br>よければ、つぎは軸の正の方向をクリックしてください'));
+    const h0 = await p.evaluate(() => { const g = document.querySelector('#calMsg .dragmsg-grip').getBoundingClientRect(), r = document.getElementById('calMsg').getBoundingClientRect(); return { x: g.left + 6, y: g.top + g.height / 2, l: r.left }; });
+    await p.mouse.move(h0.x, h0.y); await p.mouse.down(); await p.mouse.move(h0.x + 100, h0.y + 80, { steps: 5 }); await p.mouse.up();
+    const h1 = await p.evaluate(() => { const m = document.getElementById('calMsg'); return { shown: !m.classList.contains('hide'), l: m.getBoundingClientRect().left }; });
+    check('素通しの知らせも、つまみで動かせる（つかんでも消えない）', h1.shown && Math.abs(h1.l - h0.l - 100) < 6, { h0, h1 });
+    /* 解析終了のボタンは、つまみを押しても ② へ行かない */
+    await p.evaluate(() => { const d = document.getElementById('doneMsg'); d.classList.remove('hide'); });
+    const dg = await p.evaluate(() => { const g = document.querySelector('#doneMsg .dragmsg-grip').getBoundingClientRect(); return { x: g.left + 5, y: g.top + g.height / 2 }; });
+    await p.mouse.click(dg.x, dg.y);
+    check('ボタンの知らせ（解析終了）は、つまみを押しても ② へ行かない', await p.evaluate(() => APP.tab === '1'));
+    check('そのほかの知らせにもつまみがある', await p.evaluate(() => ['autoMsg', 'vhint', 'trkChoice', 'btnTrkStart'].every(id => document.querySelector('#' + id + ' > .dragmsg-grip'))));
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
+  }
+
+  console.log('K. 自動追跡の予測（どんな運動でも同じ式）');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p);
+    const r = await p.evaluate(() => {
+      const e = EXP(), dt = 0.1, out = {};
+      const cases = {
+        '単振動（1 周期 6 点）': t => ({ x: 300, y: 480 + 150 * Math.cos(2 * Math.PI * t / 0.6) }),
+        '等速円運動（1 周期 8 点）': t => ({ x: 320 + 150 * Math.cos(2 * Math.PI * t / 0.8), y: 240 + 150 * Math.sin(2 * Math.PI * t / 0.8) }),
+        '斜方投射': t => ({ x: 50 + 300 * t, y: 300 - (350 * t - 490 * t * t) }),
+        '等速': t => ({ x: 20 + 600 * t, y: 100 }),
+        '減衰振動': t => ({ x: 200, y: 400 + 150 * Math.exp(-t / 2) * Math.cos(2 * Math.PI * t / 0.7) }),
+      };
+      for (const [nm, f] of Object.entries(cases)) {
+        let mx = 0;
+        for (let n = 4; n < 20; n++) {
+          e.objs[0] = []; for (let i = 0; i < n; i++) { const q = f(i * dt); e.objs[0].push({ t: i * dt, fr: i * 3, x: q.x, y: q.y }); }
+          const pr = predictPos(0, n * dt), tr = f(n * dt);
+          mx = Math.max(mx, Math.hypot(pr.x - tr.x, pr.y - tr.y));
+        }
+        out[nm] = +mx.toFixed(3);
+      }
+      e.objs[0] = []; return out;
+    });
+    /* 単振動・円運動・放物線・等速は式どおりなのでほぼ 0。減衰振動は式からすこし外れるが、探す円（40 px）より十分小さい */
+    for (const [nm, mx] of Object.entries(r)) { const lim = /減衰/.test(nm) ? 12 : 1; check('予測のずれ ' + nm + '：' + mx + ' px（' + lim + ' px 未満）', mx < lim, mx); }
+    /* 間隔がそろっていないとき（見失って手でクリックした直後など）は、時刻を使った外挿にもどる */
+    const irr = await p.evaluate(() => { const e = EXP(); e.objs[0] = [{ t: 0, x: 0, y: 0 }, { t: 0.1, x: 10, y: 0 }, { t: 0.3, x: 30, y: 0 }];
+      const pr = predictPos(0, 0.4); e.objs[0] = []; return pr; });
+    check('間隔がそろっていない点からも予測できる（等速 100 px/s → 40 px）', Math.abs(irr.x - 40) < 0.5, irr);
+    await p.context().close();
+    const { runCase } = require('./lib_auto');
+    const CS = [
+      { video: 'test/shm.webm', name: '単振動', truth: t => ({ x: 300, y: 480 + 150 * Math.cos(2 * Math.PI * t / 0.6) }), N: 3, maxLost: 0 },
+      { video: 'test/shm_mid.webm', name: '減衰振動＋同じ色の四角', truth: t => ({ x: 300, y: 480 + 150 * Math.exp(-t / 3) * Math.sin(2 * Math.PI * t / 0.7) }), N: 3, maxLost: 1 },
+      { video: 'test/circ.webm', name: '等速円運動（1 周期 7 点）', truth: t => ({ x: 320 + 150 * Math.cos(2 * Math.PI * t / 1.2), y: 240 + 150 * Math.sin(2 * Math.PI * t / 1.2) }), N: 5, maxLost: 0 },
+      { video: 'test/proj2.webm', name: '斜方投射', truth: t => ({ x: 63 + 300 * t, y: 303 - (350 * t - 250 * t * t) }), N: 3, maxLost: 0 },
+    ];
+    for (const C of CS) {
+      const q = await runCase(browser, C, C.N, L.APPURL);
+      check(`実際の動画で自動追跡：${C.name}（N=${C.N}）見失い ${q.lost} 回・ずれ最大 ${q.maxErr.toFixed(1)} px`, q.lost <= C.maxLost && q.maxErr < 10 && q.errors === 0, q);
+    }
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();

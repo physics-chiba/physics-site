@@ -887,6 +887,15 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 /* 動画エリアの質問：.brk のボタンは改行して次の段に */
 #calMsg.ask .row .btn.brk{flex-basis:100%;max-width:max-content;margin:2px auto 0}
 
+/* ---- 動画エリアの知らせを動かす「つまみ」（左はしの ⋮⋮ の帯） ---- */
+.dragmsg-grip{position:absolute;left:0;top:0;bottom:0;width:13px;border-radius:10px 0 0 10px;
+  background:rgba(255,255,255,.26) radial-gradient(circle,rgba(255,255,255,.95) 1.3px,transparent 1.7px) 0 0/6.5px 6px repeat;
+  cursor:grab;pointer-events:auto;touch-action:none;z-index:2}
+.dragmsg-grip:hover{background-color:rgba(255,214,110,.5)}
+.dragging .dragmsg-grip{cursor:grabbing;background-color:rgba(255,214,110,.45)}
+#calMsg.dragging,#autoMsg.dragging,#vhint.dragging,#trkChoice.dragging,#doneMsg.dragging,#btnTrkStart.dragging{transition:none !important;opacity:.92}
+#calMsg.ask.act:not(.dragging){cursor:default}
+#btnTrkStart>.dragmsg-grip,#doneMsg>.dragmsg-grip{background-color:rgba(0,0,0,.14)}
 </style>
 </head>
 <body>
@@ -3321,14 +3330,39 @@ function afterSeek(){
 
 /* ---------- 色マーカーの自動追跡 ---------- */
 /* 次の点の「予測位置」：探索はいまの点ではなく、この予測点を中心に行う。
-   点が 2 つ → 前の点からいまの点への動き（速度）で外挿。
-   点が 3 つ以上 → 速度の変わり方（加速度）も入れて外挿（落下・投射で遅れないように）。
-   ただし加速度のぶんは 1 回の動きの半分までに抑え、クリックのずれで予測が暴れないようにする */
-function predictPos(obj, tNow){
+
+   ① N コマずつ同じ間隔で記録しているとき（ふつうはこちら）は、どんな運動にも合う 1 つの式で予測する。
+        x[n+1] ＝ x[n−2] ＋ (c＋1)・(x[n] − x[n−1])         （y も同じ c で）
+      c ＝ 2 …… 放物線（等速・等加速度。落下・投射・台車）
+      c ＝ 2cos(ωΔt) …… 単振動・等速円運動（つり合いの位置や円の中心がどこにあってもよい）
+      c は「最近の点がこの式にいちばんよく合う値」を最小二乗で求める（スイッチは要らない）。
+      動きが小さい・点が少ないときは c ＝ 2 に引きよせて、クリックのずれで暴れないようにする。
+      ※ 前は放物線の式だけで、しかも加速度の補正を「1 回の動きの半分まで」に抑えていた。
+        単振動は折り返し点で速さ 0・加速度が最大なので、この抑えがちょうど裏目に出て、毎回見失っていた。
+   ② 間隔がそろっていないとき（見失って手でクリックした直後など）は、時刻を使った放物線の外挿 */
+function predictPos(obj, tNow, forceC){
   var exp=EXP(), arr=exp.objs[obj].slice().sort(function(a,b){return a.t-b.t;});
   if(!arr.length) return null;
   if(tNow===undefined) tNow=VID.cur;
-  var last=arr[arr.length-1];
+  var last=arr[arr.length-1], n=arr.length;
+  /* ① 同じ間隔で並んだ、最後の点の列 */
+  if(n>=3){
+    var dt1=last.t-arr[n-2].t, tau1=tNow-last.t;
+    if(dt1>0 && Math.abs(tau1-dt1)<=0.3*dt1){
+      var run=[last];
+      for(var k=n-2; k>=0 && run.length<9; k--){
+        var dd=run[0].t-arr[k].t;
+        if(Math.abs(dd-dt1)<=0.3*dt1) run.unshift(arr[k]); else break;
+      }
+      var m=run.length;
+      if(m>=3){
+        var c=(forceC!==undefined)? forceC : (m>=4)? motionC(run) : 2;
+        var A=run[m-1], B=run[m-2], Q=run[m-3];
+        return { x:Q.x+(c+1)*(A.x-B.x), y:Q.y+(c+1)*(A.y-B.y), c:c };
+      }
+    }
+  }
+  /* ② 時刻を使った外挿 */
   if(arr.length>=2){
     var p=arr[arr.length-2], dt=last.t-p.t;
     if(dt>0){
@@ -3340,18 +3374,28 @@ function predictPos(obj, tNow){
         if(dt0>0){
           var vx0=(p.x-q.x)/dt0, vy0=(p.y-q.y)/dt0, dtm=(dt0+dt)/2;
           ax=(vx-vx0)/dtm; ay=(vy-vy0)/dtm;
-          /* vx・vy は「区間の真ん中」の速さなので、いまの点での速さは a·dt/2 だけ大きい。
-             加速度による補正（a·dt/2·τ ＋ ½a·τ²）は、1 回の動きの半分までに抑える */
-          var step=Math.hypot(last.x-p.x, last.y-p.y), k=dt/2*tau+0.5*tau*tau;
-          var corr=Math.hypot(ax,ay)*Math.abs(k), lim=0.5*step;
-          if(corr>lim && corr>0){ ax*=lim/corr; ay*=lim/corr; }
-          return { x:last.x+vx*tau+ax*k, y:last.y+vy*tau+ay*k };
+          /* vx・vy は「区間の真ん中」の速さなので、いまの点での速さは a·dt/2 だけ大きい */
+          var k2=dt/2*tau+0.5*tau*tau;
+          return { x:last.x+vx*tau+ax*k2, y:last.y+vy*tau+ay*k2 };
         }
       }
       return { x:last.x+vx*tau, y:last.y+vy*tau };
     }
   }
   return { x:last.x, y:last.y };
+}
+/* 予測の式の c を、同じ間隔で並んだ点の列 run から求める（x と y で共通の c）。
+   式 x[k] − x[k−3] ＝ (c＋1)(x[k−1] − x[k−2]) を、列の中のすべての k で最小二乗。
+   LAM は「c ＝ 2（放物線）らしさ」の重み：動き（x[k−1] − x[k−2]）が 12 px くらいより小さいと、ほぼ c ＝ 2 */
+function motionC(run){
+  var suy=0, suu=0, LAM=144;
+  for(var k=3;k<run.length;k++){
+    var ux=run[k-1].x-run[k-2].x, uy=run[k-1].y-run[k-2].y;
+    var wx=run[k].x-run[k-3].x,   wy=run[k].y-run[k-3].y;
+    suy+=ux*wx+uy*wy; suu+=ux*ux+uy*uy;
+  }
+  var c=(suy+3*LAM)/(suu+LAM)-1;
+  return Math.max(-2, Math.min(2.3, c));
 }
 /* 探索半径の中から、追いかけている色の「かたまり」を1つだけ見つける。
    ① 円の中だけを見る（四角のすみは見ない）
@@ -3404,9 +3448,121 @@ function autoJumpBad(obj, f, pr){
   if(arr.length<2 || !f || !pr) return false;
   var last=arr[arr.length-1], prev=arr[arr.length-2];
   var stepPx=Math.hypot(last.x-prev.x, last.y-prev.y);
+  /* 単振動の折り返し点のように、いまの 1 回の動きだけが小さいこともあるので、少し前の動きも見る */
+  for(var i=Math.max(1, arr.length-3); i<arr.length-1; i++)
+    stepPx=Math.max(stepPx, 0.5*Math.hypot(arr[i].x-arr[i-1].x, arr[i].y-arr[i-1].y));
   var off=Math.hypot(f.x-pr.x, f.y-pr.y);          /* 予測した位置からのずれ */
-  var lim=Math.max(8, stepPx*1.8+6);               /* 1コマの動きの2倍くらいまでは許す */
+  var lim=Math.max(10, stepPx*1.8+6);              /* 1コマの動きの2倍くらいまでは許す */
   return off>lim;
+}
+/* 次のコマで、追いかけている色の点をさがす（予測した位置のまわり）。
+   はじめの数点は、まだ速さ・運動の様子が分からず予測が外れやすいので、
+   見つからなければ探す円を 2 倍・3 倍に広げてもう一度さがす（予測した位置に近いものほど優先） */
+function autoFind(obj){
+  var pr=predictPos(obj); if(!pr) return null;
+  var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
+  var f=findColor(pr.x,pr.y,R,TH);
+  if(f && isStaticOther(f, obj)) f=null;
+  if(f && !autoJumpBad(obj,f,pr)) return f;
+  var n=EXP().objs[obj].length;
+  /* 点が 3 つ：c がまだ求められないので、放物線（c=2）から振動（c=1.5〜−1.5）までの予測を全部ためし、
+     予測にいちばん近いところで見つかったものを使う */
+  if(n===3 && pr.c!==undefined){
+    var best=null, bo=1e9;
+    [1.5, 1, 0.5, 0, -0.5, -1, -1.5].forEach(function(cc){
+      var p2=predictPos(obj, undefined, cc); if(!p2) return;
+      var g=findColor(p2.x,p2.y,R,TH); if(!g) return;
+      var o=Math.hypot(g.x-p2.x, g.y-p2.y);
+      if(o<bo && o<=Math.max(10, R*0.6)){ bo=o; best=g; }
+    });
+    if(best) return best;
+  }
+  if(n<4){
+    for(var mult=2; mult<=3; mult++){
+      var f2=findColor(pr.x,pr.y,R*mult,TH);
+      if(f2 && isStaticOther(f2, obj)) return null;
+      if(f2){
+        /* 広げた円の中に、同じ色のかたまりがほかにもあるときは、どれが本物か決められないので使わない
+           （まちがった物を追いかけるより、「見失いました」で手でクリックしてもらうほうがよい） */
+        if(colorBlobCount(pr.x,pr.y,R*mult,TH,f2)>1) return null;
+        return f2;
+      }
+    }
+  }
+  return null;
+}
+/* 「止まっている同じ色の物」：前のコマで、追いかけている物とは別の場所にあった同じ色のかたまり。
+   次のコマでそこに見つかったものは、追いかけている物ではない（壁の印・ものさしの色・もう 1 つのマーカーなど）。
+   自動追跡で次のコマへ進む前に、いまの点のまわり（探す円の 4 倍）を調べて覚えておく */
+function rememberOthers(obj){
+  UI.autoOthers=null;
+  var arr=EXP().objs[obj]; if(!arr.length || !APP.trackColor) return;
+  var last=arr.slice().sort(function(a,b){return a.t-b.t;})[arr.length-1];
+  if(Math.abs(last.t-VID.cur)>0.4/(VID.fps||30)) return;      /* いまのコマの点でなければ調べない */
+  var R=(parseInt($('inSearchR').value)||40)*4, TH=parseInt($('inColTh').value)||60;
+  UI.autoOthers={ t:VID.cur, obj:obj, list:colorBlobsAround(last.x, last.y, R, TH, last) };
+}
+function isStaticOther(f, obj){
+  var o=UI.autoOthers; if(!o || o.obj!==obj || !o.list.length) return false;
+  for(var i=0;i<o.list.length;i++){ var b=o.list[i]; if(Math.hypot(f.x-b.x, f.y-b.y) <= Math.max(6, b.r*0.6)) return true; }
+  return false;
+}
+/* 円の中の、同じ色のかたまり（me＝追いかけている物のまわりは除く）の中心と大きさ */
+function colorBlobsAround(cx, cy, R, TH, me){
+  var col=APP.trackColor; if(!col) return [];
+  if(VID.fullStale) vidDrawFull();
+  var g=$('cvFull').getContext('2d',{willReadFrequently:true});
+  var x0=Math.max(0,Math.round(cx-R)), y0=Math.max(0,Math.round(cy-R));
+  var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
+  if(x1-x0<2||y1-y0<2) return [];
+  var d=g.getImageData(x0,y0,x1-x0,y1-y0).data, W=x1-x0, H=y1-y0, R2=R*R;
+  /* 2 画素ごとのます目に「同じ色か」を入れて、つながったます目をかたまりとする（ます目の数に比例する手間だけ） */
+  var GW=Math.ceil(W/2), GH=Math.ceil(H/2), cell=new Uint8Array(GW*GH), lab=new Int32Array(GW*GH);
+  for(var gj=0;gj<GH;gj++) for(var gi=0;gi<GW;gi++){
+    var i=gi*2, j=gj*2, px=x0+i+0.5, py=y0+j+0.5;
+    if((px-cx)*(px-cx)+(py-cy)*(py-cy)>R2) continue;
+    var k=(j*W+i)*4, dr=d[k]-col.r, dg=d[k+1]-col.g, db=d[k+2]-col.b;
+    if(dr*dr+dg*dg+db*db<TH*TH) cell[gj*GW+gi]=1;
+  }
+  var blobs=[], nl=0, stack=new Int32Array(GW*GH);
+  for(var c0=0;c0<GW*GH;c0++){
+    if(!cell[c0] || lab[c0]) continue;
+    nl++; var sp=0, n=0, sx=0, sy=0; stack[sp++]=c0; lab[c0]=nl;
+    while(sp){ var c=stack[--sp], ci=c%GW, cj=(c-ci)/GW; n++; sx+=ci; sy+=cj;
+      for(var dj=-1;dj<=1;dj++) for(var di=-1;di<=1;di++){
+        var ni=ci+di, nj=cj+dj; if(ni<0||nj<0||ni>=GW||nj>=GH) continue;
+        var nc=nj*GW+ni; if(cell[nc] && !lab[nc]){ lab[nc]=nl; stack[sp++]=nc; } } }
+    if(n<3) continue;                                          /* ごく小さいもの（ノイズ）は数えない */
+    var bx=x0+(sx/n)*2+0.5, by=y0+(sy/n)*2+0.5;
+    blobs.push({ x:bx, y:by, r:Math.sqrt(n*4/Math.PI), lab:nl });
+  }
+  /* 追いかけている物のかたまり（me にいちばん近います目のかたまり）を除く */
+  if(me){
+    var mi=Math.round((me.x-0.5-x0)/2), mj=Math.round((me.y-0.5-y0)/2), ml=0, bd=1e9;
+    for(var qj=Math.max(0,mj-7); qj<=Math.min(GH-1,mj+7); qj++) for(var qi=Math.max(0,mi-7); qi<=Math.min(GW-1,mi+7); qi++){
+      var L2=lab[qj*GW+qi]; if(!L2) continue; var dq=(qi-mi)*(qi-mi)+(qj-mj)*(qj-mj); if(dq<bd){ bd=dq; ml=L2; } }
+    if(ml) blobs=blobs.filter(function(b){ return b.lab!==ml; });
+  }
+  return blobs.slice(0,20);
+}
+/* 円の中にある、追いかけている色のかたまりの数（f＝見つけた 1 つ目。そのまわりを除いて、まだ同じ色が残っているか） */
+function colorBlobCount(cx, cy, R, TH, f){
+  var col=APP.trackColor; if(!col || !f) return 0;
+  var g=$('cvFull').getContext('2d',{willReadFrequently:true});
+  var x0=Math.max(0,Math.round(cx-R)), y0=Math.max(0,Math.round(cy-R));
+  var x1=Math.min(VID.w,Math.round(cx+R)), y1=Math.min(VID.h,Math.round(cy+R));
+  if(x1-x0<2||y1-y0<2) return 0;
+  var d=g.getImageData(x0,y0,x1-x0,y1-y0).data, W=x1-x0, H=y1-y0, R2=R*R;
+  var ex=Math.max(12, Math.sqrt(f.n||1)*1.6), ex2=ex*ex;     /* 1 つ目のかたまりとみなす広さ */
+  var own=0, other=0;
+  for(var j=0;j<H;j++) for(var i=0;i<W;i++){
+    var px=x0+i+0.5, py=y0+j+0.5;
+    if((px-cx)*(px-cx)+(py-cy)*(py-cy)>R2) continue;
+    var k=(j*W+i)*4, dr=d[k]-col.r, dg=d[k+1]-col.g, db=d[k+2]-col.b;
+    if(dr*dr+dg*dg+db*db>=TH*TH) continue;
+    if((px-f.x)*(px-f.x)+(py-f.y)*(py-f.y)<=ex2) own++; else other++;
+  }
+  return 1 + (other>Math.max(12, own*0.15)? 1 : 0);
 }
 function tryAutoPlace(){
   if(Date.now() < (UI.noAutoUntil||0)) return;     /* 取り消した直後は置かない */
@@ -3421,11 +3577,8 @@ function tryAutoPlace(){
   /* そのコマにもう点があるなら、上書きしない（手で打った点を消さないため） */
   var arr0=exp.objs[obj], hf=0.4/(VID.fps||30);
   for(var q0=0;q0<arr0.length;q0++) if(Math.abs(arr0[q0].t-VID.cur)<hf) return;
-  var pr=predictPos(obj);
-  if(!pr) return;
-  var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
-  var f=findColor(pr.x,pr.y,R,TH);
-  if(f && !autoJumpBad(obj,f,pr)){ addPoint(obj, f.x, f.y, true); render(); }
+  var f=autoFind(obj);
+  if(f){ addPoint(obj, f.x, f.y, true); render(); }
 }
 /* 自動追跡を止める（範囲を変えた・タブを移した・リセットした…どこからでも呼べる） */
 function stopAuto(){ UI.autoStop=true; UI.autoRunning=false; }
@@ -3449,6 +3602,7 @@ function autoRunAll(){
     if(EXP()!==exp || exp.rangeB===null || UI.obj!==obj){ stop(); return; }
     if(VID.cur >= endT-1e-6){ stop('終わりまで追跡しました'); return; }
     var was=VID.cur;
+    rememberOthers(obj);                             /* 進む前に、まわりの「止まっている同じ色の物」を覚えておく */
     stepFrames(N).then(function(){
       if(mySeq!==UI.autoSeq) return;
       if(UI.autoStop || EXP()!==exp || exp.rangeB===null){ stop(); return; }
@@ -3461,10 +3615,7 @@ function autoRunAll(){
              '2 の［コマごとの時刻を測る］をやり直すか、fps を確かめてください');
         return;
       }
-      var pr=predictPos(obj);
-      var R=parseInt($('inSearchR').value)||40, TH=parseInt($('inColTh').value)||60;
-      var f=pr? findColor(pr.x,pr.y,R,TH) : null;
-      if(f && autoJumpBad(obj,f,pr)) f=null;       /* 変な所へ飛んだときは「見失った」とみなす */
+      var f=autoFind(obj);                           /* 変な所へ飛んだときは「見失った」とみなす（null） */
       if(f){ addPoint(obj,f.x,f.y,true); render();
              setTimeout(loop, 0); }
       else { stop(); autoLost(); render(); }
@@ -7628,7 +7779,8 @@ function onVideoReady(name){
      （前の動画のグラフのまま、新しい動画が動いてしまうため） */
   if(APP.m2mode==='live') setM2Mode('side', true);
   if(APP.tab!=='1') setTab('1');
-  UI.autoLost=false; autoMsgHide(); tblFrom=null;
+  UI.autoLost=false; UI.autoOthers=null; autoMsgHide(); tblFrom=null;
+  resetAllMsgPos();                /* 動かした知らせの場所は、新しい動画では元にもどす */
   UI.calPend=null; setCalHint(null); calMsg('');
   clearStrobe();
   resetCG();                       /* 新しい動画を読んだら、自由選択グラフは既定にもどす */
@@ -8036,7 +8188,11 @@ function openHelp(){
   '矢印キーで最後の点を1pxずつ動かせます</li>'+
   '<li><b>色で自動追跡</b>：動画の上に大きな案内が出ます（［この表示を最小化］でたためます）。マーカーを1回クリックすると、始点と色を覚えます。円をドラッグして探索半径を決め、案内の <b>［自動追跡を開始する］</b>（か［最後まで自動追跡］）で終わりまで追いかけ、'+
   '見失ったら止まります。手でクリックして見つけ直すと <b>「見つけました！ 最後まで追跡 しますか？」</b> が出るので、'+
-  'その知らせを押せばそのまま続きます</li>'+
+  'その知らせを押せばそのまま続きます。'+
+  '次のコマでは、<b>これまでの点の動きから次の位置を予測</b>して、そのまわりを探します。予測の式は 1 つで、落下・投射のような放物線も、<b>単振動や円運動</b>も、最近の点に合わせて自動で切りかわります（スイッチはありません）。'+
+  'はじめの 2〜3 点は動きがまだ分からないので、探す円を広げて探します。近くに<b>同じ色の物</b>（止まっている印など）があってどちらか決められないときは、まちがった物を追わずに「見失いました」と止まります</li>'+
+  '<li>動画の上に出る知らせ（「スケールを設定してください」など）は、<b>左はしの点々の帯（つまみ）をドラッグすると脇によけられます</b>。はい／いいえ のボタンがある知らせは、ボタン以外の所をつかんでも動きます。'+
+  'よけた場所は、次に出る知らせにも使います。つまみをダブルクリックすると元の場所にもどります</li>'+
   '<li>右上の <b>［複数物体の運動］</b> を ON にすると、4 に入ったとき N のつぎに<b>物体の数（2 か 3）</b>を聞き、物体1 → 物体2 → 物体3 の順に追いかけられます（衝突など）。ストロボ画像に描く点は物体1だけです。'+
   '物体には名前をつけます（同じ名前は不可）。撮るときは<b>物体ごとにちがう色</b>のマーカーをつけておくと、色で自動追跡できます。'+
   '画面の外に出るなどで最後まで追えない物体は、4 のカードの <b>［この物体はここで終わり］</b> を押すと、そこまでで完了になり次の物体へ進めます</li>'+
@@ -8523,6 +8679,8 @@ function bindUI(){
        ここで消してしまうと click が届かない。そのまま通す。 */
     var am=$('autoMsg');
     if(am && am.__act && ev.target && ev.target.closest && ev.target.closest('#autoMsg')) return;
+    /* 知らせのつまみをつかんだときは、消さずに動かす */
+    if(ev.target && ev.target.closest && ev.target.closest('.dragmsg-grip')) return;
     var inVideo = ev.target && ev.target.closest && ev.target.closest('#videobox');
     closeBigMsg();
     if(inVideo && !(ev.target.tagName==='BUTTON' || (ev.target.closest && ev.target.closest('button')))){
@@ -9410,6 +9568,101 @@ function calAsk(html, btns, opt){
   var vh=$('vhint'); if(vh) vh.classList.add('hide');
   if(opt.after) opt.after(m);
 }
+/* ---------- 動画エリアに出る知らせを、ドラッグで脇によけられるようにする ----------
+   左はしの「つまみ」（⋮⋮ の帯）をドラッグすると動く。押せる知らせ（はい／いいえ など）は、ボタン以外の所でもドラッグできる。
+   動かした場所は覚えておき、次に同じ知らせが出たときもそこに出す（新しい動画を読むと元にもどる）。
+   つまみをダブルクリックすると元の場所にもどる */
+var DRAG_MSGS=['calMsg','autoMsg','vhint','trkChoice','doneMsg','btnTrkStart'];
+function bindDragMsgs(){
+  UI.msgPos=UI.msgPos||{};
+  DRAG_MSGS.forEach(function(id){
+    var m=$(id); if(!m || m.__drag) return;
+    m.__drag=true;
+    var ensureGrip=function(){
+      if(m.querySelector(':scope>.dragmsg-grip')) return;
+      var g=document.createElement('span');
+      g.className='dragmsg-grip'; g.title='ドラッグして動かせます（ダブルクリックで元の場所）';
+      g.setAttribute('aria-hidden','true');
+      m.insertBefore(g, m.firstChild);
+    };
+    ensureGrip();
+    new MutationObserver(function(){ ensureGrip(); if(m.style.left && !m.classList.contains('dragging')) m.style.width=''; clampMsg(m); }).observe(m, { childList:true });
+    new MutationObserver(function(){ if(!m.classList.contains('hide')) clampMsg(m); }).observe(m, { attributes:true, attributeFilter:['class'] });
+    m.addEventListener('pointerdown', function(ev){
+      var grip=ev.target.closest && ev.target.closest('.dragmsg-grip');
+      var act=getComputedStyle(m).pointerEvents!=='none';
+      if(!grip){
+        if(!act) return;                                   /* 素通しの知らせは、つまみだけで動かす */
+        if(ev.target.closest('button,input,select,textarea,a,label')) return;   /* ボタンなどは、ふつうに押せる */
+      }
+      ev.preventDefault(); ev.stopPropagation();
+      var box=$('videobox'); if(!box) return;
+      var br=box.getBoundingClientRect(), r=m.getBoundingClientRect();
+      var st={ x:ev.clientX, y:ev.clientY, l:r.left-br.left, t:r.top-br.top, moved:false };
+      m.classList.add('dragging');
+      m.style.width=Math.ceil(r.width)+'px';               /* 動かしても幅が変わらないように（左に寄せると横に広がるため） */
+      clearTimeout(m.__t);                                 /* 動かしている間は、時間で消さない */
+      if(id==='autoMsg') clearTimeout(m.__to);
+      try{ (grip||m).setPointerCapture(ev.pointerId); }catch(e){}
+      var move=function(e){
+        var dx=e.clientX-st.x, dy=e.clientY-st.y;
+        if(!st.moved && Math.hypot(dx,dy)<3) return;
+        st.moved=true;
+        setMsgPos(m, st.l+dx, st.t+dy);
+      };
+      var up=function(){
+        if(!st.moved && !m.style.left) m.style.width='';   /* 動かさなかったときは、幅も元のまま */
+        document.removeEventListener('pointermove', move, true);
+        document.removeEventListener('pointerup', up, true);
+        document.removeEventListener('pointercancel', up, true);
+        m.classList.remove('dragging');
+        if(st.moved){
+          UI.msgPos[id]={ x:parseFloat(m.style.left)||0, y:parseFloat(m.style.top)||0 };
+          /* 時間で消える知らせは、動かしたあと、もう一度しばらく出しておく */
+          if(id==='calMsg' && !m.classList.contains('ask')) m.__t=setTimeout(function(){ m.classList.add('hide'); }, 6700);
+          if(id==='autoMsg' && !UI.autoLost) m.__to=setTimeout(function(){ m.classList.add('hide'); }, 4000);
+        }
+      };
+      document.addEventListener('pointermove', move, true);
+      document.addEventListener('pointerup', up, true);
+      document.addEventListener('pointercancel', up, true);
+    });
+    /* つまみを押しても、下のボタン（解析終了→②へ、トラッキング開始 など）は押されないように */
+    m.addEventListener('click', function(ev){
+      if(ev.target.closest && ev.target.closest('.dragmsg-grip')){ ev.preventDefault(); ev.stopPropagation(); }
+    }, true);
+    m.addEventListener('dblclick', function(ev){
+      if(!(ev.target.closest && ev.target.closest('.dragmsg-grip'))) return;
+      ev.preventDefault(); ev.stopPropagation();
+      delete UI.msgPos[id]; resetMsgPos(m);
+    });
+    if(UI.msgPos[id]) setMsgPos(m, UI.msgPos[id].x, UI.msgPos[id].y);
+  });
+}
+function setMsgPos(m, x, y){
+  m.style.left=x+'px'; m.style.top=y+'px';
+  m.style.right='auto'; m.style.bottom='auto'; m.style.transform='none';
+  clampMsg(m);
+}
+function resetMsgPos(m){
+  m.style.left=''; m.style.top=''; m.style.right=''; m.style.bottom=''; m.style.transform=''; m.style.width='';
+}
+/* 動かした知らせが、動画エリアの外にはみ出さないように */
+function clampMsg(m){
+  if(!m.style.left) return;
+  var box=$('videobox'); if(!box) return;
+  var W=box.clientWidth, H=box.clientHeight;
+  var w=m.offsetWidth, h=m.offsetHeight;
+  if(!w && !h) return;                                     /* かくれているときは、出たときに直す */
+  var x=parseFloat(m.style.left)||0, y=parseFloat(m.style.top)||0;
+  x=Math.max(0, Math.min(Math.max(0,W-w), x));
+  y=Math.max(0, Math.min(Math.max(0,H-h), y));
+  m.style.left=x+'px'; m.style.top=y+'px';
+}
+function resetAllMsgPos(){
+  UI.msgPos={};
+  DRAG_MSGS.forEach(function(id){ var m=$(id); if(m) resetMsgPos(m); });
+}
 function calAskOpen(){ var m=$('calMsg'); return !!(m && !m.classList.contains('hide') && m.classList.contains('ask')); }
 /* 左のカードの「↓やり直しはここ」 */
 function setCalHint(which){
@@ -9807,7 +10060,7 @@ function updateEnergyBtn(){
   document.documentElement.style.setProperty('--hdh', (hd?hd.offsetHeight:50)+'px');
 
   var restored=loadLocal();
-  bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries();
+  bindUI(); bindCanvas(); bindDrop(); bindSeekMarks(); bindLockedSummaries(); bindDragMsgs();
   addAgainButtons(); bindEditEnd(); buildCG(); bindCG();
   refreshExpUI();
   setMenuPos(APP.menuPos);
