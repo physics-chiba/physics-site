@@ -1,0 +1,750 @@
+<header class="apphd">
+  <h1>動画解析・トラッキングツール</h1>
+  <span class="lead">物理の基本は、物体の運動の分析です。動画を読み込むか撮影し、物体の運動をグラフ化してみよう！</span>
+  <span class="sp"></span>
+  <span class="hdtools">
+  <label class="chk" title="2〜3 つの物体（衝突など）を続けてトラッキングします"><input type="checkbox" id="cbTwoObj">複数物体の運動</label>
+  <label class="chk" title="OFFのときは手でクリック（タップ）して記録します"><input type="checkbox" id="cbAuto">色マーカーの自動追跡</label>
+  <button class="hbtn" id="btnMenuPos">メニュー：左</button>
+  <button class="hbtn" id="btnHelp">使い方と時間算出法</button>
+  <label class="chk" title="先生用の機能（課題ファイルの書き出し）を出します"><input type="checkbox" id="cbTeacher">教員用</label>
+  </span>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-mode="1" class="on">① 撮影・トラッキング</button>
+  <button data-mode="2">② グラフ</button>
+  <button data-mode="3">③ 解析</button>
+  <button data-mode="4">④ ストロボ画像</button>
+  <span class="tabgap small"></span>
+  <button data-mode="5" class="sub">補足</button>
+  <span class="tabgap"></span>
+  <select id="expSel" class="expsel" title="実験を選びます"></select>
+  <label class="chk tabchk" id="labBig" title="上の段まで隠して、実験のエリアを大きく使います"><input type="checkbox" id="cbBig">実験エリア最大表示</label>
+  <label class="chk tabchk hide" id="labM2Menu"><input type="checkbox" id="cbM2MenuTop" checked>メニューを開く</label>
+  <span class="tabright">
+    <button class="btn sm kadaibtn hide" id="btnKadai" title="いまの動画・時間範囲・原点・軸・スケールと設問を、生徒に配る 1 つの HTML にまとめます">課題ファイルを書き出す（先生用）</button>
+    <span class="tabgap small hide" id="gapKadai"></span>
+    <button class="btn sm hide" id="btnNextExp">実験2を開始する</button>
+    <span class="tabgap small hide" id="gapNextExp"></span>
+    <button class="btn sm" id="btnExpClear">この実験の測定を消去</button>
+    <button class="btn sm" id="btnResetAll">すべての実験を消してリセット</button>
+    <button class="btn sm two" id="btnJsonLoadTop">過去測定データを<br>実験2に登録</button>
+  </span>
+</nav>
+
+<div class="note hide" id="smallBar">
+  <b>画面の小さい端末です。</b>撮影はこのままでできます。点を打つ・グラフを読む作業は、
+  タブレットか PC のほうがやりやすいです（スマホでも動きます）。
+  <button class="btn sm" id="btnSmallBarX">閉じる</button>
+</div>
+<div class="note hide" id="restoreBar">
+  <b>前回のデータが残っています。</b><span id="restoreInfo"></span>
+  同じ動画を読み込むと続きができます。
+  <button class="btn sm" id="btnRestoreClear">前回のデータを消す</button>
+</div>
+
+<main class="wrap">
+
+<!-- ================= モード1 ================= -->
+<section id="mode1">
+ <div class="m1grid" id="m1grid">
+  <button class="btn sm panelbtn hide" id="btnPanelOpen">☰ 操作パネル</button>
+  <div id="panelRsz" title="左右にドラッグすると、動画エリアの大きさを変えられます"></div>
+  <div class="side" id="side1">
+
+    <details class="card op" open data-key="howto">
+      <summary id="howtoSum"><span class="sumtxt">操作説明<span class="sumsub">（クリックで折りたたみ）</span></span></summary>
+      <ol class="steps">
+        <li><b>動画を読み込む</b>か<b>撮影</b>する</li>
+        <li><b>解析する時間範囲</b>：再生して、見たい運動が見れる時間を探して、<b>この時刻をt = 0</b>と<b>この時刻まで解析</b>を決める</li>
+        <li><b>原点</b> → <b>x軸（y軸）の向き</b> → <b>スケール</b>（長さのわかる物の両端を2点クリック）を決める</li>
+        <li><b>トラッキング</b>：<span id="howto4hand">［手でクリックして記録］を押し、物体をタップ（クリック）していく</span><span id="howto4auto" class="hide">色マーカーを追跡するか、手でクリックして記録する</span></li>
+        <li>出力（5）か、上のタブで グラフ（②）・フィッティング（③）・ストロボ画像（④）へ進む</li>
+      </ol>
+      <p class="mini">いま作業するところが<b>オレンジ色に光ります</b>。</p>
+    </details>
+
+    <details class="card" open data-key="video" data-step="1">
+      <summary><span class="sumtxt">1. 動画</span></summary>
+      <p class="todo hide"></p>
+      <div class="row">
+        <button class="btn" id="btnFile">動画を選択</button>
+        <button class="btn" id="btnCam">カメラ撮影</button>
+        <select class="btn selbtn" id="selSample" title="サンプル動画をえらぶ"><option value="">サンプルから</option></select>
+      </div>
+      <p class="mini">動画エリアをクリックしても選べます。この画面に<b>ドラッグ＆ドロップ</b>でも開けます。</p>
+      <div class="row" id="cropRow">
+        <button class="btn sm blue" id="btnCrop">動画をトリミング（端を切る）</button>
+        <button class="btn sm" id="btnCropClr">トリミングをリセット</button>
+      </div>
+      <p class="mini" id="cropInfo">使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります。</p>
+      <input type="file" id="fileVideo" accept="video/*" class="hide">
+      <input type="file" id="fileCam" accept="video/*" capture="environment" class="hide">
+      <p class="mini" id="camNote"></p>
+      <div id="vidErr" class="err hide"></div>
+      <div class="hr"></div>
+      <p class="mini" id="vinfo">動画はまだ読み込まれていません。</p>
+      <div id="vidDiag" class="diagbox hide"></div>
+    </details>
+
+    <details class="card" data-key="range" data-step="2">
+      <summary><span class="sumtxt">2. 解析する時間範囲の指定</span></summary>
+      <p class="todo hide"></p>
+      <div class="row tight playrow">
+        <button class="btn sm" id="btnPlay2">▶ 再生</button>
+        <label class="koma sw hide" id="swKoma2" title="ONにして［再生］を押すと、Nコマずつゆっくり進みます"><input type="checkbox" class="cbKoma">🐢 コマ送り</label>
+        <button class="btn sm" id="btnHead2">最初から</button>
+        <button class="btn sm two2" id="btnHeadR2">解析範囲の<br>最初から</button>
+      </div>
+      <p class="mini">コマ <span class="val" id="frInfo2">-/-</span>　t = <span class="val" id="tInfo2">-</span> s</p>
+      <div class="hr"></div>
+      <div class="btnwrap">
+        <button class="btn wide" id="btnTimeZero">この時刻をt = 0</button>
+        <span class="callout hide" id="coTimeZero">解析を始めたいコマで押す</span>
+      </div>
+      <div class="btnwrap">
+        <button class="btn wide" id="btnRangeB">この時刻まで解析</button>
+        <span class="callout hide" id="coRangeB">解析を終わりたいコマで押す</span>
+      </div>
+      <div class="row">
+        <button class="btn sm danger" id="btnRangeClr">範囲を解除</button>
+        <button class="btn sm" id="btnStep2Next">このままでよい → 次へ</button>
+      </div>
+      <p class="mini" id="rangeInfo">範囲：全体</p>
+      <div class="hr"></div>
+      <p class="mini" id="fpsLine">fps <b>30.000</b>（既定値）</p>
+      <p class="mini">fps は「コマ送りが何秒にあたるか」の目安です。詳細は右上の［使い方と時間算出法］に。</p>
+      <input type="number" id="inFps" value="30" min="1" max="1000" step="0.001" class="hide">
+      <span class="hide" id="fpsSrc">（既定値）</span>
+      <select id="selTScale" class="hide">
+        <option value="1">普通の速さで撮った</option>
+        <option value="0.5">1/2 のスロー</option>
+        <option value="0.25">1/4 のスロー</option>
+        <option value="0.125">1/8 のスロー（240fps→30fps など）</option>
+        <option value="0.0625">1/16 のスロー</option>
+      </select>
+      <div class="row hide" id="ftRow">
+        <button class="btn sm" id="btnFrameTable">コマごとの時刻を測る</button>
+        <span class="tag" id="ftState">未測定</span>
+      </div>
+      <div class="prog hide" id="ftProg"><i></i></div>
+    </details>
+
+    <details class="card" data-key="cal" data-step="3">
+      <summary><span class="sumtxt">3. 空間の原点・スケール・軸</span></summary>
+      <p class="todo hide"></p>
+      <div class="row" id="calBtnRow">
+        <span class="btnwrap"><span class="callout above hide" id="coOrigin">↓やり直しはここ</span><button class="btn sm" id="btnOrigin">原点を設定</button></span>
+        <span class="btnwrap"><span class="callout above hide" id="coAxis">↓やり直しはここ</span><button class="btn sm" id="btnAxis">x軸の向き</button></span>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <span class="lb mini">軸の表示</span>
+        <div class="seg">
+          <button class="btn sm" id="btnAxX" data-v="x">x軸</button>
+          <button class="btn sm" id="btnAxXY" data-v="xy">x軸とy軸</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="cb"><input type="checkbox" id="cbXFlip">x軸を反転</label>
+        <label class="cb hide" id="labYFlip"><input type="checkbox" id="cbYFlip">y軸を反転</label>
+      </div>
+      <div class="hr"></div>
+      <div class="row"><button class="btn sm" id="btnScale">スケールを設定</button></div>
+      <label class="f">スケール長さ <input type="number" id="inScaleLen" value="10" step="0.1" min="0.000001">
+        <select id="selScaleUnit"><option value="1">m</option><option value="0.01" selected>cm</option><option value="0.001">mm</option></select>
+      </label>
+      <div class="row"><button class="btn sm danger" id="btnCalClr">原点・軸・スケールを解除</button></div>
+      <p class="mini" id="calInfo">原点：未設定／スケール：未設定／x軸：0.0°</p>
+      <p class="mini" id="precInfo">クリック精度：スケール未設定</p>
+    </details>
+
+    <details class="card" data-key="track" data-step="4">
+      <summary><span class="sumtxt">4. トラッキング</span></summary>
+      <p class="todo hide"></p>
+      <p class="donemsg hide" id="trkDone" title="②グラフへ">解析終了。グラフを表示してみよう</p>
+      <p class="mini calok" id="calOkNote">原点・x軸・スケールは<b>設定ずみ</b>です（直すときは <b>3</b> の［もう一度］へ）。</p>
+      <div id="objBox" class="hide">
+        <label class="f" id="labObjNum">物体番号
+          <select id="selObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        </label>
+        <label class="f" id="labObjName">物体1の名前
+          <input type="text" id="inObjName" placeholder="例：10円玉" style="width:130px">
+        </label>
+        <p class="mini" id="objNameNote">名前を入れると、下の2つのボタンが押せるようになります。</p>
+        <div class="row hide" id="rowObjEnd">
+          <button class="btn sm" id="btnObjEnd" title="画面の外に出るなど、これ以上追えないときに押します">この物体はここで終わり</button>
+          <span class="mini">いま記録した時刻までで完了にして、次の物体へ進みます。</span>
+        </div>
+        <div class="hr"></div>
+      </div>
+      <div id="startBox">
+        <p class="mini keyhint" id="keyHint1"><kbd>Shift</kbd>＋クリック＝記録して1コマ進む<br>取り消しは［1回分トラッキングを取り消す］か <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</p>
+        <p class="mini" id="startNote">この物体を<b>どちらで記録するか</b>を選んでください。</p>
+        <div class="col2way">
+          <span class="btnwrap"><button class="btn" id="btnStartHand">手でクリックして記録</button>
+            <span class="callout hide" id="coHand">← 今こちら</span></span>
+          <span class="btnwrap hide" id="wrapStartAuto"><button class="btn" id="btnStartAuto">色で自動追跡</button>
+            <span class="callout hide" id="coAuto">← 今こちら</span><span class="callout rec hide" id="coAutoRec">← おすすめ</span></span>
+        </div>
+        <div class="hr"></div>
+      </div>
+      <label class="f">進むフレーム数 N <input type="number" id="inStepN" value="5" min="1" max="500" step="1"></label>
+      <label class="f">記録したら
+        <select id="selAfter">
+          <option value="0">同じ位置に点を打つ</option>
+          <option value="1">1コマ進む</option>
+          <option value="n" selected>Nコマ進む</option>
+        </select>
+      </label>
+      <p class="mini hide" id="autoHint">あとから自動で追いかけるときは、右上の
+      <b>［色マーカーの自動追跡］</b>をONにします。</p>
+      <div class="sub hide" id="autoCard">
+        <div class="subhead">色マーカーの自動追跡<span class="subnote">（手でクリックしても<br>トラッキングできます）</span></div>
+      <div class="row">
+        <button class="btn sm" id="btnPickColor">始点を設定し色を取得</button>
+        <span class="tag" id="colorTag">色：未取得</span>
+      </div>
+      <p class="mini">追いかけたい物体（マーカー）を<b>1回クリック</b>します。そこが<b>始点</b>になり、
+      同時にその<b>色</b>を覚えます。</p>
+      <label class="f" id="labSearchR">探索半径 <input type="number" id="inSearchR" value="40" min="5" max="300" step="1"> px</label>
+      <p class="mini" id="radHint">動画の上の<b>円をドラッグ</b>しても変えられます（次のコマで、この円の中から色を探します）。</p>
+      <label class="f">色のしきい値 <input type="number" id="inColTh" value="60" min="5" max="255" step="1"></label>
+      <div class="row">
+        <button class="btn" id="btnAutoRun">最後まで自動追跡</button>
+        <button class="btn sm" id="btnAutoRedo">解析範囲の最初から<br>やり直し</button>
+        <button class="btn sm" id="btnAutoStop">停止</button>
+      </div>
+      <p class="mini">結果は手で直せます。ずれた点は下の［1回分トラッキングを取り消す］でその点までもどすか、上からクリックし直してください。</p>
+      </div>
+      <div class="hr"></div>
+      <div class="row hide" id="rowClearObj">
+        <button class="btn sm danger" id="btnClearObj">この物体の点を消す</button>
+      </div>
+      <div class="row">
+        <button class="btn sm danger" id="btnUndo1">1回分トラッキングを取り消す</button>
+        <button class="btn sm danger" id="btnTrkReset">トラッキングした点をリセット</button>
+      </div>
+      <div class="row hide" id="rowTrkResetB">
+        <button class="btn sm danger" id="btnTrkResetB">物体2のトラッキングした点をリセット</button>
+        <button class="btn sm danger hide" id="btnTrkResetC">物体3のトラッキングした点をリセット</button>
+      </div>
+      <p class="mini" id="trkResetNote">この実験で記録した点を全部消して、解析範囲の最初に戻ります（Ctrl＋Z で戻せます）。</p>
+      <div class="hr"></div>
+      <label class="cb"><input type="checkbox" id="cbDrift">手ぶれ補正を使う</label>
+      <div class="row">
+        <button class="btn sm" id="btnRefPt">画面内の固定点を記録</button>
+        <span class="tag" id="refInfo">固定点 0</span>
+        <button class="btn sm" id="btnRefClr">消去</button>
+      </div>
+      <p class="mini">動かない目印（机の角など）を、いくつかのコマで同じ場所にクリックします。</p>
+    </details>
+
+
+
+    <details class="card" data-key="out" data-lock="4">
+      <summary><span class="sumtxt">5. 出力・保存</span></summary>
+      <div class="grid2">
+        <button class="btn sm" id="btnCsv">CSV出力</button>
+        <button class="btn sm" id="btnCopy">CSVコピー</button>
+        <button class="btn sm" id="btnReportPng">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf">レポートPDF</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn sm two hide" id="btnJsonSaveTop">この動画の原点・<br>トラッキングを保存</button>
+      </div>
+      <input type="file" id="fileJson" accept=".json,application/json" class="hide">
+      <p class="mini"><b>「過去測定データを実験○に登録」</b>で保存したファイルを読むと、<b>いまの実験は消さずに</b>、
+      次の実験番号として追加されます（前の実験や去年のデータと並べて比べられます）。
+      提出もこのファイルで行います。</p>
+      <div class="hr"></div>
+      <p class="mini" id="saveState">トラッキングデータ等は自動保存されます。動画をもう一度開くと続きからできます。</p>
+      <p class="mini">消したいときは、上の段の <b>［この実験の測定を消去］</b>（いまの実験だけ）か
+      <b>［すべての実験を消してリセット］</b>（この端末に保存したぶんも全部）を使ってください。
+      みんなで使う端末では、終わったら <b>［すべての実験を消してリセット］</b> を押します。</p>
+    </details>
+
+  </div><!-- /side -->
+
+  <div class="rightcol">
+    <div class="videobox" id="videobox">
+      <div class="ph" id="vph"><span class="hl">ここをクリック</span>して<b>動画を選択</b>してください。<br>このエリアに<span class="hl">ドラッグ＆ドロップ</span>でもOK
+        <div class="note vlimit">
+          <b>解析できる動画のめやす</b><br>
+          長さ <b>5〜30 秒</b>（<b>40 秒まで</b>。長いほど解析に時間がかかります）／
+          画質は <b>フルHD（1920×1080）まで</b>／ファイルは <b>100 MB 以内</b>。<br>
+          <span class="mini" style="color:inherit">40 秒より長い動画は開けません。見たい運動の前後だけを切り出してください。
+          画面の大きさ 4096 px・500 MB までは開けますが、動作が重くなります。</span>
+        </div></div>
+      <div class="vwrap" id="vwrap">
+        <canvas id="cvView" class="hide"></canvas>
+        <canvas id="cvOv" class="hide" style="position:absolute;left:0;top:0"></canvas>
+      </div>
+      <div id="vidMis" class="hide"></div>
+      <div id="vhint" class="hide"><span id="vhintTxt"></span><button id="vhintX" title="閉じる">×</button></div>
+      <button id="bigPlay" class="hide" title="再生"><span>&#9654;</span></button>
+      <button id="btnUndo1v" class="vtopbtn left hide">1回分トラッキングを取り消す</button>
+      <button id="btnTrkReset2" class="vtopbtn hide">トラッキングした点をリセット</button>
+      <button id="doneMsg" class="hide" title="②グラフへ">解析終了。グラフを表示してみよう</button>
+      <button id="btnTrkStart" class="hide"><span class="l1">トラッキング（軌跡の追跡）開始</span><span class="l2">物体をクリックすると指定のコマずつ動画が進みます</span></button>
+      <div id="trkChoice" class="hide">
+        <div class="tc-q">どちらで記録しますか？</div>
+        <span class="btnwrap"><button id="btnTrkStartA" class="tc-auto"><span class="l1">色で自動追跡</span><span class="l2">物体の色を覚えて、最後まで自動で追いかけます</span></button>
+          <span class="callout rec">← おすすめ</span></span>
+        <button id="btnTrkStartH" class="tc-hand">手でクリックして記録</button>
+      </div>
+      <button id="btnOriginBig" class="hide">原点を指定してください</button>
+      <div id="calMsg" class="hide"></div>
+      <div id="autoMsg" class="hide"></div>
+      <div id="dropHint" class="hide">ここに動画ファイルをドロップ</div>
+      <div id="vidRsz" title="上下にドラッグすると、動画エリアの高さを変えられます（ダブルクリックでおまかせ）"></div>
+      <div id="loupe"><canvas id="cvLoupe" width="132" height="132"></canvas></div>
+      <!-- 動画要素は画面に置いておく（画面外に置くとブラウザがコマを描かず、実測時刻がとれない） -->
+      <video id="vid" playsinline muted preload="auto"
+             style="position:absolute;right:0;bottom:0;width:4px;height:4px;opacity:.01;pointer-events:none"></video>
+    </div>
+
+    <div class="vidbar">
+      <div class="seekwrap" id="seekwrap">
+        <div class="rangemark hide" id="rangemark"></div>
+        <div class="donemark hide" id="donemark"></div>
+        <div class="donet hide" id="doneT"></div>
+        <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+        <div class="smark t0 hide" id="mkT0" title="この時刻をt = 0：ドラッグで動かせます"><b>t=0</b></div>
+        <div class="smark tb hide" id="mkTB" title="この時刻まで解析：ドラッグで動かせます"><b>終わり</b></div>
+      </div>
+      <div class="callout seek hide" id="coSeek">上の時間バーをドラッグして時間を選んでください</div>
+      <div class="row" style="justify-content:center">
+        <button class="btn sm" id="btnPlay">▶ 再生</button>
+        <label class="koma sw" id="swKoma" title="ONにして［再生］を押すと、Nコマずつゆっくり進みます"><input type="checkbox" class="cbKoma">🐢 コマ送り</label>
+        <button class="btn sm" id="btnHead">最初から</button>
+        <button class="btn sm" id="btnHeadR">解析範囲の最初から</button>
+        <button class="btn sm nextpt hide" id="btnNextTrk">記録した続きから</button>
+      </div>
+      <div class="row hide" id="vidAuto" style="justify-content:center;padding-top:10px">
+        <button class="btn" id="btnAutoRun2">最後まで自動追跡</button>
+        <button class="btn sm" id="btnAutoStop2">停止</button>
+        <button class="btn sm" id="btnUndo1c">1回分トラッキングを取り消す</button>
+      </div>
+      <div class="row hide" id="vidStep2" style="justify-content:center;padding-top:14px">
+        <span class="btnwrap"><button class="btn sm" id="btnTimeZero2">この時刻をt = 0</button>
+          <span class="callout hide" id="coTimeZero2">解析を始めたいコマで押す</span></span>
+        <span class="btnwrap"><button class="btn sm" id="btnRangeB2">この時刻まで解析</button>
+          <span class="callout hide" id="coRangeB2">解析を終わりたいコマで押す</span></span>
+        <button class="btn sm danger" id="btnRangeClr2">範囲を解除</button>
+        <button class="btn sm" id="btnStep2Next2">このままでよい → 次へ</button>
+      </div>
+      <div class="stepbtns">
+        <div class="stepgrp back">
+          <div class="steprow">
+            <button class="btn sm n back" data-step="-n">←N</button>
+            <button class="btn sm back" data-step="-10">←10</button>
+            <button class="btn sm back" data-step="-5">←5</button>
+            <button class="btn sm back" data-step="-1">←1</button>
+          </div>
+          <span class="steplab back">もどる</span>
+        </div>
+        <div class="stepgrp fwd">
+          <div class="steprow">
+            <button class="btn sm fwd" data-step="1">1→</button>
+            <button class="btn sm fwd" data-step="5">5→</button>
+            <button class="btn sm fwd" data-step="10">10→</button>
+            <button class="btn sm n fwd" data-step="n">N→</button>
+          </div>
+          <span class="steplab fwd">すすむ</span>
+        </div>
+      </div>
+      <p class="mini keyhint hide" id="keyHint2"><kbd>Shift</kbd>＋クリック＝記録して1コマ進む／取り消しは［1回分トラッキングを取り消す］か <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。矢印キーで最後の点を1pxずつ微調整</p>
+      <div class="tline">
+        <span>コマ <span class="val" id="frInfo">-/-</span></span>
+        <span>t = <span class="val" id="tInfo">-</span> s</span>
+        <span id="modeInfo" class="tag">クリックで記録</span>
+        <span class="sp" style="flex:1"></span>
+        <button class="btn sm blue" id="btnCrop2">動画をトリミング（端を切る）</button>
+        <button class="btn sm" id="btnCropClr2">トリミングをリセット</button>
+      </div>
+      <p class="mini hide" id="hintLine">タップした所にはルーペが出ます。そのままドラッグで微調整できます。</p>
+    </div>
+
+    <details class="card" id="tblCard" open><summary>測定した値（表）<button class="btn sm blue tblbtn" id="btnSbs" type="button">表を下に表示</button></summary>
+      <div class="tblwrap"><table class="tbl" id="dataTbl"></table><div id="trkMk" class="hide" title="上下にドラッグすると、その時刻からやり直せます">&#9654;</div></div>
+    </details>
+
+
+  </div>
+ </div>
+ <footer class="credits" id="credits">
+  <b>謝意</b>　一般社団法人 国際物理オリンピック2023記念協会様のページを参考にこのページを作成しました。大変ありがとうございました。
+  <a href="https://apps.ipho2023-commemorative-association.jp/%E5%8B%95%E7%94%BB%E8%A7%A3%E6%9E%90%E3%82%A2%E3%83%97%E3%83%AA" target="_blank" rel="noopener">https://apps.ipho2023-commemorative-association.jp/動画解析アプリ</a><br>
+  その他、以下のサイトや論文等を参考にしています。
+  <ul>
+   <li>Tracker – Video Analysis and Modeling Tool（Open Source Physics, D. Brown）<a href="https://physlets.org/tracker/" target="_blank" rel="noopener">https://physlets.org/tracker/</a></li>
+   <li>FizziQ – Video analysis for teaching physics <a href="https://www.fizziq.org/" target="_blank" rel="noopener">https://www.fizziq.org/</a></li>
+   <li>Vernier Video Analysis <a href="https://www.vernier.com/physics/vernier-video-analysis/" target="_blank" rel="noopener">https://www.vernier.com/physics/vernier-video-analysis/</a></li>
+   <li>R. J. Beichner, “The impact of video motion analysis on kinematics graph interpretation skills,” Am. J. Phys. 64, 1272–1277 (1996).</li>
+   <li>P. W. Laws and H. Pfister, “Using digital video analysis in introductory mechanics projects,” Phys. Teach. 36, 282–287 (1998).</li>
+   <li>D. Brown and A. J. Cox, “Innovative uses of video analysis,” Phys. Teach. 47, 145–150 (2009).</li>
+   <li>L. K. Wee, C. Chew, G. H. Goh, S. Tan and T. L. Lee, “Using Tracker as a pedagogical tool for understanding projectile motion,” Phys. Educ. 47, 448–455 (2012).</li>
+  </ul>
+  <span class="mini">このページは外部と通信しません。上のリンクを開くときだけブラウザが外部サイトにつながります。</span>
+ </footer>
+</section>
+
+<!-- ================= モード2 ================= -->
+<section id="mode2" class="hide">
+  <div class="card m2top" id="m2top">
+    <div class="m2left">
+      <div class="row" style="margin-bottom:8px">
+        <label class="tabchk" id="labM2Min"><input type="checkbox" id="cbM2Min">このメニューを最小化</label>
+        <div class="seg big">
+          <button class="btn" id="btnM2Side">グラフを並べる</button>
+          <span class="btnwrap"><button class="btn" id="btnM2Live">動画と一緒にグラフを再生する</button>
+            <span class="callout rec hide" id="coLive">← クリックしてみよう</span></span>
+        </div>
+      </div>
+      <div class="row">
+        <span id="cmpBox" class="mini" style="color:var(--sub)">実験1 などにチェックを入れると、実験結果を重ねることができます</span>
+        <span id="expBox2"><span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks"></span></span>
+        <span class="lb mini hide" id="lbObjSel">対象の物体：</span>
+        <span class="explist hide" id="objChecks"></span>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn sm" id="btnGBig">グラフを拡大</button>
+        <button class="btn sm" id="btnGSmall">縮小</button>
+        <button class="btn sm" id="btnGReset">スケールと表示範囲をデフォルトに戻す</button>
+        <button class="btn sm blue" id="btnGFitAll" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
+        <span style="width:10px"></span>
+        <label class="cb"><input type="checkbox" id="cbG_x" checked>x・vx・ax</label>
+        <label class="cb" id="labGY"><input type="checkbox" id="cbG_y" checked>y・vy・ay</label>
+        <label class="cb hide" id="labGP" title="全体の運動量 Σ m v（＝重心の運動量）を、物体ごとの運動量と一緒にグラフにします"><input type="checkbox" id="cbG_p">重心の運動量</label>
+        <button class="btn sm danger selclr hide" id="btnSelClr" title="グラフの点をクリックして選んだ座標の表示を消します">座標の選択を解除する</button>
+        <input type="checkbox" id="cbG_v" checked class="hide">
+        <input type="checkbox" id="cbG_a" checked class="hide">
+      </div>
+      <div class="row hide" id="energyRow" style="margin-top:8px">
+        <label class="cb eonly"><input type="checkbox" id="cbG_e">エネルギー</label>
+        <label class="f">質量 m₁ <input type="number" id="inM1" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f" id="labM2">m₂ <input type="number" id="inM2" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f hide" id="labM3">m₃ <input type="number" id="inM3" value="0.1" step="0.001" min="0.0001"> kg</label>
+        <label class="f eonly">g <input type="number" id="inG" value="9.8" step="0.01" min="0"> m/s²</label>
+        <label class="f eonly" id="labGDir" title="位置エネルギー U = mgh の高さ h を、どの軸から出すかを決めます">重力の向き（鉛直下向き）
+          <select id="selGDir">
+            <option value="y-">−y 方向（y の正が上）</option>
+            <option value="y+">+y 方向（y の正が下）</option>
+            <option value="x-">−x 方向（x の正が上）</option>
+            <option value="x+">+x 方向（x の正が下）</option>
+          </select>
+        </label>
+        <span class="mini enote eonly" id="eNote">※ 位置エネルギーは U = mgh。<b>重力の向き</b>の設定から高さ h を出します（いまは <b id="eNoteH">h = y</b>）。
+        自由落下を x 軸だけで解析するときは −x／+x を選びます。円運動など、高さが決まらない実験には当てはまりません。</span>
+      </div>
+    </div>
+    <div class="m2out two">
+      <div class="m2outL">
+        <div class="row nowrap">
+          <button class="btn sm quiet" id="btnXlsx">測定データ、グラフをまとめてExcel出力</button>
+          <button class="btn sm quiet" id="btnGraphPng">グラフをPNG保存</button>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button class="btn sm" id="btnEnergyOn">力学的エネルギーを解析する</button>
+        </div>
+      </div>
+      <div class="grid2">
+        <button class="btn sm" id="btnCsv2">CSV出力</button>
+        <button class="btn sm" id="btnCopy2">CSVコピー</button>
+        <button class="btn sm" id="btnReportPng2">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf2">レポートPDF</button>
+      </div>
+    </div>
+  </div>
+  <div class="m2body">
+    <div class="m2tbl" id="m2tbl">
+      <details class="card" id="m2tblCard" open>
+        <summary>測定した値（表）</summary>
+        <div class="tblwrap"><table class="tbl" id="dataTbl2"></table></div>
+      </details>
+      <div class="rsz" id="tblRsz" title="ドラッグで表の幅を変えられます"></div>
+    </div>
+    <div class="m2charts">
+      <div id="charts2"></div>
+      <div id="cgHost2"></div>
+    </div>
+    <div class="m2live hide" id="m2live">
+      <div class="card">
+        <p class="livenote">再生を押すと、「センサーを使ってリアルタイムに測定している様子」を再現できます。</p>
+        <div class="row liverow">
+          <button class="btn pri" id="btnLivePlay">▶ 再生</button>
+          <label class="koma sw" id="swKomaLive" title="ONにして［再生］を押すと、Nコマずつゆっくり進みます"><input type="checkbox" class="cbKoma">🐢 コマ送り</label>
+          <button class="btn sm" id="btnLiveRewind">最初に戻す</button>
+          <span class="mini" id="liveT">t = -</span>
+          <span class="sp" style="flex:1"></span>
+          <label class="cb"><input type="checkbox" id="cbLiveAxis" checked>軸を表示する</label>
+        </div>
+        <div id="m2vidHost"></div>
+      </div>
+    </div>
+  </div>
+  <div id="cgHostLive"></div>
+</section>
+
+<!-- ================= モード3 ================= -->
+<section id="mode3" class="hide">
+  <div class="card m2top" id="m3top">
+    <div class="m2left">
+      <div class="row" style="margin-bottom:8px">
+        <label class="tabchk" id="labM3Min"><input type="checkbox" id="cbM3Min">このメニューを最小化</label>
+      </div>
+      <div class="row">
+        <span id="cmpBox3"><b style="color:var(--accent-d)">表示</b>
+        <select id="selCmp3"><option value="side">並べて表示</option><option value="over">他の実験を重ねて表示</option></select></span>
+        <span id="expBox3"><span class="lb mini">対象の実験：</span>
+        <span class="explist" id="expChecks3"></span></span>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <button class="btn sm" id="btnGBig3">グラフを拡大</button>
+        <button class="btn sm" id="btnGSmall3">縮小</button>
+        <button class="btn sm" id="btnGReset3">スケールと表示範囲をデフォルトに戻す</button>
+        <button class="btn sm blue" id="btnGFitAll3" title="いま出ているグラフを、まとめてスケールフィットします">まとめてスケールフィット</button>
+        <button class="btn sm danger hide" id="btnSelClr3" title="グラフの点をクリックして選んだ座標の表示を消します">座標の選択を解除する</button>
+      </div>
+    </div>
+    <div class="m2out">
+      <div class="grid2">
+        <button class="btn sm" id="btnReportPng3">レポートPNG</button>
+        <button class="btn sm" id="btnReportPdf3">レポートPDF</button>
+      </div>
+      <div class="row nowrap" style="margin-top:6px;justify-content:flex-end">
+        <button class="btn sm quiet" id="btnXlsx3">測定データ、グラフをまとめてExcel出力</button>
+        <button class="btn sm quiet" id="btnGraphPng3">グラフをPNG保存</button>
+      </div>
+    </div>
+  </div>
+  <div class="m3body">
+    <div class="m3graphs"><div class="charts" id="charts3"></div></div>
+    <div class="m3res">
+  <div class="card" id="fitCtl">
+    <div class="row">
+      <b style="color:var(--accent-d)">フィッティングする量</b>
+      <select id="selFitY">
+        <option value="x">x</option><option value="y" data-y="1">y</option>
+        <option value="vx">vx</option><option value="vy" data-y="1">vy</option>
+        <option value="ax">ax</option><option value="ay" data-y="1">ay</option>
+      </select>
+      <span class="lb mini">＝ f(t)</span>
+      <b style="color:var(--accent-d);margin-left:10px">関数</b>
+      <select id="selFitType">
+        <option value="lin">直線　y = a t + b</option>
+        <option value="quad">放物線　y = a t² + b t + c</option>
+        <option value="sin">正弦　y = A sin(ωt + φ) + C</option>
+        <option value="exp">指数　y = A e^(k t) + C</option>
+      </select>
+      <label class="f" id="labFitObj">物体 <select id="selFitObj"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+      <button class="btn pri sm" id="btnFit">フィッティングする</button>
+      <button class="btn sm" id="btnFitClr">フィッティングを消す</button>
+    </div>
+    <div class="row" id="fitInitRow" style="margin-top:4px"></div>
+    <p class="mini">※ 係数と決定係数 R² までを出します。グラフの青い帯（<b>数式をフィッティングするエリア</b>）の
+    左右のつまみを<b>ドラッグ</b>すると、フィッティングに使う範囲を変えられます。</p>
+    <div class="row nowrap">
+      <span class="mini" style="margin:0">「フィッティングする」を押すと、最小二乗法で係数と R² を出します。</span>
+      <span class="sp" style="flex:1"></span>
+      <button class="btn sm blue" id="btnWhatFit">フィッティング・決定係数とは</button>
+    </div>
+  </div>
+      <div class="m3resrow">
+        <div class="card" id="fitResult"></div>
+        <div id="residHost"></div>
+      </div>
+    </div>
+  </div>
+  <div id="cgHost3"></div>
+</section>
+
+<!-- ================= モード4：ストロボ画像 ================= -->
+<section id="mode4" class="hide">
+  <div class="m4grid">
+    <div class="card stro4card">
+      <h3>ストロボ画像</h3>
+      <div class="row">
+        <button class="btn pri" id="btnStrobe">ストロボ画像を作る</button>
+      </div>
+      <div id="stroTune" class="strotune hide">
+        <div class="row">
+          <span class="lb" id="lbStroStep">時間間隔調整</span>
+          <span class="tag" id="stroStepInfo">1 コマおき</span>
+        </div>
+        <input type="range" id="stroStep" min="0" max="4" step="1" value="0"
+               title="何コマおきに重ねるかを決めます">
+        <div class="strotick"><span>1</span><span>2</span><span>5</span><span>10</span><span>20</span></div>
+      </div>
+      <p class="mini strowait hide" id="stroWait">お待ちください…</p>
+      <div class="row">
+        <label class="f">重ね方
+          <select id="selStroMode"><option value="diff">動いた所だけ重ねる（おすすめ）</option><option value="lighten">明るい方を残す</option><option value="darken">暗い方を残す</option><option value="avg">平均</option></select>
+        </label>
+        <label class="cb"><input type="checkbox" id="cbStroPts" checked>トラッキングした点も描く</label>
+      </div>
+      <div class="row">
+        <button class="btn sm" id="btnStroSave">PNG保存</button>
+        <button class="btn sm danger" id="btnStroClr">画像をリセット</button>
+      </div>
+    </div>
+
+    <div class="m4img">
+    <div class="strobox">
+      <div class="row"><b style="font-size:.92rem;color:var(--accent-d)">ストロボ画像</b>
+        <span class="mini" id="stroInfo">まだ作っていません</span></div>
+      <canvas id="cvStrobe" width="640" height="360" class="hide"></canvas>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= モード5：補足 ================= -->
+<section id="mode5" class="hide">
+  <section class="card errcard" id="errCard">
+    <h3 class="errttl">誤差の要因の例 ― なぜグラフがずれるのか、どうすれば防ぐことができるのか</h3>
+    <div class="errbody">
+      <p class="mini">測った値のずれには、<b>原因ごとに大きさも直し方もちがう</b>ものが混ざっています。上から順に効きが大きいものです。</p>
+
+      <h4>1. クリックのずれ ― 位置 x の誤差</h4>
+      <p>点を打つとき、1〜2 px はどうしてもずれます。動画の 1 px が実際の何 mm かは 3 のカードの「クリック精度」に出ています。
+      拡大（ピンチ・長押しのルーペ）して打つと、このずれは小さくできます。</p>
+
+      <h4>2. そのずれが v・a に大きく効く ― 進むフレーム数 N と、a の出し方</h4>
+      <p><span id="errDtNote">Δt ＝ 記録した点の間隔（ふつう N コマ分）という意味です。</span>速さ v は「2 点の x の差 ÷ 時間の差 Δt」、加速度 a は「2 つの v の差 ÷ 時間の差」です。
+      <b>点と点の間が短いほど、同じクリックのずれが、大きな v・a のずれになります</b>（割る数が小さいので）。
+      v で 1 回、a で 2 回この「差」をとるので、a はとくに荒れます。</p>
+      <div class="errfig" id="errFigSlope"></div>
+      <p>だから <b>進むフレーム数 N</b> は、点と点の間が画面の横はばの 2〜3 % 以上になるように選びます。
+      それでも a–t が荒れるとき、②の a–t グラフの下で <b>a の出し方</b>を選べます。同じ測定データから 3 とおりの方法で a を出すと、こう変わります。</p>
+      <div class="errcharts" id="errCharts"></div>
+      <ul class="errlist">
+        <li><b>v の差から計算（時間の幅 Δt）</b>：となりあう v の差。いちばん細かい変化まで見えるが、クリックのずれが最大 2.5 倍ほどに増幅される</li>
+        <li><b>v の差から計算（時間の幅 5Δt）</b>：5Δt はなれた v の差。ずれは約 1/6 になる（割る時間が 5 倍になる）。そのかわり、a が急に変わる所はならされる</li>
+        <li><b>v–t の傾きから計算</b>：前後 5 点の v に直線を当てはめ、その傾きを a にする。ずれは「時間の幅 5Δt」と同じくらいまで小さくなる。v–t グラフに定規で直線を引いて傾きを読むのと同じ考え方なので、<b>等加速度かどうかを確かめる</b>目的に向く。a が変わる運動（ふりこなど）では、変化がなまる</li>
+      </ul>
+      <p class="mini">どれが正しいというより、<b>「何を見たいか」で選ぶ</b>ものです。等加速度かどうかを確かめたいなら「傾きから」か「時間の幅 5Δt」、衝突の瞬間のように a が急に変わる所を見たいなら「時間の幅 Δt」。</p>
+
+      <h4>3. ものさしの奥行き ― 長さの基準そのもののずれ（一番大きい）</h4>
+      <p>ものさしが物体より手前や奥にあると、写る大きさがちがうので、長さの基準がずれます。x も v も a も、まとめて同じ割合でずれます。</p>
+      <div id="depthBox" class="depthbox">
+        <b>どれくらいずれるかを見てみる</b>
+        <div class="row">
+          <label class="f">カメラから物体まで
+            <select id="selCamDist">
+              <option value="1">約 1 m</option>
+              <option value="2">約 2 m</option>
+              <option value="3" selected>約 3 m</option>
+              <option value="5">5 m 以上</option>
+            </select>
+          </label>
+          <label class="f">ものさしのズレ
+            <select id="selRulerGap">
+              <option value="0" selected>同じ奥行き</option>
+              <option value="0.2">20 cm ほど</option>
+              <option value="0.5">50 cm ほど</option>
+              <option value="1">1 m ほど</option>
+            </select>
+          </label>
+        </div>
+        <p class="mini" id="depthMsg"></p>
+      </div>
+
+      <h4>4. カメラの向き ― 真横から撮っていない</h4>
+      <p>運動する向きに対してななめから撮ると、手前と奥で同じ長さがちがう長さに写ります。
+      画面の左右で「1 px が何 mm か」が変わってしまうので、あとから直せません。<b>真横（正面）から</b>撮ります。カメラの傾きは、「カメラ撮影」の水平ガイドで確かめられます。</p>
+
+      <h4>5. 手ぶれ ― 背景ごと動く</h4>
+      <p>カメラが動くと、止まっているはずの背景まで動いて見え、その分が物体の速さに足し算されます。
+      4 のカードの「手ぶれ補正を使う」で、動かない目印（机の角など）を何コマかクリックすると、その分を差し引きます。直せるのは平行にずれた分だけです。</p>
+
+      <h4>6. コマの時刻 ― 1 コマ ＝ 1/30 秒とは限らない</h4>
+      <p>スマホの動画はコマの間隔が一定でないことがあります。このアプリは 1 コマごとの時刻を実際に測って使うので、ここでの誤差は小さくしてあります（右上の「使い方と時間算出法」）。</p>
+
+      <h4>7. 当てはめた式が合っていない</h4>
+      <p>③のフィッティングで R² が 0.999 でも、関数の形が合っていないことがあります。
+      「フィッティング残差のプロット」で、残差が 0 のまわりにばらばらならよく合っていて、曲がった偏りがあれば式の形が合っていません（空気抵抗など、別のはたらきがあります）。</p>
+    </div>
+  </section>
+</section>
+
+</main>
+
+<section class="card hide" id="cgCard">
+  <h3>自由選択グラフ <span class="mini" style="font-weight:400;margin-left:6px">自分で軸を自由に選べます</span>
+    <span class="readout" id="cgReadout"></span>
+    <span class="sp" style="flex:1"></span>
+    <span class="cgmass hide" id="cgMassRow">
+      <label class="f">m₁ <input type="number" id="cgM1" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
+      <label class="f">m₂ <input type="number" id="cgM2" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
+      <label class="f hide" id="labCgM3">m₃ <input type="number" id="cgM3" value="0.1" step="0.001" min="0.0001" style="width:70px"> kg</label>
+    </span>
+    <button class="btn sm blue hide" id="cgMomentum">運動量保存則</button>
+    <button class="maxbtn cgmax" id="cgBig" title="このグラフを大きく表示">最大化</button></h3>
+ <div class="cgbody">
+  <div class="cgmain">
+  <div class="cgrid">
+    <div class="cgTop">
+      <span class="cgpick"><span class="lb">縦軸</span>
+        <select id="cgExpA" title="実験" class="hide"></select><select id="cgObjA" title="物体"></select></span>
+      <span class="cgpick hide" id="cgPickB"><span class="lb">縦軸2</span>
+        <select id="cgExpB" title="実験" class="hide"></select><select id="cgObjB" title="物体"></select></span>
+    </div>
+    <div class="cgY">
+      <div class="lb">縦軸</div>
+      <select id="cgQA" class="qsel"></select>
+      <label class="cb"><input type="checkbox" id="cgInvA">正負を反転</label>
+    </div>
+    <div class="cgPlot"><canvas id="cgCanvas"></canvas></div>
+    <div class="cgB hide" id="cgRowB">
+      <div class="lb">縦軸2（右）</div>
+      <select id="cgQB" class="qsel"></select>
+      <label class="cb"><input type="checkbox" id="cgInvB">正負を反転</label>
+    </div>
+    <div class="cgX">
+      <span class="lb">横軸</span>
+      <select id="cgQX" class="qsel"></select>
+      <label class="cb"><input type="checkbox" id="cgInvX">正負を反転</label>
+    </div>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <label class="cb"><input type="checkbox" id="cgTwo">縦軸を2つにする（2軸）</label>
+    <label class="cb"><input type="checkbox" id="cgLine" checked>点を線でつなぐ</label>
+    <span class="mini hide" id="cgEqualNote">縦横を同じ目盛りにしています</span>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn sm quiet" id="cgPng">PNG保存</button>
+  </div>
+  <p class="mini hide" id="cgMomentumNote">※ 運動量 p = m v（x 成分）。質量は上の m₁・m₂ の欄で入れます。縦軸2 も同じ目盛りにしています</p>
+  <p class="ng hide" id="cgMomentumErr">物体２のデータがないと表示できません</p>
+  </div><!-- /cgmain -->
+  <div class="cgside">
+  <div class="row hide" id="cgFitRow">
+    <b style="color:var(--accent-d)">関数</b>
+    <select id="cgFitType">
+      <option value="lin">直線　y = a x + b</option>
+      <option value="quad">放物線　y = a x² + b x + c</option>
+      <option value="sin">正弦　y = A sin(ω x + φ) + C</option>
+      <option value="exp">指数　y = A e^(k x) + C</option>
+    </select>
+    <button class="btn pri sm" id="cgFit">フィッティングする</button>
+    <button class="btn sm" id="cgFitClr">フィッティングを消す</button>
+  </div>
+  <div class="cgresrow"><div id="cgResult" class="mini"></div>
+  <div id="cgResidHost"></div></div>
+  </div><!-- /cgside -->
+ </div><!-- /cgbody -->
+</section>
+
+<div class="modal hide" id="helpModal"><div class="box" id="helpBox"></div></div>
+<div class="modal hide" id="kadaiModal"><div class="box" id="kadaiBox"></div></div>
+<div class="toast" id="toast"></div>
+<div class="busy hide" id="busyLock"><div class="box">
+  <div class="spin"></div>
+  <p id="busyMsg">動画を読み込んでいます…</p>
+  <p class="mini" id="busySub">終わるまで、ボタンは押せません。</p>
+  <div class="prog hide" id="busyProg"><i></i></div>
+</div></div>
+<canvas id="cvFull" class="hide"></canvas>
+

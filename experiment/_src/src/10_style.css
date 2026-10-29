@@ -1,0 +1,881 @@
+:root{
+  --ink:#1b1f24; --sub:#5b6672; --line:#d9dee4; --bg:#f6f7f9; --card:#fff; --panel:#fbfcfd;
+  --accent:#1663b5; --accent-d:#0f4c8f; --orange:#e07b18; --ok:#1c8f4a; --ng:#c0392b;
+  --warn:#8a6d00; --warnbg:#fff8e1;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --jp:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --panelw:352px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--jp);font-size:15px;line-height:1.6;
+  overscroll-behavior-y:contain}
+button,input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+button{cursor:pointer}
+
+/* ===== ヘッダ ===== */
+.apphd{position:sticky;top:0;z-index:40;background:var(--accent);color:#fff;
+  display:flex;align-items:center;gap:7px;padding:6px 9px;flex-wrap:wrap}
+.apphd h1{font-size:1.02rem;margin:0;font-weight:700;letter-spacing:.02em;flex:0 1 auto}
+.apphd .lead{font-size:.8rem;color:#dbe8f7;flex:0 0 auto;line-height:1.35;
+  margin-left:3ch;white-space:nowrap}
+@media(max-width:1360px){ .apphd .lead{display:none} }
+.apphd .sp{flex:1 1 auto}
+.apphd .hdtools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}
+.apphd .hbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.55);color:#fff;
+  border-radius:8px;padding:6px 9px;min-height:38px;font-size:.86rem}
+.apphd .hbtn:hover{background:rgba(255,255,255,.28)}
+.apphd .chk{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:5px 8px;min-height:38px;
+  font-size:.82rem;white-space:nowrap}
+.apphd .chk input{width:17px;height:17px}
+.apphd .hbtn{white-space:nowrap}
+
+#restoreBar{margin:8px 10px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#restoreBar .btn{min-height:30px;padding:2px 10px;font-size:.82rem}
+
+/* ===== タブ・実験バー ===== */
+.tabs{display:flex;gap:4px;padding:6px 8px 0;background:#e9edf2;border-bottom:1px solid var(--line);
+  position:sticky;top:var(--hdh,50px);z-index:35;flex-wrap:wrap}
+.tabs{align-items:flex-end}
+.tabs>button{background:#dde3ea;border:1px solid var(--line);border-bottom:none;border-radius:9px 9px 0 0;
+  padding:9px 14px;min-height:42px;font-weight:700;color:#42505f}
+.tabs>button.on{background:var(--card);color:var(--accent);box-shadow:0 -2px 0 var(--accent) inset}
+/* タブの右にならべる、実験のえらび方と後始末のボタン */
+.tabs .tabgap{width:18px;flex:0 0 18px}
+.tabs .expsel{border:1px solid var(--line);border-radius:7px;padding:5px 8px;min-height:34px;
+  margin-bottom:5px;background:#fff;max-width:150px}
+.tabs .tabright{margin-left:auto;display:flex;gap:5px;align-items:flex-end;flex-wrap:wrap;padding-bottom:4px}
+/* 「実験エリア最大表示」「このメニューを最小化」は、置き場所がちがっても同じ見た目にする */
+.tabchk{display:inline-flex;align-items:center;gap:5px;background:#fff6e2;border:1px solid var(--orange);
+  border-radius:8px;padding:4px 8px;margin-bottom:5px;font-size:.8rem;white-space:nowrap;cursor:pointer;
+  color:#8a5300;font-family:inherit}
+.tabchk input{width:16px;height:16px}
+.tabchk.on{background:#fff3d6;font-weight:700}
+.m2top .tabchk{margin-bottom:0}
+/* 「実験エリア最大表示」のとき、上の段（ヘッダ）を隠す */
+body.bigview .apphd{display:none}
+body.bigview .tabs{top:0}
+#escNote{position:fixed;right:10px;bottom:10px;z-index:60;background:rgba(20,26,34,.82);color:#fff;
+  font-size:.8rem;font-weight:700;padding:6px 12px;border-radius:9px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+/* 操作パネルをたたんだときに出すボタン */
+.btn.panelbtn,.panelbtn{position:fixed;left:6px;bottom:10px;z-index:45;background:var(--accent);color:#fff;
+  border-color:var(--accent-d);font-weight:700;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.btn.panelbtn:hover{background:var(--accent-d)}
+body.panelhid .m1grid{grid-template-columns:minmax(0,1fr)}
+body.panelhid #side1{display:none}
+/* 動画エリアの幅を変えるつまみ（操作パネルと動画のあいだ） */
+.m1grid{position:relative}
+#panelRsz{position:absolute;width:14px;top:0;bottom:0;cursor:ew-resize;touch-action:none;z-index:6}
+#panelRsz::before{content:"";position:absolute;left:5px;top:60px;width:4px;height:70px;
+  background:#c8d2dd;border-radius:3px}
+#panelRsz:hover::before{background:var(--accent)}
+@media(max-width:860px){ #panelRsz{display:none} }
+/* 操作パネルをたたんでいるときは、つまみが動画の左はしに重なるので出さない（☰ でもどせる） */
+body.panelhid #panelRsz{display:none}
+/* トリミング中は、つまみが囲みの邪魔をしないように */
+body.cropping #panelRsz,body.cropping #vidRsz{pointer-events:none}
+/* 動画エリアの高さを変えるつまみ（動画エリアの下辺） */
+#vidRsz{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:ns-resize;touch-action:none;z-index:11}
+#vidRsz::before{content:"";position:absolute;left:50%;margin-left:-35px;bottom:4px;width:70px;height:4px;
+  background:rgba(255,255,255,.55);border-radius:3px}
+#vidRsz:hover::before{background:var(--orange)}
+body.novidrsz #vidRsz{display:none}
+.tabs .tabright .btn{min-height:32px;padding:4px 9px;font-size:.8rem}
+.tabs .tabright .btn.two{line-height:1.15}
+
+/* ===== レイアウト ===== */
+.wrap{padding:10px}
+.m1grid{display:grid;grid-template-columns:var(--panelw) minmax(0,1fr);gap:12px;align-items:start}
+.m1grid.top{grid-template-columns:minmax(0,1fr)}
+/* 「メニュー：上」＝メニューを上に集めるとき。
+   いま使うカードだけを開き、終わったカードは見出しだけの細い札にして、かならず1段におさめる */
+.m1grid.top .side{display:flex;flex-direction:row;flex-wrap:nowrap;gap:8px;align-items:flex-start;
+  overflow-x:auto;padding-bottom:4px}
+.m1grid.top .side>details{flex:0 0 auto;max-width:100%}
+.m1grid.top .side>details:not([open]){padding:8px 10px}
+.m1grid.top .side>details:not([open])>summary{white-space:nowrap}
+.m1grid.top .side>details[open]{flex:0 1 auto;width:340px;min-width:250px;
+  max-height:30vh;overflow-y:auto;overscroll-behavior:contain}
+/* 上に集めているときは、幅を変えるつまみは出さない（動画の左はしに縦線が出て紛らわしい） */
+.m1grid.top #panelRsz{display:none}
+.side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.rightcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+/* 狭い画面：動画を先頭に出し、操作パネルはその下（カードはたたむ） */
+@media(max-width:860px){
+  .m1grid{grid-template-columns:minmax(0,1fr)}
+  .m1grid .rightcol{order:-1}
+  .wrap{padding:8px 6px 40px}
+}
+@media(max-width:600px){
+  .apphd h1{font-size:.95rem}
+  .apphd .chk{font-size:.78rem;padding:5px 8px}
+  .apphd .hbtn{padding:6px 9px;font-size:.85rem}
+  .tabs button{padding:8px 10px;font-size:.88rem}
+  .tabs .tabgap{width:8px;flex:0 0 8px}
+  .tabs .tabright .btn{font-size:.75rem;padding:4px 6px}
+  .stepbtns .btn{min-width:40px;padding:7px 4px;font-size:.8rem}
+}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 12px;min-width:0}
+.card>h3{margin:0 0 8px;font-size:.95rem;color:var(--accent-d);display:flex;align-items:center;gap:6px}
+.card.op{border-left:5px solid var(--orange)}
+details.card>summary{cursor:pointer;font-weight:700;color:var(--accent-d);font-size:.95rem;list-style:none;
+  display:flex;align-items:center;gap:6px;min-height:30px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"▸";color:var(--sub)}
+details.card[open]>summary::before{content:"▾"}
+details.card>summary+*{margin-top:9px}
+.mini{font-size:.83rem;color:var(--sub);margin:4px 0}
+.hr{height:1px;background:var(--line);margin:9px 0}
+
+/* ===== 部品 ===== */
+.btn{background:#fff;border:1px solid #b9c3cf;border-radius:9px;padding:9px 12px;min-height:42px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:.92rem}
+.btn:hover{background:#eef3f9}
+.btn:active{background:#e2eaf4}
+select.selbtn{padding:9px 2px;font-family:inherit;color:inherit;font-size:.88rem;
+  width:7.6em;flex:0 0 auto}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.pri:hover{background:var(--accent-d)}
+.btn.on{background:#fff3d6;border-color:var(--orange);color:#8a5300;font-weight:700}
+.btn.sm{min-height:36px;padding:6px 9px;font-size:.86rem}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.quiet{background:#f4f6f9;border-color:#d5dce4;color:#5b6672;font-size:.8rem;
+  min-height:32px;padding:4px 8px}
+.btn.quiet:hover{background:#e9eef4}
+/* 2行に折り返す小さめのボタン（過去測定データを登録） */
+.btn.two{white-space:normal;line-height:1.25;font-size:.78rem;min-height:38px;padding:5px 8px;text-align:center}
+/* 薄い青のボタン（おまけの機能） */
+.btn.blue{background:#e8f1fb;border-color:#9cc3e8;color:#0d4d94}
+.btn.blue:hover{background:#d7e7f8}
+/* ボタンの右上に出す吹き出し */
+.btnwrap{position:relative;display:inline-block;max-width:100%;vertical-align:middle}
+.callout{position:absolute;left:calc(100% + 9px);top:50%;transform:translateY(-50%);z-index:3;
+  background:#fff6e8;color:#8a5510;border:1px solid #e6c48c;
+  font-size:.74rem;font-weight:700;border-radius:8px;padding:2px 8px;white-space:nowrap;
+  box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.callout::after{content:"";position:absolute;left:-6px;top:50%;margin-top:-5px;
+  border:5px solid transparent;border-right-color:#e6c48c;border-left:none}
+.callout::before{content:"";position:absolute;left:-5px;top:50%;margin-top:-5px;z-index:1;
+  border:5px solid transparent;border-right-color:#fff6e8;border-left:none}
+/* 右に出すと画面からはみ出すときは、左に出す */
+.callout.left{left:auto;right:calc(100% + 9px)}
+.callout.left::after{left:auto;right:-6px;border-right-color:transparent;border-left-color:#e6c48c;border-right:none;border-left-width:5px}
+.callout.left::before{left:auto;right:-5px;border-right-color:transparent;border-left-color:#fff6e8;border-right:none;border-left-width:5px}
+/* シークバーの下に出す吹き出し（位置は普通の流れの中） */
+.callout.seek{position:static;transform:none;display:inline-block;align-self:flex-start;width:auto;flex:0 0 auto;
+  margin:3px 0 0 6px}
+.callout.seek::after,.callout.seek::before{display:none}
+/* 2つならぶ切りかえボタン */
+.seg{display:inline-flex;gap:0}
+.seg .btn{border-radius:0}
+.seg .btn:first-child{border-radius:9px 0 0 9px}
+.seg .btn:last-child,.seg .btnwrap:last-child .btn{border-radius:0 9px 9px 0;margin-left:-1px}
+.seg .btnwrap{position:relative;display:inline-block}
+@media(max-width:700px){#coLive{display:none}}   /* せまい画面では「← クリックしてみよう」は出さない（横にはみ出すため） */
+.seg .btn.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.seg.big .btn{font-size:.9rem;font-weight:700;padding:8px 14px}
+/* 消すボタン（赤） */
+/* ストロボの「時間間隔調整」 */
+.strotune{margin:6px 0 2px;padding:6px 8px 4px;border:1px solid #e2c98a;border-radius:9px;background:#fffaf0}
+.strotune.glow{border-color:var(--orange);background:#fff3d6;box-shadow:0 0 0 3px rgba(224,123,24,.28)}
+.strotune input[type=range]{width:100%;margin:2px 0 0;accent-color:var(--orange)}
+.strotune .lb{font-weight:700;color:#8a5300}
+.strotune .tag{background:#fff;border:1px solid #e2c98a;color:#8a5300}
+.strotick{display:flex;justify-content:space-between;font-size:.72rem;color:#8a5300;
+  font-family:var(--mono);padding:0 2px}
+.btn.danger{background:#fdecea;border-color:#e3a49d;color:#a8281c;font-weight:700}
+.btn.danger:hover{background:#f9d8d4}
+.btn.danger:active{background:#f3c4be}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row.nowrap{flex-wrap:nowrap}
+.row.nowrap .btn{white-space:nowrap}
+.row.tight{gap:4px}
+/* 2 の再生の行：▶再生／コマ送り／最初から／解析範囲の最初から を1段に収める */
+.playrow{flex-wrap:nowrap;gap:3px}
+.playrow .btn{padding:5px 6px;font-size:.8rem;white-space:nowrap;flex:0 0 auto}
+.playrow label.koma.sw{padding:4px 5px;font-size:.75rem;gap:3px}
+.playrow label.koma.sw input{width:15px;height:15px}
+.playrow .btn.two2{white-space:normal;line-height:1.15;font-size:.72rem;padding:3px 5px;text-align:center}
+/* 🐢 コマ送りのスイッチ（ONのまま［再生］を押すと、Nコマずつ進む） */
+label.koma.sw{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  background:#eef7ef;border:1px solid #a8cfae;color:#1c6b3a;border-radius:9px;
+  padding:5px 8px;min-height:36px;font-size:.84rem;font-weight:700;cursor:pointer;flex:0 0 auto}
+label.koma.sw:hover{background:#ddeede}
+label.koma.sw input{width:17px;height:17px;accent-color:#1c8f4a;margin:0}
+label.koma.sw.on{background:#1c8f4a;border-color:#166f3a;color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* ②グラフ：左に測定した値の表、右にグラフ */
+.m2body{display:flex;gap:12px;align-items:flex-start;margin-top:10px}
+.m2tbl{flex:0 0 auto;width:330px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px);
+  display:flex;align-items:stretch;gap:0}
+.m2tbl>.card{flex:1 1 auto;min-width:0}
+/* 表をたたんだとき（②の「動画と一緒に再生」など）は、細い見出しだけにする */
+.m2tbl.folded{width:auto !important}
+.m2tbl.folded .rsz{display:none}
+.m2tbl.folded>details>summary{white-space:nowrap}
+.rsz{flex:0 0 10px;cursor:ew-resize;background:linear-gradient(#d9dee4,#d9dee4) center/3px 46px no-repeat;
+  border-radius:5px;touch-action:none}
+.rsz:hover{background-color:#eef3f9}
+.m2tbl .tblwrap{max-height:70vh}
+.m2charts{flex:1 1 0;min-width:0}
+/* ②「動画と一緒にグラフを再生する」ときの、右がわの動画エリア */
+.m2live{flex:1 1 520px;min-width:0;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px)}
+.m2live .videobox{min-height:120px}
+.liverow{margin:0 0 8px;align-items:center;gap:8px}
+.liverow #liveT{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* live のときは、左の「測定した値（表）」は出さない */
+.m2body.live .m2tbl{display:none}
+.livenote{margin:0 0 8px;background:#e7f2fd;border:1px solid #9cc3e8;color:#0d4d94;
+  border-radius:9px;padding:7px 10px;font-size:.86rem;font-weight:700;line-height:1.5}
+/* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける）。
+   左の列は「グラフの実際の幅」までにして、あいだに無駄なすき間を作らない */
+.m2body.live{display:grid;grid-template-columns:minmax(190px,max-content) minmax(0,1fr);
+  gap:12px;align-items:start}
+.m2body.live .m2charts>*{width:max-content;max-width:100%}
+.m2body.live .m2charts{flex:none;min-width:0}
+.m2body.live .m2live{flex:none;min-width:0}
+.m2body.live .gwrap{flex-direction:column}
+@media(max-width:700px){
+  .m2body.live{display:flex;flex-direction:column}
+  .m2live{position:static}
+}
+@media(max-width:900px){
+  .m2body{flex-direction:column}
+  .m2tbl{width:100%;position:static}
+  .m2tbl .tblwrap{max-height:260px}
+}
+/* ②グラフの上のカード：左に表示の設定、右に出力ボタン */
+.m2top{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.m2left{flex:1 1 420px;min-width:0}
+.m2out{flex:0 0 auto;width:420px;max-width:100%}
+/* ②：左に Excel・PNG（その下に 力学的エネルギー）、右に CSV・レポート */
+.m2out.two{width:auto;display:flex;gap:12px;align-items:flex-start}
+.m2out.two .grid2{flex:0 0 auto;width:420px}
+.m2out.two .m2outL{flex:0 0 auto}
+.m2out.two .m2outL .row{justify-content:flex-start}
+@media(max-width:1180px){ .m2out.two{flex-wrap:wrap} }
+@media(max-width:820px){ .m2out.two{width:100%} .m2out.two .grid2{width:100%} .m2out.two .m2outL{flex:1 1 100%} .m2out.two .m2outL .row{justify-content:flex-start;flex-wrap:wrap} }
+.m2out .grid2{grid-template-columns:1fr 1fr}
+@media(max-width:820px){ .m2out{width:100%} }
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+input[type=text],input[type=number],select,textarea{border:1px solid #b9c3cf;border-radius:8px;padding:7px 8px;
+  min-height:40px;background:#fff;max-width:100%}
+input[type=number]{width:88px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+label.f{display:flex;align-items:center;gap:6px;font-size:.88rem;flex-wrap:wrap}
+label.cb{display:inline-flex;align-items:center;gap:7px;font-size:.89rem;min-height:38px}
+label.cb input{width:19px;height:19px}
+.val{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tag{display:inline-block;background:#eef2f7;border:1px solid var(--line);border-radius:999px;
+  padding:2px 9px;font-size:.79rem;color:var(--sub)}
+.ok{color:var(--ok)} .ng{color:var(--ng)}
+.note{background:var(--warnbg);border:1px solid #e8d9a0;color:var(--warn);border-radius:9px;padding:8px 10px;font-size:.85rem}
+.err{background:#fdecea;border:1px solid #f2b8b2;color:#8c2118;border-radius:9px;padding:10px 12px;font-size:.9rem}
+.hide{display:none !important}
+
+/* ===== 手順の進み具合（光る／薄くする／まだ触れない） ===== */
+details.card.step-active{border-color:var(--orange);box-shadow:0 0 0 3px rgba(224,123,24,.22);
+  animation:stepglow 1.8s ease-in-out infinite}
+@keyframes stepglow{0%,100%{box-shadow:0 0 0 3px rgba(224,123,24,.18)}50%{box-shadow:0 0 0 6px rgba(224,123,24,.30)}}
+details.card.step-active>summary{color:#a35b00}
+details.card.step-active>summary::after{content:"いまここ";margin-left:auto;background:var(--orange);color:#fff;
+  border-radius:999px;font-size:.72rem;padding:1px 9px;font-weight:700}
+details.card.step-done{opacity:.62;background:#fafbfc}
+details.card.step-done>summary{color:#77838f}
+details.card.step-done>summary::after{content:"済";margin-left:auto;color:var(--ok);font-size:.82rem;font-weight:700}
+.again{display:none;margin-left:8px;min-height:26px;padding:1px 9px;font-size:.75rem;
+  background:#eef3f9;border-color:#b9c3cf}
+details.card.step-done>summary .again{display:inline-flex}
+details.card.step-lock{opacity:.5;background:#fafbfc}
+details.card.step-lock>summary{color:#98a3ae}
+details.card.step-lock>summary::after{content:"まだ";margin-left:auto;color:#98a3ae;font-size:.75rem}
+details.card.step-lock>*:not(summary){pointer-events:none}
+@media(prefers-reduced-motion:reduce){details.card.step-active{animation:none}}
+
+/* いま設定してほしい入力欄（探索半径など） */
+label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
+  padding:4px 8px;color:#8a5300;font-weight:700}
+/* 1.動画：解析できる動画のめやす */
+.vlimit{margin:6px 0;line-height:1.55}
+.vlimit b{color:#7a5c00}
+/* いま押してほしいボタン */
+.btn.glow{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700;
+  box-shadow:0 0 0 3px rgba(224,123,24,.25);animation:btnglow 1.6s ease-in-out infinite}
+.btn.glow:hover{background:#c96c11}
+@keyframes btnglow{0%,100%{box-shadow:0 0 0 3px rgba(224,123,24,.20)}50%{box-shadow:0 0 0 6px rgba(224,123,24,.34)}}
+.tabs button.glow{background:#fff3d6;color:#8a5300;box-shadow:0 -3px 0 var(--orange) inset,0 0 0 3px rgba(224,123,24,.25)}
+@media(prefers-reduced-motion:reduce){.btn.glow{animation:none}}
+/* 「動画ファイルを選択」は薄い青のまま、ふちだけ光らせる */
+#btnFile.glow{background:#e8f1fb;border-color:var(--accent);color:#0d4d94}
+/* 4 でまだ1点も無いときは、押す場所（動画）を光らせる */
+.videobox.glow{box-shadow:0 0 0 3px var(--orange), 0 0 14px rgba(224,123,24,.55)}
+@media(prefers-reduced-motion:reduce){.videobox.glow{box-shadow:0 0 0 3px var(--orange)}}
+
+/* 動画と表を並べる */
+.rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,420px);
+  gap:12px;align-items:start}
+.rightcol.sbs .videobox{grid-column:1;grid-row:1}
+.rightcol.sbs .vidbar{grid-column:1;grid-row:2}
+.rightcol.sbs #tblCard{grid-column:2;grid-row:1 / span 2}
+.rightcol.sbs #tblCard .tblwrap{max-height:70vh}
+.rightcol.sbs .strobox{grid-column:1 / -1}
+@media(max-width:860px){ .rightcol.sbs{display:flex;flex-direction:column} }
+/* 2・3 のあいだは、動画の右に操作（シークバーなど）を置き、表は下にまわす。
+   小さいタブレットで「動画を見ながらシークバーを動かす」ためのならべ方。 */
+.rightcol.ctl{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,380px);
+  grid-auto-rows:min-content;gap:12px;align-items:start}
+.rightcol.ctl .videobox{grid-column:1;grid-row:1}
+.rightcol.ctl .vidbar{grid-column:2;grid-row:1}
+.rightcol.ctl #tblCard{grid-column:1 / -1;grid-row:2}
+.rightcol.ctl .strobox{grid-column:1 / -1}
+.rightcol.ctl .vidbar .stepbtns .btn{min-width:40px;padding:7px 4px}
+@media(max-width:980px){ .rightcol.ctl{display:flex;flex-direction:column} }
+
+/* いま何をすべきか（赤文字） */
+.todo{color:#c0392b;font-weight:700;font-size:.88rem;line-height:1.55;margin:4px 0 2px;
+  padding-left:20px;position:relative}
+.todo::before{content:"➡";position:absolute;left:0;top:0}
+/* 「動画ファイルを選択」はいつも薄く青く光らせておく */
+#btnFile{background:#e8f1fb;border-color:#8fb8e0;color:#0f4c8f;font-weight:700;
+  box-shadow:0 0 0 3px rgba(22,99,181,.16)}
+#btnFile:hover{background:#d7e7f8}
+
+/* 動画エリアの吹き出し */
+#vhint{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:7;
+  max-width:92%;background:rgba(20,26,34,.88);color:#fff;border-radius:10px;
+  padding:9px 34px 9px 13px;font-size:.9rem;font-weight:700;line-height:1.5;
+  box-shadow:0 3px 14px rgba(0,0,0,.35);pointer-events:none}
+#vhint b{color:#ffd66e}
+/* 右上にボタンがあるときは、吹き出しを下にずらす */
+.videobox.topbtn #vhint{top:48px}
+#vhintX{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;
+  border:none;background:rgba(255,255,255,.18);color:#fff;font-size:15px;line-height:1;
+  pointer-events:auto;display:flex;align-items:center;justify-content:center}
+#vhintX:hover{background:rgba(255,255,255,.34)}
+
+/* 動画エリアの右上に出すボタン（4.トラッキングの間だけ） */
+.vtopbtn{position:absolute;right:8px;top:8px;z-index:9;
+  border:1px solid rgba(255,255,255,.55);border-radius:9px;
+  background:rgba(20,26,34,.72);color:#fff;font-size:.83rem;font-weight:700;
+  padding:6px 10px;line-height:1.2;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.vtopbtn:hover{background:rgba(232,68,58,.85)}
+/* トラッキングした点をリセット（動画の右上）は赤く */
+#btnTrkReset2{background:rgba(192,57,43,.88);border-color:#fff}
+/* 1回分トラッキングを取り消す（動画の左上）も赤く */
+.vtopbtn.left{right:auto;left:8px}
+#btnUndo1v{background:rgba(192,57,43,.88);border-color:#fff;font-size:.78rem;padding:6px 8px}
+/* 動画エリアがせまいときは、2つが重ならないように下の段へ */
+.videobox.narrow .vtopbtn.left{top:44px}
+/* いま出ている動画が、その実験の動画とちがうときの帯 */
+#vidMis{position:absolute;left:0;right:0;top:0;z-index:12;background:rgba(192,57,43,.94);color:#fff;
+  font-size:.84rem;font-weight:700;line-height:1.35;padding:7px 10px;text-align:center}
+.videobox.mismatch{outline:3px solid var(--ng);outline-offset:-3px}
+#btnTrkReset2:hover{background:rgba(232,68,58,.95)}
+
+/* 動画の真ん中の「トラッキングを開始する」 */
+#btnTrkStart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:var(--orange);border:2px solid #fff;color:#fff;font-weight:700;font-size:1.06rem;
+  padding:16px 28px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.4);
+  animation:btnglow 1.6s ease-in-out infinite;max-width:88%}
+#btnTrkStart:hover{background:#c96c11}
+#btnTrkStart .l1{display:block;font-size:1.12rem}
+#btnTrkStart .l2{display:block;font-size:.86rem;font-weight:500;margin-top:5px;opacity:.95}
+/* 「手でクリックして記録」を選んでいる間、［色で自動追跡］は灰色に */
+.btn.dim{background:#e6e9ee!important;border-color:#c9d0d8!important;color:#8a94a0!important;box-shadow:none!important}
+/* 4 に入ったときの N の質問、自動追跡の案内：動画の真ん中に大きく */
+#calMsg.ask.center{top:50%;transform:translate(-50%,-50%)}
+/* 自動追跡の案内（.big）は、ほかの案内と同じ大きさ（前は 2 倍だった） */
+#calMsg.ask.big{max-width:92%}
+#calMsg.ask.nconf{width:min(560px,90%)}
+#calMsg.ask .btn.big2{font-size:1.15rem;padding:12px 22px}
+#calMsg.ask select.nsel{font-size:1.3rem;padding:6px 10px;border-radius:8px}
+#vph{cursor:pointer}
+.smark{cursor:ew-resize}
+.videobox.record #cvOv,.videobox.origin #cvOv,.videobox.axis #cvOv,.videobox.scale1 #cvOv,.videobox.scale2 #cvOv,.videobox.color #cvOv,.videobox.ref #cvOv{cursor:crosshair}
+#autoMsg.act,#doneMsg,#btnOriginBig,#vhintX,#calMsg.ask .btn,.tabs button,summary{cursor:pointer}
+@media(prefers-reduced-motion:reduce){#btnTrkStart{animation:none}}
+/* 色マーカーの自動追跡が ON のとき：動画の真ん中で「色で自動追跡（おすすめ）／手でクリック」を選ぶ */
+#trkChoice{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;display:flex;flex-direction:column;align-items:center;gap:12px;
+  background:rgba(20,30,45,.72);padding:16px 22px 18px;border-radius:16px;max-width:92%}
+#trkChoice .tc-q{color:#fff;font-weight:700;font-size:1.08rem;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+#trkChoice .btnwrap{position:relative;display:inline-block;margin-right:92px;margin-left:92px}
+#trkChoice .tc-auto{background:var(--orange);border:2px solid #fff;color:#fff;font-weight:700;font-size:1.06rem;white-space:nowrap;
+  padding:16px 30px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.4);animation:btnglow 1.6s ease-in-out infinite;cursor:pointer}
+#trkChoice .tc-auto:hover{background:#c96c11}
+#trkChoice .tc-auto .l1{display:block;font-size:1.2rem}
+#trkChoice .tc-auto .l2{display:block;font-size:.86rem;font-weight:500;margin-top:5px;opacity:.95}
+#trkChoice .tc-hand{background:#fff;border:1.5px solid #c9d0d8;color:#1b1f24;font-weight:600;font-size:.95rem;padding:8px 16px;border-radius:10px;cursor:pointer}
+#trkChoice .tc-hand:hover{background:#eef3f8}
+.callout.rec{background:var(--orange);color:#fff;border-color:var(--orange);font-weight:700}
+.callout.rec::after,.callout.rec::before{border-right-color:var(--orange)}
+#btnStartAuto.rec{animation:btnglow 1.6s ease-in-out infinite;font-size:1.06rem;padding:11px 18px;background:var(--orange);color:#fff;border-color:#fff}
+@media(prefers-reduced-motion:reduce){#trkChoice .tc-auto,#btnStartAuto.rec{animation:none}}
+
+/* 3 の「原点を指定してください」（動画の真ん中） */
+#btnOriginBig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:var(--orange);border:2px solid #fff;color:#fff;font-weight:700;font-size:1.04rem;
+  padding:15px 26px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,.4);
+  animation:btnglow 1.6s ease-in-out infinite;max-width:88%}
+#btnOriginBig:hover{background:#c96c11}
+@media(prefers-reduced-motion:reduce){#btnOriginBig{animation:none}}
+
+/* 解析が終わったときの知らせ */
+#doneMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:rgba(28,143,74,.92);color:#fff;font-weight:700;font-size:1.05rem;
+  padding:14px 22px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.35);
+  border:none;cursor:pointer;text-align:center;max-width:88%;transition:all .4s}
+#doneMsg:hover{background:rgba(22,120,62,.96)}
+/* 2秒たったら、左下に小さく出しておく（左上は「1回分トラッキングを取り消す」があるので重なる） */
+#doneMsg.small{left:8px;top:auto;bottom:20px;transform:none;font-size:.8rem;font-weight:600;
+  padding:4px 10px;background:rgba(28,143,74,.55);box-shadow:0 1px 5px rgba(0,0,0,.2);max-width:70%}
+#doneMsg.small:hover{background:rgba(22,120,62,.9)}
+.calok{background:#f2f8f3;border:1px solid #b9dcc4;border-radius:8px;padding:4px 9px;color:#1c6b3c}
+.calok b{color:#155c33}
+.donemsg{margin:.2em 0 .5em;color:#1c8f4a;font-weight:700;font-size:.94rem;
+  background:#e7f6ed;border:1px solid #9fd8b6;border-radius:9px;padding:6px 9px;cursor:pointer}
+.donemsg:hover{background:#d8f0e2}
+
+/* ===== 動画の上の大きな再生ボタン・ドロップ表示 ===== */
+#bigPlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;
+  width:88px;height:88px;border-radius:50%;border:3px solid rgba(255,255,255,.9);
+  background:rgba(20,26,34,.45);color:#fff;font-size:30px;line-height:1;
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#bigPlay:hover{background:rgba(22,99,181,.75)}
+#bigPlay span{margin-left:6px}
+#dropHint{position:absolute;inset:8px;z-index:8;border:3px dashed #7fb2e5;border-radius:12px;
+  background:rgba(22,99,181,.35);color:#fff;font-weight:700;font-size:1.05rem;
+  display:flex;align-items:center;justify-content:center;pointer-events:none}
+body.dropping #dropHint{display:flex !important}
+
+/* ===== シークバーの縦棒（t=0 と おわり） ===== */
+/* シークバーのつまみと重ならないように、縦棒は上のほうだけ（短く）にする */
+.smark{position:absolute;top:6px;height:24px;width:22px;margin-left:-11px;z-index:3;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;touch-action:none;
+  cursor:ew-resize;touch-action:none;display:flex;justify-content:center}
+/* 指でつかめるように、見た目はそのままで当たり判定だけ広げる（44×44 px くらい） */
+.smark::after{content:"";position:absolute;left:-11px;right:-11px;top:-8px;bottom:-12px}
+.smark::before{content:"";position:absolute;top:9px;bottom:0;width:3px;border-radius:2px}
+.smark.t0::before{background:#1c8f4a}
+.smark.tb::before{background:#c0392b}
+.smark b{position:absolute;top:-4px;font-size:.66rem;font-weight:700;white-space:nowrap;
+  padding:0 4px;border-radius:4px;color:#fff;pointer-events:none}
+.smark.t0 b{background:#1c8f4a}
+.smark.tb b{background:#c0392b}
+
+/* 手順の箇条書き（操作説明） */
+ol.steps{margin:0;padding-left:1.25em;font-size:.85rem;color:#39434e}
+ol.steps li{margin:.28em 0}
+ol.steps b{color:var(--accent-d)}
+kbd{font-family:var(--mono);font-size:.8em;background:#eef2f7;border:1px solid #c6cfda;
+  border-bottom-width:2px;border-radius:5px;padding:1px 5px}
+
+/* ===== 動画エリア ===== */
+.videobox{position:relative;background:#20262e;border:1px solid var(--line);border-radius:11px;overflow:hidden;
+  touch-action:none;-webkit-user-select:none;user-select:none;min-height:180px;
+  max-width:100%;min-width:0}
+.videobox{display:flex;justify-content:center;align-items:flex-start}
+.vwrap{position:relative;line-height:0;max-width:100%}
+.videobox canvas{display:block;width:100%;height:auto;touch-action:none}
+.videobox .ph{color:#dfe6ee;text-align:center;padding:46px 16px;font-size:1.25rem;line-height:1.7;flex:1;font-weight:600}
+.videobox .ph .hl{color:var(--orange);font-weight:800;font-size:1.35rem}
+.videobox .ph b{color:#fff}
+#loupe{position:absolute;width:132px;height:132px;border-radius:50%;border:3px solid #fff;
+  box-shadow:0 3px 12px rgba(0,0,0,.45);pointer-events:none;display:none;z-index:6;background:#000;overflow:hidden}
+#loupe canvas{width:132px;height:132px}
+.vidbar{display:flex;flex-direction:column;gap:7px;background:var(--card);border:1px solid var(--line);
+  border-radius:11px;padding:9px 10px}
+.seekwrap{position:relative;padding-top:16px;overflow:hidden}
+input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
+.seekwrap input[type=range]{height:51px}
+.rangemark{position:absolute;top:12px;height:10px;background:rgba(22,99,181,.28);border-radius:5px;pointer-events:none}
+/* トラッキングが終わっている所（解析範囲のバーの上に重ねる） */
+.donemark{position:absolute;top:12px;height:10px;background:rgba(28,143,74,.72);border-radius:5px;pointer-events:none}
+.donet{position:absolute;top:7px;font-size:.7rem;font-weight:700;color:#12603a;background:#e9f6ee;
+  border:1px solid #9fd3b4;border-radius:6px;padding:0 5px;white-space:nowrap;pointer-events:none;z-index:4}
+.btn.nextpt{background:#1c8f4a;border-color:#177a3f;color:#fff;font-weight:700}
+.awayrow{margin:6px 0 0;gap:8px;align-items:center;flex-wrap:wrap}
+.awayrow .seg .btn{font-size:.78rem;padding:3px 9px;min-height:26px;
+  background:#eaf2fb;border-color:#b7d3ef;color:var(--accent-d)}
+.awayrow .seg .btn.on{background:#1663b5;border-color:#0f4c8f;color:#fff;font-weight:700}
+.awaysel{font-size:.78rem;color:var(--sub)}
+.awaysel select{font-size:.78rem;padding:2px 6px;min-height:26px}
+.btn.nextpt:hover{background:#177a3f}
+.sub .subhead{position:relative}
+.sub .subnote{float:right;font-weight:400;font-size:.72rem;color:var(--sub);line-height:1.25;text-align:right}
+/* コマ送りのボタン。もどる（赤）／すすむ（緑）の2つのまとまりを1段にならべる */
+.stepbtns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.stepgrp{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.steprow{display:flex;gap:3px;flex-wrap:nowrap}
+.stepbtns .btn{min-width:44px;padding:8px 5px;font-family:var(--mono);font-size:.85rem}
+.stepbtns .btn.back{background:#fff4f2;border-color:#e3a79e;color:#a5342a;font-weight:700}
+.stepbtns .btn.back:hover{background:#fde8e4}
+.stepbtns .btn.fwd{background:#f1fbf5;border-color:#9ed2b4;color:#136b39;font-weight:700}
+.stepbtns .btn.fwd:hover{background:#e2f6ea}
+.stepbtns .btn.n{box-shadow:0 0 0 2px #f4dfae inset}
+/* ボタンの下の小さな吹き出し（もどる・すすむ） */
+.steplab{font-size:.72rem;font-weight:700;border-radius:7px;padding:1px 9px;position:relative;
+  border:1px solid transparent;line-height:1.5}
+.steplab::before{content:"";position:absolute;left:50%;top:-5px;margin-left:-4px;
+  border:4px solid transparent;border-bottom-width:5px}
+.steplab.back{background:#fff4f2;border-color:#e3a79e;color:#a5342a}
+.steplab.back::before{border-bottom-color:#e3a79e}
+.steplab.fwd{background:#f1fbf5;border-color:#9ed2b4;color:#136b39}
+.steplab.fwd::before{border-bottom-color:#9ed2b4}
+@media(max-width:520px){ .stepbtns{gap:8px} .stepbtns .btn{min-width:36px;padding:7px 2px;font-size:.76rem} }
+.tline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.86rem;color:var(--sub)}
+.tline .val{color:var(--ink)}
+
+/* ===== ストロボ ===== */
+.strobox{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px}
+.strobox canvas{width:auto;height:auto;max-width:100%;max-height:70vh;display:block;
+  background:#111;border-radius:8px;margin:0 auto}
+
+/* ===== グラフ ===== */
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.chartcard{background:#fff;border:1px solid var(--line);border-radius:11px;padding:8px}
+.chartcard canvas{width:100%;height:auto;display:block;touch-action:none;cursor:grab}
+.chartcard canvas:active{cursor:grabbing}
+#cgCanvas{touch-action:none;cursor:grab}
+.chartcard .ttl{font-size:.88rem;font-weight:700;color:var(--accent-d);margin:0 0 4px 4px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.82rem;margin:4px 0 0 4px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.explist{display:flex;gap:10px;flex-wrap:wrap}
+.explist label{display:inline-flex;align-items:center;gap:5px;font-size:.86rem;background:#f1f4f8;
+  border:1px solid var(--line);border-radius:8px;padding:5px 9px;min-height:36px}
+
+/* ===== 表 ===== */
+.tbl{width:100%;border-collapse:collapse;font-size:.84rem}
+.tbl th,.tbl td{border:1px solid var(--line);padding:4px 7px;text-align:right;font-family:var(--mono);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl th{background:#eef2f7;font-family:var(--jp);text-align:center;font-size:.8rem;
+  position:sticky;top:0;z-index:1}
+.tbl tr.cur td{background:#fff3d6;font-weight:700}
+/* 速さは行と行のあいだ（半マスずらして見せる） */
+.tbl tr.vrow td{border-top:none;border-bottom:none;color:#0f4c8f;background:#fbfcfd;padding:1px 8px}
+.tblwrap{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;position:relative}
+/* 表のとちゅうを飛ばしたときの行（クリックで前後を表示） */
+.tbl tr.more td{background:#eef4fb;color:var(--accent-d);font-weight:700;cursor:pointer;text-align:center}
+.tbl tr.more td:hover{background:#dfeaf7}
+/* 「いまのトラッキング点」を指す矢印（上下にドラッグできる） */
+#trkMk{position:absolute;left:1px;z-index:5;color:#e07b18;font-size:15px;line-height:1;
+  cursor:grab;touch-action:none;text-shadow:0 0 3px #fff,0 0 3px #fff;user-select:none}
+#trkMk:hover{color:#c1660d;transform:scale(1.25)}
+#trkMk.drag{cursor:grabbing;color:#c1660d;transform:scale(1.3)}
+.tbl tr.mkrow td{background:#fff4e2}
+/* カードの中の小さなまとまり（色マーカーの自動追跡など） */
+.sub{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0;background:#fafcff}
+.sub .subhead{font-weight:700;color:var(--accent-d);font-size:.92rem;margin:0 0 6px}
+.sub.on{border-color:#e07b18;background:#fff8ef}
+.sub.step-lock{opacity:.45;pointer-events:none}
+/* 「手でクリックして記録」「色で自動追跡」は縦に並べる */
+.col2way{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.col2way .btnwrap{max-width:100%}
+.col2way .btn{white-space:normal;text-align:left}
+/* 「測定した値（表）」の右上に置くボタン */
+#tblCard > summary{position:relative;padding-right:130px}
+.tblbtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  padding:2px 9px;min-height:26px;font-size:.8rem}
+/* 説明ポップアップの数式 */
+.fml{font-family:var(--mono);background:#f6f9fc;border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;font-size:.9rem;overflow-x:auto;white-space:nowrap}
+
+/* フィット結果（③と自由選択グラフでそろえる） */
+.fitone{margin:.3em 0;padding:.45em .6em;background:#f6f9fc;border:1px solid var(--line);border-radius:9px;
+  font-size:.88rem;line-height:1.7}
+.fitone b{color:var(--accent-d)}
+#fitResult,#cgResult{font-size:.88rem;color:var(--ink)}
+
+/* ③解析：グラフの右にフィット結果 */
+.m3body{display:flex;gap:12px;align-items:flex-start}
+.m3graphs{flex:0 1 auto;min-width:0}
+#charts3 .chartcard{width:max-content;max-width:100%}
+.m3res{flex:0 0 360px;max-width:100%;position:sticky;top:calc(var(--hdh,50px) + 54px);
+  display:flex;flex-direction:column;gap:10px}
+#residHost:empty{display:none}
+.m3res>.card{min-height:74px}
+@media(max-width:980px){ .m3body{flex-direction:column} .m3res{width:100%;position:static} }
+
+/* 自由選択グラフ */
+#cgCard select{max-width:148px}
+/* フィットする関数は式が長いので、広くとる */
+#cgCard select#cgFitType{max-width:none;min-width:210px;flex:0 1 auto}
+#cgFitRow{flex-wrap:wrap}
+#cgHost2>#cgCard{max-width:900px}
+/* ③では ③のグラフと同じく、左にグラフ・右にフィッティングの設定と結果 */
+#cgHost3>#cgCard{max-width:none}
+#cgHost3>#cgCard .cgside{flex:1 1 300px;max-width:760px}
+/* 結果｜残差 を横に（③のフィッティング結果と同じ） */
+.cgresrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.cgresrow #cgResult{flex:1 1 260px;min-width:0}
+.cgresrow #cgResidHost{flex:0 0 340px;max-width:100%}
+.cgresrow #cgResidHost:empty{display:none}
+.maxbtn.cgmax{margin-left:6px}
+.cgbody{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.cgmain{flex:0 0 auto;min-width:0;max-width:100%}
+.cgside{flex:1 1 240px;min-width:0}
+.cgside .fitone{margin-top:0}
+.cgside .row{margin-bottom:6px}
+.cgrid{display:grid;grid-template-columns:auto max-content auto;gap:8px 12px;align-items:center}
+.cgTop{grid-column:1 / -1;grid-row:1;display:flex;gap:8px;align-items:center;
+  justify-content:flex-end;flex-wrap:wrap}
+.cgpick{display:inline-flex;gap:4px;align-items:center;background:#f6f9fc;
+  border:1px solid var(--line);border-radius:9px;padding:4px 7px}
+.cgY,.cgB{display:flex;flex-direction:column;gap:5px;
+  background:#f6f9fc;border:1px solid var(--line);border-radius:9px;padding:8px 9px}
+.cgY{grid-column:1;grid-row:2}
+.cgB{grid-column:3;grid-row:2}
+.cgY .lb,.cgB .lb,.cgpick .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
+.cgY label.cb,.cgB label.cb{min-height:30px;font-size:.82rem}
+.cgPlot{grid-column:2;grid-row:2;min-width:0;display:flex;justify-content:flex-start}
+.cgX{grid-column:2 / -1;grid-row:3;display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.cgX .lb{font-size:.8rem;color:var(--accent-d);font-weight:700}
+.cgX label.cb{min-height:30px;font-size:.82rem}
+/* 物理量を選ぶところは目立たせる */
+#cgCard select.qsel{background:#fff3d6;border:2px solid #e0a12a;color:#7a5200;
+  font-weight:700;border-radius:8px}
+#cgCard select.qsel:focus{outline:2px solid #e0a12a}
+@media(max-width:820px){
+  .cgrid{grid-template-columns:minmax(0,1fr)}
+  .cgTop,.cgY,.cgPlot,.cgB,.cgX{grid-column:1}
+  .cgTop{grid-row:1;justify-content:flex-start}
+  .cgY{grid-row:2} .cgPlot{grid-row:3} .cgB{grid-row:4} .cgX{grid-row:5;justify-content:flex-start}
+  .cgY,.cgB{flex-direction:row;flex-wrap:wrap;align-items:center}
+}
+
+/* グラフの並べ方（物体ごとのブロック → 列） */
+.gblock{margin:0 0 14px}
+.gblock>h3{margin:0 0 6px;font-size:.95rem;color:var(--accent-d)}
+.gwrap{display:grid;gap:12px;align-items:start}
+.gcol{display:flex;flex-direction:column;gap:10px;min-width:0;align-items:flex-start}
+.gcol>.chartcard{width:max-content;max-width:100%}
+.chartcard{position:relative}
+.chartcard .ttl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-right:210px}
+.readout{font-size:.8rem;color:#0f4c8f;font-family:var(--mono);font-variant-numeric:tabular-nums;
+  background:#eaf2fb;border:1px solid #b9d3ef;border-radius:7px;padding:1px 7px;font-weight:400}
+.readout:empty{display:none}
+.chartcard .dydt{position:absolute;right:96px;top:5px;z-index:2;min-height:24px;font-size:.74rem;
+  color:var(--sub);background:#f4f6f9;border:1px solid var(--line);border-radius:7px;padding:0 6px;gap:4px}
+.chartcard .dydt input{width:14px;height:14px}
+/* グラフのすぐ下・右よせ：スケールフィット */
+.chartcard .fitrow{display:flex;justify-content:flex-end;margin:2px 2px 0}
+.chartcard .fitbtn{min-height:26px;padding:2px 9px;
+  display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;
+  background:#eef6ff;border:1px solid #9cc3e8;color:#0d4d94;border-radius:8px;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.10)}
+.chartcard .fitbtn:hover{background:#dce7f4}
+.chartcard .fitbtn:active{background:#cddff2}
+.chartcard .maxbtn{position:absolute;right:6px;top:5px;z-index:2;min-height:26px;padding:1px 8px;
+  font-size:.74rem;background:#eef3f9;border:1px solid #b9c3cf;border-radius:7px;color:#39434e}
+.chartcard .maxbtn:hover{background:#dce7f4}
+#gmodal .box{max-width:1200px}
+#cgCard .lb{font-size:.85rem;color:var(--sub);font-weight:700}
+
+/* ===== 読み込み中は操作させない ===== */
+.busy{position:fixed;inset:0;background:rgba(20,26,34,.45);z-index:300;display:flex;
+  align-items:center;justify-content:center;padding:16px;cursor:progress}
+.busy .box{background:#fff;border-radius:14px;padding:20px 26px;text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,.3);max-width:420px;width:100%}
+.busy p{margin:.4em 0;font-weight:700;color:var(--accent-d)}
+.busy p.mini{font-weight:400}
+.busy .spin{width:38px;height:38px;margin:2px auto 10px;border-radius:50%;
+  border:4px solid #dbe6f3;border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.busy .spin{animation:none}}
+
+/* 動画の真ん中に出す確認メッセージ（原点・x軸） */
+#calMsg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;
+  background:rgba(20,26,34,.88);color:#fff;font-weight:700;font-size:1.02rem;line-height:1.6;
+  padding:14px 22px;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.4);
+  text-align:center;max-width:88%;pointer-events:none;border:2px solid rgba(255,255,255,.55)}
+#calMsg b{color:#ffd66e}
+/* 自動追跡の知らせ（見失った・見つけた） */
+#autoMsg{position:absolute;left:50%;z-index:9;text-align:center;max-width:90%;
+  pointer-events:none;border-radius:12px;transition:all .35s}
+#autoMsg.big{top:50%;transform:translate(-50%,-50%);background:rgba(20,26,34,.9);color:#fff;
+  font-weight:700;font-size:1.12rem;line-height:1.6;padding:16px 24px;
+  box-shadow:0 4px 18px rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.6)}
+#autoMsg.faint{top:auto;bottom:10px;transform:translate(-50%,0);max-width:74%;background:rgba(20,26,34,.45);color:#fff;
+  font-weight:600;font-size:.86rem;line-height:1.4;padding:5px 12px;border:1px solid rgba(255,255,255,.35)}
+#autoMsg b{color:#ffd66e}
+/* 押すとそのまま実行できる知らせ（見つけました！ 最後まで追跡 しますか？） */
+#autoMsg.act{cursor:pointer;border:2px solid #ffd66e;pointer-events:auto}
+#autoMsg.act:hover{filter:brightness(1.18)}
+#autoMsg.ok.big{background:rgba(18,110,60,.92)}
+#autoMsg.ok.faint{background:rgba(18,110,60,.5)}
+
+/* ===== モーダル ===== */
+.modal{position:fixed;inset:0;background:rgba(20,26,34,.55);z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:14px}
+.modal .box{background:#fff;border-radius:14px;max-width:820px;width:100%;max-height:88vh;overflow:auto;
+  padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.modal h2{margin:.2em 0 .5em;font-size:1.15rem;color:var(--accent-d)}
+.namein{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;
+  padding:9px 10px;font-size:1rem;margin-top:6px}
+.modal h3{margin:1.1em 0 .3em;font-size:1rem;color:var(--accent-d)}
+.modal .cls{position:sticky;top:0;float:right}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:rgba(20,26,34,.92);color:#fff;
+  padding:10px 18px;border-radius:999px;z-index:200;font-size:.9rem;pointer-events:none;opacity:0;
+  transition:opacity .18s}
+.toast.on{opacity:1}
+.prog{height:8px;background:#e6ebf1;border-radius:5px;overflow:hidden}
+.prog>i{display:block;height:100%;background:var(--accent);width:0%}
+
+/* 印刷 */
+@media print{.apphd,.tabs,.side{display:none}}
+
+/* ---- この動画の撮れぐあい（読み込み直後の自動チェック） ---- */
+.diagbox{ margin-top:8px; border:1px solid #d9dee4; border-radius:8px; padding:8px 10px;
+  background:#fbfcfe; font-size:.86rem; line-height:1.5 }
+.diagbox.warn{ border-color:#e3a33a; background:#fff8ec }
+.diagbox.bad{ border-color:#d9534f; background:#fdf1f0 }
+.diagbox .dgt{ font-weight:700; color:#0f4c8f; display:block; margin-bottom:4px }
+.diagbox ul{ margin:0; padding:0; list-style:none }
+.diagbox li{ display:flex; gap:6px; align-items:flex-start; margin:2px 0 }
+.diagbox .mk{ flex:0 0 1.15em; text-align:center; font-weight:700 }
+.diagbox .mk.o{ color:#12703c } .diagbox .mk.t{ color:#c07a12 } .diagbox .mk.x{ color:#c0332e }
+.diagbox .dgtip{ margin-top:5px; color:#41525f }
+.diagbox .btn{ margin-top:6px }
+
+/* ---- ものさしの奥行き ---- */
+.depthbox{ margin-top:8px; border:1px solid #cfd8e3; border-radius:8px; padding:8px 10px;
+  background:#f6f9fd; font-size:.86rem }
+.depthbox b{ color:#0f4c8f }
+.depthbox .row{ margin-top:4px }
+.depthbox .f{ font-size:.84rem }
+#depthMsg.ok{ color:#12703c } #depthMsg.ng{ color:#c0332e; font-weight:700 }
+
+/* ---- 謝意・参考文献（①の一番下） ---- */
+.credits{ margin:18px 8px 10px; padding:10px 14px; border-top:1px solid #d9dee4;
+  font-size:.8rem; line-height:1.6; color:#41525f }
+.credits b{ color:#0f4c8f }
+.credits a{ color:#1663b5; word-break:break-all }
+.credits ul{ margin:4px 0 6px; padding-left:1.3em }
+.credits li{ margin:1px 0 }
+
+/* ストロボを作っている最中 */
+.strowait{ color:#c0332e; font-weight:700; margin:4px 0 0 }
+/* ※ .busy は画面全体をおおう別のクラスなので、ここでは stro-busy を使う（前は .busy を付けていて、作成中に時間間隔調整が画面いっぱいに出ていた） */
+.strotune.stro-busy{ opacity:.75 }
+.strotune.stro-busy input[type=range]{ cursor:not-allowed }
+
+/* ボタンの上に出す吹き出し（↓やり直しはここ） */
+.callout.above{left:0;top:auto;bottom:calc(100% + 4px);transform:none}
+.callout.above::before,.callout.above::after{display:none}
+#calBtnRow.calltop{margin-top:28px}
+/* 3 の案内（はい・いいえ で進める）。動画の上のほうに出して、動画をかくさない */
+#calMsg.ask{top:14px;transform:translate(-50%,0);text-align:left;font-weight:600;font-size:.98rem;
+  max-width:92%;background:rgba(20,26,34,.92)}
+#calMsg.ask.act{pointer-events:auto}
+#calMsg.ask .q{font-weight:700;font-size:1.06rem;display:block;margin-bottom:6px;color:#fff}
+#calMsg.ask .row{margin-top:8px;gap:8px;justify-content:center}
+#calMsg.ask .btn{font-size:.92rem;padding:6px 14px}
+#calMsg.ask .btn.pri{background:#ffd66e;border-color:#ffd66e;color:#1b1f24;font-weight:700}
+#calMsg.ask .btn.ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.55);color:#fff}
+#calMsg.ask input,#calMsg.ask select{font-size:1rem;padding:3px 6px;border-radius:6px;border:1px solid #cbd3dc}
+#calMsg.ask .mini{color:#dfe6ee;font-weight:500;font-size:.84rem;line-height:1.5;display:block;margin-top:6px}
+
+/* ---- カメラ撮影のガイド ---- */
+.camwrap{position:relative}
+#camGuide{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;border-radius:8px}
+.camtilt{position:absolute;left:8px;top:8px;background:rgba(20,26,34,.7);color:#fff;font-size:.8rem;
+  font-weight:700;padding:3px 9px;border-radius:7px;pointer-events:none}
+.camtilt.ok{background:rgba(18,110,60,.85)}
+.camtilt.ng{background:rgba(192,51,46,.88)}
+
+/* ---- 畳んだカード（①の左）は小さく・1 段に ---- */
+#side1 details.card:not([open]){padding:5px 9px}
+#side1 details.card:not([open])>summary{font-size:.76rem;min-height:22px;gap:4px;
+  white-space:nowrap;overflow:hidden}
+#side1 details.card:not([open])>summary::before{font-size:.7rem}
+#side1 details.card:not([open])>summary .again{min-height:20px;padding:0 6px;font-size:.66rem;margin-left:6px;flex:0 0 auto}
+#side1 details.card.step-done:not([open])>summary::after,
+#side1 details.card.step-lock:not([open])>summary::after{font-size:.66rem;flex:0 0 auto}
+#side1 details.card.step-active:not([open])>summary::after{font-size:.62rem;padding:0 7px;flex:0 0 auto}
+/* 見出しの文字だけを省略（…）する。ボタンや「済」は残す */
+#side1 details.card:not([open])>summary>.sumtxt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- 「スケールを設定してください」を最小化したとき ---- */
+#calMsg.ask.mini{left:8px;top:auto;bottom:22px;transform:none;max-width:60%;padding:5px 10px;font-size:.8rem;
+  background:rgba(20,26,34,.55);border-color:rgba(255,255,255,.35);pointer-events:auto}
+#calMsg.ask.mini .btn{font-size:.76rem;padding:2px 8px;min-height:24px}
+#calMsg.ask .row.minirow{justify-content:flex-end;margin-top:6px}
+
+/* ---- ③ 誤差の要因の例 ---- */
+.errcard{margin-top:14px}
+.errcard>.errttl{font-size:1.2rem;margin:0 0 10px;color:var(--accent-d)}
+.errbody{max-width:980px;font-size:.9rem;line-height:1.65;color:#1b1f24}
+.errbody h4{margin:14px 0 4px;font-size:.95rem;color:#0f4c8f;border-left:4px solid #0f4c8f;padding-left:8px}
+.errbody p{margin:4px 0}
+.errlist{margin:6px 0 4px;padding-left:1.3em}
+.errlist li{margin:3px 0}
+.errfig{margin:8px 0}
+.errfig svg{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:9px}
+.errcharts{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}
+.errcharts .errchart{flex:1 1 280px;max-width:340px}
+.errcharts .errchart .ttl{font-size:.82rem;font-weight:700;color:#0f4c8f;margin:0 0 3px}
+.errcharts canvas{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px;background:#fff}
+.errbody .depthbox{margin:6px 0 4px;max-width:560px}
+
+/* ---- タブ：④ストロボ画像・補足 ---- */
+.tabs .tabgap.small{width:14px;flex:0 0 14px}
+.tabs button.sub{font-size:.86rem;padding:8px 12px;color:#4b5a6b}
+.tabs button.lock{opacity:.45;cursor:not-allowed}
+/* 「実験2を開始する」：③まで進んだら光らせる */
+.kdstat{margin:8px 0 4px;padding:7px 10px;border-radius:8px;background:#fff6e2;border:1.5px solid #e0a240;font-size:.9rem;line-height:1.5}
+.kdstat.ok{background:#eaf7ee;border-color:#3a9a5b}
+.kdwarn{margin:6px 0;padding:7px 10px;border-radius:8px;background:#fff1f0;border:1.5px solid #c62828;color:#8a1c1c;font-size:.88rem;line-height:1.5}
+/* 課題ファイルを書き出す（先生用）：上の段の「実験○を開始する」の左に赤文字で */
+.btn.kadaibtn{color:#c62828;border:1.5px solid #c62828;background:#fff5f4;font-weight:700}
+.btn.kadaibtn:hover{background:#ffe7e4}
+#btnNextExp.glow{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700}
+.nextexp-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 4px}
+/* ②のグラフの上の一言（点の選択・ドラッグ・目盛り） */
+.gblock>h3{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.gtips{flex:1 1 260px;min-width:0;font-size:.74rem;font-weight:400;color:var(--sub);line-height:1.15;display:inline-flex;align-items:center;gap:2px 8px;flex-wrap:wrap}
+.gtips .btn{font-size:.74rem;padding:2px 8px}
+/* ①「操作説明（クリックで折りたたみ）」の括弧は小さく */
+.sumsub{font-size:70%;font-weight:400;color:var(--sub)}
+/* ---- ④ ストロボ画像 ---- */
+.m4grid{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:14px;align-items:start}
+.m4img .strobox{margin:0}
+.m4img #cvStrobe{width:50%;height:auto;max-height:none;display:block;border-radius:8px;background:#000;margin:0}  /* 縦横とも半分の大きさ。左寄せ */
+@media(max-width:860px){ .m4grid{grid-template-columns:minmax(0,1fr)} }
+/* ---- ③：右にフィッティングの数式・ボタン、その下に結果と残差 ---- */
+.m3res{flex:1 1 560px;position:static;top:auto}
+.m3resrow{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.m3resrow>#fitResult{flex:0 1 auto;min-width:260px;max-width:400px}   /* 中身の幅だけ。右に大きな余白を作らない（自由選択グラフと同じ見え方） */
+.m3resrow>#residHost{flex:0 0 340px;max-width:100%}
+.m3resrow>#residHost:empty{display:none}
+/* ---- 運動量保存則の質量欄 ---- */
+.cgmass{display:inline-flex;gap:8px;align-items:center;margin-right:6px}
+.cgmass .f{font-size:.82rem;font-weight:400}
+
+/* カードへスクロールするとき、上の固定バーの下にかくれないように */
+#side1 details.card{scroll-margin-top:100px}
+
+/* 2 のカードの吹き出し（解析を始めたい／終わりたいコマで押す）：2 行に折り返して、動画エリアにはみ出さない */
+#coTimeZero,#coRangeB{white-space:normal;width:8.2em;line-height:1.25;padding:2px 6px;text-align:left;box-sizing:border-box}
+
+/* ②③のグラフの「最小化」（左下・色なし）。閉じると題と［開く］の 1 行だけ */
+.chartcard .minbtn{min-height:26px;padding:2px 9px;margin-right:auto;font-size:.74rem;background:#fff;border:1px solid #c9d0d8;border-radius:7px;color:#39434e;cursor:pointer}
+.chartcard .minbtn:hover{background:#f2f5f9}
+.chartcard.min{display:flex;align-items:center;gap:10px;padding:4px 8px;width:max-content;max-width:100%}
+.chartcard.min>.ttl{margin:0;padding-right:0}
+.chartcard.min>canvas,.chartcard.min>.dydt,.chartcard.min>.maxbtn,.chartcard.min>.awayrow,.chartcard.min .fitbtn,.chartcard.min>.accnote,.chartcard.min>p{display:none}
+.chartcard.min>.fitrow{margin:0}
+
+/* x 軸だけ・複数物体：列の頭に物体の名前 */
+.gcol>.colhead{font-size:.9rem;font-weight:700;color:var(--accent-d);margin:0 0 -4px 2px}
+
+/* 動画エリアの最初の案内の下：解析できる動画のめやす */
+.videobox .ph .vlimit{margin:18px auto 0;max-width:640px;font-size:.78rem;font-weight:500;line-height:1.55;color:#dfe6ee;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:8px 12px;text-align:left}
+.videobox .ph .vlimit b{color:#ffd66e}
+/* キーの説明（4 のカードと動画の下） */
+.keyhint{color:var(--sub);line-height:1.5;margin:0 0 6px}
+.keyhint kbd{font-size:.72rem}
+#keyHint2{margin:4px 0 2px}
+
+/* 動画エリアの質問：.brk のボタンは改行して次の段に */
+#calMsg.ask .row .btn.brk{flex-basis:100%;max-width:max-content;margin:2px auto 0}
+

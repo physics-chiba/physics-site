@@ -830,6 +830,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .tabs button.sub{font-size:.86rem;padding:8px 12px;color:#4b5a6b}
 .tabs button.lock{opacity:.45;cursor:not-allowed}
 /* 「実験2を開始する」：③まで進んだら光らせる */
+.kdstat{margin:8px 0 4px;padding:7px 10px;border-radius:8px;background:#fff6e2;border:1.5px solid #e0a240;font-size:.9rem;line-height:1.5}
+.kdstat.ok{background:#eaf7ee;border-color:#3a9a5b}
+.kdwarn{margin:6px 0;padding:7px 10px;border-radius:8px;background:#fff1f0;border:1.5px solid #c62828;color:#8a1c1c;font-size:.88rem;line-height:1.5}
+/* 課題ファイルを書き出す（先生用）：上の段の「実験○を開始する」の左に赤文字で */
+.btn.kadaibtn{color:#c62828;border:1.5px solid #c62828;background:#fff5f4;font-weight:700}
+.btn.kadaibtn:hover{background:#ffe7e4}
 #btnNextExp.glow{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700}
 .nextexp-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0 4px}
 /* ②のグラフの上の一言（点の選択・ドラッグ・目盛り） */
@@ -909,6 +915,8 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
   <label class="chk tabchk" id="labBig" title="上の段まで隠して、実験のエリアを大きく使います"><input type="checkbox" id="cbBig">実験エリア最大表示</label>
   <label class="chk tabchk hide" id="labM2Menu"><input type="checkbox" id="cbM2MenuTop" checked>メニューを開く</label>
   <span class="tabright">
+    <button class="btn sm kadaibtn hide" id="btnKadai" title="いまの動画・時間範囲・原点・軸・スケールと設問を、生徒に配る 1 つの HTML にまとめます">課題ファイルを書き出す（先生用）</button>
+    <span class="tabgap small hide" id="gapKadai"></span>
     <button class="btn sm hide" id="btnNextExp">実験2を開始する</button>
     <span class="tabgap small hide" id="gapNextExp"></span>
     <button class="btn sm" id="btnExpClear">この実験の測定を消去</button>
@@ -970,12 +978,6 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
       <div class="hr"></div>
       <p class="mini" id="vinfo">動画はまだ読み込まれていません。</p>
       <div id="vidDiag" class="diagbox hide"></div>
-      <div id="teacherBox" class="hide">
-        <div class="row">
-          <button class="btn sm" id="btnKadai">課題ファイルを書き出す（先生用）</button>
-        </div>
-        <p class="mini">いま読み込んでいる動画と設問を、1つの HTML にまとめて配れます。</p>
-      </div>
     </details>
 
     <details class="card" data-key="range" data-step="2">
@@ -5061,11 +5063,13 @@ function chartXml(ch){
    '</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'+
    '<c:majorTickMark val="out"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>'+
    '<c:crossAx val="'+ax2+'"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx>'+
-   '<c:valAx><c:axId val="'+ax2+'"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/>'+
+   '<c:valAx><c:axId val="'+ax2+'"/><c:scaling><c:orientation val="minMax"/>'+
+     ((ch.ymax!==undefined)? '<c:max val="'+ch.ymax+'"/><c:min val="'+ch.ymin+'"/>' : '')+'</c:scaling><c:delete val="0"/>'+
    '<c:axPos val="l"/><c:majorGridlines/><c:title><c:tx><c:rich><a:bodyPr rot="-5400000" vert="horz"/><a:lstStyle/>'+
    '<a:p><a:r><a:t>'+xesc(ch.ylab)+'</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'+
    '<c:majorTickMark val="out"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/>'+
-   '<c:crossAx val="'+ax1+'"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx>'+
+   '<c:crossAx val="'+ax1+'"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/>'+
+     ((ch.yunit>0)? '<c:majorUnit val="'+ch.yunit+'"/>' : '')+'</c:valAx>'+
    '</c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>'+
    '<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart></c:chartSpace>';
 }
@@ -5198,6 +5202,22 @@ function sheetForExp(exp, idx){
     });
     rows.push(row);
   }
+  /* ②で a を「v–t の傾きから計算」にしているときは、その値の列も足す（グラフ・レポート PDF と同じ a–t にするため）。
+     値は v の時刻（tv）の行に入れる。表の ax 列（v の差から計算）はそのまま残す */
+  var afCols={};
+  if(APP.aFit){
+    objs.forEach(function(o,k){
+      ['vx'].concat(wy? ['vy'] : []).forEach(function(vk){
+        var key=(vk==='vx'?'ax':'ay')+o, mp={};
+        aByFit(ss[k], vk).forEach(function(q){ mp[q.x.toFixed(9)]=q.y; });
+        afCols[key]=head.length; head.push((vk==='vx'?'ax':'ay')+(idx2? '_'+(o+1) : '')+'(v–tの傾き)');
+        for(var rr=headRow; rr<rows.length; rr++){            /* rows[headRow] が 1 行目のデータ（0 始まり） */
+          var pp=ss[k][rr-headRow], v=(pp && pp.tv!==null && pp.tv!==undefined)? mp[pp.tv.toFixed(9)] : undefined;
+          rows[rr][afCols[key]] = (v===undefined)? '' : num(v);
+        }
+      });
+    });
+  }
   /* ③でフィッティングしていれば、「フィッティングの値」と「残差」の列を足す */
   var fitCol=null, resCol=null;
   if(typeof RESID!=='undefined' && RESID.length && idx===APP.cur){
@@ -5206,8 +5226,8 @@ function sheetForExp(exp, idx){
     var isV=(fq==='vx'||fq==='vy');
     fitCol=head.length; head.push('fit('+fq+')');
     resCol=head.length; head.push('残差('+fq+')');
-    for(var rr=headRow+1; rr<rows.length; rr++){
-      var row2=rows[rr], si=rr-(headRow+1);
+    for(var rr=headRow; rr<rows.length; rr++){            /* rows[headRow] が 1 行目のデータ（0 始まり。前は 1 行ずれていた） */
+      var row2=rows[rr], si=rr-headRow;
       var p2=ss[0]? ss[0][si] : null;
       var xv=p2? (isV? p2.tv : p2.t) : null, yv=p2? p2[fq] : null;
       if(p2 && xv!==null && yv!==null && isFinite(xv) && isFinite(yv) && xv>=lo-1e-9 && xv<=hi+1e-9){
@@ -5238,8 +5258,8 @@ function sheetForExp(exp, idx){
         else if(d.q==='y') sers.push({name:'y物体'+(o+1), col:cols['y'+o], color:c, symbol:'circle'});
         else if(d.q==='v') sers.push({name:'vx物体'+(o+1), col:cols['vx'+o], color:c, symbol:'circle'});
         else if(d.q==='vy') sers.push({name:'vy物体'+(o+1), col:cols['vy'+o], color:c, symbol:'circle'});
-        else if(d.q==='a') sers.push({name:'ax物体'+(o+1), col:cols['ax'+o], color:c, symbol:'circle'});
-        else if(d.q==='ay') sers.push({name:'ay物体'+(o+1), col:cols['ay'+o], color:c, symbol:'circle'});
+        else if(d.q==='a') sers.push({name:'ax物体'+(o+1)+(APP.aFit?'（v–tの傾き）':''), col:(APP.aFit? afCols['ax'+o] : cols['ax'+o]), color:c, symbol:'circle'});
+        else if(d.q==='ay') sers.push({name:'ay物体'+(o+1)+(APP.aFit?'（v–tの傾き）':''), col:(APP.aFit? afCols['ay'+o] : cols['ay'+o]), color:c, symbol:'circle'});
         else if(d.q==='fit'){ if(k===0){
                  var fq2=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
                  sers.push({name:fq2+'（測った値）', col:cols[fq2+o], color:c, symbol:'circle'});
@@ -5251,15 +5271,37 @@ function sheetForExp(exp, idx){
                sers.push({name:'U物体'+(o+1), col:cols['U'+o], color:c2, symbol:'square'});
                sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
       });
-      charts.push({title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y,
-                   xcol:((d.q==='v'||d.q==='vy'||((d.q==='fit'||d.q==='res') &&
+      var ch={title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y,
+                   xcol:((d.q==='v'||d.q==='vy'||(APP.aFit && (d.q==='a'||d.q==='ay'))||((d.q==='fit'||d.q==='res') &&
                           typeof RESID_INFO!=='undefined' &&
-                          (RESID_INFO.q==='vx'||RESID_INFO.q==='vy')))?1:0), r0:r0, r1:r1,   /* 速さは tv[s] を横軸に */
-                   series:sers, anchorCol:anchor, anchorRow:di*19});
+                          (RESID_INFO.q==='vx'||RESID_INFO.q==='vy')))?1:0), r0:r0, r1:r1,   /* 速さ（と v–t の傾きの a）は tv[s] を横軸に */
+                   series:sers, anchorCol:anchor, anchorRow:di*19};
+      /* 縦軸の範囲は、画面・レポートのグラフと同じ決め方（0 をふくむ、きりのよい数まで）にする。
+         Excel におまかせすると、データだけに寄せて拡大するので、a–t のばらつきが大きく見えてしまう */
+      var yr=xlsxYRange(rows, r0, r1, sers.map(function(q){ return q.col; }));
+      if(yr){ ch.ymin=yr[0]; ch.ymax=yr[1]; ch.yunit=xlsxUnit(yr[0], yr[1]); }
+      charts.push(ch);
     });
   }
   return { name:'Data'+(idx+1), rows:rows, charts:charts };
   function num(v){ if(v===null||v===undefined||!isFinite(v)) return ''; return Math.round(v*1e8)/1e8; }
+}
+/* Excel のグラフの縦軸の範囲：drawChart と同じく zeroRange（0 をふくむ、1・2・5×10ⁿ のきりのよい数まで） */
+function xlsxYRange(rows, r0, r1, cols){
+  var lo=Infinity, hi=-Infinity;
+  for(var r=r0; r<=r1; r++){
+    var row=rows[r-1]; if(!row) continue;
+    cols.forEach(function(c){ var v=row[c]; if(typeof v==='number' && isFinite(v)){ if(v<lo) lo=v; if(v>hi) hi=v; } });
+  }
+  if(!isFinite(lo) || !isFinite(hi)) return null;
+  return zeroRange(lo, hi);
+}
+/* 目盛りの間隔：Excel は最小値から目盛りを刻むので、最小・最大の両方を割り切れる間隔にする（-0.5〜0.5 なら 0.1） */
+function xlsxUnit(a, b){
+  var u=niceStep(b-a,5);
+  var fits=function(v,q){ var r=v/q; return Math.abs(r-Math.round(r))<1e-6; };
+  for(var k=0;k<4;k++){ if(fits(a,u)&&fits(b,u)) return u; u=[u/2,u/2.5,u/2][k%3]; }
+  return niceStep(b-a,10);
 }
 function exportXlsx(){
   var ids = selectedExps('expChecks');           /* ②の「対象の実験」でチェックした実験（無ければいまの実験） */
@@ -5649,27 +5691,39 @@ function importJson(file){
    課題ファイルの書き出し（先生用）
    ========================================================= */
 function openKadaiDialog(){
-  var box=$('kadaiBox');
+  var box=$('kadaiBox'), e=EXP();
+  var curN=parseInt($('inStepN').value)||5, dt=frameDt();
+  var nOpts=[1,2,3,4,5,6,8,10,15,20].map(function(n){
+    return '<option value="'+n+'"'+(n===curN?' selected':'')+'>'+n+' コマ'+(VID.ready? '（'+nf(n*dt,3)+' s）':'')+'</option>'; }).join('');
+  var mb=KADAI_SRC.size? Math.round(KADAI_SRC.size/1048576*10)/10+' MB' : '未読込';
   box.innerHTML=
    '<button class="btn sm cls" id="kdClose">閉じる</button>'+
    '<h2>課題ファイルを書き出す（先生用）</h2>'+
-   '<p class="mini">いま読み込んでいる動画と設問を1つの HTML に埋め込みます。生徒はそのファイルを開くだけで、動画つきで始められます。</p>'+
+   '<p class="mini">いま読み込んでいる動画と、ここまでの設定（時間範囲・原点・軸・スケール）、設問を 1 つの HTML に埋め込みます。生徒はそのファイルを開くだけで、動画つきで始められます。</p>'+
    '<label class="f" style="display:block;margin:.6em 0">課題の題名<br><input type="text" id="kdTitle" style="width:100%" value="課題：運動の解析"></label>'+
    '<label class="f" style="display:block;margin:.6em 0">設問（1行に1問）<br>'+
-   '<textarea id="kdQ" rows="6" style="width:100%">1. 台車の x–t グラフをかき、どんな運動か説明しなさい。\n2. v–t グラフの傾きは何を表しますか。\n3. 直線でフィッティングしたときの係数 a の意味を答えなさい。</textarea></label>'+
-   '<div class="row"><label class="cb"><input type="checkbox" id="kdVideo" checked>動画を埋め込む'+
-   '（'+(KADAI_SRC.size? Math.round(KADAI_SRC.size/1048576*10)/10+' MB':'未読込')+'）</label>'+
-   '<label class="cb"><input type="checkbox" id="kdCal" checked>原点・スケール・軸の設定も入れる</label></div>'+
+   '<textarea id="kdQ" rows="5" style="width:100%">1. 台車の x–t グラフをかき、どんな運動か説明しなさい。\n2. v–t グラフの傾きは何を表しますか。\n3. 直線でフィッティングしたときの係数 a の意味を答えなさい。</textarea></label>'+
+   '<div class="row"><label class="cb"><input type="checkbox" id="kdVideo" checked>動画を埋め込む（'+mb+'）</label>'+
+   '<label class="cb"><input type="checkbox" id="kdCal" checked>時間範囲・原点・軸・スケールの設定も入れる</label></div>'+
+   '<div class="kdstat" id="kdStat"></div>'+
+   '<div class="kdwarn hide" id="kdHevc"></div>'+
    '<div class="kdset">'+
-   '<div class="row" style="margin-top:8px"><b style="color:var(--accent-d)">物体の数</b>'+
+   '<div class="row" style="margin-top:8px"><b style="color:var(--accent-d)">色マーカーの自動追跡</b>'+
+   '<select id="kdAuto"><option value="1"'+(APP.autoTrack?' selected':'')+'>ON（［色で自動追跡］を「おすすめ」で出す）</option>'+
+   '<option value="0"'+(APP.autoTrack?'':' selected')+'>OFF（手でクリックして記録だけ）</option></select>'+
+   '<span class="mini">生徒の画面の右上のチェックが、この状態で始まります</span></div>'+
+   '<div class="row" style="margin-top:6px"><b style="color:var(--accent-d)">進むフレーム数 N</b>'+
+   '<select id="kdN">'+nOpts+'</select>'+
+   '<span class="mini">1 クリックで進むコマ数。生徒には聞きません（あとから生徒が 4 のカードで変えることはできます）</span></div>'+
+   '<div class="row" style="margin-top:6px"><b style="color:var(--accent-d)">物体の数</b>'+
    '<select id="kdNObj"><option value="1"'+(nObj()===1?' selected':'')+'>1 つ</option><option value="2"'+(nObj()===2?' selected':'')+'>2 つ</option><option value="3"'+(nObj()===3?' selected':'')+'>3 つ</option></select>'+
    '<span class="mini">2 つ以上なら、生徒の画面で「複数物体の運動」が ON になり、物体の数は聞きません</span></div>'+
    '<div class="row" style="margin-top:6px"><b style="color:var(--accent-d)">質量</b>'+
-   '<label class="f">m₁ <input type="number" id="kdM1" value="'+(EXP().m1||0.1)+'" step="0.001" min="0.0001" style="width:80px"> kg</label>'+
-   '<label class="f" id="kdLabM2">m₂ <input type="number" id="kdM2" value="'+(EXP().m2||0.1)+'" step="0.001" min="0.0001" style="width:80px"> kg</label>'+
-   '<label class="f" id="kdLabM3">m₃ <input type="number" id="kdM3" value="'+(EXP().m3||0.1)+'" step="0.001" min="0.0001" style="width:80px"> kg</label>'+
+   '<label class="f">m₁ <input type="number" id="kdM1" value="'+(e.m1||0.1)+'" step="0.001" min="0.0001" style="width:80px"> kg</label>'+
+   '<label class="f" id="kdLabM2">m₂ <input type="number" id="kdM2" value="'+(e.m2||0.1)+'" step="0.001" min="0.0001" style="width:80px"> kg</label>'+
+   '<label class="f" id="kdLabM3">m₃ <input type="number" id="kdM3" value="'+(e.m3||0.1)+'" step="0.001" min="0.0001" style="width:80px"> kg</label>'+
    '<span class="mini">（②のエネルギー・運動量で使います）</span></div>'+
-   '<div class="row" style="margin-top:6px"><label class="cb"><input type="checkbox" id="kdScaleOn"'+(EXP().mPerPx>0?'':' checked')+'>スケールを数で決めておく</label>'+
+   '<div class="row" style="margin-top:6px"><label class="cb"><input type="checkbox" id="kdScaleOn"'+(e.mPerPx>0?'':' checked')+'>スケールを数で決めておく</label>'+
    '<label class="f"><input type="number" id="kdScalePx" value="'+kdScaleDefault().px+'" step="1" min="1" style="width:80px"> px ＝ </label>'+
    '<label class="f"><input type="number" id="kdScaleCm" value="'+kdScaleDefault().cm+'" step="0.1" min="0.001" style="width:80px"> cm</label>'+
    '<span class="mini">（動画の中で何ピクセルが何 cm か。生徒はスケールの 2 点を打たなくてよくなります）</span></div>'+
@@ -5679,7 +5733,7 @@ function openKadaiDialog(){
    '<div class="row" style="margin-top:10px"><button class="btn pri" id="kdMake">この内容で書き出す</button></div>'+
    '<h3>使い方（配布のしかた）</h3>'+
    '<ol class="steps" style="font-size:.88rem">'+
-   '<li>先生の端末でこのツールを開き、課題にしたい<b>動画を読み込む</b>（必要なら原点・スケール・軸も決めておく）</li>'+
+   '<li>先生の端末でこのツールを開き、課題にしたい<b>動画を読み込む</b>。時間範囲・原点・軸・スケールまで決めておくと、生徒は <b>4. トラッキング から</b>始められます（途中で書き出してもかまいません。その場合は、決めていない手順から始まります）</li>'+
    '<li>この画面で設問を書いて「書き出す」。<b>kadai_○○.html</b> ができます</li>'+
    '<li>そのファイルを Classroom や共有フォルダで配る。生徒はダブルクリックで開くだけ（ネット不要）</li>'+
    '<li>生徒は解析して「JSON保存」→ 提出。先生は「JSON読込」で開いて確認できます</li>'+
@@ -5689,6 +5743,63 @@ function openKadaiDialog(){
   $('kdMake').onclick=makeKadai;
   var syncM=function(){ var n=parseInt($('kdNObj').value)||1; $('kdLabM2').classList.toggle('hide', n<2); $('kdLabM3').classList.toggle('hide', n<3); };
   $('kdNObj').onchange=syncM; syncM();
+  ['kdCal','kdScaleOn','kdScalePx','kdScaleCm','kdVideo'].forEach(function(id){ $(id).addEventListener('input', kdUpdateStat); $(id).addEventListener('change', kdUpdateStat); });
+  kdUpdateStat();
+  /* HEVC（H.265）の動画は、先生の端末で再生できても生徒の端末では再生できないことがある */
+  var cdc=kadaiCodec(KADAI_SRC.data);
+  if(cdc==='hevc'){
+    var w=$('kdHevc'); w.classList.remove('hide');
+    w.innerHTML='<b>注意：この動画は HEVC（H.265）形式です。</b>この端末では再生できても、生徒の端末（Chromebook、HEVC の拡張機能が入っていない Windows など）では<b>再生できないことがあります</b>。'+
+      'iPhone・iPad は［設定 → カメラ → フォーマット → 互換性優先］にして撮り直すか、MP4（H.264）に変換してから読み込むと安全です。';
+  }
+}
+/* 生徒がどの手順から始めるか（先生のいまの設定と、この画面のチェックから） */
+function kadaiFlowStatus(){
+  var e=EXP(), withCal=$('kdCal')? $('kdCal').checked : true;
+  var px=parseFloat(($('kdScalePx')||{}).value), cm=parseFloat(($('kdScaleCm')||{}).value);
+  var numScale=!!($('kdScaleOn') && $('kdScaleOn').checked && px>0 && cm>0);
+  var has={ range: withCal && ((e.t0!==null && e.rangeB!==null) || !!e.step2ok),
+            origin: withCal && !!(e.origin && e.originSet),
+            axis: withCal && !!e.axisSet,
+            scale: numScale || (withCal && e.mPerPx>0) };
+  var miss=[];
+  if(!has.range) miss.push('時間範囲（2）');
+  if(!has.origin) miss.push('原点（3）');
+  if(!has.axis) miss.push('x軸の向き（3）');
+  if(!has.scale) miss.push('スケール（3）');
+  var start = !has.range? 2 : (miss.length? 3 : 4);
+  return { has:has, miss:miss, start:start };
+}
+function kdUpdateStat(){
+  var b=$('kdStat'); if(!b) return;
+  var st=kadaiFlowStatus();
+  b.classList.toggle('ok', st.start===4);
+  b.innerHTML = (st.start===4)?
+    '<b>生徒は 4. トラッキング から始めます。</b>（動画・時間範囲・原点・軸・スケールは決まった状態で開き、fps や N も聞きません）' :
+    '<b>生徒は '+stepName(st.start)+' から始めます。</b>まだ決まっていないもの：'+st.miss.join('・')+
+    '<br><span class="mini">4. トラッキング から始めさせたいときは、先にこの画面を閉じて決めておくか、スケールは下の「スケールを数で決めておく」を使ってください。</span>';
+}
+/* 動画の形式を調べる（moov の中の 4 文字コード）。HEVC は 'hvc1' / 'hev1' */
+function kadaiCodec(dataUrl){
+  if(!dataUrl || dataUrl.indexOf('base64,')<0) return '';
+  try{
+    var bin=atob(dataUrl.slice(dataUrl.indexOf('base64,')+7));
+    if(bin.indexOf('hvc1')>=0 || bin.indexOf('hev1')>=0) return 'hevc';
+    if(bin.indexOf('avc1')>=0) return 'h264';
+    return '';
+  }catch(e){ return ''; }
+}
+/* 埋め込む動画の種類（MIME）をそろえる。
+   Chrome は data: の動画を「その種類で再生できるか」で判断するので、.MOV の video/quicktime や
+   空の種類のままだと、中身が H.264 でも「再生できない」と断る（ファイルを選んだときの blob: は種類を見ないので開ける）。
+   MOV（QuickTime）は MP4 と同じ作りなので video/mp4 として埋め込む */
+function kadaiVideoData(src){
+  var d=src.data||'', t=(src.type||'').toLowerCase(), nm=(src.name||'').toLowerCase();
+  if(/^video\/(mp4|webm|ogg)$/.test(t)) return { data:d, type:t };
+  var nt=/\.webm$/.test(nm)? 'video/webm' : 'video/mp4';
+  var i=d.indexOf(';base64,');
+  if(i>0) d='data:'+nt+d.slice(i);
+  return { data:d, type:nt };
 }
 /* 課題のスケール欄のはじめの値：いまスケールが決まっていればその 2 点の間隔と長さ、無ければ 100 px ＝ 10 cm */
 function kdScaleDefault(){
@@ -5703,7 +5814,9 @@ function kdScaleDefault(){
 function makeKadai(){
   var title=$('kdTitle').value||'課題', qs=$('kdQ').value.split('\n').filter(function(s){return s.trim();});
   var withVideo=$('kdVideo').checked, withCal=$('kdCal').checked;
-  if(withVideo && !KADAI_SRC.data){ alert('動画が読み込まれていません（またはサンプル動画は埋め込めません）。'); return; }
+  if(withVideo && !KADAI_SRC.data){
+    alert(KADAI_SRC.big? '動画が 30 MB を超えているため埋め込めません。動画を短く切るか、画質を下げてから読み込んでください。'
+                       : '動画が読み込まれていません（またはサンプル動画は埋め込めません）。'); return; }
   var exp=EXP();
   var nO=parseInt($('kdNObj').value)||1;
   var pos=function(id,d){ var v=parseFloat($(id).value); return (v>0&&isFinite(v))? v : d; };
@@ -5714,17 +5827,27 @@ function makeKadai(){
     if(!(px>0&&cm>0)){ alert('スケールは「○ px ＝ ○ cm」の両方に 0 より大きい数を入れてください。'); return; }
     scale={ px:px, cm:cm, mPerPx:cm/100/px };
   }
+  var vd=withVideo? kadaiVideoData(KADAI_SRC) : null;
   var K={ title:title, questions:qs, nObjs:nO, masses:masses, scale:scale,
-          video: withVideo? {name:exp.video.name, data:KADAI_SRC.data, type:KADAI_SRC.type} : null,
+          autoTrack: $('kdAuto').value==='1',
+          stepN: parseInt($('kdN').value)||5,
+          video: withVideo? {name:exp.video.name, data:vd.data, type:vd.type} : null,
+          /* 動画の情報と fps（先生が答えたもの）。生徒には fps の確認を出さない */
+          vmeta: { name:exp.video.name, w:exp.video.w, h:exp.video.h, dur:exp.video.dur, fps:exp.video.fps,
+                   tscale:exp.tscale||1, shotFps:exp.shotFps||0 },
           cal: withCal? { origin:exp.origin, angle:exp.angle, yflip:exp.yflip, mPerPx:exp.mPerPx,
-                          scaleRef:exp.scaleRef, scaleLen:exp.scaleLen, rangeA:exp.rangeA, rangeB:exp.rangeB } : null };
+                          scaleRef:exp.scaleRef, scaleLen:exp.scaleLen, rangeA:exp.rangeA, rangeB:exp.rangeB,
+                          /* ここから下は 4. トラッキング からすぐ始めるための分 */
+                          t0:exp.t0, step2ok:!!exp.step2ok, originSet:!!exp.originSet, axisSet:!!exp.axisSet,
+                          xflip:!!exp.xflip, crop:exp.crop||null, axisDisp:APP.axisDisp } : null };
   var js='window.KADAI='+JSON.stringify(K)+';';
   var html='<!DOCTYPE html>'+ORIGINAL_HTML.replace('</head>',
       '<script id="kadaiData">'+js.replace(/<\//g,'<\\/')+'<'+'/script></head>');
   var name='kadai_'+(title.replace(/[\\\/:*?"<>|\s]+/g,'_'))+'.html';
   dl(new Blob([html],{type:'text/html;charset=utf-8'}), name);
   $('kadaiModal').classList.add('hide');
-  toast('課題ファイルを書き出しました（'+name+'）');
+  var st=kadaiFlowStatus();
+  toast('課題ファイルを書き出しました（'+name+'）。生徒は '+stepName(st.start)+' から始めます');
 }
 
 </script>
@@ -7436,9 +7559,9 @@ function loadVideoFile(file){
     onVideoReady(file.name);      /* 読み込み中の表示は、コマ表づくりまで続けて出す */
     if(file.size < 30*1024*1024){
       var fr=new FileReader();
-      fr.onload=function(){ KADAI_SRC={data:fr.result, type:file.type, size:file.size}; };
+      fr.onload=function(){ KADAI_SRC={data:fr.result, type:file.type, size:file.size, name:file.name}; };
       fr.readAsDataURL(file);
-    } else KADAI_SRC={data:null,type:'',size:file.size};
+    } else KADAI_SRC={data:null,type:'',size:file.size,big:true};
   }).catch(function(err){
     if(myseq!==VID.loadSeq) return;
     setBusy(false); showVidError(err, file.name);
@@ -7513,6 +7636,8 @@ function onVideoReady(name){
   /* 同じ動画を開き直したとき（続きから）だけ、fps の確認は聞かない */
   var same = !!(exp.fpsOk && exp.video && exp.video.name===name &&
                 exp.video.w===VID.w && exp.video.h===VID.h && Math.abs((exp.video.dur||0)-VID.dur)<0.05);
+  /* 課題ファイルの動画を初めて読んだとき：先生が決めた fps・N・物体の数をそのまま使う（聞き直さない） */
+  if(UI.kadaiPending){ same=true; UI.kadaiPending=false; }
   exp.fpsOk = same;
   resetFlowFlags(!same);          /* 別の動画なら、進むフレーム数 N も聞き直す（1 コマの時間が変わるため） */
   exp.video={name:name, w:VID.w, h:VID.h, dur:VID.dur, fps:VID.fps};
@@ -7866,8 +7991,9 @@ function openHelp(){
   '線が<b>緑なら水平、赤ならかたむいている</b>合図です（iPhone/iPad は［傾きセンサーを使う］を押して許可します）</li>'+
   '<li><b>動画をトリミング（端を切る）</b>：使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります</li>'+
   '<li>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します</li>'+
-  '<li>右上の <b>［教員用］</b>にチェックを入れると、「課題ファイルを書き出す」が出ます（ふだんは隠れています）。'+
-  '課題には設問のほか、<b>物体の数（1〜3）・それぞれの質量・スケール（○ px ＝ ○ cm）</b>も決めておけます。生徒の画面ではそのとおりに設定ずみで始まり、物体の数は聞きません</li></ul>'+
+  '<li>右上の <b>［教員用］</b>にチェックを入れると、上の段の「実験○を開始する」の左に赤い<b>［課題ファイルを書き出す（先生用）］</b>が出ます（ふだんは隠れています。3 の途中でも押せます）。'+
+  '課題には設問のほか、<b>色マーカーの自動追跡の ON／OFF・進むフレーム数 N・物体の数（1〜3）・それぞれの質量・スケール（○ px ＝ ○ cm）</b>も決めておけます。'+
+  '時間範囲・原点・軸・スケールまで決めてから書き出すと、生徒はファイルを開くと<b>いきなり 4. トラッキング</b>から始まります（fps・N・物体の数も聞きません）。途中で書き出したときは、決めていない手順から始まります</li></ul>'+
   '<h3>2. 解析する時間範囲の指定</h3>'+
   '<p>動画の真ん中の▶か「再生」で見どころをさがし、コマ送りで合わせてから：</p>'+
   '<ul><li><b>この時刻をt = 0</b>：いま出ているコマを t=0 にします（もう一度押すと解除）</li>'+
@@ -7974,7 +8100,8 @@ function openHelp(){
   '<b>縦軸の目盛りの所をドラッグ</b>すると縦の拡大縮小。'+
   '横軸（t）は x–t・v–t・a–t で<b>いっしょに動きます</b>（縦軸はグラフごと）。元に戻すときは <b>［スケールと表示範囲をデフォルトに戻す］</b></li>'+
   '<li><b>a の出し方</b>は a–t グラフの下で選べます：「v の差から計算」（a に使う時間の幅 Δt・3Δt・5Δt、はじめは <b>Δt（となりの v との差 ÷ Δt）</b>。「自動」にすると、クリックのずれによる a のばらつきが a の大きさの 1/4 以下になる、いちばん短い幅をえらびます。点が少ないときは a の点が 5 個は残る幅までにします）か「v–t の傾きから計算」。'+
-  'クリックが 1 px ずれると a がどれだけずれるかの目安も出ます</li>'+
+  'クリックが 1 px ずれると a がどれだけずれるかの目安も出ます。'+
+  '「v–t の傾きから計算」にしたときは、<b>レポート PDF と Excel の a–t もその値</b>で描きます（Excel には「ax(v–tの傾き)」の列が足されます。表の ax 列は「v の差から計算」のまま）</li>'+
   '<li><b>動画と一緒にグラフを再生する</b>：動画とグラフを横に並べ、再生に合わせて点が増えていきます</li>'+
   '<li>②の左の「測定した値（表）」は、右はしを<b>ドラッグして幅を変えられます</b></li>'+
   '<li>グラフの左下の <b>［最小化］</b>（色なし）で、そのグラフを題の 1 行にたたみ、もう一度押すと開きます。複数物体で x 軸だけのときは、物体 1 の x の列と物体 2 の x の列が横にならびます</li>'+
@@ -8425,7 +8552,10 @@ function bindUI(){
     saveLocal();
   };
   $('cbTeacher').onchange=function(){
-    $('teacherBox').classList.toggle('hide', !this.checked);
+    /* 課題ファイルを書き出すボタンは、上の段の「実験○を開始する」の左（赤文字）。
+       3 の途中でも書き出せるように、教員用が ON ならいつでも出す（課題ファイルとして開いたときは出さない） */
+    $('btnKadai').classList.toggle('hide', !this.checked || !!window.KADAI);
+    if($('gapKadai')) $('gapKadai').classList.toggle('hide', !this.checked || !!window.KADAI);
   };
   $('cbAuto').onchange=function(){
     APP.autoTrack=this.checked;
@@ -9664,6 +9794,14 @@ function updateEnergyBtn(){
     if(kd) document.head.appendChild(kd);
   }catch(e){ ORIGINAL_HTML=''; }
 
+  /* 課題ファイルとして開かれたときは、自動保存の置き場所を課題ごとに分ける
+     （file:// のページはどれも同じ保存場所を使うので、ふだんの測定や別の課題のデータが混ざらないように） */
+  if(window.KADAI){
+    var kh=0, ks=(window.KADAI.title||'')+'|'+((window.KADAI.vmeta||window.KADAI.video||{}).name||'')+'|'+(window.KADAI.questions||[]).join('/');
+    for(var ki=0; ki<ks.length; ki++){ kh=((kh<<5)-kh+ks.charCodeAt(ki))|0; }
+    LSKEY=LSKEY+'-kadai-'+(kh>>>0).toString(36);
+  }
+
   vidInit();
   var hd=document.querySelector('.apphd');
   document.documentElement.style.setProperty('--hdh', (hd?hd.offsetHeight:50)+'px');
@@ -9737,28 +9875,69 @@ function updateEnergyBtn(){
     if(ms.length) cond.push('質量：'+ms.map(function(m,i){ return 'm'+'₁₂₃'.charAt(i)+' = '+m+' kg'; }).join('、'));
     if(K.scale && K.scale.mPerPx>0) cond.push('スケール：'+K.scale.px+' px ＝ '+K.scale.cm+' cm（設定ずみ）');
     c.innerHTML='<h3>'+esc(K.title||'課題')+'</h3><ol class="steps">'+
-      (K.questions||[]).map(function(q){ return '<li>'+esc(q)+'</li>'; }).join('')+'</ol>'+
+      (K.questions||[]).map(function(q){ return '<li>'+esc(String(q).replace(/^\s*[0-9０-９]+\s*[.．、)）]\s*/,''))+'</li>'; }).join('')+'</ol>'+   /* 「1. 」を書いても番号が二重にならないように */
       (cond.length? '<p class="mini">'+cond.map(esc).join('　／　')+'</p>' : '')+
       '<p class="mini">終わったら「JSON保存」で保存して提出してください。</p>';
     $('side1').insertBefore(c, $('side1').firstChild);
-    var eK=EXP();
-    if(K.cal){
+    var eK=EXP(), C=K.cal;
+    if(C){
       ['origin','angle','yflip','mPerPx','scaleRef','scaleLen','rangeA','rangeB'].forEach(function(k){
-        if(K.cal[k]!==undefined && K.cal[k]!==null) eK[k]=K.cal[k];
+        if(C[k]!==undefined && C[k]!==null) eK[k]=C[k];
       });
+      /* 時間範囲・原点・軸が決まっていれば、そのまま 4. トラッキング から始める */
+      if(C.t0!==undefined) eK.t0=C.t0;
+      if(C.step2ok) eK.step2ok=true;
+      if(C.originSet) eK.originSet=true;
+      if(C.axisSet) eK.axisSet=true;
+      if(C.xflip) eK.xflip=true;
+      if(C.crop) eK.crop=C.crop;
+      if(C.axisDisp==='x' || C.axisDisp==='xy'){
+        APP.axisDisp=C.axisDisp; updateAxisButtons();
+        $('labYFlip').classList.toggle('hide', C.axisDisp!=='xy'); applyAxisDisp();
+      }
     }
+    /* 動画の情報と fps（先生が答えた値）。生徒に fps は聞かない */
+    var VM=K.vmeta;
+    if(VM){
+      if(VM.tscale>0) eK.tscale=VM.tscale;
+      if(VM.shotFps>0) eK.shotFps=VM.shotFps;
+      eK.fpsOk=true;
+    }
+    /* 進むフレーム数 N（先生が決めた値。生徒には聞かない） */
+    if(K.stepN>0){ $('inStepN').value=K.stepN; eK.nOk=true; }
+    UI.calPend=null; APP.editStep=0;
     /* 先生が決めた物体の数・質量・スケール */
     if(ms[0]>0) eK.m1=ms[0]; if(ms[1]>0) eK.m2=ms[1]; if(ms[2]>0) eK.m3=ms[2];
     if(nK>1){ eK.nObjs=Math.min(3,nK); eK.nObjOk=true; setTwoObj(true, true); }
     else { eK.nObjOk=true; setTwoObj(false, true); }
     if(K.scale && K.scale.mPerPx>0){ eK.mPerPx=K.scale.mPerPx; eK.scaleLen=K.scale.cm/100; eK.scaleRef=null; }
+    /* 色マーカーの自動追跡（先生が ON／OFF を決める。前の版の課題ファイルでは何もしない） */
+    if(K.autoTrack===true || K.autoTrack===false){
+      var au=K.autoTrack;
+      APP.autoTrack=au; $('cbAuto').checked=au; $('autoCard').classList.toggle('hide', !au);
+      if($('howto4hand')){ $('howto4hand').classList.toggle('hide', au); $('howto4auto').classList.toggle('hide', !au); }
+    }
     refreshExpUI(); afterChange();
     if(K.video && K.video.data){
       $('vinfo').textContent='課題の動画を読み込んでいます…';
-      loadVideoUrl(K.video.data, K.video.name||'課題の動画');
+      UI.kadaiPending=true;                 /* 読みこんだ直後に fps・N・物体の数を聞き直さない */
+      loadVideoUrl(kadaiVideoUrl(K.video), K.video.name||'課題の動画');
     }
   }
 })();
+/* 課題に埋め込んだ動画（data:）を blob: にして渡す。
+   ファイルを選んだときと同じ読み方になる（data: のままだと、.MOV のように種類が video/quicktime のものを
+   Chrome が「再生できない種類」として断るため） */
+function kadaiVideoUrl(v){
+  var d=v.data||'';
+  try{
+    var i=d.indexOf(','), meta=d.slice(5, i), mt=meta.split(';')[0].toLowerCase();
+    if(!/^video\/(mp4|webm|ogg)$/.test(mt)) mt=/\.webm$/i.test(v.name||'')? 'video/webm' : 'video/mp4';
+    var bin=atob(d.slice(i+1)), n=bin.length, u=new Uint8Array(n);
+    for(var k=0;k<n;k++) u[k]=bin.charCodeAt(k);
+    return URL.createObjectURL(new Blob([u], {type:mt}));
+  }catch(e){ return d; }
+}
 
 </script>
 <!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
