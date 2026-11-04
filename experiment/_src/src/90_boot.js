@@ -29,6 +29,10 @@
   setMenuPos(APP.menuPos);
   $('btnMenuPos').textContent='メニュー：'+(APP.menuPos==='left'?'左':'上');
   setTwoObj(APP.twoObj, true);
+  /* 右上のチェックは、覚えている状態にそろえる（ブラウザが前のチェックの見た目だけを復元して、
+     中身とずれることがあるため。ずれると「チェックは入っているのに色で自動追跡が出ない」になる） */
+  applyAutoTrackUI(!!APP.autoTrack);
+  if($('cbTeacher')) $('cbTeacher').checked=false;
   /* URL で最初から ON にできる：motion-analysis.html?auto=1&multi=1（# でもよい）
      auto … 色マーカーの自動追跡、multi（two でも可）… 複数物体の運動。生徒に配るときに使う */
   try{
@@ -36,8 +40,7 @@
     var qp={}; qsrc.split('&').forEach(function(kv){ var m=kv.split('='); if(m[0]) qp[decodeURIComponent(m[0]).toLowerCase()]=decodeURIComponent(m[1]||'1'); });
     var on=function(v){ return /^(1|on|true|yes)$/i.test(v||''); };
     if(on(qp.multi)||on(qp.two)) setTwoObj(true, true);
-    if(on(qp.auto)){ APP.autoTrack=true; $('cbAuto').checked=true; $('autoCard').classList.remove('hide');
-      if($('howto4hand')){ $('howto4hand').classList.add('hide'); $('howto4auto').classList.remove('hide'); } }
+    if(on(qp.auto)) applyAutoTrackUI(true);
     APP.urlOpts={ auto:on(qp.auto), multi:on(qp.multi)||on(qp.two) };
   }catch(e){}
   setMode('record');
@@ -93,8 +96,15 @@
     c.innerHTML='<h3>'+esc(K.title||'課題')+'</h3><ol class="steps">'+
       (K.questions||[]).map(function(q){ return '<li>'+esc(String(q).replace(/^\s*[0-9０-９]+\s*[.．、)）]\s*/,''))+'</li>'; }).join('')+'</ol>'+   /* 「1. 」を書いても番号が二重にならないように */
       (cond.length? '<p class="mini">'+cond.map(esc).join('　／　')+'</p>' : '')+
-      '<p class="mini">終わったら「JSON保存」で保存して提出してください。</p>';
+      /* 「JSON で提出」：先生が ON にしたときだけ、提出の案内とボタンを出す（前の版の課題ファイルは ON あつかい） */
+      ((K.jsonSubmit!==false)? '<div class="kdsubmit"><p class="mini">終わったら、下のボタンで<b>提出用ファイル（JSON）</b>を保存して提出してください。</p>'+
+        '<button class="btn sm" id="btnKadaiSubmit">提出用ファイル（JSON）を保存</button></div>' : '');
     $('side1').insertBefore(c, $('side1').firstChild);
+    if($('btnKadaiSubmit')) $('btnKadaiSubmit').onclick=function(){
+      var n=EXP().objs.reduce(function(a,o){ return a+o.length; },0);
+      if(!n){ toast('まだ点が記録されていません。トラッキングしてから保存してください'); return; }
+      UI.attachStro=undefined; askSaveName('提出用ファイル', exportJson);
+    };
     var eK=EXP(), C=K.cal;
     if(C){
       ['origin','angle','yflip','mPerPx','scaleRef','scaleLen','rangeA','rangeB'].forEach(function(k){
@@ -129,9 +139,7 @@
     if(K.scale && K.scale.mPerPx>0){ eK.mPerPx=K.scale.mPerPx; eK.scaleLen=K.scale.cm/100; eK.scaleRef=null; }
     /* 色マーカーの自動追跡（先生が ON／OFF を決める。前の版の課題ファイルでは何もしない） */
     if(K.autoTrack===true || K.autoTrack===false){
-      var au=K.autoTrack;
-      APP.autoTrack=au; $('cbAuto').checked=au; $('autoCard').classList.toggle('hide', !au);
-      if($('howto4hand')){ $('howto4hand').classList.toggle('hide', au); $('howto4auto').classList.toggle('hide', !au); }
+      applyAutoTrackUI(K.autoTrack);
     }
     refreshExpUI(); afterChange();
     if(K.video && K.video.data){
@@ -153,4 +161,11 @@ function kadaiVideoUrl(v){
     for(var k=0;k<n;k++) u[k]=bin.charCodeAt(k);
     return URL.createObjectURL(new Blob([u], {type:mt}));
   }catch(e){ return d; }
+}
+/* 色マーカーの自動追跡の ON／OFF を、中身（APP.autoTrack）と見た目（チェック・説明）の両方にそろえる */
+function applyAutoTrackUI(on){
+  APP.autoTrack=!!on;
+  if($('cbAuto')) $('cbAuto').checked=!!on;
+  if($('autoCard')) $('autoCard').classList.toggle('hide', !on);
+  if($('howto4hand')){ $('howto4hand').classList.toggle('hide', !!on); $('howto4auto').classList.toggle('hide', !on); }
 }

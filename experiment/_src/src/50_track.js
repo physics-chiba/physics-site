@@ -621,6 +621,8 @@ function commitPoint(vx, vy, e){
   if(typeof autoFoundCheck==='function') autoFoundCheck(vx, vy);   /* 見失ったあと、また見つかったか */
   var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;
   if(e && e.shiftKey) adv='1';           /* Shift＋クリック＝記録して 1 コマ進む（Ctrl＋クリックはふつうのクリックと同じなので廃止） */
+  /* 残りが N コマに満たないときは、ここで終わり（最後のコマまで進めて、短い間隔の点を打たせない） */
+  if(adv==='n' && typeof objDone==='function' && objDone(UI.obj)){ afterChange(); return; }
   if(adv==='1') stepFrames(1);
   else if(adv==='n') stepFrames(N);
   else { afterChange(); }
@@ -981,7 +983,7 @@ function autoRunAll(){
     if(UI.autoStop) { stop('停止しました'); return; }
     /* 途中で実験・範囲・物体が変わったら、そこでやめる */
     if(EXP()!==exp || exp.rangeB===null || UI.obj!==obj){ stop(); return; }
-    if(VID.cur >= endT-1e-6){ stop('終わりまで追跡しました'); return; }
+    if(VID.cur >= endT-1e-6 || (typeof objDone==='function' && objDone(obj))){ stop('終わりまで追跡しました'); return; }   /* 残りが N コマに満たなければ、そこで終わり */
     var was=VID.cur;
     rememberOthers(obj);                             /* 進む前に、まわりの「止まっている同じ色の物」を覚えておく */
     stepFrames(N).then(function(){

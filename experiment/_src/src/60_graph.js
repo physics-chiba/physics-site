@@ -506,12 +506,13 @@ function specEnergy(ids, obj){
            xkey:'t', key:'E_o'+obj+'_'+ids.join('-') };
 }
 /* 重心の運動量のグラフ：物体ごとの p = m v（細い）と、全体 Σ m v（太い黒）。横軸は v の時刻 tv */
-function specMomentum(expIdx, comp){
+function specMomentum(expIdx, comp, withSum){
   var e=APP.exps[expIdx], ms=momentumSeries(e, comp), ser=[];
   ms.objs.forEach(function(o,i){
-    ser.push({ name:'物体'+(o+1)+(e.objName[o]?'（'+e.objName[o]+'）':'')+' p'+comp, color:OBJCOL[o], shape:'open', pts:ms.per[i] });
+    var nm=APP.twoObj? '物体'+(o+1)+(e.objName[o]?'（'+e.objName[o]+'）':'') : (e.objName[o]||'物体');
+    ser.push({ name:nm+' p'+comp, color:OBJCOL[o], shape:'open', pts:ms.per[i] });
   });
-  ser.push({ name:'重心（全体） Σ m v'+comp, color:'#1b1f24', shape:'sq', pts:ms.sum });
+  if(withSum!==false && ms.objs.length>1) ser.push({ name:'重心（全体） Σ m v'+comp, color:'#1b1f24', shape:'sq', pts:ms.sum });
   return { title:'', xlab:'t [s]', ylab:'p'+comp+' [kg·m/s]', series:ser, xkey:'t', key:'P'+comp+'_'+expIdx };
 }
 function objTitle(e, obj){
@@ -617,20 +618,23 @@ function renderMode2(){
     wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
     blk.appendChild(wrap); host.appendChild(blk);
   });
-  /* 「重心の運動量」：物体ごとの運動量 p = m v と、その和（＝重心の運動量）を 1 枚に。x 成分（y があれば y 成分も） */
-  if(typeof momOn==='function' && momOn() && !over){
+  /* 「運動量を解析する」：物体ごとの運動量 p = m v を 1 枚に。x 成分（y があれば y 成分も）。
+     複数物体で「重心の運動量」にチェックがあれば、その和（全体 Σ m v ＝ 重心の運動量）も重ねる */
+  if(APP.momAna && !over){
     ids.forEach(function(i2){
       var e=APP.exps[i2]; if(!e) return;
-      var ms=momentumSeries(e,'x'); if(ms.objs.length<2) return;
+      var ms=momentumSeries(e,'x'); if(!ms.objs.length) return;
+      var sumOn=(typeof momOn==='function' && momOn() && ms.objs.length>1);
       var blk=document.createElement('div'); blk.className='gblock';
-      var t=document.createElement('h3'); t.textContent=(e.name+'　重心の運動量（全体 Σ m v）').replace(/\s+$/,'');
+      var t=document.createElement('h3'); t.textContent=(e.name+(sumOn? '　運動量と重心の運動量（全体 Σ m v）' : '　運動量 p = m v'));
       var tip=document.createElement('span'); tip.className='mini'; tip.style.fontWeight='400'; tip.style.marginLeft='8px';
-      tip.textContent='物体ごとの p = m v と、その和（＝重心の運動量）。和は、すべての物体のデータがある時刻だけ出ます。';
+      tip.textContent= sumOn? '物体ごとの p = m v と、その和（＝重心の運動量）。和は、すべての物体のデータがある時刻だけ出ます。'
+                            : ('物体ごとの p = m v（質量は上の欄）。'+(ms.objs.length>1? '和（重心の運動量）も描くときは「重心の運動量」にチェック。' : ''));
       t.appendChild(tip); blk.appendChild(t);
       var wrap=document.createElement('div'); wrap.className='gwrap';
       var col=document.createElement('div'); col.className='gcol';
-      col.appendChild(chartCard('px–t', specMomentum(i2,'x'), null, w, h));
-      if(showY) col.appendChild(chartCard('py–t', specMomentum(i2,'y'), null, w, h));
+      col.appendChild(chartCard('px–t', specMomentum(i2,'x',sumOn), null, w, h));
+      if(showY) col.appendChild(chartCard('py–t', specMomentum(i2,'y',sumOn), null, w, h));
       wrap.appendChild(col); wrap.style.gridTemplateColumns='max-content';
       blk.appendChild(wrap); host.appendChild(blk);
     });

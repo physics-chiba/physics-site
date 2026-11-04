@@ -42,7 +42,7 @@ var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x'
   bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
-  editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, momOn:false, gMin:{}, fitRange:null, tblw:330,
+  editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, momOn:false, momAna:false, gMin:{}, fitRange:null, tblw:330,
   tab:'1', m2mode:'side', komaMode:false, cgRange:null, twoObj:false };
 /* 使う物体の数（「複数物体の運動」がONなら 2 か 3（e.nObjs）、OFFなら1） */
 function nObj(){ return APP.twoObj? Math.max(2, Math.min(3, parseInt(EXP().nObjs)||2)) : 1; }
@@ -422,7 +422,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, gMin:APP.gMin, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, momAna:APP.momAna, autoTrack:!!APP.autoTrack, gMin:APP.gMin, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -466,6 +466,8 @@ function applyState(st){
   if(st.gsize>0) APP.gsize=st.gsize;
   APP.energyOn=!!st.energyOn;
   APP.momOn=!!st.momOn;
+  APP.autoTrack=!!st.autoTrack;                 /* 色マーカーの自動追跡の ON／OFF も覚えておく（開き直しても同じ） */
+  APP.momAna=!!(st.momAna || st.momOn);         /* 前の版で「重心の運動量」を ON にしていたら、運動量の解析も ON */
   APP.gMin=(st.gMin && typeof st.gMin==='object')? st.gMin : {};
   if(st.tblw>0) APP.tblw=st.tblw;
   if(st.m2mode) APP.m2mode=st.m2mode;

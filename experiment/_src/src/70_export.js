@@ -317,8 +317,12 @@ function sheetForExp(exp, idx){
   rows.push(['動画', exp.video.name||'', 'fps(表示用)', Number(nf(exp.video.fps,4))]);
   rows.push(['スケール[m/px]', exp.mPerPx||'', 'x軸[deg]', Number(nf(exp.angle*180/Math.PI,3))]);
   var useE=!!APP.energyOn;                 /* 「力学的エネルギーを解析する」を押したときだけ出す */
+  var useP=!!APP.momAna;                   /* 「運動量を解析する」を押したときだけ、運動量 p = m v の列とグラフを出す */
   if(useE) rows.push(['質量m1[kg]', exp.m1, '質量m2[kg]', exp.m2, '質量m3[kg]', exp.m3||0.1, 'g[m/s2]', exp.g,
                       '重力の向き', gDirInfo(exp).label+'（'+gDirInfo(exp).h+'）']);   /* 質量・g・重力の向き もそのときだけ */
+  else if(useP){                           /* 運動量だけのときは、物体の数ぶんの質量 */
+    var mrow=[]; objs.forEach(function(o){ mrow.push('質量m'+(o+1)+'[kg]', massOf(exp,o)); }); rows.push(mrow);
+  }
   rows.push([]);
   var wy=useY();                           /* x軸のみのときは y の列とグラフを出さない */
   var QS = wy? ['x','y','vx','vy','ax','ay'] : ['x','vx','ax'];
@@ -345,6 +349,32 @@ function sheetForExp(exp, idx){
       if(useE) row.push(e?num(e.K):'', e?num(e.U):'', e?num(e.E):'');
     });
     rows.push(row);
+  }
+  /* 運動量 p = m v の列：v と同じ行（横軸は tv[s]）。複数物体で「重心の運動量」にチェックがあれば、和 Σmv の列も */
+  var pCols={}, sumOnX=false;
+  if(useP){
+    objs.forEach(function(o,k){
+      ['x'].concat(wy? ['y'] : []).forEach(function(c){
+        var key='p'+c+o, vk='v'+c, m=massOf(exp,o);
+        pCols[key]=head.length; head.push('p'+c+(idx2? '_'+(o+1) : '')+'[kg·m/s]');
+        for(var rr=headRow; rr<rows.length; rr++){
+          var pp=ss[k][rr-headRow];
+          rows[rr][pCols[key]] = (pp && pp[vk]!==null && pp[vk]!==undefined)? num(m*pp[vk]) : '';
+        }
+      });
+    });
+    if(typeof momOn==='function' && momOn() && objs.length>1){
+      sumOnX=true;
+      ['x'].concat(wy? ['y'] : []).forEach(function(c){
+        var ms=momentumSeries(exp,c), mp={};
+        ms.sum.forEach(function(q){ mp[q.x.toFixed(9)]=q.y; });
+        pCols['sum'+c]=head.length; head.push('Σmv'+c+'（重心の運動量）[kg·m/s]');
+        for(var rr=headRow; rr<rows.length; rr++){
+          var pp=ss[0][rr-headRow], v=(pp && pp.tv!==null && pp.tv!==undefined)? mp[pp.tv.toFixed(9)] : undefined;
+          rows[rr][pCols['sum'+c]] = (v===undefined)? '' : num(v);
+        }
+      });
+    }
   }
   /* ②で a を「v–t の傾きから計算」にしているときは、その値の列も足す（グラフ・レポート PDF と同じ a–t にするため）。
      値は v の時刻（tv）の行に入れる。表の ax 列（v の差から計算）はそのまま残す */
@@ -392,6 +422,8 @@ function sheetForExp(exp, idx){
       {t:'vx - t', y:'vx [m/s]', q:'v'}, {t:'ax - t', y:'ax [m/s2]', q:'a'}
     ];
     if(useE) objs.forEach(function(o){ chDefs.push({t:'エネルギー - t 物体'+(o+1), y:'E [J]', q:'e', only:o}); });   /* 物体ごとに 1 枚（縦にならぶ） */
+    if(useP){ chDefs.push({t:'px - t（運動量）', y:'px [kg·m/s]', q:'px'});
+              if(wy) chDefs.push({t:'py - t（運動量）', y:'py [kg·m/s]', q:'py'}); }
     if(fitCol!==null) chDefs.push({t:'フィッティングしたグラフ', y:'値', q:'fit'},
                                   {t:'フィッティング残差', y:'残差', q:'res'});
     chDefs.forEach(function(d,di){
@@ -408,6 +440,9 @@ function sheetForExp(exp, idx){
                  var fq2=(typeof RESID_INFO!=='undefined' && RESID_INFO.q)? RESID_INFO.q : 'x';
                  sers.push({name:fq2+'（測った値）', col:cols[fq2+o], color:c, symbol:'circle'});
                  sers.push({name:'フィッティング', col:fitCol, color:'8A241D', symbol:'none', line:true}); } }
+        else if(d.q==='px'||d.q==='py'){ var cc=d.q.charAt(1);
+                 sers.push({name:'p'+cc+'物体'+(o+1), col:pCols['p'+cc+o], color:c, symbol:'circle'});
+                 if(sumOnX && k===objs.length-1) sers.push({name:'Σmv'+cc+'（重心）', col:pCols['sum'+cc], color:'1B1F24', symbol:'square'}); }
         else if(d.q==='res'){ if(k===0)
                  sers.push({name:'残差', col:resCol, color:'0F3F73', symbol:'circle'}); }
         else if(d.only!==undefined && d.only!==o){ }
@@ -416,7 +451,7 @@ function sheetForExp(exp, idx){
                sers.push({name:'K+U物体'+(o+1), col:cols['K+U'+o], color:c3, symbol:'triangle'}); }
       });
       var ch={title:d.t+'（'+exp.name+'）', xlab:'t [s]', ylab:d.y,
-                   xcol:((d.q==='v'||d.q==='vy'||(APP.aFit && (d.q==='a'||d.q==='ay'))||((d.q==='fit'||d.q==='res') &&
+                   xcol:((d.q==='v'||d.q==='vy'||d.q==='px'||d.q==='py'||(APP.aFit && (d.q==='a'||d.q==='ay'))||((d.q==='fit'||d.q==='res') &&
                           typeof RESID_INFO!=='undefined' &&
                           (RESID_INFO.q==='vx'||RESID_INFO.q==='vy')))?1:0), r0:r0, r1:r1,   /* 速さ（と v–t の傾きの a）は tv[s] を横軸に */
                    series:sers, anchorCol:anchor, anchorRow:di*19};
@@ -480,9 +515,11 @@ function exportXlsx(){
    レポート（PNG / PDF）
    ========================================================= */
 /* レポートは A4 たて（1240×1754）を1ページとして、入らなければページを足す */
+var REPORT_HEADS=[];
 function buildReportPages(){
   var W=1240, H=1754, M=50;
   var pages=[], g=null, y=0, exp=EXP();
+  REPORT_HEADS=[];                         /* 書いた見出しの一覧（自動テストで、どの節が入ったかを見るため） */
   function newPage(){
     var cv=document.createElement('canvas'); cv.width=W; cv.height=H;
     g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
@@ -496,6 +533,7 @@ function buildReportPages(){
   }
   function need(h){ if(y+h > H-70) newPage(); }
   function head(t){
+    REPORT_HEADS.push(t);
     need(46);
     g.fillStyle='#0f4c8f'; g.font='bold 17px '+FONT; g.fillText(t, M, y+14); y+=26;
   }
@@ -560,6 +598,44 @@ function buildReportPages(){
       y+=chh+12;
     }
   });
+  /* ---- 力学的エネルギー（「力学的エネルギーを解析する」のとき）：物体ごとに 1 枚、2 枚ずつ横に ---- */
+  if(APP.energyOn){
+    var eobjs=robjs.filter(function(ob){ return exp.objs[ob] && exp.objs[ob].length>1; });
+    if(eobjs.length){
+      need(46+chh+40);
+      head('力学的エネルギー（'+gDirInfo(exp).h+'）');
+      g.fillStyle='#1b1f24'; g.font='14px '+FONT;
+      g.fillText('質量 '+eobjs.map(function(ob){ return 'm'+'₁₂₃'.charAt(ob)+' = '+massOf(exp,ob)+' kg'; }).join('、')+
+                 '　g = '+exp.g+' m/s²　重力の向き：'+gDirInfo(exp).label, M, y+16); y+=30;
+      for(var ei=0; ei<eobjs.length; ei+=2){
+        need(chh+14);
+        [eobjs[ei], eobjs[ei+1]].forEach(function(ob, c2){
+          if(ob===undefined) return;
+          drawInto(g, M+c2*(cw+20), y, cw, chh, {title:'エネルギー–t'+(robjs.length>1? '　物体'+(ob+1)+(exp.objName[ob]? '（'+exp.objName[ob]+'）':'') : ''),
+                   xlab:'t [s]', ylab:KINDY.e, series:seriesFor(exp,'e',APP.cur,false,false,ob)});
+        });
+        y+=chh+12;
+      }
+    }
+  }
+  /* ---- 運動量（「運動量を解析する」のとき）：px–t（y もあれば py–t を右に）。物体ごとの p = m v、
+         複数物体で「重心の運動量」にチェックがあれば和 Σ m v も ---- */
+  if(APP.momAna && typeof specMomentum==='function'){
+    var mser=momentumSeries(exp,'x');
+    if(mser.objs.length){
+      var sumOn=(typeof momOn==='function' && momOn() && mser.objs.length>1);
+      need(46+chh+40);
+      head(sumOn? '運動量と重心の運動量（全体 Σ m v）' : '運動量 p = m v');
+      g.fillStyle='#1b1f24'; g.font='14px '+FONT;
+      g.fillText('質量 '+mser.objs.map(function(ob){ return 'm'+'₁₂₃'.charAt(ob)+' = '+massOf(exp,ob)+' kg'; }).join('、'), M, y+16); y+=30;
+      need(chh+14);
+      var plain=function(sp){ var c={}; for(var k in sp) if(k!=='key' && k!=='xkey') c[k]=sp[k]; return c; };   /* 画面で動かした範囲は使わない */
+      var spx=plain(specMomentum(APP.cur,'x',sumOn)); spx.title='px–t';
+      drawInto(g, M, y, cw, chh, spx);
+      if(wy){ var spy=plain(specMomentum(APP.cur,'y',sumOn)); spy.title='py–t'; drawInto(g, M+cw+20, y, cw, chh, spy); }
+      y+=chh+12;
+    }
+  }
   /* ---- フィッティングの結果・グラフ・残差 ---- */
   var box=$('fitResult');
   var hasFit = (typeof RESID!=='undefined') && RESID.length;
@@ -856,6 +932,10 @@ function openKadaiDialog(){
    '<select id="kdAuto"><option value="1"'+(APP.autoTrack?' selected':'')+'>ON（［色で自動追跡］を「おすすめ」で出す）</option>'+
    '<option value="0"'+(APP.autoTrack?'':' selected')+'>OFF（手でクリックして記録だけ）</option></select>'+
    '<span class="mini">生徒の画面の右上のチェックが、この状態で始まります</span></div>'+
+   '<div class="row" style="margin-top:6px"><b style="color:var(--accent-d)">JSON で提出</b>'+
+   '<select id="kdJson"><option value="1" selected>ON（課題のカードに［提出用ファイル（JSON）を保存］を出す）</option>'+
+   '<option value="0">OFF（提出の案内もボタンも出さない）</option></select>'+
+   '<span class="mini">JSON は記録した点と設定のファイル。先生は「過去測定データを実験○に登録」で開いて、そのまま確かめられます</span></div>'+
    '<div class="row" style="margin-top:6px"><b style="color:var(--accent-d)">進むフレーム数 N</b>'+
    '<select id="kdN">'+nOpts+'</select>'+
    '<span class="mini">1 クリックで進むコマ数。生徒には聞きません（あとから生徒が 4 のカードで変えることはできます）</span></div>'+
@@ -880,7 +960,7 @@ function openKadaiDialog(){
    '<li>先生の端末でこのツールを開き、課題にしたい<b>動画を読み込む</b>。時間範囲・原点・軸・スケールまで決めておくと、生徒は <b>4. トラッキング から</b>始められます（途中で書き出してもかまいません。その場合は、決めていない手順から始まります）</li>'+
    '<li>この画面で設問を書いて「書き出す」。<b>kadai_○○.html</b> ができます</li>'+
    '<li>そのファイルを Classroom や共有フォルダで配る。生徒はダブルクリックで開くだけ（ネット不要）</li>'+
-   '<li>生徒は解析して「JSON保存」→ 提出。先生は「JSON読込」で開いて確認できます</li>'+
+   '<li>「JSON で提出」が ON なら、生徒は課題のカードの<b>［提出用ファイル（JSON）を保存］</b>で保存して提出します。先生は上の段の<b>「過去測定データを実験○に登録」</b>で開いて確認できます（OFF のときは、Excel やレポートなど、別の方法で集めてください）</li>'+
    '</ol>';
   $('kadaiModal').classList.remove('hide');
   $('kdClose').onclick=function(){ $('kadaiModal').classList.add('hide'); };
@@ -974,6 +1054,7 @@ function makeKadai(){
   var vd=withVideo? kadaiVideoData(KADAI_SRC) : null;
   var K={ title:title, questions:qs, nObjs:nO, masses:masses, scale:scale,
           autoTrack: $('kdAuto').value==='1',
+          jsonSubmit: $('kdJson').value==='1',
           stepN: parseInt($('kdN').value)||5,
           video: withVideo? {name:exp.video.name, data:vd.data, type:vd.type} : null,
           /* 動画の情報と fps（先生が答えたもの）。生徒には fps の確認を出さない */

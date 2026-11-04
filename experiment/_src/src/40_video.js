@@ -78,7 +78,16 @@ function vidSeekNow(t){
     t = Math.max(0, Math.min((VID.dur||0)-0.0005, t));
     if(!isFinite(t)) t=0;
     /* 解析する時間範囲が決まったら、その外へは動かさない（コマ表づくり中は別） */
-    if(VID.limit && !VID.building) t = Math.max(VID.limit.a, Math.min(VID.limit.b, t));
+    if(VID.limit && !VID.building){
+      /* 範囲の端は「コマの切れ目」の時刻ちょうどなので、そこへシークすると端末によっては 1 つ前のコマが映る
+         （映っている絵と記録する時刻が 1 コマずれる）。コマ表があれば、端のコマの真ん中あたりに合わせる */
+      var la=VID.limit.a, lb=VID.limit.b;
+      if(VID.frames.length>1){
+        if(t<la){ var ka=frameIndexAt(la); if(Math.abs(VID.frames[ka]-la)<1e-6) la=frameSeekTime(ka); }
+        if(t>lb){ var kb=frameIndexAt(lb); if(Math.abs(VID.frames[kb]-lb)<1e-6) lb=frameSeekTime(kb); }
+      }
+      t = Math.max(la, Math.min(lb, t));
+    }
     var done=false;
     function fin(mt, exact){
       if(done) return; done=true;

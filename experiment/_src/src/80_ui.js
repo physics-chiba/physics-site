@@ -406,15 +406,29 @@ function setEnergyOn(on){
   if(!APP.energyOn) $('cbG_e').checked=false;
   if(!$('mode2').classList.contains('hide')) renderMode2();
 }
-/* 質量の欄は、エネルギーか重心の運動量のどちらかを使うときに出す。g・重力の向き・注はエネルギーのときだけ */
-function momOn(){ return !!(APP.momOn && APP.twoObj); }
+/* 運動量を解析するかどうか（ON で質量の欄と、物体ごとの運動量 p = m v のグラフを出す） */
+function setMomAna(on){
+  APP.momAna=!!on;
+  if(!APP.momAna) APP.momOn=false;                   /* 重心の運動量（全体 Σ m v）も、運動量の解析をやめたら消す */
+  var b=$('btnMomOn');
+  if(b){ b.classList.toggle('on', APP.momAna);
+         b.textContent = APP.momAna? '運動量の解析をやめる' : '運動量を解析する'; }
+  updateMassRow();
+  if(!$('mode2').classList.contains('hide')) renderMode2();
+}
+/* 質量の欄は、エネルギーか運動量を解析するときに出す。g・重力の向き・注はエネルギーのときだけ。
+   質量は物体の数だけ（m₂ は 2 つ以上、m₃ は 3 つのとき） */
+function momOn(){ return !!(APP.momOn && APP.twoObj && APP.momAna); }
 function updateMassRow(){
   var row=$('energyRow'); if(!row) return;
-  var show=APP.energyOn || momOn();
+  var show=APP.energyOn || !!APP.momAna;
   row.classList.toggle('hide', !show);
   els('.eonly', row).forEach(function(q){ q.classList.toggle('hide', !APP.energyOn); });
+  if($('labM2')) $('labM2').classList.toggle('hide', nObj()<2);
+  if($('labM3')) $('labM3').classList.toggle('hide', nObj()<3);
   if($('labGP')) $('labGP').classList.toggle('hide', !APP.twoObj);
   if($('cbG_p')) $('cbG_p').checked=momOn();
+  var mb=$('btnMomOn'); if(mb){ mb.classList.toggle('on', !!APP.momAna); mb.textContent=APP.momAna? '運動量の解析をやめる' : '運動量を解析する'; }
   if($('selGDir')) $('selGDir').value=EXP().gDir||'y-';
   if($('eNoteH')) $('eNoteH').textContent=gDirInfo(EXP()).h;
 }
@@ -948,6 +962,8 @@ function updateGuide(){
   if(cok){ var e9=EXP();
     cok.classList.toggle('hide', !(st>=4 && e9.origin && e9.originSet && e9.axisSet && e9.mPerPx>0)); }
   $('btnJsonSaveTop').classList.toggle('hide', !done);
+  /* 課題の「提出用ファイル（JSON）を保存」は、解析が終わったら光らせる */
+  if($('btnKadaiSubmit')) $('btnKadaiSubmit').classList.toggle('glow', done);
   $('labYFlip').classList.toggle('hide', APP.axisDisp!=='xy');
   /* 色マーカーの自動追跡：始点と色 → 探索半径 → 最後まで自動追跡 の順に光らせる */
   if(st===4 && VID.ready && APP.autoTrack && !needTrackStart() && !$('autoCard').classList.contains('hide')){
@@ -1176,6 +1192,22 @@ function needTrackStart(){
   return true;
 }
 /* その物体が、解析範囲の終わりまで記録できているか */
+/* 時刻 t まで記録したら「終わり」か。
+   ・解析範囲の最後のコマまで来た、または
+   ・あと N コマ進むと解析範囲の終わりを越える（＝残りが N コマに満たない）
+   前は、残りが N コマに満たなくても最後のコマまで進めて 1 点打たせていたので、最後の間隔だけが
+   1〜2 コマと短くなり、クリックのずれが v で N 倍・a で N² 倍ほどに効いて、グラフの最後の点だけがおかしくなっていた */
+function doneAt(t){
+  var e=EXP(); if(e.rangeB===null || t===null) return false;
+  var fps=VID.fps||30;
+  if(t >= e.rangeB - 0.6/fps) return true;
+  var N=parseInt(($('inStepN')||{}).value)||1, nt;
+  if(VID.frames && VID.frames.length>1 && typeof tableCovers==='function' && tableCovers(t)){
+    var i=frameIndexAt(t);
+    nt=(i+N < VID.frames.length)? VID.frames[i+N] : Infinity;
+  } else nt=t+N/fps;
+  return nt > e.rangeB + 0.4/fps;
+}
 function objDone(o){
   var e=EXP();
   if(e.rangeB===null) return false;
@@ -1183,7 +1215,7 @@ function objDone(o){
   if(e.objEnd && e.objEnd[o]) return true;         /* ［この物体はここで終わり］を押した */
   var last=null;
   arr.forEach(function(p){ if(last===null||p.t>last) last=p.t; });
-  return last >= e.rangeB - 0.6/(VID.fps||30);   /* 解析範囲の最後のコマまで来たら「終わり」 */
+  return doneAt(last);
 }
 function trackingDone(){
   var e=EXP();
@@ -1192,7 +1224,7 @@ function trackingDone(){
   var last=null;
   for(var i=0;i<NOBJ;i++) e.objs[i].forEach(function(p){ if(last===null||p.t>last) last=p.t; });
   if(last===null) return false;
-  return last >= e.rangeB - 0.6/(VID.fps||30);   /* 解析範囲の最後のコマまで来たら「終わり」 */
+  return doneAt(last);
 }
 /* 「２物体の運動」の切りかえ。画面の見た目と選べる物体をそろえる */
 function setTwoObj(on, quiet){
@@ -1606,8 +1638,21 @@ function resetTracking(obj){
   rewindToRangeStart();
   toast((obj===undefined? 'トラッキングした点' : '物体'+(obj+1)+'の点')+'をリセットしました（Ctrl+Z でもどせます）');
 }
+/* 動画・実験が変わるときに、操作の途中の状態（クリック待ちのモード・自動追跡）を元にもどす。
+   前の実験が「探索半径」「始点と色」「x軸の向き」などのクリック待ちのまま終わっていると、
+   次の実験でそのモードが残り、原点をドラッグできない → 「原点はこの位置でいいですか？」以降（軸の設定）が出ない →
+   4 に進めず、色で自動追跡の選択も出ない、ということが起きていた */
+function resetWorkMode(){
+  if(typeof stopAuto==='function') stopAuto();
+  UI.startedAuto=false; UI.autoLost=false; UI.autoOthers=null;
+  UI.scaleP1=null; UI.dragOrigin=false; UI.dragRad=false; UI.dragScale=0; UI.radCenter=null;
+  APP.editStep=0; UI.calPend=null;
+  if(typeof setCalHint==='function') setCalHint(null);
+  if(typeof autoMsgHide==='function') autoMsgHide();
+  setMode('record');
+}
 function switchExp(i){
-  UI.calPend=null; if(typeof setCalHint==='function') setCalHint(null); calMsg('');
+  resetWorkMode(); calMsg('');
   APP.cur=i; UI.undo=[]; UI.lastPt=null; clearStrobe();
   refreshExpUI(); afterChange(); render();
 }
@@ -1670,7 +1715,7 @@ function askKeepExp(next){
       if(APP.exps.length>=MAXEXP){ toast('実験は'+MAXEXP+'個までです。古い実験を消してください'); return; }
       var ne=newExp(APP.exps.length+1);
       APP.exps.push(ne); APP.cur=APP.exps.length-1;
-      UI.undo=[]; UI.lastPt=null; UI.obj=0;
+      UI.undo=[]; UI.lastPt=null; UI.obj=0; resetWorkMode();
       refreshExpUI(); afterChange();
       next();
     },
@@ -1680,7 +1725,7 @@ function askKeepExp(next){
         e2.trackReady=false; e2.origin=null; e2.originSet=false; e2.axisSet=false; e2.angle=0;
         e2.mPerPx=null; e2.scaleRef=null; e2.t0=null; e2.rangeB=null; e2.rangeA=null;
         e2.step2ok=false; e2.crop=null; e2.ref=[]; e2.nOk=false; e2.nObjOk=false;
-        UI.undo=[]; UI.lastPt=null; UI.obj=0; APP.editStep=0; resetFlowFlags(true);
+        UI.undo=[]; UI.lastPt=null; UI.obj=0; resetWorkMode(); resetFlowFlags(true);
         refreshExpUI(); afterChange();
         next();
       } });
@@ -1772,7 +1817,7 @@ function onVideoReady(name){
      （前の動画のグラフのまま、新しい動画が動いてしまうため） */
   if(APP.m2mode==='live') setM2Mode('side', true);
   if(APP.tab!=='1') setTab('1');
-  UI.autoLost=false; UI.autoOthers=null; autoMsgHide(); tblFrom=null;
+  resetWorkMode(); tblFrom=null;
   resetAllMsgPos();                /* 動かした知らせの場所は、新しい動画では元にもどす */
   UI.calPend=null; setCalHint(null); calMsg('');
   clearStrobe();
@@ -2137,7 +2182,8 @@ function openHelp(){
   '<li><b>動画をトリミング（端を切る）</b>：使いたい所だけを四角く囲むと、その部分が動画エリアいっぱいに広がります</li>'+
   '<li>開けないときは、iPhone/iPad の <b>設定→カメラ→フォーマット→「互換性優先」</b>で撮り直すと、たいてい解決します</li>'+
   '<li>右上の <b>［教員用］</b>にチェックを入れると、上の段の「実験○を開始する」の左に赤い<b>［課題ファイルを書き出す（先生用）］</b>が出ます（ふだんは隠れています。3 の途中でも押せます）。'+
-  '課題には設問のほか、<b>色マーカーの自動追跡の ON／OFF・進むフレーム数 N・物体の数（1〜3）・それぞれの質量・スケール（○ px ＝ ○ cm）</b>も決めておけます。'+
+  '課題には設問のほか、<b>色マーカーの自動追跡の ON／OFF・JSON で提出の ON／OFF・進むフレーム数 N・物体の数（1〜3）・それぞれの質量・スケール（○ px ＝ ○ cm）</b>も決めておけます。'+
+  '「JSON で提出」が ON なら、生徒の課題のカードに［提出用ファイル（JSON）を保存］が出ます（解析が終わると光ります）。OFF なら提出の案内もボタンも出しません。'+
   '時間範囲・原点・軸・スケールまで決めてから書き出すと、生徒はファイルを開くと<b>いきなり 4. トラッキング</b>から始まります（fps・N・物体の数も聞きません）。途中で書き出したときは、決めていない手順から始まります</li></ul>'+
   '<h3>2. 解析する時間範囲の指定</h3>'+
   '<p>動画の真ん中の▶か「再生」で見どころをさがし、コマ送りで合わせてから：</p>'+
@@ -2151,7 +2197,7 @@ function openHelp(){
   '<h3>3. 空間の原点・スケール・軸を決める</h3>'+
   '<ul><li>2 で「この時刻まで解析」を決めると、まず <b>「動画をトリミング（端を切る）しますか？」</b> と聞きます。はいなら四角で囲み、「この範囲でいいですか？」に答えてから 3 へ</li>'+
   '<li>3 に入ると、<b>原点の印が画面の中央</b>に置かれます。正しい位置にドラッグ（またはクリック）すると、動画の上に'+
-  '「原点はこの位置でいいですか？」→「分析する方向（1方向／2方向）」→「x軸の正の方向をクリック」→（2方向なら y軸の向き）→'+
+  '「原点はこの位置でいいですか？」→「分析する方向（1方向／2方向）」→「x軸の正の方向をクリック」（動画の右向きのままでよければ［そのままでよい（右向きが正）］）→（2方向なら y軸の向き）→'+
   '「スケールを設定してください」→「スケールはこれでいいですか？」と <b>はい／いいえ</b> で順に聞きます。はい で 4 へ</li>'+
   '<li><b>原点を設定</b>：クリックした所が x=0, y=0。そのまま<b>x軸の向き</b>の設定に進みます（軸の正の方向をクリック）</li>'+
   '<li>ボタンを押さずに動画をクリックしても、<b>原点 → x軸の向き → スケール</b>の順に自動で進みます</li>'+
@@ -2177,6 +2223,8 @@ function openHelp(){
   '<li><b>N の目安</b>：点と点の間が、画面の横はばの 2〜3 % 以上動くように。ゆっくりな運動ほど N を大きく</li>'+
   '<li>指でタップすると<b>ルーペ</b>が出ます。長押しするとズームアップして、正確に点が打てます</li>'+
   '<li><kbd>Shift</kbd>＋クリック＝記録して1コマ進む（ふつうのクリックは N コマ進む）</li>'+
+  '<li>解析範囲の終わりまで <b>N コマに満たない残り</b>は記録しません（そこで「解析終了」）。最後の間隔だけが短いと、クリックのずれが v・a に大きく効いて、グラフの最後の点だけがおかしくなるためです。'+
+  '残りも記録したいときは、4 のカードの［進むフレーム数 N］を小さくして、［記録した続きから］で続けてください（そのぶん最後の間隔は短くなります）</li>'+
   '<li>取消は <b>［1回分トラッキングを取り消す］</b>（動画の左上と下にもあります）か <kbd>Ctrl</kbd>(<kbd>⌘</kbd>)＋<kbd>Z</kbd>。'+
   '矢印キーで最後の点を1pxずつ動かせます</li>'+
   '<li><b>色で自動追跡</b>：動画の上に大きな案内が出ます（［この表示を最小化］でたためます）。マーカーを1回クリックすると、始点と色を覚えます。円をドラッグして探索半径を決め、案内の <b>［自動追跡を開始する］</b>（か［最後まで自動追跡］）で終わりまで追いかけ、'+
@@ -2260,13 +2308,14 @@ function openHelp(){
   '例：〔縦軸＝物体1 vx／縦軸2＝物体2 vx／横軸＝t〕で衝突の前後を見る、〔縦軸＝x／縦軸2＝y／横軸＝t〕で x と y を 1 枚で見る、など</li>'+
   '<li><b>運動量保存則</b>ボタン（右上の［複数物体の運動］が ON で、物体が 2 つのときだけ出ます）で〔縦軸＝物体1 の運動量 px／縦軸2＝物体2 の px／横軸＝t〕に、'+
   '同じ目盛りで一発で切りかわります。質量 m₁・m₂ はそのとなりの欄で入れます。物体2のデータが無いときは切りかわらず、赤字で知らせます</li>'+
-  '<li>②の <b>「重心の運動量」</b> にチェック（複数物体のとき）を入れると、質量の欄が出て、物体ごとの運動量 p = m v と、'+
-  'その和 Σ m v（＝重心の運動量）を 1 枚のグラフに出します。物体が 3 つでも、衝突の前後で和が変わらないことを確かめられます</li>'+
+  '<li>②の右上の <b>［運動量を解析する］</b>を押すと、物体ごとの<b>質量の欄</b>（物体の数だけ）が出て、運動量 p = m v のグラフ（px–t、y もあれば py–t）を出します。'+
+  '複数物体のときは <b>「重心の運動量」</b> にチェックを入れると、その和 Σ m v（＝重心の運動量）も重ねます。物体が 3 つでも、衝突の前後で和が変わらないことを確かめられます。'+
+  '押しているときは、Excel（質量の行、px・py の列と px–t・py–t のグラフ、チェックがあれば Σmv の列も）とレポート（「運動量」の節）にも入ります</li>'+
   '<li>縦軸と横軸が<b>同じ単位</b>のとき（x–y など）は、縦横の目盛りを自動でそろえます。円運動が<b>ちゃんと円に見えます</b></li>'+
   '<li>エネルギーは②の右上の <b>［力学的エネルギーを解析する］</b>を押すと、質量 m・g・<b>重力の向き</b>の入力欄が出ます。'+
   '位置エネルギー U = mgh の高さ h は、重力の向き（鉛直下向きが −y／+y／−x／+x のどれか）から出します（−y なら h = y、+x なら h = −x）。'+
   '自由落下を x 軸だけで解析するときは −x か +x を選びます。円運動など高さが決まらない実験には当てはまりません。'+
-  '押していないときは Excel 出力にもエネルギーは入りません</li>'+
+  '押しているときは、Excel（K・U・K+U の列と物体ごとのグラフ）とレポート（「力学的エネルギー」の節）にも入ります。押していないときは入りません</li>'+
   '<li>実験は10個まで記録できます。②の「対象の実験」で実験1 などにチェックを入れると、実験結果を重ねて比べられます（はじめはいまの実験だけにチェック。全部外すとグラフは出ません）</li>'+
   '<li>②③の Excel 出力・レポートを押すと、先に「ストロボ写真を作成しますか？」と聞きます。はい なら、④で作ってあればその写真を、無ければふさわしいコマ間隔（2 コマおき以上）で自動で作って、Excel・レポートの最後につけます</li>'+
   '<li>グラフの縦軸のはじめの範囲は 0 をふくみ、上（下）はきりのよい数までです（4〜6 なら 0〜10）。データだけに寄せて見たいときは［スケールフィット］</li>'+
@@ -2281,7 +2330,7 @@ function openHelp(){
   '［デフォルトに戻す］か［スケールと表示範囲をデフォルトに戻す］でもどります</li>'+
   '<li>上の <b>補足</b> のタブ「誤差の要因の例」に、クリックのずれ・N と a の出し方（見本のグラフつき）・ものさしの奥行き・'+
   'カメラの向き・手ぶれ・コマの時刻・式の当てはまり、をまとめてあります</li>'+
-  '<li>②③の右上から <b>Excel／グラフPNG／CSV／レポートPNG／レポートPDF</b> を出せます（②では Excel・PNG の下に［力学的エネルギーを解析する］）。'+
+  '<li>②③の右上から <b>Excel／グラフPNG／CSV／レポートPNG／レポートPDF</b> を出せます（②では Excel・PNG の下に［力学的エネルギーを解析する］［運動量を解析する］）。'+
   'レポートには、フィッティングしたグラフと残差も載ります</li></ul>'+
   '<h3>精度について</h3>'+
   '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
@@ -2651,7 +2700,7 @@ function startNextExp(){
     function(){
       var ne=newExp(APP.exps.length+1);
       APP.exps.push(ne); APP.cur=APP.exps.length-1;
-      UI.undo=[]; UI.lastPt=null; UI.obj=0; APP.editStep=0;
+      UI.undo=[]; UI.lastPt=null; UI.obj=0; resetWorkMode();
       UI.m2Visited=false; UI.m3Visited=false; resetFlowFlags(false);
       setTab('1'); refreshExpUI(); afterChange(); updateNextExpBtn();
       $('fileVideo').click();                     /* ボタンを押した流れの中なので、ファイル選択が開く */
@@ -2709,7 +2758,7 @@ function bindUI(){
     if($('gapKadai')) $('gapKadai').classList.toggle('hide', !this.checked || !!window.KADAI);
   };
   $('cbAuto').onchange=function(){
-    APP.autoTrack=this.checked;
+    APP.autoTrack=this.checked; saveLocal();
     if($('howto4hand')){ $('howto4hand').classList.toggle('hide', this.checked); $('howto4auto').classList.toggle('hide', !this.checked); }
     $('autoCard').classList.toggle('hide', !this.checked);
     if(this.checked){
@@ -3161,6 +3210,7 @@ function askResetPts(go){
   });
   $('fileJson').onchange=function(){ if(this.files[0]) importJson(this.files[0]); this.value=''; };
   $('btnEnergyOn').onclick=function(){ setEnergyOn(!APP.energyOn); saveLocal(); };
+  if($('btnMomOn')) $('btnMomOn').onclick=function(){ setMomAna(!APP.momAna); saveLocal(); };
   $('btnReportPng').onclick=askThen('レポート（PNG）', exportReportPng);
   $('btnReportPdf').onclick=askThen('レポート（PDF）', exportReportPdf);
   $('btnReportPng2').onclick=askStroThen('レポート（PNG）', exportReportPng);
@@ -3223,7 +3273,9 @@ function askResetPts(go){
   });
   /* ②の「重心の運動量」：ON にすると質量の欄が出て、物体ごとの運動量と全体（重心）の運動量のグラフが増える */
   if($('cbG_p')) $('cbG_p').addEventListener('change', function(){
-    APP.momOn=$('cbG_p').checked; updateMassRow(); afterChange(); renderMode2();
+    APP.momOn=$('cbG_p').checked;
+    if(APP.momOn && !APP.momAna){ setMomAna(true); APP.momOn=true; }   /* 重心の運動量を描くには質量が要るので、運動量の解析も ON に */
+    updateMassRow(); afterChange(); renderMode2();
   });
   function reRender(){
     if(!$('mode2').classList.contains('hide')) renderMode2();
@@ -3695,7 +3747,13 @@ function calGuide(step){
   if(step==='axis'){
     setMode('axis');
     calAsk('<span class="q">x軸の正方向を選んでください</span>'+
-      '<span class="mini">動画の上で、原点から見て<b>正の向き</b>になる所をクリックします（水平なら原点の右あたり）。</span>', []);
+      '<span class="mini">原点から見て<b>正の向き</b>になる所をクリックします。動画の右向きのままでよければ、下のボタンを押してください。</span>', [
+      { label:'そのままでよい（右向きが正）', cls:'pri', fn:function(){
+          e.angle=0; e.xflip=false; e.axisSet=true;
+          setMode('record'); afterChange(); drawOverlay();
+          if(APP.axisDisp==='xy') calGuide('yaxis'); else calGuide('axisOk');
+        } }
+    ]);
     return;
   }
   if(step==='yaxis'){

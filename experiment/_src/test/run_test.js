@@ -354,6 +354,216 @@ async function setMovSource(page, type) {
     }
   }
 
+  console.log('L. x軸の「そのままでよい」・運動量を解析する');
+  {
+    const p = await L.newPage(browser);
+    await p.evaluate((v) => loadVideoUrl(v, 'proj.webm'), 'test/proj.webm');
+    await L.waitReady(p);
+    await p.evaluate(() => { const e = EXP(); e.t0 = 0; e.rangeB = VID.dur - 0.1; e.origin = { x: 72, y: 312 }; e.originSet = true; e.angle = 0.7; afterChange(); APP.axisDisp = 'x'; calGuide('axis'); });
+    await p.waitForTimeout(150);
+    const btn = await p.evaluate(() => { const b = [...document.querySelectorAll('#calMsg .btn')].find(x => /そのままでよい/.test(x.textContent)); return b ? b.textContent : null; });
+    check('「x軸の正方向を選んでください」に［そのままでよい］がある', !!btn, btn);
+    await p.evaluate(() => [...document.querySelectorAll('#calMsg .btn')].find(x => /そのままでよい/.test(x.textContent)).click());
+    await p.waitForTimeout(150);
+    const ax = await p.evaluate(() => ({ angle: EXP().angle, set: EXP().axisSet, q: document.getElementById('calMsg').textContent, mode: UI.mode }));
+    check('押すと x 軸は動画の右向き（角度 0）で決まり、次の確認へ進む', ax.angle === 0 && ax.set && /X軸はこの方向でいいですか/.test(ax.q) && ax.mode === 'record', ax);
+    /* 2 方向なら y 軸の確認へ */
+    await p.evaluate(() => { APP.axisDisp = 'xy'; EXP().axisSet = false; calGuide('axis'); [...document.querySelectorAll('#calMsg .btn')].find(x => /そのままでよい/.test(x.textContent)).click(); });
+    check('2 方向のときは y 軸の確認へ', /y軸はこの方向でいいですか/.test(await p.evaluate(() => document.getElementById('calMsg').textContent)));
+    await p.evaluate(() => { calMsg(''); APP.axisDisp = 'x'; });
+    await p.context().close();
+
+    const q = await L.newPage(browser);
+    await L.setupTo4(q); await L.addProjPoints(q, 3);
+    await q.evaluate(() => setTab('2')); await q.waitForTimeout(400);
+    const lay = await q.evaluate(() => { const e = document.getElementById('btnEnergyOn'), m = document.getElementById('btnMomOn'), x = document.getElementById('btnCsv2');
+      const re = e.getBoundingClientRect(), rm = m.getBoundingClientRect();
+      return { fe: parseFloat(getComputedStyle(e).fontSize), fm: parseFloat(getComputedStyle(m).fontSize), fx: parseFloat(getComputedStyle(x).fontSize), right: rm.left > re.right - 1, sameRow: Math.abs(re.top - rm.top) < 4, txt: m.textContent }; });
+    check('［力学的エネルギーを解析する］の字が 2 段階小さい', lay.fe < lay.fx - 1.5, lay);
+    check('その右に同じ大きさの［運動量を解析する］', lay.right && lay.sameRow && lay.fm === lay.fe && lay.txt === '運動量を解析する', lay);
+    check('はじめは質量の欄は出ていない', await q.evaluate(() => document.getElementById('energyRow').classList.contains('hide')));
+    await q.click('#btnMomOn'); await q.waitForTimeout(400);
+    const mo = await q.evaluate(() => {
+      const row = document.getElementById('energyRow'), vis = id => { const x = document.getElementById(id); return !!x && !x.classList.contains('hide') && x.offsetParent !== null; };
+      const cards = [...document.querySelectorAll('#charts2 .chartcard')].map(c => c.querySelector('canvas').__spec).filter(sp => sp && /^P[xy]_/.test(sp.key));
+      const sp = cards[0], s = series(EXP(), 0).filter(p => p.vx !== null);
+      return { row: !row.classList.contains('hide'), m1: vis('inM1'), m2: vis('labM2'), g: vis('inG'), gdir: vis('labGDir'), n: cards.length, ser: sp ? sp.series.length : 0,
+        ok: sp ? Math.abs(sp.series[0].pts[2].y - EXP().m1 * s[2].vx) < 1e-9 : false, txt: document.getElementById('btnMomOn').textContent };
+    });
+    check('押すと質量の欄が出る（1 物体なら m₁ だけ。g・重力の向きは出ない）', mo.row && mo.m1 && !mo.m2 && !mo.g && !mo.gdir, mo);
+    check('運動量 p = m v のグラフが出る（値は m₁ × vx）', mo.n >= 1 && mo.ser === 1 && mo.ok, mo);
+    check('ボタンは「運動量の解析をやめる」に変わる', mo.txt === '運動量の解析をやめる', mo.txt);
+    await q.fill('#inM1', '0.5'); await q.dispatchEvent('#inM1', 'change'); await q.waitForTimeout(300);
+    const m5 = await q.evaluate(() => { const sp = [...document.querySelectorAll('#charts2 .chartcard canvas')].map(c => c.__spec).find(sp => sp && /^Px_/.test(sp.key)); const s = series(EXP(), 0).filter(p => p.vx !== null); return Math.abs(sp.series[0].pts[2].y - 0.5 * s[2].vx) < 1e-9; });
+    check('質量を変えるとグラフも変わる', m5);
+    /* 2 物体 */
+    await q.evaluate(() => { setTwoObj(true, true); EXP().nObjs = 2; EXP().nObjOk = true;
+      EXP().objs[1] = EXP().objs[0].map(p => ({ t: p.t, fr: p.fr, x: p.x + 40, y: p.y + 30 })); afterChange(); renderMode2(); });
+    await q.waitForTimeout(300);
+    const two = await q.evaluate(() => { const vis = id => { const x = document.getElementById(id); return !!x && !x.classList.contains('hide') && x.offsetParent !== null; };
+      const sp = [...document.querySelectorAll('#charts2 .chartcard canvas')].map(c => c.__spec).find(sp => sp && /^Px_/.test(sp.key));
+      return { m2: vis('labM2'), m3: vis('labM3'), ser: sp ? sp.series.map(x => x.name) : [] }; });
+    check('2 物体なら m₁・m₂ の欄（m₃ は出ない）', two.m2 && !two.m3, two);
+    check('2 物体の運動量（重心の運動量はチェックしたときだけ）', two.ser.length === 2 && !two.ser.some(n => /Σ/.test(n)), two.ser);
+    await q.check('#cbG_p'); await q.waitForTimeout(300);
+    const sum = await q.evaluate(() => [...document.querySelectorAll('#charts2 .chartcard canvas')].map(c => c.__spec).find(sp => sp && /^Px_/.test(sp.key)).series.map(x => x.name));
+    check('「重心の運動量」にチェックすると Σ m v も重なる', sum.some(n => /Σ/.test(n)), sum);
+    await q.click('#btnMomOn'); await q.waitForTimeout(300);
+    const off = await q.evaluate(() => ({ row: document.getElementById('energyRow').classList.contains('hide'),
+      cards: [...document.querySelectorAll('#charts2 .chartcard canvas')].filter(c => c.__spec && /^P[xy]_/.test(c.__spec.key)).length, gp: document.getElementById('cbG_p').checked }));
+    check('もう一度押すと、質量の欄も運動量のグラフも消える', off.row && off.cards === 0 && !off.gp, off);
+    check('ページエラー 0', q.__errors.length === 0, q.__errors);
+    await q.screenshot({ path: L.path.join(__dirname, 'shot_mom.png') });
+    await q.context().close();
+  }
+
+  console.log('M. 運動量（とエネルギー）を Excel・レポートにも');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p); await L.addProjPoints(p, 3);
+    const a = await p.evaluate(() => {
+      APP.axisDisp = 'xy'; APP.energyOn = false; setMomAna(false);
+      const off = sheetForExp(EXP(), APP.cur), hro = off.rows.findIndex(r => r[0] === 't[s]');
+      const offHas = off.rows[hro].some(h => /^p[xy]/.test(h)) || off.charts.some(c => /運動量/.test(c.title));
+      buildReportPages(); const offRep = REPORT_HEADS.slice();
+      EXP().m1 = 0.25; setMomAna(true);
+      const sh = sheetForExp(EXP(), APP.cur), hr = sh.rows.findIndex(r => r[0] === 't[s]'), head = sh.rows[hr];
+      const cpx = head.indexOf('px[kg·m/s]'), cvx = head.indexOf('vx');
+      const ok = sh.rows.slice(hr + 1).every(r => r[cvx] === '' ? r[cpx] === '' : Math.abs(r[cpx] - 0.25 * r[cvx]) < 1e-7);
+      const mrow = sh.rows.slice(0, hr).find(r => r[0] === '質量m1[kg]');
+      const chs = sh.charts.filter(c => /運動量/.test(c.title)).map(c => ({ t: c.title, x: c.xcol, n: c.series.length }));
+      buildReportPages(); const onRep = REPORT_HEADS.slice();
+      setEnergyOn(true); buildReportPages(); const eRep = REPORT_HEADS.slice(); setEnergyOn(false);
+      return { offHas, offRep, head, ok, mrow, chs, onRep, eRep };
+    });
+    check('「運動量を解析する」OFF なら Excel・レポートに運動量は出ない', !a.offHas && !a.offRep.some(t => /運動量/.test(t)), a);
+    check('ON なら Excel に px・py の列（p = m v、v と同じ行）', a.head.includes('px[kg·m/s]') && a.head.includes('py[kg·m/s]') && a.ok, a.head);
+    check('Excel の上に質量の行（m₁ = 0.25）', a.mrow && a.mrow[1] === 0.25, a.mrow);
+    check('Excel に px–t・py–t のグラフ（横軸は tv）', a.chs.length === 2 && a.chs.every(c => c.x === 1 && c.n === 1), a.chs);
+    check('レポートに「運動量 p = m v」の節', a.onRep.includes('運動量 p = m v'), a.onRep);
+    check('「力学的エネルギーを解析する」のときはレポートに力学的エネルギーの節', a.eRep.some(t => /^力学的エネルギー/.test(t)), a.eRep);
+    /* 2 物体・重心の運動量 */
+    const b = await p.evaluate(() => {
+      setTwoObj(true, true); EXP().nObjs = 2; EXP().nObjOk = true;
+      EXP().objs[1] = EXP().objs[0].map(q => ({ t: q.t, fr: q.fr, x: q.x + 40, y: q.y + 30 }));
+      EXP().m2 = 0.5; APP.momOn = false; afterChange();
+      const s1 = sheetForExp(EXP(), APP.cur), h1 = s1.rows[s1.rows.findIndex(r => r[0] === 't[s]')];
+      APP.momOn = true;
+      const s2 = sheetForExp(EXP(), APP.cur), hr2 = s2.rows.findIndex(r => r[0] === 't[s]'), h2 = s2.rows[hr2];
+      const cs = h2.indexOf('Σmvx（重心の運動量）[kg·m/s]'), c1 = h2.indexOf('px_1[kg·m/s]'), c2 = h2.indexOf('px_2[kg·m/s]');
+      const r = s2.rows[hr2 + 3];
+      const ch = s2.charts.find(c => /^px - t/.test(c.title));
+      buildReportPages(); const rep = REPORT_HEADS.slice();
+      return { noSum: !h1.some(h => /Σ/.test(h)), sumOk: Math.abs(r[cs] - (r[c1] + r[c2])) < 1e-7, nSer: ch.series.length, rep };
+    });
+    check('2 物体：重心の運動量にチェックが無ければ Σ の列は出ない', b.noSum, b);
+    check('チェックすると Σmv の列（= px₁ + px₂）とグラフの線', b.sumOk && b.nSer === 3, b);
+    check('レポートも「運動量と重心の運動量」の節', b.rep.some(t => /運動量と重心の運動量/.test(t)), b.rep);
+    /* 本当に書き出して壊れていないか */
+    await p.evaluate(() => { window.__askStro = false; setTab('2'); }); await p.waitForTimeout(300);
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.evaluate(() => exportXlsx())]);
+    const xf = L.path.join(__dirname, '_out_mom.xlsx'); await dl.saveAs(xf);
+    let ok = false, msg = '';
+    try { msg = require('child_process').execSync('python3 -W ignore -c "import openpyxl,sys; wb=openpyxl.load_workbook(sys.argv[1]); ws=wb.worksheets[0]; print(len(ws._charts))" ' + xf).toString().trim(); ok = +msg >= 8; } catch (e) { msg = String(e.stdout || e); }
+    check('運動量入りの Excel ファイルが壊れていない（グラフ ' + msg + ' 枚）', ok, msg);
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
+  }
+
+  console.log('N. 解析終了の大きさ・実験2 での表示・最後の点');
+  {
+    const p = await L.newPage(browser);
+    const fs0 = await p.evaluate(() => { const d = document.getElementById('doneMsg'); d.style.transition = 'none'; d.classList.remove('hide'); const a = parseFloat(getComputedStyle(d).fontSize);
+      d.classList.add('small'); const b = parseFloat(getComputedStyle(d).fontSize); d.classList.add('hide'); d.classList.remove('small'); d.style.transition = ''; return [a, b]; });
+    check('「解析終了。グラフを表示してみよう」は 150%（16.8→25.2px、小さいときも 12.8→19.2px）', Math.abs(fs0[0] - 25.2) < 0.2 && Math.abs(fs0[1] - 19.2) < 0.2, fs0);
+    /* 前の実験がクリック待ちのモードのまま → 新しい動画で元にもどる */
+    await L.setupTo4(p);
+    for (const m of ['radius', 'color', 'axis', 'scale1']) {
+      const r = await p.evaluate(async (m) => { setMode(m); UI.startedAuto = true; UI.calPend = 'scale'; APP.editStep = 3;
+        loadVideoUrl('test/proj.webm', 'proj.webm'); await new Promise(res => { const iv = setInterval(() => { if (VID.ready && !VID.building && document.getElementById('busyLock').classList.contains('hide')) { clearInterval(iv); res(); } }, 50); });
+        return { mode: UI.mode, auto: UI.startedAuto, pend: UI.calPend, edit: APP.editStep }; }, m);
+      check('「' + m + '」のまま動画を読み直しても、クリックで記録のモードにもどる', r.mode === 'record' && !r.auto && r.pend === null && r.edit === 0, r);
+    }
+    const sw = await p.evaluate(() => { APP.exps.push(newExp(2)); setMode('radius'); switchExp(1); const m = UI.mode; switchExp(0); return m; });
+    check('実験を切りかえても、クリックで記録のモードにもどる', sw === 'record', sw);
+    /* 色マーカーの自動追跡の ON は、開き直しても残る */
+    await p.evaluate(() => { const c = document.getElementById('cbAuto'); c.checked = true; c.onchange(); });
+    await p.reload({ waitUntil: 'load' }); await p.waitForTimeout(400);
+    const au = await p.evaluate(() => ({ app: APP.autoTrack, cb: document.getElementById('cbAuto').checked, card: !document.getElementById('autoCard').classList.contains('hide') }));
+    check('色マーカーの自動追跡の ON は、ページを開き直しても残る（中身とチェックがそろう）', au.app === true && au.cb === true, au);
+    await p.evaluate(() => { const c = document.getElementById('cbAuto'); c.checked = false; c.onchange(); });
+    await p.context().close();
+
+    /* 最後の点：残りが N コマに満たないときは、そこで終わり（間隔はすべて N コマ） */
+    for (const [N, endFr, lastFr] of [[5, 43, 40], [5, 40, 40], [3, 44, 42], [4, 41, 40]]) {
+      const q = await L.newPage(browser);
+      const b64 = L.fs.readFileSync(L.path.join(__dirname, 'uni.webm')).toString('base64');
+      await q.evaluate(({ b64 }) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        loadVideoUrl(URL.createObjectURL(new Blob([u], { type: 'video/webm' })), 'uni.webm'); }, { b64 });
+      await L.waitReady(q);
+      const r = await q.evaluate(async ({ N, endFr }) => {
+        const e = EXP(); e.t0 = VID.frames[0]; e.rangeB = VID.frames[endFr];
+        e.origin = { x: 10, y: 10 }; e.originSet = true; e.axisSet = true; e.mPerPx = 0.001; UI.calPend = null;
+        e.objReady[0] = true; e.trackReady = true; document.getElementById('inStepN').value = N; document.getElementById('selAfter').value = 'n';
+        afterChange(); await vidSeek(e.t0); afterSeek();
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        for (let k = 0; k < 30 && !trackingDone(); k++) { await VID.q; await sleep(60); commitPoint(35 + 600 * VID.cur, 180, null); await sleep(60); await VID.q; }
+        const fr = e.objs[0].map(p => p.fr), gaps = fr.slice(1).map((f, i) => f - fr[i]);
+        const handN = { last: fr[fr.length - 1], gaps: [...new Set(gaps)], done: trackingDone() };
+        /* 自動追跡でも同じ */
+        e.objs[0] = []; APP.autoTrack = true; UI.startedAuto = true; await vidSeek(e.t0); afterSeek();
+        vidDrawFull(); const d = document.getElementById('cvFull').getContext('2d').getImageData(Math.round(35 + 600 * VID.cur), 180, 1, 1).data;
+        APP.trackColor = { r: d[0], g: d[1], b: d[2] }; addPoint(0, 35 + 600 * VID.cur, 180, false);
+        autoRunAll(); while (UI.autoRunning) await sleep(30);
+        const fa = e.objs[0].map(p => p.fr), ga = fa.slice(1).map((f, i) => f - fa[i]);
+        return { hand: handN, auto: { last: fa[fa.length - 1], gaps: [...new Set(ga)] } };
+      }, { N, endFr });
+      check(`N=${N}・終わり 第${endFr}コマ：手で記録は第${lastFr}コマで終わり、間隔はすべて ${N} コマ`, r.hand.last === lastFr && r.hand.gaps.length === 1 && r.hand.gaps[0] === N && r.hand.done, r.hand);
+      check(`N=${N}・終わり 第${endFr}コマ：自動追跡も第${lastFr}コマで終わり、間隔はすべて ${N} コマ`, r.auto.last === lastFr && r.auto.gaps.length === 1 && r.auto.gaps[0] === N, r.auto);
+      await q.context().close();
+    }
+  }
+
+  console.log('O. 課題ファイルの「JSON で提出」ON／OFF');
+  {
+    for (const on of [true, false]) {
+      const p = await L.newPage(browser);
+      await L.setupTo4(p);
+      await setMovSource(p, 'video/quicktime');
+      await p.evaluate(() => { const c = document.getElementById('cbTeacher'); c.checked = true; c.onchange(); });
+      await p.click('#btnKadai'); await p.waitForSelector('#kdJson', { state: 'visible' });
+      const def = await p.evaluate(() => document.getElementById('kdJson').value);
+      if (on) check('課題の画面に「JSON で提出」（既定は ON）', def === '1', def);
+      await p.selectOption('#kdJson', on ? '1' : '0');
+      const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#kdMake')]);
+      const out = L.path.join(__dirname, on ? '_kadai_json_on.html' : '_kadai_json_off.html'); await dl.saveAs(out);
+      await p.context().close();
+      const q = await L.newPage(browser, 'file://' + out, { flags: { __noAskName: true } });
+      await L.waitReady(q, 30000);
+      const r = await q.evaluate(() => { const c = document.querySelector('#side1 .card.op'); return { btn: !!document.getElementById('btnKadaiSubmit'), txt: c.textContent }; });
+      if (on) {
+        check('ON：生徒の課題のカードに［提出用ファイル（JSON）を保存］と案内', r.btn && /提出用ファイル（JSON）/.test(r.txt), r);
+        const empty = await q.evaluate(() => { document.getElementById('btnKadaiSubmit').click(); return document.getElementById('toast') ? document.getElementById('toast').textContent : ''; });
+        check('点が無いときは保存しない（ひとこと出す）', /まだ点が記録されていません/.test(empty), empty);
+        await q.evaluate(() => { const e = EXP(); e.objReady[0] = true; e.trackReady = true; UI.startedAuto = false;
+          VID.frames.forEach((t, i) => { if (i % 6 === 0 && t <= e.rangeB + 1e-6) e.objs[0].push({ t, fr: i, x: 72 + 300 * t, y: 312 }); }); afterChange(); });
+        const [dj] = await Promise.all([q.waitForEvent('download'), q.click('#btnKadaiSubmit')]);
+        const jf = L.path.join(__dirname, '_submit.json'); await dj.saveAs(jf);
+        const js = JSON.parse(L.fs.readFileSync(jf, 'utf8'));
+        check('押すと JSON（記録した点つき）を保存できる', js.app === 'motion-analysis' && js.exps && js.exps[0].objs[0].length > 3, { name: dj.suggestedFilename(), n: js.exps && js.exps[0].objs[0].length });
+        /* 先生が「過去測定データを実験○に登録」で読めるか */
+        const p2 = await L.newPage(browser);
+        const back = await p2.evaluate((txt) => new Promise(res => { importJson(new File([txt], 'a.json', { type: 'application/json' })); setTimeout(() => res({ n: APP.exps.length, pts: APP.exps[APP.exps.length - 1].objs[0].length }), 400); }), L.fs.readFileSync(jf, 'utf8'));
+        check('先生の画面で「過去測定データを登録」として読める', back.n >= 2 && back.pts > 3, back);
+        await p2.context().close();
+      } else {
+        check('OFF：提出の案内もボタンも出ない', !r.btn && !/提出/.test(r.txt), r);
+      }
+      check('ページエラー 0（生徒側）', q.__errors.length === 0, q.__errors);
+      await q.context().close();
+    }
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();
