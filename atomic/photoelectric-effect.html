@@ -2206,6 +2206,8 @@ button.b.play.peglow::after,.vin.peglow::after{content:"";position:absolute;inse
 .vin.peglow::after{inset:-4px;box-shadow:0 0 0 4px rgba(224,123,24,.6),0 0 24px 6px rgba(224,123,24,.6)}
 @media(prefers-reduced-motion:reduce){button.b.play.peglow::after,.vin.peglow::after{animation:none;opacity:.8}}
 @media print{button.b.play.peglow::after,.vin.peglow::after{display:none}}
+/* コンテンツ一覧：画面に固定して上の帯より前に（80_page.js が位置を決める） */
+body > .tocpanel{z-index:300;color:var(--ink)}
 
 /* ===== 18_xray.css ===== */
 /* =========================================================================
@@ -5901,7 +5903,7 @@ DEFS.x3 = {
     var gh = el('div', 'pgraphs two'); s.R.appendChild(gh);
     s.plotS = x3MakeSpec(s, gh); s.plotD = x3MakeDl(s, gh); s.plots = [s.plotS, s.plotD];
     /* スペクトルの右上：「入射 X 線と散乱 X 線を分けて表示」（いつも光らせる） */
-    var sb = el('button', 'b chkb ghbtn glowchk', '入射 X 線と散乱 X 線を分けて表示'); sb.type = 'button'; sb.setAttribute('aria-pressed', 'false');
+    var sb = el('button', 'b chkb ghbtn glowchk', '入射 X 線と散乱 X 線それぞれを色分けして表示'); sb.type = 'button'; sb.setAttribute('aria-pressed', 'false');
     sb.addEventListener('click', function () { s.split = !s.split; xChk(s, sb, s.split); s.plotS.render(); });
     s.plotS.box.querySelector('.ghead').appendChild(sb); s.splitB = sb;
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
@@ -6063,7 +6065,11 @@ function buildToc() {
   });
   p.innerHTML = h;
   var close = function () { p.hidden = true; b.setAttribute('aria-expanded', 'false'); };
-  b.addEventListener('click', function (ev) { ev.stopPropagation(); p.hidden = !p.hidden; b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true'); });
+  /* 見出しの帯（低い）は overflow:hidden なので、一覧は画面に固定して、ボタンのすぐ下に出す（途中で切れていた。2026-11-05 千葉さん） */
+  document.body.appendChild(p);                       /* 見出しの帯の外へ（帯の重なりの順番と overflow:hidden から出す） */
+  var place = function () { if (p.hidden) return; var r = b.getBoundingClientRect(), top = Math.max(8, r.bottom + 8); p.style.position = 'fixed'; p.style.top = top + 'px'; p.style.maxHeight = (innerHeight - top - 12) + 'px'; };
+  b.addEventListener('click', function (ev) { ev.stopPropagation(); p.hidden = !p.hidden; b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true'); place(); });
+  window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true });
   p.querySelector('.tocx').addEventListener('click', close);
   document.addEventListener('click', function (ev) { if (!p.hidden && !p.contains(ev.target) && ev.target !== b) close(); });
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') close(); });
