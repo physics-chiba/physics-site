@@ -564,6 +564,15 @@ async function setMovSource(page, type) {
     }
   }
 
+  console.log('P. サンプル動画の一覧');
+  {
+    const p = await L.newPage(browser, null, { flags: false });
+    const r = await p.evaluate(() => [...document.querySelectorAll('#selSample option')].slice(1).map(o => [o.value, o.textContent]));
+    check('サンプルは ①等速直線運動 ②鉛直投げ上げ運動 ③単振動 ④等速円運動（samples\\ の 4 本）',
+      JSON.stringify(r) === JSON.stringify([['samples/1_tousoku.mp4', '①等速直線運動'], ['samples/2_nageage.mp4', '②鉛直投げ上げ運動'], ['samples/3_tanshindou.mp4', '③単振動'], ['samples/4_tousoku-enundou.mp4', '④等速円運動']]), r);
+    await p.context().close();
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();
