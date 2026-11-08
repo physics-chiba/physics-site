@@ -2362,6 +2362,29 @@ button.b.chkb.fob{font-size:.92rem;font-weight:700;padding:.4em .9em}   /* 2 段
 .m5tune .m5tl b{color:#c9670c;font-size:.95rem}
 .m5tune input[type=range]{width:100%;margin:.1em 0 0}
 @media(max-width:560px){ #m2s4 .drvchips button.b small{display:none} .m5tune .m5tl{font-size:.72rem} .m5tune .m5tl b{font-size:.86rem} }
+/* ===== スマホの最終確認（2026-11-08 千葉さん 21 回目） ===== */
+@media(max-width:520px){
+  .reltab th,.reltab td{white-space:normal}               /* 表は折り返す（右が切れないように） */
+  .ctrls .playbar .row1{flex:1 1 100%;min-width:0;max-width:100%}
+  .ctrls .playbar .row1 .btns{flex-wrap:wrap}                                    /* 「本当の速さ」などが右にはみ出さないように */
+  .b.realb{margin-left:0}
+  button.b.chkb.fob{white-space:normal;text-align:left;font-size:.84rem}       /* ①-2「t = 0 から原点を波源として…」 */
+  .m2ctl .forow{min-width:0;max-width:100%}
+}
+@media(max-width:900px){
+  .m4name{flex-wrap:wrap}
+  .m4name small{flex:1 1 8em;min-width:6em}
+  .m4name .chk.m1qauto{flex:1 1 100%}
+}
+.tscroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:520px){ .m4tune{font-size:.68rem} .m4tune th,.m4tune td{padding:.28em .14em} canvas.m3s5fig{max-width:100%} }
+.tshint{display:none;margin:.1em 0 0;font-size:.7rem;color:var(--sub);text-align:right}
+@media(max-width:520px){ .tshint{display:block} .reltab.m4tune th,.reltab.m4tune td{white-space:nowrap} }
+@media(max-width:440px){ #m2s2 .cvwrap button.b.virtbtn{top:84px} }
+@media(max-width:520px){
+  #m5s1 .row1b .seg,#m5s2 .row1b .seg,#m5s3 .row1b .seg{display:grid;grid-template-columns:1fr 1fr;width:100%;border-radius:14px}
+  #m5s1 .row1b .seg button,#m5s2 .row1b .seg button,#m5s3 .row1b .seg button{white-space:normal;line-height:1.25}
+}
 
 </style>
 </head>
@@ -3029,6 +3052,8 @@ function label(ctx, text, x, y, opt) {
   ctx.font = (opt.bold ? '700 ' : '600 ') + size + 'px ' + FONT;
   ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
   var tw = ctx.measureText(text).width, al = opt.align || 'center';
+  /* 図の横はばに入りきらない文字は、少し小さくして入れる（スマホのせまい画面で文字が切れないように。2026-11-08 千葉さん 21 回目） */
+  if (opt.clamp !== false && CVW && tw > CVW - 8) { size = Math.max(size * 0.6, size * (CVW - 8) / tw); ctx.font = (opt.bold ? '700 ' : '600 ') + size + 'px ' + FONT; tw = ctx.measureText(text).width; }
   var left = al === 'right' ? x - tw : (al === 'left' ? x : x - tw / 2);
   if (opt.clamp !== false && CVW) { left = clamp(left, 4, Math.max(4, CVW - 4 - tw)); y = clamp(y, size / 2 + 3, CVH - size / 2 - 3); }
   if (opt.halo !== false) { ctx.strokeStyle = opt.haloColor || 'rgba(255,255,255,.92)'; ctx.lineWidth = opt.haloW || 4.5; ctx.lineJoin = 'round'; ctx.strokeText(text, left, y); }
@@ -3152,6 +3177,7 @@ function bubble(ctx, text, x, y, opt) {
   ctx.save();
   ctx.font = 'bold ' + size + 'px ' + FONT;
   var w = ctx.measureText(text).width + 18, h = size + 14;
+  if (CVW && w > CVW - 8) { size = Math.max(size * 0.6, size * (CVW - 26) / (w - 18)); ctx.font = 'bold ' + size + 'px ' + FONT; w = ctx.measureText(text).width + 18; h = size + 14; }   /* 図に入りきらないときは文字を小さく（21 回目） */
   if (side === 'down' && y - T - h < 4) side = 'up';             /* 上に場所がなければ下に出す */
   var bx = x - w / 2 + (opt.dx || 0), by = (side === 'up') ? y + T : y - T - h;
   if (CVW) { bx = clamp(bx, 4, Math.max(4, CVW - 4 - w)); by = clamp(by, 4, Math.max(4, CVH - 4 - h)); }
@@ -4207,7 +4233,7 @@ WGraph.prototype.rect = function () { var pl = this.o.padL || GPAD.l; return { x
 WGraph.prototype.toggleMax = function () {
   var on = !this.box.classList.contains('gmax'), self = this;
   this.box.classList.toggle('gmax', on); document.body.classList.toggle('hasgmax', on);
-  this.bMax.title = on ? '元の大きさにもどす' : '最大化';
+  this.bMax.title = on ? '元の大きさに戻す' : '最大化';
   if (on) {
     this._esc = function (ev) { if (ev.key === 'Escape') self.toggleMax(); };
     document.addEventListener('keydown', this._esc);
@@ -4854,7 +4880,7 @@ function rightM1S1(s, R) {
   if (s.srcMode === 'pulse') h += '<p class="qnote">パルス波：山 1 つだけの波（ここでは連続波の半周期ぶん、幅 $\\dfrac{\\lambda}{2}$）。進む速さは連続波と同じ $v$。</p>';
   else if (s.srcMode === 'one') h += '<p class="qnote">' + (s.nPer === 2 ? '2 周期分振動させると、ちょうど 2 波長 $2\\lambda$ の波ができる（$2T$ 秒で $2\\lambda$ 進む）。' : '1 周期分だけ振動させると、ちょうど 1 波長 $\\lambda$ の波ができる。波源が振動している $T$ 秒の間に、波の先頭は $\\lambda$ 進んでいる。') + '</p>';
   if (s.srcMode === 'cont' && (s.showSame || s.showOpp)) h += '<p class="qnote"><b>同位相</b>：いつも同じ振動のようすの点（注目する点から $\\lambda$ の整数倍はなれた点）。<b>逆位相</b>：いつも逆の振動のようすの点（$\\dfrac{\\lambda}{2}$ の奇数倍はなれた点）。</p>';
-  else if (s.srcMode === 'hand') h += '<p class="qnote">手で動かした形が、速さ $v$ で右へ進む。速さ $v$ は波源の動かし方では変わらない（媒質で決まる）。手をずらしたまま止めても、ずれが伝わったあとは、各点はつりあいの位置にもどる。</p>';
+  else if (s.srcMode === 'hand') h += '<p class="qnote">手で動かした形が、速さ $v$ で右へ進む。速さ $v$ は波源の動かし方では変わらない（媒質で決まる）。手をずらしたまま止めても、ずれが伝わったあとは、各点はつりあいの位置に戻る。</p>';
   else h += '<p class="qnote">$f$ を変えると、$v$ は同じなので $\\lambda$ が変わる。すでに出ていた波は、もとの波長のまま進む。</p>';
   h += '</div></details>';
   R.innerHTML = mathify(h); foldBind(s, R);
@@ -4959,7 +4985,7 @@ function m1s2Y(s, x, t) { var q = m1s2Q(s); if (s.fromO && x > 0 && t < x / q.v)
 DEFS.m1s2 = {
   id: 'm1s2', mode: 'mode1', num: 2,
   title: '$y$-$x$ グラフと $y$-$t$ グラフ', short: 'y-x グラフと y-t グラフ',
-  desc: '左は<b>ある時刻の波形</b>（$y$-$x$ グラフ）、右は ★ の点の<b>変位の時間変化</b>（$y$-$t$ グラフ）。<span class="todo">▶ スタートで 2 つのグラフを比べよう。</span>',
+  desc: '左は<b>ある時刻の波形</b>（$y$-$x$ グラフ）、右は ★ の点の<b>変位の時間変化</b>（$y$-$t$ グラフ）。<span class="todo">「スタート」を押して、2 つのグラフを比べよう。</span>',
   strobe: false, stepDiv: 8,
   /* スライダーはなし（2026-11-03 千葉さん）。A = 0.10 m、λ = 0.50 m、f = 2.0 Hz で固定 */
   init: function (s) { s.v.A = M1.s2.A0; s.v.lam = M1.s2.lam0; s.v.f = M1.s2.f0; s.dir = 1; s.pt = 5; s.ptX = null; s.x0i = 2; s.showDt = false; s.fromO = false; },
@@ -5212,7 +5238,6 @@ function m1s2Front(s, ctx, g) {
   }
   ctx.restore();
   var narrowS = window.innerWidth <= 880 || document.body.classList.contains('hideeq');
-  if (!s.playing && s.t === 0) label(ctx, '時刻 t = 0 の波形', narrowS ? g.R.x0 + 10 : (g.R.x0 + g.R.x1) / 2, g.R.y0 + 12, { size: narrowS ? 14 : 19, bold: true, color: COL.ink, align: narrowS ? 'left' : 'center' });   /* せまい画面では、右上の吹き出しと重ならないように左に */   /* スタート前（2026-11-07 千葉さん 15 回目） */
   if (narrowS && sx >= g.R.x0 - 2 && sx <= g.R.x1 + 2) {          /* せまい画面だけ。広い画面では ★ から右の y-t グラフへ吹き出し（m1s2Bubble）。吹き出し（2 行）。左はしを ★ の真上に（2026-11-03 千葉さん 5 回目）。引き出し線はまっすぐ下へ */
     var nm = m1s2PtName(s), narrow = window.innerWidth <= 880 || document.body.classList.contains('hideeq');
     var l1 = '点 ' + nm + ' の y-t', l2 = 'グラフは' + (narrow ? '下 ↓' : '右 →');
@@ -5221,6 +5246,12 @@ function m1s2Front(s, ctx, g) {
     ctx.strokeStyle = '#c9670c'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(lx, by + bh); ctx.lineTo(sx, sy - 10); ctx.stroke(); ctx.setLineDash([]);
     ctx.shadowColor = 'rgba(20,23,28,.16)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3; ctx.fillStyle = '#fff5d6'; rrect(ctx, bx, by, bw, bh, 10); ctx.fill(); ctx.shadowColor = 'transparent';
     ctx.strokeStyle = '#d9a545'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.fillStyle = '#8a5000'; ctx.textBaseline = 'middle'; ctx.fillText(l1, bx + 10, by + 11.5); ctx.fillText(l2, bx + 10, by + 27); ctx.restore();
+  }
+  /* スタート前は図の上に「時刻 t = 0 の波形」。せまい画面では左に置き、右上の吹き出しと重なるときは吹き出しの下の段へ（21 回目） */
+  if (!s.playing && s.t === 0) {
+    var tSz = narrowS ? 14 : 19, tY = g.R.y0 + 12;
+    if (narrowS && bx !== undefined) { ctx.save(); ctx.font = '700 ' + tSz + 'px ' + FONT; var tW = ctx.measureText('時刻 t = 0 の波形').width; ctx.restore(); if (g.R.x0 + 10 + tW > bx - 6) tY = by + bh + 12; }
+    label(ctx, '時刻 t = 0 の波形', narrowS ? g.R.x0 + 10 : (g.R.x0 + g.R.x1) / 2, tY, { size: tSz, bold: true, color: COL.ink, align: narrowS ? 'left' : 'center' });
   }
   /* 止まっているときは λ と A（①-1 と同じ） */
   if (!s.playing) m1s2Dims(ctx, g, function (x) { return m1s2Y(s, x, s.t); }, Math.max(0, g.xa.lo), g.xa.hi, 'λ');
@@ -5447,7 +5478,7 @@ function vArrow2(ctx, x, y1, y2, col, lw) {
   ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2 - d * hd); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(x, y2); ctx.lineTo(x - 3.6, y2 - d * hd); ctx.lineTo(x + 3.6, y2 - d * hd); ctx.closePath(); ctx.fill(); ctx.restore();
 }
-var M1S3_BACK = ['① 縦向きの変位を横向きにもどす', '② 密・疎の位置を読む'];
+var M1S3_BACK = ['① 縦向きの変位を横向きに戻す', '② 密・疎の位置を読む'];
 var M1S3_BCALL = ['① 時計回りに 90° 回す。上向き → 右向き、下向き → 左向き', '② 矢印が向かい合う所が密、離れていく所が疎'];
 /* 下の図の点（0.2 m ごと。0 は波源の所）。上の媒質の赤い点と同じ点 */
 function m1s3Row() { var a = []; for (var k = 0; k <= 12; k++) a.push(k * 0.2); return a; }
@@ -5621,7 +5652,7 @@ function rightM1S3(s, R) {
    ========================================================================= */
 'use strict';
 var M4K = {
-  machine: { name: 'ウェーブマシン', sub: '速さはウェーブマシン次第で決まる', L: 4, vFix: 1.0, f: { lo: 0.25, hi: 2.0, step: 0.25, def: 0.5, ticks: [0.5, 1.0, 1.5, 2.0], unit: 'Hz' } },
+  machine: { name: 'ウェーブマシン', sub: '速さはウェーブマシンで決まる', L: 4, vFix: 1.0, f: { lo: 0.25, hi: 2.0, step: 0.25, def: 0.5, ticks: [0.5, 1.0, 1.5, 2.0], unit: 'Hz' } },
   water: { name: '水面波', sub: '深いほど速い', L: 3, f: { lo: 0.25, hi: 2.0, step: 0.25, def: 0.5, ticks: [0.5, 1.0, 1.5, 2.0], unit: 'Hz' },
     h: { lo: 0.01, hi: 0.10, step: 0.01, def: 0.04, ticks: [0.02, 0.04, 0.06, 0.08, 0.10] } },
   string: { name: '糸（弦）', sub: '張力が大きいほど速い', L: 4, rho: 0.10, f: { lo: 0.5, hi: 4.0, step: 0.5, def: 2.0, ticks: [1, 2, 3, 4], unit: 'Hz' },
@@ -5783,7 +5814,7 @@ M4Sec.prototype.build = function (host) {
     self.rows[k] = { row: r, cv: cv, side: ct, tl: 0, on: false };
     self.rowPlayBtn(k, nm);                                         /* 名前の下に、その波だけの ▶ スタート */
     if (k === 'water') nm.appendChild(el('span', 'm4gh', mathify('$v = \\sqrt{gh}$<br>（$g$ は重力加速度、$h$ は深さ）')));   /* 2026-11-03 千葉さん 5 回目 */
-    if (k === 'surf') { ct.appendChild(el('p', 'm4note', '水面を伝わる波では、水の粒はその場で<b>円をえがくように</b>動く（深いところほど小さい円）。そのため、水面波は横波とも縦波とも言い切れない。赤い粒に注目しよう。')); return; }
+    if (k === 'surf') { ct.appendChild(el('p', 'm4note', '水面を伝わる波では、水の粒はその場で<b>円を描くように</b>動く（深いところほど小さい円）。そのため、水面波は横波とも縦波とも言い切れない。赤い粒に注目しよう。')); return; }
     var vb = el('div', 'varbox m4vb'); ct.appendChild(vb);
     var fo = M4K[k].f, on = function () { self.changed(k); };
     var fsl = m4Slider({ label: '振動数 $f$', lo: fo.lo, hi: fo.hi, step: fo.step, stops: fo.stops, log: fo.log, value: fo.def, ticks: fo.ticks,
@@ -5794,7 +5825,7 @@ M4Sec.prototype.build = function (host) {
     vb.appendChild(fsl.row); self.rows[k].fsl = fsl; self.st.f[k] = fsl.get();   /* 段の値にそろえる */
     /* 光：振動数のスライダーの下に波長のスライダー（光電効果ページの「2 光電効果の実験」と同じ作り。2 本は連動し、色の帯は左右が逆） */
     if (k === 'light') {
-      var lsl = m4Slider({ label: '波長 $\\lambda_0$（真空中）', lo: 200, hi: 1500, step: 1, stops: M4_LAM, value: WAVE.c0 / fo.def * 1e9, ticks: [200, 400, 600, 800, 1000, 1200, 1400],
+      var lsl = m4Slider({ label: '波長 $\\lambda_0$（真空中）', lo: 200, hi: 1500, step: 1, stops: M4_LAM, value: WAVE.c0 / fo.def * 1e9, ticks: [200, 600, 1000, 1400],   /* せまい画面で数字が重ならないように 4 つに（21 回目） */
         tickFmt: function (v, last) { return v + (last ? ' nm' : ''); }, fmt: function (v) { return Math.round(v) + ' nm'; },
         onChange: function (v) { self.st.f.light = WAVE.c0 / (v * 1e-9); fsl.set(self.st.f.light, true); self.lamIcon(); on(); } });
       vb.appendChild(lsl.row); self.lsl = lsl;                      /* 名前は振動数と同じくスライダーの上（2026-11-05 千葉さん 8 回目） */
@@ -5927,7 +5958,7 @@ M4Sec.prototype.drawChirp = function (lam) {
 M4Sec.prototype.buildSurf = function (host) {
   var box = host.querySelector('.m4ref'), cvw = el('div', 'm4refcv'), cv = el('canvas'), tx = el('div', 'm4reftx');
   cvw.appendChild(cv); box.appendChild(cvw); box.appendChild(tx);
-  tx.innerHTML = mathify('<p>水面を伝わる波は、横波でも縦波でもない。水面近くの水の粒は、その場で<b>円をえがくように</b>回っている（赤い粒に注目）。</p>' +
+  tx.innerHTML = mathify('<p>水面を伝わる波は、横波でも縦波でもない。水面近くの水の粒は、その場で<b>円を描くように</b>回っている（赤い粒に注目）。</p>' +
     '<p class="m4cond"><b>この図のような動きになる条件</b>　波長が水深に比べて十分に短いとき（水が深いとき）。円の半径は深くなるほど急激に小さくなり、水底の水はほとんど動かない（表面だけの波なので<b>表面波</b>という）。</p>' +
     '');
   this.rows.surf = { row: box, cv: cv, side: tx, tl: 0, on: false };
@@ -6101,6 +6132,7 @@ function drawM4(ctx, W, H, q, t, paused, st, Lz) {
   }
   /* ものさし（右下）と、拡大・スローの断り（音・光は右上） */
   var unit = niceUp(d.L / 6), upx = unit * SX, ry = H - 7;
+  var x1 = k === 'string' ? x1 - 22 : x1;   /* 糸：右はしの壁と重ならないように、ものさしを左へ（スマホ確認で） */
   ctx.save(); ctx.strokeStyle = '#3a414c'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x1 - upx, ry); ctx.lineTo(x1, ry); ctx.moveTo(x1 - upx, ry - 4); ctx.lineTo(x1 - upx, ry + 1); ctx.moveTo(x1, ry - 4); ctx.lineTo(x1, ry + 1); ctx.stroke(); ctx.restore();
   label(ctx, lenTxt(unit), x1 - upx / 2, ry - 9, { size: 10, color: COL.ink2 });
   if (k === 'light' || k === 'sound') {
@@ -6190,7 +6222,7 @@ M4Sec.prototype.buildQuake = function (tab) {
   ck.addEventListener('change', function () { self.rows.quake.auto = ck.checked; });
   lb.appendChild(ck); lb.appendChild(document.createTextNode(' 観測地に届いたら一時停止')); nm.appendChild(lb);
   ct.innerHTML = mathify('<p class="m4note">震源で地震が起こると、<b style="color:#1663b5">P 波</b>（縦波、約 $6$ km/s）と <b style="color:#c9670c">S 波</b>（横波、約 $3.5$ km/s）が同時に出る。</p>' +
-    '<p class="m4note">速い P 波が先に届いて小さくゆれ（<b>初期微動</b>）、おそい S 波があとから届いて大きくゆれる（<b>主要動</b>）。その時間の差（初期微動継続時間）は、震源から遠いほど長い。</p>' +
+    '<p class="m4note">速い P 波が先に届いて小さく揺れ（<b>初期微動</b>）、遅い S 波があとから届いて大きく揺れる（<b>主要動</b>）。その時間の差（初期微動継続時間）は、震源から遠いほど長い。</p>' +
     '<p class="m4note">P 波は固体・液体・気体を伝わるが、S 波（横波）は固体しか伝わらない。</p>' +
     '<p class="m4note sub">実際の地震は断層のずれで起こるが、ここでは震源の 1 点から波が出るとした。</p>');
 };
@@ -6272,7 +6304,7 @@ function legendRowR(ctx, items, xr, y) {
   legendRow(ctx, items, xr - w + 14, y);
 }
 /* 図の上の帯の高さ（チェックボックスと凡例の場所） */
-function m2Top(W) { return W < 560 ? 54 : 38; }
+function m2Top(W) { return W < 400 ? 70 : (W < 560 ? 54 : 38); }   /* とてもせまい画面では凡例を「合成波を表示」の下の段に（21 回目） */
 function legendRow(ctx, items, x, y) {
   items.forEach(function (it) {
     ctx.save(); ctx.strokeStyle = it.col; ctx.lineWidth = it.lw || 2; if (it.dash) ctx.setLineDash(it.dash); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 22, y); ctx.stroke(); ctx.restore();
@@ -6396,10 +6428,10 @@ function drawM2S1(s, ctx, W, H) {
     label(ctx, i ? '右の波源' : '左の波源', px, H - 12, { size: 11, bold: true, color: i ? M2C.L : M2C.R });
   });
   var nar = W < 560;
-  legendRowR(ctx, [{ col: M2C.R, dash: [7, 4], txt: nar ? '右向き' : '右向きに進む波' }, { col: M2C.L, dash: [7, 4], txt: nar ? '左向き' : '左向きに進む波' }, { col: M2C.S, lw: 3, txt: '合成波' }], g.x1, nar ? 42 : 14);
+  legendRowR(ctx, [{ col: M2C.R, dash: [7, 4], txt: nar ? '右向き' : '右向きに進む波' }, { col: M2C.L, dash: [7, 4], txt: nar ? '左向き' : '左向きに進む波' }, { col: M2C.S, lw: 3, txt: '合成波' }], g.x1, W < 400 ? 60 : (nar ? 42 : 14));
   label(ctx, '1 目盛り 1 m', (g.x0 + g.x1) / 2, H - 12, { size: 10.5, color: COL.sub });
   if (s.showNodes && !st && both1 > both0 + 0.5 && q.sh[0] === 'sin' && q.sh[1] === 'sin')
-    bubble(ctx, '振幅か振動数がちがうと、止まったままの点（節）はできない', X(q.L / 2), Y(-(q.A[0] + q.A[1])) + 8, { size: 11.5, side: 'up' });
+    bubble(ctx, '振幅か振動数が違うと、止まったままの点（節）はできない', X(q.L / 2), Y(-(q.A[0] + q.A[1])) + 8, { size: 11.5, side: 'up' });
 }
 function rightM2S1(s, R) {
   var q = m2s1Q(s), st = m2s1Standing(q);
@@ -6411,7 +6443,7 @@ function rightM2S1(s, R) {
     '<tr><th>腹</th><td class="l">最も大きく振動する点。振幅は $2A$</td></tr></tbody></table>' +
     '<p>定在波に対して、ふつうに進む波を<b>進行波</b>という。</p>';
   if (st) h += '<p class="qnow"><span class="qtag now">いま</span>$\\lambda = \\dfrac{v}{f} = \\dfrac{' + fmt(q.v, 1) + '}{' + fmt(q.f[0], 2) + '} = ' + sig(q.lam[0], 2) + '$ m なので、節の間隔 $\\dfrac{\\lambda}{2} = ' + sig(q.lam[0] / 2, 2) + '$ m、腹の振幅 $2A = ' + fmt(2 * q.A[0], 1) + '$ m</p>';
-  else h += '<p class="qnow"><span class="qtag now">いま</span>左右の波の形・振幅・振動数のどれかがちがうので、きれいな定在波にはならない。</p>';
+  else h += '<p class="qnow"><span class="qtag now">いま</span>左右の波の形・振幅・振動数のどれかが違うので、きれいな定在波にはならない。</p>';
   h += '</div>';
   R.innerHTML = mathify(h);
 }
@@ -6432,7 +6464,7 @@ function m2s2Geo(W, H) {
 DEFS.m2s2 = {
   id: 'm2s2', mode: 'mode2', num: 2,
   title: '波の反射（固定端反射と自由端反射）', short: '波の反射',
-  desc: '端で反射した<b>反射波</b>が<b>入射波</b>と重なる。<span class="todo">固定端・自由端を切りかえ（端をクリックしても切りかわる）、反射波の作図も確かめよう。</span>',
+  desc: '端で反射した<b>反射波</b>が<b>入射波</b>と重なる。<span class="todo">固定端・自由端を切り替え（端をクリックしても切り替わる）、反射波の作図も確かめよう。</span>',
   strobe: false, stepDiv: 16,
   init: function (s) { s.sh = 'sin'; s.fixed = true; s.showDisp = false; s.stp = 0; s.showSum = false; s.showComp = true; s.showNodes = false; s.showVirt = false; s._nodeLink = false; s.showBead = true; },   /* 既定は連続波（2026-11-03 千葉さん 3 回目） */
   onDefaults: function (s) { m2s2Sync(s); },
@@ -6555,7 +6587,7 @@ function drawM2S2(s, ctx, W, H) {
   /* 端の点の変位 */
   var ye = yi(q.L) + yr(q.L);
   ctx.save(); ctx.fillStyle = q.fixed ? '#2b323c' : '#fff'; ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(xe, Y(ye), 5, 0, TAU); ctx.fill(); ctx.stroke(); ctx.restore();
-  legendRowR(ctx, [{ col: M2C.R, txt: '入射波' }, { col: M2C.L, txt: '反射波' }, { col: M2C.S, lw: 3, txt: '合成波' }], g.x1, W < 560 ? 42 : 14);
+  legendRowR(ctx, [{ col: M2C.R, txt: '入射波' }, { col: M2C.L, txt: '反射波' }, { col: M2C.S, lw: 3, txt: '合成波' }], g.x1, W < 400 ? 60 : (W < 560 ? 42 : 14));
   if (st) {
     stepHead(ctx, (q.fixed ? M2S2_STEPS : M2S2_STEPS_FREE)[st - 1], 8, gt + 4);
     var calls = ['① 端をこえても進み続けたと考えて、入射波をそのまま延ばす（橙の点線）',
@@ -6697,7 +6729,7 @@ function drawM2S3(s, ctx, W, H) {
     var y0d = yD(0), px0 = X(0), py0 = Y(y0d);
     vibBox(ctx, px0, py0, g.cy + 66);                                /* 振動子の右の辺が糸の左端（つながっている） */
     var res = Math.abs(s.dm - Math.round(s.dm)) < 0.03;
-    label(ctx, '振動子の振動数 ' + (s.dm === 1 ? '' : fmt(s.dm, 2)) + 'f₁ = ' + sig(fd, 2) + ' Hz' + (started ? (res ? '：固有振動数と同じ → 共振して大きく振動する' : '：固有振動数とちがう → 大きくならない') : ''), (X(0) + X(q.l)) / 2, 16, { size: 12, bold: true, color: '#6b3a0a' });
+    label(ctx, '振動子の振動数 ' + (s.dm === 1 ? '' : fmt(s.dm, 2)) + 'f₁ = ' + sig(fd, 2) + ' Hz' + (started ? (res ? '：固有振動数と同じ → 共振して大きく振動する' : '：固有振動数と違う → 大きくならない') : ''), (X(0) + X(q.l)) / 2, 16, { size: 12, bold: true, color: '#6b3a0a' });
   } else if (s.pmode === 'ramp') {
     /* 速くなると目には重なって見える：カメラのシャッター（1/30 s）の間の形を重ねて描く。倍音ほど早く減衰 */
     var M = 26, exp = 1 / 30;
@@ -6714,7 +6746,7 @@ function drawM2S3(s, ctx, W, H) {
     /* 指：はじく前は糸を持ち上げている。はじくと上へはね上がって離れ、消える（2026-11-07 千葉さん 14 回目） */
     if (!started) m2Finger(ctx, X(q.xp), Y(q.h0) + 2, 1);
     else if (tp < 0.45) m2Finger(ctx, X(q.xp), Y(q.h0) + 2 - Math.min(1, tp / 0.12) * 26, tp < 0.12 ? 1 : Math.max(0, 1 - (tp - 0.12) / 0.33));
-    if (!started) { bubble(ctx, 'ここをはじく（糸の上をクリックすると場所を変えられる）', X(q.xp), Y(q.h0) - 8, { size: 11.5 }); }
+    if (!started) { bubble(ctx, W < 420 ? 'ここをはじく（クリックで場所を変える）' : 'ここをはじく（糸の上をクリックすると場所を変えられる）', X(q.xp), Y(q.h0) - 8, { size: 11.5 }); }
     else if (s.showComp) {
       var reflected = q.v * tp > Math.min(q.xp, q.l - q.xp);
       legendRow(ctx, [{ col: M2C.R, dash: [6, 4], txt: W < 560 ? '右向き' : '右向きに進む波' }, { col: M2C.L, dash: [6, 4], txt: W < 560 ? '左向き' : '左向きに進む波' }, { col: '#7a3b12', lw: 2.8, txt: W < 560 ? '糸（和）' : '糸（2 つの和）' }], X(0), 14);
@@ -6771,10 +6803,10 @@ function m2s4Reset(s) {
 DEFS.m2s4 = {
   id: 'm2s4', mode: 'mode2', num: 4,
   title: '共振の例', short: '共振の例',
-  desc: '物体には、ゆれやすい振動数（<b>固有振動数</b>）がある。外から与える振動の振動数が固有振動数に近いと、ゆれがだんだん大きくなる。これを<b>共振</b>（音では<b>共鳴</b>）という。<span class="todo">与える振動の振動数を変えて、どれが大きくゆれるか見よう。</span>',
+  desc: '物体には、揺れやすい振動数（<b>固有振動数</b>）がある。外から与える振動の振動数が固有振動数に近いと、揺れがだんだん大きくなる。これを<b>共振</b>（音では<b>共鳴</b>）という。<span class="todo">与える振動の振動数を変えて、どれが大きく揺れるか見よう。</span>',
   strobe: false, stepDiv: 16,
   vars: [
-    { k: 'fp', label: '手でゆらす振動数 $f$', aria: '手でゆらす振動数', min: 0.40, max: 1.30, step: 0.01, def: 0.73, fmt: function (x) { return x.toFixed(2) + ' Hz'; } },
+    { k: 'fp', label: '手で揺らす振動数 $f$', aria: '手で揺らす振動数', min: 0.40, max: 1.30, step: 0.01, def: 0.73, fmt: function (x) { return x.toFixed(2) + ' Hz'; } },
     { k: 'ff', label: 'たたくおんさの振動数 $f$', aria: 'たたくおんさの振動数', min: 400, max: 480, step: 1, def: 440, fmt: function (x) { return Math.round(x) + ' Hz'; } }
   ],
   init: function (s) { m2s4Reset(s); },
@@ -6788,7 +6820,7 @@ DEFS.m2s4 = {
   afterBuild: function (s) {
     document.getElementById('m2s4').classList.add('wide1');
     var box = el('div', 'brows m2s4rows'); s.cw.insertAdjacentElement('beforebegin', box);
-    s.bRows = [['(1) 振り子の共振：張った糸の両端を手で持って、左右にゆらす', 0], ['(2) おんさの共鳴：共鳴箱の口を向かい合わせて、一方をたたく', 1]].map(function (p) {
+    s.bRows = [['(1) 振り子の共振：張った糸の両端を手で持って、左右に揺らす', 0], ['(2) おんさの共鳴：共鳴箱の口を向かい合わせて、一方をたたく', 1]].map(function (p) {
       var row = el('div', 'brow'), hd = el('p', 'browh', p[0]), lc = el('div', 'browl'), rc = el('div', 'browr');
       row.appendChild(hd); row.appendChild(lc); row.appendChild(rc); box.appendChild(row);
       return { row: row, L: lc, R: rc };
@@ -6799,13 +6831,13 @@ DEFS.m2s4 = {
     s.varbox.style.display = 'none';
     var chP = [], seen = {};
     M2S4.P.forEach(function (p) { var f = Math.round(m2s4F0(p[1]) * 100) / 100; if (seen[f]) { seen[f][0] += '・' + p[0]; return; } seen[f] = [p[0], f]; chP.push(seen[f]); });
-    s.drvP = m2s4Drv(s, s.bRows[0].R, 'fp', 0.40, 1.30, 0.01, chP, function (v) { return '手でゆらす振動数　<b>' + v.toFixed(2) + ' Hz</b>'; });
+    s.drvP = m2s4Drv(s, s.bRows[0].R, 'fp', 0.40, 1.30, 0.01, chP, function (v) { return '手で揺らす振動数　<b>' + v.toFixed(2) + ' Hz</b>'; });
     s.drvF = m2s4Drv(s, s.bRows[1].R, 'ff', 400, 480, 1, [['', 400], ['', 420], ['', 440], ['', 460], ['', 480]], function (v) { return 'たたくおんさの振動数　<b>' + Math.round(v) + ' Hz</b>'; });
     s.info1 = el('div', 'm2s4info'); s.bRows[0].R.appendChild(s.info1);
     /* おんさのボタン */
     var bb = el('div', 'm2s4btns');
     s.bHit = el('button', 'b glow', '🔨 おんさをたたく（音が鳴る）'); s.bHit.type = 'button';
-    s.bMute = el('button', 'b', '✋ たたいたおんさを手でおさえる'); s.bMute.type = 'button';
+    s.bMute = el('button', 'b', '✋ たたいたおんさを手で押さえる'); s.bMute.type = 'button';
     s.bStop = el('button', 'b', '■ 音を止める'); s.bStop.type = 'button';
     s.bHit.addEventListener('click', function () { s.fk.hit = true; s.fk.mute = false; s.fk.aL = 1; m2s4Sound(s); if (!s.playing) s.togglePlay(); m2s4Btns(s); });
     s.bMute.addEventListener('click', function () { if (!s.fk.hit) return; s.fk.mute = true; m2s4Sound(s); m2s4Btns(s); });
@@ -6864,7 +6896,7 @@ function drawM2S4P(s, ctx, W, H) {
   ctx.save(); ctx.strokeStyle = '#5b6570'; ctx.lineWidth = 1.6; ctx.beginPath();
   for (var i = 0; i <= 60; i++) { var x = x0 + (x1 - x0) * i / 60; ctx.lineTo(x + Xp, yS(x)); } ctx.stroke(); ctx.restore();
   [x0, x1].forEach(function (xh, k) { m2s4Hand(ctx, xh + Xp, yT, k ? 1 : -1, nar ? 0.8 : 1); });
-  label(ctx, '手で左右にゆらす　f = ' + s.v.fp.toFixed(2) + ' Hz', W / 2, 14, { size: nar ? 11 : 12.5, bold: true, color: '#c9670c' });
+  label(ctx, '手で左右に揺らす　f = ' + s.v.fp.toFixed(2) + ' Hz', W / 2, 14, { size: nar ? 11 : 12.5, bold: true, color: '#c9670c' });
   /* 振り子 */
   M2S4.P.forEach(function (p, i) {
     var xs = x0 + (x1 - x0) * (i + 0.5) / 6, ys = yS(xs), L = p[1] * sc, th = s.pd[i].th, bx = xs + Xp + L * Math.sin(th), by = ys + L * Math.cos(th);
@@ -6911,31 +6943,31 @@ function drawM2S4F(s, ctx, W, H) {
   if (fk.aL > 0.05) for (var j = 0; j < 4; j++) { var u = ((s.t * 0.9) + j / 4) % 1, xx = xL + bw + 10 + u * (xR - xL - bw - 20); ctx.save(); ctx.strokeStyle = 'rgba(209,74,42,' + (fk.aL * (1 - u) * 0.8) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(xx - 20, yb + bh / 2, 20, -0.6, 0.6); ctx.stroke(); ctx.restore(); }
   /* ハンマー（たたいた直後） */
   if (fk.hit && !fk.mute && fk.aL > 0.9) { ctx.save(); ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xL + bw / 2 - 16, yb - 70); ctx.lineTo(xL - 6, yb - 100); ctx.stroke(); ctx.fillStyle = '#c9670c'; ctx.beginPath(); ctx.ellipse(xL + bw / 2 - 18, yb - 70, 7, 5, 0.5, 0, TAU); ctx.fill(); ctx.restore(); }
-  if (fk.mute) label(ctx, '✋ おさえた', xL + bw / 2, yb - (nar ? 100 : 122), { size: 11, bold: true, color: '#9b2418' });
+  if (fk.mute) label(ctx, '✋ 押さえた', xL + bw / 2, yb - (nar ? 100 : 122), { size: 11, bold: true, color: '#9b2418' });
   /* 右のおんさのゆれの大きさ */
   var mw = nar ? 90 : 130, mxx = W / 2 - mw / 2, my = nar ? 44 : 50;
   ctx.save(); ctx.fillStyle = '#eef1f4'; rrect(ctx, mxx, my, mw, 10, 5); ctx.fill(); ctx.fillStyle = '#1663b5'; rrect(ctx, mxx, my, Math.max(0, mw * fk.aR), 10, 5); ctx.fill(); ctx.restore();
-  label(ctx, '440 Hz のおんさのゆれ', W / 2, my - 9, { size: nar ? 9.5 : 10.5, color: COL.sub });
+  label(ctx, '440 Hz のおんさの揺れ', W / 2, my - 9, { size: nar ? 9.5 : 10.5, color: COL.sub });
   if (fk.aR > 0.3) pill(ctx, '共鳴する', mxx + mw / 2 - 40, my + 16, { size: 12, bg: '#fff1dc', border: '#e07b18', color: '#6b3a0a' });
 }
 function m2s4Info(s) {
   if (!s.info1) return;
   var f = s.v.fp, best = M2S4.P.map(function (p) { return [p[0], m2s4F0(p[1])]; }).filter(function (q) { return Math.abs(q[1] - f) < 0.03; });
-  var h1 = '<p>いまの $f$ に固有振動数が近い振り子：<b>' + (best.length ? best.map(function (q) { return q[0]; }).join('・') : 'なし') + '</b></p><p class="sub">ゆれは少しずつ育つので、数秒〜十数秒待とう。B と E は同じ長さ。</p>';
+  var h1 = '<p>いまの $f$ に固有振動数が近い振り子：<b>' + (best.length ? best.map(function (q) { return q[0]; }).join('・') : 'なし') + '</b></p><p class="sub">揺れは少しずつ育つので、数秒〜十数秒待とう。B と E は同じ長さ。</p>';
   if (s.info1._h !== h1) { s.info1._h = h1; s.info1.innerHTML = mathify(h1); }
-  var R = m2s4R(s), h2 = '<p>440 Hz のおんさが共鳴する大きさ（くらべ）：<b>' + Math.round(R * 100) + ' %</b></p><p class="sub">振動数が同じ（440 Hz）ときだけ大きく共鳴する。たたいたおんさを手でおさえても、共鳴した 440 Hz のおんさは鳴り続ける。</p>';
+  var R = m2s4R(s), h2 = '<p>440 Hz のおんさが共鳴する大きさ（いちばん大きいときを 100 % とする）：<b>' + Math.round(R * 100) + ' %</b></p><p class="sub">振動数が同じ（440 Hz）ときだけ大きく共鳴する。たたいたおんさを手で押さえても、共鳴した 440 Hz のおんさは鳴り続ける。</p>';
   if (s.info2._h !== h2) { s.info2._h = h2; s.info2.innerHTML = mathify(h2); }
 }
 function rightM2S4(s, R) {
   R.innerHTML = mathify('<div class="qcard"><p class="qt">共振（共鳴）</p>' +
     '<p>振り子の<b>固有振動数</b>は糸の長さ $L$ で決まる。</p><div class="qeq">$$f_0 = \\dfrac{1}{2\\pi}\\sqrt{\\dfrac{g}{L}}$$</div>' +
-    '<p>外から与える振動の振動数 $f$ が $f_0$ に等しいとき、1 回ゆれるごとにちょうどよいタイミングで押されるので、ゆれがどんどん大きくなる（<b>共振</b>）。音で起こる共振を<b>共鳴</b>という（気柱・弦の共鳴は <a class="xlink" href="#3-3">③-3</a>）。</p>' +
-    '<p class="qnote">図の手と糸の動きは 3 倍に拡大している。おんさの Q（どれだけせまい振動数でしか共鳴しないか）は、見やすくするために実際より小さくした。</p></div>');
+    '<p>外から与える振動の振動数 $f$ が $f_0$ に等しいとき、1 回揺れるごとにちょうどよいタイミングで押されるので、揺れがどんどん大きくなる（<b>共振</b>）。音で起こる共振を<b>共鳴</b>という（気柱・弦の共鳴は <a class="xlink" href="#3-3">③-3</a>）。</p>' +
+    '<p class="qnote">図の手と糸の動きは 3 倍に拡大している。おんさの Q（どれだけ狭い振動数でしか共鳴しないか）は、見やすくするために実際より小さくした。</p></div>');
 }
 /* 札＋スライダーの操作（②-3 の drvctl と同じ形）。chips：[[名前, 値]]（名前が空なら値を書く） */
 function m2s4Drv(s, host, k, lo, hi, step, chips, txt) {
   var dv = el('div', 'drvctl'), dvv = el('div', 'drvval'), cb = el('div', 'drvchips'), rg = el('input'), bs = [];
-  rg.type = 'range'; rg.min = String(lo); rg.max = String(hi); rg.step = String(step); rg.value = String(s.v[k]); rg.setAttribute('aria-label', k === 'fp' ? '手でゆらす振動数' : 'たたくおんさの振動数');
+  rg.type = 'range'; rg.min = String(lo); rg.max = String(hi); rg.step = String(step); rg.value = String(s.v[k]); rg.setAttribute('aria-label', k === 'fp' ? '手で揺らす振動数' : 'たたくおんさの振動数');
   var set = function (v) { s.v[k] = v; o.sync(); s.def.onChanged(s, k); s.draw(); };
   var lastX = -1, two = false;
   chips.slice().sort(function (a, b) { return a[1] - b[1]; }).forEach(function (c) {
@@ -7000,7 +7032,7 @@ function m3Wave(parts) {
 /* 音のボタン（各節で共通）：鳴らす／止める。鳴らせないときは理由 */
 function m3SpkBtn(s, host, getVoices) {
   var b = el('button', 'b spk m3spk', '🔊 音を鳴らす'); b.type = 'button';
-  var msg = el('span', 'spkmsg', '人の耳には聞こえません（およそ 20〜20000 Hz）');
+  var msg = el('span', 'spkmsg', '人の耳には聞こえない（およそ 20〜20000 Hz の外）');
   b.addEventListener('click', function () {
     if (AUDIO.owner() === s.def.id) { AUDIO.stop(); s._resume = null; return; }
     m3Sound(s, getVoices);
@@ -7221,8 +7253,8 @@ function m3s1Scope(s) {
   c2.save(); c2.strokeStyle = 'rgba(120,220,170,.25)'; c2.lineWidth = 1;
   for (var k = 0; k <= 5; k++) { var gx = Math.round(XF(k * 1000)) + 0.5; c2.beginPath(); c2.moveTo(gx, fy0); c2.lineTo(gx, fy1); c2.stroke(); }
   c2.beginPath(); c2.moveTo(fx0, fy1 + 0.5); c2.lineTo(fx1, fy1 + 0.5); c2.stroke(); c2.restore();
-  c2.save(); c2.font = '600 10px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.85)'; c2.textBaseline = 'top'; c2.fillText('振動数のスペクトル（どの振動数の音が、どれだけまざっているか）', 6, 5);
-  c2.textAlign = 'center'; for (var k2 = 0; k2 <= 5; k2++) c2.fillText(k2 === 5 ? '5000 Hz' : String(k2 * 1000), Math.min(fx1 - 18, XF(k2 * 1000)), fy1 + 4); c2.restore();
+  c2.save(); c2.font = '600 10px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.85)'; c2.textBaseline = 'top'; c2.fillText(W < 380 ? '振動数のスペクトル（どの音がどれだけ混ざるか）' : '振動数のスペクトル（どの振動数の音が、どれだけ混ざっているか）', 6, 5);
+  c2.textAlign = 'center'; for (var k2 = 0; k2 <= 5; k2++) { if (k2 === 5) { c2.textAlign = 'right'; c2.fillText('5000 Hz', fx1 + 6, fy1 + 4); } else c2.fillText(String(k2 * 1000), XF(k2 * 1000), fy1 + 4); } c2.restore();   /* 右はしは右寄せ（4000 と重ならないように。21 回目） */
   m3SpecBars(c2, s, parts, q.f, q.A, XF, fy0, fy1, FM, s.src !== 'fork');
   var cap = '1 周期 $T = ' + sig(q.T * 1000, 3) + '$ ms（10 ms の間に ' + sig(0.010 * q.f, 3) + ' 回振動）。いちばん左の線が $f = ' + q.f + '$ Hz（基音）、ほかは倍音。線をクリックすると振動数を表示';
   if (sc.cap._h !== cap) { sc.cap._h = cap; sc.cap.innerHTML = mathify(cap); }
@@ -7234,7 +7266,7 @@ function rightM3S1(s, R) {
     '<tr><th>高さ</th><td>振動数 $f$</td><td>波の数（多いほど高い音）</td></tr>' +
     '<tr><th>大きさ</th><td>振幅 $A$</td><td>波の高さ（高いほど大きい音）</td></tr>' +
     '<tr><th>音色</th><td>波形</td><td>波の形</td></tr></tbody></table>' +
-    '<p>おんさの音は、きれいな正弦波に近い。声や楽器の音は、振動数が $f$ の整数倍の波（倍音）がまざっているので、波形がちがう。同じ高さ（同じ $f$）でも音色がちがって聞こえる。</p>' +
+    '<p>おんさの音は、きれいな正弦波に近い。声や楽器の音は、振動数が $f$ の整数倍の波（倍音）が混ざっているので、波形が違う。同じ高さ（同じ $f$）でも音色が違って聞こえる。</p>' +
     '<div class="qeq">$$V = 331.5 + 0.6t,\\qquad V = f\\lambda$$</div>' +
     '<p class="qnow"><span class="qtag now">いま</span>$t = ' + s.v.tc + '$ ℃ なので $V = ' + sig(q.V, 4) + '$ m/s、$\\lambda = \\dfrac{V}{f} = \\dfrac{' + sig(q.V, 4) + '}{' + Math.round(q.f) + '} = ' + sig(q.lam, 3) + '$ m</p>' +
     '<p class="qnote">気温を変えても振動数（音の高さ）は変わらない。変わるのは音速 $V$ と波長 $\\lambda$。</p></div>';
@@ -7258,7 +7290,7 @@ function m3s2Env(q, t) { return Math.abs(Math.cos(Math.PI * (q.f1 - q.f2) * t));
 DEFS.m3s2 = {
   id: 'm3s2', mode: 'mode3', num: 2,
   title: 'うなり', short: 'うなり',
-  desc: '振動数が少しちがう 2 つの音が重なると、音がうわんうわん聞こえる「<b>うなり</b>」が発生する。<span class="todo">(1)〜(3) を見比べ、どうして (2) ではうなりが聞こえるのかを理解しよう。</span>',
+  desc: '振動数が少し違う 2 つの音が重なると、音がうわんうわん聞こえる「<b>うなり</b>」が発生する。<span class="todo">(1)〜(3) を見比べ、どうして (2) ではうなりが聞こえるのかを理解しよう。</span>',
   strobe: false, stepDiv: 16,
   varCols: [['f1', 'f2', 'fb']],
   vars: [
@@ -7431,13 +7463,13 @@ function m3s2ScopeRow(s, i) {
     var fx = function (f) { return f + ' Hz'; };
     var b1 = m3s2Block(sc, c, 0, W, q, { span: 1, lh: lh, words: i === 0, title: '1 s 間（横 1 目盛り 0.1 s）',
       n1: 'おんさ 1（' + fx(q.f1) + '）' + (i === 0 ? '：1 s の間に ' + q.f1 + ' 個' : ''), n2: 'おんさ 2（' + fx(q.f2) + '）' + (i === 0 ? '：1 s の間に ' + q.f2 + ' 個' : ''),
-      n3: '合成した波' + (q.fb && q.fb < 200 ? '：1 s の間に ' + q.fb + ' 回 大きくなる' : (q.fb ? '：大きさは変わらない（うなりの形にならない）' : '')) });
+      n3: '合成した波' + (q.fb && q.fb < 200 ? '：1 s の間に ' + q.fb + ' 回大きくなる' : (q.fb ? (W < 400 ? '：大きさは変わらない' : '：大きさは変わらない（うなりの形にならない）') : '')) });
     sc._ly = [b1.y0, b1.y1];
     if (zoom) {
       var zs = i === 1 ? 0.1 : 0.01, yb = b1.y + 16, pad = 8;
       m3s2BubbleDraw(c, W, b1.y0, b1.y1, yb, H - 2, zs);
       if (i === 1) m3s2Block(sc, c, yb + 4, W, q, { x: pad, w: W - 2 * pad, span: 0.1, lh: lh, title: '拡大：はじめの 0.1 s 間（横 1 目盛り 0.01 s）', n1: 'おんさ 1（' + fx(q.f1) + '）：0.1 s の間に ' + m3Cnt(q.f1 / 10) + ' 個', n2: 'おんさ 2（' + fx(q.f2) + '）：0.1 s の間に ' + m3Cnt(q.f2 / 10) + ' 個', n3: '合成した波' });
-      else m3s2Block(sc, c, yb + 4, W, q, { x: pad, w: W - 2 * pad, span: 0.01, lh: lh, title: '拡大：はじめの 0.01 s 間（横 1 目盛り 0.001 s）', n1: 'おんさ 1（400 Hz）：0.01 s の間に 4 個', n2: 'おんさ 2（4000 Hz）：0.01 s の間に 40 個', n3: '合成した波：400 Hz の波に 4000 Hz の細かい波がのった形' });
+      else m3s2Block(sc, c, yb + 4, W, q, { x: pad, w: W - 2 * pad, span: 0.01, lh: lh, title: '拡大：はじめの 0.01 s 間（横 1 目盛り 0.001 s）', n1: 'おんさ 1（400 Hz）：0.01 s の間に 4 個', n2: 'おんさ 2（4000 Hz）：0.01 s の間に 40 個', n3: W < 400 ? '合成した波：400 Hz の波に細かい波がのる' : '合成した波：400 Hz の波に 4000 Hz の細かい波がのった形' });
     }
     var cap;
     if (i === 0) cap = '合成した波の振幅は、同位相で重なるとき最大、逆位相で重なるとき最小。1 s の間に振動の数が ' + q.fb + ' 個ずれる → うなりは 1 秒に ' + q.fb + ' 回（$f = |' + q.f1 + ' - ' + q.f2 + '| = ' + q.fb + '$ 回/秒）';
@@ -7680,7 +7712,7 @@ function drawM3S3(s, ctx, W, H) {
     }
   } else {
     var big = s.ins === 'string' ? s._dsBig : tot > 0.5;
-    label(ctx, (s.ins === 'string' ? '振動子' : 'スピーカー') + 'の振動数 ' + m3s3Rt(s) + ' = ' + sig(q.fd, 3) + ' Hz：' + (big ? '固有振動数と同じ → 共鳴して大きく振動する' : '固有振動数とちがう → ほとんど振動しない'), W / 2, 14, { size: 12, bold: true, color: big ? '#14653a' : '#6b3a0a' });
+    label(ctx, (s.ins === 'string' ? '振動子' : 'スピーカー') + 'の振動数 ' + m3s3Rt(s) + ' = ' + sig(q.fd, 3) + ' Hz：' + (big ? '固有振動数と同じ → 共鳴して大きく振動する' : '固有振動数と違う → ほとんど振動しない'), W / 2, 14, { size: 12, bold: true, color: big ? '#14653a' : '#6b3a0a' });
   }
   /* 長さの寸法 */
   var dl = dimH(ctx, X(0), X(q.l), H - 18, '#3a414c', 'l', { ticks: false }); label(ctx, '= ' + fmt(q.l, 2) + ' m', (X(0) + X(q.l)) / 2 + 9, H - 29, { size: 12, color: '#3a414c', align: 'left' });
@@ -7847,7 +7879,7 @@ function m3SpecMini(ctx, x, y, w, h, f1, parts, arr, ratio, hk) {
   ctx.strokeStyle = 'rgba(120,220,170,.3)'; ctx.beginPath(); ctx.moveTo(bx0, by1 + 0.5); ctx.lineTo(bx1, by1 + 0.5); ctx.stroke();
   ctx.font = '600 9px ' + FONT; ctx.fillStyle = 'rgba(190,240,215,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   for (var n = 1; n <= NX; n++) ctx.fillText(String(n), XF(n), by1 + 3);
-  ctx.textAlign = 'left'; ctx.fillText('スペクトル（f₁ の何倍か）', x + 6, y + 4);
+  ctx.textAlign = 'left'; if (w < 120) { ctx.fillText('スペクトル', x + 6, y + 4); ctx.fillText('（f₁ の何倍か）', x + 6, y + 15); } else ctx.fillText('スペクトル（f₁ の何倍か）', x + 6, y + 4);   /* せまいときは 2 行（21 回目） */
   if (arr) {
     var mx = 0; parts.forEach(function (p) { mx = Math.max(mx, p[1]); });
     ctx.fillStyle = '#7dffb4'; ctx.shadowColor = '#7dffb4'; ctx.shadowBlur = 5;
@@ -8034,14 +8066,14 @@ function drawM3S4(s, ctx, W, H) {
   ctx.restore();   /* 響き穴は描かない（シミに見えるので。2026-11-06 千葉さん 10 回目） */
   /* 目盛り（10 cm ごと） */
   ctx.save(); ctx.strokeStyle = 'rgba(58,40,20,.55)'; ctx.lineWidth = 1; ctx.font = '600 9.5px ' + FONT; ctx.fillStyle = 'rgba(58,40,20,.85)'; ctx.textAlign = 'center';
-  for (var c = 0; c <= 10; c++) { var px = X(c / 10); ctx.beginPath(); ctx.moveTo(px, cy + 24); ctx.lineTo(px, cy + (c % 5 ? 30 : 34)); ctx.stroke(); if (c % 2 === 0) { ctx.textAlign = c === 10 ? 'right' : 'center'; ctx.fillText(String(c * 10) + (c === 10 ? ' cm' : ''), c === 10 ? px - 2 : px, cy + 44); } }
+  for (var c = 0; c <= 10; c++) { var px = X(c / 10); ctx.beginPath(); ctx.moveTo(px, cy + 24); ctx.lineTo(px, cy + (c % 5 ? 30 : 34)); ctx.stroke(); if (c % 2 === 0 && !(X(1) - X(0) < 260 && (c === 2 || c === 6 || c === 8))) { ctx.textAlign = c === 10 ? 'right' : 'center'; ctx.fillText(String(c * 10) + (c === 10 ? ' cm' : ''), c === 10 ? px - 2 : px, cy + 44); } }
   ctx.restore();
   /* 目盛りの数字の下に、ドレミ … の位置（いまの張力・太さで、その音になる弦の長さ）。チョーキングなしの値（2026-11-07 千葉さん 14 回目） */
   var v0 = 2 * q.l * q.f0, lastX = -99, nN = 0;                      /* 名前は 2 段に交互に書く（となりの音と重ならないように） */
   for (var mN = 36; mN <= 96; mN++) {                             /* 長い（低い）音から順に。となりと近すぎる所で止める（とびとびにしない） */
     if (MUS.black(mN)) continue;
     var lN = v0 / (2 * MUS.fET(mN)); if (lN > 0.97) continue; if (lN < 0.1) break;
-    var pxN = X(lN); if (lastX > 0 && lastX - pxN < 7.5) break; lastX = pxN; nN++;
+    var pxN = X(lN); if (lastX > 0 && lastX - pxN < (X(1) - X(0) < 260 ? 11 : 7.5)) break; lastX = pxN; nN++;
     var isC = mN % 12 === 0;
     ctx.save(); ctx.strokeStyle = isC ? '#7a3b12' : 'rgba(90,60,30,.6)'; ctx.lineWidth = isC ? 1.6 : 1; ctx.beginPath(); ctx.moveTo(pxN, cy + 50); ctx.lineTo(pxN, cy + 56); ctx.stroke(); ctx.restore();
     if (nN % 2 === 0) { ctx.save(); ctx.strokeStyle = 'rgba(90,60,30,.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pxN, cy + 56); ctx.lineTo(pxN, cy + 64); ctx.stroke(); ctx.restore(); }
@@ -8057,7 +8089,7 @@ function drawM3S4(s, ctx, W, H) {
   if (cB !== 0) m3s4Finger(ctx, xf, cy + dep - sLw / 2 - 1);      /* チョーキング「なし」のときは指をかかない（2026-11-08 千葉さん 16 回目） */
   if (cB !== 0) label(ctx, cB < 0 ? 'ビブラート' : 'チョーキング（+' + cB + ' セント）', xf, cy - 58, { size: 10.5, bold: true, color: '#9c4e06' });
   for (var k = 0; k < s.v.nw; k++) { ctx.save(); ctx.fillStyle = '#5b6470'; ctx.strokeStyle = '#3a414c'; rrect(ctx, wx - 14, wy0 + 2 + k * wh, 28, wh - 2, 3); ctx.fill(); ctx.stroke(); ctx.restore(); }
-  label(ctx, 'おもり ' + s.v.nw + ' 個', wx, wy0 + s.v.nw * wh + 14, { size: 10.5, bold: true, color: COL.ink2 });
+  label(ctx, 'おもり ' + s.v.nw + ' 個', Math.min(wx, W - 34), wy0 + s.v.nw * wh + 14, { size: 10.5, bold: true, color: COL.ink2 });
   label(ctx, '↕', wx + 24, wy0 + s.v.nw * wh / 2, { size: 13, bold: true, color: '#9c4e06' });
   s._g = { X: X, SX: SX, cy: cy, wx: wx, wy0: wy0, wh: wh };
   /* 振動する弦（基本振動だけ）。うすい帯＝目に見える振動の幅、線＝ゆっくりにした動き */
@@ -8088,7 +8120,7 @@ function drawM3S4(s, ctx, W, H) {
   if (tp === null || env <= 0.01) label(ctx, 'Enter キー・弦をクリックで、弦をはじく', (X(0) + kx) / 2, cy - 16, { size: nar ? 10 : 11, color: COL.faint });
   /* 動きの断り（うそをつかない：何倍ゆっくりにしているかを書く） */
   var slow = Math.round(q.f1 / fSd / (s.real ? 1 : 10)) * (s.real ? 1 : 10);
-  var t1 = 'うすい帯：目に見える振動の幅（実際は 1 秒に ' + sig(q.f1, 3) + ' 回振動）', t2 = '線：動きを実際の約 ' + bigNum(slow) + ' 分の 1 の速さにしたもの（振幅は拡大）';
+  var t1 = nar ? '薄い帯：見える振動の幅（実際は 1 秒に ' + sig(q.f1, 3) + ' 回）' : '薄い帯：目に見える振動の幅（実際は 1 秒に ' + sig(q.f1, 3) + ' 回振動）', t2 = nar ? '線：実際の約 ' + bigNum(slow) + ' 分の 1 の速さ（振幅は拡大）' : '線：動きを実際の約 ' + bigNum(slow) + ' 分の 1 の速さにしたもの（振幅は拡大）';   /* スマホでは短く（おもりと重ならないように） */
   label(ctx, t1, 8, H - 26, { size: nar ? 9.5 : 10.5, color: COL.ink2, align: 'left' });
   label(ctx, t2, 8, H - 10, { size: nar ? 9.5 : 10.5, color: COL.ink2, align: 'left' });
 }
@@ -8105,7 +8137,7 @@ function m3s4Scope(s) {
   var f = function (t) { if (tp === null) return 0; var y = 0; parts.forEach(function (p) { y += p[1] * Math.sin(TAU * p[0] * fNow * t); }); return 0.9 * A * Math.exp(-t / M3S4.tau) * y / pk; };
   sc.screen(ctx, 0, 0, W, h1, { t0: t0, span: 0.010, yMax: 1, traces: [{ f: f, fmax: fNow * parts.length }], label: '横 1 目盛り 1 ms', labelR: sig(fNow * (s.harm || 1), 4) + ' Hz' });
   /* 下の「振動数の変化」の帯はなくした（2026-11-08 千葉さん 16 回目） */
-  var cap = s.harm ? 'ハーモニクス：基本振動が止まり、振動数 $' + s.harm + 'f_1 = ' + sig(s.harm * fNow, 4) + '$ Hz（第 ' + s.harm + ' 倍音）の振動が残る（10 ms の間に ' + sig(0.010 * s.harm * fNow, 3) + ' 回振動）' : 'はじくと、振動数 $f = ' + sig(fNow, 4) + '$ Hz の音が出て、だんだん小さくなる（10 ms の間に ' + sig(0.010 * fNow, 3) + ' 回振動）' + (s.timb === 'real' ? '。本物の音なので倍音もふくみ、波形がとがる' : '');
+  var cap = s.harm ? 'ハーモニクス：基本振動が止まり、振動数 $' + s.harm + 'f_1 = ' + sig(s.harm * fNow, 4) + '$ Hz（第 ' + s.harm + ' 倍音）の振動が残る（10 ms の間に ' + sig(0.010 * s.harm * fNow, 3) + ' 回振動）' : 'はじくと、振動数 $f = ' + sig(fNow, 4) + '$ Hz の音が出て、だんだん小さくなる（10 ms の間に ' + sig(0.010 * fNow, 3) + ' 回振動）' + (s.timb === 'real' ? '。本物の音なので倍音も含み、波形がとがる' : '');
   if (sc.cap._h !== cap) { sc.cap._h = cap; sc.cap.innerHTML = mathify(cap); }
 }
 /* 説明カードの上の五線譜（2026-11-07 千葉さん 14 回目：④-1 と同じく、音符をクリックするとその音が鳴る）
@@ -8138,15 +8170,15 @@ function m3s4NoteClick(s, ev) {
 function rightM3S4(s, R) {
   var q = m3s4Q(s);
   var h = '<div class="qcard"><p class="qt">モノコードの音の高さ</p>' +
-    '<p>弦の両はし（左はしの駒と、動かせるこま）が節になる。基本振動では $l = \\dfrac{\\lambda}{2}$ なので</p>' +
+    '<p>弦の両端（左端の固定されたこまと、動かせるこま）が節になる。基本振動では $l = \\dfrac{\\lambda}{2}$ なので</p>' +
     '<div class="qeq">$$f_1 = \\frac{v}{2l} = \\frac{1}{2l}\\sqrt{\\frac{S}{\\rho}}$$</div>' +
     '<p>（$S$：弦の張力＝おもりの重さ、$\\rho$：弦 1 m あたりの質量。太い弦ほど大きい）</p>' +
     '<table class="reltab grid1"><tbody><tr><th>$l$ を短く</th><td class="l">高い音（$l$ を半分にすると振動数は 2 倍＝1 オクターブ上）</td></tr>' +
     '<tr><th>おもりを増やす</th><td class="l">高い音（張力 $S$ が大きく、$v$ が大きくなる。4 倍にすると 1 オクターブ上）</td></tr><tr><th>弦を太く</th><td class="l">低い音（$\\rho$ が大きく、$v$ が小さくなる）</td></tr></tbody></table>' +
     '<p class="qnow"><span class="qtag now">いま</span>$S = ' + s.v.nw + ' \\times 1.0 \\times 9.8' + (q.cents ? ' \\times ' + sig(q.S / q.S0, 3) + '（チョーキング）' : '') + ' = ' + sig(q.S, 3) + '$ N、$v = \\sqrt{\\dfrac{S}{\\rho}} = ' + sig(q.v, 3) + '$ m/s、$f_1 = \\dfrac{' + sig(q.v, 3) + '}{2 \\times ' + fmt(q.l, 3) + '} = ' + sig(q.f1, 3) + '$ Hz</p>' +
-    '<p><b>チョーキング</b>：音を出さない側（こま〜滑車）の弦を指で押し下げると、弦がのびて張力 $S$ が大きくなる。すると $v = \\sqrt{\\dfrac{S}{\\rho}}$ が大きくなり、音が高くなる。半音（100 セント）上げるには、$S$ を $2^{\\frac{2}{12}} \\fallingdotseq 1.12$ 倍にすればよい。ビブラートは、押す強さをくり返し変えて $S$ を変化させる。</p>' +
+    '<p><b>チョーキング</b>：音を出さない側（こま〜滑車）の弦を指で押し下げると、弦がのびて張力 $S$ が大きくなる。すると $v = \\sqrt{\\dfrac{S}{\\rho}}$ が大きくなり、音が高くなる。半音（100 セント）上げるには、$S$ を $2^{\\frac{2}{12}} \\fallingdotseq 1.12$ 倍にすればよい。ビブラートは、押す強さを繰り返し変えて $S$ を変化させる。</p>' +
     (s.timb === 'real' ? '<p><b>ハーモニクス</b>：鳴っている弦の真ん中（3 分の 1）の所に軽く触れると、そこが節になる振動だけが残り、第 2（第 3）倍音が鳴る（1 オクターブ上・1 オクターブと 5 度上）。</p>' : '') +
-    '<p class="qnote">弦はナイロン（密度 1140 kg/m³）とした。「基音のみ」は ③-3 の基本振動と同じく単音、「本物の音」ははじいた弦のように倍音もふくむ。</p></div>';
+    '<p class="qnote">弦はナイロン（密度 1140 kg/m³）とした。「基音のみ」は ③-3 の基本振動と同じく単音、「本物の音」ははじいた弦のように倍音も含む。</p></div>';
   R.innerHTML = mathify(h);
 }
 
@@ -8182,12 +8214,12 @@ function m3s5Amp(q, L) {
 DEFS.m3s5 = {
   id: 'm3s5', mode: 'mode3', num: 5,
   title: '気柱の共鳴（水柱の実験）', short: '気柱共鳴実験',
-  desc: '管口でおんさを鳴らし、水面を下げていくと、決まった低さで<b>共鳴</b>して大きな音になる。<span class="todo">右の水だめを上下に動かして、共鳴する水面の低さ $L_1$・$L_2$ を見つけよう。</span>',
+  desc: '管口でおんさを鳴らし、水面を下げていくと、決まった位置で<b>共鳴</b>して大きな音になる。<span class="todo">右の水だめを上下に動かして、共鳴する水面の位置 $L_1$・$L_2$ を見つけよう。</span>',
   strobe: false, stepDiv: 16,
   varCols: [['Lw', 'tc'], ['lam', 'dx']],
   varColNote: { 1: '以下は、左の値で決まる（直接は変えられない）' },
   vars: [
-    { k: 'Lw', label: '水面の管口からの低さ $L$', aria: '水面の管口からの低さ', min: M3S5.Lmin, max: M3S5.Lmax, step: 0.002, def: 0.04, fmt: function (x) { return sig(x * 100, 3) + ' cm'; } },
+    { k: 'Lw', label: '管口から水面までの長さ $L$', aria: '管口から水面までの長さ', min: M3S5.Lmin, max: M3S5.Lmax, step: 0.002, def: 0.04, fmt: function (x) { return sig(x * 100, 3) + ' cm'; } },
     { k: 'tc', label: '気温 $t$', aria: '気温', stops: [-10, 0, 10, 15, 20, 30, 40], prop: true, stopLabels: ['−10', '0', '10', '', '20', '30', '40 ℃'], def: 15, fmt: function (x) { return String(x).replace('-', '−') + ' ℃'; } },
     meterVar('lam', '波長 $\\lambda$（800 Hz）', '波長', function (x) { return sig(x * 100, 3) + ' cm'; }, 0.5),
     meterVar('dx', '開口端補正 $\\Delta x$', '開口端補正', function (x) { return sig(x * 100, 2) + ' cm'; }, 0.05)
@@ -8217,7 +8249,7 @@ DEFS.m3s5 = {
   below: function (s) { m3s5Dx(s); },
   afterBuild: function (s) {
     s.R.innerHTML = ''; var sw = el('div', 'row2 sliders inR'); sw.appendChild(s.varbox); s.R.appendChild(sw); s.varbox.classList.add('inR');
-    s.scope = new Scope(s.R, '水面の低さと音の大きさ'); s.scope.box.classList.add('light');
+    s.scope = new Scope(s.R, '水面の位置と音の大きさ'); s.scope.box.classList.add('light');
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
     var segs = s.row1b.querySelectorAll('.seg'); if (segs[0]) { var lb = el('span', 'seglbl', '管の中の表示'); segs[0].insertAdjacentElement('beforebegin', lb); lblSeg(lb, segs[0]); }
     var sp = el('span', 'spkrow'); s.row1b.appendChild(sp); s.spkRow = sp;
@@ -8360,7 +8392,7 @@ function rightM3S5(s, R) {
 /* L₁ と L₂ のときの管をならべた図（同じ縮尺。管口の高さをそろえる） */
 function m3s5Fig(s) {
   var cv = s.Rdyn && s.Rdyn.querySelector('canvas.m3s5fig'); if (!cv || !cv.offsetParent) return;
-  var q = m3s5Q(s), W = Math.max(240, Math.floor(cv.clientWidth || 300)), H = 260, key = W + '|' + q.lam;
+  var q = m3s5Q(s), W = Math.max(220, Math.floor((cv.parentElement && cv.parentElement.clientWidth) || cv.clientWidth || 300)), H = 260, key = W + '|' + q.lam;   /* 入れ物の幅に合わせる（スマホではみ出さないように。21 回目） */
   if (s._figK === key) return; s._figK = key;
   var ctx = prep(cv, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
   var top = 46, SY = (H - top - 22) / (q.L2 + 0.02), tw = 16, dxPx = M3S5.dx * SY;
@@ -8404,7 +8436,7 @@ function m3s5Dx(s) {
   var host = s.below; if (!host) return;
   if (!host._built) {
     host._built = true; host.classList.add('dxbox');
-    host.innerHTML = '<p class="dxh">管口のまわりを拡大すると（開口端補正 <i>Δx</i>）</p><div class="dxrow"><canvas class="dxcv" aria-label="管口のまわりの拡大図"></canvas><div class="dxtx"></div></div>';
+    host.innerHTML = '<p class="dxh">管口の周りを拡大すると（開口端補正 <i>Δx</i>）</p><div class="dxrow"><canvas class="dxcv" aria-label="管口の周りの拡大図"></canvas><div class="dxtx"></div></div>';
     host._cv = host.querySelector('canvas'); host._tx = host.querySelector('.dxtx');
     host._tx.innerHTML = mathify('<p>気柱の振動の<b>腹</b>は、ちょうど管口ではなく、管口より少し外（上）にできる。管口から腹までの長さ $\\Delta x$ を<b>開口端補正</b>という。</p>' +
       '<p>$L_1$ は $\\lambda/4$ より $\\Delta x$ だけ短い。</p>' +
@@ -8529,8 +8561,8 @@ function m4Scope(s, f, parts, cap, FM, span) {
   c2.save(); c2.strokeStyle = 'rgba(120,220,170,.25)'; c2.lineWidth = 1;
   for (var k = 0; k <= 5; k++) { var gx = Math.round(XF(k * FM / 5)) + 0.5; c2.beginPath(); c2.moveTo(gx, fy0); c2.lineTo(gx, fy1); c2.stroke(); }
   c2.beginPath(); c2.moveTo(fx0, fy1 + 0.5); c2.lineTo(fx1, fy1 + 0.5); c2.stroke(); c2.restore();
-  c2.save(); c2.font = '600 10px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.85)'; c2.textBaseline = 'top'; c2.fillText('振動数のスペクトル（線をクリックすると振動数を表示）', 6, 5);
-  c2.textAlign = 'center'; for (var k2 = 0; k2 <= 5; k2++) c2.fillText(k2 === 5 ? FM + ' Hz' : String(k2 * FM / 5), Math.min(fx1 - 18, XF(k2 * FM / 5)), fy1 + 4); c2.restore();
+  c2.save(); c2.font = '600 10px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.85)'; c2.textBaseline = 'top'; c2.fillText(W < 380 ? '振動数のスペクトル（線をクリックで表示）' : '振動数のスペクトル（線をクリックすると振動数を表示）', 6, 5);
+  c2.textAlign = 'center'; for (var k2 = 0; k2 <= 5; k2++) { if (k2 === 5) { c2.textAlign = 'right'; c2.fillText(FM + ' Hz', fx1 + 6, fy1 + 4); } else c2.fillText(String(k2 * FM / 5), XF(k2 * FM / 5), fy1 + 4); } c2.restore();   /* 右はしは右寄せ（21 回目） */
   if (f) m3SpecBars(c2, s, parts, f, 1, XF, fy0, fy1, FM, true); else s._spHits = [];
   if (sc.cap._h !== cap) { sc.cap._h = cap; sc.cap.innerHTML = mathify(cap); }
 }
@@ -8543,7 +8575,7 @@ var M4S1_NOTES = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84];  
 DEFS.m4s1 = {
   id: 'm4s1', mode: 'mode4', num: 2,
   title: '波長（長さ）の違いを手で作る楽器', short: '長さを手で変える楽器',
-  desc: '楽器は、弦や管の<b>長さ</b>を変えて音の高さ（振動数）を変える。<span class="todo">楽器を選び、穴・フレットか五線譜の音符をクリック。<b>Enter キー</b>（または弦・管をクリック）で音を出そう。</span>',
+  desc: '楽器は、弦や管の<b>長さ</b>を変えて音の高さ（振動数）を変える。<span class="todo">楽器を選び、穴・こまか五線譜の音符をクリック。<b>Enter キー</b>（または弦・管をクリック）で音を出そう。</span>',
   strobe: false, stepDiv: 16,
   vars: [],
   init: function (s) { s.ins = 'recorder'; s.nm = null; s.tN = 0; },
@@ -8572,7 +8604,7 @@ DEFS.m4s1 = {
   right: function (s, R) { rightM4S1(s, R); }
 };
 function m4s1Sync(s) { m2Sync(s, M4S1_INS.map(function (p) { return ['i_' + p[0], s.ins === p[0]]; })); if (s.Rdyn) s.renderRight(); }
-function m4s1Cap(s, f) { return f ? MUS.jp(s.nm) + '（' + MUS.en(s.nm) + '）$f = ' + sig(f, 4) + '$ Hz。同じ高さでも、楽器によって波形（倍音のまざり方）がちがう＝<b>音色</b>がちがう' : '楽器を選んで、音符をクリック'; }
+function m4s1Cap(s, f) { return f ? MUS.jp(s.nm) + '（' + MUS.en(s.nm) + '）$f = ' + sig(f, 4) + '$ Hz。同じ高さでも、楽器によって波形（倍音の混ざり方）が違う＝<b>音色</b>が違う' : '楽器を選んで、音符をクリック'; }
 /* 楽器の長さ：弦・管とも基本振動で l = v/(2f)（図のための値：v = 340 m/s。モノコードは C4 で 0.65 m になる速さ） */
 function m4s1Len(f) { return 340 / (2 * f); }
 /* 管楽器の穴（2026-11-06 千葉さん 12 回目：穴をクリックすると、そこまでふさぐ）
@@ -8608,7 +8640,7 @@ function drawM4S1(s, ctx, W, H) {
     plotF(ctx, function (x) { return Math.sin(Math.PI * x / l) * A; }, 0, l, X, function (y) { return ay - y * 20; }, '#7a3b12', 2.4);
     /* こま（③-4 と同じ形。ギターでは指でフレットをおさえるのと同じはたらき） */
     ctx.save(); ctx.fillStyle = '#e07b18'; ctx.strokeStyle = '#9c4e06'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(l) - 9, ay + 18); ctx.lineTo(X(l), ay - 1); ctx.lineTo(X(l) + 9, ay + 18); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
-    label(ctx, 'こま（ギターでは指でおさえる所）', clamp(X(l), 110, ax1 - 110), ay - 28, { size: 10.5, bold: true, color: '#9c4e06' });
+    label(ctx, 'こま（ギターでは指で押さえる所）', clamp(X(l), 110, ax1 - 110), ay - 28, { size: 10.5, bold: true, color: '#9c4e06' });
     m4Hit(s, X(0) + 4, ay - 16, X(l) - X(0) - 10, 30, function () { m4s1Play(s); });     /* 弦をクリック：はじく */
   } else {
     var wd = m4s1Wind(m), tr = 13, cone = s.ins === 'oboe';
@@ -8643,7 +8675,8 @@ function drawM4S1(s, ctx, W, H) {
   M4S1_NOTES.forEach(function (mm, i) {
     var x = nx0 + dx * (i + 0.5), sel = s.nm === mm;
     noteHead(ctx, x, MUS.step(mm), Y, sp, sel ? '#e07b18' : '#14171c', false, !sel);
-    label(ctx, MUS.jp(mm), x, Y(-4) + 6, { size: nar ? 9.5 : 11, bold: sel, color: sel ? '#c9670c' : COL.ink2 });
+    var tight = dx < 20, nmTx = MUS.jp(mm);   /* 音符の間がせまいときは「ファ」を「フ」にせず、2 段に互いちがいに書く（21 回目） */
+    label(ctx, nmTx, x, Y(-4) + 6 + (tight && i % 2 ? 12 : 0), { size: nar ? 9 : 11, bold: sel, color: sel ? '#c9670c' : COL.ink2 });
     m4Hit(s, x - dx / 2, yTop - 3 * sp, dx, Y(-4) + 14 - (yTop - 3 * sp), function () { s.nm = mm; m4s1Play(s); });
   });
 }
@@ -8653,8 +8686,8 @@ function rightM4S1(s, R) {
     '<div class="qeq">$$f = \\frac{v}{2l}$$</div>' +
     '<table class="reltab grid1"><tbody><tr><th>リコーダー</th><td class="l">指で穴をふさぐ・開けて、管の長さを変える（開いた穴の所で管が終わったのと同じ）</td></tr>' +
     '<tr><th>オーボエ</th><td class="l">リードの振動を、円すい形の管で鳴らす。倍音が多く、明るい音色</td></tr>' +
-    '<tr><th>モノコード（ギター）</th><td class="l">こまを動かして、振動する弦の長さを変える（ギターでは指でフレットをおさえる）</td></tr></tbody></table>' +
-    '<p class="qnote">同じ高さの音でも、楽器によって倍音のまざり方（スペクトル）がちがうので、音色がちがう。図の長さは、両はしが開いた管・弦として計算したおよその値。</p></div>';
+    '<tr><th>モノコード（ギター）</th><td class="l">こまを動かして、振動する弦の長さを変える（ギターでは指でフレットを押さえる）</td></tr></tbody></table>' +
+    '<p class="qnote">同じ高さの音でも、楽器によって倍音の混ざり方（スペクトル）が違うので、音色が違う。図の長さは、両端が開いた管・弦として計算したおよその値。</p></div>';
   R.innerHTML = mathify(h);
 }
 
@@ -8686,7 +8719,7 @@ DEFS.m4s2 = {
   draw: function (s, ctx, W, H) {
     drawM4S2(s, ctx, W, H); m4s2BwvDraw(s);
     var f = s.n ? s.n * M4S2_F1 : 0;
-    m4Scope(s, f, M4_TIM.trumpet, f ? s.n + ' 倍振動の音 $f = ' + s.n + 'f_1 = ' + sig(f, 4) + '$ Hz。この音にも、さらにその 2 倍・3 倍 … の倍音がまざっている（スペクトル）' : '五線譜の音符をクリック', 6000);
+    m4Scope(s, f, M4_TIM.trumpet, f ? s.n + ' 倍振動の音 $f = ' + s.n + 'f_1 = ' + sig(f, 4) + '$ Hz。この音にも、さらにその 2 倍・3 倍 … の倍音が混ざっている（スペクトル）' : '五線譜の音符をクリック', 6000);
   },
   right: function (s, R) { rightM4S2(s, R); }
 };
@@ -8725,7 +8758,7 @@ function drawM4S2(s, ctx, W, H) {
   for (var k = 1; k <= 8; k++) {
     var yy = FX(k * M4S2_F1), sel = s.n === k, nr2 = MUS.near(k * M4S2_F1);
     ctx.save(); ctx.strokeStyle = sel ? '#e07b18' : (k === 1 ? '#9aa1ab' : '#5b7a90'); ctx.lineWidth = sel ? 3 : 1.6; ctx.beginPath(); ctx.moveTo(lx, yy); ctx.lineTo(lx + 60, yy); ctx.stroke(); ctx.restore();
-    label(ctx, (k === 1 ? 'f₁' : k + 'f₁') + ' = ' + Math.round(k * M4S2_F1) + ' Hz　' + (k === 7 ? 'シ♭（B♭5）より少し低い' : MUS.jp(nr2.m) + '（' + MUS.en(nr2.m) + '）') + (k === 1 ? '　基音（ふつうは出さない）' : ''), lx + 66, yy, { size: 10, bold: sel, color: sel ? '#c9670c' : COL.ink2, align: 'left' });
+    label(ctx, (k === 1 ? 'f₁' : k + 'f₁') + ' = ' + Math.round(k * M4S2_F1) + ' Hz　' + (k === 7 ? (nar ? 'シ♭より少し低い' : 'シ♭（B♭5）より少し低い') : MUS.jp(nr2.m) + '（' + MUS.en(nr2.m) + '）') + (k === 1 ? '　基音（ふつうは出さない）' : ''), lx + 66, yy, { size: 10, bold: sel, color: sel ? '#c9670c' : COL.ink2, align: 'left' });
   }
 }
 /* ---------------------------------------------------------------------
@@ -8779,9 +8812,10 @@ function m4s2BwvDraw(s) {
     var x = nx0 + dx * (i + 0.5), cur = s.bwI === i || (s.bwI === null && s.bwSel === i), fl = nt[2] === '♭', m = nt[1];
     noteHead(ctx, x, MUS.step(fl ? m + 1 : m), Y, sp, cur ? '#e07b18' : '#14171c', fl ? '♭' : false, false);
     var nr = { cent: 1200 * Math.log(nt[0] * M4_BWV.f1 / MUS.fET(m)) / Math.LN2 }, yb = Y(MUS.step(77)) + 4 * sp + 8;
-    label(ctx, (fl ? MUS.jp(m + 1) + '♭' : MUS.jp(m)), x, yb, { size: nar ? 9.5 : 11, bold: cur, color: cur ? '#c9670c' : COL.ink2 });
-    label(ctx, nt[0] + (nar ? '' : ' 倍'), x, yb + 16, { size: nar ? 9.5 : 10.5, bold: true, color: cur ? '#c9670c' : '#1663b5' });
-    if (Math.abs(nr.cent) > 15) label(ctx, (nr.cent > 0 ? '高め' : '低め'), x, yb + 31, { size: nar ? 8.5 : 9.5, color: '#9b2418' });
+    var tg = dx < 30, dy = tg && i % 2 ? 13 : 0;   /* 音符の間がせまいときは、音名を 2 段に互いちがいに（21 回目） */
+    label(ctx, (fl ? MUS.jp(m + 1) + '♭' : MUS.jp(m)), x, yb + dy, { size: nar ? 9 : 11, bold: cur, color: cur ? '#c9670c' : COL.ink2 });
+    label(ctx, nt[0] + (nar ? '' : ' 倍'), x, yb + 16 + (tg ? 13 : 0), { size: nar ? 9.5 : 10.5, bold: true, color: cur ? '#c9670c' : '#1663b5' });
+    if (Math.abs(nr.cent) > 15) label(ctx, (nr.cent > 0 ? '高め' : '低め'), x, yb + 31 + (tg ? 13 + (i % 2 ? 11 : 0) : 0), { size: nar ? 8.5 : 9.5, color: '#9b2418' });
     s._bwH.push({ x0: x - dx / 2, x1: x + dx / 2, i: i, n: nt[0] });
   });
   if (nar) { label(ctx, '数字：何倍の倍音か', 4, H - 20, { size: 8.5, color: COL.sub, align: 'left' }); label(ctx, '「高め」「低め」：平均律から少しずれる（唇で直して吹く）', 4, H - 7, { size: 8.5, color: COL.sub, align: 'left' }); }
@@ -8792,9 +8826,9 @@ function rightM4S2(s, R) {
     '<p>管や弦の固有振動数は、基本振動数 $f_1$ の整数倍になる（開管・弦）。$2f_1, 3f_1, 4f_1, \\cdots$ の音を<b>倍音</b>という（$f_1$ の音は<b>基音</b>）。</p>' +
     '<div class="qeq">$$f_n = n f_1\\quad(n = 1, 2, 3, \\cdots)$$</div>' +
     '<p>バルブのないトランペットは、管の長さを変えられない。唇の振動を変えて、どの固有振動で鳴らすかを選ぶので、出せるのは倍音の列（ド・ソ・ド・ミ・ソ …）だけ。</p>' +
-    '<p>となりの倍音の振動数の比は $2:3$（完全 5 度）、$3:4$（完全 4 度）、$4:5$（長 3 度）、$5:6$（短 3 度）… と、だんだん音程がせまくなる。</p>';
+    '<p>となりの倍音の振動数の比は $2:3$（完全 5 度）、$3:4$（完全 4 度）、$4:5$（長 3 度）、$5:6$（短 3 度）… と、だんだん音程が狭くなる。</p>';
   if (s.n) h += '<p class="qnow"><span class="qtag now">いま</span>$f_' + s.n + ' = ' + s.n + ' \\times ' + sig(M4S2_F1, 4) + ' = ' + sig(s.n * M4S2_F1, 4) + '$ Hz</p>';
-  h += '<p class="qnote">楽器の 1 つの音にも、基音とその倍音がまざっている（右のスペクトル）。倍音のまざり方が音色を決める。</p></div>';
+  h += '<p class="qnote">楽器の 1 つの音にも、基音とその倍音が混ざっている（右のスペクトル）。倍音の混ざり方が音色を決める。</p></div>';
   R.innerHTML = mathify(h);
 }
 
@@ -8825,7 +8859,7 @@ function m4s3Qi(s) { return m4s3Qc(M4S3_IV[s.ii]); }
 DEFS.m4s3 = {
   id: 'm4s3', mode: 'mode4', num: 5,
   title: '和音（コード）とは何か', short: '和音（コード）',
-  desc: '高さのちがう音を同時に鳴らしたものを<b>和音</b>（コード）という。振動数の比が簡単な整数比だと、よく調和して聞こえる。<span class="todo">2 つの音・3 つの音を選ぶと音が鳴る。合成した波を比べよう。</span>なお、ここでは振動数をちょうど整数比にしている（純正律）。',
+  desc: '高さの違う音を同時に鳴らしたものを<b>和音</b>（コード）という。振動数の比が簡単な整数比だと、よく調和して聞こえる。<span class="todo">2 つの音・3 つの音を選ぶと音が鳴る。合成した波を比べよう。</span>なお、ここでは振動数をちょうど整数比にしている（純正律）。',
   strobe: false, stepDiv: 16,
   vars: [],
   init: function (s) { s.ci = 0; s.ii = 1; s.last = 'ch'; },
@@ -8890,7 +8924,7 @@ function drawM4S3Row(s, ctx, W, H, q) {
   /* 振動数の比は大きく（2026-11-07 千葉さん 15 回目：2 倍の大きさ） */
   label(ctx, '振動数の比　' + q.c.r.join(' : '), W / 2, ty + 6, { size: nar ? 20 : 23, bold: true, color: COL.ink });
   var l1 = '（' + q.f.map(function (f, i) { return MUS.jp(q.c.m[i]) + ' ' + sig(f, 4) + ' Hz'; }).join('、') + '）',
-    l2 = q.c.good ? ['ドが ' + q.c.r[0] + ' 回振動する間に、ほかの音は ' + q.c.r.slice(1).join(' 回・') + ' 回', '→ 合成した波は同じ形をくり返す'] : (q.c.r.length === 2 ? ['振動数が近い（半音）ので、合成した波の大きさがゆれる', '→ うなりが生じて、にごって聞こえる'] : ['比が複雑なので、なかなかそろわない', '→ 合成した波の形が定まらない（にごった響き）']),
+    l2 = q.c.good ? ['ドが ' + q.c.r[0] + ' 回振動する間に、ほかの音は ' + q.c.r.slice(1).join(' 回・') + ' 回', '→ 合成した波は同じ形を繰り返す'] : (q.c.r.length === 2 ? ['振動数が近い（半音）ので、合成した波の大きさが揺れる', '→ うなりが生じて、にごって聞こえる'] : ['比が複雑なので、なかなかそろわない', '→ 合成した波の形が定まらない（にごった響き）']),
     lines = nar ? [[l1, 0], [l2[0], 1], [l2[1], 1]] : [[l1, 0], [l2.join(' '), 1]];
   lines.forEach(function (ln, k) { label(ctx, ln[0], W / 2, ty + 30 + k * (nar ? 16 : 18), { size: nar ? 10 : (ln[1] ? 11 : 10.5), bold: !!ln[1], color: ln[1] ? (q.c.good ? '#14653a' : '#9b2418') : COL.ink2 }); });
 }
@@ -8912,13 +8946,13 @@ function m4s3ScopeQ(sc, q) {
       label(ctx, 'そろう', clamp(px, 20, W - 20), y + 8, { size: 10, bold: true, color: '#ffd678', halo: false });
     }
   }
-  var cap = q.c.good ? '横はば：' + sig(span * 1000, 3) + ' ms。黄色の線の所で ' + n + ' つの音の振動がそろい、合成した波は同じ形をくり返す' : (n === 2 ? '横はば：' + sig(span * 1000, 3) + ' ms。振動数が近すぎるので、合成した波の大きさがゆれて（うなり 1 秒に ' + Math.round(q.f[1] - q.f[0]) + ' 回）、にごって聞こえる' : '') || '横はば：' + sig(span * 1000, 3) + ' ms。' + n + ' つの音の振動がなかなかそろわないので、合成した波の形がくり返さない';
+  var cap = q.c.good ? '横はば：' + sig(span * 1000, 3) + ' ms。黄色の線の所で ' + n + ' つの音の振動がそろい、合成した波は同じ形を繰り返す' : (n === 2 ? '横はば：' + sig(span * 1000, 3) + ' ms。振動数が近すぎるので、合成した波の大きさが揺れて（うなり 1 秒に ' + Math.round(q.f[1] - q.f[0]) + ' 回）、にごって聞こえる' : '') || '横はば：' + sig(span * 1000, 3) + ' ms。' + n + ' つの音の振動がなかなかそろわないので、合成した波の形が繰り返さない';
   if (sc.cap._h !== cap) { sc.cap._h = cap; sc.cap.innerHTML = mathify(cap); }
 }
 function rightM4S3(s, R) {
   var q = s.last === 'iv' ? m4s3Qi(s) : m4s3Q(s), c = q.c;
   var h = '<div class="qcard"><p class="qt">和音と振動数の比</p>' +
-    '<p>ド・ミ・ソ（長 3 和音）の振動数の比は $4:5:6$。ドが 4 回振動する間に、ミは 5 回、ソは 6 回振動するので、合成した波は短い時間でもとの形にもどる（くり返す）。このような和音は、よく調和して（<b>協和して</b>）聞こえる。</p>' +
+    '<p>ド・ミ・ソ（長 3 和音）の振動数の比は $4:5:6$。ドが 4 回振動する間に、ミは 5 回、ソは 6 回振動するので、合成した波は短い時間でもとの形に戻る（繰り返す）。このような和音は、よく調和して（<b>協和して</b>）聞こえる。</p>' +
     '<table class="reltab grid1"><thead><tr><th>音・和音</th><th>振動数の比</th><th>響き</th></tr></thead><tbody>' +
     '<tr><td>ド・ド（オクターブ上）</td><td>$1:2$</td><td>とけ合って 1 つの音のよう</td></tr><tr><td>ド・ソ（5 度）</td><td>$2:3$</td><td>よく協和する</td></tr><tr><td>ド・ファ（4 度）</td><td>$3:4$</td><td>協和する</td></tr><tr><td>ド・ミ（長 3 度）</td><td>$4:5$</td><td>明るく協和する</td></tr><tr><td>ド・ド♯（半音）</td><td>$15:16$</td><td>にごる（不協和）</td></tr>' +
     '<tr><td>ド・ミ・ソ、ソ・シ・レ</td><td>$4:5:6$</td><td>明るい（長 3 和音）</td></tr><tr><td>ド・ファ・ラ</td><td>$3:4:5$</td><td>協和する</td></tr><tr><td>ド・ド♯・レ</td><td>$120:128:135$</td><td>にごる（不協和）</td></tr></tbody></table>' +
@@ -9020,7 +9054,7 @@ function rightM4S4(s, R) {
   var h = '<div class="qcard"><p class="qt">純正律と平均律</p>' +
     '<p><b>純正律</b>：ドの振動数を 1 として、ほかの音を簡単な整数比（ミ $\\frac{5}{4}$、ソ $\\frac{3}{2}$ など）で決める。和音がよく調和するが、ほかの調に移ると比がくずれる。</p>' +
     '<p><b>平均律</b>：1 オクターブ上の音は振動数がちょうど 2 倍。これを 12 の半音に<b>等しい比</b>で分ける。半音 1 つで $2^{\\frac{1}{12}} \\fallingdotseq 1.0595$ 倍。基準はラ（A4）＝ 440 Hz で、A4 から半音 $n$ 個上の音は $f = 440 \\times 2^{\\frac{n}{12}}$ Hz（例：ド（C5）＝ $440 \\times 2^{\\frac{3}{12}} \\fallingdotseq 523.25$ Hz）。<br>表のように、ミ・ラ・シが純正律から大きくずれており、平均律の場合はこれらを含む和音（例えばド・ミ・ソの和音）でうなりが生じてしまう。ゆえに、「長 3 度の音（ドに対するミの音）は下げ気味で」歌う・演奏するのが、きれいな和音を響かせるコツとなる。</p>' +
-    '<table class="reltab grid1 m4tune"><thead><tr><th>音名</th><th class="vl">純正律〔Hz〕</th><th>純正律の比</th><th class="vl">平均律〔Hz〕</th><th>平均律の比</th><th class="vl">ずれ〔セント〕</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="tscroll"><table class="reltab grid1 m4tune"><thead><tr><th>音名</th><th class="vl">純正律〔Hz〕</th><th>純正律の比</th><th class="vl">平均律〔Hz〕</th><th>平均律の比</th><th class="vl">ずれ〔セント〕</th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="tshint">← 表は横にスクロールできる →</p>' +
     '<p class="qnote">ドはどちらも 261.63 Hz とした。比はどちらもドの振動数に対する比。ずれ＝平均律が純正律より何セント高いか（1 セント＝半音の 1/100）。</p></div>';
   R.innerHTML = mathify(h);
 }
@@ -9028,9 +9062,9 @@ function rightM4S4(s, R) {
 /* =====================================================================
    ④-5 平均律と純正律を聞き比べよう（2026-11-06 千葉さん 12 回目に作り直し）
    伝えたいこと：
-     ① 楽器の音には倍音がふくまれる（ドの 2 倍・3 倍 …）
+     ① 楽器の音には倍音が含まれる（ドの 2 倍・3 倍 …）
      ② 長 3 度（ド・ミ）では、ドの 5 倍音とミの 4 倍音がほぼ同じ高さになる
-        純正律（5/4）ならぴったり重なる → うならない／平均律（2^(4/12)）では 10 Hz ほどずれる → 1 秒に約 10 回うなる（音がゆれる）
+        純正律（5/4）ならぴったり重なる → うならない／平均律（2^(4/12)）では 10 Hz ほどずれる → 1 秒に約 10 回うなる（音が揺れる）
      ③ 完全 5 度（ド・ソ）は、ドの 3 倍音とソの 2 倍音。平均律でもずれは 1 Hz 以下（ほとんど気にならない）
    図：左＝倍音のはしご（2 つの音の倍音の振動数をならべ、近いものを結ぶ）、右＝オシロスコープ（近い倍音どうしを重ねた 2 s 間）
    ===================================================================== */
@@ -9058,7 +9092,7 @@ function m4s5Main(q, P) { var want = q.iv.k === 'P5' ? [3, 2] : [5, 4]; for (var
 DEFS.m4s5 = {
   id: 'm4s5', mode: 'mode4', num: 7,
   title: '純正律と平均律を聞き比べよう', short: '純正律・平均律聞き比べ',
-  desc: '楽器の音には<b>倍音</b>がふくまれる。2 つの音の倍音どうしが少しだけずれると、<b>うなり</b>が生じて音がゆれる。<span class="todo">音程と調律を切りかえて聞き比べよう（切りかえると 4 秒鳴る）。</span>',
+  desc: '楽器の音には<b>倍音</b>が含まれる。2 つの音の倍音どうしが少しだけずれると、<b>うなり</b>が生じて音が揺れる。<span class="todo">音程と調律を切りかえて聞き比べよう（切りかえると 4 秒鳴る）。</span>',
   strobe: false, stepDiv: 16,
   vars: [],
   init: function (s) { s.ii = 0; s.tune = 'just'; },
@@ -9070,7 +9104,7 @@ DEFS.m4s5 = {
   tEnd: function () { return M4_TEND; },
   tInfo: function () { return ''; },
   gT: function () { return 1; },
-  height: function (s, w) { return Math.round(clamp(w * 0.7, 360, 420)); },
+  height: function (s, w) { return Math.round(clamp(w * 0.7, 360, 420)) + (w < 560 ? 30 : 0); },
   afterBuild: function (s) {
     s.R.innerHTML = '';
     s.scope = new Scope(s.R, 'オシロスコープ（近い倍音どうしを重ねた音・2 s 間）');
@@ -9092,7 +9126,7 @@ function m4s5Sync(s) { m2Sync(s, M4S5_IV.map(function (iv, i) { return ['v' + i,
 function drawM4S5(s, ctx, W, H) {
   var q = m4s5Q(s), P = m4s5Pairs(q), nar = W < 520, n = q.f.length;
   label(ctx, '倍音のはしご（' + (s.tune === 'just' ? '純正律' : '平均律') + '）', 8, 14, { size: 12, bold: true, color: COL.ink, align: 'left' });
-  var y0 = 34, y1 = H - 40, FY = function (f) { return y1 - f / 2000 * (y1 - y0); };
+  var y0 = 34, y1 = H - (nar ? 72 : 40), FY = function (f) { return y1 - f / 2000 * (y1 - y0); };   /* せまい画面では、組の説明を図の下に書く（21 回目） */
   var cw = Math.min(nar ? 70 : 110, (W - 150) / n), cx0 = 56;
   axisArrow(ctx, 40, y1, 40, y0 - 6);
   [0, 500, 1000, 1500, 2000].forEach(function (f) { label(ctx, String(f), 36, FY(f), { size: 9.5, color: COL.sub, align: 'right' }); ctx.save(); ctx.strokeStyle = '#f0f1f3'; ctx.beginPath(); ctx.moveTo(42, FY(f)); ctx.lineTo(W - 8, FY(f)); ctx.stroke(); ctx.restore(); });
@@ -9112,7 +9146,9 @@ function drawM4S5(s, ctx, W, H) {
     var ya = FY(p.fa), yb = FY(p.fb), ok = p.d < 0.05, col = ok ? '#14653a' : '#c0392b';
     ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash(ok ? [] : [4, 3]);
     ctx.beginPath(); ctx.moveTo(colX(p.a) + cw, ya); ctx.lineTo(colX(p.b), yb); ctx.stroke(); ctx.restore();
-    label(ctx, MUS.jp(q.iv.m[p.a]) + 'の' + p.i + '倍音と' + MUS.jp(q.iv.m[p.b]) + 'の' + p.j + '倍音：' + (ok ? 'ぴったり重なる' : sig(p.d, 2) + ' Hz ずれ → うなり ' + sig(p.d, 2) + ' 回/秒'), Math.min(tx, W - 8), (ya + yb) / 2, { size: nar ? 9.5 : 10.5, bold: true, color: col, align: tx > W - 160 ? 'right' : 'left' });
+    var ptx = MUS.jp(q.iv.m[p.a]) + 'の ' + p.i + ' 倍音と' + MUS.jp(q.iv.m[p.b]) + 'の ' + p.j + ' 倍音：' + (ok ? 'ぴったり重なる' : sig(p.d, 2) + ' Hz ずれ → うなり ' + sig(p.d, 2) + ' 回/秒');
+    if (nar) { label(ctx, ptx, 6, H - 34 + 14 * P.indexOf(p), { size: 9.5, bold: true, color: col, align: 'left' }); return; }
+    label(ctx, ptx, Math.min(tx, W - 8), (ya + yb) / 2, { size: nar ? 9.5 : 10.5, bold: true, color: col, align: tx > W - 160 ? 'right' : 'left' });
   });
   if (!P.length) label(ctx, '近い倍音どうしの組はない', W - 10, y0 + 10, { size: 11, color: COL.sub, align: 'right' });
 }
@@ -9142,28 +9178,28 @@ function m4s5Scope(s) {
   var lanes = [
     { f: function (t) { return 0.8 * Math.sin(TAU * p.fa * t); }, col: '#ff9fa8', name: MUS.jp(q.iv.m[p.a]) + 'の ' + p.i + ' 倍音（' + sig(p.fa, 5) + ' Hz）' },
     { f: function (t) { return 0.8 * Math.sin(TAU * p.fb * t); }, col: '#9fc8ff', name: MUS.jp(q.iv.m[p.b]) + 'の ' + p.j + ' 倍音（' + sig(p.fb, 5) + ' Hz）' },
-    { f: function (t) { return 0.4 * (Math.sin(TAU * p.fa * t) + Math.sin(TAU * p.fb * t)); }, col: '#7dffb4', name: '重ねた音：' + (p.d < 0.05 ? '大きさが変わらない（うならない）' : '大きさがゆれる（うなり ' + sig(p.d, 2) + ' 回/秒）'), env: function (t) { return 0.8 * Math.abs(Math.cos(Math.PI * d * t)); } }
+    { f: function (t) { return 0.4 * (Math.sin(TAU * p.fa * t) + Math.sin(TAU * p.fb * t)); }, col: '#7dffb4', name: '重ねた音：' + (p.d < 0.05 ? '大きさが変わらない（うならない）' : '大きさが揺れる（うなり ' + sig(p.d, 2) + ' 回/秒）'), env: function (t) { return 0.8 * Math.abs(Math.cos(Math.PI * d * t)); } }
   ];
   lanes.forEach(function (ln) { label(ctx, ln.name, 6, y + 7.5, { size: 10.5, bold: true, color: ln.col, align: 'left', halo: false }); sc.screen(ctx, 0, y + 15, W, lh, { t0: 0, span: span, yMax: 1, traces: [{ f: ln.f, col: ln.col, fmax: 2000 }], env: ln.env || null }); y += 15 + lh + 3; });
-  var cap = '横 1 目盛り 0.2 s。' + (s.tune === 'just' ? '純正律では、2 つの倍音の振動数がぴったり同じなので、重ねても大きさが変わらない（すんだ響き）' : '平均律では、2 つの倍音の振動数が ' + sig(p.d, 2) + ' Hz ずれているので、1 秒に ' + sig(p.d, 2) + ' 回、大きくなったり小さくなったりする（音がゆれて聞こえる）');
+  var cap = '横 1 目盛り 0.2 s。' + (s.tune === 'just' ? '純正律では、2 つの倍音の振動数がぴったり同じなので、重ねても大きさが変わらない（すんだ響き）' : '平均律では、2 つの倍音の振動数が ' + sig(p.d, 2) + ' Hz ずれているので、1 秒に ' + sig(p.d, 2) + ' 回、大きくなったり小さくなったりする（音が揺れて聞こえる）');
   if (sc.cap._h !== cap) { sc.cap._h = cap; sc.cap.innerHTML = mathify(cap); }
 }
 function rightM4S5(s, R) {
   var h = '<div class="qcard"><p class="qt">聞き比べるポイント</p>' +
-    '<p>① 楽器の音には、基音のほかに 2 倍・3 倍 … の<b>倍音</b>がふくまれる。</p>' +
-    '<p>② ドとミ（長 3 度）を同時に鳴らすと、<b>ドの 5 倍音とミの 4 倍音</b>がほぼ同じ高さになる。純正律（ミ＝ドの $\\frac{5}{4}$ 倍）なら $5 \\times f_ド = 4 \\times f_ミ$ でぴったり重なり、うならない。平均律（ミ＝ドの $2^{\\frac{4}{12}} \\fallingdotseq 1.260$ 倍）では約 10 Hz ずれるので、<b>1 秒に約 10 回うなる</b>（音が細かくゆれる）。</p>' +
+    '<p>① 楽器の音には、基音のほかに 2 倍・3 倍 … の<b>倍音</b>が含まれる。</p>' +
+    '<p>② ドとミ（長 3 度）を同時に鳴らすと、<b>ドの 5 倍音とミの 4 倍音</b>がほぼ同じ高さになる。純正律（ミ＝ドの $\\frac{5}{4}$ 倍）なら $5 \\times f_ド = 4 \\times f_ミ$ でぴったり重なり、うならない。平均律（ミ＝ドの $2^{\\frac{4}{12}} \\fallingdotseq 1.260$ 倍）では約 10 Hz ずれるので、<b>1 秒に約 10 回うなる</b>（音が細かく揺れる）。</p>' +
     '<p>③ ドとソ（完全 5 度）では、ドの 3 倍音とソの 2 倍音。平均律でもずれは 1 Hz 以下なので、ほとんど気にならない。</p>' +
     '<table class="reltab grid1"><thead><tr><th>音程</th><th>純正律</th><th>平均律</th></tr></thead><tbody>' +
     '<tr><th>長 3 度</th><td>$\\frac{5}{4} = 1.250$</td><td>$2^{\\frac{4}{12}} \\fallingdotseq 1.260$</td></tr>' +
     '<tr><th>完全 5 度</th><td>$\\frac{3}{2} = 1.500$</td><td>$2^{\\frac{7}{12}} \\fallingdotseq 1.498$</td></tr></tbody></table>' +
-    '<p class="qnote">うなりは、内蔵スピーカーでは聞き取りにくいことがある。イヤホンで聞くとよくわかる。</p></div>';
+    '<p class="qnote">うなりは、内蔵スピーカーでは聞き取りにくいことがある。イヤホンで聞くとよく分かる。</p></div>';
   R.innerHTML = mathify(h);
 }
 
 /* ===== 76_m4p.js ===== */
 /* =====================================================================
    ④-2 波長（長さ）の違いが最初からある楽器（2026-11-07 千葉さん 15 回目に新しく作った。id は m4p）
-   ・試験管の笛・ピアノ・鉄琴。どれも、音ごとに長さのちがう管・弦・板が並んでいる（④-1 は 1 つの管・弦の長さを手で変える）
+   ・試験管の笛・ピアノ・鉄琴。どれも、音ごとに長さの違う管・弦・板が並んでいる（④-1 は 1 つの管・弦の長さを手で変える）
    ・伝えたいこと：短いと波長が短く、振動数が大きい（高い音）
    ・試験管の笛：閉管。水面が節、管口が腹。f = v / {4(L + Δx)}（v = 340 m/s、Δx = 0.6r = 0.45 cm、試験管 16 cm）
      → 空気の柱の長さ L = v/(4f) − Δx、水の高さ = 16 cm − L（添付の写真のとおり、低いドは空、高いドは水が多い）
@@ -9185,7 +9221,7 @@ function m4pLam(ins, f) { var L = m4pLen(ins, f); return ins === 'tube' ? 4 * (L
 DEFS.m4p = {
   id: 'm4p', mode: 'mode4', num: 3,
   title: '波長（長さ）の違いが最初からある楽器', short: '長さが最初から違う楽器',
-  desc: '試験管の笛・ピアノ・鉄琴は、音ごとに長さのちがう管・弦・板が並んでいる。<span class="todo">楽器を選び、管・弦・板か五線譜の音符をクリックしよう。短いほど波長が短く、振動数が大きい（高い音）。</span>',
+  desc: '試験管の笛・ピアノ・鉄琴は、音ごとに長さの違う管・弦・板が並んでいる。<span class="todo">楽器を選び、管・弦・板か五線譜の音符をクリックしよう。短いほど波長が短く、振動数が大きい（高い音）。</span>',
   strobe: false, stepDiv: 16,
   vars: [],
   init: function (s) { s.ins = 'tube'; s.nm = null; s.tN = 0; },
@@ -9215,7 +9251,7 @@ function drawM4P(s, ctx, W, H) {
   var nar = W < 620, Hi = Math.round(H * 0.54), notes = M4P_NOTES[s.ins], n = notes.length, x0 = 14, dx = (W - 2 * x0) / n;
   var tp = s.t - (s.tN || 0), A = s.nm === null ? 0 : Math.cos(TAU * 0.8 * tp) * Math.exp(-tp / (s.ins === 'tube' ? 1e9 : 1.2)) * (s.ins === 'tube' && tp > 1.3 ? 0 : 1);
   var cx = function (i) { return x0 + dx * (i + 0.5); }, play = function (m) { return function () { s.nm = m; m4pPlay(s); }; };
-  label(ctx, s.ins === 'tube' ? '試験管の笛：水の量で空気の柱の長さを変えてある' + (nar ? '' : '。試験管をクリックで吹く') : (s.ins === 'piano' ? 'ピアノ：音ごとに長さのちがう弦' + (nar ? '' : '。鍵盤・弦をクリック') : '鉄琴：音ごとに長さのちがう金属の板' + (nar ? '' : '。板をクリックでたたく')), 8, 12, { size: nar ? 10 : 11.5, bold: true, color: COL.ink2, align: 'left' });
+  label(ctx, s.ins === 'tube' ? '試験管の笛：水の量で空気の柱の長さを変えてある' + (nar ? '' : '。試験管をクリックで吹く') : (s.ins === 'piano' ? 'ピアノ：音ごとに長さの違う弦' + (nar ? '' : '。鍵盤・弦をクリック') : '鉄琴：音ごとに長さの違う金属の板' + (nar ? '' : '。板をクリックでたたく')), 8, 12, { size: nar ? 10 : 11.5, bold: true, color: COL.ink2, align: 'left' });
   if (s.ins === 'tube') {
     var yT = 80, TL = Hi - 120, S = TL / M4P.tubeL, tw = Math.min(26, dx * 0.55);   /* 上に顔の場所をあける（16 回目） */
     ctx.save(); ctx.strokeStyle = '#9aa1ab'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x0, yT + TL * 0.32); ctx.lineTo(W - x0, yT + TL * 0.32); ctx.moveTo(x0, yT + TL * 0.94); ctx.lineTo(W - x0, yT + TL * 0.94); ctx.stroke(); ctx.restore();   /* 試験管立て */
@@ -9292,11 +9328,11 @@ function drawM4P(s, ctx, W, H) {
 }
 function rightM4P(s, R) {
   var h = '<div class="qcard"><p class="qt">短いほど高い音</p>' +
-    '<p>音ごとに長さのちがう管・弦・板を並べてある。短いほど<b>波長が短く</b>、<b>振動数が大きい</b>（高い音）。</p>' +
+    '<p>音ごとに長さの違う管・弦・板を並べてある。短いほど<b>波長が短く</b>、<b>振動数が大きい</b>（高い音）。</p>' +
     '<table class="reltab grid1"><tbody>' +
     '<tr><th>試験管の笛</th><td class="l">空気の柱が振動する（閉管）。水面が節、管口が腹。水が多いほど空気の柱が短く、高い音。$f = \\dfrac{v}{4(L + \\Delta x)}$</td></tr>' +
-    '<tr><th>ピアノ</th><td class="l">両はしを固定した弦が振動する。短い弦ほど高い音。$f = \\dfrac{v}{2l}$</td></tr>' +
-    '<tr><th>鉄琴</th><td class="l">金属の板が曲がるように振動する（両はしが自由）。短い板ほど高い音</td></tr></tbody></table>';
+    '<tr><th>ピアノ</th><td class="l">両端を固定した弦が振動する。短い弦ほど高い音。$f = \\dfrac{v}{2l}$</td></tr>' +
+    '<tr><th>鉄琴</th><td class="l">金属の板が曲がるように振動する（両端が自由）。短い板ほど高い音</td></tr></tbody></table>';
   if (s.nm !== null) { var f = MUS.fET(s.nm); h += '<p class="qnow"><span class="qtag now">いま</span>' + MUS.jp(s.nm) + '（' + MUS.en(s.nm) + '）$f = ' + sig(f, 4) + '$ Hz、波長 $\\lambda = ' + sig(m4pLam(s.ins, f) * 100, 3) + '$ cm</p>'; }
   h += '<p class="qnote">' + (s.ins === 'tube' ? '試験管は長さ 16 cm、開口端補正 $\\Delta x = 0.45$ cm、音速 340 m/s とした。' : s.ins === 'piano' ? '図は、弦の張力・太さが同じとしたときの長さ（本物のピアノは、低い音ほど太い弦も使う）。' : '鉄琴の板を伝わる曲げの波は、振動数が大きいほど速く伝わる。そのため振動数は長さの 2 乗に反比例する（長さを半分にすると 4 倍）。') + '</p></div>';
   R.innerHTML = mathify(h);
@@ -9455,10 +9491,11 @@ function m4hRetone(s) {
 DEFS.m4h = {
   id: 'm4h', mode: 'mode4', num: 1,
   title: '倍音と楽器ごとの音色　～自由に音を作ろう～', short: '音色を作る',
-  desc: '楽器や声の音は、基本振動数 $f_1$ の音（基音）に、その整数倍の振動数の音（倍音）がまざってできている。まざり方で<b>音色</b>が決まる。<span class="todo">つまみを上下に動かして倍音の大きさを変えたり、プリセットを選んだりして、自由に音を作ろう。</span>',
+  desc: '楽器や声の音は、基本振動数 $f_1$ の音（基音）に、その整数倍の振動数の音（倍音）が混ざってできている。混ざり方で<b>音色</b>が決まる。<span class="todo">つまみを上下に動かして倍音の大きさを変えたり、プリセットを選んだりして、自由に音を作ろう。</span>',
   strobe: false, stepDiv: 16,
+  varCols: [['f']],
   vars: [
-    { k: 'f', label: '基本振動数 $f_1$', aria: '基本振動数', min: 110, max: 880, step: 1, def: 262, fmt: function (x) { return Math.round(x) + ' Hz（' + MUS.jp(MUS.near(x).m) + ' 付近）'; } }
+    { k: 'f', label: '基本振動数 $f_1$', aria: '基本振動数', min: 110, max: 880, step: 1, def: 262, fmt: function (x) { return Math.round(x) + ' Hz（' + MUS.jp(MUS.near(x).m) + '）'; } }
   ],
   init: function (s) { m4hSet(s, 'sine'); s.a[0] = 0.5; s.drag = null; },   /* 最初は基音だけ・強さ 50 */
   onDefaults: function (s) { m4hSet(s, 'sine'); s.a[0] = 0.5; m4hSync(s); m4hRetone(s); },
@@ -9523,7 +9560,7 @@ DEFS.m4h = {
     if (s.noise) { m4hNoiseScope(s); return; }
     var p = m4hParts(s), FM = Math.ceil(M4H_N * s.v.f / 1000) * 1000;
     s._emptyMsg = '倍音が 1 つもない（つまみを上げよう）';
-    s._absK = 2 * m4hPeak(s) / m4hScale(s); m4Scope(s, p.length ? s.v.f : 0, p, p.length ? '波形の形（音色）は倍音のまざり方で決まる。縦は強さそのまま（つまみの強さを変えると、波の大きさも変わる）' : 'つまみを上げると、ここに波形が映る', FM);
+    s._absK = 2 * m4hPeak(s) / m4hScale(s); m4Scope(s, p.length ? s.v.f : 0, p, p.length ? '波形の形（音色）は倍音の混ざり方で決まる。縦は強さそのまま（つまみの強さを変えると、波の大きさも変わる）' : 'つまみを上げると、ここに波形が映る', FM);
   },
   right: function (s, R) { rightM4H(s, R); }
 };
@@ -9575,7 +9612,7 @@ function drawM4H(s, ctx, W, H) {
     for (var xi = X(0); xi <= X(2); xi += 1.5) { var yv = gm - 0.45 * m4hNz(xi * 3.7) * ga; if (xi === X(0)) ctx.moveTo(xi, yv); else ctx.lineTo(xi, yv); }
     ctx.stroke(); ctx.restore();
     ctx.save(); ctx.fillStyle = 'rgba(29,43,58,.82)'; rrect(ctx, x0 + 10, py0 + 30, x1 - x0 - 20, 54, 8); ctx.fill(); ctx.restore();
-    label(ctx, 'ホワイトノイズは、あらゆる振動数の音を同じ強さでふくむ。', (x0 + x1) / 2, py0 + 48, { size: nar ? 10 : 12, bold: true, color: '#fff', halo: false });
+    label(ctx, 'ホワイトノイズは、あらゆる振動数の音を同じ強さで含む。', (x0 + x1) / 2, py0 + 48, { size: nar ? 10 : 12, bold: true, color: '#fff', halo: false });
     label(ctx, '基音の整数倍（倍音）だけではないので、つまみでは作れない', (x0 + x1) / 2, py0 + 68, { size: nar ? 10 : 12, bold: true, color: '#ffd9a8', halo: false });
   } else if (!p.length) label(ctx, '倍音が 1 つもない（音は出ない）', (x0 + x1) / 2, gm - 14, { size: 12, color: '#e8f6f5' });
   else {
@@ -9606,14 +9643,14 @@ function drawM4H(s, ctx, W, H) {
 function rightM4H(s, R) {
   var nm = s.pre ? M4H_BY[s.pre][1] : '自分で作った音', p = m4hParts(s);
   var h = '<div class="qcard"><p class="qt">音色と倍音</p>' +
-    '<p>同じ高さ（同じ $f_1$）の音でも、楽器や声によって聞こえ方がちがう。このちがいを<b>音色</b>という。音色は、基音にまざる<b>倍音</b>（振動数 $2f_1, 3f_1, \\cdots$）の大きさで決まる。</p>' +
+    '<p>同じ高さ（同じ $f_1$）の音でも、楽器や声によって聞こえ方が違う。この違いを<b>音色</b>という。音色は、基音に混ざる<b>倍音</b>（振動数 $2f_1, 3f_1, \\cdots$）の大きさで決まる。</p>' +
     '<div class="qeq">$$y = a_1 \\sin 2\\pi f_1 t + a_2 \\sin 2\\pi (2f_1) t + a_3 \\sin 2\\pi (3f_1) t + \\cdots$$</div>' +
     '<p>$a_1, a_2, a_3, \\cdots$ は、基音・第 2 倍音・第 3 倍音 … の<b>振幅</b>（それぞれの音の強さ）。左のつまみの数字 ÷ 100 にあたる。$f_1, 2f_1, 3f_1, \\cdots$ がそれぞれの振動数。</p>' +
     '<table class="reltab grid1"><tbody>' +
     '<tr><th>矩形波</th><td class="l">奇数倍の倍音だけ。大きさは $1, \\dfrac{1}{3}, \\dfrac{1}{5}, \\cdots$（クラリネットに近い）</td></tr>' +
     '<tr><th>三角波</th><td class="l">奇数倍の倍音だけ。大きさは $1, \\dfrac{1}{9}, \\dfrac{1}{25}, \\cdots$ で、正弦波に近いやわらかい音（「逆」は向きが反対の波）</td></tr>' +
     '<tr><th>ノコギリ波</th><td class="l">すべての倍音。大きさは $1, \\dfrac{1}{2}, \\dfrac{1}{3}, \\cdots$（バイオリンなどの弦をこする音に近い）</td></tr></tbody></table>';
-  h += s.noise ? '<p class="qnow"><span class="qtag now">いま</span>ホワイトノイズ（あらゆる振動数を同じ強さでふくむ）</p>' : '<p class="qnow"><span class="qtag now">いま</span>' + nm + '：' + (p.length ? '倍音 ' + p.map(function (q) { return q[0]; }).join('・') + ' 倍' : '倍音なし') + '、$f_1 = ' + Math.round(s.v.f) + '$ Hz</p>';
+  h += s.noise ? '<p class="qnow"><span class="qtag now">いま</span>ホワイトノイズ（あらゆる振動数を同じ強さで含む）</p>' : '<p class="qnow"><span class="qtag now">いま</span>' + nm + '：' + (p.length ? '倍音 ' + p.map(function (q) { return q[0]; }).join('・') + ' 倍' : '倍音なし') + '、$f_1 = ' + Math.round(s.v.f) + '$ Hz</p>';
   h += '<p class="qnote">倍音の大きさを変えても、周期 $T = \\dfrac{1}{f_1}$（音の高さ）は変わらない。変わるのは波形（音色）だけ。声の母音は、口の形で強くなる倍音（フォルマント）が決まるので、$f_1$ を変えると倍音の表も変わる。</p></div>';
   R.innerHTML = mathify(h);
 }
@@ -9622,7 +9659,7 @@ function m4hTab(s) {
   var box = s.tabBox; if (!box) return;
   var p = m4hParts(s), f = s.v.f, key = (s.noise ? 'N' : '') + JSON.stringify(p) + '|' + Math.round(f * 100);
   if (box._k === key) return; box._k = key;
-  if (s.noise) { box.innerHTML = '<p class="m4hnone">いまはホワイトノイズ。あらゆる振動数をふくむので、倍音の表や式（とびとびの $f_n = n f_1$）では書けない。</p>'; box.innerHTML = mathify(box.innerHTML); return; }
+  if (s.noise) { box.innerHTML = '<p class="m4hnone">いまはホワイトノイズ。あらゆる振動数を含むので、倍音の表や式（とびとびの $f_n = n f_1$）では書けない。</p>'; box.innerHTML = mathify(box.innerHTML); return; }
   if (!p.length) { box.innerHTML = '<p class="m4hnone">倍音が 1 つもないので、音は出ない。</p>'; return; }
   var sub = function (n) { return n; };
   var h = '<p class="m4htt">いま出している音</p><div class="m4hscroll"><table class="reltab m4ht"><thead><tr><th></th>' + p.map(function (q) { return '<th style="color:' + m4hCol(q[0]) + '">' + (q[0] === 1 ? '基音' : '第 ' + q[0] + ' 倍音') + '</th>'; }).join('') + '</tr></thead><tbody>' +
@@ -9651,7 +9688,7 @@ function m4hNoiseScope(s) {
   c2.save(); c2.fillStyle = 'rgba(125,255,180,.45)'; c2.fillRect(fx0, fy0 + (fy1 - fy0) * 0.45, fx1 - fx0, (fy1 - fy0) * 0.55); c2.strokeStyle = '#7dffb4'; c2.lineWidth = 1.5; c2.beginPath(); c2.moveTo(fx0, fy0 + (fy1 - fy0) * 0.45); c2.lineTo(fx1, fy0 + (fy1 - fy0) * 0.45); c2.stroke(); c2.restore();
   c2.save(); c2.font = '600 10px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.85)'; c2.textBaseline = 'top'; c2.fillText('0', fx0, fy1 + 4); c2.textAlign = 'right'; c2.fillText('20000 Hz まで', fx1, fy1 + 4); c2.restore();
   s._spHits = [];
-  var cap = 'ホワイトノイズ：あらゆる振動数の音を同じ強さでふくむ（ラジオの「ザー」という音）。波形はくり返さないので、高さ（音程）が聞こえない。';
+  var cap = 'ホワイトノイズ：あらゆる振動数の音を同じ強さで含む（ラジオの「ザー」という音）。波形は繰り返さないので、高さ（音程）が聞こえない。';
   if (sc.cap._h !== cap) { sc.cap._h = cap; sc.cap.innerHTML = mathify(cap); }
 }
 
@@ -9723,9 +9760,10 @@ function m5s1Spec(src) {
 DEFS.m5s1 = {
   id: 'm5s1', mode: 'mode5', num: 1,
   title: 'フーリエ変換とは何か', short: 'フーリエ変換とは',
-  desc: 'どんなに複雑な波も、いろいろな振動数の正弦波の重ね合わせで表せる。波の形（<b>時間</b>で見た姿）から、どの振動数の正弦波がどれだけふくまれているか（<b>振動数</b>で見た姿）を求める計算を<b>フーリエ変換</b>という。<span class="todo">波を選び、使う成分の数を変えて、元の波にもどる様子を見よう。</span>',
+  desc: 'どんなに複雑な波も、いろいろな振動数の正弦波の重ね合わせで表せる。波の形（<b>時間</b>で見た姿）から、どの振動数の正弦波がどれだけ含まれているか（<b>振動数</b>で見た姿）を求める計算を<b>フーリエ変換</b>という。<span class="todo">波を選び、使う成分の数を変えて、元の波に戻る様子を見よう。</span>',
   strobe: false, stepDiv: 16,
-  vars: [{ k: 'n', label: '逆変換で使う成分の数 $n$', aria: '使う成分の数', min: 1, max: 30, step: 1, def: 30, fmt: function (x) { return Math.round(x) + ' 個'; } }],
+  varCols: [['n']],   /* 名前と値を上、スライダーを下の段に（スマホで細くならないように） */
+  vars: [{ k: 'n', label: '使う成分の数 $n$', aria: '使う成分の数', min: 1, max: 30, step: 1, def: 30, fmt: function (x) { return Math.round(x) + ' 個'; } }],
   init: function (s) { s.si = 0; },
   onDefaults: function (s) { s.si = 0; m5s1Sync(s); },
   onChanged: function (s) { m5s1Sync(s); return 'keepT'; },
@@ -9762,7 +9800,7 @@ function drawM5S1(s, ctx, W, H) {
   label(ctx, '時間〔' + c.unit + '〕', ax1, A.y + A.h - 26, { size: 9.5, color: COL.sub, align: 'right' });
   plotF(ctx, c.f, 0, c.Tw, XT, YT, '#14171c', 2);
   if (n < sp.length || true) plotF(ctx, rec, 0, c.Tw, XT, YT, 'rgba(224,123,24,.9)', 1.8, [6, 4]);
-  label(ctx, '黒：元の波　オレンジの点線：成分 ' + Math.min(n, sp.length) + ' 個からもどした波', A.x + 8, A.y + 12, { size: 9.5, bold: true, color: COL.ink2, align: 'left' });
+  label(ctx, '黒：元の波　オレンジの点線：成分 ' + Math.min(n, sp.length) + ' 個から戻した波', A.x + 8, A.y + 12, { size: 9.5, bold: true, color: COL.ink2, align: 'left' });
   /* 振動数の図：成分の棒 */
   var bx0 = B.x + 30, bx1 = B.x + B.w - 12, by1 = B.y + B.h - 24, by0 = B.y + 22, mx = 0;
   sp.forEach(function (q) { mx = Math.max(mx, q.a); });
@@ -9776,7 +9814,7 @@ function drawM5S1(s, ctx, W, H) {
     var x = XF(q.f), on = useSet.indexOf(q.f) >= 0, h = q.a / mx * (by1 - by0);
     ctx.save(); ctx.strokeStyle = on ? '#e07b18' : '#b8c0c9'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, by1); ctx.lineTo(x, by1 - h); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.moveTo(x, by1 - h - 6); ctx.lineTo(x - 4, by1 - h + 1); ctx.lineTo(x + 4, by1 - h + 1); ctx.closePath(); ctx.fill(); ctx.restore();
   });
-  label(ctx, 'オレンジ：もどすのに使った成分（大きい順に ' + Math.min(n, sp.length) + ' 個）', B.x + 8, B.y + 12, { size: 9.5, bold: true, color: COL.ink2, align: 'left' });
+  label(ctx, 'オレンジ：戻すのに使った成分（大きい順に ' + Math.min(n, sp.length) + ' 個）', B.x + 8, B.y + 12, { size: 9.5, bold: true, color: COL.ink2, align: 'left' });
   /* 矢印：フーリエ変換 → ／ ← 逆変換 */
   if (!nar) {
     var mx2 = (A.x + A.w + B.x) / 2, my = A.y + A.h / 2;
@@ -9798,7 +9836,7 @@ function rightM5S1(s, R) {
     '<p>①〜④では、波を「いろいろな振動数の正弦波の重ね合わせ」として見てきた（④-1 の音色づくりは、成分から波を作る<b>逆変換</b>そのもの）。反対に、波形から成分を求めるのが<b>フーリエ変換</b>。</p>' +
     '<p>時間で見ると何が起きているか分かりにくい波も、振動数で見ると「何 Hz の成分がどれだけあるか」がひと目で分かる。</p>' +
     '<div class="qeq">$$F(f) = \\int_{-\\infty}^{\\infty} y(t)\\, e^{-i 2\\pi f t}\\, dt$$</div>' +
-    '<p class="qnote">大学で学ぶ式（くわしくは ⑤-5 の参考サイトで）。$e^{-i2\\pi ft}$ は「振動数 $f$ の正弦波」を表し、波 $y(t)$ に振動数 $f$ の成分がどれだけふくまれるかを足し合わせて求めている。コンピュータでは高速フーリエ変換（FFT）という速い計算方法を使う。この図も、ページの中で本当に FFT を計算している。</p>' +
+    '<p class="qnote">大学で学ぶ式（詳しくは ⑤-5 の参考サイトで）。$e^{-i2\\pi ft}$ は「振動数 $f$ の正弦波」を表し、波 $y(t)$ に振動数 $f$ の成分がどれだけ含まれるかを足し合わせて求めている。コンピュータでは高速フーリエ変換（FFT）という速い計算方法を使う。この図も、ページの中で本当に FFT を計算している。</p>' +
     '<p class="qnow"><span class="qtag now">いま</span>' + c.nm + '：成分 ' + sp.length + ' 個（' + (sp.length <= 12 ? sp.map(function (q) { return (Math.round(q.f * 100) / 100) + ' Hz'; }).join('、') : '振動数のとびとびの値') + '）</p>' +
     (c.k === 'sq' ? '<p class="qnote">矩形波は 400・1200・2000・2800 … Hz の成分（400 Hz の奇数倍）でできている。成分の数を減らすと角が丸くなる。かどの所の小さな出っぱりは、成分が有限個のときにかならず残る（ギブズ現象）。</p>' : '') +
     '</div>');
@@ -9909,7 +9947,7 @@ function drawM5S2(s, ctx, W, H) {
 }
 function rightM5S2(s, R) {
   R.innerHTML = mathify('<div class="qcard"><p class="qt">音楽をつくる人の仕事</p>' +
-    '<p>録音した声や楽器の音には、ほしくないノイズ（「サー」という音や、低い「ブーン」という音）がまざる。フーリエ変換で振動数ごとに分けると、ノイズのある振動数だけを小さくできる。</p>' +
+    '<p>録音した声や楽器の音には、ほしくないノイズ（「サー」という音や、低い「ブーン」という音）が混ざる。フーリエ変換で振動数ごとに分けると、ノイズのある振動数だけを小さくできる。</p>' +
     '<p>音楽プロデューサーやエンジニアは、低音を強めて迫力を出したり、こもる帯を少しけずったり、高すぎる成分をカットしたりして、曲全体の聞こえ方を整える（ミキシング・マスタリング）。ふだん聞いているアーティストの音源は、こうして整えられたもの。スマートフォンの音楽アプリの「イコライザー」も同じしくみ。</p>' +
     '<p class="qnote">この図の音：ド・ミ・ソ（中音）・低いド（C2 = 65 Hz、低音）・ノイズ。ノイズはあらゆる振動数に広がっているので、高音をカットすると「サー」は小さくなるが、中音・低音の中のノイズは残る。</p></div>');
 }
@@ -9933,7 +9971,7 @@ function m5s3Tune(s) {
 DEFS.m5s3 = {
   id: 'm5s3', mode: 'mode5', num: 3,
   title: '電波で送る・受け取る（ラジオ・電話）', short: '電波で送る',
-  desc: 'ラジオやスマートフォンの電波は、それぞれ決まった振動数を使っている。アンテナには何十もの電波がまざって届くが、振動数で分けて（フーリエ変換の考え方）、ほしい 1 つだけを取り出している。<span class="todo">受信する振動数を変えて、放送局を選ぼう。</span>',
+  desc: 'ラジオやスマートフォンの電波は、それぞれ決まった振動数を使っている。アンテナには何十もの電波が混ざって届くが、振動数で分けて（フーリエ変換の考え方）、ほしい 1 つだけを取り出している。<span class="todo">受信する振動数を変えて、放送局を選ぼう。</span>',
   strobe: false, stepDiv: 16,
   vars: [{ k: 'tu', label: '受信する振動数', aria: '受信する振動数', min: 520, max: 1060, step: 1, def: 594, fmt: function (x) { return Math.round(x) + ' kHz'; } }],
   init: function (s) { },
@@ -9941,7 +9979,7 @@ DEFS.m5s3 = {
   onChanged: function (s) { m5s3Resound(s); return 'keepT'; },
   buttons: M5S3_ST.map(function (st, i) { return { k: 'st' + i, label: st.nm + '（' + st.fc + ' kHz）', seg: 'st', segLabel: '合わせる', onClick: function (s) { s.v.tu = st.fc; s.syncSliders && s.syncSliders(); m5s3Resound(s); s.draw(); s.renderRight(); } }; }),
   tEnd: function () { return 1e6; }, tInfo: function () { return ''; }, gT: function () { return 1; },
-  height: function (s, w) { return w < 560 ? 530 : 530; },
+  height: function (s, w) { return w < 560 ? 572 : 530; },
   afterBuild: function (s) {
     m5Layout(s);
     var sp = el('span', 'spkrow'); s.row1b.appendChild(sp);
@@ -9966,7 +10004,7 @@ function m5s3Voices(s) {
 }
 function m5s3Resound(s) { if (AUDIO.owner() === 'm5s3' && s.resound) s.resound(); if (s.Rdyn) s.renderRight(); }
 function drawM5S3(s, ctx, W, H) {
-  var nar = W < 560, b = m5s3Tune(s), SH = nar ? 168 : 200;
+  var nar = W < 560, b = m5s3Tune(s), SH = nar ? 210 : 200;
   m5s3Scene(s, ctx, W, SH, nar, b);
   ctx.save(); ctx.translate(0, SH); H -= SH;
   /* 上：アンテナに届く電波のスペクトル（kHz） */
@@ -9987,12 +10025,12 @@ function drawM5S3(s, ctx, W, H) {
     var parts = []; st.v().forEach(function (o) { (o.partials || [[1, 1]]).forEach(function (p) { parts.push([o.f * p[0], Math.abs(p[1])]); }); });
     var mx = 0; parts.forEach(function (p) { mx = Math.max(mx, p[1]); });
     parts.forEach(function (p) { if (p[0] > 4500) return; var dx = p[0] / 4500 * sideW, h = p[1] / mx * hC * 0.45; [-1, 1].forEach(function (sg) { ctx.save(); ctx.strokeStyle = st.col; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(xc + sg * dx, y1); ctx.lineTo(xc + sg * dx, y1 - h); ctx.stroke(); ctx.restore(); }); });
-    label(ctx, st.nm, xc, y1 - hC - 10, { size: nar ? 10 : 11, bold: true, color: st.col });
+    label(ctx, nar ? st.nm.replace('放送局 ', '') : st.nm, xc, y1 - hC - 10, { size: nar ? 10 : 11, bold: true, color: st.col });
   });
   /* 下：取り出した音の波形 */
   var gy0 = y1 + 50, gy1 = H - 8, gm = (gy0 + gy1) / 2, ga = (gy1 - gy0) / 2 - 6, span = 0.02;
-  var title = b.q === 1 ? b.st.nm + 'の音：' + b.st.what : (b.q ? b.st.nm + 'の音（ずれていてノイズまじり）' : '放送局がない振動数：ノイズ（ザー）だけ');
-  label(ctx, '取り出した音の波形（20 ms 間）：' + title, 8, gy0 - 10, { size: nar ? 10 : 11.5, bold: true, color: COL.ink2, align: 'left' });
+  var title = b.q === 1 ? b.st.nm + ' の音（' + b.st.what + '）' : (b.q ? b.st.nm + ' の音（ずれていてノイズまじり）' : '放送局がない振動数：ノイズ（ザー）だけ');
+  label(ctx, '取り出した音の波形（20 ms 間）　' + title, 8, gy0 - 10, { size: nar ? 10 : 11.5, bold: true, color: COL.ink2, align: 'left' });
   ctx.save(); ctx.fillStyle = '#0d1a14'; rrect(ctx, x0 - 22, gy0 - 2, x1 - x0 + 22, gy1 - gy0 + 4, 6); ctx.fill(); ctx.restore();
   var vs = b.q > 0 ? b.st.v() : [], rnd = m5Rnd(99), nz = [];
   for (var i = 0; i <= 600; i++) nz.push(rnd() * 2 - 1);
@@ -10008,7 +10046,7 @@ function m5s3Scene(s, ctx, W, SH, nar, b) {
   ctx.save(); ctx.fillStyle = '#eef6ea'; ctx.fillRect(0, gy, W, 14); ctx.strokeStyle = '#7a9a6a'; ctx.beginPath(); ctx.moveTo(0, gy + 0.5); ctx.lineTo(W, gy + 0.5); ctx.stroke(); ctx.restore();
   var tw = nar ? 0.56 : 0.5, hx = W * (nar ? 0.8 : 0.8);
   M5S3_ST.forEach(function (st, i) {
-    var x = W * (0.08 + i * tw / 3), th = (nar ? 70 : 90) - i * 6, top = gy - th, on = b.q === 1 && b.st === st;
+    var x = W * (0.08 + i * tw / 3), th = (nar ? 56 : 90) - i * (nar ? 4 : 6), top = gy - th, on = b.q === 1 && b.st === st;
     /* 電波塔（鉄骨の三角） */
     ctx.save(); ctx.strokeStyle = st.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 12, gy); ctx.lineTo(x, top); ctx.lineTo(x + 12, gy); ctx.stroke();
     ctx.lineWidth = 1; for (var k = 1; k < 5; k++) { var yy = gy - th * k / 5, hw = 12 * (1 - k / 5); ctx.beginPath(); ctx.moveTo(x - hw, yy); ctx.lineTo(x + hw, yy); ctx.stroke(); }
@@ -10043,8 +10081,8 @@ function m5s3Scene(s, ctx, W, SH, nar, b) {
 function rightM5S3(s, R) {
   var b = m5s3Tune(s);
   R.innerHTML = mathify('<div class="qcard"><p class="qt">振動数で分けて取り出す</p>' +
-    '<p>放送局は、音を決まった振動数 $f_c$ の電波（<b>搬送波</b>）にのせて送る。音にふくまれる振動数 $f$ の成分は、電波では $f_c \\pm f$ に移る。だから放送局ごとに $f_c$ を少しずつずらせば（日本の AM 放送は 9 kHz おき）、同じ空間を通っても混ざらずに分けられる。</p>' +
-    '<p>ラジオは、選んだ振動数の近くの成分だけを通す（フィルター）ことで 1 つの放送を取り出し、元の音にもどす。</p>' +
+    '<p>放送局は、音を決まった振動数 $f_c$ の電波（<b>搬送波</b>）にのせて送る。音に含まれる振動数 $f$ の成分は、電波では $f_c \\pm f$ に移る。だから放送局ごとに $f_c$ を少しずつずらせば（日本の AM 放送は 9 kHz おき）、同じ空間を通っても混ざらずに分けられる。</p>' +
+    '<p>ラジオは、選んだ振動数の近くの成分だけを通す（フィルター）ことで 1 つの放送を取り出し、元の音に戻す。</p>' +
     '<p><b>電話（スマートフォン）</b>も、声をマイクで電気信号にし、振動数の成分に分けて大事な成分だけを数値で送る（データを小さくする）。電波もたくさんの細かい振動数に分けて、多くの人が同時に使えるようにしている（4G・5G の OFDM という方式は、FFT そのものを使う）。</p>' +
     '<p class="qnow"><span class="qtag now">いま</span>' + (b.q === 1 ? b.st.nm + '（' + b.st.fc + ' kHz）を受信中：' + b.st.what : (b.q ? b.st.nm + 'に近いがずれている' : '放送局のない振動数')) + '</p>' +
     '<p class="qnote">放送局の振動数は例。音のスペクトルの幅（片側 約 4.5 kHz）は、見やすいように図では広げてある。</p></div>');
@@ -10100,6 +10138,7 @@ DEFS.m5s4 = {
   title: '画像の圧縮（JPEG）', short: '画像の圧縮',
   desc: '写真の JPEG は、画像を 8 × 8 画素の区画に分け、区画ごとに明るさの変化を「振動数の成分」に分ける（フーリエ変換のなかまの<b>離散コサイン変換</b>）。人の目は細かい変化（振動数の高い成分）に気づきにくいので、その成分を捨ててデータを小さくする。<span class="todo">残す成分の数を変えて、画像とデータ量を比べよう。</span>',
   strobe: false, stepDiv: 16,
+  varCols: [['K']],
   vars: [{ k: 'K', label: '残す成分の数 $K$', aria: '残す成分の数', stops: [1, 2, 3, 6, 10, 15, 21, 28, 36, 64], def: 10, prop: false, stopLabels: ['1', '', '', '', '10', '', '', '', '', '64'], fmt: function (x) { return Math.round(x) + ' 個'; } }],
   init: function (s) { },
   onChanged: function (s) { return 'keepT'; },
@@ -10119,7 +10158,7 @@ function drawM5S4(s, ctx, W, H) {
   var sz = nar ? Math.min(W - 24, 230) : Math.min(Math.floor((W - 260) / 2), 250), y0 = 30;
   var xa = nar ? (W - sz) / 2 : 10, xb = nar ? (W - sz) / 2 : 10 + sz + 20, yb = nar ? y0 + sz + 34 : y0;
   label(ctx, '元の画像（64 × 64 画素）', xa, y0 - 12, { size: 11.5, bold: true, color: COL.ink, align: 'left' });
-  label(ctx, '成分を ' + K + ' 個だけ残してもどした画像', xb, yb - 12, { size: 11.5, bold: true, color: '#c9670c', align: 'left' });
+  label(ctx, '成分を ' + K + ' 個だけ残して戻した画像', xb, yb - 12, { size: 11.5, bold: true, color: '#c9670c', align: 'left' });
   m5s4Paint(ctx, M5S4.img, xa, y0, sz); m5s4Paint(ctx, rec, xb, yb, sz);
   /* 8 × 8 の区画の線 */
   [[xa, y0], [xb, yb]].forEach(function (p) { ctx.save(); ctx.strokeStyle = 'rgba(224,123,24,.35)'; ctx.lineWidth = 1; for (var k = 0; k <= 8; k++) { var d = Math.round(sz * k / 8) + 0.5; ctx.beginPath(); ctx.moveTo(p[0] + d, p[1]); ctx.lineTo(p[0] + d, p[1] + sz); ctx.moveTo(p[0], p[1] + d); ctx.lineTo(p[0] + sz, p[1] + d); ctx.stroke(); } ctx.restore(); });
@@ -10133,15 +10172,15 @@ function drawM5S4(s, ctx, W, H) {
     if (!keep[u * 8 + v]) { ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.72)'; ctx.fillRect(gx + v * ts, gy + u * ts, ts, ts); ctx.restore(); }
     else { ctx.save(); ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 1.6; ctx.strokeRect(gx + v * ts + 1, gy + u * ts + 1, ts - 2, ts - 2); ctx.restore(); }
   }
-  label(ctx, 'オレンジの枠：残した成分　うすい所：捨てた成分', gx, gy + gs + 12, { size: 9.5, color: COL.sub, align: 'left' });
+  label(ctx, 'オレンジの枠：残した成分　薄い所：捨てた成分', gx, gy + gs + 12, { size: 9.5, color: COL.sub, align: 'left' });
 }
 function rightM5S4(s, R) {
   var K = Math.round(s.v.K);
   R.innerHTML = mathify('<div class="qcard"><p class="qt">画像の圧縮</p>' +
-    '<p>画像も「明るさの波」と考えられる。8 × 8 画素の区画の明るさを、右の 64 種類のもようの重ね合わせで表す（2 次元のフーリエ変換のなかま）。左上のもようほどゆっくり変わる（振動数が低い）。</p>' +
+    '<p>画像も「明るさの波」と考えられる。8 × 8 画素の区画の明るさを、図の「成分の形」の 64 種類のもようの重ね合わせで表す（2 次元のフーリエ変換のなかま）。左上のもようほどゆっくり変わる（振動数が低い）。</p>' +
     '<p>ふつうの写真では、ほとんどの区画で振動数の低い成分が大きく、高い成分は小さい。そこで高い成分を捨てても、見た目はあまり変わらない。これが JPEG の考え方（実際は成分を「捨てる」代わりに「粗く丸める」）。</p>' +
     '<p class="qnow"><span class="qtag now">いま</span>64 個のうち ' + K + ' 個を残す → データ量は約 ' + Math.round(K / 64 * 100) + ' %</p>' +
-    '<p class="qnote">成分を減らしすぎると、区画のさかいめが見える（ブロックノイズ）。屋根のななめの線や地面の細かいもようのように、変化の速い所から先にくずれる。</p></div>');
+    '<p class="qnote">成分を減らしすぎると、区画のさかいめが見える（ブロックノイズ）。屋根の斜めの線や地面の細かいもようのように、変化の速い所から先にくずれる。</p></div>');
 }
 
 /* =========================================================================
@@ -10152,16 +10191,16 @@ DEFS.m5s5 = {
   title: 'ほかの使い道と参考サイト', short: '使い道・参考サイト',
   html: function () {
     var li = function (t, d) { return '<li><b>' + t + '</b>：' + d + '</li>'; };
-    return '<div class="secdesc">フーリエ変換は、身のまわりのいろいろな所で使われている。<span class="todo">気になったものを調べてみよう。</span></div>' +
+    return '<div class="secdesc">フーリエ変換は、身の回りのいろいろな所で使われている。<span class="todo">気になったものを調べてみよう。</span></div>' +
       '<div class="m5ideas"><ul>' +
       li('ノイズキャンセリング・イヤホン', 'マイクで周りの音をとらえ、逆の形（位相が反対）の音を出して打ち消す（②-1 の重ね合わせ）。どの振動数の騒音が多いかを調べて打ち消し方を決める。') +
       li('チューナーアプリ・音声認識', '音をフーリエ変換していちばん強い成分（基音）を見つけ、音の高さを表示する（③-1・④-1）。声を文字にする音声認識も、まず声を振動数の成分に分けるところから始まる。') +
       li('スペクトログラム（声紋）', '短い時間ごとにフーリエ変換して、横に時間、縦に振動数、色で強さを表した図。声の特徴や鳥の鳴き声、楽器の分析に使われる。') +
-      li('地震と建物', '地震のゆれをフーリエ変換すると、どの周期のゆれが強いかが分かる。建物の固有振動数と近いと大きくゆれる（②-4 の共振）ので、設計に使われる（①-4 の地震波）。') +
+      li('地震と建物', '地震の揺れをフーリエ変換すると、どの周期の揺れが強いかが分かる。建物の固有振動数と近いと大きく揺れる（②-4 の共振）ので、設計に使われる（①-4 の地震波）。') +
       li('病院の MRI', '体の中の水素の原子核が出す電波をとらえ、フーリエ変換で体の断面の画像を作っている。') +
-      li('天体観測', '星の光を振動数（色）ごとに分けると、星にふくまれる元素や、星が近づいているか遠ざかっているか（ドップラー効果）が分かる。') +
+      li('天体観測', '星の光を振動数（色）ごとに分けると、星に含まれる元素や、星が近づいているか遠ざかっているか（ドップラー効果）が分かる。') +
       '</ul></div>' +
-      '<div class="m5refs"><p class="m5rt">参考サイト（くわしく知りたい人へ）</p><ul>' +
+      '<div class="m5refs"><p class="m5rt">参考サイト（詳しく知りたい人へ）</p><ul>' +
       '<li><a href="https://note.com/charu_star/n/n75281efae2cd" target="_blank" rel="noopener">高校生の自分のためのフーリエ変換（note、レチクル／ちゃる）</a>：フーリエ級数からフーリエ変換まで。音声のノイズ除去や画像の例を、動かせるプログラムつきで紹介</li>' +
       '<li><a href="https://u.muroran-it.ac.jp/hydrogen/lec/engmath2014_kamegawa02.pdf" target="_blank" rel="noopener">室蘭工業大学の講義資料（工業数学）</a>：「時間領域」と「周波数領域」の図（⑤-1 の左右の図のもと）</li>' +
       '<li><a href="https://www.youtube.com/watch?v=spUNpyF58BY" target="_blank" rel="noopener">3Blue1Brown「But what is the Fourier Transform?」（YouTube、英語）</a>：波を円に巻きつける見方で、式の意味を動画で説明</li>' +
@@ -10188,13 +10227,13 @@ var MODES = [
     lead: '2 つの波が出会うと、変位は足し合わされる（重ね合わせの原理）。逆向きに進む同じ波が重なると、どちらにも進まない波（定在波）ができる。波が端で反射すると、入射波と反射波が重なって定在波ができ、両端が固定された糸では固有振動が起こる。' },
   { id: 'mode3', name: '音波（物理基礎の範囲）', secs: ['m3s1', 'm3s2', 'm3s3', 'm3s4', 'm3s5'], rotSwitch: false,
     en: 'Sound Waves',
-    lead: '音は空気を伝わる縦波である。音の三要素・うなり・弦と気柱の固有振動と共鳴・モノコード・水柱の実験を、音を聞きながら確かめよう。' },
+    lead: '音は空気を伝わる縦波である。音の三要素・うなり・弦と気柱の固有振動と共鳴・モノコード・気柱共鳴実験を、音を聞きながら確かめよう。' },
   { id: 'mode4', name: '音波（芸術の範囲）', secs: ['m4h', 'm4s1', 'm4p', 'm4s2', 'm4s3', 'm4s4', 'm4s5'], rotSwitch: false,
     en: 'Sound and Music',
     lead: 'このページは、あなたのより深い音楽への理解のために作りました。特に合唱・合奏で「長 3 度の音（ドに対するミの音）は下げ気味で」と聞いたことがある人は、その理由が理解できると思います。<br>これまで学んだように、弦と気柱は、基音の整数倍の振動数の音、倍音を発生させる（特に <a class="xlink" href="#3-3">③-3</a> と <a class="xlink" href="#3-4">③-4</a> から理解できる）。弦は弦楽器、気柱は管楽器と私たちの体から出る声の発音原理を理解できる。倍音の構成比の違いから、声や言葉、楽器は音色（y-t グラフの波形、オシロの波形）が違う。音色の原理、和音・平均律と純正律を、振動数の比から見てみよう。' },
   { id: 'mode5', name: 'より知りたい人へ：フーリエ変換などの大学クラスの内容', secs: ['m5s1', 'm5s2', 'm5s3', 'm5s4', 'm5s5'], rotSwitch: false,
     en: 'Fourier Transform',
-    lead: '①〜④では、波を「いろいろな振動数の正弦波の重ね合わせ」として見てきた。特に ④ では、音を振動数の成分（倍音）に分けて見ることで、音色の正体（<a class="xlink" href="#4-1">④-1</a>）や、和音がきれいに響く理由（<a class="xlink" href="#4-5">④-5</a>・<a class="xlink" href="#4-6">④-6</a>）まで説明できた。成分に分けて見ることが、とても役に立つと分かったはずだ。<br>どんな波でも、その振動数の成分を計算で求める方法が<b>フーリエ変換</b>である。音・電波・画像など、波として表せるものなら何でも扱えるので、身のまわりの技術で広く使われている。ここは大学で学ぶ内容なので、興味がある人が読めばよい（くわしくは <a class="xlink" href="#5-5">⑤-5</a> の参考サイトで）。' }
+    lead: '①〜④では、波を「いろいろな振動数の正弦波の重ね合わせ」として見てきた。特に ④ では、音を振動数の成分（倍音）に分けて見ることで、音色の正体（<a class="xlink" href="#4-1">④-1</a>）や、和音がきれいに響く理由（<a class="xlink" href="#4-5">④-5</a>・<a class="xlink" href="#4-6">④-6</a>）まで説明できた。成分に分けて見ることが、とても役に立つと分かったはずだ。<br>どんな波でも、その振動数の成分を計算で求める方法が<b>フーリエ変換</b>である。音・電波・画像など、波として表せるものなら何でも扱えるので、身の回りの技術で広く使われている。ここは大学で学ぶ内容なので、興味がある人が読めばよい（詳しくは <a class="xlink" href="#5-5">⑤-5</a> の参考サイトで）。' }
 ];
 var CIRC = '①②③④⑤⑥⑦⑧⑨';
 var GLOBAL = { hideEq: false, rot: false };
@@ -10617,7 +10656,7 @@ document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
       ctx.save(); ctx.strokeStyle=C.faint; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(gx0, gy0); ctx.lineTo(gx0, gy1); ctx.lineTo(gx1, gy1); ctx.stroke(); ctx.restore();
       const GX = (l)=> gx0 + l/0.6*(gx1-gx0), GY = (v)=> gy1 - v*(gy1-gy0)*0.92;
       for(let c=0;c<=6;c++) text(String(c*10), GX(c*0.1), gy1+10, C.faint.replace(".2", ".55"), 9.5);
-      text("水面の管口からの低さ L〔cm〕", gx1, gy1+24, C.dim, 10, "right");
+      text("管口から水面までの長さ L〔cm〕", gx1, gy1+24, C.dim, 10, "right");
       text("音の大きさ", gx0+6, gy0-10, C.dim, 10, "left");
       ctx.save(); ctx.strokeStyle="#4fa8ff"; ctx.lineWidth=2; ctx.beginPath();
       for(let l=0.02, i=0; l<=L+1e-9; l+=0.002, i++){ const X = GX(l), Y = GY(m3s5Amp(q, l)); i? ctx.lineTo(X,Y) : ctx.moveTo(X,Y); } ctx.stroke(); ctx.restore();
