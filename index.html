@@ -145,8 +145,10 @@ img.deco-l{border-radius:12px;object-fit:contain;background:transparent}
 .upd-latest b{color:var(--ink);font-weight:400}
 .upd-bar .chev{flex:none;color:var(--blue);font-size:.72rem;transition:transform .18s ease}
 .updates.open .upd-bar .chev{transform:rotate(180deg)}
-.upd-list{list-style:none;margin:0;padding:0;display:none;border-top:1px solid #eef2f7}
-.updates.open .upd-list{display:block}
+.upd-list{list-style:none;margin:0;padding:0;display:block;border-top:1px solid #eef2f7}
+/* たたんでいるときは、新しいほうから 3 件だけ出す（2026-11-08 千葉さん） */
+.upd-list li:nth-child(n+4){display:none}
+.updates.open .upd-list li:nth-child(n+4){display:flex}
 .upd-list li{
   display:flex;gap:10px;align-items:baseline;
   padding:5px 10px;border-bottom:1px dotted #e6ecf3;font-size:.78rem;line-height:1.6;
@@ -333,8 +335,13 @@ footer p{margin:.3em 0}
   .search,.hit-note{display:none}
   .toprow{margin:12px 0 0}
   .updates{flex:1}
-  .upd-list li{flex-direction:column;gap:0;padding:6px 10px}
-  .upd-date{min-width:0}
+  .upd-list li{gap:6px;padding:4px 10px;font-size:.74rem;line-height:1.5}
+  .updates.open .upd-list li:nth-child(n+4){display:flex}
+  .upd-date{min-width:0;font-size:.67rem}
+  .upd-bar{min-height:30px;padding:4px 10px}
+  /* スマホでは、たたんでいる間は 1 件 1 行（続きは「…」）。1 枚目のカードを画面に残すため */
+  .upd-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .updates.open .upd-text{overflow:visible;white-space:normal}
   .hero{padding:20px 0 24px}
   .hero-in{padding-left:16px;padding-right:16px}
   .hero h1{font-size:1.3rem;line-height:1.45}
@@ -691,7 +698,7 @@ footer p{margin:0}
 
 <div id="viewSim">
 
-  <!-- ============ 更新履歴（1行）と検索　※スマホでは非表示 ============ -->
+  <!-- ============ 更新履歴（新しい 3 件）と検索 ============ -->
   <div class="toprow">
     <section class="updates" id="updates">
       <button class="upd-bar" id="updMore" type="button" aria-expanded="false" aria-controls="updList">
@@ -820,7 +827,7 @@ const GC_CODE = "physics-chiba";
 
 /* サムネイル画像の版番号。画像を差し替えたら、この数字を 1 つ増やしてください。
    （増やさないと、前に見た人のブラウザが古い画像を出しつづけます）      */
-const IMG_V = 17;
+const IMG_V = 18;
 
 const FORM_URL ="https://docs.google.com/forms/d/e/1FAIpQLScU1DzFTmUDGSvP3UE5Lr7RY8NvjukkzBHmQYtmOac44twPwQ/viewform?embedded=true";
 
@@ -919,7 +926,7 @@ const SITE = [
     desc:"波の重ねあわせと干渉。位相のずれを、目で追う。",
     icon:'<path d="M2 12c2.5-7 5-7 7.5 0s5 7 7.5 0 3-4 5-2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>',
     items:[
-      { t:"波の基礎　～重ね合わせ・定在波・音波～", tag:"sim", course:["kiso","but"], new:true, img:"thumbs/wave-basics.webp",
+      { t:"波の基礎　～重ね合わせ・定在波・音波～", tag:"sim", course:["kiso","but"], new:true, img:"thumbs/wave-basics.gif",
         u:BASE+"wave/wave-basics.html",
         d:"波はどう進み、重なるとどうなるか。y-xグラフとy-tグラフ、縦波、定在波の腹と節、弦と気柱の固有振動まで。倍音・和音・純正律を音で聞き比べることもできる。" },
       { t:"光の干渉①　ヤングの実験", tag:"sim", course:["but"], img:"thumbs/young.gif",
@@ -1023,7 +1030,7 @@ const COMING = [
   };
   var TAGNAME = { sim:"シミュレーション", quiz:"クイズ", exam:"試験問題", note:"読みもの", hub:"まとめ", tool:"ツール" };
 
-  /* ----- 更新履歴（たたんだときは最新1件だけ） ----- */
+  /* ----- 更新履歴（たたんだときは新しい 3 件だけ。出し分けは CSS の :nth-child(n+4)） ----- */
   var ul = document.getElementById("updList");
   UPDATES.forEach(function(u){
     var li = document.createElement("li");
@@ -1034,14 +1041,19 @@ const COMING = [
   var box = document.getElementById("updates");
   var more = document.getElementById("updMore");
   var latest = document.getElementById("updLatest");
-  if (UPDATES[0]){
-    latest.innerHTML = esc(UPDATES[0].date) + "　<b>" + esc(UPDATES[0].text) + "</b>";
-  }
-  more.title = "更新履歴をすべて見る（全 " + UPDATES.length + " 件）";
+  var UPD_SHOWN = 3;                 /* たたんでいるときに見せる件数 */
+  var updSync = function (open){
+    latest.textContent = open ? "とじる"
+                              : "すべて見る（全 " + UPDATES.length + " 件）";
+    more.title = latest.textContent;
+  };
+  if (UPDATES.length <= UPD_SHOWN){ more.style.display = "none"; }
+  else { updSync(false); }
   more.addEventListener("click", function(){
     var open = !box.classList.contains("open");
     box.classList.toggle("open", open);
     more.setAttribute("aria-expanded", open ? "true" : "false");
+    updSync(open);
   });
 
   /* ----- 一覧（シミュレーションと実験、どちらも同じ形で作る） ----- */
