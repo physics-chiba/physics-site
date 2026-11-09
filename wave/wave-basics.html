@@ -2394,6 +2394,9 @@ button.b.chkb.fob{font-size:.92rem;font-weight:700;padding:.4em .9em}   /* 2 段
 .tshint{display:none;margin:.1em 0 0;font-size:.7rem;color:var(--sub);text-align:right}
 @media(max-width:520px){ .tshint{display:block} .reltab.m4tune th,.reltab.m4tune td{white-space:nowrap} }
 @media(max-width:440px){ #m2s2 .cvwrap button.b.virtbtn{top:84px} }
+/* ⑤-2 の加工のボタン：1 つの名前は折り返さず、入りきらなければ次の行へ（23 回目） */
+#m5s2 .row1b .seg{flex-wrap:wrap;border-radius:14px}
+#m5s2 .row1b .seg button{white-space:nowrap}
 @media(max-width:520px){
   #m5s1 .row1b .seg,#m5s2 .row1b .seg,#m5s3 .row1b .seg{display:grid;grid-template-columns:1fr 1fr;width:100%;border-radius:14px}
   #m5s1 .row1b .seg button,#m5s2 .row1b .seg button,#m5s3 .row1b .seg button{white-space:normal;line-height:1.25}
@@ -8242,15 +8245,15 @@ function drawM3S4(s, ctx, W, H) {
   for (var c = 0; c <= 10; c++) { var px = X(c / 10); ctx.beginPath(); ctx.moveTo(px, cy + 24); ctx.lineTo(px, cy + (c % 5 ? 30 : 34)); ctx.stroke(); if (c % 2 === 0 && !(X(1) - X(0) < 260 && (c === 2 || c === 6 || c === 8))) { ctx.textAlign = c === 10 ? 'right' : 'center'; ctx.fillText(String(c * 10) + (c === 10 ? ' cm' : ''), c === 10 ? px - 2 : px, cy + 44); } }
   ctx.restore();
   /* 目盛りの数字の下に、ドレミ … の位置（いまの張力・太さで、その音になる弦の長さ）。チョーキングなしの値（2026-11-07 千葉さん 14 回目） */
-  var v0 = 2 * q.l * q.f0, lastX = -99, nN = 0;                      /* 名前は 2 段に交互に書く（となりの音と重ならないように） */
-  for (var mN = 36; mN <= 96; mN++) {                             /* 長い（低い）音から順に。となりと近すぎる所で止める（とびとびにしない） */
+  var v0 = 2 * q.l * q.f0, lastX = -99, lastW = 0;                  /* 名前は横一列に書く（23 回目。前は 2 段に交互で凸凹に見えた） */
+  for (var mN = 36; mN <= 96; mN++) {                             /* 長い（低い）音から順に。となりの名前と重なる所で止める（とびとびにしない） */
     if (MUS.black(mN)) continue;
     var lN = v0 / (2 * MUS.fET(mN)); if (lN > 0.97) continue; if (lN < 0.1) break;
-    var pxN = X(lN); if (lastX > 0 && lastX - pxN < (X(1) - X(0) < 260 ? 11 : 7.5)) break; lastX = pxN; nN++;
-    var isC = mN % 12 === 0;
+    var isC = mN % 12 === 0, nmN = MUS.jp(mN);
+    ctx.save(); ctx.font = (isC ? '700 9.5px ' : '600 8.5px ') + FONT; var wN = ctx.measureText(nmN).width; ctx.restore();
+    var pxN = X(lN); if (lastX > 0 && lastX - pxN < (lastW + wN) / 2 + 2) break; lastX = pxN; lastW = wN;
     ctx.save(); ctx.strokeStyle = isC ? '#7a3b12' : 'rgba(90,60,30,.6)'; ctx.lineWidth = isC ? 1.6 : 1; ctx.beginPath(); ctx.moveTo(pxN, cy + 50); ctx.lineTo(pxN, cy + 56); ctx.stroke(); ctx.restore();
-    if (nN % 2 === 0) { ctx.save(); ctx.strokeStyle = 'rgba(90,60,30,.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pxN, cy + 56); ctx.lineTo(pxN, cy + 64); ctx.stroke(); ctx.restore(); }
-    label(ctx, MUS.jp(mN), pxN, nN % 2 ? cy + 62 : cy + 71, { size: isC ? 9.5 : 8.5, bold: isC, color: isC ? '#5a2a08' : '#6b4a2a', halo: false });
+    label(ctx, nmN, pxN, cy + 64, { size: isC ? 9.5 : 8.5, bold: isC, color: isC ? '#5a2a08' : '#6b4a2a', halo: false });
   }
   /* 左はしの駒（固定）・右はしの滑車とおもり */
   ctx.save(); ctx.fillStyle = '#6b4a2a'; ctx.beginPath(); ctx.moveTo(X(0) - 7, cy + 24); ctx.lineTo(X(0), cy); ctx.lineTo(X(0) + 7, cy + 24); ctx.closePath(); ctx.fill(); ctx.restore();
@@ -10063,7 +10066,7 @@ function m5s2Bands(X, gainFn) {
 DEFS.m5s2 = {
   id: 'm5s2', mode: 'mode5', num: 2,
   title: '音の加工（ノイズを消す・低音を強める）', short: '音の加工',
-  desc: '録音した音をフーリエ変換すると、振動数ごとの成分に分かれる。ほしくない成分を小さくしたり、強めたい成分を大きくしたりしてから逆変換すれば、音を作り直せる（<b>イコライザー</b>）。<span class="todo">3 つの帯の大きさを変えて、元の音と聞き比べよう。</span>',
+  desc: '録音した音をフーリエ変換すると、振動数ごとの成分に分かれる。ほしくない成分を小さくしたり、強めたい成分を大きくしたりしてから逆変換すれば、音を作り直せる（<b>イコライザー</b>）。<span class="todo">3 つの帯の大きさを変えて、「元の音に戻す」と聞き比べよう。</span>',
   strobe: false, stepDiv: 16,
   varCols: [['gL', 'gM', 'gH']],
   vars: [
@@ -10075,9 +10078,9 @@ DEFS.m5s2 = {
   onDefaults: function (s) { s.which = 'proc'; m5s2Sync(s); m5s2Sound(s); },
   onChanged: function (s) { m5s2Sync(s); m5s2Sound(s, true); return 'keepT'; },
   buttons: [
-    { k: 'wO', label: '元の音', seg: 'which', segLabel: '聞く音', onClick: function (s) { s.which = 'orig'; m5s2Sync(s); s.resound && s.resound(); } },
-    { k: 'wP', label: '加工した音', seg: 'which', onClick: function (s) { s.which = 'proc'; m5s2Sync(s); s.resound && s.resound(); } },
-    { k: 'pN', label: 'ノイズカット（高音を 0 に）', seg: 'pre', segLabel: 'おすすめ', onClick: function (s) { m5s2Set(s, 1, 1, 0); } },
+    /* 23 回目：「聞く音：元の音／加工した音」をやめ、いちばん左の「元の音に戻す」（3 つとも 100 %）にまとめた。鳴る音は、いつも 3 つの帯の値で加工した音 */
+    { k: 'p0', label: '元の音に戻す', seg: 'pre', segLabel: '加工', onClick: function (s) { m5s2Set(s, 1, 1, 1); } },
+    { k: 'pN', label: 'ノイズカット（高音を 0 に）', seg: 'pre', onClick: function (s) { m5s2Set(s, 1, 1, 0); } },
     { k: 'pB', label: '低音を強調', seg: 'pre', onClick: function (s) { m5s2Set(s, 2, 1, 1); } },
     { k: 'pB2', label: '低音をより強調', seg: 'pre', onClick: function (s) { m5s2Set(s, 2, 0.5, 0.5); } },   /* 中音・高音を小さくする（22 回目） */
     { k: 'pV', label: 'ラジオ風（中音だけ）', seg: 'pre', onClick: function (s) { m5s2Set(s, 0, 1.4, 0); } }
@@ -10086,9 +10089,9 @@ DEFS.m5s2 = {
   height: function (s, w) { return w < 560 ? 380 : 340; },
   afterBuild: function (s) {
     m5Layout(s);
-    /* 「聞く音」は ④-6 の純正律・平均律と同じ選ぶ形（どちらを選んでいるか分かるように。20 回目）。鳴らす・止めるは 🔊 のボタン */
+    /* 鳴らす・止めるは 🔊 のボタン。いま選ばれている加工の音が鳴る */
     var sp = el('span', 'spkrow'); s.row1b.appendChild(sp);
-    m3SpkBtn(s, sp, function () { return { voices: [{ data: s.which === 'orig' ? m5s2Orig() : m5s2Proc(s), sr: M5S2.sr }], vol: 1 }; });
+    m3SpkBtn(s, sp, function () { return { voices: [{ data: m5s2Proc(s), sr: M5S2.sr }], vol: 1 }; });
     s.Rdyn = el('div', 'rdyn'); s.R.appendChild(s.Rdyn);
     m5s2Sync(s);
   },
@@ -10096,15 +10099,15 @@ DEFS.m5s2 = {
   right: function (s, R) { rightM5S2(s, R); }
 };
 /* M5S2_PRE：おすすめの値。いまの値と同じものを選ばれた形にする（どれが ON か分かるように。22 回目） */
-var M5S2_PRE = { pN: [1, 1, 0], pB: [2, 1, 1], pB2: [2, 0.5, 0.5], pV: [0, 1.4, 0] };
+var M5S2_PRE = { p0: [1, 1, 1], pN: [1, 1, 0], pB: [2, 1, 1], pB2: [2, 0.5, 0.5], pV: [0, 1.4, 0] };
 function m5s2Sync(s) {
-  var a = [['wO', s.which === 'orig'], ['wP', s.which === 'proc']];
+  var a = [];
   Object.keys(M5S2_PRE).forEach(function (k) { var p = M5S2_PRE[k]; a.push([k, Math.abs(s.v.gL - p[0]) < 1e-6 && Math.abs(s.v.gM - p[1]) < 1e-6 && Math.abs(s.v.gH - p[2]) < 1e-6]); });
   m2Sync(s, a);
 }
 function m5s2Set(s, a, b, c) { s.v.gL = a; s.v.gM = b; s.v.gH = c; s.syncSliders && s.syncSliders(); s.which = 'proc'; m5s2Sync(s); m5s2Sound(s, true); s.draw(); s.renderRight(); }
 /* 値を変えたとき：加工した音を鳴らしていれば鳴らし直す */
-function m5s2Sound(s) { if (s.which === 'proc' && s.resound) s.resound(); }
+function m5s2Sound(s) { if (s.resound) s.resound(); }
 function drawM5S2(s, ctx, W, H) {
   var nar = W < 560; m5s2Orig(); var y = m5s2Proc(s);
   var bo = s._bo || (s._bo = m5s2Bands(M5S2.X, null)), bp = m5s2Bands(M5S2.X, function (f) { return m5s2Gain(s, f); });
