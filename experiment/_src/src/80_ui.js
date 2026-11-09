@@ -1204,11 +1204,10 @@ function doneAt(t){
   var e=EXP(); if(e.rangeB===null || t===null) return false;
   var fps=VID.fps||30;
   if(t >= e.rangeB - 0.6/fps) return true;
-  var N=parseInt(($('inStepN')||{}).value)||1, nt;
-  if(VID.frames && VID.frames.length>1 && typeof tableCovers==='function' && tableCovers(t)){
-    var i=frameIndexAt(t);
-    nt=(i+N < VID.frames.length)? VID.frames[i+N] : Infinity;
-  } else nt=t+N/fps;
+  var N=parseInt(($('inStepN')||{}).value)||1;
+  /* 表が動画の途中で切れていても、表の終わり＝解析の終わり にはしない（前はここで「解析終了」になっていた）。
+     表の外は fps で数える。表が動画の最後まであれば、最後のコマの先は動画の外なので、ちゃんと終わりになる */
+  var nt=frameTimeAfter(t, N);
   return nt > e.rangeB + 0.4/fps;
 }
 function objDone(o){
@@ -1552,11 +1551,7 @@ function trackedTo(){
 function nextTrkTime(){
   var tp=trackedTo(); if(tp===null) return null;
   var N=parseInt($('inStepN').value)||1, e=EXP();
-  var t;
-  if(VID.frames.length>1 && typeof tableCovers==='function' && tableCovers(tp)){
-    var i=frameIndexAt(tp);
-    t=VID.frames[Math.min(VID.frames.length-1, i+N)];
-  } else t=tp+N/(VID.fps||30);
+  var t=frameTimeAfter(tp, N);
   if(e.rangeB!==null) t=Math.min(t, e.rangeB);
   return t;
 }
@@ -1622,7 +1617,7 @@ function stroStepVal(){
 function makeStrobeAuto(){
   if(!VID.ready) return Promise.resolve();
   var e=EXP(), a=rangeStart(e), b=(e.rangeB!==null? e.rangeB : VID.dur-1e-3);
-  var F=(VID.frames.length>1)? (frameIndexAt(b)-frameIndexAt(a)) : Math.round((b-a)*(VID.fps||30));
+  var F=(VID.frames.length>1)? (framesIn(a, b, 1).length-1) : Math.round((b-a)*(VID.fps||30));
   var idx=1;                                          /* 2 コマおきから */
   for(var i=1;i<STRO_STEPS.length;i++){ idx=i; if(F/STRO_STEPS[i]<=24) break; }
   var q=$('stroStep'); if(q) q.value=String(idx);
@@ -1934,7 +1929,7 @@ function buildTableUI(auto, seq){
       settled=true; VID.building=false; VID.needExact=false;
       p.classList.add('hide'); setBusy(false); busyProg(null);
       $('btnFrameTable').textContent='コマごとの時刻を測る';
-      if(VID.frames.length>2){ trimTable(); $('ftState').innerHTML='<b>'+VID.frames.length+' コマ</b>（途中で打ち切り）'; }
+      if(VID.frames.length>2){ fillByCfr(); trimTable(); $('ftState').innerHTML='<b>'+VID.frames.length+' コマ</b>（途中で打ち切り）'; }
       else { VID.frames=[]; $('ftState').innerHTML='<span class="ng">測れませんでした（fps から計算します）</span>'; }
       toast('時刻の測定に時間がかかりすぎたので、ここまでで進めます');
       renderVidDiag(); render(); afterChange(); askFpsUI();
@@ -2707,7 +2702,7 @@ function setTab(m){
   if(m==='2' && VID.ready && APP.tab!==UI.prevTab){ var t2=rangeStart(EXP()); if(Math.abs((VID.cur||0)-t2)>1e-6) vidSeek(t2).then(function(){ afterSeek(); if(LIVE.on) liveTick(-Infinity); }); }
   UI.prevTab=m;
   els('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.mode===m); });
-  ['1','2','3','4','5'].forEach(function(k){ var sec=$('mode'+k); if(sec) sec.classList.toggle('hide', m!==k); });
+  ['1','2','3','4','5','6'].forEach(function(k){ var sec=$('mode'+k); if(sec) sec.classList.toggle('hide', m!==k); });
   if(m==='4'){ if(typeof updateStroUI==='function') updateStroUI(); }
   if(m==='5'){ if(typeof renderErrSection==='function') renderErrSection(); if(typeof updateDepth==='function') updateDepth(); if($('errDtNote') && typeof dtMeaningHtml==='function') $('errDtNote').innerHTML=dtMeaningHtml(); }
   if(m==='2'){ APP.m2mode='side'; updateTable(); }   /* ②に来たときは、いつも「グラフを並べる」から */

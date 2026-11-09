@@ -19,7 +19,7 @@ function vidLoad(src, name){
     /* 前の動画の読み込み・コマ時刻の測定を、ここで打ち切る
        （生徒が続けざまに動画を選ぶと、前の測定の結果が新しい動画に混ざるため） */
     VID.loadSeq=(VID.loadSeq||0)+1; VID.cancelBuild=true;
-    VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0; VID.tableA=0; VID.tableB=0;
+    VID.ready=false; VID.frames=[]; VID.idx=-1; VID.cur=0; VID.tableA=0; VID.tableB=0; VID.tableFilled=0; VID.realGaps=[];
     try{ diagReset(); }catch(e){}
     if(VID.url && VID.url.indexOf('blob:')===0){ try{URL.revokeObjectURL(VID.url);}catch(e){} }
     VID.url=src; VID.name=name||'';
@@ -154,11 +154,38 @@ function tableCovers(t){
 function vidStep(n){
   var fps=VID.fps>0?VID.fps:30;
   if(VID.frames.length>1 && tableCovers(VID.cur)){
-    var i=(VID.idx>=0?VID.idx:frameIndexAt(VID.cur));
-    var j=Math.max(0, Math.min(VID.frames.length-1, i+n));
-    return vidSeek(frameSeekTime(j));
+    var i=(VID.idx>=0?VID.idx:frameIndexAt(VID.cur)), j=i+n, L=VID.frames.length;
+    if(j>=0 && j<L) return vidSeek(frameSeekTime(j));
+    /* 表の外へ出る（表が動画の途中までしかない）ときは、表のはしから fps で進める。
+       前はここで表の最後のコマに止めていたので、表が途中で切れていると、そこから先へ進めなかった */
+    if(j<0) return vidSeek(Math.max(0, VID.frames[0] + j/fps + 0.25/fps));
+    return vidSeek(VID.frames[L-1] + (j-(L-1))/fps + 0.25/fps);
   }
   return vidSeek(VID.cur + n/fps + 0.25/fps);
+}
+/* 時刻 t のコマから n コマ先のコマの時刻。測った時刻の表があればそれで、
+   表の外（表が途中で切れているときの、その先）は表のはしから fps で数える */
+function frameTimeAfter(t, n){
+  var f=VID.frames, fps=VID.fps||30;
+  if(f.length>1 && tableCovers(t)){
+    var i=frameIndexAt(t), j=i+n, L=f.length;
+    if(j>=0 && j<L) return f[j];
+    return (j<0)? f[0] + j/fps : f[L-1] + (j-(L-1))/fps;
+  }
+  return t + n/fps;
+}
+/* コマの間隔（1 コマぶん）。中央値ではなく「いちばん短い間隔のまとまり」の平均で決める。
+   再生しながら測ると、端末によっては 2 コマに 1 回ほど取りこぼし（HEVC の MOV を Windows で再生したときなど）、
+   中央値が 2 コマぶんになって fps が 38 のように狂う（60 fps の動画なのに）。 */
+function baseDt(d){
+  var s=d.filter(function(x){ return x>1e-5; }).sort(function(a,b){return a-b;});
+  if(!s.length) return 0;
+  var med=s[Math.floor(s.length/2)], p=s[Math.floor(s.length*0.1)];
+  var sum=0, n=0;
+  for(var i=0;i<s.length;i++) if(s[i] < p*1.45){ sum+=s[i]; n++; }
+  /* 短い間隔が少なすぎるとき（2 割未満）は、たまたまの短い間隔とみて中央値を使う */
+  if(n < s.length*0.2 || !(sum>0)) return med;
+  return sum/n;
 }
 function frameSeekTime(j){
   var f=VID.frames;
@@ -185,7 +212,7 @@ function vidBuildTable(onProg, tA, tB){
     var A=(typeof tA==='number' && tA>0)? tA : 0;
     var B=(typeof tB==='number' && tB>A)? Math.min(tB, VID.dur) : VID.dur;
     var span=Math.max(0.001, B-A);
-    VID.tableA=A; VID.tableB=B;            /* どこからどこまでを測ったか（取りこぼし直しで使う） */
+    VID.tableA=A; VID.tableB=B; VID.tableFilled=0; VID.realGaps=[];  /* どこからどこまでを測ったか（取りこぼし直しで使う） */
     var times=[], rate = (span>40? 2 : 1);
     v.pause(); v.muted=true; v.playbackRate=rate;
     diagStart();                       /* 撮れぐあいも、この再生のついでに測る */
@@ -221,6 +248,7 @@ function vidBuildTable(onProg, tA, tB){
            ただし時間を区切る（穴が多いと何分もかかって「固まった」ように見えるため）。 */
         var deadline=performance.now()+Math.min(15000, 4000+span*700);
         repairTable(0, deadline, onProg).then(function(){
+          fillByCfr();                 /* 測り直しきれなかった取りこぼしを、コマの間隔から埋める */
           trimTable();                 /* 穴があったら、続いている所だけを残す */
           vidSeek(Math.max(A, VID.tableA||A)).then(function(){
             VID.building=false; res(VID.frames.length>2);
@@ -251,12 +279,40 @@ function setFpsFromFrames(){
   var f=VID.frames, i;
   if(f.length<3) return;
   var d=[]; for(i=1;i<f.length;i++) d.push(f[i]-f[i-1]);
-  var sd=d.slice().sort(function(a,b){return a-b;}), med=sd[Math.floor(sd.length/2)];
-  /* 測りもらしで空いた所（＝中央値よりずっと広い間隔）は、平均に入れない */
+  var med=baseDt(d);
+  /* 測りもらしで空いた所（＝1 コマぶんよりずっと広い間隔）は、平均に入れない */
   var sum=0, n=0;
   for(i=0;i<d.length;i++) if(d[i] < med*1.6){ sum+=d[i]; n++; }
   var mean=n? sum/n : med;
   if(mean>0){ VID.fps=1/mean; VID.fpsSrc='実測した時刻から'; }
+}
+/* 取りこぼしを、コマの間隔から埋める。
+   ・1 コマぶんの間隔がよくそろっている（＝一定のフレームレートの動画）ときだけ行う
+   ・穴の幅が 1 コマぶんのほぼ整数倍（2〜12 倍）のところだけ、等間隔に時刻を入れる
+   再生しながら測ると、端末によってはコマを大量に取りこぼし（2 コマに 1 回など）、シークで測り直すと
+   時間がかかりすぎて途中で打ち切りになる。そのままだと「N コマ進む」が 2〜4 コマとばらつき、
+   表が途中で切れて、そこで解析が終わってしまうこともあった */
+function fillByCfr(){
+  var f=VID.frames, i;
+  if(f.length<6) return 0;
+  var d=[]; for(i=1;i<f.length;i++) d.push(f[i]-f[i-1]);
+  var base=baseDt(d); if(!(base>0)) return 0;
+  var one=d.filter(function(x){ return x>base*0.6 && x<base*1.4; });
+  if(one.length<5) return 0;
+  var m=0; one.forEach(function(x){ m+=x; }); m/=one.length;
+  var v=0; one.forEach(function(x){ v+=(x-m)*(x-m); }); v=Math.sqrt(v/one.length);
+  if(v > m*0.08) return 0;                      /* 間隔がそろっていない（可変フレームレート）なら、埋めない */
+  var out=[f[0]], added=0;
+  for(i=1;i<f.length;i++){
+    var w=f[i]-f[i-1], r=w/m, k=Math.round(r);
+    var real=(VID.realGaps||[]).some(function(g0){ return Math.abs(g0-f[i-1])<1e-6; });
+    if(!real && k>=2 && k<=12 && Math.abs(r-k)<0.15){
+      for(var j=1;j<k;j++){ out.push(f[i-1]+w*j/k); added++; }
+    }
+    out.push(f[i]);
+  }
+  if(added){ VID.frames=out; VID.tableFilled=(VID.tableFilled||0)+added; setFpsFromFrames(); }
+  return added;
 }
 /* 測れた所と測れなかった所がまざっていると、コマ送りも自動追跡も狂う。
    いちばん長い「切れ目のない並び」だけを残し、そこを「測れた範囲」とする。 */
@@ -295,7 +351,7 @@ function repairTable(pass, deadline, onProg){
   var f=VID.frames, d=[], i;
   for(i=1;i<f.length;i++) d.push(f[i]-f[i-1]);
   if(!d.length) return Promise.resolve();
-  var sd=d.slice().sort(function(a,b){return a-b;}), med=sd[Math.floor(sd.length/2)];
+  var med=baseDt(d);
   var gaps=[], WIDE=med*12;      /* これより広い穴は「測れなかった所」。埋めにいかない */
   for(i=1;i<f.length;i++){
     var w=f[i]-f[i-1];
@@ -305,7 +361,8 @@ function repairTable(pass, deadline, onProg){
   var END=(typeof VID.tableB==='number' && VID.tableB>0)? VID.tableB : VID.dur;
   var wt=END - f[f.length-1];
   if(wt > med*1.6 && wt < WIDE) gaps.push([f[f.length-1], END]);
-  if(!gaps.length || gaps.length>200){ VID.needExact=false; return Promise.resolve(); }
+  /* 穴がとても多いとき（2 コマに 1 回取りこぼした、など）も、時間の許すかぎり埋める（前は 200 を超えると何もしなかった） */
+  if(!gaps.length || gaps.length>3000){ VID.needExact=false; return Promise.resolve(); }
   var k=0, added=0, tries=0;
   function next(){
     if(k>=gaps.length || (deadline && performance.now()>deadline)){
@@ -319,6 +376,9 @@ function repairTable(pass, deadline, onProg){
     return vidSeekNow(t).then(function(){
       var mt=VID.cur, ok=false;
       if(VID.exact && mt>g[0]+med*0.4 && mt<g[1]-med*0.4){ VID.frames.push(mt); added++; ok=true; }
+      else if(VID.exact) g.sawOut=(g.sawOut||0)+1;   /* 正確な時刻が読めたのに、穴の中のコマではなかった */
+      /* シークして確かめても穴の中にコマが無い＝動画そのものにコマが無い所。あとで fillByCfr が埋めないように覚えておく */
+      if(!ok && tries>=3 && g.sawOut>=1) (VID.realGaps=VID.realGaps||[]).push(g[0]);
       if(ok || tries>=3){ k++; tries=0; } else { tries++; }   /* 読めなければ数回やり直す */
       return next();
     });
@@ -340,7 +400,7 @@ function fpsFromTable(){
     var d=[], i;
     for(i=1;i<VID.frames.length;i++) d.push(VID.frames[i]-VID.frames[i-1]);
     d.sort(function(a,b){return a-b;});
-    var med=d[Math.floor(d.length/2)];
+    var med=baseDt(d);
     var jitter=(d[d.length-1]-d[0]);
     return { fps: med>0? 1/med : 0, n:VID.frames.length, vfr: jitter> (med*0.25) };
   }

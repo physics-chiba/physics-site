@@ -774,9 +774,13 @@ function chartCard(title, spec, curves, w, h){
       lb.appendChild(sel); row.appendChild(lb);
     }
     d.appendChild(row);
-    var nt=document.createElement('p'); nt.className='mini accnote';
+    /* a の出し方の細かい話は、ふだんは折りたたんでおく（［クリックで詳しい話を表示］で開く） */
+    var nt=document.createElement('details'); nt.className='mini accnote';
     nt.style.maxWidth=w+'px';        /* 文が長くてもグラフの幅を広げない */
-    nt.innerHTML=accNoteHtml();
+    nt.innerHTML='<summary><span class="op">クリックで詳しい話を表示</span><span class="cl">詳しい話を閉じる</span></summary>'+
+      '<div class="accbody">'+accNoteHtml()+'</div>';
+    if(UI.accNoteOpen) nt.open=true;  /* 開いたままグラフを描き直しても、閉じない */
+    nt.addEventListener('toggle', function(){ UI.accNoteOpen=nt.open; });
     d.appendChild(nt);
   }
   d.__spec=spec; d.__title=title; d.__ro=ro;

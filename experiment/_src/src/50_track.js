@@ -1010,6 +1010,13 @@ function autoRunAll(){
 }
 
 /* ---------- ストロボ合成 ---------- */
+/* a〜b のコマを N コマおきに（表が途中で切れていても、その先は fps で数えて b まで） */
+function framesIn(a, b, N){
+  var out=[], t=(VID.frames.length>1 && tableCovers(a))? VID.frames[frameIndexAt(a)] : a, fps=VID.fps||30;
+  var guard=0;
+  while(t <= b + 0.4/fps && guard++ < 20000){ out.push(t); var nt=frameTimeAfter(t, N); if(!(nt>t)) break; t=nt; }
+  return out;
+}
 function makeStrobe(preview){
   var exp=EXP(), cv=$('cvStrobe');
   var mode=preview? 'diff' : $('selStroMode').value;
@@ -1017,9 +1024,8 @@ function makeStrobe(preview){
   if(preview){
     var a0=rangeStart(exp), b0=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
     if(VID.frames.length>1){
-      var ia=frameIndexAt(a0), ib=frameIndexAt(b0);
-      var stepN=Math.max(1, Math.round((ib-ia)/14));
-      for(var q=ia;q<=ib;q+=stepN) times.push(VID.frames[q]);
+      var nAll=framesIn(a0, b0, 1).length;
+      times=framesIn(a0, b0, Math.max(1, Math.round((nAll-1)/14)));
     } else {
       for(var tq=a0; tq<=b0; tq+=(b0-a0)/14) times.push(tq);
     }
@@ -1027,8 +1033,7 @@ function makeStrobe(preview){
     var N=stroStepVal();                 /* 「時間間隔調整」で決めた、何コマおきか */
     var a=rangeStart(exp), b=(exp.rangeB!==null?exp.rangeB:VID.dur-1e-3);
     if(VID.frames.length>1){
-      var i0=frameIndexAt(a), i1=frameIndexAt(b);
-      for(var i=i0;i<=i1;i+=N) times.push(VID.frames[i]);
+      times=framesIn(a, b, N);         /* 表が途中で切れていても、範囲の終わりまで */
     } else { for(var t=a;t<=b;t+=N/(VID.fps||30)) times.push(t); }
   }
   if(!times.length){ toast('先に点を記録するか、範囲を決めてください'); return Promise.resolve(); }

@@ -650,6 +650,68 @@ async function setMovSource(page, type) {
     }
   }
 
+
+  console.log('S. コマの時刻の表が取りこぼし・途中までのとき（扇風機の動画）・a の細かい話の折りたたみ・謝意のタブ');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p, 'test/proj.webm');
+    const r = await p.evaluate(() => {
+      const full = VID.frames.slice(), fps0 = VID.fps;
+      /* 6 割で 1 コマ取りこぼした表 */
+      const deg = [], pat = [1, 2, 1, 2, 2];          /* 1 コマ・2 コマの間隔がまざる（2 コマが 6 割） */
+      for (let i = 0, k = 0; i < full.length; i += pat[k++ % pat.length]) deg.push(full[i]);
+      VID.frames = deg.slice(); setFpsFromFrames();
+      const fpsDrop = VID.fps;
+      const filled = fillByCfr();
+      const nFill = VID.frames.length, fpsFill = VID.fps;
+      /* 表を途中（半分）で切る → 表の終わりで「解析終了」にならない／その先へコマ送りできる */
+      VID.frames = full.slice(0, Math.floor(full.length / 2)); setFpsFromFrames();
+      const e = EXP(); e.rangeB = full[full.length - 3];
+      const L2 = VID.frames.length, tEnd = VID.frames[L2 - 1];
+      document.getElementById('inStepN').value = 3;
+      const doneMid = doneAt(VID.frames[L2 - 2]);
+      const after = frameTimeAfter(VID.frames[L2 - 2], 3);
+      const doneLast = doneAt(full[full.length - 3]);
+      const strobeN = framesIn(rangeStart(e), e.rangeB, 3).length;
+      VID.frames = full; setFpsFromFrames();
+      return { fps0, fpsDrop, filled, nFill, nFull: full.length, fpsFill, doneMid, after, tEnd, doneLast, strobeN, want: Math.floor((full.length - 3) / 3) + 1 };
+    });
+    check('取りこぼしの多い表でも fps を 1 コマぶんの間隔から出す（2 コマぶんにならない）', Math.abs(r.fpsDrop - r.fps0) / r.fps0 < 0.03, r);
+    check('取りこぼしを、そろった間隔から埋めて元のコマ数にもどす', r.filled > 0 && Math.abs(r.nFill - r.nFull) <= 2 && Math.abs(r.fpsFill - r.fps0) / r.fps0 < 0.02, r);
+    check('表が途中で切れていても、表の終わりで「解析終了」にしない（範囲の終わりで終わる）', r.doneMid === false && r.after > r.tEnd && r.doneLast === true, r);
+    check('ストロボのコマも、表が途中まででも範囲の終わりまで数える', Math.abs(r.strobeN - r.want) <= 1, r);
+    /* コマ送り：表の最後のコマから先へ進める */
+    const st = await p.evaluate(async () => { const full = VID.frames.slice(); VID.frames = full.slice(0, 20); setFpsFromFrames();
+      await vidSeek(frameSeekTime(19)); const a = VID.cur; await vidStep(3); const b = VID.cur; VID.frames = full; setFpsFromFrames(); return { a, b }; });
+    check('表の最後のコマから、さらに N コマ先へ進める', st.b > st.a + 2 / 30, st);
+
+    /* ほんとうにコマが抜けている動画（12 コマ目が無い）では、埋めない（無いコマを作らない） */
+    {
+      const q = await L.newPage(browser);
+      const b64 = L.fs.readFileSync(L.path.join(L.ROOT, 'test/proj_gap.webm')).toString('base64');
+      await q.evaluate(({ b64 }) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        loadVideoUrl(URL.createObjectURL(new Blob([u], { type: 'video/webm' })), 'gap.webm'); }, { b64 });
+      await L.waitReady(q);
+      const g = await q.evaluate(() => { const f = VID.frames; let wide = 0; for (let i = 1; i < f.length; i++) if (f[i] - f[i - 1] > 1.6 / 30) wide++;
+        return { n: f.length, wide, filled: VID.tableFilled || 0, real: (VID.realGaps || []).length }; });
+      check('ほんとうにコマが抜けている所は埋めない（44 コマのまま、広い間隔が 1 つ残る）', g.n === 44 && g.wide === 1 && g.filled === 0, g);
+      await q.context().close();
+    }
+    await L.addProjPoints(p, 3);
+    await p.click('#tabs button[data-mode="2"]'); await p.waitForTimeout(600);
+    const n = await p.evaluate(() => { const d = document.querySelector('details.accnote'); return d ? { open: d.open, sum: d.querySelector('summary').textContent, body: d.querySelector('.accbody').textContent.slice(0, 30), vis: d.querySelector('.accbody').checkVisibility() } : null; });
+    check('a に使う時間の幅の細かい話は、はじめは折りたたみ（［クリックで詳しい話を表示］）', n && !n.open && /クリックで詳しい話を表示/.test(n.sum) && n.vis === false && /Δt ＝ 記録した点の間隔/.test(n.body), n);
+    await p.click('details.accnote>summary'); await p.waitForTimeout(200);
+    await p.evaluate(() => renderMode2()); await p.waitForTimeout(200);
+    check('開いたあとグラフを描き直しても開いたまま', await p.evaluate(() => document.querySelector('details.accnote').open));
+    const c = await p.evaluate(() => { const tabs = [...document.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
+      const i5 = tabs.indexOf('補足'); setTab('6');
+      return { right: tabs[i5 + 1], inTab: !!document.querySelector('#mode6 #credits'), shown: !document.getElementById('mode6').classList.contains('hide'), notIn1: !document.querySelector('#mode1 .credits'), txt: document.getElementById('credits').textContent.includes('国際物理オリンピック2023記念協会') }; });
+    check('謝意は「補足」の右の「謝意」タブへ（①の下には無い）', c.right === '謝意' && c.inTab && c.shown && c.notIn1 && c.txt, c);
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();
