@@ -36,7 +36,7 @@ b=box(d,m2,pad=2); badge(d, b[0]-4, b[1]-4, '2')
 vb=R['s2']['vb']; crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'g2_color.png')
 # 3 自動追跡を開始する
 im=Image.open(D+'s3_radius.png').convert('RGB'); d=ImageDraw.Draw(im)
-b=box(d,R['s3']['start']); badge(d, b[0]-4, b[1]+6, '3')
+b=box(d,R['s3']['start']); badge(d, b[0]-4, b[1]+6, '4')
 vb=R['s3']['vb']; crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'g3_start.png')
 # 4 解析終了
 im=Image.open(D+'s4_done.png').convert('RGB'); d=ImageDraw.Draw(im)
@@ -56,3 +56,36 @@ im=Image.open(D+'s8_name.png').convert('RGB'); d=ImageDraw.Draw(im)
 bx=R['s8']['box']; b=box(d,R['s8']['ok'],col=ORANGE); badge(d, b[0]-4, b[1]+6, '6', col=ORANGE)
 crop(im, bx['x']-8, bx['y']-8, bx['x']+bx['w']+8, bx['y']+bx['h']+8, 'g7_name.png')
 print('ok')
+# ===== 第69回：手でクリックの続き・色マーカー =====
+BLUE=(40,90,200)
+def strip(name, src, y0f=0.26, y1f=0.74, x0f=0.0, x1f=1.0, draw=None):
+    im=Image.open(D+src+'.png').convert('RGB'); d=ImageDraw.Draw(im)
+    if draw: draw(d)
+    vb=R[src]['vb']
+    return crop(im, vb['x']+vb['w']*x0f, vb['y']+vb['h']*y0f, vb['x']+vb['w']*x1f, vb['y']+vb['h']*y1f, name)
+def mkbox(d, r, label, col=RED, right=True):
+    m2={'x':r['x']-4,'y':r['y']-4,'w':r['w']+8,'h':r['h']+8}
+    b=box(d,m2,pad=2,col=col); badge(d, (b[0]+b[2]+8) if right else (b[0]-8), b[1]-6, label, col=col)
+strip('h1_click.png','m1', draw=lambda d: mkbox(d,R['m1']['mk'],'2'))
+def _m2(d):
+    p=R['m2']['prev']; box(d,{'x':p['x']-2,'y':p['y']-2,'w':p['w']+4,'h':p['h']+4},pad=1,col=ORANGE,w=5)
+    mkbox(d,R['m2']['mk'],'3')
+strip('h2_next.png','m2', draw=_m2)
+strip('h3_more.png','m3')
+# 色：1［色で自動追跡］
+im=Image.open(D+'c1.png').convert('RGB'); d=ImageDraw.Draw(im)
+b=box(d,R['c1']['auto']); badge(d, b[0]-6, b[1]+8, '1')
+vb=R['c1']['vb']; crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'c1_color.png')
+# 色：3 探索半径の円（左半分を拡大）
+def _c3(d):
+    k=R['c3']['knob']; b=box(d,k,pad=1,col=ORANGE,w=4); badge(d, b[0]+b[2]+34, b[1]+b[3]+30, '3', col=ORANGE, r=22)
+strip('c3_radius.png','c3', y0f=0.33, y1f=0.66, x0f=0.02, x1f=0.42, draw=_c3)
+# 色：見失った・見つけました
+def _c5(d):
+    m=R['c5']['msg']; box(d,m,pad=2,col=(120,120,120),w=4)
+vb=R['c5']['vb']; im=Image.open(D+'c5.png').convert('RGB'); d=ImageDraw.Draw(im); _c5(d)
+crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'c5_lost.png')
+im=Image.open(D+'c6.png').convert('RGB'); d=ImageDraw.Draw(im)
+b=box(d,R['c6']['msg'],pad=3); badge(d, b[0]-6, b[1]+8, '2')
+vb=R['c6']['vb']; crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'c6_found.png')
+print('ok2')

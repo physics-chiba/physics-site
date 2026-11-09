@@ -1038,9 +1038,16 @@ function makeStrobe(preview){
   }
   if(!times.length){ toast('先に点を記録するか、範囲を決めてください'); return Promise.resolve(); }
   if(times.length>120) times=times.filter(function(_,i){ return i%Math.ceil(times.length/120)===0; });
+  /* 中止したときに元へもどせるよう、前のストロボ画像を控えておく */
+  var prevStro=null;
   if(!preview){
     if(UI.stroBusy) return Promise.resolve();      /* 作っている最中は、もう1枚を始めない */
-    UI.stroBusy=true;
+    UI.stroBusy=true; UI.stroCancel=false; UI.stroCancelled=false;
+    if(UI.stroReady && cv.width>0){
+      var pc=document.createElement('canvas'); pc.width=cv.width; pc.height=cv.height;
+      pc.getContext('2d').drawImage(cv,0,0);
+      prevStro={ cv:pc, base:UI.stroBase, info:$('stroInfo').textContent };
+    }
     if(typeof stroBusyUI==='function') stroBusyUI(true);
   }
   cv.width=VID.w; cv.height=VID.h;
@@ -1059,11 +1066,29 @@ function makeStrobe(preview){
   var savedT=VID.cur, k=0, bg=null;
   function finishStro(){
     if(!preview){
-      UI.stroBusy=false;
+      UI.stroBusy=false; UI.stroCancel=false;
       if(typeof stroBusyUI==='function') stroBusyUI(false);
     }
   }
+  /* ［中止する］が押されたら：前のストロボ画像があればそれにもどし、動画も元の時刻へ */
+  function cancelStro(){
+    if(prevStro){
+      cv.width=prevStro.cv.width; cv.height=prevStro.cv.height;
+      cv.getContext('2d').drawImage(prevStro.cv,0,0);
+      UI.stroBase=prevStro.base; UI.stroReady=true;
+      $('stroInfo').textContent=prevStro.info+'（作り直しは中止しました）';
+    } else {
+      UI.stroReady=false; UI.stroBase=null;
+      cv.classList.add('hide'); g.clearRect(0,0,cv.width,cv.height);
+      $('stroInfo').textContent='作成を中止しました';
+    }
+    UI.stroCancelled=true;
+    finishStro();
+    toast('ストロボ画像の作成を中止しました');
+    return vidSeek(savedT).then(function(){ afterSeek(); });
+  }
   function next(){
+    if(!preview && UI.stroCancel) return cancelStro();
     if(mode==='diff' && !bg){
       /* 何コマかの「まん中の値」で背景を作る（動いている物が消えた背景）。
          そこから変わった所だけを重ねるので、背景が明るくても暗くても使える。 */
@@ -1076,6 +1101,7 @@ function makeStrobe(preview){
           g.putImageData(bg,0,0);
           return next();
         }
+        if(UI.stroCancel) return cancelStro();
         return vidSeek(samp[q++]).then(function(){
           var f2=vidDrawFull();
           imgs.push(f2.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height));

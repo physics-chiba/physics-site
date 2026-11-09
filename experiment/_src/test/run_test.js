@@ -568,8 +568,8 @@ async function setMovSource(page, type) {
   {
     const p = await L.newPage(browser, null, { flags: false });
     const r = await p.evaluate(() => [...document.querySelectorAll('#selSample option')].slice(1).map(o => [o.value, o.textContent]));
-    check('サンプルは ①等速直線運動 ②鉛直投げ上げ運動 ③単振動 ④等速円運動（samples\\ の 4 本）',
-      JSON.stringify(r) === JSON.stringify([['samples/1_tousoku.mp4', '①等速直線運動'], ['samples/2_nageage.mp4', '②鉛直投げ上げ運動'], ['samples/3_tanshindou.mp4', '③単振動'], ['samples/4_tousoku-enundou.mp4', '④等速円運動']]), r);
+    check('サンプルは ①等速直線運動 ②鉛直投げ上げ運動 ③単振動 ④等速円運動 ⑤減衰円運動（samples\\ の 5 本）',
+      JSON.stringify(r) === JSON.stringify([['samples/1_tousoku.mp4', '①等速直線運動'], ['samples/2_nageage.mp4', '②鉛直投げ上げ運動'], ['samples/3_tanshindou.mp4', '③単振動'], ['samples/4_tousoku-enundou.mp4', '④等速円運動'], ['samples/5_gensui-enundou.mp4', '⑤減衰円運動']]), r);
     await p.context().close();
   }
 
@@ -710,6 +710,50 @@ async function setMovSource(page, type) {
     check('謝意は「補足」の右の「謝意」タブへ（①の下には無い）', c.right === '謝意' && c.inTab && c.shown && c.notIn1 && c.txt, c);
     check('ページエラー 0', p.__errors.length === 0, p.__errors);
     await p.context().close();
+  }
+
+
+  console.log('T. ストロボ画像の作成を中止できる');
+  {
+    const p = await L.newPage(browser, null, { viewport: { width: 1366, height: 860 }, flags: { __noAskName: true, __askStro: undefined } });
+    /* file:// の動画は canvas が汚れるので blob: で読む */
+    const sb64 = L.fs.readFileSync(L.path.join(L.ROOT, 'test/shm.webm')).toString('base64');
+    await p.evaluate(({ b64 }) => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      window.__blobUrl = URL.createObjectURL(new Blob([u], { type: 'video/webm' })); }, { b64: sb64 });
+    await p.evaluate(() => loadVideoUrl(__blobUrl, 'shm.webm')); await L.waitReady(p);
+    await p.evaluate(() => { const e = EXP(); e.t0 = 0; e.rangeB = VID.frames[VID.frames.length - 1]; e.origin = { x: 72, y: 312 }; e.originSet = true; e.axisSet = true; e.mPerPx = 0.001; UI.calPend = null; APP.editStep = 0; afterChange(); });
+    await L.addProjPoints(p, 2);
+    await p.click('#tabs button[data-mode="4"]'); await p.waitForTimeout(400);
+    await p.evaluate(() => { const o = window.vidSeek; window.vidSeek = t => new Promise(r => setTimeout(r, 60)).then(() => o(t)); });
+    // 1) はじめて作るときに中止
+    await p.click('#btnStrobe'); await p.waitForTimeout(250);
+      const vis = await p.evaluate(() => ({ row: !document.getElementById('stroWaitRow').classList.contains('hide'), fl: !document.getElementById('stroFloat').classList.contains('hide'), busy: UI.stroBusy }));
+    await p.click('#btnStroCancel');
+    await p.waitForFunction(() => !UI.stroBusy, null, { timeout: 20000 });
+    const r1 = await p.evaluate(() => ({ ready: UI.stroReady, info: document.getElementById('stroInfo').textContent, hidden: document.getElementById('cvStrobe').classList.contains('hide'), row: document.getElementById('stroWaitRow').classList.contains('hide'), btn: document.getElementById('btnStrobe').disabled }));
+    check('ストロボ作成中は［中止する］が出て、押すと止まる（はじめてのときは画像なし）', vis.row && vis.busy && !vis.fl && r1.ready === false && /中止/.test(r1.info) && r1.hidden && r1.row && !r1.btn, { vis, r1 });
+    // 2) 作ってから、作り直しを中止 → 前の画像にもどる
+    await p.click('#btnStrobe'); await p.waitForFunction(() => !UI.stroBusy && UI.stroReady, null, { timeout: 60000 });
+    const before = await p.evaluate(() => document.getElementById('cvStrobe').toDataURL().length);
+    await p.evaluate(() => { document.getElementById('stroStep').value = '1'; document.getElementById('stroStep').onchange(); }); await p.waitForTimeout(250);
+    await p.click('#btnStroCancel'); await p.waitForFunction(() => !UI.stroBusy, null, { timeout: 20000 });
+    const r2 = await p.evaluate(() => ({ ready: UI.stroReady, info: document.getElementById('stroInfo').textContent, len: document.getElementById('cvStrobe').toDataURL().length }));
+    check('作り直しを中止したら、前のストロボ画像にもどる', r2.ready && r2.len === before && /中止/.test(r2.info), r2);
+    // 3) ②のレポートPDF → はい → 作成中に下の［中止する］→ ストロボなしで名前の画面へ
+    await p.evaluate(() => clearStrobe());
+    await p.evaluate(() => { window.__noAskName = false; }); 
+    await p.click('#tabs button[data-mode="2"]'); await p.waitForTimeout(500);
+    await p.evaluate(() => document.getElementById('btnReportPdf2').click()); await p.waitForTimeout(300);
+    await p.evaluate(() => { const bt = [...document.querySelectorAll('.modal:not(.hide) button')].find(x => /^はい/.test(x.textContent.trim())); bt.click(); });
+    await p.waitForTimeout(250);
+    const fl = await p.evaluate(() => ({ fl: !document.getElementById('stroFloat').classList.contains('hide'), txt: document.getElementById('stroFloat').textContent }));
+    await p.click('#btnStroCancel2');
+    await p.waitForFunction(() => !!document.getElementById('inSaveName'), null, { timeout: 20000 });
+    const r3 = await p.evaluate(() => ({ attach: UI.attachStro, fl: document.getElementById('stroFloat').classList.contains('hide') }));
+    check('レポートの「はい」から作る途中でも、画面の下の［中止する］で止まり、ストロボなしで名前の画面へ', fl.fl && /中止する/.test(fl.txt) && r3.attach === false && r3.fl, { fl, r3 });
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
+
   }
 
   await browser.close();

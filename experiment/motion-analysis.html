@@ -764,6 +764,15 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 
 /* ストロボを作っている最中 */
 .strowait{ color:#c0332e; font-weight:700; margin:4px 0 0 }
+.strowaitrow{ align-items:center; gap:10px; margin-top:4px }
+.strowaitrow .strowait{ margin:0 }
+/* ストロボ作成中の知らせ（④以外のタブ） */
+.strofloat{ position:fixed; left:50%; bottom:76px; transform:translateX(-50%); z-index:60;
+  display:flex; align-items:center; gap:12px; max-width:calc(100% - 32px);
+  background:rgba(20,26,34,.94); color:#fff; border-radius:12px; padding:10px 14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.25); font-weight:700; font-size:.95rem }
+.strofloat.hide{ display:none }
+@media print{ .strofloat{ display:none !important } }
 /* ※ .busy は画面全体をおおう別のクラスなので、ここでは stro-busy を使う（前は .busy を付けていて、作成中に時間間隔調整が画面いっぱいに出ていた） */
 .strotune.stro-busy{ opacity:.75 }
 .strotune.stro-busy input[type=range]{ cursor:not-allowed }
@@ -1481,6 +1490,8 @@ details.accnote>.accbody{margin-top:4px}
   <div id="cgHost3"></div>
 </section>
 
+<div class="strofloat hide" id="stroFloat" role="status"><span id="stroFloatTxt">ストロボ画像を作っています…</span>
+  <button class="btn sm danger" id="btnStroCancel2" type="button">中止する</button></div>
 <!-- ================= モード4：ストロボ画像 ================= -->
 <section id="mode4" class="hide">
   <div class="m4grid">
@@ -1498,7 +1509,8 @@ details.accnote>.accbody{margin-top:4px}
                title="何コマおきに重ねるかを決めます">
         <div class="strotick"><span>1</span><span>2</span><span>5</span><span>10</span><span>20</span></div>
       </div>
-      <p class="mini strowait hide" id="stroWait">お待ちください…</p>
+      <div class="row strowaitrow hide" id="stroWaitRow"><p class="mini strowait" id="stroWait">お待ちください…</p>
+        <button class="btn sm danger" id="btnStroCancel" type="button">中止する</button></div>
       <div class="row">
         <label class="f">重ね方
           <select id="selStroMode"><option value="diff">動いた所だけ重ねる（おすすめ）</option><option value="lighten">明るい方を残す</option><option value="darken">暗い方を残す</option><option value="avg">平均</option></select>
@@ -3767,9 +3779,16 @@ function makeStrobe(preview){
   }
   if(!times.length){ toast('先に点を記録するか、範囲を決めてください'); return Promise.resolve(); }
   if(times.length>120) times=times.filter(function(_,i){ return i%Math.ceil(times.length/120)===0; });
+  /* 中止したときに元へもどせるよう、前のストロボ画像を控えておく */
+  var prevStro=null;
   if(!preview){
     if(UI.stroBusy) return Promise.resolve();      /* 作っている最中は、もう1枚を始めない */
-    UI.stroBusy=true;
+    UI.stroBusy=true; UI.stroCancel=false; UI.stroCancelled=false;
+    if(UI.stroReady && cv.width>0){
+      var pc=document.createElement('canvas'); pc.width=cv.width; pc.height=cv.height;
+      pc.getContext('2d').drawImage(cv,0,0);
+      prevStro={ cv:pc, base:UI.stroBase, info:$('stroInfo').textContent };
+    }
     if(typeof stroBusyUI==='function') stroBusyUI(true);
   }
   cv.width=VID.w; cv.height=VID.h;
@@ -3788,11 +3807,29 @@ function makeStrobe(preview){
   var savedT=VID.cur, k=0, bg=null;
   function finishStro(){
     if(!preview){
-      UI.stroBusy=false;
+      UI.stroBusy=false; UI.stroCancel=false;
       if(typeof stroBusyUI==='function') stroBusyUI(false);
     }
   }
+  /* ［中止する］が押されたら：前のストロボ画像があればそれにもどし、動画も元の時刻へ */
+  function cancelStro(){
+    if(prevStro){
+      cv.width=prevStro.cv.width; cv.height=prevStro.cv.height;
+      cv.getContext('2d').drawImage(prevStro.cv,0,0);
+      UI.stroBase=prevStro.base; UI.stroReady=true;
+      $('stroInfo').textContent=prevStro.info+'（作り直しは中止しました）';
+    } else {
+      UI.stroReady=false; UI.stroBase=null;
+      cv.classList.add('hide'); g.clearRect(0,0,cv.width,cv.height);
+      $('stroInfo').textContent='作成を中止しました';
+    }
+    UI.stroCancelled=true;
+    finishStro();
+    toast('ストロボ画像の作成を中止しました');
+    return vidSeek(savedT).then(function(){ afterSeek(); });
+  }
   function next(){
+    if(!preview && UI.stroCancel) return cancelStro();
     if(mode==='diff' && !bg){
       /* 何コマかの「まん中の値」で背景を作る（動いている物が消えた背景）。
          そこから変わった所だけを重ねるので、背景が明るくても暗くても使える。 */
@@ -3805,6 +3842,7 @@ function makeStrobe(preview){
           g.putImageData(bg,0,0);
           return next();
         }
+        if(UI.stroCancel) return cancelStro();
         return vidSeek(samp[q++]).then(function(){
           var f2=vidDrawFull();
           imgs.push(f2.getContext('2d',{willReadFrequently:true}).getImageData(0,0,cv.width,cv.height));
@@ -6260,7 +6298,8 @@ var ORIGINAL_HTML = '';
 var SAMPLES = [ {f:'samples/1_tousoku.mp4',          n:'①等速直線運動'},
                 {f:'samples/2_nageage.mp4',          n:'②鉛直投げ上げ運動'},
                 {f:'samples/3_tanshindou.mp4',       n:'③単振動'},
-                {f:'samples/4_tousoku-enundou.mp4',  n:'④等速円運動'} ];
+                {f:'samples/4_tousoku-enundou.mp4',  n:'④等速円運動'},
+                {f:'samples/5_gensui-enundou.mp4',   n:'⑤減衰円運動'} ];
 
 /* 動画の真ん中に出す確認メッセージ（空文字で消す） */
 function calMsg(html){
@@ -7894,13 +7933,26 @@ function stroBusyUI(on){
   ['stroStep','selStroMode','cbStroPts','btnStroSave','btnStroClr','btnStrobe'].forEach(function(id){
     var x=$(id); if(x) x.disabled=!!on;
   });
-  var w=$('stroWait'); if(w){ w.classList.toggle('hide', !on); if(on) w.textContent='お待ちください…'; }
+  var w=$('stroWait'); if(w && on) w.textContent='お待ちください…';
+  var wr=$('stroWaitRow'); if(wr) wr.classList.toggle('hide', !on);
+  var cb=$('btnStroCancel'); if(cb){ cb.disabled=false; cb.textContent='中止する'; }
+  /* ④以外のタブ（レポート・Excel の「はい」から作るとき）は、画面の下に「作っています…［中止する］」 */
+  var fl=$('stroFloat'); if(fl) fl.classList.toggle('hide', !on || APP.tab==='4');
+  var cb2=$('btnStroCancel2'); if(cb2){ cb2.disabled=false; cb2.textContent='中止する'; }
+  var ft=$('stroFloatTxt'); if(ft && on) ft.textContent='ストロボ画像を作っています…';
   var t=$('stroTune'); if(t) t.classList.toggle('stro-busy', !!on);
   if(!on) updateStroUI();
 }
 function stroWaitUI(left){
   var w=$('stroWait'); if(!w) return;
   w.textContent = (left===null)? 'お待ちください…' : 'お待ちください　あと '+left+' 秒';
+  var ft=$('stroFloatTxt'); if(ft) ft.textContent='ストロボ画像を作っています…'+(left===null? '' : '　あと '+left+' 秒');
+}
+/* ストロボ画像の作成を中止する（次のコマに進む前に止まる） */
+function cancelStrobe(){
+  if(!UI.stroBusy) return;
+  UI.stroCancel=true;
+  ['btnStroCancel','btnStroCancel2'].forEach(function(id){ var b=$(id); if(b){ b.disabled=true; b.textContent='中止しています…'; } });
 }
 function clearStrobe(){
   UI.stroReady=false; UI.stroBase=null;
@@ -8957,6 +9009,7 @@ function setTab(m){
   els('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.mode===m); });
   ['1','2','3','4','5','6'].forEach(function(k){ var sec=$('mode'+k); if(sec) sec.classList.toggle('hide', m!==k); });
   if(m==='4'){ if(typeof updateStroUI==='function') updateStroUI(); }
+  var sfl=$('stroFloat'); if(sfl) sfl.classList.toggle('hide', !UI.stroBusy || m==='4');
   if(m==='5'){ if(typeof renderErrSection==='function') renderErrSection(); if(typeof updateDepth==='function') updateDepth(); if($('errDtNote') && typeof dtMeaningHtml==='function') $('errDtNote').innerHTML=dtMeaningHtml(); }
   if(m==='2'){ APP.m2mode='side'; updateTable(); }   /* ②に来たときは、いつも「グラフを並べる」から */
   setM2Menu(APP.m2menu); setM3Menu(APP.m3menu);
@@ -9473,6 +9526,8 @@ function askResetPts(go){
     makeStrobe().then(function(){ $('btnStrobe').disabled=false; updateStroUI(); });
   };
   $('cbStroPts').onchange=function(){ applyStroPts(); };
+  $('btnStroCancel').onclick=cancelStrobe;
+  $('btnStroCancel2').onclick=cancelStrobe;
   $('btnStroSave').onclick=function(){ askSaveName('ストロボ画像', saveStrobePng); };
   $('btnStroClr').onclick=function(){
     clearStrobe(); toast('ストロボ画像を消しました');
@@ -9492,8 +9547,9 @@ function askResetPts(go){
       'を '+esc(what)+' の最後につけます。</p>',
       'はい', function(){
         if(UI.stroReady){ go(true); return; }
-        toast('ストロボ画像を作っています…');
-        makeStrobeAuto().then(function(){ go(!!UI.stroReady); });
+        makeStrobeAuto().then(function(){        /* 作っている間は、画面の下に「作っています…［中止する］」が出る */
+          if(UI.stroCancelled){ toast('ストロボ写真なしで続けます'); go(false); return; }   /* ［中止する］を押した */
+          go(!!UI.stroReady); });
       }, { noLabel:'いいえ', onNo:function(){ go(false); } });
   }; };
   $('btnCsv').onclick=askThen('CSV', exportCsv);

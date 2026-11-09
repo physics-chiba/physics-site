@@ -49,6 +49,20 @@ const W6 = PX(half) - 12, H6 = Math.round(W6 * 411 / 1152), H7 = Math.round(W6 *
 const W4 = PX(2500), H4 = Math.round(W4 * 621 / 1100);
 const CW = 4200, WC = PX(CW) - 14, HC = Math.round(WC * 621 / 1100);   /* 色マーカーの小さい図 */
 
+/* 小見出し（色マーカーの中の区切り） */
+const hs = (text, newPage) => new Paragraph({ pageBreakBefore: !!newPage, keepNext: true,
+  children: [t(text, { bold: true, size: 23, color: BLUE })],
+  border: { left: { style: BorderStyle.SINGLE, size: 24, color: BLUE, space: 6 }, bottom: { style: BorderStyle.SINGLE, size: 4, color: '9CC3E8', space: 2 } },
+  spacing: { before: 140, after: 70, line: 340, lineRule: LineRuleType.EXACT }, indent: { left: 60 } });
+/* 画像の下に説明をつけた 1 マス */
+const capCell = (name, w, h, runs) => [imgP(name, w, h, { spacing: { before: 0, after: 20 } }),
+  new Paragraph({ children: runs, alignment: AlignmentType.LEFT, spacing: { before: 0, after: 40, line: 280, lineRule: LineRuleType.EXACT } })];
+/* 帯の画像（左）と説明（右） */
+const SW = 5400, SPX = PX(SW) - 12, SPH = Math.round(SPX * 298 / 1100);
+const stripRow = (name, runs) => pair(
+  [imgP(name, SPX, SPH, { alignment: AlignmentType.LEFT, spacing: { before: 0, after: 0 } })],
+  [new Paragraph({ children: runs, spacing: { before: 60, after: 0, line: 290, lineRule: LineRuleType.EXACT } })],
+  SW, CONTENT - SW);
 const children = [
   /* ===== 1 枚目 ===== */
   new Paragraph({ children: [t('動画解析アプリ　課題ファイルの使い方', { bold: true, size: 36, color: BLUE })], spacing: { before: 0, after: 40, line: 480, lineRule: LineRuleType.EXACT } }),
@@ -63,13 +77,19 @@ const children = [
      b('「4. トラッキング」から始まります'), t('。時間の範囲・原点・スケール・コマ数などは、先生が設定ずみです。')]),
   h('1', 'トラッキング（手でクリックして、物体の位置を記録する）'),
   pair(
-    [imgP('g1_open.png', WH, HH, { spacing: { before: 0, after: 20 } }), p([b('1 '), t('［トラッキング（軌跡の追跡）開始］を押す')], { alignment: AlignmentType.CENTER })],
-    [imgP('g8_hand.png', WH, HH, { spacing: { before: 0, after: 20 } }), p([b('2 '), t('赤い印（マーカー）の真ん中をクリック')], { alignment: AlignmentType.CENTER })],
+    capCell('g1_open.png', Math.round(WH * 0.85), Math.round(HH * 0.85), [b('1 '), b('［トラッキング（軌跡の追跡）開始］'), t('を押す')]),
+    [p([t('「'), b('どちらで記録しますか？'), t('」が出たときは、'), b('［手でクリックして記録］'), t('を押します。')], { spacing: { before: 60, after: 80, line: 290, lineRule: LineRuleType.EXACT } }),
+     p([t('動画の上に「物体をクリックするたびコマがすすみます…」という案内が出ます。じゃまなときは'), b('［×］'), t('で消せます。案内の上からでも、そのままクリックできます。')], { spacing: { before: 0, after: 0, line: 290, lineRule: LineRuleType.EXACT } })],
     half + 100, half + 100),
-  bullet([t('「'), b('どちらで記録しますか？'), t('」が出たときは、'), b('［手でクリックして記録］'), t('を押します。')]),
-  bullet([t('クリックするたびに数コマ進みます。'), b('最後まで、毎回同じ所（赤い印の真ん中）をクリック'), t('し続けます。')]),
+  sp(10),
+  stripRow('h1_click.png', [b('2 '), t('1 回目：'), b('赤い印（マーカー）の真ん中'), t('をクリックします。')]),
+  sp(10),
+  stripRow('h2_next.png', [b('3 '), t('クリックすると、動画が数コマ進んで、台車が少し右へ動きます。'), t('オレンジの丸', { bold: true, color: ORANGE }), t('が、いまクリックした所です。また'), b('赤い印の真ん中'), t('をクリックします。')]),
+  sp(10),
+  stripRow('h3_more.png', [t('これを'), b('最後までくり返す'), t('と、クリックした所に赤い点がならんでいきます。')]),
+  sp(10),
   bullet([b('長押し'), t('すると拡大されるので、正確に打てます。')]),
-  bullet([t('まちがえたら、左上の'), b('［1回分トラッキングを取り消す］'), t('（オレンジの枠）を押すと、1 つ前にもどれます。')]),
+  bullet([t('まちがえたら、左上の'), b('［1回分トラッキングを取り消す］'), t('を押すと、1 つ前にもどれます。')]),
   sp(10),
   pair(
     [imgP('g4_done.png', W4, H4, { alignment: AlignmentType.LEFT, spacing: { before: 0, after: 0 } })],
@@ -77,7 +97,8 @@ const children = [
      p([t('このあと 2 のグラフへ進みます。（この知らせを押しても ②グラフ に進めます）', { color: GRAY, size: 19 })])],
     2700, CONTENT - 2700),
 
-  h('2', 'グラフを動画と一緒に再生する'),
+  /* ===== 2 枚目 ===== */
+  h('2', 'グラフを動画と一緒に再生する', true),
   pair(
     [imgP('g5_live.png', W5, H5, { alignment: AlignmentType.LEFT, spacing: { before: 0, after: 0 } })],
     [step([t('上のタブの'), b('［② グラフ］'), t('を押す')]),
@@ -87,9 +108,8 @@ const children = [
     G5, CONTENT - G5),
   sp(30),
   boxed([p([b('見てみよう　', { color: ORANGE }), t('物体の動きと、グラフの点のならび方を見くらべてみよう。')], { spacing: { before: 0, after: 20 } })], 'EAF3FB', '9CC3E8'),
-
-  /* ===== 2 枚目 ===== */
-  h('3', 'レポート（PDF）を保存する', true),
+  sp(20),
+  h('3', 'レポート（PDF）を保存する'),
   step([t('右上の'), b('［レポートPDF］'), t('を押す')]),
   step([t('「ストロボ写真を作成しますか？」と聞かれたら'), b('［はい］'), t('（レポートの最後にストロボ写真がつきます。少し時間がかかります）')]),
   step([t('名前を聞かれたら、'), b('先生の指示した名前'), t('（例：出席番号と名前）を入れて'), b('［保存する］')]),
@@ -103,15 +123,37 @@ const children = [
   bullet([b('最初からやり直したい'), t('　…　①の画面の右上の［トラッキングした点をリセット］。')]),
   bullet([b('途中で閉じてしまった'), t('　…　同じ端末・同じブラウザで同じ課題を開けば、続きからできます。')]),
   bullet([b('動画が出ない'), t('　…　Chrome・Edge・Safari で開き直してください。それでもだめなら先生に知らせてください。')]),
-  h('★', '色マーカーで自動追跡する（先生から指示があったとき）'),
+  bullet([b('ストロボ写真の作成をやめたい'), t('　…　画面の下の［中止する］。ストロボ写真なしで続きます。')]),
+
+  /* ===== 3 枚目：色マーカー ===== */
+  h('★', '色マーカーで自動追跡する（先生から指示があったとき）', true),
+  p([t('物体についている'), b('赤い印の色を覚えて'), t('、アプリが最後まで自動で追いかける方法です。課題によっては使えないこともあります（そのときは「どちらで記録しますか？」が出ません）。')]),
+  hs('始めかた'),
   pair(
-    [p([t('赤い印の色を覚えて、最後まで自動で追いかける方法です。')], { spacing: { before: 0, after: 40, line: 290, lineRule: LineRuleType.EXACT } }),
-     p([b('1 '), t('「どちらで記録しますか？」で'), b('［色で自動追跡］'), t('を押す')], { spacing: { before: 0, after: 30, line: 290, lineRule: LineRuleType.EXACT } }),
-     p([b('2 '), t('赤い印を 1 回クリック')], { spacing: { before: 0, after: 30, line: 290, lineRule: LineRuleType.EXACT } }),
-     p([b('3 '), b('［自動追跡を開始する］'), t('を押す')], { spacing: { before: 0, after: 50, line: 290, lineRule: LineRuleType.EXACT } }),
-     p([b('見失ったとき'), t('は止まります。その場で物体をクリックし、「見つけました！ 最後まで追跡 しますか？」を押すと続きます。', { size: 19 })], { spacing: { before: 0, after: 0, line: 280, lineRule: LineRuleType.EXACT } })],
-    [imgP('g2_color.png', WC, HC, { spacing: { before: 0, after: 0 } }), imgP('g3_start.png', WC, HC, { spacing: { before: 40, after: 0 } })],
-    CONTENT - CW, CW),
+    capCell('c1_color.png', WH, HH, [b('1 '), t('「どちらで記録しますか？」で'), b('［色で自動追跡］'), t('を押す')]),
+    capCell('g2_color.png', WH, HH, [b('2 '), b('赤い印を 1 回クリック'), t('。そこが始点になり、印の色を覚えます。')]),
+    half + 100, half + 100),
+  pair(
+    capCell('c3_radius.png', WH, Math.round(WH * 205 / 440), [b('3 '), t('印のまわりに'), b('水色の点線の円（探索半径）', { color: '0090A8' }), t('が出ます。右はしの'), b('丸（オレンジの枠）', { color: ORANGE }), t('をドラッグすると、円の大きさを変えられます。ふつうは、そのままで大丈夫です。')]),
+    capCell('g3_start.png', WH, HH, [b('4 '), b('［自動追跡を開始する］'), t('を押す。最後のコマまで、自動で点が打たれていきます。')]),
+    half + 100, half + 100),
+  hs('探索半径（水色の円）とは'),
+  p([t('アプリは、それまでの動きから「次のコマでは、このあたりに来るはず」という位置（'), b('＋'), t('）を予想して、そのまわりの'), b('円の中だけ'), t('で、覚えた赤い色をさがします。この円の半径が'), b('探索半径'), t('です。')]),
+  imgP('c_radius_diag.png', PX(CONTENT) - 20, Math.round((PX(CONTENT) - 20) * 420 / 1200), { spacing: { before: 60, after: 0 } }),
+  imgP('c_legend.png', PX(CONTENT) - 20, Math.round((PX(CONTENT) - 20) * 60 / 1200), { spacing: { before: 0, after: 60 } }),
+  bullet([b('ちょうどよい大きさ'), t('は、物体が 1 回（数コマ）で動く距離より少し大きいくらいです。')]),
+  bullet([b('よく見失う'), t('ときは、円を少し大きくします。'), b('ほかの赤い物をまちがえて追いかける'), t('ときは、少し小さくします。')]),
+
+  /* ===== 4 枚目：見失ったとき ===== */
+  hs('見失ったとき', true),
+  p([t('物体が速く動いたり、手や影に隠れたりすると、円の中で赤い色を見つけられず、'), b('「見失いました」'), t('と出て止まります。そのときは、手でクリックして助けます。')]),
+  pair(
+    capCell('c5_lost.png', WH, HH, [b('1 '), t('「見失いました」が出たら、'), b('赤い印の真ん中をクリック'), t('。知らせが出ている間の 1 回目のクリックは'), b('知らせを消すだけ'), t('なので、もう一度クリックします。')]),
+    capCell('c6_found.png', WH, HH, [b('2 '), t('色が見つかると'), b('「見つけました！ 最後まで追跡 しますか？」'), t('が出ます。'), b('これを押す'), t('と、続きを最後まで自動で追いかけます。')]),
+    half + 100, half + 100),
+  bullet([t('何度も見失うときは、そのまま'), b('手でクリックして最後まで記録'), t('してもかまいません（1 の 2・3 と同じです）。')]),
+  bullet([t('まちがった所に点が打たれたときは、'), b('［1回分トラッキングを取り消す］'), t('で 1 つずつもどせます。最初からやり直すときは'), b('［トラッキングした点をリセット］'), t('。')]),
+  bullet([t('最後まで追いかけると'), b('「解析終了。グラフを表示してみよう」'), t('が出ます。あとは 2・3 と同じです。')]),
 ];
 
 const doc = new Document({

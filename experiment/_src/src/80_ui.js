@@ -7,7 +7,8 @@ var ORIGINAL_HTML = '';
 var SAMPLES = [ {f:'samples/1_tousoku.mp4',          n:'①等速直線運動'},
                 {f:'samples/2_nageage.mp4',          n:'②鉛直投げ上げ運動'},
                 {f:'samples/3_tanshindou.mp4',       n:'③単振動'},
-                {f:'samples/4_tousoku-enundou.mp4',  n:'④等速円運動'} ];
+                {f:'samples/4_tousoku-enundou.mp4',  n:'④等速円運動'},
+                {f:'samples/5_gensui-enundou.mp4',   n:'⑤減衰円運動'} ];
 
 /* 動画の真ん中に出す確認メッセージ（空文字で消す） */
 function calMsg(html){
@@ -1641,13 +1642,26 @@ function stroBusyUI(on){
   ['stroStep','selStroMode','cbStroPts','btnStroSave','btnStroClr','btnStrobe'].forEach(function(id){
     var x=$(id); if(x) x.disabled=!!on;
   });
-  var w=$('stroWait'); if(w){ w.classList.toggle('hide', !on); if(on) w.textContent='お待ちください…'; }
+  var w=$('stroWait'); if(w && on) w.textContent='お待ちください…';
+  var wr=$('stroWaitRow'); if(wr) wr.classList.toggle('hide', !on);
+  var cb=$('btnStroCancel'); if(cb){ cb.disabled=false; cb.textContent='中止する'; }
+  /* ④以外のタブ（レポート・Excel の「はい」から作るとき）は、画面の下に「作っています…［中止する］」 */
+  var fl=$('stroFloat'); if(fl) fl.classList.toggle('hide', !on || APP.tab==='4');
+  var cb2=$('btnStroCancel2'); if(cb2){ cb2.disabled=false; cb2.textContent='中止する'; }
+  var ft=$('stroFloatTxt'); if(ft && on) ft.textContent='ストロボ画像を作っています…';
   var t=$('stroTune'); if(t) t.classList.toggle('stro-busy', !!on);
   if(!on) updateStroUI();
 }
 function stroWaitUI(left){
   var w=$('stroWait'); if(!w) return;
   w.textContent = (left===null)? 'お待ちください…' : 'お待ちください　あと '+left+' 秒';
+  var ft=$('stroFloatTxt'); if(ft) ft.textContent='ストロボ画像を作っています…'+(left===null? '' : '　あと '+left+' 秒');
+}
+/* ストロボ画像の作成を中止する（次のコマに進む前に止まる） */
+function cancelStrobe(){
+  if(!UI.stroBusy) return;
+  UI.stroCancel=true;
+  ['btnStroCancel','btnStroCancel2'].forEach(function(id){ var b=$(id); if(b){ b.disabled=true; b.textContent='中止しています…'; } });
 }
 function clearStrobe(){
   UI.stroReady=false; UI.stroBase=null;
@@ -2704,6 +2718,7 @@ function setTab(m){
   els('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.mode===m); });
   ['1','2','3','4','5','6'].forEach(function(k){ var sec=$('mode'+k); if(sec) sec.classList.toggle('hide', m!==k); });
   if(m==='4'){ if(typeof updateStroUI==='function') updateStroUI(); }
+  var sfl=$('stroFloat'); if(sfl) sfl.classList.toggle('hide', !UI.stroBusy || m==='4');
   if(m==='5'){ if(typeof renderErrSection==='function') renderErrSection(); if(typeof updateDepth==='function') updateDepth(); if($('errDtNote') && typeof dtMeaningHtml==='function') $('errDtNote').innerHTML=dtMeaningHtml(); }
   if(m==='2'){ APP.m2mode='side'; updateTable(); }   /* ②に来たときは、いつも「グラフを並べる」から */
   setM2Menu(APP.m2menu); setM3Menu(APP.m3menu);
@@ -3220,6 +3235,8 @@ function askResetPts(go){
     makeStrobe().then(function(){ $('btnStrobe').disabled=false; updateStroUI(); });
   };
   $('cbStroPts').onchange=function(){ applyStroPts(); };
+  $('btnStroCancel').onclick=cancelStrobe;
+  $('btnStroCancel2').onclick=cancelStrobe;
   $('btnStroSave').onclick=function(){ askSaveName('ストロボ画像', saveStrobePng); };
   $('btnStroClr').onclick=function(){
     clearStrobe(); toast('ストロボ画像を消しました');
@@ -3239,8 +3256,9 @@ function askResetPts(go){
       'を '+esc(what)+' の最後につけます。</p>',
       'はい', function(){
         if(UI.stroReady){ go(true); return; }
-        toast('ストロボ画像を作っています…');
-        makeStrobeAuto().then(function(){ go(!!UI.stroReady); });
+        makeStrobeAuto().then(function(){        /* 作っている間は、画面の下に「作っています…［中止する］」が出る */
+          if(UI.stroCancelled){ toast('ストロボ写真なしで続けます'); go(false); return; }   /* ［中止する］を押した */
+          go(!!UI.stroReady); });
       }, { noLabel:'いいえ', onNo:function(){ go(false); } });
   }; };
   $('btnCsv').onclick=askThen('CSV', exportCsv);
