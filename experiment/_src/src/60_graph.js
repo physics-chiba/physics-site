@@ -580,7 +580,18 @@ function renderMode2(){
   }
   /* 「動画と一緒に再生」のときは、右に大きな動画を置くぶんグラフを小さくする（2 列のときはさらに小さく） */
   var twoCols=(showX&&showY) || blocks.some(function(b){ return b.objs && b.objs.length>1; });
-  if(live){ w=Math.round(APP.gsize*(twoCols?0.52:0.72)); h=Math.round(w*0.62); }
+  /* 左（グラフ）：右（動画）＝ 4：6。グラフの大きさは左の列の幅から決める（2 列なら半分ずつ） */
+  var liveStack=false;                 /* 左の列がせまくて 2 列が入らないときは、x の列の下に y の列を積む */
+  if(live){
+    var bodyEl=host.closest('.m2body'), bw=bodyEl? bodyEl.clientWidth : 0;
+    if(bw>0 && window.innerWidth>700){
+      var leftW=(bw-12)*0.4, nc=twoCols? 2 : 1;
+      w=Math.floor((leftW-(nc-1)*12)/nc)-18;            /* 18 ＝ カードの内側の余白と枠 */
+      if(nc===2 && w<250){ liveStack=true; w=Math.floor(leftW)-18; }   /* 見出し（d○/dt・最大化）が入る幅がないとき */
+      w=Math.max(170, w);
+    } else w=Math.round(APP.gsize*(twoCols?0.52:0.72));
+    h=Math.round(w*0.62);
+  }
   if(!blocks.length){
     host.innerHTML='<div class="card mini">グラフに出せるデータがありません。①でいくつか点を記録してください。</div>';
     if(cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); renderCG(); }
@@ -615,7 +626,7 @@ function renderMode2(){
     /* 自由選択グラフは、グラフのならびの「下」に置く。
        横にならべると場所が足りず、グラフが小さくなってしまうため。 */
     if(bi===0 && cgc && !live){ cgc.classList.remove('hide'); cgBelow=true; }
-    wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
+    wrap.style.gridTemplateColumns=liveStack? 'max-content' : colNodes.map(function(){return 'max-content';}).join(' ');
     blk.appendChild(wrap); host.appendChild(blk);
   });
   /* 「運動量を解析する」：物体ごとの運動量 p = m v を 1 枚に。x 成分（y があれば y 成分も）。

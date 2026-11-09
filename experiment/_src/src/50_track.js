@@ -617,6 +617,8 @@ function commitPoint(vx, vy, e){
       return;
     }
   }
+  /* 「物体をクリックするたび…」が左に出ている間にクリックしたら、その案内は左上へ */
+  var vh=$('vhint'); if(vh && vh.classList.contains('vh-left') && !vh.classList.contains('hide')){ UI.vhTL=true; vh.classList.remove('vh-left'); vh.classList.add('vh-tl'); }
   addPoint(UI.obj, vx, vy, false);
   if(typeof autoFoundCheck==='function') autoFoundCheck(vx, vy);   /* 見失ったあと、また見つかったか */
   var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;

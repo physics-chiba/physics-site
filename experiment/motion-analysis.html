@@ -240,7 +240,7 @@ label.koma.sw.on{background:#1c8f4a;border-color:#166f3a;color:#fff}
   border-radius:9px;padding:7px 10px;font-size:.86rem;font-weight:700;line-height:1.5}
 /* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける）。
    左の列は「グラフの実際の幅」までにして、あいだに無駄なすき間を作らない */
-.m2body.live{display:grid;grid-template-columns:minmax(190px,max-content) minmax(0,1fr);
+.m2body.live{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,6fr);   /* 左（グラフ）：右（動画）＝ 4：6 */
   gap:12px;align-items:start}
 .m2body.live .m2charts>*{width:max-content;max-width:100%}
 .m2body.live .m2charts{flex:none;min-width:0}
@@ -910,6 +910,12 @@ input[type=range]{width:100%;height:34px;accent-color:var(--accent)}
 .editDone .ed-q{font-weight:700;font-size:.86rem;color:#8a5a00;margin-bottom:4px}
 .editDone .row{gap:6px;flex-wrap:wrap}
 .editDone .btn.pri{background:var(--orange);border-color:#b95f08;color:#fff;font-weight:700}
+
+/* 4 の「物体をクリックするたびコマがすすみます…」：はじめは動画の左 1/3 のまん中、動画をクリックしたら左上へ
+   （左上は「1回分トラッキングを取り消す」があるので、その下） */
+.videobox #vhint.vh-left{left:16.67%;top:50%;transform:translate(-50%,-50%);max-width:31%;width:max-content}
+.videobox #vhint.vh-tl{left:8px;top:52px;transform:none;max-width:34%;width:max-content}
+.videobox.narrow #vhint.vh-tl{top:92px}
 </style>
 </head>
 <body>
@@ -3262,6 +3268,8 @@ function commitPoint(vx, vy, e){
       return;
     }
   }
+  /* 「物体をクリックするたび…」が左に出ている間にクリックしたら、その案内は左上へ */
+  var vh=$('vhint'); if(vh && vh.classList.contains('vh-left') && !vh.classList.contains('hide')){ UI.vhTL=true; vh.classList.remove('vh-left'); vh.classList.add('vh-tl'); }
   addPoint(UI.obj, vx, vy, false);
   if(typeof autoFoundCheck==='function') autoFoundCheck(vx, vy);   /* 見失ったあと、また見つかったか */
   var adv = $('selAfter').value, N=parseInt($('inStepN').value)||1;
@@ -4405,7 +4413,18 @@ function renderMode2(){
   }
   /* 「動画と一緒に再生」のときは、右に大きな動画を置くぶんグラフを小さくする（2 列のときはさらに小さく） */
   var twoCols=(showX&&showY) || blocks.some(function(b){ return b.objs && b.objs.length>1; });
-  if(live){ w=Math.round(APP.gsize*(twoCols?0.52:0.72)); h=Math.round(w*0.62); }
+  /* 左（グラフ）：右（動画）＝ 4：6。グラフの大きさは左の列の幅から決める（2 列なら半分ずつ） */
+  var liveStack=false;                 /* 左の列がせまくて 2 列が入らないときは、x の列の下に y の列を積む */
+  if(live){
+    var bodyEl=host.closest('.m2body'), bw=bodyEl? bodyEl.clientWidth : 0;
+    if(bw>0 && window.innerWidth>700){
+      var leftW=(bw-12)*0.4, nc=twoCols? 2 : 1;
+      w=Math.floor((leftW-(nc-1)*12)/nc)-18;            /* 18 ＝ カードの内側の余白と枠 */
+      if(nc===2 && w<250){ liveStack=true; w=Math.floor(leftW)-18; }   /* 見出し（d○/dt・最大化）が入る幅がないとき */
+      w=Math.max(170, w);
+    } else w=Math.round(APP.gsize*(twoCols?0.52:0.72));
+    h=Math.round(w*0.62);
+  }
   if(!blocks.length){
     host.innerHTML='<div class="card mini">グラフに出せるデータがありません。①でいくつか点を記録してください。</div>';
     if(cgc){ $('cgHost2').appendChild(cgc); cgc.classList.remove('hide'); renderCG(); }
@@ -4440,7 +4459,7 @@ function renderMode2(){
     /* 自由選択グラフは、グラフのならびの「下」に置く。
        横にならべると場所が足りず、グラフが小さくなってしまうため。 */
     if(bi===0 && cgc && !live){ cgc.classList.remove('hide'); cgBelow=true; }
-    wrap.style.gridTemplateColumns=colNodes.map(function(){return 'max-content';}).join(' ');
+    wrap.style.gridTemplateColumns=liveStack? 'max-content' : colNodes.map(function(){return 'max-content';}).join(' ');
     blk.appendChild(wrap); host.appendChild(blk);
   });
   /* 「運動量を解析する」：物体ごとの運動量 p = m v を 1 枚に。x 成分（y があれば y 成分も）。
@@ -7537,6 +7556,10 @@ function setVideoHint(html){
   if(!VID.ready){ h.classList.add('hide'); h.__t=''; return; }   /* 動画がまだなら、真ん中の「ここをクリック」だけにする */
   if(UI.mode==='crop' || UI.trimAsking){ h.classList.add('hide'); h.__t=''; return; }   /* トリミング中は 3 の案内を出さない */
   if(!html){ h.classList.add('hide'); h.__t=''; return; }
+  /* 「物体をクリックするたびコマがすすみます…」は、動画のまん中をかくさないように左に出す（クリックしたら左上へ） */
+  var side=/クリックするたびコマ/.test(html);
+  h.classList.toggle('vh-left', side && !UI.vhTL);
+  h.classList.toggle('vh-tl', side && !!UI.vhTL);
   if(h.__t!==html){
     h.__t=html; h.__closed=false; $('vhintTxt').innerHTML=html;
     clearTimeout(h.__to);
@@ -7839,7 +7862,7 @@ function resetWorkMode(){
   if(typeof stopAuto==='function') stopAuto();
   UI.startedAuto=false; UI.autoLost=false; UI.autoOthers=null;
   UI.scaleP1=null; UI.dragOrigin=false; UI.dragRad=false; UI.dragScale=0; UI.radCenter=null;
-  APP.editStep=0; UI.calPend=null;
+  APP.editStep=0; UI.calPend=null; UI.vhTL=false;
   if(typeof setCalHint==='function') setCalHint(null);
   if(typeof autoMsgHide==='function') autoMsgHide();
   setMode('record');

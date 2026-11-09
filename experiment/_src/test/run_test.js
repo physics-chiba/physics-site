@@ -619,6 +619,37 @@ async function setMovSource(page, type) {
     await p.context().close();
   }
 
+  console.log('R. 「物体をクリックするたび…」の位置・動画と一緒に再生の 4：6');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p);
+    await p.evaluate(async () => { const e = EXP(); e.objReady[0] = true; e.trackReady = true; UI.startedAuto = false; document.getElementById('selAfter').value = 'n'; afterChange(); await vidSeek(e.t0); afterSeek(); commitPoint(72, 312, null); });
+    await p.waitForTimeout(400);
+    const g = () => p.evaluate(() => { const v = document.getElementById('videobox').getBoundingClientRect(), h = document.getElementById('vhint'), r = h.getBoundingClientRect(), u = document.getElementById('btnUndo1v').getBoundingClientRect();
+      return { txt: h.textContent.slice(0, 16), shown: !h.classList.contains('hide'), cx: ((r.left + r.right) / 2 - v.left) / v.width, cy: ((r.top + r.bottom) / 2 - v.top) / v.height, right: (r.right - v.left) / v.width, left: r.left - v.left, top: r.top - v.top,
+        overlap: !(r.top >= u.bottom || r.left >= u.right || r.right <= u.left || r.bottom <= u.top) }; });
+    const a = await g();
+    check('1 点目のあと：動画の左 1/3 のまん中あたりに出る', a.shown && /クリックするたびコマ/.test(a.txt) && a.right <= 0.34 && Math.abs(a.cy - 0.5) < 0.05, a);
+    await p.evaluate(() => commitPoint(102, 300, null)); await p.waitForTimeout(400);
+    const b = await g();
+    check('動画をクリックしたら左上へ（「1回分トラッキングを取り消す」とは重ならない）', b.shown && b.left < 20 && b.top < 70 && !b.overlap, b);
+    await p.context().close();
+
+    for (const W of [1440, 1024]) {
+      const q = await L.newPage(browser, null, { viewport: { width: W, height: 900 } });
+      await L.setupTo4(q); await L.addProjPoints(q, 3);
+      await q.evaluate(() => { APP.axisDisp = 'xy'; setTab('2'); }); await q.waitForTimeout(300);
+      await q.click('#btnM2Live'); await q.waitForTimeout(700);
+      const r = await q.evaluate(() => { const b = document.querySelector('#mode2 .m2body'), c = b.querySelector('.m2charts'), v = b.querySelector('.m2live');
+        const cr = c.getBoundingClientRect(), vr = v.getBoundingClientRect();
+        const cards = [...c.querySelectorAll('.chartcard')].map(x => x.getBoundingClientRect().right);
+        return { ratio: cr.width / (cr.width + vr.width), fits: Math.max(...cards) <= vr.left + 1, over: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
+      check(`動画と一緒に再生（${W}px）：グラフ：動画 ＝ 4：6、グラフは左の列からはみ出さない`, Math.abs(r.ratio - 0.4) < 0.01 && r.fits && r.over === 0, r);
+      check('ページエラー 0', q.__errors.length === 0, q.__errors);
+      await q.context().close();
+    }
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();

@@ -1390,6 +1390,10 @@ function setVideoHint(html){
   if(!VID.ready){ h.classList.add('hide'); h.__t=''; return; }   /* 動画がまだなら、真ん中の「ここをクリック」だけにする */
   if(UI.mode==='crop' || UI.trimAsking){ h.classList.add('hide'); h.__t=''; return; }   /* トリミング中は 3 の案内を出さない */
   if(!html){ h.classList.add('hide'); h.__t=''; return; }
+  /* 「物体をクリックするたびコマがすすみます…」は、動画のまん中をかくさないように左に出す（クリックしたら左上へ） */
+  var side=/クリックするたびコマ/.test(html);
+  h.classList.toggle('vh-left', side && !UI.vhTL);
+  h.classList.toggle('vh-tl', side && !!UI.vhTL);
   if(h.__t!==html){
     h.__t=html; h.__closed=false; $('vhintTxt').innerHTML=html;
     clearTimeout(h.__to);
@@ -1692,7 +1696,7 @@ function resetWorkMode(){
   if(typeof stopAuto==='function') stopAuto();
   UI.startedAuto=false; UI.autoLost=false; UI.autoOthers=null;
   UI.scaleP1=null; UI.dragOrigin=false; UI.dragRad=false; UI.dragScale=0; UI.radCenter=null;
-  APP.editStep=0; UI.calPend=null;
+  APP.editStep=0; UI.calPend=null; UI.vhTL=false;
   if(typeof setCalHint==='function') setCalHint(null);
   if(typeof autoMsgHide==='function') autoMsgHide();
   setMode('record');
