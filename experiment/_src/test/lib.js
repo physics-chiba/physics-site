@@ -15,7 +15,7 @@ function summary(label) {
 }
 async function newPage(browser, url, opts) {
   opts = opts || {};
-  const ctx = await browser.newContext({ viewport: opts.viewport || { width: 1440, height: 900 }, acceptDownloads: true });
+  const ctx = await browser.newContext({ viewport: opts.viewport || { width: 1440, height: 900 }, acceptDownloads: true, deviceScaleFactor: opts.dpr || 1 });
   const page = await ctx.newPage();
   page.__errors = []; page.__ext = [];
   page.on('pageerror', e => page.__errors.push(String(e)));

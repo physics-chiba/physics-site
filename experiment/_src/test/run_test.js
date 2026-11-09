@@ -533,7 +533,7 @@ async function setMovSource(page, type) {
       await p.evaluate(() => { const c = document.getElementById('cbTeacher'); c.checked = true; c.onchange(); });
       await p.click('#btnKadai'); await p.waitForSelector('#kdJson', { state: 'visible' });
       const def = await p.evaluate(() => document.getElementById('kdJson').value);
-      if (on) check('課題の画面に「JSON で提出」（既定は ON）', def === '1', def);
+      if (on) check('課題の画面に「JSON で提出」（既定は OFF）', def === '0', def);
       await p.selectOption('#kdJson', on ? '1' : '0');
       const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#kdMake')]);
       const out = L.path.join(__dirname, on ? '_kadai_json_on.html' : '_kadai_json_off.html'); await dl.saveAs(out);
