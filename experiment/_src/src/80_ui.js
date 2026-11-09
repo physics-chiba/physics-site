@@ -280,9 +280,7 @@ function updatePrec(){
   var r=cv.getBoundingClientRect();
   var pxPerCss = r.width? (VID.w/ r.width)/VIEW.zoom : 1;
   var e3 = 3*pxPerCss*exp.mPerPx;      /* 指のずれ3画面px 相当 */
-  var e1 = 1*exp.mPerPx;
-  $('precInfo').innerHTML='クリック精度：<b>±3画面px ＝ ±'+fmtLen(e3)+'</b>'+
-    '<br>（動画の1pxは '+fmtLen(e1)+'。拡大すると精度は上がります）';
+  $('precInfo').innerHTML='クリック精度：<b>±3画面px ＝ ±'+fmtLen(e3)+'</b>';
 }
 function updateTimeLine(){
   var exp=EXP();
@@ -574,6 +572,7 @@ function updateSteps(){
   updateTodo();
   applyRangeLimit();
   updateGuide();
+  updateEditDone();
 }
 /* ===== メニューを左に置くか、上に集めるか ===== */
 function setMenuPos(pos){
@@ -1408,6 +1407,49 @@ function addAgainButtons(){
     b.className='btn sm again'; b.textContent='もう一度'; b.type='button';
     b.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); redoStep(n); });
     d.querySelector('summary').appendChild(b);
+    /* 「もう一度」で開いたカードのいちばん下：直し終わったことを示して先へ進むボタン
+       ［次に進む（つぎのカード）］［○○に進む（いまの手順）］。つぎのカードがいまの手順なら 1 つだけ */
+    var bar=document.createElement('div');
+    bar.className='editDone hide'; bar.dataset.step=String(n);
+    bar.innerHTML='<div class="ed-q">このステップの直しが終わったら</div><div class="row">'+
+      '<button class="btn sm ed-next" type="button"></button>'+
+      '<button class="btn sm pri ed-go" type="button"></button></div>';
+    bar.querySelector('.ed-next').addEventListener('click', function(ev){ ev.preventDefault(); editNext(n); });
+    bar.querySelector('.ed-go').addEventListener('click', function(ev){ ev.preventDefault(); editFinish(n); });
+    d.appendChild(bar);
+  });
+}
+/* 直していたカードを閉じて、つぎのカードを「もう一度」の状態で開く */
+function editNext(n){
+  var st=currentStep();
+  if(n+1>=st){ editFinish(n); return; }
+  APP.editStep=n+1;                               /* 先に変えてから閉じる（閉じた瞬間に endEdit が走らないように） */
+  var d=el('#side1 details[data-step="'+n+'"]'); if(d) d.open=false;
+  redoStep(n+1);
+}
+/* 直し終わり：いまの手順（ふつうは 4. トラッキング）にもどる */
+function editFinish(n){
+  calMsg(''); setMode('record');
+  APP.editStep=0;
+  var d=el('#side1 details[data-step="'+n+'"]'); if(d) d.open=false;
+  applyRangeLimit(); updateSteps();
+  var st=currentStep(), cur=el('#side1 details[data-step="'+st+'"]');
+  if(cur){ cur.open=true; setTimeout(function(){ var r=cur.getBoundingClientRect();
+    if(r.top<60 || r.top>window.innerHeight-120) cur.scrollIntoView({block:'start', behavior:'smooth'}); }, 60); }
+  toast(stepName(n)+' の直しを終えました。'+stepName(st)+' にもどります');
+}
+/* 直し終わりのボタンを、いま「もう一度」で開いているカードにだけ出す */
+function updateEditDone(){
+  var st=currentStep();
+  els('#side1 .editDone').forEach(function(bar){
+    var n=parseInt(bar.dataset.step), on=(APP.editStep===n && n<st && VID.ready);
+    bar.classList.toggle('hide', !on);
+    if(!on) return;
+    var nx=bar.querySelector('.ed-next'), go=bar.querySelector('.ed-go');
+    var showNext=(n+1<st);
+    nx.classList.toggle('hide', !showNext);
+    if(showNext) nx.textContent='次に進む（'+stepName(n+1)+'）';
+    go.textContent=(st===4? 'トラッキングに進む' : stepName(st)+' に進む');
   });
 }
 /* 「もう一度」＝そのカードを開いて、また触れるようにするだけ（決めた内容は消さない） */
@@ -2276,7 +2318,8 @@ function openHelp(){
   '<h3>やり直したいとき</h3>'+
   '<p>終わったカードには「<b>済</b>」がつき、自動でたたまれます。'+
   '「<b>もう一度</b>」を押すと、そのカードが開いて<b>また触れるようになります</b>'+
-  '（決めた内容は消えません。必要なところだけ直してください）。</p>'+
+  '（決めた内容は消えません。必要なところだけ直してください）。'+
+  '直し終わったら、そのカードのいちばん下の <b>［次に進む（つぎのカード）］</b>か<b>［トラッキングに進む］</b>を押します。</p>'+
   '<p><b>この実験の測定を消去</b>は、記録した点だけでなく<b>原点・スケール・x軸・時間範囲も消して</b>、'+
   '「2. 解析する時間範囲の指定」からやり直せる状態にもどします（動画はそのままです）。</p>'+
   '<p>全部を最初からやり直したいときは、上の「<b>すべての実験を消してリセット</b>」。'+
@@ -2337,7 +2380,7 @@ function openHelp(){
   '<li>②③の右上から <b>Excel／グラフPNG／CSV／レポートPNG／レポートPDF</b> を出せます（②では Excel・PNG の下に［力学的エネルギーを解析する］［運動量を解析する］）。'+
   'レポートには、フィッティングしたグラフと残差も載ります</li></ul>'+
   '<h3>精度について</h3>'+
-  '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。拡大すると精度が上がります</li>'+
+  '<ul><li>クリックのずれが実際の何 cm にあたるかを、3 のカードに出しています。動画をトリミングして大きく映すと、ずれは小さくなります</li>'+
   '<li>いちばん大きな誤差は<b>ものさしの奥行き</b>です。カメラから 3 m で、ものさしが 50 cm 手前にあると長さが約 17 % ずれます（<b>補足</b>のタブの「誤差の要因の例」）</li>'+
   '<li>コマ送りはシークの位置がずれることがあるので、<b>毎回いま表示されているコマの実測時刻を読み直して</b>記録しています</li></ul>'+
   '<h3>時刻はどうやって求めているか（時間算出法）</h3>'+
@@ -3351,8 +3394,16 @@ function askResetPts(go){
       updateVBoxNarrow();
       if(!$('mode2').classList.contains('hide')) renderMode2(); }, 180);
   });
+  /* 外側（暗い所）をクリックしたら閉じる。ただし、押した所も離した所も外側のときだけ
+     （入力欄で文字を選んで、外側で指を離しただけで閉じて、入力が消えないように）。
+     課題ファイルの画面は入力が多いので、外側をクリックしても閉じない（［閉じる］だけ） */
   els('.modal').forEach(function(m){
-    m.addEventListener('click', function(e){ if(e.target===m) m.classList.add('hide'); });
+    m.addEventListener('pointerdown', function(e){ m.__downOut=(e.target===m); });
+    m.addEventListener('click', function(e){
+      var ok=(e.target===m && m.__downOut); m.__downOut=false;
+      if(!ok || m.id==='kadaiModal') return;
+      m.classList.add('hide');
+    });
   });
 }
 var seekBusy=false;

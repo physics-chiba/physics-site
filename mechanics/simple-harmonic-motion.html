@@ -4994,7 +4994,7 @@ function fScene(s, ctx, g, st, opt) {
    ===================================================================== */
 function m2s6Q(s) { var l = s.v.l, m = s.v.m, w = Math.sqrt(G / l), th0 = s.v.th * Math.PI / 180, A = l * th0; return { m: m, K: m * G / l, w: w, T: TAU / w, A: A, phi: s.v.phi, Amax: l * 15 * Math.PI / 180, Amin: l * 2 * Math.PI / 180, l: l, th0: th0 }; }
 function pGeo(s, box, small) {
-  var Q = m2s6Q(s), top = box.y0 + (small ? 8 : 22), S = (box.h - (small ? 26 : 70)) / (2.0 + 0.06), px = box.x0 + box.w * (small || s.W < 480 ? 0.48 : 0.58), rb = small ? 6 : 12;   /* 左に参考の図があるので右へ（2026-10-25） */
+  var Q = m2s6Q(s), top = box.y0 + (small ? 8 : 22), S = (box.h - (small ? 84 : 70)) / (2.0 + 0.06),   /* 並べた図（small）も、小球の下に重力の矢印・mg・速度が入る余白を残す（2026-11-09 千葉さん：mg の字が矢印に重なっていた） */ px = box.x0 + box.w * (small || s.W < 480 ? 0.48 : 0.58), rb = small ? 6 : 12;   /* 左に参考の図があるので右へ（2026-10-25） */
   S = Math.min(S, (box.w * 0.45) / (2.0 * Math.sin(15 * Math.PI / 180)));
   var L = Q.l * S;
   var pos = function (X) { var th = X / Q.l; return { x: px + L * Math.sin(th), y: top + L * Math.cos(th) }; };
@@ -5093,7 +5093,7 @@ function pScene(s, ctx, g, st, opt) {
       if (ar) label(ctx, 'F = −mg sinθ', ar.x2 + (Lr < 0 ? -6 : 6), ar.y2 - 14, { size: 12, bold: true, color: COL.force, align: Lr < 0 ? 'right' : 'left' }); }
   }
   var vs = snap ? (opt.frame.v || 0) * 0.7 : (s.hideVec ? 0 : 1) * st.v / (Q.A * Q.w || 1), tu = [Math.cos(th), -Math.sin(th)];
-  if (Math.abs(vs) > 0.03) vArrowAt(ctx, b.x, b.y, 0, 1, (showF && !sm) ? Q.m * G * fs + 24 : rb + (sm ? 9 : 16), tu[0], tu[1], vs * (sm ? 28 : 40), !sm);   /* 速度は小球の下（重力の矢印の先よりさらに下） */
+  if (Math.abs(vs) > 0.03) vArrowAt(ctx, b.x, b.y, 0, 1, showF ? Q.m * G * fs + (sm ? 18 : 26) : rb + 16, tu[0], tu[1], vs * (sm ? 28 : 40), !sm);   /* 速度は小球の下（重力の矢印の先と mg の字よりさらに下。並べた図でも重ねない） */
   if (showF) {
     var S = Q.m * G * Math.cos(th) + Q.m * st.v * st.v / Q.l;
     fArrow(ctx, cp.x, cp.y, -Math.sin(th), -Math.cos(th), S * fs, COL.hand, sm ? null : 'S', { lx: -10 });

@@ -2149,6 +2149,7 @@ button.b.spk.on{background:#1663b5;border-color:#1663b5;color:#fff}
 .m4reftx .m4cond{background:var(--paper,#f5f3ee);border-radius:10px;padding:.45em .7em}
 .m4refh .m4zero{font-weight:700;color:#9b2418;font-size:.82rem}
 .m4refh button.b.rplay{display:block;margin-top:.45em}
+.m4name button.b.rreset,.m4refh button.b.rreset{margin-top:.25em;background:#fff}
 .m4name button.b.rplay,.m4refh button.b.rplay{font-size:.74rem;padding:.3em .8em;align-self:flex-start;white-space:nowrap;font-weight:700}
 .m4name button.b.rplay.on{background:var(--brand-50,#fdf4e8);border-color:#e07b18;color:#9c4e06}
 @media(max-width:900px){.m4ref{grid-template-columns:minmax(0,1fr)}}
@@ -2206,6 +2207,13 @@ button.b.chkb.fob{font-size:.92rem;font-weight:700;padding:.4em .9em}   /* 2 段
 .cvwrap button.b.chkb.sumov.on{background:var(--brand-50,#fdf4e8)}
 .row1b .seglbl.mgl2{margin-left:2.5em}
 .scope .speccv{margin-top:.45em}
+/* スペクトルの右上「縦軸を dB にする」と、下の「dB とは」（22 回目） */
+.scope .spdbtop{display:flex;justify-content:flex-end;margin-top:.45em}
+.scope .spdbtop + .speccv{margin-top:.3em}
+.scope button.b.spdb,.scope button.b.spdbq{font-size:.72rem;padding:.25em .7em;background:#e6efe9;font-weight:700}
+.scope button.b.spdb.on,.scope button.b.spdbq.on{background:#ffd678;border-color:#c9952a;color:#2a2006}
+.scope .spdbbot{margin-top:.35em}
+.scope .spdbtx{margin-top:.35em;background:#f4f8f5;color:var(--ink);border-radius:8px;padding:.5em .7em;font-size:.8rem;line-height:1.6}
 .scope .zbtns{display:flex;flex-wrap:wrap;gap:.3em;margin-top:.45em}
 .scope .zbtns button.b{font-size:.72rem;padding:.25em .7em;background:#e6efe9}
 #m3s2 .scopecv{touch-action:pan-y}
@@ -2356,6 +2364,11 @@ button.b.chkb.fob{font-size:.92rem;font-weight:700;padding:.4em .9em}   /* 2 段
 #m2s4 .drvchips button.b small{font-weight:600;opacity:.8;font-size:.85em}
 #m2s4 .drvchips button.b.on{background:#1d2b3a;color:#fff;border-color:#1d2b3a}
 #m2s4 .drvctl input[type=range]{width:100%}
+/* −／＋ つきの札＋スライダー（②-3・②-4。22 回目） */
+.drvbar{display:flex;align-items:flex-end;gap:.4em}
+.drvbar .drvmid{flex:1 1 auto;min-width:0}
+.drvbar button.tiny.nudge{flex:0 0 auto;margin-bottom:-1px}
+.drvctl input[type=range]{--c:var(--ink);display:block}
 /* ⑤-3：受信する振動数（図の中、家のアンテナの上。20 回目） */
 .m5tune{position:absolute;background:#fff;border:2px solid #e07b18;border-radius:10px;padding:.25em .55em .3em;box-shadow:0 2px 6px rgba(0,0,0,.12);z-index:2}
 .m5tune .m5tl{font-size:.78rem;color:var(--ink-2);white-space:nowrap}
@@ -2385,6 +2398,10 @@ button.b.chkb.fob{font-size:.92rem;font-weight:700;padding:.4em .9em}   /* 2 段
   #m5s1 .row1b .seg,#m5s2 .row1b .seg,#m5s3 .row1b .seg{display:grid;grid-template-columns:1fr 1fr;width:100%;border-radius:14px}
   #m5s1 .row1b .seg button,#m5s2 .row1b .seg button,#m5s3 .row1b .seg button{white-space:normal;line-height:1.25}
 }
+/* ②-4：段ごとの ▶ スタート・スロー・リセット・時間バー（図の左上。22 回目） */
+#m2s4 .m2s4ctl{margin:0 0 .45em;display:flex;flex-direction:column;gap:.35em;align-items:stretch}
+#m2s4 .m2s4ctl input[type=range]:disabled{cursor:default;opacity:1}
+#m2s4 .m2s4ctl button.b.m2s4zero{align-self:flex-start;font-size:.76rem;padding:.3em .8em;font-weight:700;background:#fff}
 
 </style>
 </head>
@@ -3466,6 +3483,16 @@ function vibBox(ctx, px, py, baseY, o) {
   ctx.restore();
   if (o.label !== false) label(ctx, o.label || '振動子', rx, baseY + 26, { size: 11, bold: true, color: '#9c4e06' });
 }
+/* 札＋スライダーの操作（②-3・②-4）に −／＋ を付ける（22 回目）：[−][札・スライダー][＋]。nudge(±1) で 1 目盛り動かす */
+function drvBar(rg, chips, nudge) {
+  var bar = el('div', 'drvbar'), mid = el('div', 'drvmid'), dn = el('button', 'tiny nudge', '−'), up = el('button', 'tiny nudge', '＋');
+  dn.type = up.type = 'button'; dn.title = '1 目盛り小さく'; up.title = '1 目盛り大きく';
+  dn.addEventListener('click', function () { nudge(-1); }); up.addEventListener('click', function () { nudge(1); });
+  mid.appendChild(chips); mid.appendChild(rg); bar.appendChild(dn); bar.appendChild(mid); bar.appendChild(up);
+  return bar;
+}
+/* スライダーの線を、つまみの左まで塗る（ほかのスライダーと同じ見た目） */
+function drvFill(rg) { var p = (+rg.value - +rg.min) / (+rg.max - +rg.min) * 100; rg.style.setProperty('--p', clamp(p, 0, 100).toFixed(1) + '%'); }
 
 /* ===== 45_sim.js ===== */
 /* =========================================================================
@@ -5183,7 +5210,7 @@ function m1s2StarBubble(s) {
   var c = sec.getBoundingClientRect(), a = s.wg.cv.getBoundingClientRect(), b = s.wgt.box.getBoundingClientRect();
   var W = Math.round(c.width), H = Math.round(c.height);
   s.ssvg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); s.ssvg.setAttribute('width', W); s.ssvg.setAttribute('height', H);
-  var sx = a.left - c.left + sxr + 12, sy = a.top - c.top + g.Y(m1s2Y(s, xp, s.t));
+  var sx = a.left - c.left + sxr + 12, sy = a.top - c.top + g.Y(0);   /* 先は ★ のつり合いの位置（y = 0）。点 O の吹き出しと同じく動かさない（22 回目） */
   var x0 = b.left - c.left - 8, y0 = b.top - c.top - 8, x1 = b.right - c.left + 8, y1 = b.bottom - c.top + 8, r = 18;
   var ty = clamp(sy, y0 + r + 16, y1 - r - 16), t1 = ty - 14, t2 = ty + 14;
   var d = 'M' + (x0 + r) + ' ' + y0 + ' L' + (x1 - r) + ' ' + y0 + ' Q' + x1 + ' ' + y0 + ' ' + x1 + ' ' + (y0 + r) + ' L' + x1 + ' ' + (y1 - r) + ' Q' + x1 + ' ' + y1 + ' ' + (x1 - r) + ' ' + y1 +
@@ -5243,7 +5270,7 @@ function m1s2Front(s, ctx, g) {
     var l1 = '点 ' + nm + ' の y-t', l2 = 'グラフは' + (narrow ? '下 ↓' : '右 →');
     ctx.save(); ctx.font = '700 11.5px ' + FONT; var bw = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width) + 20, bh = 38;
     var bx = Math.min(sx - 6, g.W - bw - 3), by = g.R.y0 + 4, lx = clamp(sx, bx + 6, bx + bw - 6);
-    ctx.strokeStyle = '#c9670c'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(lx, by + bh); ctx.lineTo(sx, sy - 10); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#c9670c'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(lx, by + bh); ctx.lineTo(sx, g.Y(0) - 10); ctx.stroke();   /* 線の先は y = 0 の位置で止めておく（22 回目） */ ctx.setLineDash([]);
     ctx.shadowColor = 'rgba(20,23,28,.16)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3; ctx.fillStyle = '#fff5d6'; rrect(ctx, bx, by, bw, bh, 10); ctx.fill(); ctx.shadowColor = 'transparent';
     ctx.strokeStyle = '#d9a545'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.fillStyle = '#8a5000'; ctx.textBaseline = 'middle'; ctx.fillText(l1, bx + 10, by + 11.5); ctx.fillText(l2, bx + 10, by + 27); ctx.restore();
   }
@@ -5802,7 +5829,7 @@ M4Sec.prototype.build = function (host) {
   this.bReset = el('button', 'b', '↺ リセット'); this.bReset.type = 'button';
   ctr.appendChild(this.bPlay); ctr.appendChild(this.bReset);
   this.bPlay.addEventListener('click', function () { self.togglePlay(); });
-  this.bReset.addEventListener('click', function () { Object.keys(self.rows).forEach(function (k) { self.rows[k].tl = 0; self.rows[k].on = false; }); self.playing = false; self.syncPlayLabel(); self.draw(); });
+  this.bReset.addEventListener('click', function () { Object.keys(self.rows).forEach(function (k) { self.rows[k].tl = 0; self.rows[k].on = false; self.rows[k].msg = null; }); self.playing = false; self.syncPlayLabel(); self.draw(); });
   this.rows = {};
   var tab = host.querySelector('.m4tab');
   ['machine', 'water', 'string', 'quake', 'sound', 'light', 'surf'].forEach(function (k) {
@@ -5909,6 +5936,10 @@ M4Sec.prototype.rowPlayBtn = function (k, host) {
   var self = this, b = el('button', 'b rplay', '▶ スタート'); b.type = 'button';
   b.addEventListener('click', function () { self.toggleRow(k); });
   host.appendChild(b); this.rows[k].pb = b;
+  /* その波だけの ↺ リセット（▶ スタートの下。22 回目） */
+  var rb = el('button', 'b rplay rreset', '↺ リセット'); rb.type = 'button';
+  rb.addEventListener('click', function () { var r = self.rows[k]; r.tl = 0; r.on = false; r.msg = null; self.playing = self.anyOn(); self.syncPlayLabel(); self.draw(); });
+  host.appendChild(rb); this.rows[k].rb = rb;
 };
 M4Sec.prototype.anyOn = function () { var r = this.rows; return Object.keys(r).some(function (k) { return r[k].on; }); };
 M4Sec.prototype.allOn = function () { var r = this.rows; return Object.keys(r).every(function (k) { return r[k].on; }); };
@@ -6463,15 +6494,15 @@ function m2s2Geo(W, H) {
 }
 DEFS.m2s2 = {
   id: 'm2s2', mode: 'mode2', num: 2,
-  title: '波の反射（固定端反射と自由端反射）', short: '波の反射',
-  desc: '端で反射した<b>反射波</b>が<b>入射波</b>と重なる。<span class="todo">固定端・自由端を切り替え（端をクリックしても切り替わる）、反射波の作図も確かめよう。</span>',
+  title: '波の反射（自由端反射と固定端反射）', short: '波の反射',
+  desc: '端で反射した<b>反射波</b>が<b>入射波</b>と重なる。<span class="todo">自由端・固定端を切り替え（端をクリックしても切り替わる）、反射波の作図も確かめよう。</span>',
   strobe: false, stepDiv: 16,
-  init: function (s) { s.sh = 'sin'; s.fixed = true; s.showDisp = false; s.stp = 0; s.showSum = false; s.showComp = true; s.showNodes = false; s.showVirt = false; s._nodeLink = false; s.showBead = true; },   /* 既定は連続波（2026-11-03 千葉さん 3 回目） */
+  init: function (s) { s.sh = 'sin'; s.fixed = false;   /* 既定は自由端（22 回目） */ s.showDisp = false; s.stp = 0; s.showSum = false; s.showComp = true; s.showNodes = false; s.showVirt = false; s._nodeLink = false; s.showBead = true; },   /* 既定は連続波（2026-11-03 千葉さん 3 回目） */
   onDefaults: function (s) { m2s2Sync(s); },
   onReset: function (s) { if (s.stp) { s.stp = 0; m2s2Sync(s); } },
   buttons: [
-    { k: 'fix', label: '固定端', seg: 'end', segLabel: '端のようす', onClick: function (s) { s.fixed = true; m2s2Sync(s); s.draw(); } },
-    { k: 'free', label: '自由端', seg: 'end', onClick: function (s) { s.fixed = false; m2s2Sync(s); s.draw(); } }
+    { k: 'free', label: '自由端', seg: 'end', segLabel: '端のようす', onClick: function (s) { s.fixed = false; m2s2Sync(s); s.draw(); } },   /* 自由端を左に（22 回目） */
+    { k: 'fix', label: '固定端', seg: 'end', onClick: function (s) { s.fixed = true; m2s2Sync(s); s.draw(); } }
   ].concat(M2_SHAPES.map(function (p) { return { k: 'S_' + p[0], label: p[0] === 'sin' ? '連続波' : (p[0] === 'pulse' ? 'パルス' : '三角パルス'), seg: 'shape', segLabel: '入射波の形', onClick: function (s) { s.sh = p[0]; m2s2Sync(s); s.resetT(); } }; }))
     .concat([
       /* ②-1 と同じチェック（2026-11-03 千葉さん 5 回目）。合成波は既定 OFF・押されるまで光る */
@@ -6552,6 +6583,7 @@ function drawM2S2(s, ctx, W, H) {
   /* 端（固定端：壁にとめてある／自由端：輪が棒にそって自由に動く） */
   ctx.save(); ctx.strokeStyle = '#2b323c'; ctx.lineWidth = 2.2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(xe, gt + 4); ctx.lineTo(xe, H - 10); ctx.stroke(); ctx.restore();
   label(ctx, q.fixed ? '固定端' : '自由端', xe, H - 12, { size: 12, bold: true, color: COL.ink });
+  if (q.fixed) { ctx.save(); ctx.translate(xe, 0); ctx.scale(-1, 1); srcHand(ctx, 0, g.cy, false, false); ctx.restore(); }   /* 固定端：右端を手でつかんで動かないようにする（22 回目。腕は右下へ） */
   if (st || s.showVirt) label(ctx, '壁の向こう（仮想の波）', (xe + g.x1) / 2, st ? gt + 12 : gt + 48, { size: 10.5, color: '#9c4e06' });
   var full = !st, virt = st || s.showVirt, comp = st || s.showComp;  /* ステップ表示のときは、手順ごとに出すものを決める */
   if (s.virtBtn) { var vl = Math.round(Math.min(W - s.virtBtn.offsetWidth - 6, Math.max(xe + 8, (xe + g.x1) / 2 - s.virtBtn.offsetWidth / 2))); if (s.virtBtn._l !== vl) { s.virtBtn._l = vl; s.virtBtn.style.left = vl + 'px'; } }
@@ -6614,13 +6646,14 @@ function m2s2Nodes(ctx, q, t, X, Y, g) {
 }
 function rightM2S2(s, R) {
   var q = m2s2Q(s);
-  var h = '<div class="qcard"><p class="qt">固定端反射と自由端反射</p>' +
-    '<table class="reltab grid1"><thead><tr><th></th><th>固定端</th><th>自由端</th></tr></thead><tbody>' +
-    '<tr><th>端のようす</th><td>動けない</td><td>自由に動ける</td></tr>' +
-    '<tr><th>反射波</th><td>上下が逆になる<br>（山 → 谷）</td><td>そのまま<br>（山 → 山）</td></tr>' +
-    '<tr><th>端の合成波</th><td>いつも 0（節）</td><td>入射波の 2 倍（腹）</td></tr></tbody></table>' +
-    '<p><b>反射波の作図</b>：入射波を端の向こうへ延ばし、固定端なら上下を逆にしてから、端を軸に折り返す（自由端ならそのまま折り返す）。</p>' +
-    '<p>連続した正弦波が反射すると、入射波と反射波が重なって<b>定在波</b>ができる。固定端は節、自由端は腹になる。</p>' +
+  var h = '<div class="qcard"><p class="qt">自由端反射と固定端反射</p>' +
+    '<table class="reltab grid1"><thead><tr><th></th><th>自由端</th><th>固定端</th></tr></thead><tbody>' +   /* 左が自由端（22 回目） */
+    '<tr><th>端のようす</th><td>自由に動ける</td><td>動けない</td></tr>' +
+    '<tr><th>反射波</th><td>そのまま<br>（山 → 山）</td><td>上下が逆になる<br>（山 → 谷）</td></tr>' +
+    '<tr><th>位相変化</th><td>変化なし</td><td><i>π</i></td></tr>' +
+    '<tr><th>端の合成波</th><td>入射波の 2 倍（腹）</td><td>いつも 0（節）</td></tr></tbody></table>' +
+    '<p><b>反射波の作図</b>：入射波を端の向こうへ延ばし、自由端ならそのまま、固定端なら上下を逆にしてから、端を軸に折り返す。</p>' +
+    '<p>連続した正弦波が反射すると、入射波と反射波が重なって<b>定在波</b>ができる。自由端は腹、固定端は節になる。</p>' +
     '<p class="qnow"><span class="qtag now">いま</span>' + (q.fixed ? '固定端' : '自由端') + '。$\\lambda = ' + fmt(q.lam, 1) + '$ m、$v = ' + fmt(q.v, 1) + '$ m/s</p></div>';
   R.innerHTML = mathify(h);
 }
@@ -6683,7 +6716,8 @@ DEFS.m2s3 = {
     var go = function () { if (s.pmode === 'drive') m2s3Pluck(s, 'drive'); else { m2s3Sync(s); s.draw(); } };
     M2S3_DF.forEach(function (r) { var b = el('button', 'b drvchip', (r === 1 ? '' : r) + 'f₁'); b.type = 'button'; b.style.left = 'calc(9px + (100% - 18px) * ' + ((r - 0.75) / 2.5).toFixed(4) + ')'; b.addEventListener('click', function () { s.dm = r; go(); }); chips.appendChild(b); });
     rg.addEventListener('input', function () { s.dm = +rg.value; go(); });
-    dv.appendChild(dvv); dv.appendChild(chips); dv.appendChild(rg); s.Rdyn.insertAdjacentElement('beforebegin', dv); s.drv = dv; s.drvRg = rg; s.drvVal = dvv; s.drvChips = chips;
+    var nd = function (sg) { s.dm = clamp(+((Math.round(s.dm / 0.05) + sg) * 0.05).toFixed(2), 0.75, 3.25); go(); };   /* −／＋ で 0.05f₁ ずつ（22 回目） */
+    dv.appendChild(dvv); dv.appendChild(drvBar(rg, chips, nd)); s.Rdyn.insertAdjacentElement('beforebegin', dv); s.drv = dv; s.drvRg = rg; s.drvVal = dvv; s.drvChips = chips;
     m2s3Sync(s);
   },
   draw: function (s, ctx, W, H) { drawM2S3(s, ctx, W, H); },
@@ -6703,6 +6737,7 @@ function m2s3Sync(s) {
   if (s.drv) {
     var q = m2s3Q(s); s.drv.style.display = s.pmode === 'drive' ? '' : 'none';
     if (+s.drvRg.value !== s.dm) s.drvRg.value = s.dm;
+    drvFill(s.drvRg);
     s.drvVal.innerHTML = '振動子の振動数　<b>' + sig(s.dm * q.f1, 2) + ' Hz</b>（' + fmt(s.dm, 2) + 'f₁）';
     Array.prototype.forEach.call(s.drvChips.children, function (b, i) { b.classList.toggle('on', Math.abs(M2S3_DF[i] - s.dm) < 1e-9); });
   }
@@ -6793,13 +6828,12 @@ function m2Finger(ctx, x, y, a) {
 var M2S4 = {
   g: 9.8, X0: 0.01, gam: 0.25,
   P: [['A', 0.20], ['B', 0.47], ['C', 0.74], ['D', 0.24], ['E', 0.47], ['F', 0.70]],   /* 写真の振り子 A〜F の長さ〔m〕（およそ） */
-  fork: 440, Q: 200
+  fork: 440, Q: 200, TMAX: 60   /* 時間バーの最大（22 回目。60 s で止まる） */
 };
 function m2s4F0(L) { return Math.sqrt(M2S4.g / L) / TAU; }
-function m2s4Reset(s) {
-  s.pd = M2S4.P.map(function () { return { th: 0, w: 0 }; }); s.tp = 0;
-  s.fk = { aL: 0, aR: 0, hit: false, mute: false };
-}
+function m2s4Reset(s) { m2s4ResetP(s); m2s4ResetF(s); }
+function m2s4ResetP(s) { s.pd = M2S4.P.map(function () { return { th: 0, w: 0 }; }); s.tp = 0; s.stg = s.stg || [{}, {}]; s.stg[0] = { on: false, slow: false, t: 0 }; }
+function m2s4ResetF(s) { s.fk = { aL: 0, aR: 0, hit: false, mute: false }; s.stg = s.stg || [{}, {}]; s.stg[1] = { on: false, slow: false, t: 0 }; }
 DEFS.m2s4 = {
   id: 'm2s4', mode: 'mode2', num: 4,
   title: '共振の例', short: '共振の例',
@@ -6810,7 +6844,7 @@ DEFS.m2s4 = {
     { k: 'ff', label: 'たたくおんさの振動数 $f$', aria: 'たたくおんさの振動数', min: 400, max: 480, step: 1, def: 440, fmt: function (x) { return Math.round(x) + ' Hz'; } }
   ],
   init: function (s) { m2s4Reset(s); },
-  onDefaults: function (s) { m2s4Reset(s); AUDIO.owner() === 'm2s4' && AUDIO.stop(); m2s4Btns(s); s.drvP && (s.drvP.sync(), s.drvF.sync()); },
+  onDefaults: function (s) { m2s4Reset(s); s._stgSync && s._stgSync(); AUDIO.owner() === 'm2s4' && AUDIO.stop(); m2s4Btns(s); s.drvP && (s.drvP.sync(), s.drvF.sync()); },
   onChanged: function (s, k) { if (s.fk && s.fk.hit && !s.fk.mute) m2s4Sound(s); m2s4Btns(s); return 'keepT'; },
   buttons: [],
   tEnd: function () { return 1e6; },
@@ -6825,6 +6859,22 @@ DEFS.m2s4 = {
       row.appendChild(hd); row.appendChild(lc); row.appendChild(rc); box.appendChild(row);
       return { row: row, L: lc, R: rc };
     });
+    /* 段ごとの操作（図の左上。22 回目）。上のふつうの ▶ スタート・時間バーはかくす */
+    var pbar0 = s.L.querySelector('.ctrls .playbar'); if (pbar0) pbar0.style.display = 'none';
+    var bz = el('button', 'b m2s4zero', '全ての振り子を一度止める'); bz.type = 'button';
+    bz.addEventListener('click', function () { s.pd.forEach(function (p) { p.th = 0; p.w = 0; }); s.draw(); });
+    s.ctl = [m2s4Ctl(s, 0, s.bRows[0].L, bz), m2s4Ctl(s, 1, s.bRows[1].L)];
+    s._stgSync = function (light) {
+      s.stg.forEach(function (st, i) {
+        var c = s.ctl[i], tx = st.on ? '❚❚ 一時停止' : (st.end ? '▶ 最初から' : '▶ スタート');
+        if (c.bp.textContent !== tx) c.bp.textContent = tx;
+        c.bs.classList.toggle('on', !!st.slow);
+        c.rg.value = String(st.t); c.rg.style.setProperty('--p', (st.t / M2S4.TMAX * 100).toFixed(2) + '%');
+        var tv = fmt(st.t, 1) + ' s'; if (c.tv.textContent !== tv) c.tv.textContent = tv;
+      });
+    };
+    /* ほかの節が動き出して playing = false にされたら、両方の段を止める */
+    s.syncPlayLabel = function () { if (!s.playing && s.stg) { s.stg[0].on = false; s.stg[1].on = false; } Sim.prototype.syncPlayLabel.call(s); if (s._stgSync) s._stgSync(); };
     s.bRows[0].L.appendChild(s.cw);
     var cw2 = el('div', 'cvwrap'), cv2 = el('canvas'); cw2.appendChild(cv2); s.bRows[1].L.appendChild(cw2); s.cv2 = cv2;
     /* 振動数の操作：②-3 の振動子と同じ「札＋スライダー」一体の形（2026-11-08 千葉さん 20 回目） */
@@ -6839,7 +6889,7 @@ DEFS.m2s4 = {
     s.bHit = el('button', 'b glow', '🔨 おんさをたたく（音が鳴る）'); s.bHit.type = 'button';
     s.bMute = el('button', 'b', '✋ たたいたおんさを手で押さえる'); s.bMute.type = 'button';
     s.bStop = el('button', 'b', '■ 音を止める'); s.bStop.type = 'button';
-    s.bHit.addEventListener('click', function () { s.fk.hit = true; s.fk.mute = false; s.fk.aL = 1; m2s4Sound(s); if (!s.playing) s.togglePlay(); m2s4Btns(s); });
+    s.bHit.addEventListener('click', function () { s.fk.hit = true; s.fk.mute = false; s.fk.aL = 1; m2s4Sound(s); if (!s.stg[1].on) m2s4Go(s, 1, true); m2s4Btns(s); });
     s.bMute.addEventListener('click', function () { if (!s.fk.hit) return; s.fk.mute = true; m2s4Sound(s); m2s4Btns(s); });
     s.bStop.addEventListener('click', function () { s.fk.hit = false; s.fk.mute = false; s.fk.aL = 0; s.fk.aR = 0; AUDIO.owner() === 'm2s4' && AUDIO.stop(); m2s4Btns(s); s.draw(); });
     bb.appendChild(s.bHit); bb.appendChild(s.bMute); bb.appendChild(s.bStop); s.bRows[1].R.appendChild(bb);
@@ -6849,7 +6899,28 @@ DEFS.m2s4 = {
     m2s4Btns(s);
   },
   beforeStep: function (s, t0, t1) {
-    /* 振り子：4 次のルンゲ・クッタ（刻み 1/600 s） */
+    /* 上の段・下の段は、それぞれの ▶ スタート・スロー・時間で進める（22 回目） */
+    var raw = (t1 - t0) / s.rate;
+    [0, 1].forEach(function (i) {
+      var st = s.stg[i]; if (!st.on) return;
+      var d = Math.min(raw * (st.slow ? 0.3 : 1), M2S4.TMAX - st.t);
+      if (d > 0) { if (i) m2s4StepF(s, d); else m2s4StepP(s, d); st.t += d; }
+      if (st.t >= M2S4.TMAX - 1e-9) { st.t = M2S4.TMAX; st.on = false; st.end = true; }
+    });
+    s.playing = s.stg[0].on || s.stg[1].on;
+    if (!s.playing) { s._stgSync(); }
+  },
+  draw: function (s, ctx, W, H) {
+    drawM2S4P(s, ctx, W, H);
+    if (s.cv2 && s.cv2.offsetParent) { var w2 = Math.max(260, Math.floor(s.cv2.clientWidth || 300)), h2 = w2 < 560 ? 250 : 260, c2 = prep(s.cv2, w2, h2); c2.fillStyle = '#fff'; c2.fillRect(0, 0, w2, h2); drawM2S4F(s, c2, w2, h2); }
+    m2s4Info(s); if (s._stgSync) s._stgSync(true);
+  },
+  right: function (s, R) { rightM2S4(s, R); }
+};
+/* 振り子：4 次のルンゲ・クッタ（刻み 1/600 s） */
+function m2s4StepP(s, dt) {
+  var t0 = 0, t1 = dt;
+  {
     var w = TAU * s.v.fp, X0 = M2S4.X0, g = M2S4.g, gm = M2S4.gam, n = Math.max(1, Math.ceil((t1 - t0) * 600)), h = (t1 - t0) / n;
     s.pd.forEach(function (p, i) {
       var L = M2S4.P[i][1], acc = function (t, th, om) { return -(g / L) * th - gm * om + (X0 * w * w / L) * Math.sin(w * t); };
@@ -6863,17 +6934,40 @@ DEFS.m2s4 = {
       }
     });
     s.tp += t1 - t0;
-    /* おんさ：たたいた方は 8 s の時定数で弱まる（おさえたらすぐ 0）。440 Hz の方は R·aL に時定数 τ で近づく */
-    var dt = t1 - t0, fk = s.fk, tau = M2S4.Q / (Math.PI * M2S4.fork);
-    if (fk.hit) { fk.aL = fk.mute ? 0 : fk.aL * Math.exp(-dt / 8); var R = m2s4R(s), tgt = R * fk.aL; fk.aR += (tgt - fk.aR) * (1 - Math.exp(-dt / (fk.mute ? 8 : tau))); }
-  },
-  draw: function (s, ctx, W, H) {
-    drawM2S4P(s, ctx, W, H);
-    if (s.cv2 && s.cv2.offsetParent) { var w2 = Math.max(260, Math.floor(s.cv2.clientWidth || 300)), h2 = w2 < 560 ? 250 : 260, c2 = prep(s.cv2, w2, h2); c2.fillStyle = '#fff'; c2.fillRect(0, 0, w2, h2); drawM2S4F(s, c2, w2, h2); }
-    m2s4Info(s);
-  },
-  right: function (s, R) { rightM2S4(s, R); }
-};
+  }
+}
+/* おんさ：たたいた方は 8 s の時定数で弱まる（おさえたらすぐ 0）。440 Hz の方は R·aL に時定数 τ で近づく */
+function m2s4StepF(s, dt) {
+  var fk = s.fk, tau = M2S4.Q / (Math.PI * M2S4.fork);
+  if (fk.hit) { fk.aL = fk.mute ? 0 : fk.aL * Math.exp(-dt / 8); var R = m2s4R(s), tgt = R * fk.aL; fk.aR += (tgt - fk.aR) * (1 - Math.exp(-dt / (fk.mute ? 8 : tau))); }
+}
+/* 段ごとの ▶ スタート・🐢 スロー・↺ リセット・時間バー（図の左上。22 回目）。時間バーは見るだけ（0〜60 s） */
+function m2s4Ctl(s, i, host, extra) {
+  var c = el('div', 'ctrls m2s4ctl'), pb = el('div', 'playbar'), r1 = el('div', 'row1'), bt = el('div', 'btns'), tr = el('div', 'trow'), tb = el('div', 'tbox m2s4tb');
+  var bp = el('button', 'b play', '▶ スタート'), bs = el('button', 'b', '🐢 スロー'), br = el('button', 'b gapL', '↺ リセット');
+  [bp, bs, br].forEach(function (b) { b.type = 'button'; bt.appendChild(b); });
+  var rg = el('input'); rg.type = 'range'; rg.min = '0'; rg.max = String(M2S4.TMAX); rg.step = '0.01'; rg.value = '0'; rg.disabled = true; rg.tabIndex = -1; rg.setAttribute('aria-label', '時間');
+  var tv = el('span', 'vv', '0.0 s');
+  tb.appendChild(el('span', 'vl', '時間 ' + tex('t'))); tb.appendChild(rg); tb.appendChild(tv); tr.appendChild(tb);
+  r1.appendChild(bt); pb.appendChild(r1); pb.appendChild(tr); c.appendChild(pb);
+  if (extra) c.appendChild(extra);
+  host.appendChild(c);
+  bp.addEventListener('click', function () { m2s4Go(s, i, !s.stg[i].on); });
+  bs.addEventListener('click', function () { s.stg[i].slow = !s.stg[i].slow; s._stgSync(); });
+  br.addEventListener('click', function () {
+    if (i) { m2s4ResetF(s); if (AUDIO.owner() === 'm2s4') AUDIO.stop(); m2s4Btns(s); } else m2s4ResetP(s);
+    s.playing = s.stg[0].on || s.stg[1].on; s.draw();
+  });
+  return { bp: bp, bs: bs, rg: rg, tv: tv };
+}
+function m2s4Go(s, i, on) {
+  var st = s.stg[i];
+  if (on) {
+    if (st.end) { if (i) { m2s4ResetF(s); m2s4Btns(s); } else m2s4ResetP(s); st = s.stg[i]; }   /* 60 s で止まっていたら最初から */
+    SIMS.forEach(function (o) { if (o !== s && o.playing) { o.playing = false; o.syncPlayLabel(); } });
+    st.on = true; s.playing = true; s._stgSync(); startLoop();
+  } else { st.on = false; s.playing = s.stg[0].on || s.stg[1].on; s._stgSync(); }
+}
 function m2s4R(s) { var x = 2 * M2S4.Q * (s.v.ff - M2S4.fork) / M2S4.fork; return 1 / Math.sqrt(1 + x * x); }
 function m2s4Sound(s) {
   var fk = s.fk, R = m2s4R(s), v = [];
@@ -6979,8 +7073,9 @@ function m2s4Drv(s, host, k, lo, hi, step, chips, txt) {
   });
   rg.addEventListener('input', function () { set(+rg.value); });
   if (two) cb.style.height = '3.9em';
-  dv.appendChild(dvv); dv.appendChild(cb); dv.appendChild(rg); host.appendChild(dv);
-  var o = { sync: function () { if (+rg.value !== s.v[k]) rg.value = s.v[k]; dvv.innerHTML = txt(s.v[k]); bs.forEach(function (q) { q[0].classList.toggle('on', Math.abs(q[1] - s.v[k]) < step / 2); }); } };
+  var nd = function (sg) { set(clamp(+((Math.round(s.v[k] / step) + sg) * step).toFixed(4), lo, hi)); };   /* −／＋ で 1 目盛り（22 回目） */
+  dv.appendChild(dvv); dv.appendChild(drvBar(rg, cb, nd)); host.appendChild(dv);
+  var o = { sync: function () { if (+rg.value !== s.v[k]) rg.value = s.v[k]; drvFill(rg); dvv.innerHTML = txt(s.v[k]); bs.forEach(function (q) { q[0].classList.toggle('on', Math.abs(q[1] - s.v[k]) < step / 2); }); } };
   o.sync(); return o;
 }
 
@@ -6994,19 +7089,68 @@ function m2s4Drv(s, host, k, lo, hi, step, chips, txt) {
 'use strict';
 /* ---------- 音色（倍音の表）---------- */
 /* 声：声帯の音（倍音ほど小さい）に、口の形で決まる共鳴（フォルマント）をかける。フォルマントは日本語の母音のおよその値 */
-var M3_FORMANT = { a: [[800, 120], [1200, 150], [2500, 200]], i: [[300, 80], [2300, 160], [3000, 200]], u: [[320, 80], [1300, 150], [2400, 200]],
-  /* オペラ歌手の「う」（19 回目）：ふつうの「う」より口の中を広げた暗い響き＋「歌手のフォルマント」（2.5〜3.2 kHz の強い山。オーケストラに負けずに声が通る）。高い倍音までたっぷり */
-  U: [[350, 90], [800, 160], [2600, 260], [3000, 320]] };
-var M3_FW = { U: [1, 0.55, 1.1, 1.2] };
+var M3_FORMANT = { a: [[800, 120], [1200, 150], [2500, 200]], i: [[300, 80], [2300, 160], [3000, 200]], u: [[320, 80], [1300, 150], [2400, 200]] };
+var M3_FW = {};
+/* オペラ歌手の「あ」（22 回目に作り直し。19 回目の「う」は、よい声に聞こえなかった）
+   ・声帯の音（倍音の大きさ ∝ n^−0.6）を、口とのどの共鳴（フォルマント）に通す。共鳴は並べてつなぎ、山の高さ（[振動数, 幅, 高さ]）を決めて足す
+   ・高い声（300 Hz 以上）はソプラノ、低い声はテノールの値。いちばん低い山は、声帯の音そのものの山（基音を強くする）
+   ・2.5〜3.5 kHz のフォルマントが集まった山（歌手のフォルマント）で、声がよく通る。PC やスマホのスピーカーでもよく聞こえる帯
+   ・鳴らす音にはビブラート（1 秒に 5.5 回、±60 セント）と、息の音を少し加える（m3OperaBuf）。図は、ビブラートのない形 */
+var M3_OPERA = { hi: [[900, 110, 1], [1300, 130, 0.6], [2800, 180, 0.3], [3400, 220, 0.25], [4200, 280, 0.1]], lo: [[700, 90, 1], [1150, 110, 0.6], [2700, 140, 0.4], [3050, 160, 0.35], [3400, 190, 0.2]] };
+var M3_OPSR = 32000;
+/* 共鳴 1 つ：y[k] = A x[k] + B y[k−1] + C y[k−2]。振動数 f での応答（複素数）を [実部, 虚部] で返す */
+function m3OpCx(r, f) { var w = TAU * f / M3_OPSR, re = 1 - r.B * Math.cos(w) - r.C * Math.cos(2 * w), im = r.B * Math.sin(w) + r.C * Math.sin(2 * w), d = re * re + im * im; return [r.A * re / d, -r.A * im / d]; }
+function m3OpRes(f0) {
+  var F = [[Math.max(f0, 250), 250, 0.55]].concat(f0 >= 300 ? M3_OPERA.hi : M3_OPERA.lo);
+  return F.map(function (p, i) {
+    var C = -Math.exp(-TAU * p[1] / M3_OPSR), B = 2 * Math.exp(-Math.PI * p[1] / M3_OPSR) * Math.cos(TAU * p[0] / M3_OPSR), r = { A: 1 - B - C, B: B, C: C }, g = m3OpCx(r, p[0]);
+    r.A *= p[2] / Math.sqrt(g[0] * g[0] + g[1] * g[1]) * (i % 2 ? -1 : 1);   /* 山の高さをそろえ、となりの山とは逆向きに足す（山と山の間で打ち消し合わないように） */
+    return r;
+  });
+}
+function m3OpGain(R, f) { var re = 0, im = 0; R.forEach(function (r) { var c = m3OpCx(r, f); re += c[0]; im += c[1]; }); return Math.sqrt(re * re + im * im); }
 function m3Voice(vow, f0) {
-  var F = M3_FORMANT[vow], W = M3_FW[vow] || [1, 0.7, 0.35], op = vow === 'U', out = [];
-  for (var n = 1; n * f0 <= (op ? 8000 : 5000) && n <= (op ? 60 : 40); n++) {
+  var out = [], n;
+  if (vow === 'U') { var R = m3OpRes(f0); for (n = 1; n * f0 <= 8000 && n <= 60; n++) out.push([n, Math.pow(n, -0.6) * m3OpGain(R, n * f0)]); return out; }
+  var F = M3_FORMANT[vow], W = M3_FW[vow] || [1, 0.7, 0.35];
+  for (n = 1; n * f0 <= 5000 && n <= 40; n++) {
     var fr = n * f0, g = 0;
     F.forEach(function (p, i) { g += W[i] / (1 + Math.pow((fr - p[0]) / p[1], 2)); });
-    out.push([n, op ? g / Math.pow(n, 0.6) : g / n]);   /* 歌手は声帯の音の倍音が弱まりにくい */
+    out.push([n, g / n]);
   }
   return out;
 }
+/* オペラ歌手の声の音のデータ（4 秒をくり返す。ゆらぎはどれも 4 秒でちょうど元に戻る振動数にして、つなぎ目で音が切れないようにする） */
+var _m3op = {};
+function m3OperaBuf(f0) {
+  f0 = Math.round(f0); if (_m3op[f0]) return _m3op[f0];
+  var sr = M3_OPSR, T = 4, L = sr * T, N = Math.floor(9000 / f0), ph = new Float64Array(L), env = new Float32Array(L), src = new Float32Array(L), tot = 0, k, n;
+  for (k = 0; k < L; k++) {
+    var t = k / sr, dv = 0.035 * (1 + 0.12 * Math.sin(TAU * 0.5 * t));                           /* ビブラートの深さも少しゆれる */
+    var fr = f0 * (1 + dv * Math.sin(TAU * 5.5 * t) + 0.003 * Math.sin(TAU * 1.25 * t + 1) + 0.002 * Math.sin(TAU * 3 * t + 2));
+    ph[k] = tot; tot += fr / sr;
+    env[k] = 1 + 0.06 * Math.sin(TAU * 5.5 * t - 0.6) + 0.03 * Math.sin(TAU * 0.75 * t);          /* 大きさもビブラートに合わせて少しゆれる */
+  }
+  var sc = Math.round(tot) / tot, r = 2468, am = []; for (n = 1; n <= N; n++) am[n] = Math.pow(n, -0.6);                                                       /* 4 秒でちょうど整数回になるように、ほんの少しそろえる */
+  for (k = 0; k < L; k++) {
+    var th = TAU * ph[k] * sc, c2 = 2 * Math.cos(th), s1 = Math.sin(th), s0 = 0, y = 0;            /* sin nθ を順に（sₙ = 2cosθ·sₙ₋₁ − sₙ₋₂） */
+    for (n = 1; n <= N; n++) { y += am[n] * s1; var s2 = c2 * s1 - s0; s0 = s1; s1 = s2; }
+    r = (r * 1103515245 + 12345) & 0x7fffffff;
+    var nz = ((r / 0x7fffffff) * 2 - 1) * 0.04 * (0.6 + 0.4 * Math.cos(th));                         /* 息の音（声帯が開くときに多い） */
+    src[k] = env[k] * (y + nz);
+  }
+  var R = m3OpRes(f0), out = new Float32Array(L), mx = 0;
+  R.forEach(function (q, i) { R[i] = { A: q.A, B: q.B, C: q.C, y1: 0, y2: 0 }; });
+  for (var pass = 0; pass < 2; pass++) for (k = 0; k < L; k++) {                                   /* 2 回通して、2 回目を使う（つなぎ目も同じ響きになる） */
+    var x = src[k], sum = 0;
+    for (var j = 0; j < R.length; j++) { var q = R[j], yy = q.A * x + q.B * q.y1 + q.C * q.y2; q.y2 = q.y1; q.y1 = yy; sum += yy; }
+    if (pass) { out[k] = sum; mx = Math.max(mx, Math.abs(sum)); }
+  }
+  for (k = 0; k < L; k++) out[k] = out[k] / mx * 0.9;
+  _m3op[f0] = out; return out;
+}
+/* 声の音を鳴らすときの voices：オペラ歌手はデータの音、ほかは倍音の表 */
+function m3VoiceV(vow, f0, parts) { return vow === 'U' ? { f: f0, data: m3OperaBuf(f0), sr: M3_OPSR } : { f: f0, partials: parts || m3Voice(vow, f0) }; }
 var M3_INST = {
   fork: [[1, 1]],
   flute: [[1, 1], [2, 0.45], [3, 0.2], [4, 0.08], [5, 0.04]],
@@ -7014,7 +7158,7 @@ var M3_INST = {
   violin: (function () { var a = []; for (var n = 1; n <= 14; n++) a.push([n, (1 / n) * (1 + 0.8 * Math.exp(-Math.pow(n - 4, 2) / 5))]); return a; })()
 };
 var M3_SRC = [['fork', 'おんさ'], ['voice', '声'], ['inst', '楽器']];
-var M3_VOW = [['a', 'あ'], ['i', 'い'], ['u', 'う'], ['U', 'オペラ歌手の「う」']];
+var M3_VOW = [['a', 'あ'], ['i', 'い'], ['u', 'う'], ['U', 'オペラ歌手の「あ」']];
 var M3_INS = [['flute', 'フルート'], ['clarinet', 'クラリネット'], ['violin', 'バイオリン']];
 function m3Parts(s, f) {
   if (s.src === 'fork') return M3_INST.fork;
@@ -7066,22 +7210,31 @@ function m3TimeBar(s, show) {
 }
 /* 章 ③ は、一時停止を押すまでずっと動く（2026-11-05 千葉さん 8 回目）。オシロスコープは最初から映す（音はもうマイクに届いているとする） */
 var M3_TEND = 1e6;
-/* スペクトルの線（倍音）。mult：声・楽器では、線の上に「基音の何倍か」（×2 …）を書く。s._spSel：クリックで選んだ線（振動数を表示） */
+/* スペクトルの線（倍音）。mult：声・楽器では、線の上に「基音の何倍か」（×2 …）を書く。s._spSel：クリックで選んだ線（振動数を表示）
+   s.dB：縦軸を dB にする（22 回目）。いちばん大きい線（振幅 A = 1 のとき）を 0 dB、下の端を −60 dB とする */
+var M3_DBMIN = 60;
+function m3SpecDBv(a, mx, A) { return 20 * Math.log10(Math.max(1e-9, Math.abs(a) / mx * A)); }
 function m3SpecBars(c2, s, parts, f1, A, XF, fy0, fy1, FM, mult) {
   var mx = 0; parts.forEach(function (p) { mx = Math.max(mx, Math.abs(p[1])); });
-  var gap = XF(f1) - XF(0), hits = [];
+  var gap = XF(f1) - XF(0), hits = [], hm = fy1 - fy0 - 12;
+  if (s.dB) {   /* dB の目盛り：0・−20・−40 dB の横線と数字（左のすき間に） */
+    c2.save(); c2.strokeStyle = 'rgba(120,220,170,.22)'; c2.lineWidth = 1; c2.setLineDash([3, 3]); c2.font = '600 9px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.8)'; c2.textAlign = 'right'; c2.textBaseline = 'middle';
+    for (var d = 0; d < M3_DBMIN; d += 20) { var gy = Math.round(fy1 - (1 - d / M3_DBMIN) * hm) + 0.5; c2.beginPath(); c2.moveTo(XF(0), gy); c2.lineTo(XF(FM), gy); c2.stroke(); c2.fillText(d ? '−' + d : '0 dB', XF(0) - 3, gy); }
+    c2.restore();
+  }
   c2.save(); c2.font = '700 9.5px ' + FONT; c2.textAlign = 'center'; c2.textBaseline = 'bottom';
   parts.forEach(function (p) {
     var f = p[0] * f1; if (f > FM) return;
-    var h = Math.abs(p[1]) / mx * (fy1 - fy0 - 12) * A, x = XF(f), sel = s._spSel === p[0];
+    var rel = s.dB ? clamp(1 + m3SpecDBv(p[1], mx, A) / M3_DBMIN, 0, 1) : Math.abs(p[1]) / mx * A;
+    var h = rel * hm, x = XF(f), sel = s._spSel === p[0];
     c2.fillStyle = sel ? '#ffd678' : '#7dffb4'; c2.shadowColor = c2.fillStyle; c2.shadowBlur = 6; c2.fillRect(x - 2, fy1 - h, 4, h); c2.shadowBlur = 0;
-    hits.push({ x: x, y: fy1 - h, n: p[0], f: f });
-    var big = Math.abs(p[1]) / mx > 0.3;
+    hits.push({ x: x, y: fy1 - h, n: p[0], f: f, db: m3SpecDBv(p[1], mx, A) });
+    var big = !s.dB && Math.abs(p[1]) / mx > 0.3;   /* dB では線が高くなりがちなので、すき間があるときだけ書く */
     if (mult && (gap >= 17 || big || p[0] === 1)) { c2.fillStyle = 'rgba(255,214,120,.9)'; c2.fillText(p[0] === 1 ? '基音' : '×' + p[0], x, fy1 - h - 2); }
   });
   var hs = hits.filter(function (o) { return o.n === s._spSel; })[0];
   if (hs) {
-    var t = 'f = ' + Math.round(hs.f) + ' Hz' + (hs.n === 1 ? '（基音）' : '（基音の ' + hs.n + ' 倍）'), W = c2.canvas.clientWidth || 300;
+    var t = 'f = ' + Math.round(hs.f) + ' Hz' + (hs.n === 1 ? '（基音）' : '（基音の ' + hs.n + ' 倍）') + (s.dB ? '　' + (Math.round(hs.db) < 0 ? '−' + Math.abs(Math.round(hs.db)) : '0') + ' dB' : ''), W = c2.canvas.clientWidth || 300;
     c2.font = '700 11px ' + FONT; var w = c2.measureText(t).width + 12, bx = clamp(hs.x - w / 2, 4, W - w - 4), by = fy0 - 4;
     c2.fillStyle = '#ffd678'; rrect(c2, bx, by - 14, w, 18, 5); c2.fill(); c2.fillStyle = '#2a2006'; c2.textAlign = 'left'; c2.textBaseline = 'middle'; c2.fillText(t, bx + 6, by - 5);
   }
@@ -7097,6 +7250,25 @@ function m3SpecPick(s, cv, redraw) {
   };
   cv.addEventListener('pointermove', function (ev) { cv.style.cursor = near(ev) ? 'pointer' : 'default'; });
   cv.addEventListener('click', function (ev) { var o = near(ev); s._spSel = o && s._spSel !== o.n ? o.n : null; redraw(); });
+  m3SpecDB(s, cv, redraw);
+}
+/* 「縦軸を dB にする」（スペクトルの右上）。オンのときだけ、スペクトルの下に「dB とは」（押すと説明）（22 回目） */
+function m3SpecDB(s, cv, redraw) {
+  var top = el('div', 'spdbtop'), b = el('button', 'b spdb'); b.type = 'button'; top.appendChild(b);
+  cv.insertAdjacentElement('beforebegin', top);
+  var bot = el('div', 'spdbbot'), qb = el('button', 'b spdbq', 'dB とは'); qb.type = 'button'; bot.appendChild(qb);
+  var box = el('div', 'spdbtx');
+  box.innerHTML = mathify('<b>dB（デシベル）</b>は、大きさの<b>比</b>を対数で表す目盛り（振幅の比が $a/a_0$ なら $20\\log_{10}(a/a_0)$ dB）。振幅が 1/10 になるごとに 20 dB 下がる。ここでは、いちばん大きい線を 0 dB とした。' +
+    '<br>小さい倍音も見やすくなる。人の耳も、音の大きさをおよそこの比で感じている。');
+  bot.appendChild(box); cv.insertAdjacentElement('afterend', bot);
+  var sync = function () {
+    b.textContent = (s.dB ? '☑' : '☐') + ' 縦軸を dB にする'; b.classList.toggle('on', !!s.dB); b.setAttribute('aria-pressed', s.dB ? 'true' : 'false');
+    bot.style.display = s.dB ? '' : 'none'; if (!s.dB) s._dbHelp = false;
+    box.style.display = s._dbHelp ? '' : 'none'; qb.classList.toggle('on', !!s._dbHelp); qb.textContent = s._dbHelp ? 'dB とは（閉じる）' : 'dB とは';
+  };
+  b.addEventListener('click', function () { s.dB = !s.dB; sync(); redraw(); });
+  qb.addEventListener('click', function () { s._dbHelp = !s._dbHelp; sync(); });
+  sync();
 }
 /* おんさの絵：(x, y)＝ U 字の底。d：枝の開き〔px〕（振動のようす）。h：枝の長さ */
 function forkShape(ctx, x, y, h, d, col) {
@@ -7164,7 +7336,7 @@ DEFS.m3s1 = {
     s.subSeg = [segs[1], segs[2]]; s.subLbl = [s.row1b.querySelector('.seglbl.sub1'), s.row1b.querySelector('.seglbl.sub2')];
     s.subGrp = [lblSeg(s.subLbl[0], segs[1]), lblSeg(s.subLbl[1], segs[2])]; lblSeg(segs[0].previousElementSibling, segs[0]);
     var sp = el('span', 'spkrow'); s.row1b.appendChild(sp); s.spkRow = sp;
-    m3SpkBtn(s, sp, function () { var q = m3s1Q(s); return { voices: [{ f: q.f, partials: m3Parts(s, q.f) }], vol: q.A }; });
+    m3SpkBtn(s, sp, function () { var q = m3s1Q(s); return { voices: [s.src === 'voice' ? m3VoiceV(s.vow, q.f) : { f: q.f, partials: m3Parts(s, q.f) }], vol: q.A }; });
     m3TimeBar(s, false);
     m3s1Sync(s);
   },
@@ -7186,9 +7358,9 @@ function m3SrcShape(s, ctx, x, cy, ph, A) {
     ctx.save(); ctx.fillStyle = '#f3dccb'; ctx.strokeStyle = '#6b4a3a'; ctx.lineWidth = 1.8;
     ctx.beginPath(); ctx.ellipse(x - 6, cy, 30, 36, 0, 0, TAU); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#3a2a22'; ctx.beginPath(); ctx.arc(x + 6, cy - 10, 3, 0, TAU); ctx.fill();
-    var mo = 4 + 3 * Math.abs(Math.sin(TAU * ph)) * A, mh = s.vow === 'a' ? 9 : (s.vow === 'i' ? 3 : (s.vow === 'U' ? 8 : 5)), mw = s.vow === 'i' ? 7 : (s.vow === 'u' ? 3.5 : (s.vow === 'U' ? 4.5 : 6));
+    var mo = 4 + 3 * Math.abs(Math.sin(TAU * ph)) * A, mh = s.vow === 'a' ? 9 : (s.vow === 'i' ? 3 : (s.vow === 'U' ? 11 : 5)), mw = s.vow === 'i' ? 7 : (s.vow === 'u' ? 3.5 : (s.vow === 'U' ? 6.5 : 6));
     ctx.fillStyle = '#8a2c2c'; ctx.beginPath(); ctx.ellipse(x + 17, cy + 12, mw, Math.max(1.5, mh * mo / 7), 0, 0, TAU); ctx.fill(); ctx.restore();
-    label(ctx, s.vow === 'U' ? 'オペラ歌手の「う」' : '声「' + { a: 'あ', i: 'い', u: 'う' }[s.vow] + '」', x - 6, cy + 54, { size: 11, color: COL.ink2, bold: true }); return;
+    label(ctx, s.vow === 'U' ? 'オペラ歌手の「あ」' : '声「' + { a: 'あ', i: 'い', u: 'う' }[s.vow] + '」', x - 6, cy + 54, { size: 11, color: COL.ink2, bold: true }); return;
   }
   ctx.save(); ctx.strokeStyle = '#3a414c'; ctx.lineWidth = 2;
   if (s.ins === 'flute') {
@@ -7242,14 +7414,14 @@ function m3s1Scope(s) {
   var sc = s.scope; if (!sc || !sc.cv.offsetParent) return;
   var q = m3s1Q(s), parts = m3Parts(s, q.f), wv = m3Wave(parts), W = Math.max(240, Math.floor(sc.cv.clientWidth || 300)), H = Math.round(clamp(W * 0.55, 150, 210));
   var arr = true;
-  var key = [W, q.f, q.A, s.src, s.vow, s.ins, s._spSel].join('|'); if (sc._k === key) return; sc._k = key;   /* 変わったときだけ描き直す（波形は止まって見える） */
+  var key = [W, q.f, q.A, s.src, s.vow, s.ins, s._spSel, s.dB].join('|'); if (sc._k === key) return; sc._k = key;   /* 変わったときだけ描き直す（波形は止まって見える） */
   var ctx = prep(sc.cv, W, H);
   ctx.clearRect(0, 0, W, H);
   sc.screen(ctx, 0, 0, W, H, { t0: 0, span: 0.010, yMax: 1, traces: arr ? [{ f: function (t) { return q.A * wv.f(q.f * t); }, fmax: q.f * wv.nMax }] : [], label: '横 1 目盛り 1 ms', labelR: arr ? q.f + ' Hz' : '' });
   /* 振動数のスペクトル：どの振動数の波が、どれだけの大きさでまざっているか（倍音の表そのもの） */
   var sv = s.specCv, SW = W, SH = Math.round(clamp(W * 0.3, 90, 120)), c2 = prep(sv, SW, SH);
   c2.clearRect(0, 0, SW, SH); c2.fillStyle = '#0d1a14'; rrect(c2, 0, 0, SW, SH, 6); c2.fill();
-  var fx0 = 12, fx1 = SW - 12, fy0 = 22, fy1 = SH - 20, FM = 5000, XF = function (f) { return fx0 + f / FM * (fx1 - fx0); };
+  var fx0 = s.dB ? 34 : 12, fx1 = SW - 12, fy0 = 22, fy1 = SH - 20, FM = 5000, XF = function (f) { return fx0 + f / FM * (fx1 - fx0); };
   c2.save(); c2.strokeStyle = 'rgba(120,220,170,.25)'; c2.lineWidth = 1;
   for (var k = 0; k <= 5; k++) { var gx = Math.round(XF(k * 1000)) + 0.5; c2.beginPath(); c2.moveTo(gx, fy0); c2.lineTo(gx, fy1); c2.stroke(); }
   c2.beginPath(); c2.moveTo(fx0, fy1 + 0.5); c2.lineTo(fx1, fy1 + 0.5); c2.stroke(); c2.restore();
@@ -7269,7 +7441,8 @@ function rightM3S1(s, R) {
     '<p>おんさの音は、きれいな正弦波に近い。声や楽器の音は、振動数が $f$ の整数倍の波（倍音）が混ざっているので、波形が違う。同じ高さ（同じ $f$）でも音色が違って聞こえる。</p>' +
     '<div class="qeq">$$V = 331.5 + 0.6t,\\qquad V = f\\lambda$$</div>' +
     '<p class="qnow"><span class="qtag now">いま</span>$t = ' + s.v.tc + '$ ℃ なので $V = ' + sig(q.V, 4) + '$ m/s、$\\lambda = \\dfrac{V}{f} = \\dfrac{' + sig(q.V, 4) + '}{' + Math.round(q.f) + '} = ' + sig(q.lam, 3) + '$ m</p>' +
-    '<p class="qnote">気温を変えても振動数（音の高さ）は変わらない。変わるのは音速 $V$ と波長 $\\lambda$。</p></div>';
+    '<p class="qnote">気温を変えても振動数（音の高さ）は変わらない。変わるのは音速 $V$ と波長 $\\lambda$。</p>' +
+    '<p class="qnote">オペラ歌手の「あ」は、$f$ が 300 Hz 以上ではソプラノ、300 Hz 未満ではテノールの声にしてある。</p></div>';
   R.innerHTML = mathify(h);
 }
 
@@ -8550,14 +8723,14 @@ function m4Right(s, title) {
 function m4Scope(s, f, parts, cap, FM, span) {
   var sc = s.scope; if (!sc || !sc.cv.offsetParent) return;
   var W = Math.max(240, Math.floor(sc.cv.clientWidth || 300)), H = Math.round(clamp(W * 0.5, 140, 190));
-  var key = [W, f, JSON.stringify(parts), s._spSel, FM, span].join('|'); if (s._sk === key) return; s._sk = key;
+  var key = [W, f, JSON.stringify(parts), s._spSel, FM, span, s.dB].join('|'); if (s._sk === key) return; s._sk = key;
   var ctx = prep(sc.cv, W, H); ctx.clearRect(0, 0, W, H);
   var sp = span || 0.010;
   if (f) { var wv = m3Wave(parts); sc.screen(ctx, 0, 0, W, H, { t0: 0, span: sp, yMax: 1, traces: [{ f: function (t) { return (s._absK !== undefined ? 0.5 * s._absK : 0.85) * wv.f(f * t); }, fmax: f * wv.nMax }], label: '横 1 目盛り ' + divTxt(sp / 10), labelR: sig(f, 4) + ' Hz' }); }
   else { sc.screen(ctx, 0, 0, W, H, { t0: 0, span: sp, yMax: 1, traces: [], label: '横 1 目盛り ' + divTxt(sp / 10) }); label(ctx, s._emptyMsg || '音符をクリックすると、ここに映る', W / 2, H / 2 + 16, { size: 11.5, color: 'rgba(190,240,215,.8)', halo: false }); }
   var sv = s.specCv, SH = Math.round(clamp(W * 0.3, 90, 120)), c2 = prep(sv, W, SH);
   c2.clearRect(0, 0, W, SH); c2.fillStyle = '#0d1a14'; rrect(c2, 0, 0, W, SH, 6); c2.fill();
-  var fx0 = 12, fx1 = W - 12, fy0 = 22, fy1 = SH - 20, XF = function (x) { return fx0 + x / FM * (fx1 - fx0); };
+  var fx0 = s.dB ? 34 : 12, fx1 = W - 12, fy0 = 22, fy1 = SH - 20, XF = function (x) { return fx0 + x / FM * (fx1 - fx0); };
   c2.save(); c2.strokeStyle = 'rgba(120,220,170,.25)'; c2.lineWidth = 1;
   for (var k = 0; k <= 5; k++) { var gx = Math.round(XF(k * FM / 5)) + 0.5; c2.beginPath(); c2.moveTo(gx, fy0); c2.lineTo(gx, fy1); c2.stroke(); }
   c2.beginPath(); c2.moveTo(fx0, fy1 + 0.5); c2.lineTo(fx1, fy1 + 0.5); c2.stroke(); c2.restore();
@@ -9442,7 +9615,7 @@ var M4H_PRE = [
     ['va', '声「あ」', function (f) { return m3Voice('a', f); }],
     ['vi', '声「い」', function (f) { return m3Voice('i', f); }],
     ['vu', '声「う」', function (f) { return m3Voice('u', f); }],
-    ['vU', 'オペラ歌手の「う」', function (f) { return m3Voice('U', f); }]
+    ['vU', 'オペラ歌手の「あ」', function (f) { return m3Voice('U', f); }]
   ]],
   ['楽器（③・④）', [
     ['recorder', 'リコーダー', function () { return M4_TIM.recorder; }],
@@ -9476,13 +9649,13 @@ function m4hPeak(s) { var p = m4hParts(s), mx = 0; if (!p.length) return 0; for 
 function m4hScale(s) { return Math.max(2, m4hPeak(s)); }
 /* 音の大きさも強さに合わせる（ブラウザは波形を正規化するので、音量で合わせる） */
 function m4hVol(s) { return 0.85 * clamp(m4hPeak(s), 0.08, 1.5) / 1.5; }
-function m4hVoices(s) { if (s.noise) return { voices: [{ f: 1000, noise: true }], vol: 0.35 }; var p = m4hParts(s); return { voices: p.length ? [{ f: s.v.f, partials: p }] : [], vol: m4hVol(s) }; }
+function m4hVoices(s) { if (s.noise) return { voices: [{ f: 1000, noise: true }], vol: 0.35 }; if (s.pre === 'vU') return { voices: [m3VoiceV('U', s.v.f)], vol: 0.8 };   /* オペラ歌手は、プリセットのままならビブラートつきの声で鳴らす（22 回目） */ var p = m4hParts(s); return { voices: p.length ? [{ f: s.v.f, partials: p }] : [], vol: m4hVol(s) }; }
 /* 倍音の色：基音はオレンジ、第 2 倍音からは色相を少しずつ変える（dark：暗い画面の上で使う明るい色） */
 function m4hCol(n, dark) { return n === 1 ? (dark ? '#ffb469' : '#e07b18') : 'hsl(' + Math.round((190 + (n - 2) * 300 / 14) % 360) + ',' + (dark ? '85%,72%)' : '70%,42%)'); }
 /* 音色が変わったら：鳴っていれば鳴らしたまま入れかえる。倍音が 1 つもなければ止める */
 function m4hRetone(s) {
   if (AUDIO.owner() !== 'm4h') return;
-  if (s.noise) { s.resound(); return; }
+  if (s.noise || s.pre === 'vU' || s._wasOp) { s._wasOp = s.pre === 'vU'; s.resound(); return; }
   var p = m4hParts(s);
   if (s._wasNoise) { s._wasNoise = false; if (p.length) { s.resound(); return; } }
   if (!p.length) { AUDIO.stop(); return; }
@@ -9508,7 +9681,7 @@ DEFS.m4h = {
   afterBuild: function (s) {
     /* 右：スライダー → プリセット → オシロスコープ・スペクトル → 説明 */
     s.R.innerHTML = ''; var sw = el('div', 'row2 sliders inR'); sw.appendChild(s.varbox); s.R.appendChild(sw); s.varbox.classList.add('inR');
-    var pb = el('div', 'm4hpre'); pb.appendChild(el('p', 'm4hpt', '＜プリセット＞　押すと、その音の倍音の大きさになる'));
+    var pb = el('div', 'm4hpre'); pb.appendChild(el('p', 'm4hpt', '＜プリセット＞　押すと、その楽器の倍音構成になる'));
     s.preBtns = {};
     M4H_PRE.forEach(function (g) {
       var row = el('div', 'm4hgrp'); row.appendChild(el('span', 'm4hgl', g[0]));
@@ -9651,7 +9824,8 @@ function rightM4H(s, R) {
     '<tr><th>三角波</th><td class="l">奇数倍の倍音だけ。大きさは $1, \\dfrac{1}{9}, \\dfrac{1}{25}, \\cdots$ で、正弦波に近いやわらかい音（「逆」は向きが反対の波）</td></tr>' +
     '<tr><th>ノコギリ波</th><td class="l">すべての倍音。大きさは $1, \\dfrac{1}{2}, \\dfrac{1}{3}, \\cdots$（バイオリンなどの弦をこする音に近い）</td></tr></tbody></table>';
   h += s.noise ? '<p class="qnow"><span class="qtag now">いま</span>ホワイトノイズ（あらゆる振動数を同じ強さで含む）</p>' : '<p class="qnow"><span class="qtag now">いま</span>' + nm + '：' + (p.length ? '倍音 ' + p.map(function (q) { return q[0]; }).join('・') + ' 倍' : '倍音なし') + '、$f_1 = ' + Math.round(s.v.f) + '$ Hz</p>';
-  h += '<p class="qnote">倍音の大きさを変えても、周期 $T = \\dfrac{1}{f_1}$（音の高さ）は変わらない。変わるのは波形（音色）だけ。声の母音は、口の形で強くなる倍音（フォルマント）が決まるので、$f_1$ を変えると倍音の表も変わる。</p></div>';
+  h += '<p class="qnote">倍音の大きさを変えても、周期 $T = \\dfrac{1}{f_1}$（音の高さ）は変わらない。変わるのは波形（音色）だけ。声の母音は、口の形で強くなる倍音（フォルマント）が決まるので、$f_1$ を変えると倍音の表も変わる。</p>' +
+    '<p class="qnote">オペラ歌手の「あ」は、$f_1$ が 300 Hz 以上ではソプラノ、300 Hz 未満ではテノールの声にしてある。</p></div>';
   R.innerHTML = mathify(h);
 }
 /* 鍵盤の下の表と式：鳴らしている倍音の aₙ（強さ ÷ 100）と fₙ = n f₁、式（文字のまま・数を入れたもの） */
@@ -9899,12 +10073,13 @@ DEFS.m5s2 = {
   ],
   init: function (s) { s.which = 'proc'; },
   onDefaults: function (s) { s.which = 'proc'; m5s2Sync(s); m5s2Sound(s); },
-  onChanged: function (s) { m5s2Sound(s, true); return 'keepT'; },
+  onChanged: function (s) { m5s2Sync(s); m5s2Sound(s, true); return 'keepT'; },
   buttons: [
     { k: 'wO', label: '元の音', seg: 'which', segLabel: '聞く音', onClick: function (s) { s.which = 'orig'; m5s2Sync(s); s.resound && s.resound(); } },
     { k: 'wP', label: '加工した音', seg: 'which', onClick: function (s) { s.which = 'proc'; m5s2Sync(s); s.resound && s.resound(); } },
     { k: 'pN', label: 'ノイズカット（高音を 0 に）', seg: 'pre', segLabel: 'おすすめ', onClick: function (s) { m5s2Set(s, 1, 1, 0); } },
     { k: 'pB', label: '低音を強調', seg: 'pre', onClick: function (s) { m5s2Set(s, 2, 1, 1); } },
+    { k: 'pB2', label: '低音をより強調', seg: 'pre', onClick: function (s) { m5s2Set(s, 2, 0.5, 0.5); } },   /* 中音・高音を小さくする（22 回目） */
     { k: 'pV', label: 'ラジオ風（中音だけ）', seg: 'pre', onClick: function (s) { m5s2Set(s, 0, 1.4, 0); } }
   ],
   tEnd: function () { return 1e6; }, tInfo: function () { return ''; }, gT: function () { return 1; },
@@ -9920,7 +10095,13 @@ DEFS.m5s2 = {
   draw: function (s, ctx, W, H) { drawM5S2(s, ctx, W, H); },
   right: function (s, R) { rightM5S2(s, R); }
 };
-function m5s2Sync(s) { m2Sync(s, [['wO', s.which === 'orig'], ['wP', s.which === 'proc']]); }
+/* M5S2_PRE：おすすめの値。いまの値と同じものを選ばれた形にする（どれが ON か分かるように。22 回目） */
+var M5S2_PRE = { pN: [1, 1, 0], pB: [2, 1, 1], pB2: [2, 0.5, 0.5], pV: [0, 1.4, 0] };
+function m5s2Sync(s) {
+  var a = [['wO', s.which === 'orig'], ['wP', s.which === 'proc']];
+  Object.keys(M5S2_PRE).forEach(function (k) { var p = M5S2_PRE[k]; a.push([k, Math.abs(s.v.gL - p[0]) < 1e-6 && Math.abs(s.v.gM - p[1]) < 1e-6 && Math.abs(s.v.gH - p[2]) < 1e-6]); });
+  m2Sync(s, a);
+}
 function m5s2Set(s, a, b, c) { s.v.gL = a; s.v.gM = b; s.v.gH = c; s.syncSliders && s.syncSliders(); s.which = 'proc'; m5s2Sync(s); m5s2Sound(s, true); s.draw(); s.renderRight(); }
 /* 値を変えたとき：加工した音を鳴らしていれば鳴らし直す */
 function m5s2Sound(s) { if (s.which === 'proc' && s.resound) s.resound(); }
@@ -9949,7 +10130,8 @@ function rightM5S2(s, R) {
   R.innerHTML = mathify('<div class="qcard"><p class="qt">音楽をつくる人の仕事</p>' +
     '<p>録音した声や楽器の音には、ほしくないノイズ（「サー」という音や、低い「ブーン」という音）が混ざる。フーリエ変換で振動数ごとに分けると、ノイズのある振動数だけを小さくできる。</p>' +
     '<p>音楽プロデューサーやエンジニアは、低音を強めて迫力を出したり、こもる帯を少しけずったり、高すぎる成分をカットしたりして、曲全体の聞こえ方を整える（ミキシング・マスタリング）。ふだん聞いているアーティストの音源は、こうして整えられたもの。スマートフォンの音楽アプリの「イコライザー」も同じしくみ。</p>' +
-    '<p class="qnote">この図の音：ド・ミ・ソ（中音）・低いド（C2 = 65 Hz、低音）・ノイズ。ノイズはあらゆる振動数に広がっているので、高音をカットすると「サー」は小さくなるが、中音・低音の中のノイズは残る。</p></div>');
+    '<p class="qnote">この図の音：ド・ミ・ソ（中音）・低いド（C2 = 65 Hz、低音）・ノイズ。ノイズはあらゆる振動数に広がっているので、高音をカットすると「サー」は小さくなるが、中音・低音の中のノイズは残る。</p>' +
+    '<p class="qnote">低音だけにすると、ノート PC やスマートフォンの内蔵スピーカーでは、ほとんど聞こえない（200 Hz より低い音がほとんど出ない）。イヤホンやヘッドホンで聞こう。</p></div>');
 }
 
 /* =========================================================================
@@ -9959,7 +10141,7 @@ function rightM5S2(s, R) {
    ・アンテナには全部の電波がまざって届く。ラジオは振動数で 1 つだけ選んで取り出す（フィルター）。日本の AM 放送は 9 kHz おき
    ========================================================================= */
 var M5S3_ST = [
-  { nm: '放送局 A', fc: 594, col: '#d1353f', what: '声「あ」', v: function () { return [{ f: 200, partials: m3Voice('a', 200) }]; } },
+  { nm: '放送局 A', fc: 594, col: '#d1353f', what: '声「あ」', v: function () { return [{ f: 220, partials: m3Voice('a', 220) }]; } },   /* ⑤-1 の声「あ」と同じ 220 Hz（22 回目） */
   { nm: '放送局 B', fc: 693, col: '#1663b5', what: 'フルートの音（ラ 880 Hz）', v: function () { return [{ f: 880, partials: M3_INST.flute }]; } },
   { nm: '放送局 C', fc: 954, col: '#c9970c', what: 'ド・ミ・ソの和音', v: function () { return [{ f: 261.63, partials: [[1, 1], [2, 0.4]] }, { f: 329.63, partials: [[1, 1], [2, 0.4]] }, { f: 392, partials: [[1, 1], [2, 0.4]] }]; } }
 ];
@@ -10090,48 +10272,57 @@ function rightM5S3(s, R) {
 
 /* =========================================================================
    ⑤-4 画像の圧縮（JPEG）
-   ・64 × 64 画素の白黒の絵（式で作る）を 8 × 8 画素の区画に分け、区画ごとに 2 次元の離散コサイン変換（DCT。フーリエ変換のなかま）
+   ・64 × 64 画素の色つきの絵（⑤-3 の家。式で作る。22 回目に白黒から変えた）を赤・緑・青に分け、それぞれ 8 × 8 画素の区画に分け、区画ごとに 2 次元の離散コサイン変換（DCT。フーリエ変換のなかま）
    ・振動数の低い成分から順（ジグザグ）に K 個だけ残し、残りを 0 にして逆変換 → 画像の質とデータ量をくらべる
    ========================================================================= */
 var M5S4 = { N: 64 };
 M5S4.zz = (function () { var o = []; for (var s = 0; s < 15; s++) { var a = []; for (var i = 0; i < 8; i++) { var j = s - i; if (j >= 0 && j < 8) a.push([i, j]); } if (s % 2 === 0) a.reverse(); o = o.concat(a); } return o; })();
+/* 64 × 64 画素の色つきの絵（⑤-3 の家とアンテナ。22 回目に白黒から変えた）。画素ごとに [赤, 緑, 青]（0〜1）。チャンネルごとに Float32Array */
 M5S4.img = (function () {
-  var N = M5S4.N, a = new Float32Array(N * N);
+  var N = M5S4.N, ch = [new Float32Array(N * N), new Float32Array(N * N), new Float32Array(N * N)];
+  var put = function (x, y, c) { if (x < 0 || y < 0 || x >= N || y >= N) return; for (var k = 0; k < 3; k++) ch[k][y * N + x] = c[k] / 255; };
+  var INK = [58, 65, 76];
   for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
-    var v = 0.78 - 0.25 * y / N;                                                         /* 空（上ほど明るい） */
-    var dx = x - 49, dy = y - 13; if (dx * dx + dy * dy < 64) v = 0.98;                     /* 太陽 */
-    if (y >= 52) v = 0.32 + 0.18 * ((x >> 1) % 2) * ((y >> 1) % 2);                        /* 地面（細かいもよう） */
-    if (x >= 12 && x < 38 && y >= 33 && y < 52) v = 0.62;                                   /* 家のかべ */
-    if (y >= 20 && y < 33 && Math.abs(x - 25) <= (y - 20) * 1.15 + 1) v = 0.18;           /* 屋根 */
-    if (((x >= 16 && x < 23) || (x >= 27 && x < 34)) && y >= 37 && y < 44) v = 0.92;        /* 窓 */
-    if (x >= 22 && x < 28 && y >= 45 && y < 52) v = 0.25;                                   /* 戸 */
-    a[y * N + x] = v;
+    var u = y / 54, c = [150 + 65 * u, 205 + 31 * u, 245 + 5 * u];                         /* 空（下ほど白っぽい） */
+    var dx = x - 52, dy = y - 11; if (dx * dx + dy * dy < 49) c = [255, 210, 80];            /* 太陽 */
+    if (y >= 54) c = ((x >> 1) + (y >> 1)) % 2 ? [120, 190, 95] : [88, 160, 70];             /* 地面（草。細かいもよう） */
+    put(x, y, c);
   }
-  return a;
+  for (y = 23; y < 36; y++) for (x = 8; x < 47; x++) { var hw = (y - 23) * 18 / 13 + 1; if (Math.abs(x - 27) <= hw) put(x, y, Math.abs(Math.abs(x - 27) - hw) < 1.2 || y === 35 ? INK : [210, 74, 42]); }   /* 屋根（赤） */
+  for (y = 36; y < 54; y++) for (x = 13; x < 42; x++) put(x, y, x === 13 || x === 41 ? INK : [248, 248, 244]);   /* かべ（白） */
+  for (y = 39; y < 48; y++) for (x = 17; x < 27; x++) put(x, y, x === 17 || x === 26 || y === 39 || y === 47 || x === 21 ? INK : [159, 230, 242]);   /* 窓（水色） */
+  for (y = 43; y < 54; y++) for (x = 30; x < 37; x++) put(x, y, x === 30 || x === 36 || y === 43 ? INK : [150, 96, 52]);   /* 戸（茶色） */
+  for (y = 10; y < 30; y++) put(36, y, INK);                                                 /* アンテナの柱 */
+  [[11, 6], [14, 5], [17, 4], [20, 3]].forEach(function (q) { for (x = 36 - q[1]; x <= 36 + q[1]; x++) put(x, q[0], INK); });   /* アンテナの横の棒 */
+  return ch;
 })();
 function m5DctC(u) { return u === 0 ? Math.sqrt(1 / 8) : Math.sqrt(2 / 8); }
 M5S4.cos = (function () { var c = []; for (var x = 0; x < 8; x++) { c.push([]); for (var u = 0; u < 8; u++) c[x].push(Math.cos((2 * x + 1) * u * Math.PI / 16)); } return c; })();
-/* 区画ごとの DCT 係数（1 回だけ計算） */
-M5S4.coef = (function () {
-  var N = M5S4.N, img = M5S4.img, C = M5S4.cos, out = [];
+/* 区画ごとの DCT 係数（1 回だけ計算）。赤・緑・青のそれぞれで同じことをする */
+M5S4.coef = M5S4.img.map(function (img) {
+  var N = M5S4.N, C = M5S4.cos, out = [];
   for (var by = 0; by < N; by += 8) for (var bx = 0; bx < N; bx += 8) {
     var F = [];
     for (var u = 0; u < 8; u++) { F.push([]); for (var v = 0; v < 8; v++) { var sm = 0; for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) sm += (img[(by + y) * N + bx + x] - 0.5) * C[y][u] * C[x][v]; F[u].push(m5DctC(u) * m5DctC(v) * sm); } }
     out.push({ bx: bx, by: by, F: F });
   }
   return out;
-})();
+});
 function m5s4Rec(K) {
   if (M5S4['r' + K]) return M5S4['r' + K];
-  var N = M5S4.N, C = M5S4.cos, out = new Float32Array(N * N), keep = {};
+  var N = M5S4.N, C = M5S4.cos, keep = {};
   M5S4.zz.slice(0, K).forEach(function (p) { keep[p[0] * 8 + p[1]] = true; });
-  M5S4.coef.forEach(function (b) {
-    for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
-      var sm = 0; for (var u = 0; u < 8; u++) for (var v = 0; v < 8; v++) if (keep[u * 8 + v]) sm += m5DctC(u) * m5DctC(v) * b.F[u][v] * C[y][u] * C[x][v];
-      out[(b.by + y) * N + b.bx + x] = clamp(sm + 0.5, 0, 1);
-    }
+  var res = M5S4.coef.map(function (cf) {
+    var out = new Float32Array(N * N);
+    cf.forEach(function (b) {
+      for (var y = 0; y < 8; y++) for (var x = 0; x < 8; x++) {
+        var sm = 0; for (var u = 0; u < 8; u++) for (var v = 0; v < 8; v++) if (keep[u * 8 + v]) sm += m5DctC(u) * m5DctC(v) * b.F[u][v] * C[y][u] * C[x][v];
+        out[(b.by + y) * N + b.bx + x] = clamp(sm + 0.5, 0, 1);
+      }
+    });
+    return out;
   });
-  return (M5S4['r' + K] = out);
+  return (M5S4['r' + K] = res);
 }
 DEFS.m5s4 = {
   id: 'm5s4', mode: 'mode5', num: 4,
@@ -10151,7 +10342,7 @@ DEFS.m5s4 = {
 };
 function m5s4Paint(ctx, a, x, y, sz) {
   var N = M5S4.N, px = sz / N;
-  for (var j = 0; j < N; j++) for (var i = 0; i < N; i++) { var g = Math.round(a[j * N + i] * 255); ctx.fillStyle = 'rgb(' + g + ',' + g + ',' + g + ')'; ctx.fillRect(x + i * px, y + j * px, px + 0.6, px + 0.6); }
+  for (var j = 0; j < N; j++) for (var i = 0; i < N; i++) { var q = j * N + i; ctx.fillStyle = 'rgb(' + Math.round(a[0][q] * 255) + ',' + Math.round(a[1][q] * 255) + ',' + Math.round(a[2][q] * 255) + ')'; ctx.fillRect(x + i * px, y + j * px, px + 0.6, px + 0.6); }
 }
 function drawM5S4(s, ctx, W, H) {
   var nar = W < 560, K = Math.round(s.v.K), rec = m5s4Rec(K);
@@ -10180,7 +10371,8 @@ function rightM5S4(s, R) {
     '<p>画像も「明るさの波」と考えられる。8 × 8 画素の区画の明るさを、図の「成分の形」の 64 種類のもようの重ね合わせで表す（2 次元のフーリエ変換のなかま）。左上のもようほどゆっくり変わる（振動数が低い）。</p>' +
     '<p>ふつうの写真では、ほとんどの区画で振動数の低い成分が大きく、高い成分は小さい。そこで高い成分を捨てても、見た目はあまり変わらない。これが JPEG の考え方（実際は成分を「捨てる」代わりに「粗く丸める」）。</p>' +
     '<p class="qnow"><span class="qtag now">いま</span>64 個のうち ' + K + ' 個を残す → データ量は約 ' + Math.round(K / 64 * 100) + ' %</p>' +
-    '<p class="qnote">成分を減らしすぎると、区画のさかいめが見える（ブロックノイズ）。屋根の斜めの線や地面の細かいもようのように、変化の速い所から先にくずれる。</p></div>');
+    '<p class="qnote">成分を減らしすぎると、区画のさかいめが見える（ブロックノイズ）。屋根の斜めの線・アンテナの細い棒・草の細かいもようのように、変化の速い所から先にくずれる。</p>' +
+    '<p class="qnote">色のついた画像は、赤・緑・青の 3 つの明るさに分けて、それぞれ同じことをしている（実際の JPEG は「明るさ」と「色み」に分け、人の目が気づきにくい色みの方をより粗くする）。</p></div>');
 }
 
 /* =========================================================================
@@ -10231,7 +10423,7 @@ var MODES = [
   { id: 'mode4', name: '音波（芸術の範囲）', secs: ['m4h', 'm4s1', 'm4p', 'm4s2', 'm4s3', 'm4s4', 'm4s5'], rotSwitch: false,
     en: 'Sound and Music',
     lead: 'このページは、あなたのより深い音楽への理解のために作りました。特に合唱・合奏で「長 3 度の音（ドに対するミの音）は下げ気味で」と聞いたことがある人は、その理由が理解できると思います。<br>これまで学んだように、弦と気柱は、基音の整数倍の振動数の音、倍音を発生させる（特に <a class="xlink" href="#3-3">③-3</a> と <a class="xlink" href="#3-4">③-4</a> から理解できる）。弦は弦楽器、気柱は管楽器と私たちの体から出る声の発音原理を理解できる。倍音の構成比の違いから、声や言葉、楽器は音色（y-t グラフの波形、オシロの波形）が違う。音色の原理、和音・平均律と純正律を、振動数の比から見てみよう。' },
-  { id: 'mode5', name: 'より知りたい人へ：フーリエ変換などの大学クラスの内容', secs: ['m5s1', 'm5s2', 'm5s3', 'm5s4', 'm5s5'], rotSwitch: false,
+  { id: 'mode5', name: 'より知りたい人へ：フーリエ変換などの大学レベルの内容', secs: ['m5s1', 'm5s2', 'm5s3', 'm5s4', 'm5s5'], rotSwitch: false,
     en: 'Fourier Transform',
     lead: '①〜④では、波を「いろいろな振動数の正弦波の重ね合わせ」として見てきた。特に ④ では、音を振動数の成分（倍音）に分けて見ることで、音色の正体（<a class="xlink" href="#4-1">④-1</a>）や、和音がきれいに響く理由（<a class="xlink" href="#4-5">④-5</a>・<a class="xlink" href="#4-6">④-6</a>）まで説明できた。成分に分けて見ることが、とても役に立つと分かったはずだ。<br>どんな波でも、その振動数の成分を計算で求める方法が<b>フーリエ変換</b>である。音・電波・画像など、波として表せるものなら何でも扱えるので、身の回りの技術で広く使われている。ここは大学で学ぶ内容なので、興味がある人が読めばよい（詳しくは <a class="xlink" href="#5-5">⑤-5</a> の参考サイトで）。' }
 ];

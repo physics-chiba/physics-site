@@ -573,6 +573,52 @@ async function setMovSource(page, type) {
     await p.context().close();
   }
 
+  console.log('Q. 「もう一度」のあとの［次に進む］［トラッキングに進む］・精度の文・課題の画面が消えない');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p);
+    const vis = sel => p.evaluate((sel) => { const x = document.querySelector(sel); return !!x && !x.classList.contains('hide') && x.offsetParent !== null; }, sel);
+    check('ふだん（直していないとき）は出ない', !(await vis('#side1 .editDone:not(.hide)')));
+    await p.evaluate(() => redoStep(2)); await p.waitForTimeout(300);
+    const a = await p.evaluate(() => { const bar = document.querySelector('.editDone[data-step="2"]'), nx = bar.querySelector('.ed-next'), go = bar.querySelector('.ed-go');
+      const card = bar.closest('details'); return { shown: !bar.classList.contains('hide'), last: card.lastElementChild === bar, nx: nx.classList.contains('hide') ? '' : nx.textContent, go: go.textContent }; });
+    check('2 を「もう一度」で開くと、カードのいちばん下に出る', a.shown && a.last, a);
+    check('［次に進む（3. …）］と［トラッキングに進む］の 2 つ', /次に進む（3\. 空間の原点/.test(a.nx) && a.go === 'トラッキングに進む', a);
+    await p.click('.editDone[data-step="2"] .ed-next'); await p.waitForTimeout(300);
+    const b = await p.evaluate(() => ({ edit: APP.editStep, open3: document.querySelector('details[data-step="3"]').open, open2: document.querySelector('details[data-step="2"]').open,
+      bar3: !document.querySelector('.editDone[data-step="3"]').classList.contains('hide'), nx3: document.querySelector('.editDone[data-step="3"] .ed-next').classList.contains('hide') }));
+    check('［次に進む］で 3 のカードが「もう一度」の状態で開く（3 では［トラッキングに進む］だけ）', b.edit === 3 && b.open3 && !b.open2 && b.bar3 && b.nx3, b);
+    await p.click('.editDone[data-step="3"] .ed-go'); await p.waitForTimeout(300);
+    const c = await p.evaluate(() => ({ edit: APP.editStep, eff: effStep(), open4: document.querySelector('details[data-step="4"]').open, open3: document.querySelector('details[data-step="3"]').open, any: !!document.querySelector('#side1 .editDone:not(.hide)') }));
+    check('［トラッキングに進む］で直し終わり、4 にもどる', c.edit === 0 && c.eff === 4 && c.open4 && !c.open3 && !c.any, c);
+    /* 精度の文 */
+    const pr = await p.evaluate(() => { updatePrec(); return document.getElementById('precInfo').textContent; });
+    check('「（動画の1pxは 〇 mm。拡大すると精度は上がります）」を消した', !/拡大すると精度/.test(pr) && !/動画の1pxは/.test(pr) && /クリック精度/.test(pr), pr);
+    /* 課題の画面：入力欄で文字を選んで外側で離しても閉じない／外側をクリックしても閉じない／閉じても書きかけが残る */
+    await p.evaluate(() => { const c = document.getElementById('cbTeacher'); c.checked = true; c.onchange(); });
+    await p.click('#btnKadai'); await p.waitForSelector('#kdQ', { state: 'visible' });
+    await p.fill('#kdTitle', '台車の課題（書きかけ）'); await p.fill('#kdQ', '1. x–t をかけ\n2. 書きかけの設問');
+    const tq = await p.evaluate(() => { const r = document.getElementById('kdQ').getBoundingClientRect(); return { x: r.left + 20, y: r.top + 15 }; });
+    await p.mouse.move(tq.x, tq.y); await p.mouse.down(); await p.mouse.move(5, 5, { steps: 6 }); await p.mouse.up();   /* 文字を選んで、外側で離す */
+    await p.waitForTimeout(200);
+    check('入力欄で文字を選んで外側で指を離しても、画面は閉じない', await vis('#kadaiBox'));
+    await p.mouse.click(5, 5); await p.waitForTimeout(200);
+    check('課題の画面は、外側をクリックしても閉じない（［閉じる］だけ）', await vis('#kadaiBox'));
+    await p.click('#kdClose'); await p.waitForTimeout(200);
+    await p.click('#btnKadai'); await p.waitForSelector('#kdQ', { state: 'visible' });
+    const dr = await p.evaluate(() => ({ t: document.getElementById('kdTitle').value, q: document.getElementById('kdQ').value }));
+    check('閉じて開き直しても、書きかけの題名・設問が残っている', dr.t === '台車の課題（書きかけ）' && /書きかけの設問/.test(dr.q), dr);
+    await p.click('#kdClose');
+    /* ほかの画面（使い方など）は、外側をクリックすれば今までどおり閉じる */
+    const other = await p.evaluate(() => { const m = [...document.querySelectorAll('.modal')].find(x => x.id !== 'kadaiModal'); if (!m) return null; m.classList.remove('hide'); return m.id; });
+    if (other) {
+      await p.mouse.click(3, 3); await p.waitForTimeout(150);
+      check('ほかの画面は、外側をクリックすれば閉じる（' + other + '）', await p.evaluate((id) => document.getElementById(id).classList.contains('hide'), other));
+    }
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();

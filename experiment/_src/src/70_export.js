@@ -963,7 +963,9 @@ function openKadaiDialog(){
    '<li>「JSON で提出」が ON なら、生徒は課題のカードの<b>［提出用ファイル（JSON）を保存］</b>で保存して提出します。先生は上の段の<b>「過去測定データを実験○に登録」</b>で開いて確認できます（OFF のときは、Excel やレポートなど、別の方法で集めてください）</li>'+
    '</ol>';
   $('kadaiModal').classList.remove('hide');
-  $('kdClose').onclick=function(){ $('kadaiModal').classList.add('hide'); };
+  kdRestoreDraft();
+  box.oninput=kdSaveDraft; box.onchange=kdSaveDraft;
+  $('kdClose').onclick=function(){ kdSaveDraft(); $('kadaiModal').classList.add('hide'); };
   $('kdMake').onclick=makeKadai;
   var syncM=function(){ var n=parseInt($('kdNObj').value)||1; $('kdLabM2').classList.toggle('hide', n<2); $('kdLabM3').classList.toggle('hide', n<3); };
   $('kdNObj').onchange=syncM; syncM();
@@ -976,6 +978,31 @@ function openKadaiDialog(){
     w.innerHTML='<b>注意：この動画は HEVC（H.265）形式です。</b>この端末では再生できても、生徒の端末（Chromebook、HEVC の拡張機能が入っていない Windows など）では<b>再生できないことがあります</b>。'+
       'iPhone・iPad は［設定 → カメラ → フォーマット → 互換性優先］にして撮り直すか、MP4（H.264）に変換してから読み込むと安全です。';
   }
+}
+/* 課題の画面の書きかけ：閉じても、開き直したら同じ内容にもどす（題名・設問はページを開き直しても残す） */
+var KD_FIELDS=['kdTitle','kdQ','kdVideo','kdCal','kdAuto','kdJson','kdN','kdNObj','kdM1','kdM2','kdM3','kdScaleOn','kdScalePx','kdScaleCm'];
+function kdSaveDraft(){
+  var d={};
+  KD_FIELDS.forEach(function(id){ var x=$(id); if(!x) return; d[id]=(x.type==='checkbox')? x.checked : x.value; });
+  d.__key=APP.cur+'|'+(EXP().video.name||'');   /* 同じ実験・同じ動画のときだけ、数の欄までもどす */
+  UI.kdDraft=d;
+  try{ localStorage.setItem('ma_kadai_draft', JSON.stringify({ kdTitle:d.kdTitle, kdQ:d.kdQ })); }catch(e){}
+}
+function kdRestoreDraft(){
+  var d=UI.kdDraft;
+  if(!d){ try{ d=JSON.parse(localStorage.getItem('ma_kadai_draft')||'null'); }catch(e){ d=null; } }
+  if(!d) return;
+  var same=(d.__key===APP.cur+'|'+(EXP().video.name||''));
+  KD_FIELDS.forEach(function(id){
+    var x=$(id); if(!x || !(id in d)) return;
+    if(!same && ['kdTitle','kdQ','kdAuto','kdJson'].indexOf(id)<0) return;   /* 別の動画なら、題名・設問・自動追跡・JSON だけ */
+    if(x.type==='checkbox') x.checked=!!d[id];
+    else if(x.tagName==='SELECT'){ if([].some.call(x.options, function(o){ return o.value===String(d[id]); })) x.value=d[id]; }
+    else x.value=d[id];
+  });
+  var n=parseInt($('kdNObj').value)||1;
+  $('kdLabM2').classList.toggle('hide', n<2); $('kdLabM3').classList.toggle('hide', n<3);
+  if(typeof kdUpdateStat==='function') kdUpdateStat();
 }
 /* 生徒がどの手順から始めるか（先生のいまの設定と、この画面のチェックから） */
 function kadaiFlowStatus(){
