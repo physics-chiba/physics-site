@@ -86,6 +86,33 @@ function zeroRange(lo, hi){
   if(hi<=0){ var a=niceCeil(-lo); if(!(a>0)) a=1; return [-a,0]; }
   return [-niceCeil(-lo), niceCeil(hi)];
 }
+/* グラフの縦軸の「はじめの範囲」（画面・レポート・Excel で同じ決め方）
+   ・位置（x [m]・y [m] など）… データにぴったり合わせる（スケールフィットと同じ）。
+     原点はどこに置いてもよいので、0 をふくめると、たとえば単振動の振れが小さく見えてしまう
+   ・速度・加速度・エネルギーなど … 0 をふくめる（v が一定なら一定に見える、a のばらつきを大きく見せない）。
+     上（下）は、余白 5 % をとってから「目盛りの切りのよい値」まで。
+     前は 1・2・5×10ⁿ まで広げていたので、0.21 が 0〜0.5 のように半分以上あいてしまうことがあった */
+function isPosLab(lab){ return /\[(m|cm|mm)\]\s*$/.test(String(lab||'')); }
+function autoYRange(lo, hi, pos){
+  if(!isFinite(lo)||!isFinite(hi)) return [-1,1];
+  var y0, y1, st;
+  if(pos){
+    y0=lo; y1=hi;
+    if(!(y1-y0>1e-12)){ var hw=Math.max(Math.abs(y0)*0.1, 1e-3); y0-=hw; y1+=hw; }
+    var m=(y1-y0)*0.05; y0-=m; y1+=m;
+  } else {
+    var a=Math.min(0,lo), b=Math.max(0,hi);
+    if(!(b-a>1e-12)) return [-1,1];
+    var m2=(b-a)*0.05;
+    y0=(a<0)? a-m2 : 0; y1=(b>0)? b+m2 : 0;
+  }
+  st=niceStep(y1-y0, 5);
+  y0=Math.floor(y0/st+1e-9)*st; y1=Math.ceil(y1/st-1e-9)*st;
+  if(!(y1-y0>1e-12)){ y0-=st; y1+=st; }
+  /* 浮動小数のくずれ（0.30000000000000004 など）を丸める */
+  var r=function(v){ return parseFloat(v.toPrecision(12)); };
+  return [r(y0), r(y1)];
+}
 function redrawAllCharts(){
   els('.chartcard').forEach(function(d){
     var cv=d.querySelector('canvas');
@@ -124,10 +151,9 @@ function drawChart(cv, spec, opt){
   var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
   var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
   if(x1-x0<1e-12){ x0-=0.5; x1+=0.5; }
-  /* 縦軸のはじめの範囲は 0 をふくめ、上（下）はきりのよい数（1・2・5×10ⁿ）まで。
-     4〜6 なら 0〜10、0.12〜0.35 なら 0〜0.5。データだけに寄せて拡大しない（拡大したいときはスケールフィット） */
+  /* 縦軸のはじめの範囲は autoYRange（位置はデータに合わせる、ほかは 0 をふくめる） */
   if(spec.equal){ if(y1-y0<1e-12){ y0-=0.5; y1+=0.5; } var my=(y1-y0)*0.08; y0-=my; y1+=my; }
-  else { var zr=zeroRange(y0,y1); y0=zr[0]; y1=zr[1]; }
+  else { var zr=autoYRange(y0,y1,isPosLab(spec.ylab)); y0=zr[0]; y1=zr[1]; }
   var mx=(x1-x0)*0.03; x0-=mx; x1+=mx;
   /* ドラッグで動かした範囲があれば、それを使う */
   var xk=spec.xkey||null, yk=spec.key||null, moved=false;
@@ -146,7 +172,7 @@ function drawChart(cv, spec, opt){
   var z0=0, z1=1, sy2=sy;
   if(has2 && ys2.length){
     z0=Math.min.apply(null,ys2); z1=Math.max.apply(null,ys2);
-    var zr2=zeroRange(z0,z1); z0=zr2[0]; z1=zr2[1];
+    var zr2=autoYRange(z0,z1,isPosLab(spec.ylab2)); z0=zr2[0]; z1=zr2[1];
     if(spec.sameY){            /* 2 つの縦軸を同じ目盛りに（運動量保存則など、同じ単位を比べるとき） */
       if(!moved){ y0=Math.min(y0,z0); y1=Math.max(y1,z1); sy=function(v){ return T+ph-(v-y0)/(y1-y0)*ph; }; }
       z0=y0; z1=y1;

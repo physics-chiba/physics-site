@@ -1392,6 +1392,9 @@ function setVideoHint(html){
   if(!html){ h.classList.add('hide'); h.__t=''; return; }
   /* 「物体をクリックするたびコマがすすみます…」は、動画のまん中をかくさないように左に出す（クリックしたら左上へ） */
   var side=/クリックするたびコマ/.test(html);
+  /* 動画の枠がせまいとき（タブレットの縦・スマホなど）は、左の 1/3 に入れると縦に長くなりすぎて
+     上のボタンや動画にかぶるので、ふつうどおり上のまん中に出す */
+  var vbx=$('videobox'); if(side && vbx && vbx.clientWidth < 420) side=false;
   h.classList.toggle('vh-left', side && !UI.vhTL);
   h.classList.toggle('vh-tl', side && !!UI.vhTL);
   if(h.__t!==html){

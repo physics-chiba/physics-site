@@ -218,12 +218,12 @@ async function setMovSource(page, type) {
       const ca2 = sh2.charts.find(c => /^ay - t/.test(c.title));
       return { head, colName: head[col], xcol: ca.xcol, n: vals.length, nAf: af.length,
                same: vals.length === rep.length && vals.every((v, i) => Math.abs(v - rep[i]) < 1e-6),
-               yr: [ca.ymin, ca.ymax, ca.yunit], col2: sh2.rows[hr][ca2.series[0].col], yr2: [ca2.ymin, ca2.ymax] };
+               yr: [ca.ymin, ca.ymax, ca.yunit], auto: (function () { const vs = vals.filter(v => typeof v === 'number'); return autoYRange(Math.min(...vs), Math.max(...vs), false); })(), col2: sh2.rows[hr][ca2.series[0].col], yr2: [ca2.ymin, ca2.ymax] };
     });
     check('「v–t の傾きから計算」のとき、Excel の a–t はその値の列を使う', /ay\(v–tの傾き\)/.test(r.colName), r);
     check('その値はレポートの a–t と同じ', r.same, r);
     check('横軸は tv（v の時刻）', r.xcol === 1, r);
-    check('縦軸の範囲は 0 をふくむきりのよい数（画面・レポートと同じ）', r.yr[0] === -0.5 && r.yr[1] === 0, r.yr);
+    check('縦軸の範囲は 0 をふくむきりのよい数（画面・レポートと同じ autoYRange）', r.yr[1] === 0 && r.yr[0] < 0 && Math.abs(r.yr[0] / r.yr[2] - Math.round(r.yr[0] / r.yr[2])) < 1e-9 && JSON.stringify([r.yr[0], r.yr[1]]) === JSON.stringify(r.auto), r);
     check('「v の差から計算」のときは表の ay 列', r.col2 === 'ay', r);
     /* フィッティングの列は、同じ行の t の値（前は 1 行ずれていた） */
     const f = await p.evaluate(() => {
@@ -629,12 +629,25 @@ async function setMovSource(page, type) {
       return { txt: h.textContent.slice(0, 16), shown: !h.classList.contains('hide'), cx: ((r.left + r.right) / 2 - v.left) / v.width, cy: ((r.top + r.bottom) / 2 - v.top) / v.height, right: (r.right - v.left) / v.width, left: r.left - v.left, top: r.top - v.top,
         overlap: !(r.top >= u.bottom || r.left >= u.right || r.right <= u.left || r.bottom <= u.top) }; });
     const a = await g();
-    check('1 点目のあと：動画の左 1/3 のまん中あたりに出る', a.shown && /クリックするたびコマ/.test(a.txt) && a.right <= 0.34 && Math.abs(a.cy - 0.5) < 0.05, a);
+    check('1 点目のあと：動画の左 1/3 の、まん中よりやや上（高さ 40 %）に出る', a.shown && /クリックするたびコマ/.test(a.txt) && a.right <= 0.34 && Math.abs(a.cy - 0.4) < 0.04 && !a.overlap, a);
     await p.evaluate(() => commitPoint(102, 300, null)); await p.waitForTimeout(400);
     const b = await g();
     check('動画をクリックしたら左上へ（「1回分トラッキングを取り消す」とは重ならない）', b.shown && b.left < 20 && b.top < 70 && !b.overlap, b);
     await p.context().close();
 
+
+    /* iPad の横（1024px）・スマホ：動画がつぶれない・案内がボタンにかぶらない */
+    for (const [W, H] of [[1024, 768], [390, 844]]) {
+      const q = await L.newPage(browser, null, { viewport: { width: W, height: H } });
+      await L.setupTo4(q);
+      await q.evaluate(async () => { const e = EXP(); e.objReady[0] = true; e.trackReady = true; UI.startedAuto = false; document.getElementById('selAfter').value = 'n'; afterChange(); await vidSeek(e.t0); afterSeek(); commitPoint(72, 312, null); });
+      await q.waitForTimeout(400);
+      const r = await q.evaluate(() => { const v = document.getElementById('videobox').getBoundingClientRect(), hh = document.getElementById('vhint'), z = hh.getBoundingClientRect();
+        const bs = ['btnUndo1v', 'btnTrkReset2'].map(id => document.getElementById(id)).filter(b => b && b.offsetParent).map(b => b.getBoundingClientRect());
+        return { vw: Math.round(v.width), shown: !hh.classList.contains('hide'), inside: z.bottom <= v.bottom + 1, overlap: bs.some(u => !(z.top >= u.bottom || z.left >= u.right || z.right <= u.left || z.bottom <= u.top)) }; });
+      check(`${W}px：動画の幅が 300px 以上・「クリックするたび…」はボタンにかぶらず動画の中`, r.vw >= 300 && r.shown && r.inside && !r.overlap, r);
+      await q.context().close();
+    }
     for (const W of [1440, 1024]) {
       const q = await L.newPage(browser, null, { viewport: { width: W, height: 900 } });
       await L.setupTo4(q); await L.addProjPoints(q, 3);
@@ -754,6 +767,22 @@ async function setMovSource(page, type) {
     check('ページエラー 0', p.__errors.length === 0, p.__errors);
     await p.context().close();
 
+  }
+
+
+  console.log('U. グラフのはじめの縦軸（位置はデータに合わせる・ほかは 0 をふくむ）');
+  {
+    const p = await L.newPage(browser);
+    await L.setupTo4(p);
+    const r = await p.evaluate(() => { const e = EXP(); e.objs[0] = [];
+      for (let i = 0; i < 45; i += 2) { const t = VID.frames[i]; const X = 0.32 + 0.04 * Math.sin(2 * Math.PI * t / 0.9); e.objs[0].push({ t, fr: i, x: 72 + X / 0.001, y: 312 }); }
+      e.objReady[0] = true; e.trackReady = true; APP.axisDisp = 'x'; afterChange(); setTab('2');
+      const g = {}; document.querySelectorAll('#mode2 .chartcard canvas').forEach(c => { if (c.__spec && c.__geo) g[c.__spec.ylab] = [c.__geo.y0, c.__geo.y1]; });
+      return { g, a: autoYRange(0.12, 0.35, false), b: autoYRange(0.28, 0.36, true), c: autoYRange(-3.1, 4.2, false) }; });
+    check('単振動の x–t（0.28〜0.36 m）は、はじめからデータに合わせる（0 をふくめない）', r.g['x [m]'] && r.g['x [m]'][0] >= 0.2 && r.g['x [m]'][1] <= 0.4, r.g);
+    check('autoYRange：0.12〜0.35（速度など）→ 0〜0.4、位置 0.28〜0.36 → 0.26〜0.38、-3.1〜4.2 → -4〜6', JSON.stringify(r.a) === '[0,0.4]' && JSON.stringify(r.b) === '[0.26,0.38]' && JSON.stringify(r.c) === '[-4,6]', r);
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
   }
 
   await browser.close();

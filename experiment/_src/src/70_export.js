@@ -457,7 +457,7 @@ function sheetForExp(exp, idx){
                    series:sers, anchorCol:anchor, anchorRow:di*19};
       /* 縦軸の範囲は、画面・レポートのグラフと同じ決め方（0 をふくむ、きりのよい数まで）にする。
          Excel におまかせすると、データだけに寄せて拡大するので、a–t のばらつきが大きく見えてしまう */
-      var yr=xlsxYRange(rows, r0, r1, sers.map(function(q){ return q.col; }));
+      var yr=xlsxYRange(rows, r0, r1, sers.map(function(q){ return q.col; }), isPosLab(d.y));
       if(yr){ ch.ymin=yr[0]; ch.ymax=yr[1]; ch.yunit=xlsxUnit(yr[0], yr[1]); }
       charts.push(ch);
     });
@@ -465,15 +465,15 @@ function sheetForExp(exp, idx){
   return { name:'Data'+(idx+1), rows:rows, charts:charts };
   function num(v){ if(v===null||v===undefined||!isFinite(v)) return ''; return Math.round(v*1e8)/1e8; }
 }
-/* Excel のグラフの縦軸の範囲：drawChart と同じく zeroRange（0 をふくむ、1・2・5×10ⁿ のきりのよい数まで） */
-function xlsxYRange(rows, r0, r1, cols){
+/* Excel のグラフの縦軸の範囲：drawChart と同じく autoYRange（位置はデータに合わせる、ほかは 0 をふくむ） */
+function xlsxYRange(rows, r0, r1, cols, pos){
   var lo=Infinity, hi=-Infinity;
   for(var r=r0; r<=r1; r++){
     var row=rows[r-1]; if(!row) continue;
     cols.forEach(function(c){ var v=row[c]; if(typeof v==='number' && isFinite(v)){ if(v<lo) lo=v; if(v>hi) hi=v; } });
   }
   if(!isFinite(lo) || !isFinite(hi)) return null;
-  return zeroRange(lo, hi);
+  return autoYRange(lo, hi, !!pos);
 }
 /* 目盛りの間隔：Excel は最小値から目盛りを刻むので、最小・最大の両方を割り切れる間隔にする（-0.5〜0.5 なら 0.1） */
 function xlsxUnit(a, b){
