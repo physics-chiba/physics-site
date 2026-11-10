@@ -69,6 +69,11 @@ const VW = { width: 1366, height: 800 };
     await p.mouse.click(c.x, c.y); await p.waitForTimeout(700);
     R.c6 = { vb: await rectOf(p, '#videobox'), msg: await rectOf(p, '#autoMsg') };
     await p.screenshot({ path: path.join(OUT, 'c6.png') });
+    /* 「見つけました！」を押す → もう一度、探索半径の円と［自動追跡を開始する］ */
+    await p.click('#autoMsg'); await p.waitForTimeout(600);
+    const st7 = await p.evaluate(() => { const bt = [...document.querySelectorAll('#calMsg .btn')].find(x => /自動追跡を開始する/.test(x.textContent)); const r = bt && bt.getBoundingClientRect(); return { mode: UI.mode, start: r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null }; });
+    R.c7 = { vb: await rectOf(p, '#videobox'), start: st7.start, mode: st7.mode };
+    await p.screenshot({ path: path.join(OUT, 'c7.png') });
     console.log('色', JSON.stringify({ c5: R.c5.msg, c6: R.c6.msg, txt: await p.evaluate(() => document.getElementById('autoMsg').textContent) }), p.__errors);
     await p.context().close();
   }

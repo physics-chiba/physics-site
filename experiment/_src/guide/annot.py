@@ -89,3 +89,8 @@ im=Image.open(D+'c6.png').convert('RGB'); d=ImageDraw.Draw(im)
 b=box(d,R['c6']['msg'],pad=3); badge(d, b[0]-6, b[1]+8, '2')
 vb=R['c6']['vb']; crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'c6_found.png')
 print('ok2')
+# 見つけました → もう一度 探索半径（第74回）
+im=Image.open(D+'c7.png').convert('RGB'); d=ImageDraw.Draw(im)
+b=box(d,R['c7']['start']); badge(d, b[0]-4, b[1]+6, '3')
+vb=R['c7']['vb']; crop(im, vb['x'], vb['y'], vb['x']+vb['w'], vb['y']+vb['h'], 'c7_again.png')
+print('ok3')

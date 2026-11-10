@@ -269,10 +269,10 @@ async function setMovSource(page, type) {
     const g0 = await p.evaluate(() => { const m = document.getElementById('calMsg'), g = m.querySelector('.dragmsg-grip'), r = m.getBoundingClientRect(), gr = g && g.getBoundingClientRect();
       return { has: !!g, mx: r.left, my: r.top, gx: gr && gr.left + gr.width / 2, gy: gr && gr.top + gr.height / 2 }; });
     check('知らせの左はしに「つまみ」がある', g0.has, g0);
-    await p.mouse.move(g0.gx, g0.gy); await p.mouse.down(); await p.mouse.move(g0.gx - 120, g0.gy + 150, { steps: 6 }); await p.mouse.up();
+    await p.mouse.move(g0.gx, g0.gy); await p.mouse.down(); await p.mouse.move(g0.gx + 120, g0.gy + 60, { steps: 6 }); await p.mouse.up();   /* 知らせは左 1/3 にあるので、右下へ動かす */
     await p.waitForTimeout(150);
     const g1 = await p.evaluate(() => { const m = document.getElementById('calMsg'), r = m.getBoundingClientRect(); return { shown: !m.classList.contains('hide'), mx: r.left, my: r.top, act: m.classList.contains('ask') }; });
-    check('つまみをドラッグすると動く（消えない）', g1.shown && g1.act && Math.abs((g1.mx - g0.mx) + 120) < 6 && Math.abs((g1.my - g0.my) - 150) < 6, { g0, g1 });
+    check('つまみをドラッグすると動く（消えない）', g1.shown && g1.act && Math.abs((g1.mx - g0.mx) - 120) < 6 && Math.abs((g1.my - g0.my) - 60) < 6, { g0, g1 });
     /* ボタン以外の所（文字の上）をつかんでも動く */
     const tb = await p.evaluate(() => { const q = document.querySelector('#calMsg .q').getBoundingClientRect(); return { x: q.left + q.width / 2, y: q.top + q.height / 2 }; });
     await p.mouse.move(tb.x, tb.y); await p.mouse.down(); await p.mouse.move(tb.x + 60, tb.y - 40, { steps: 4 }); await p.mouse.up();
@@ -783,6 +783,56 @@ async function setMovSource(page, type) {
     check('autoYRange：0.12〜0.35（速度など）→ 0〜0.4、位置 0.28〜0.36 → 0.26〜0.38、-3.1〜4.2 → -4〜6', JSON.stringify(r.a) === '[0,0.4]' && JSON.stringify(r.b) === '[0.26,0.38]' && JSON.stringify(r.c) === '[-4,6]', r);
     check('ページエラー 0', p.__errors.length === 0, p.__errors);
     await p.context().close();
+  }
+
+
+  console.log('V. 動画の上の知らせは左 1/3・高さ 40 %／自動追跡はかならず探索半径を決めてから');
+  {
+    const p = await L.newPage(browser, null, { viewport: { width: 1366, height: 860 } });
+    await L.setupTo4(p);
+    const pos = (id) => p.evaluate((id) => { const v = document.getElementById('videobox').getBoundingClientRect(), m = document.getElementById(id), r = m.getBoundingClientRect();
+      return { shown: !m.classList.contains('hide') && r.width > 0, l: +((r.left - v.left) / v.width).toFixed(3), rgt: +((r.right - v.left) / v.width).toFixed(3), cy: +(((r.top + r.bottom) / 2 - v.top) / v.height).toFixed(3) }; }, id);
+    const inLeft = (q) => q.shown && q.l >= 0 && q.l < 0.05 && q.rgt <= 0.5 && q.cy > 0.34 && q.cy < 0.5;   /* 背の高い知らせは、上のボタンにかからないよう少し下がる */
+    await p.evaluate(() => calAsk('<span class="q">原点はこの位置でいいですか？</span>', [{ label: 'はい', fn: () => {} }]));
+    const a = await pos('calMsg');
+    await p.evaluate(() => { calMsg(''); autoMsgShow('見失いました（t = 0.300 s）<br>ここからは<b>動画の中の物体をクリック</b>して、手で記録してください', false, '見失い中'); });
+    await p.waitForTimeout(500);                     /* autoMsg は動きながら出る（transition） */
+    const b = await pos('autoMsg');
+    await p.evaluate(() => { autoMsgHide(); const d = document.getElementById('doneMsg'); d.style.transition = 'none'; d.classList.remove('hide', 'small'); });
+    const c = await pos('doneMsg');
+    await p.evaluate(() => { document.getElementById('doneMsg').classList.add('hide'); document.getElementById('trkChoice').classList.remove('hide'); });
+    const d = await pos('trkChoice');
+    await p.evaluate(() => { document.getElementById('trkChoice').classList.add('hide'); document.getElementById('btnTrkStart').classList.remove('hide'); });
+    const e = await pos('btnTrkStart');
+    check('知らせ（確認・見失いました・解析終了・どちらで記録・トラッキング開始）は、動画の左 1/3 の高さ 40 % あたり', [a, b, c, d, e].every(inLeft), { a, b, c, d, e });
+    await p.evaluate(() => document.getElementById('btnTrkStart').classList.add('hide'));
+    /* 自動追跡：［最後まで自動追跡］・「見つけました！」から始めても、まず探索半径の円と［自動追跡を開始する］ */
+    const r = await p.evaluate(async () => { const ex = EXP(); ex.objReady[0] = true; ex.trackReady = true;
+      APP.autoTrack = true; document.getElementById('cbAuto').checked = true; UI.startedAuto = true;
+      await vidSeek(ex.t0); afterSeek(); addPoint(0, 72, 312, false); APP.trackColor = { r: 230, g: 40, b: 40 }; setMode('record'); afterChange();
+      let ran = 0; const o = window.autoRunAll; window.autoRunAll = function () { ran++; };
+      document.getElementById('btnAutoRun').click();
+      const st1 = { mode: UI.mode, guide: UI.autoGuide && UI.autoGuide.step, ran, txt: document.getElementById('calMsg').textContent, circle: !!UI.radCenter };
+      const bt = [...document.querySelectorAll('#calMsg .btn')].find(x => /自動追跡を開始する/.test(x.textContent)); bt && bt.click();
+      const st2 = { mode: UI.mode, ran };
+      /* 見失った → 見つけた → 知らせを押す → まず探索半径 */
+      UI.autoLost = true; autoFoundCheck = autoFoundCheck; autoMsgShow('見つけました！', true, '見つけました！', function () { document.getElementById('btnAutoRun').click(); });
+      document.getElementById('autoMsg').click();
+      const st3 = { mode: UI.mode, ran, txt: document.getElementById('calMsg').textContent };
+      window.autoRunAll = o; return { st1, st2, st3 }; });
+    check('［最後まで自動追跡］を押すと、すぐには始めず「探索半径の円＋［自動追跡を開始する］」を出す', r.st1.mode === 'radius' && r.st1.guide === 'radius' && r.st1.ran === 0 && /探索半径/.test(r.st1.txt) && /自動追跡を開始する/.test(r.st1.txt) && r.st1.circle, r.st1);
+    check('［自動追跡を開始する］で始まる', r.st2.mode === 'record' && r.st2.ran === 1, r.st2);
+    check('「見つけました！ 最後まで追跡しますか？」を押したときも、まず探索半径', r.st3.mode === 'radius' && r.st3.ran === 1 && /自動追跡を開始する/.test(r.st3.txt), r.st3);
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
+    /* せまい画面では、これまでどおり上のまん中 */
+    const q = await L.newPage(browser, null, { viewport: { width: 390, height: 844 } });
+    await L.setupTo4(q);
+    const n = await q.evaluate(() => { calAsk('<span class="q">原点はこの位置でいいですか？</span>', [{ label: 'はい', fn: () => {} }]);
+      const v = document.getElementById('videobox'), m = document.getElementById('calMsg').getBoundingClientRect(), vr = v.getBoundingClientRect();
+      return { lmsg: v.classList.contains('lmsg'), cx: +(((m.left + m.right) / 2 - vr.left) / vr.width).toFixed(2) }; });
+    check('せまい動画枠（スマホ）では左に寄せない（まん中）', !n.lmsg && Math.abs(n.cx - 0.5) < 0.05, n);
+    await q.context().close();
   }
 
   await browser.close();

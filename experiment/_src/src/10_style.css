@@ -933,3 +933,43 @@ details.accnote[open]>summary .op{display:none}
 details.accnote[open]>summary .cl{display:inline}
 details.accnote>.accbody{margin-top:4px}
 @media print{ details.accnote:not([open]){display:none} details.accnote>summary{display:none} }
+
+/* ===== 動画の上の知らせは「左 1/3・高さ 40 %」に（第74回）=====
+   真ん中に出すと、物体やボタンにかぶって操作しづらいので、左の 1/3 に寄せる。
+   動画の枠がせまい（420px 未満）ときは .lmsg がつかず、これまでどおり真ん中・上に出す。
+   ドラッグで動かした知らせは、動かした場所（style の left/top）が優先される */
+.videobox.lmsg #calMsg:not(.mini),
+.videobox.lmsg #autoMsg.big,
+.videobox.lmsg #doneMsg:not(.small),
+.videobox.lmsg #trkChoice,
+.videobox.lmsg #btnTrkStart,
+.videobox.lmsg #btnOriginBig,
+.videobox.lmsg #vhint:not(.vh-tl):not(.vh-left){
+  left:1.5%; right:auto; bottom:auto; transform:none;
+  /* 中心を高さ 40 % に。ただし上のボタン（取り消す・リセット）にかからないよう、上は 48px より下（--mh は知らせの高さ、JS で入れる） */
+  top:max(48px, calc(40% - var(--mh, 0px) / 2));
+  width:max-content; max-width:max(31%, 240px)}
+.videobox.lmsg #calMsg.ask.nconf{width:max(31%, 240px)}
+.videobox.lmsg #trkChoice{padding:14px 14px 16px}
+.videobox.lmsg #trkChoice .btnwrap{margin:0}
+.videobox.lmsg #trkChoice .tc-auto{white-space:normal;padding:12px 16px}
+/* 物体にかぶるときは右 1/3 に（avoidObj） */
+.videobox.lmsg #calMsg.lmsg-r:not(.mini),
+.videobox.lmsg #autoMsg.big.lmsg-r,
+.videobox.lmsg #vhint.lmsg-r:not(.vh-tl):not(.vh-left){left:auto; right:1.5%}
+.videobox.lmsg #vhint.vh-left.lmsg-r{left:83.33%}
+/* 色の取得（物体を 1 回クリック）の案内：素通し・うすく（下の物体が見え、そのままクリックできる） */
+#calMsg.ask.thru{pointer-events:none;background:rgba(20,26,34,.58)}
+#calMsg.ask.thru .btn,#calMsg.ask.thru .dragmsg-grip{pointer-events:auto}
+/* 「どちらで記録しますか？」は少し広めに（ボタンの文字が 1 字ずつ折り返さないように） */
+.videobox.lmsg #trkChoice{max-width:none;width:min(46%,340px)}
+.videobox.lmsg #trkChoice .tc-auto .l1{white-space:nowrap}
+.videobox.lmsg #calMsg.autog:not(.mini){max-width:max(34%, 280px)}
+.videobox.lmsg #calMsg.ask .btn.big2{font-size:1.05rem;padding:9px 16px}
+.videobox.lmsg #doneMsg:not(.small){max-width:max(40%, 280px)}
+.videobox.narrow.lmsg #calMsg:not(.mini),.videobox.narrow.lmsg #autoMsg.big,.videobox.narrow.lmsg #doneMsg:not(.small),
+.videobox.narrow.lmsg #trkChoice,.videobox.narrow.lmsg #btnTrkStart,.videobox.narrow.lmsg #btnOriginBig{top:max(84px, calc(40% - var(--mh, 0px) / 2))}
+/* 色の取得の案内：［この表示を最小化］は小さく右上へ（下の物体の上にボタンが来て、押しまちがえないように） */
+#calMsg.ask.thru{display:flex;flex-direction:column}
+#calMsg.ask.thru .row{order:-1;justify-content:flex-end;margin:0 0 4px}
+#calMsg.ask.thru .btn{font-size:.72rem;padding:2px 8px;min-height:22px}

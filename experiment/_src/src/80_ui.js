@@ -159,7 +159,7 @@ function autoFoundCheck(vx, vy){
   autoMsgShow('見つけました！　<b>最後まで追跡</b> しますか？', true,
     '見つけました！　<b>最後まで追跡</b> しますか？',
     function(){ var b=$('btnAutoRun'); if(b) b.click(); });
-  toast('色を見つけました。この知らせを押すと、最後まで追跡します');
+  toast('色を見つけました。この知らせを押すと、探索半径を決めてから追跡を始められます');
   updateGuide(); updateTodo();
 }
 /* ---------- 表の中の「いまのトラッキング点」の矢印 ---------- */
@@ -708,6 +708,9 @@ function updateVBoxNarrow(){
   if(u && !u.classList.contains('hide')) need += u.offsetWidth;
   if(r && !r.classList.contains('hide')) need += r.offsetWidth;
   b.classList.toggle('narrow', need>0 && need+28 > b.clientWidth);
+  /* 動画の枠がじゅうぶん広いときは、動画の上に出す知らせを、真ん中ではなく「左 1/3・高さ 40 %」に出す
+     （真ん中に出すと、物体やボタンにかぶって操作しづらい）。せまいときは、これまでどおり */
+  b.classList.toggle('lmsg', b.clientWidth >= 420);
 }
 /* ===== 動画エリアの高さ（下辺のつまみ） ===== */
 function setVidH(h){
@@ -1118,6 +1121,24 @@ function autoGuideShow(){
     ]);
   }
   m.classList.add('big','autog');
+  /* 「物体を 1 回クリック」の案内は、物体にかぶっていても、その上からクリックできるように素通しにし、
+     下が少し見えるようにうすくする（左 1/3 に出すので、左から動き出す物体にかぶることがある） */
+  m.classList.toggle('thru', g.step==='color');
+}
+/* 自動追跡を（もう一度）始めるときは、かならず「探索半径の円 ＋［自動追跡を開始する］」を出す。
+   ［最後まで自動追跡］・「見つけました！ 最後まで追跡 しますか？」から来たときも同じ。
+   円の中心は、最後に記録した点 */
+function askRadiusThenRun(){
+  var e=EXP(), arr=e.objs[UI.obj]||[];
+  if(UI.autoRunning){ toast('自動追跡はすでに動いています'); return; }
+  if(!APP.trackColor || !arr.length){ toast('先に［色で自動追跡］を押して、始点と色を決めてください'); return; }
+  var last=arr[0]; arr.forEach(function(p){ if(p.t>last.t) last=p; });
+  UI.radCenter={x:last.x, y:last.y};
+  UI.startedAuto=true; UI.autoLost=false; autoMsgHide();
+  setMode('radius'); afterChange();
+  if(!UI.autoGuide || UI.autoGuide.step!=='radius'){ UI.autoGuide={ step:'radius', mini:false }; }
+  UI.autoGuide.mini=false; autoGuideShow();
+  render();
 }
 function autoGuideRun(){
   UI.autoGuide=null; calMsg('');
@@ -1395,6 +1416,7 @@ function setVideoHint(html){
   /* 動画の枠がせまいとき（タブレットの縦・スマホなど）は、左の 1/3 に入れると縦に長くなりすぎて
      上のボタンや動画にかぶるので、ふつうどおり上のまん中に出す */
   var vbx=$('videobox'); if(side && vbx && vbx.clientWidth < 420) side=false;
+  if(vbx) vbx.classList.toggle('lmsg', vbx.clientWidth >= 420);
   h.classList.toggle('vh-left', side && !UI.vhTL);
   h.classList.toggle('vh-tl', side && !!UI.vhTL);
   if(h.__t!==html){
@@ -3184,8 +3206,8 @@ function askResetPts(go){
   };
   $('btnAutoRun').onclick=function(){
     if(needTrackStart()){ toast('先に［色で自動追跡］を押して、始点と色を決めてください'); return; }
-    if(UI.mode==='radius') setMode('record');      /* 探索半径は決まったものとする */
-    autoRunAll();
+    if(UI.mode==='radius'){ autoGuideRun(); return; }     /* 探索半径を決めているところ → ここで開始 */
+    askRadiusThenRun();                                   /* かならず、探索半径を決めてから開始する */
   };
   $('btnAutoStop').onclick=function(){ stopAuto(); };
   $('btnAutoRun2').onclick=function(){ $('btnAutoRun').click(); };
@@ -3706,8 +3728,8 @@ function bindDragMsgs(){
       m.insertBefore(g, m.firstChild);
     };
     ensureGrip();
-    new MutationObserver(function(){ ensureGrip(); if(m.style.left && !m.classList.contains('dragging')) m.style.width=''; clampMsg(m); }).observe(m, { childList:true });
-    new MutationObserver(function(){ if(!m.classList.contains('hide')) clampMsg(m); }).observe(m, { attributes:true, attributeFilter:['class'] });
+    new MutationObserver(function(){ ensureGrip(); if(m.style.left && !m.classList.contains('dragging')) m.style.width=''; avoidObj(m); clampMsg(m); }).observe(m, { childList:true });
+    new MutationObserver(function(){ if(!m.classList.contains('hide')){ avoidObj(m); clampMsg(m); } }).observe(m, { attributes:true, attributeFilter:['class'] });
     m.addEventListener('pointerdown', function(ev){
       var grip=ev.target.closest && ev.target.closest('.dragmsg-grip');
       var act=getComputedStyle(m).pointerEvents!=='none';
@@ -3768,6 +3790,39 @@ function resetMsgPos(m){
   m.style.left=''; m.style.top=''; m.style.right=''; m.style.bottom=''; m.style.transform=''; m.style.width='';
 }
 /* 動かした知らせが、動画エリアの外にはみ出さないように */
+/* いま追いかけている物体の、画面の上の位置（最後に記録した点・探索半径の円の中心）。わからなければ null */
+function objScreenPt(){
+  var e=EXP(); if(!e || !VID.ready) return null;
+  var v=null;
+  if(UI.mode==='radius' && UI.radCenter) v=UI.radCenter;
+  else {
+    var arr=e.objs[UI.obj]||[];
+    arr.forEach(function(q){ if(!v || q.t>v.t) v=q; });
+  }
+  if(!v) return null;
+  var cv=$('cvView'); if(!cv || !cv.width) return null;
+  var r=cv.getBoundingClientRect(), c=v2s(v.x, v.y);
+  return { x:r.left + c.x*r.width/cv.width, y:r.top + c.y*r.height/cv.height };
+}
+/* 左 1/3 に出す知らせが物体にかぶるときは、右 1/3 に出す（.lmsg-r）。動かした知らせはそのまま */
+var AVOID_MSGS={ calMsg:1, autoMsg:1, vhint:1 };
+function avoidObj(m){
+  if(m.offsetHeight) m.style.setProperty('--mh', m.offsetHeight+'px');   /* 高さ（上にはみ出さないように CSS で使う） */
+  if(!AVOID_MSGS[m.id]) return;
+  var box=$('videobox'); if(!box) return;
+  var want=false;
+  if(box.classList.contains('lmsg') && !m.style.left && !m.classList.contains('mini') && !m.classList.contains('faint') && !m.classList.contains('vh-tl')){
+    var p=objScreenPt();
+    if(p){
+      var br=box.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+      /* 左側に出したときの四角（.vh-left は 1/6 の所が中心、ほかは左はしから） */
+      var x0=(m.classList.contains('vh-left'))? br.left + br.width/6 - w/2 : br.left + br.width*0.015;
+      var y0=br.top + br.height*0.4 - h/2, pad=40;   /* 探索半径の円や点の印の大きさぶん、少し広めに */
+      want = p.x > x0-pad && p.x < x0+w+pad && p.y > y0-pad && p.y < y0+h+pad;
+    }
+  }
+  if(m.classList.contains('lmsg-r')!==want) m.classList.toggle('lmsg-r', want);
+}
 function clampMsg(m){
   if(!m.style.left) return;
   var box=$('videobox'); if(!box) return;
