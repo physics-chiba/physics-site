@@ -2349,6 +2349,15 @@ button.b.tiny.segb .katex{font-size:1em}
 .mbpair .mbcap{font-size:.74rem}
 @media(max-width:560px){ .mbpair{grid-template-columns:minmax(0,1fr)} }
 .mbsec .secdesc a.golink{display:inline;background:none;box-shadow:none;border:0;padding:0;border-radius:0;color:var(--brand-700);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+/* ②-2 の図は 70% の大きさ */
+.cvwrap.mbcv.w70{width:70%;min-width:min(100%,280px);margin:0 auto}
+/* ①-2 の答え：▲▼ で 1 Ω ずつ */
+.spin{display:inline-flex;align-items:stretch;border:1px solid var(--rule-2);border-radius:8px;background:#fff;overflow:hidden}
+.spin .numin.ansin{border:0;border-radius:0;width:4.2em;box-shadow:none}
+.spinb{display:flex;flex-direction:column;border-left:1px solid var(--rule-2)}
+.spinb button{flex:1;min-width:2.1em;padding:0 .3em;border:0;background:var(--paper);color:var(--ink-2);font-size:.62rem;line-height:1;cursor:pointer}
+.spinb button+button{border-top:1px solid var(--rule-2)}
+.spinb button:hover{background:var(--brand);color:#fff}
 
 </style>
 </head>
@@ -2636,8 +2645,10 @@ function drawApparatus(cv, o) {
   (function () {
     var x0 = 432, x1 = 568, y0 = 58, y1 = 206, d = 12, cx = 500;
     c.save(); c.shadowColor = 'rgba(20,23,28,.22)'; c.shadowBlur = 14; c.shadowOffsetY = 5;
-    c.fillStyle = '#2b3038'; rrect(c, x0, y0, x1 - x0, y1 - y0, 10); c.fill(); c.restore();
-    c.fillStyle = '#3d444e'; c.beginPath(); c.moveTo(x0 + 6, y0); c.lineTo(x0 + 6 + d, y0 - 10); c.lineTo(x1 - 6 + d, y0 - 10); c.lineTo(x1 - 6, y0); c.closePath(); c.fill();
+    var gb = c.createLinearGradient(x0, 0, x1, 0); gb.addColorStop(0, '#c9d9ec'); gb.addColorStop(.5, '#e4eef8'); gb.addColorStop(1, '#b7cbe2');   /* 検流計は明るい青。黒いケーブルと見分けられるように */
+    c.fillStyle = gb; rrect(c, x0, y0, x1 - x0, y1 - y0, 10); c.fill(); c.restore();
+    c.strokeStyle = '#1663b5'; c.lineWidth = 2; rrect(c, x0, y0, x1 - x0, y1 - y0, 10); c.stroke();
+    c.fillStyle = '#9fb8d6'; c.beginPath(); c.moveTo(x0 + 6, y0); c.lineTo(x0 + 6 + d, y0 - 10); c.lineTo(x1 - 6 + d, y0 - 10); c.lineTo(x1 - 6, y0); c.closePath(); c.fill();
     [gL, gR].forEach(function (p) { c.fillStyle = '#9aa1ab'; rrect(c, p[0] - 6, p[1] - 4, 12, 14, 3); c.fill(); c.fillStyle = '#6b737e'; c.beginPath(); c.ellipse(p[0], p[1] - 4, 6, 3, 0, 0, 7); c.fill(); });
     c.fillStyle = '#fbfaf7'; rrect(c, x0 + 10, y0 + 10, x1 - x0 - 20, 96, 8); c.fill();
     var pcx = cx, pcy = y0 + 98, R = 68, Aa = 50 * Math.PI / 180;
@@ -2753,7 +2764,7 @@ var C2 = { VW: 640, VH: 450, A: [110, 205], B: [530, 205], D: [320, 62], P: [320
 /* o = { s, hideX, labels: 'val' | 'sym'（②-2 の図は I₁・I₂ を書く） } */
 function drawCircuit2d(cv, o) {
   var f = fitCanvas(cv, C2.VH / C2.VW, 220, 520), c = f.c, k = f.W / C2.VW, s = o.s;
-  var nar = f.W < 500, fz = function (px) { return Math.max(px >= 17 ? 17 : 14, px * k) / k; };   /* 回路図は小さく置くので、文字は 14〜17px より小さくしない */
+  var nar = f.W < 500, fz = function (px) { return Math.max(o.small ? (px >= 17 ? 14 : 11.5) : (px >= 17 ? 17 : 14), px * k) / k; };   /* 回路図は小さく置くので、文字は 14〜17px より小さくしない */
   c.clearRect(0, 0, f.W, f.H); c.save(); c.scale(k, k); c.lineCap = 'round'; c.lineJoin = 'round';
   var vmin = 0, vmax = s.V, pc = function (v) { return potentialColor(v, vmin, vmax, 1); };
   var A = C2.A, B = C2.B, D = C2.D, P = C2.P;
@@ -3218,7 +3229,7 @@ function mkSlider(host, o) {
   row.appendChild(head); row.appendChild(bar); host.appendChild(row);
   var dec = (String(o.step).split('.')[1] || '').length;
   var set = function (x) { x = +clamp(Math.round(x / o.step) * o.step, o.min, o.max).toFixed(dec); o.set(x); };
-  inp.addEventListener('input', function () { set(parseFloat(inp.value)); });
+  inp.addEventListener('input', function () { var x = parseFloat(inp.value); if (o.snap) { var y = o.snap(x); if (y !== null) { o.set(y); return; } } set(x); });   /* スライダーを動かしたときだけ吸いつく（−／＋ボタンでは吸いつかない） */
   dn.addEventListener('click', function () { set(o.get() - o.step); });
   up.addEventListener('click', function () { set(o.get() + o.step); });
   if (ni) {
@@ -3280,6 +3291,11 @@ function bindGoLinks(root) {
     a.addEventListener('click', function (ev) { ev.preventDefault(); var sid = a.dataset.go; activateMode(modeOfSec(sid).id); history.replaceState(null, '', '#' + addrOf(sid)); scrollToSec(sid); });
   });
 }
+/* 0 A の位置に吸いつく：つり合いの位置 Lb から SNAP cm 以内なら Lb ちょうどにする。それ以外は null */
+var SNAP = 0.5;
+function snapBal(st, L) { var Lb = mbBalanceL(st.R, st.X); return Math.abs(L - Lb) < SNAP ? Lb : null; }
+/* 接点のドラッグ・スライダーで動かしたときの位置（吸いつき → 0.1 cm 刻み） */
+function dragL(st, L) { var y = snapBal(st, L); return y !== null ? y : +clamp(Math.round(L * 10) / 10, MB.LMIN, MB.LMAX).toFixed(1); }
 /* つり合っているか（接点の目盛り 0.1 cm 以内） */
 function mbNearBal(s) { return Math.abs(s.L - mbBalanceL(s.R, s.X)) < 0.05 || Math.abs(s.I.G) < 5e-6; }
 /* 回路図の右上：つり合いの式。hideX のときは X を求める式の形まで */
@@ -3319,7 +3335,7 @@ DEFS.s1 = {
     var ctr = el('div', 'ctrls mbctrls'); Rh.appendChild(ctr);
     var vb = el('div', 'varbox cols2 mbvars'); ctr.appendChild(vb);
     var sl = [];
-    sl.push(mkSlider(vb, { label: '接点の位置 $L$', cls: 'wide lrow', min: MB.LMIN, max: MB.LMAX, step: 0.1, num: true, unit: 'cm', aria: '接点の位置 L', get: function () { return st.L; }, set: function (x) { st.L = x; changed(); } }));
+    sl.push(mkSlider(vb, { label: '接点の位置 $L$', cls: 'wide lrow', min: MB.LMIN, max: MB.LMAX, step: 0.1, num: true, unit: 'cm', aria: '接点の位置 L', snap: function (x) { return snapBal(st, x); }, get: function () { return st.L; }, set: function (x) { st.L = x; changed(); } }));
     sl.push(mkSlider(vb, { label: '電源の電圧 $V$', min: 1, max: 6, step: 0.5, get: function () { return st.V; }, set: function (x) { st.V = x; changed(); }, fmtv: function (x) { return fmt(x, 1) + ' V'; } }));
     sl.push(mkSlider(vb, { label: '既知の抵抗 $R$', min: 1, max: 50, step: 1, get: function () { return st.R; }, set: function (x) { st.R = x; changed(); }, fmtv: function (x) { return x + ' Ω'; } }));
     sl.push(mkSlider(vb, { label: '未知の抵抗 $X$', min: 1, max: 50, step: 1, get: function () { return st.X; }, set: function (x) { st.X = x; changed(); }, fmtv: function (x) { return x + ' Ω'; } }));
@@ -3349,7 +3365,10 @@ DEFS.s1 = {
     var setView = function (top) { if (top) { st.view.az = D3.VIEW_TOP.az; st.view.tilt = D3.VIEW_TOP.tilt; } else st.view.tilt = 0.05; bTop.classList.toggle('on', top); bSide.classList.toggle('on', !top); draw3(); };
     bTop.addEventListener('click', function () { setView(true); }); bSide.addEventListener('click', function () { setView(false); });
     D3.bindDrag(cv3, st, function () { requestDraw(draw3); }, function () { bTop.classList.remove('on'); bSide.classList.remove('on'); });
-    bindApparatusDrag(cvA, function () { return st.L; }, function (L) { st.L = +clamp(Math.round(L * 10) / 10, MB.LMIN, MB.LMAX).toFixed(1); changed(); });
+    bindApparatusDrag(cvA, function () { return st.L; }, function (L) {
+      st.L = dragL(st, L); changed();
+      if (!play.playing) { play.playing = true; syncPlay(); playKick(); }   /* 接点をドラッグしたら、水の流れを見せはじめる */
+    });
 
     var play = { playing: false, tick: function (dt) { D3.advance(st, dt); draw3(); } };
     PLAY.list.push(play);
@@ -3386,7 +3405,7 @@ DEFS.s2 = {
   desc: '$X$ の値は隠してあります。検流計の針が 0 になる接点の位置 $L$ を見つけて、$\\dfrac{R}{X}=\\dfrac{L}{100-L}$ から $X$ を求めよう。' + GO_P2 + '<br>' + DRAG_HINT,
   build: function (Lh, Rh) {
     var pick = function (not) { var c; do { c = XLIST[Math.floor(Math.random() * XLIST.length)]; } while (c === not); return c; };
-    var st = { V: MB_DEF.V, R: 10, X: pick(), L: 50, fs: 0.05 };
+    var st = { V: MB_DEF.V, R: 10, X: 5, L: 50, fs: 0.05 };   /* はじめの X は計算しやすい 5 Ω（「新しい X にする」からはランダム） */
     var solve = function () { st.s = mbSolve(st); }; solve();
     bindGoLinks(Lh.parentNode);
     var zb = Lh.parentNode.querySelector('.zerob');
@@ -3398,7 +3417,7 @@ DEFS.s2 = {
     var ctr = el('div', 'ctrls mbctrls'); Rh.appendChild(ctr);
     var vb = el('div', 'varbox cols2 mbvars'); ctr.appendChild(vb);
     var sl = [];
-    sl.push(mkSlider(vb, { label: '接点の位置 $L$', cls: 'wide lrow', min: MB.LMIN, max: MB.LMAX, step: 0.1, num: true, unit: 'cm', aria: '接点の位置 L', get: function () { return st.L; }, set: function (x) { st.L = x; changed(); } }));
+    sl.push(mkSlider(vb, { label: '接点の位置 $L$', cls: 'wide lrow', min: MB.LMIN, max: MB.LMAX, step: 0.1, num: true, unit: 'cm', aria: '接点の位置 L', snap: function (x) { return snapBal(st, x); }, get: function () { return st.L; }, set: function (x) { st.L = x; changed(); } }));
     sl.push(mkSlider(vb, { label: '既知の抵抗 $R$', min: 1, max: 50, step: 1, get: function () { return st.R; }, set: function (x) { st.R = x; changed(); }, fmtv: function (x) { return x + ' Ω'; } }));
     sl.push(mkSlider(vb, { label: '電源の電圧 $V$', min: 1, max: 6, step: 0.5, get: function () { return st.V; }, set: function (x) { st.V = x; changed(); }, fmtv: function (x) { return fmt(x, 1) + ' V'; } }));
     var card = el('div', 'qcard mbq'); Rh.appendChild(card);
@@ -3406,12 +3425,17 @@ DEFS.s2 = {
       '<ol class="mbsteps"><li>接点を動かして、検流計の針が 0 を指す位置を探す。</li>' +
       '<li>そのときの $L$ をものさしで読む。</li>' +
       '<li>つり合いの式 $\\dfrac{R}{X}=\\dfrac{L}{100-L}$ を $X$ について解き、数値を入れて計算する（整数の位まで合っていれば正解）。</li></ol>' +
-      '<div class="mbans"><label>$X$ ＝ <input type="number" class="numin ansin" step="any" min="0" inputmode="decimal" aria-label="X の値"> Ω</label>' +
+      '<div class="mbans"><label>$X$ ＝ <span class="spin"><input type="number" class="numin ansin" step="any" min="0" inputmode="decimal" aria-label="X の値"><span class="spinb"><button type="button" class="sup" aria-label="1 大きく">▲</button><button type="button" class="sdn" aria-label="1 小さく">▼</button></span></span> Ω</label>' +
       '<button type="button" class="b chk">答え合わせ</button></div>' +
       '<div class="mbfb" aria-live="polite"></div>' +
       '<div class="mbbtns"><button type="button" class="b tiny newx">新しい X にする</button><button type="button" class="b tiny show">答えを見る</button></div>');
     var cb = circBox(Rh, '回路図');
     var ans = card.querySelector('.ansin'), fb = card.querySelector('.mbfb');
+    /* ▲▼ で 1 Ω ずつ選ぶ（整数の位まで合っていれば正解なので） */
+    var stepAns = function (d) { var x = parseFloat(ans.value); x = isFinite(x) ? Math.round(x) + d : (d > 0 ? 1 : 0); ans.value = String(Math.max(0, Math.min(99, x))); };
+    card.querySelector('.sup').addEventListener('click', function () { stepAns(1); });
+    card.querySelector('.sdn').addEventListener('click', function () { stepAns(-1); });
+    ans.addEventListener('keydown', function (ev) { if (ev.key === 'ArrowUp') { ev.preventDefault(); stepAns(1); } else if (ev.key === 'ArrowDown') { ev.preventDefault(); stepAns(-1); } });
     card.querySelector('.chk').addEventListener('click', function () {
       var x = parseFloat(ans.value);
       if (!isFinite(x) || x <= 0) { fb.className = 'mbfb ng'; fb.innerHTML = mathify('$X$ の値を数字で入れよう。'); return; }
@@ -3429,7 +3453,7 @@ DEFS.s2 = {
       var m = mbStatus(st.s, { hide: true }); msg.className = 'msgbox mbmsg ' + m.cls; msg.innerHTML = m.html;
     }
     function changed() { solve(); sl.forEach(function (q) { q.sync(); }); requestDraw(draw); }
-    bindApparatusDrag(cvA, function () { return st.L; }, function (L) { st.L = +clamp(Math.round(L * 10) / 10, MB.LMIN, MB.LMAX).toFixed(1); changed(); });
+    bindApparatusDrag(cvA, function () { return st.L; }, function (L) { st.L = dragL(st, L); changed(); });
     draw(); LIVE.push({ redraw: draw });
     DEFS.s2.st = st; DEFS.s2.changed = changed;
   }
@@ -3522,8 +3546,8 @@ DEFS.p2 = {
   desc: '検流計に電流が流れないとき、点 P と点 D は等電位である。ここから $\\dfrac{R}{X}=\\dfrac{L}{100-L}$ を導こう。',
   build: function (Lh, Rh) {
     var s = mbSolve({ V: MB_DEF.V, R: MB_DEF.R, X: MB_DEF.X, L: mbBalanceL(MB_DEF.R, MB_DEF.X) });
-    var bx = mkBox(Lh, 'つり合っているときの回路（$R$ ＝ ' + MB_DEF.R + ' Ω、$X$ ＝ ' + MB_DEF.X + ' Ω、$L$ ＝ ' + fmt(s.L, 1) + ' cm）'); var cv = mkCanvas(bx);
-    var bv = mkBox(Lh, '金属線に沿った電位'); var cvV = mkCanvas(bv);
+    var bx = mkBox(Lh, 'つり合っているときの回路（$R$ ＝ ' + MB_DEF.R + ' Ω、$X$ ＝ ' + MB_DEF.X + ' Ω、$L$ ＝ ' + fmt(s.L, 1) + ' cm）'); var cv = mkCanvas(bx, 'w70');
+    var bv = mkBox(Lh, '金属線に沿った電位'); var cvV = mkCanvas(bv, 'w70');
     bv.appendChild(el('p', 'mbcap', mathify('A から D へ下がる電圧（$R$ にかかる電圧）と、A から P へ下がる電圧（金属線 AP にかかる電圧）が等しい。')));
     var card = el('div', 'qcard mbq'); Rh.appendChild(card);
     card.innerHTML = mathify('<ol class="mbderiv">' +
@@ -3534,7 +3558,7 @@ DEFS.p2 = {
       '<li>① ÷ ② で $I_1$・$I_2$ が消える。<div class="eqbox">$\\dfrac{R}{X}=\\dfrac{R_{\\mathrm{AP}}}{R_{\\mathrm{PB}}}$</div></li>' +
       '<li>金属線の抵抗は長さに比例する（②-1）ので <div class="eqbox">$\\dfrac{R}{X}=\\dfrac{L}{100-L}$　よって　$X=R\\times\\dfrac{100-L}{L}$</div></li></ol>' +
       '<p class="mbcap">数値で確かめる：$\\dfrac{R}{X}=\\dfrac{' + MB_DEF.R + '}{' + MB_DEF.X + '}=' + fmt(MB_DEF.R / MB_DEF.X, 3) + '$、$\\dfrac{L}{100-L}=\\dfrac{' + fmt(s.L, 1) + '}{' + fmt(100 - s.L, 1) + '}=' + fmt(s.L / (100 - s.L), 3) + '$。<br>$I_1$ ＝ ' + fmtVal(s.I.R, 'A') + '、$I_2$ ＝ ' + fmtVal(s.I.AP, 'A') + '、$RI_1$ ＝ ' + fmt(s.U.R, 3) + ' V ＝ $R_{\\mathrm{AP}}I_2$ ＝ ' + fmt(s.U.AP, 3) + ' V。</p>');
-    function draw() { drawCircuit2d(cv, { s: s, labels: 'sym' }); drawVplot(cvV, { s: s, showBal: false }); }
+    function draw() { drawCircuit2d(cv, { s: s, labels: 'sym', small: true }); drawVplot(cvV, { s: s, showBal: false, small: true }); }
     draw(); LIVE.push({ redraw: draw });
   }
 };

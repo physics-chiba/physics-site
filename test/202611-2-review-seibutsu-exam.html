@@ -1762,6 +1762,22 @@ details.qcard.fold > summary .foldhint{font-size:.78rem;color:var(--ink-4)}
 .flipnote{display:block;margin:0 0 .5em;padding:.45em .8em;border-radius:10px;background:#fff4e5;border:1px solid #f0c48a;color:#7a4a0c;font-size:.92rem}
 .exbar-t{margin-left:14px;align-self:center;font-weight:700;font-size:.88rem;color:#5b6672;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #exam .sec{scroll-margin-top:calc(var(--navh, 56px) + 12px)}
+/* 物理選択者：図は 70%（最大 700 px）で中央。スライダーは右、▶ スタートなどは左に並べる（大問5 以外。2026-11-13 千葉さん） */
+.sec.exwide .cvwrap{max-width:700px;margin-left:auto;margin-right:auto}
+.sec.exwide.exfull .cvwrap{max-width:960px}
+@media(min-width:900px){
+  .sec.exwide .ctrls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"b s" "p s";column-gap:16px;row-gap:8px;align-items:start}
+  .sec.exwide .ctrls>.row1b{grid-area:b;margin:0}
+  .sec.exwide .ctrls>.playbar{grid-area:p;margin:0}
+  .sec.exwide .ctrls>.sliders{grid-area:s;margin:0}
+  .sec.exwide .ctrls>.sliders:empty{display:none}
+}
+.exmom{max-width:700px;margin:10px auto 0;display:flex;flex-direction:column;gap:8px}
+.exmom .exmrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.exmom .exml{font-weight:800;font-size:.86rem;color:#31465e;min-width:10.5em}
+.exmom .b{font-size:.8rem;padding:.32em .75em}
+.exmom .b.two{line-height:1.25;font-size:.82rem}
+#q2 .playbar{display:none}
 
 </style>
 </head>
@@ -6154,7 +6170,7 @@ function richParts(text) {          /* "k_A(L_A＋x)" → [["k",0],["A",1],["(L"
 }
 function label(ctx, text, x, y, o) {
   o = o || {};
-  var size = o.size || 13, fb = (o.bold ? 'bold ' : '');
+  var size = (o.size || 13) * (typeof EXF !== 'undefined' ? EXF : 1), fb = (o.bold ? 'bold ' : '');
   ctx.save();
   ctx.fillStyle = o.color || COL.ink;
   ctx.textBaseline = o.base || 'middle';
@@ -6411,6 +6427,69 @@ function angArc(ctx, x, y, r, a1, a2, txt, lr) {
 }
 COL.ok = '#1f8a3a'; COL.ng = '#c0392b';
 var G = 9.8, RAD = Math.PI / 180;
+/* ---------------------------------------------------------------- 大問2(3) 水中の圧力（202609-2-review-exam.html の大問2(1) と同じ） */
+function r2(ctx, q) {
+  var i;
+  var hFull = 65;                                  /* 水そうは 65 m ぶんの深さで描く */
+  var top = 104, bot = 372;
+  var yOf = function (h) { return top + (bot - top) * h / hFull; };
+  var P0 = 1.0e5, Pnow = P0 + q.rho * 1.0e3 * q.h * G;
+  var LEN = function (P) { return 16 * (P / 1.0e5); };   /* 矢印の長さ ∝ 圧力 */
+  var L0 = LEN(P0), L = LEN(Pnow);
+  /* 水そう */
+  ctx.save(); ctx.fillStyle = COL.water; ctx.fillRect(60, top, 420, bot - top); ctx.restore();
+  ctx.save(); ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(60, top); ctx.lineTo(60, bot); ctx.lineTo(480, bot); ctx.lineTo(480, top);
+  ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.strokeStyle = '#5b8fb8'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(60, top); ctx.lineTo(480, top); ctx.stroke(); ctx.restore();
+  label(ctx, '水面', 66, top - 12, { align: 'left', size: 12, color: '#3d6f96' });
+  /* 大気圧：長さは h=0 のときの矢印と同じ */
+  for (i = 0; i < 4; i++) {
+    var xa = 120 + i * 100;
+    arrow(ctx, xa, top - 8 - L0, xa, top - 6, 'force', COL.force);
+  }
+  label(ctx, '大気圧 P₀（長さは h=0 のときと同じ）', 270, top - 22 - L0, { size: 12, color: COL.force });
+  /* 深さの点 */
+  var yp = yOf(q.h), xp = 270;
+  ctx.save(); ctx.fillStyle = '#123'; ctx.beginPath(); ctx.arc(xp, yp, 5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  for (i = 0; i < 8; i++) {
+    var a = i * Math.PI / 4;
+    arrow(ctx, xp + (11 + L) * Math.cos(a), yp + (11 + L) * Math.sin(a),
+               xp + 11 * Math.cos(a), yp + 11 * Math.sin(a), 'force', COL.force);
+  }
+  label(ctx, '深さ h の点', xp + 16 + L, yp + 22 + L * 0.5, { align: 'left', size: 12.5 });
+  /* 寸法 */
+  arrow(ctx, 88, top, 88, yp, 'dim', COL.dim);
+  arrow(ctx, 88, yp, 88, top, 'dim', COL.dim);
+  label(ctx, 'h = ' + fmt(q.h) + ' m', 98, (top + yp) / 2, { align: 'left', size: 12.5 });
+  label(ctx, '矢印の長さ＝圧力の大きさ', 270, 388, { size: 12, color: COL.sub });
+  /* ★ 大事な式を右上に赤で ★ */
+  ctx.save();
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = COL.force; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.rect(548, 22, 302, 54); ctx.fill(); ctx.stroke(); ctx.restore();
+  label(ctx, 'P = P₀ + ρhg', 699, 42, { size: 21, bold: true, color: COL.force });
+  label(ctx, '大気圧 ＋ 上にのっている水の重さのぶん', 699, 64, { size: 11.5, color: COL.force });
+  /* 棒グラフ */
+  var bx = 590, bw = 96, bBot = 356, sc = 260 / 5.0e5;
+  var pw = Pnow - P0;
+  ctx.save();
+  ctx.fillStyle = '#c9d6e2'; ctx.fillRect(bx, bBot - P0 * sc, bw, P0 * sc);
+  ctx.fillStyle = '#7f9db8'; ctx.fillRect(bx, bBot - Pnow * sc, bw, pw * sc);
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1.4;
+  ctx.strokeRect(bx, bBot - P0 * sc, bw, P0 * sc);
+  ctx.strokeRect(bx, bBot - Pnow * sc, bw, pw * sc);
+  ctx.restore();
+  hatch(ctx, bx - 30, bx + bw + 30, bBot, true);
+  label(ctx, '大気圧 1.0×10⁵ Pa', bx + bw + 12, bBot - P0 * sc / 2, { align: 'left', size: 12 });
+  var yw = bBot - (P0 + pw / 2) * sc;
+  if (pw * sc < 30) yw = bBot - Pnow * sc - 18;
+  label(ctx, '水柱の圧力 ρhg', bx + bw + 12, yw, { align: 'left', size: 12 });
+  label(ctx, '＝ ' + (pw / 1e5).toFixed(2) + '×10⁵ Pa', bx + bw + 12, yw + 16, { align: 'left', size: 12, color: COL.sub });
+  label(ctx, '全体の圧力 P = ' + (Pnow / 1e5).toFixed(2) + '×10⁵ Pa', bx + bw / 2 + 30, bBot - Pnow * sc - (pw * sc < 30 ? 56 : 22), { size: 13.5, bold: true });
+}
+
+
 /* 押す力：外から面に向かう矢印。作用点（面の上）に・ */
 function push(ctx, x, y, len, col) {
   arrow(ctx, x - len, y, x, y, 'acc', col);
@@ -6692,7 +6771,7 @@ function r9(ctx, q) {
   fbox(ctx, 570, 14, 290, '½mv² − 0 ＝ mgh', '垂直抗力の仕事は 0、重力の仕事は mgh');
 }
 
-return { r3: r3, mv3: mv3, a3: a3, fr3: fr3, r5: r5, r7: r7, a7: a7, tEnd7: tEnd7, r8: r8, L8: L8, r9: r9, pos9: pos9, X9: X9, PPM9: PPM9 };
+return { r2: r2, r3: r3, mv3: mv3, a3: a3, fr3: fr3, r5: r5, r7: r7, a7: a7, tEnd7: tEnd7, r8: r8, L8: L8, r9: r9, pos9: pos9, X9: X9, PPM9: PPM9 };
 })();
 /* ===================== 考査ページ（生物選択者）のセクション ===================== */
 var EXMAXW = 960;
@@ -6707,6 +6786,26 @@ function exLive(s) { var now = performance.now(); if (s.playing && now - (s._rT 
 function exCard(title, body) { return '<div class="qcard"><p class="qt">' + title + '</p>' + body + '</div>'; }
 function exNow(rows) { return '<table class="cmpt"><tbody>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>'; }
 function exQ(s) { var q = Object.assign({}, s.v); q.t = s.t; q.showF = s.ms.showF; return q; }
+
+/* ---------- 大問2(3) 水中の圧力（test/202609-2-review-exam.html の大問2(1) をそのまま使う） ---------- */
+DEFS.y2 = {
+  id: 'y2', wide: true, num: 2, title: '水中の圧力（大気圧を足しわすれない）', mode: 'q2', showFBtn: false, strobe: false, baseRate: 1,
+  desc: '水面には大気圧 $p_0$ がかかっている。深さ $h$ の点の圧力は、大気圧に、その上にある水の重さによる圧力 $\\rho hg$ を加えたもの。<span class="todo">深さ $h$ を変えて、点のまわりの矢印（長さ＝圧力の大きさ）と右の棒グラフを見よう。</span>',
+  vars: [{ k: 'h', label: '深さ $h$', aria: '深さ', min: 0, max: 40, step: 0.5, def: 20, dec: 1, unit: 'm' },
+         { k: 'rho', label: '水の密度 $\\rho$', aria: '水の密度', min: 0.6, max: 1.4, step: 0.05, def: 1.0, fmt: function (x) { return fmt(x, 2) + '×10³ kg/m³'; } }],
+  onChanged: function () { return 'stop'; },
+  height: exH(400),
+  tEnd: function () { return 0.01; },
+  draw: exDraw(400, function (c, q) { EX.r2(c, q); }, exQ),
+  msg: function (s) { var p = 1.0e5 + s.v.rho * 1e3 * s.v.h * G; return '深さ ' + f1(s.v.h) + ' m の点の圧力 $p=p_0+\\rho hg=' + fmt(p / 1e5, 2) + '\\times10^5$ Pa。深さ 0 でも矢印は消えない——水面にも大気圧 $p_0$ がかかっているから。'; },
+  right: function (s, R) {
+    var pw = s.v.rho * 1e3 * s.v.h * G, p = 1.0e5 + pw;
+    var h = exCard('深さ $h$ の点の圧力', '<div class="qeq">' + tex('p = p_0 + \\rho h g', true) + '</div><p>大気圧 $p_0$ に、上にのっている水の重さによる圧力 $\\rho hg$ を足す。<b>大気圧を足しわすれない。</b></p>');
+    h += exCard('いまの値', exNow([['大気圧 $p_0$', '1.0×10⁵ Pa'], ['水の圧力 $\\rho hg$', fmt(pw / 1e5, 2) + '×10⁵ Pa'], ['全体の圧力 $p$', fmt(p / 1e5, 2) + '×10⁵ Pa']]) +
+      '<p class="qnote">考査の問題（深さ 20 m）：$p=1.0\\times10^5+1.0\\times10^3\\times20\\times9.8\\fallingdotseq3.0\\times10^5$ Pa。深さ約 10 m ごとに大気圧 1 つ分ずつ増える。</p>');
+    R.innerHTML = mathify(h);
+  }
+};
 
 /* ---------- 大問3 ---------- */
 DEFS.y3 = {
@@ -6824,8 +6923,10 @@ var EXAM = {
   crumb: 'Ⅱ期中間考査の解説（生物選択者）', en: 'Midterm Review',
   title: 'Ⅱ期中間考査', sub: '２年物理基礎（生物選択者）を動かして確かめる',
   docTitle: 'Ⅱ期中間考査　解説シミュレーション（生物選択者）',
-  lead: '令和8年11月12日実施の中間考査のうち、大問3・5・7・8・9 を動かして確かめるページ。まず <b>▶ スタート</b> を押して何が起きるかを見て、つぎにスライダーを少し動かしてもう一度。<b>力を表示</b> の ON／OFF もできる。',
+  lead: '令和8年11月12日実施の中間考査のうち、大問2(3)・3・5・7・8・9 を動かして確かめるページ。まず <b>▶ スタート</b> を押して何が起きるかを見て、つぎにスライダーを少し動かしてもう一度。<b>力を表示</b> の ON／OFF もできる。',
   modes: [
+    { id: 'q2', qlabel: '大問2 (3)', tab: '水中の圧力', name: '水中の圧力', en: 'Water Pressure', eq: '$p = p_0 + \\rho hg$', secs: ['y2'],
+      lead: '大気圧に、上にある水の重さによる圧力を足す。' },
     { id: 'q3', tab: '摩擦力', name: '静止摩擦力と動摩擦力', en: 'Static and Kinetic Friction', eq: '$ma = F - \\mu\'mg$', secs: ['y3'],
       lead: '最大摩擦力をこえるまでは動かない。動き出すと、摩擦力は動摩擦力で一定になる。' },
     { id: 'q5', tab: '2 物体を押す', name: '接触している 2 物体を押す', en: 'Pushing Two Blocks', eq: '$(m_{\\rm A}+m_{\\rm B})a = F$', secs: ['y5'],
@@ -6837,7 +6938,7 @@ var EXAM = {
     { id: 'q9', tab: '曲面をすべり下りる', name: 'なめらかな曲面をすべり下りる小球', en: 'Sliding Down a Smooth Curve', eq: '$v = \\sqrt{2gh}$', secs: ['y9'],
       lead: '垂直抗力は仕事をしない。下に着いたときの速さは自由落下と同じ。' }
   ],
-  mhNum: 'Q', mhTitle: '大問 3・5・7・8・9 を動かして確かめる',
+  mhNum: 'Q', mhTitle: '大問 2(3)・3・5・7・8・9 を動かして確かめる',
   mhLead: '上から大問の番号の順に並んでいる。それぞれ <b>▶ スタート</b> で現象を見て、スライダーを少し動かしてもう一度。この下の「力を表示」で、すべての図の力の矢印を出したり消したりできる。',
   purpose: ''
 };
@@ -6881,7 +6982,7 @@ function buildPage() {
       '<h1 class="hero-title"><span class="t1"><span class="nb">' + EXAM.title + '</span></span><span class="t2">' + EXAM.sub + '</span></h1>' +
       '<div class="introrow"><p class="lead2">' + EXAM.lead + '</p></div>' +
       '<ol class="ideas">' + EXQ.map(function (q) {
-        return '<li><a href="#' + q.id + '" data-q="' + q.id + '"><span class="in" aria-label="大問' + QNUM(q) + '"><b>' + QNUM(q) + '</b></span><span class="ie">' + q.eq + '</span><span class="ij">大問' + QNUM(q) + '　' + q.tab + '</span><span class="ia" aria-hidden="true">↓</span></a></li>';
+        return '<li><a href="#' + q.id + '" data-q="' + q.id + '"><span class="in" aria-label="大問' + QNUM(q) + '"><b>' + QNUM(q) + '</b></span><span class="ie">' + q.eq + '</span><span class="ij">' + (q.qlabel || '大問' + QNUM(q)) + '　' + q.tab + '</span><span class="ia" aria-hidden="true">↓</span></a></li>';
       }).join('') + '</ol>' +
     '</div>';
   /* タブ列：タブは置かず、ホームとページ一覧だけ */
@@ -6895,8 +6996,8 @@ function buildPage() {
   EXQ.forEach(function (q) {
     q.secs.forEach(function (sid, k) {
       var d = DEFS[sid]; if (!d) return;
-      h += '<article class="sec' + (d.wide ? ' grid4 exwide' : '') + '" id="' + (k === 0 ? q.id : 'sec_' + sid) + '"><div class="sL">' +
-        '<div class="sechead"><span class="secnum">大問' + QNUM(q) + '</span><h2>' + d.title + '</h2>' + (d.headExtra || '') + '</div>' +
+      h += '<article class="sec' + (d.wide ? ' grid4 exwide' : '') + (d.full ? ' exfull' : '') + '" id="' + (k === 0 ? q.id : 'sec_' + sid) + '"><div class="sL">' +
+        '<div class="sechead"><span class="secnum">' + (q.qlabel || '大問' + QNUM(q)) + '</span><h2>' + d.title + '</h2>' + (d.headExtra || '') + '</div>' +
         '<div class="secdesc">' + (d.desc || '') + '</div><div class="simhost" id="simL_' + sid + '"></div></div>' +
         '<div class="sR" id="simR_' + sid + '"></div></article>';
     });
@@ -6914,6 +7015,16 @@ function buildPage() {
   });
   setupGlobalButtons();
   buildModeBar(m);
+  /* circular-motion.html から借りたシミュレーション（CM）も、同じ「力を表示」で切りかえる */
+  if (window.CM) {
+    var ms0 = modeState('exam'); CM.MSTATE.exam = ms0;
+    if (ms0._cb) ms0._cb.addEventListener('change', function () { CM.SIMS.forEach(function (x) { x.draw(); }); });
+    var sm0 = syncModeBar;
+    syncModeBar = function (mid) {
+      sm0(mid);
+      CM.SIMS.forEach(function (x) { if (x.extra && x.extra.showF) { x.extra.showF.classList.toggle('on', ms0.showF); x.extra.showF.setAttribute('aria-pressed', ms0.showF ? 'true' : 'false'); } x.draw(); });
+    };
+  }
   activateMode('exam');
   window.addEventListener('hashchange', function () { gotoHash(); });
   gotoHash(true);
@@ -6926,7 +7037,7 @@ function buildPage() {
     var mk = f.querySelector('.ft-mark'); if (mk) mk.innerHTML = 'Midterm Review<span>' + EXAM.title + '　' + EXAM.sub + '</span>';
     var nv = f.querySelector('.ft-nav');
     if (nv) {
-      nv.innerHTML = EXQ.map(function (q) { return '<li><a href="#' + q.id + '" data-q="' + q.id + '"><b>' + QNUM(q) + '</b>大問' + QNUM(q) + '　' + q.name + '</a></li>'; }).join('');
+      nv.innerHTML = EXQ.map(function (q) { return '<li><a href="#' + q.id + '" data-q="' + q.id + '"><b>' + QNUM(q) + '</b>' + (q.qlabel || '大問' + QNUM(q)) + '　' + q.name + '</a></li>'; }).join('');
       nv.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); history.replaceState(null, '', '#' + a.dataset.q); scrollToQ(a.dataset.q); }); });
     }
   }, 0);
