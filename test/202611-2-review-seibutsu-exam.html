@@ -1760,6 +1760,8 @@ details.qcard.fold > summary .foldhint{font-size:.78rem;color:var(--ink-4)}
 .sec.exwide .sR>*{margin-top:0!important}
 @media(max-width:880px){.sec.exwide .sR{grid-template-columns:1fr}}
 .flipnote{display:block;margin:0 0 .5em;padding:.45em .8em;border-radius:10px;background:#fff4e5;border:1px solid #f0c48a;color:#7a4a0c;font-size:.92rem}
+.exbar-t{margin-left:14px;align-self:center;font-weight:700;font-size:.88rem;color:#5b6672;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#exam .sec{scroll-margin-top:calc(var(--navh, 56px) + 12px)}
 
 </style>
 </head>
@@ -6835,28 +6837,37 @@ var EXAM = {
     { id: 'q9', tab: '曲面をすべり下りる', name: 'なめらかな曲面をすべり下りる小球', en: 'Sliding Down a Smooth Curve', eq: '$v = \\sqrt{2gh}$', secs: ['y9'],
       lead: '垂直抗力は仕事をしない。下に着いたときの速さは自由落下と同じ。' }
   ],
+  mhNum: 'Q', mhTitle: '大問 3・5・7・8・9 を動かして確かめる',
+  mhLead: '上から大問の番号の順に並んでいる。それぞれ <b>▶ スタート</b> で現象を見て、スライダーを少し動かしてもう一度。この下の「力を表示」で、すべての図の力の矢印を出したり消したりできる。',
   purpose: ''
 };
 
 /* ===== 82_exam.js ===== */
 /* =========================================================================
-   81_exam.js … 考査シミュレーションページの組み立て（慣性力のページの骨組みを使う）
-   大問 1 つ ＝ タブ 1 つ（モード）。アドレスは #q3 のように大問の番号。
-   EXAM（82_*.js で定義）：title・sub・lead・modes・links
+   82_exam.js … 考査シミュレーションページの組み立て（慣性力のページの骨組みを使う）
+   タブに分けず、inertia-force.html の 1 つのモードのように、大問を縦に 1 列に並べる（2026-11-13 千葉さん）。
+   アドレス #q3 などは、その大問のセクションへスクロール（解説プリントの QR が使う）。
+   EXAM（81_examA.js で定義）：title・sub・lead・qs（大問ごとの情報）
    ========================================================================= */
 'use strict';
-MODES = EXAM.modes;
+var EXQ = EXAM.modes;                                   /* 大問ごとの情報 */
+EXQ.forEach(function (q) { q.secs.forEach(function (sid) { if (DEFS[sid]) DEFS[sid].mode = 'exam'; }); });
+MODES = [{ id: 'exam', name: EXAM.title + '　' + EXAM.sub, secs: [].concat.apply([], EXQ.map(function (q) { return q.secs; })), rotSwitch: false, en: EXAM.en, lead: EXAM.modeLead || '' }];
 GLOBAL.rot = false;
-var TABNUM = function (m) { return m.id.replace('q', ''); };
+var QNUM = function (q) { return q.id.replace('q', ''); };
+function qOfSec(sid) { return EXQ.find(function (q) { return q.secs.indexOf(sid) >= 0; }); }
 
-function modeHash(mid) { return mid; }
-function addrOf(sid) { var m = MODES.find(function (x) { return x.secs.indexOf(sid) >= 0; }); return m ? m.id : sid; }
+function modeHash() { return 'exam'; }
+function addrOf(sid) { var q = qOfSec(sid); return q ? q.id : sid; }
 function parseHash(hs) {
   hs = String(hs || '').replace('#', '');
-  var mo = MODES.find(function (x) { return x.id === hs; });
-  if (mo) return { mode: mo };
-  var m2 = /^(q\d)-rot$/.exec(hs); if (m2) { mo = MODES.find(function (x) { return x.id === m2[1]; }); return mo ? { mode: mo, rot: true } : {}; }
-  return {};
+  var q = EXQ.find(function (x) { return x.id === hs; });
+  return q ? { mode: MODES[0], q: q } : { mode: MODES[0] };
+}
+function scrollToQ(id) {
+  var e = document.getElementById(id); if (!e) return;
+  var go = function () { window.scrollTo({ top: Math.max(0, e.getBoundingClientRect().top + window.pageYOffset - tabbarH() - 10), behavior: 'auto' }); };
+  go(); setTimeout(go, 200); setTimeout(go, 600);
 }
 
 function buildPage() {
@@ -6869,54 +6880,60 @@ function buildPage() {
       '</div>' +
       '<h1 class="hero-title"><span class="t1"><span class="nb">' + EXAM.title + '</span></span><span class="t2">' + EXAM.sub + '</span></h1>' +
       '<div class="introrow"><p class="lead2">' + EXAM.lead + '</p></div>' +
-      '<ol class="ideas">' + MODES.map(function (m, i) {
-        return '<li><a href="#' + m.id + '"><span class="in" aria-label="大問' + TABNUM(m) + '"><b>' + TABNUM(m) + '</b></span><span class="ie">' + m.eq + '</span><span class="ij">' + m.tab + '</span><span class="ia" aria-hidden="true">→</span></a></li>';
+      '<ol class="ideas">' + EXQ.map(function (q) {
+        return '<li><a href="#' + q.id + '" data-q="' + q.id + '"><span class="in" aria-label="大問' + QNUM(q) + '"><b>' + QNUM(q) + '</b></span><span class="ie">' + q.eq + '</span><span class="ij">大問' + QNUM(q) + '　' + q.tab + '</span><span class="ia" aria-hidden="true">↓</span></a></li>';
       }).join('') + '</ol>' +
     '</div>';
+  /* タブ列：タブは置かず、ホームとページ一覧だけ */
   document.getElementById('tabs').innerHTML = '<div class="tabs-in"><div class="navsite"><a class="navhome" href="' + SITE_HOME + '" aria-label="ホーム（楽楽高校物理のトップページ）" title="ホーム（楽楽高校物理のトップページ）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></a><button class="navpages" id="bPages" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="siteDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor"/></svg><span>ページ一覧</span></button></div>' +
-    MODES.map(function (m) { return '<button class="tab" type="button" data-mode="' + m.id + '"><span class="tn">' + TABNUM(m) + '</span><span class="tl">大問' + TABNUM(m) + '　' + m.tab + '</span></button>'; }).join('') +
-    '</div><span class="tprog" aria-hidden="true"></span>';
-  MODES.forEach(function (m, i) {
-    h += '<section class="mode" id="' + m.id + '">' +
-      '<header class="modehead"><div class="mh-num" aria-hidden="true"><span>' + TABNUM(m) + '</span></div><div class="mh-body"><p class="mh-en">Question ' + TABNUM(m) + ' — ' + m.en + '</p>' +
-      '<h2>大問' + TABNUM(m) + '　' + m.name + '</h2><p class="mh-lead">' + m.lead + '</p></div></header>' +
-      '<div class="modebar" id="mbar_' + m.id + '"></div>';
-    m.secs.forEach(function (sid) {
+    '<span class="exbar-t">' + EXAM.title + '　' + EXAM.sub + '</span></div><span class="tprog" aria-hidden="true"></span>';
+  var m = MODES[0];
+  h += '<section class="mode on" id="exam">' +
+    '<header class="modehead"><div class="mh-num" aria-hidden="true"><span>' + EXAM.mhNum + '</span></div><div class="mh-body"><p class="mh-en">' + EXAM.en + '</p>' +
+    '<h2>' + EXAM.mhTitle + '</h2><p class="mh-lead">' + EXAM.mhLead + '</p></div></header>' +
+    '<div class="modebar" id="mbar_exam"></div>';
+  EXQ.forEach(function (q) {
+    q.secs.forEach(function (sid, k) {
       var d = DEFS[sid]; if (!d) return;
-      h += '<article class="sec' + (d.wide ? ' grid4 exwide' : '') + '" id="sec_' + sid + '"><div class="sL">' +
-        '<div class="sechead"><span class="secnum">大問' + TABNUM(m) + '</span><h2>' + d.title + '</h2>' + (d.headExtra || '') + '</div>' +
+      h += '<article class="sec' + (d.wide ? ' grid4 exwide' : '') + '" id="' + (k === 0 ? q.id : 'sec_' + sid) + '"><div class="sL">' +
+        '<div class="sechead"><span class="secnum">大問' + QNUM(q) + '</span><h2>' + d.title + '</h2>' + (d.headExtra || '') + '</div>' +
         '<div class="secdesc">' + (d.desc || '') + '</div><div class="simhost" id="simL_' + sid + '"></div></div>' +
         '<div class="sR" id="simR_' + sid + '"></div></article>';
     });
-    h += '</section>';
   });
+  h += '</section>';
   h += EXAM.purpose || '';
   h += '<footer></footer>';
   wrap.innerHTML = h;
   document.title = EXAM.docTitle;
   wrap.querySelectorAll('.purpose,.modehead,.secdesc,.sechead h2').forEach(function (e) { e.innerHTML = mathify(e.innerHTML); });
   document.querySelectorAll('#hero .ideas .ie').forEach(function (e) { e.innerHTML = mathify(e.innerHTML); });
-  setupGlobalButtons();
-  MODES.forEach(function (m) { buildModeBar(m); });
-  document.querySelectorAll('#tabs .tab').forEach(function (b) {
-    b.addEventListener('click', function () {
-      activateMode(b.dataset.mode); history.replaceState(null, '', '#' + b.dataset.mode);
-      window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });
-    });
+  /* ヒーローの大問の札：その大問へスクロール（85_design.js の「章を開く」より先に受けとる） */
+  document.querySelectorAll('#hero .ideas a').forEach(function (a) {
+    a.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopImmediatePropagation(); history.replaceState(null, '', '#' + a.dataset.q); scrollToQ(a.dataset.q); });
   });
+  setupGlobalButtons();
+  buildModeBar(m);
+  activateMode('exam');
   window.addEventListener('hashchange', function () { gotoHash(); });
   gotoHash(true);
   if (document.fonts && document.fonts.load) {
     Promise.all(['italic 17px KaTeX_Math', '16px KaTeX_Main'].map(function (f) { return document.fonts.load(f); })).then(function () { SIMS.forEach(function (s) { s.draw(); }); });
   }
+  /* フッター（85_design.js が慣性力の文言で作るので、あとで書きかえる） */
+  setTimeout(function () {
+    var f = document.querySelector('body > footer'); if (!f) return;
+    var mk = f.querySelector('.ft-mark'); if (mk) mk.innerHTML = 'Midterm Review<span>' + EXAM.title + '　' + EXAM.sub + '</span>';
+    var nv = f.querySelector('.ft-nav');
+    if (nv) {
+      nv.innerHTML = EXQ.map(function (q) { return '<li><a href="#' + q.id + '" data-q="' + q.id + '"><b>' + QNUM(q) + '</b>大問' + QNUM(q) + '　' + q.name + '</a></li>'; }).join('');
+      nv.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); history.replaceState(null, '', '#' + a.dataset.q); scrollToQ(a.dataset.q); }); });
+    }
+  }, 0);
 }
 function gotoHash(first) {
-  var q = parseHash(location.hash);
-  if (!q.mode) { if (first) activateMode(MODES[0].id); return; }
-  if (q.rot !== undefined && q.mode.rotSwitch) modeState(q.mode.id).rot = q.rot;
-  activateMode(q.mode.id);
-  if (q.rot !== undefined && q.mode.rotSwitch) setModeRot(q.mode.id, q.rot, true);
-  if (location.hash) { var e = document.getElementById(q.mode.id); if (e) { var go = function () { window.scrollTo({ top: Math.max(0, e.getBoundingClientRect().top + window.pageYOffset - tabbarH() - 8), behavior: 'auto' }); }; go(); setTimeout(go, 200); } }
+  var p = parseHash(location.hash);
+  if (p.q) scrollToQ(p.q.id);
 }
 
 /* ===== 84_sitenav.js ===== */
