@@ -2804,7 +2804,7 @@ function bindApparatusDrag(cv, getL, onL) {
    元画像 1536x1024 の (np.int64(24), np.int64(160), np.int64(1530), np.int64(919)) を切り出し、幅 640px に縮小。座標は縮小後の画像の上（px）。 */
 'use strict';
 var RH_IMG = { W: 640, H: 323, KW: 139, KH: 88, KX: 278.8, KY: -14.9,
-  T1: [25.9, 178.5], T2: [74.8, 184.9], T3: [614.5, 59.5],     /* 端子：T1・T2＝左はし（外側・内側）、T3＝右はし。使うのは T2（コイルの左はし）と T3（つまみのレール）（2026-11-14 千葉さん：左と右から 1 本ずつ） */
+  T1: [25.9, 178.5], T2: [74.8, 184.9], T3: [614.5, 59.5],     /* 端子：T1・T2＝左はし（外側・内側）、T3＝右はし（使わない） */
   KC: [347.6, 59.5], XL: 189.5, XR: 482.8, SLOPE: -0.165 };   /* つまみの中心（元の位置）、つまみが動ける左はし・右はし（x）、レールのかたむき */
 var RH_BASE = new Image(), RH_KNOB = new Image();
 RH_BASE.onload = RH_KNOB.onload = function () { if (window.LIVE) LIVE.forEach(function (x) { x.redraw(); }); };
@@ -3854,8 +3854,8 @@ DEFS.p3 = {
    ・解き方はメートルブリッジと同じ節点電位法（検流計の内部抵抗も入れて解く）。
      ほかの描画（回路図・立体図）と共通に使えるよう、結果はメートルブリッジと同じ名前で返す：
        節点 A=a、B=b、D=c、P=d。電流 I.R＝R₁（a→c）、I.X＝R₃（c→b）、I.AP＝R₂（a→d）、I.PB＝Rₓ（d→b）、I.G＝d→c（正）
-   ・すべり抵抗器：左はしの端子（コイルの左はし）と、右はしの端子（つまみのレール）から 1 本ずつ導線を出す（2026-11-14 千葉さん）。
-     抵抗はコイルの左はし〜つまみの間なので、つまみが左ほど抵抗が小さく、右へすべらせると大きい
+   ・すべり抵抗器：左はしに端子が 2 つ（コイルの左はし・つまみのレール）。右はしの端子は使わない。
+     つまみが左（端子の側）ほど抵抗が小さく、右へすべらせると大きい
    ========================================================================= */
 'use strict';
 var WB = { R3MAX: 50, R3MIN: 0.5, SNAP: 0.5 };
@@ -3881,8 +3881,7 @@ function wbSolve(o) {
 }
 function wbBalR3(st) { return st.R1 * st.Rx / st.R2; }                       /* つり合いの R₃ */
 function wbNearBal(st) { return Math.abs(st.R3 - wbBalR3(st)) < 0.05 || Math.abs(st.s.I.G) < 5e-6; }
-function wbSnap(st, R) { var b = wbBalR3(st), sn = (st.fs < 0.01) ? 0.05 : WB.SNAP;   /* ±1 mA のときは吸いつく幅をせまく（針が 0 に近づくようすが見えるように） */
-  return (b >= WB.R3MIN && b <= WB.R3MAX && Math.abs(R - b) < sn) ? b : null; }
+function wbSnap(st, R) { var b = wbBalR3(st); return (b >= WB.R3MIN && b <= WB.R3MAX && Math.abs(R - b) < WB.SNAP) ? b : null; }
 function wbDragR3(st, R) { var y = wbSnap(st, R); return y !== null ? y : +clamp(Math.round(R * 10) / 10, WB.R3MIN, WB.R3MAX).toFixed(1); }
 
 /* 状態のことば */
@@ -3943,8 +3942,8 @@ function drawWBApparatus(cv, o) {
   var gL = [462, 46], gR = [538, 46], rL = [94, 104], rR = [206, 104];
   var pa = [60, 372], pd = [500, 372], pb = [930, 372];                   /* 端子台 a・d・b（頭は y−12） */
   var ta = [pa[0], pa[1] - 12], td = [pd[0], pd[1] - 12], tb = [pb[0], pb[1] - 12];
-  var A2 = [WBA.RX + RH_IMG.T2[0] * WBA.RS, WBA.RY + RH_IMG.T2[1] * WBA.RS];   /* すべり抵抗器：左はしの端子（コイルの左はし） */
-  var A3 = [WBA.RX + RH_IMG.T3[0] * WBA.RS, WBA.RY + RH_IMG.T3[1] * WBA.RS];   /* 右はしの端子（つまみのレール） */
+  var A1 = [WBA.RX + RH_IMG.T1[0] * WBA.RS, WBA.RY + RH_IMG.T1[1] * WBA.RS];   /* すべり抵抗器：左はしの外側の端子（つまみのレールにつながる） */
+  var A2 = [WBA.RX + RH_IMG.T2[0] * WBA.RS, WBA.RY + RH_IMG.T2[1] * WBA.RS];   /* 左はしの内側の端子（コイルの左はし） */
   var bx0 = 330, bw = 250, bcy = 522, earL = [bx0 + 34.4 * bw / 720, bcy + 1], earR = [bx0 + 686.6 * bw / 720, bcy + 1];
 
   /* ---- 抵抗箱 R₁ ---- */
@@ -3994,9 +3993,7 @@ function drawWBApparatus(cv, o) {
     if (nar) { F(15, '700'); c.fillStyle = '#9c4e06'; c.fillText('R₃ ' + fmt(w.R3, 1) + ' Ω', cx, Y + IH + 4); }
     else { F(14, '700'); c.fillStyle = '#14171c'; c.fillText('可変抵抗（すべり抵抗器）', cx - 14, Y + IH + 4); symText(c, cx + 100, Y + IH + 20, 'R', '3', '#14171c', fz(17), 'left');
       F(14, '700'); c.fillStyle = '#9c4e06'; c.fillText(fmt(w.R3, 1) + ' Ω', cx, Y + IH + 24); }
-    if (!nar) { F(11.5); c.fillStyle = '#69717d'; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText('つまみが左ほど小さく、右ほど大きい', cx - 4, Y + IH + 44); }
-    if ((o.fs || 0.05) < 0.01) { F(nar ? 14 : 12, '700'); c.fillStyle = '#c0392b'; c.textAlign = 'center'; c.textBaseline = 'top';
-      if (nar) c.fillText('±1 mA：微調整', cx, Y + IH + 58); else c.fillText('±1 mA：つまみはゆっくり動く（微調整）', cx - 8, Y + IH + 62); }
+    if (!nar) { F(11.5); c.fillStyle = '#69717d'; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText('つまみが左ほど小さく、右ほど大きい', cx + 22, Y + IH + 44); }
   })();
 
   /* ---- 端子台・導線 ---- */
@@ -4010,8 +4007,8 @@ function drawWBApparatus(cv, o) {
   lead([px[0], [600, 300, 560, 300, td[0], td[1]]]);                             /* Rₓ の左 → d */
   lead([px[1], [850, 300, 900, 300, tb[0], tb[1]]]);                             /* Rₓ の右 → b */
   lead([rR, [300, 70, 380, 20, gL[0], gL[1]]]);                                  /* R₁ の右 → c（検流計の左のたんし） */
-  lead([A2, [600, 150, 520, 10, gL[0], gL[1]]]);                                 /* すべり抵抗器（コイルの左はし）→ c */
-  lead([A3, [1010, 80, 1004, 270, tb[0] + 30, tb[1] - 40], [tb[0] + 8, tb[1] - 30, tb[0], tb[1]]]);   /* すべり抵抗器の右はし（つまみのレール）→ b */
+  lead([A1, [600, 150, 520, 10, gL[0], gL[1]]]);                                 /* すべり抵抗器（左はしの外側の端子）→ c */
+  lead([A2, [655, 220, 645, 336, 760, 336], [860, 336, tb[0] - 6, tb[1] - 40, tb[0], tb[1]]]);   /* すべり抵抗器（左はしの手前の端子）→ b */
   [rL, rR, p2[0], p2[1], px[0], px[1], ta, td, tb].forEach(screw);
 
   /* ---- 検流計 G ---- */
@@ -4049,31 +4046,22 @@ function drawWBApparatus(cv, o) {
   c.restore();
 }
 /* すべり抵抗器のつまみのドラッグ。onR(R3) を呼ぶ */
-/* fine() が true（検流計 ±1 mA）のときは「微調整」：画面の上で指を 1 px 動かすと R₃ が WB_FINE Ω だけ変わる
-   （0.1 Ω ＝ 約 8 px。PC でもスマホでも同じ手ごたえ）。レールを押しても飛ばない（2026-11-14 千葉さん） */
-var WB_FINE = 0.012;
-function bindWBDrag(cv, getR, onR, fine) {
-  var drag = false, off = 0, fx0 = 0, fr0 = 0, isFine = false;
+function bindWBDrag(cv, getR, onR) {
+  var drag = false, off = 0;
   var toV = function (ev) { var r = cv.getBoundingClientRect(), k = r.width / 1000; return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k - WBA.OFF }; };
   var near = function (p) { var q = wbKnobV(getR()); return Math.abs(p.x - q[0]) < 40 && p.y > q[1] - 40 && p.y < q[1] + 16; };
   var onRail = function (p) { var a = wbKnobV(0), b = wbKnobV(WB.R3MAX); if (p.x < a[0] - 10 || p.x > b[0] + 10) return false; var t = (p.x - a[0]) / (b[0] - a[0]), yr = a[1] + (b[1] - a[1]) * t; return Math.abs(p.y - yr) < 22; };
   cv.style.touchAction = 'pan-y';
   cv.addEventListener('pointerdown', function (ev) {
     var p = toV(ev);
-    isFine = !!(fine && fine());
-    if (isFine && (near(p) || onRail(p))) { drag = true; fx0 = ev.clientX; fr0 = getR(); }
-    else if (near(p)) { drag = true; off = p.x - wbKnobV(getR())[0]; }
+    if (near(p)) { drag = true; off = p.x - wbKnobV(getR())[0]; }
     else if (onRail(p)) { drag = true; off = 0; onR(wbR3FromX(p.x)); }
     else return;
     cv.setPointerCapture && cv.setPointerCapture(ev.pointerId); cv.style.cursor = 'grabbing'; ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
     var p = toV(ev);
-    if (drag) {
-      if (isFine) onR(fr0 + (ev.clientX - fx0) * WB_FINE);
-      else onR(wbR3FromX(p.x - off));
-      return;
-    }
+    if (drag) { onR(wbR3FromX(p.x - off)); return; }
     cv.style.cursor = near(p) ? 'grab' : onRail(p) ? 'pointer' : 'default';
   });
   var end = function () { drag = false; cv.style.cursor = 'default'; };
@@ -4105,7 +4093,7 @@ function drawWBplot(cv, o) {
 }
 
 /* ====================== ①-1 ホイートストンブリッジのしくみ ====================== */
-var WB_HINT = '<span class="deschint">▶ 可変抵抗のつまみ（紺色）をドラッグ</span><button type="button" class="b tiny zerob">0 A にする</button>';
+var WB_HINT = '<span class="deschint">▶ 可変抵抗のつまみ（紺色）をドラッグ</span><button type="button" class="b tiny zerob">0 A のスライダーにする</button>';
 var WB_GO = '原理は <a href="#" class="golink" data-go="p2">③-2 つり合いの式の導き方</a> へ（メートルブリッジと同じ考え方）。';
 function wbCommon(Lh, Rh, st, opt) {
   /* opt = { hideX, full }：full のとき ①-1（立体図・グラフ・表・内部抵抗） */
@@ -4165,7 +4153,7 @@ function wbCommon(Lh, Rh, st, opt) {
   bindWBDrag(cvA, function () { return st.R3; }, function (r) {
     hideTip(); st.R3 = wbDragR3(st, r); changed();
     if (play && !play.playing) { play.playing = true; syncPlay(); playKick(); }     /* つまみを動かしたら、水の流れを見せはじめる */
-  }, function () { return st.fs < 0.01; });
+  });
   function draw3() { if (cv3) D3.render(cv3, st); }
   function drawTbl() {
     if (!tbl) return;

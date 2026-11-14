@@ -1766,18 +1766,30 @@ details.qcard.fold > summary .foldhint{font-size:.78rem;color:var(--ink-4)}
 .sec.exwide .cvwrap{max-width:700px;margin-left:auto;margin-right:auto}
 .sec.exwide.exfull .cvwrap{max-width:960px}
 @media(min-width:900px){
-  .sec.exwide .ctrls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"b s" "p s";column-gap:16px;row-gap:8px;align-items:start}
+  .sec.exwide .ctrls:not(.exslider){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"b s" "p s";column-gap:16px;row-gap:8px;align-items:start}
   .sec.exwide .ctrls>.row1b{grid-area:b;margin:0}
   .sec.exwide .ctrls>.playbar{grid-area:p;margin:0}
   .sec.exwide .ctrls>.sliders{grid-area:s;margin:0}
   .sec.exwide .ctrls>.sliders:empty{display:none}
 }
-.exmom{max-width:700px;margin:10px auto 0;display:flex;flex-direction:column;gap:8px}
 .exmom .exmrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.exmom .exml{font-weight:800;font-size:.86rem;color:#31465e;min-width:10.5em}
+.exmom .exml{font-weight:800;font-size:.86rem;color:#31465e}
 .exmom .b{font-size:.8rem;padding:.32em .75em}
 .exmom .b.two{line-height:1.25;font-size:.82rem}
 #q2 .playbar{display:none}
+
+/* 大問3：右上の「力のモーメントを確かめる」（光らせる）。4 つの力は縦に並べ、となりに「小さくする・大きくする」（2026-11-14 千葉さん） */
+.exmom{display:flex;flex-direction:column;gap:6px;padding:.55em .75em .7em;border:2px solid #e59a3c;border-radius:14px;background:#fffaf2;animation:glowpulse 1.6s ease-in-out infinite}
+.sec.exwide .ctrls>.exmom{grid-area:s;margin:0}
+.exmom .exmt{margin:0 0 .2em;align-self:flex-start;padding:.22em .9em;border-radius:999px;background:var(--accent,#e07b18);color:#fff;font-weight:800;font-size:.92rem;letter-spacing:.04em;animation:glowPulse 1.5s ease-out infinite}
+.exmom .exmrow{display:flex;flex-wrap:nowrap;align-items:center;gap:6px}
+.exmom .exmrow .chkb{min-width:10.5em;justify-content:flex-start}
+.exmom .exsz{font-size:.74rem;padding:.26em .6em;white-space:nowrap}
+.exmom .exmv{min-width:3.2em;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;color:#5b6672}
+.exmom .exmv.chg{color:#c0392b}
+.exmom .exax{margin-top:.25em}
+.ctrls.exslider{max-width:700px;margin:10px auto 0}
+@media (prefers-reduced-motion:reduce){.exmom,.exmom .exmt{animation:none}}
 
 /* ===== 18_cm.css ===== */
 /* ===== circular-motion.html だけの見た目（大問8 の中だけ） ===== */
@@ -11803,8 +11815,10 @@ function r3(ctx, q) {
   var Ax = wx + L * Math.cos(tr), Ay = fy, Bx = wx, By = fy - L * Math.sin(tr);
   var Gx = (Ax + Bx) / 2, Gy = (Ay + By) / 2;
   var S = Math.max(40, Math.min(105, fy - Gy - 3));
+  var phi = q.mom ? fall3(q, th) : 0;                  /* モーメントがつりあわないとき、軸のまわりに回る角 */
+  ctx.save(); if (Math.abs(phi) > 1e-4) ctx.globalAlpha = 0.28;
   rod(ctx, Ax, Ay, Bx, By);
-  ctx.save(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(Gx, Gy, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(Gx, Gy, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   label(ctx, 'A', Ax + 12, Ay - 14, { size: 15, bold: true });
   label(ctx, 'B', Bx + 16, By - 16, { size: 15, bold: true });
   angArc(ctx, Ax, Ay, 40, Math.PI + 0.0001, Math.PI + tr, 'θ', 56);
@@ -11817,7 +11831,7 @@ function r3(ctx, q) {
     if (q.t === 0) bubble(ctx, '手で棒をささえている。\n▶ スタートで手をはなす', hx + 150, hy - 70, { side: 'left', size: 12.5 });
   }
   var nd = need3(th), Ff = slipping ? q.mu : nd;
-  if (q.mom) { mom3(ctx, q, { Ax: Ax, Ay: Ay, Bx: Bx, By: By, Gx: Gx, Gy: Gy, S: S, nd: nd, fy: fy, th: th }); return; }
+  if (q.mom) { mom3(ctx, q, { Ax: Ax, Ay: Ay, Bx: Bx, By: By, Gx: Gx, Gy: Gy, S: S, nd: nd, fy: fy, th: th, phi: phi }); return; }
   if (q.showF && released && !slipping) {
     arrow(ctx, Gx, Gy, Gx, Gy + S, 'force', COL.force);
     label(ctx, 'mg', Gx + 12, Gy + S - 6, { size: 14, bold: true, color: COL.force, align: 'left' });
@@ -11844,6 +11858,15 @@ var MOM3 = {   /* [うでの式, うでの長さ（ℓ を 1）, 回る向き +1
 };
 var FN3 = { mg: 'mg', NA: 'N_A', NB: 'N_B', F: 'F' };
 function fval3(k, th) { return (k === 'mg' || k === 'NA') ? 1 : need3(th); }   /* 力の大きさ（mg を 1） */
+function mul3(q, k) { return (q.mult && q.mult[k] !== undefined) ? q.mult[k] : 1; }
+/* 軸のまわりの力のモーメントの和（反時計回りを正、mgℓ を 1） */
+function net3(q, th) {
+  var ax = q.axis || 'A', tr = th * RAD, sum = 0;
+  ['mg', 'NA', 'NB', 'F'].forEach(function (k) { var M = MOM3[ax][k]; if (M[1]) sum += M[2] * M[1](tr) * fval3(k, th) * mul3(q, k); });
+  return sum;
+}
+var PHI3 = 50 * Math.PI / 180, TFALL3 = 1.6;
+function fall3(q, th) { var tau = net3(q, th); if (Math.abs(tau) < 1e-6 || q.t <= 0) return 0; return (tau > 0 ? 1 : -1) * Math.min(PHI3, 2.0 * Math.abs(tau) * q.t * q.t); }
 function mom3(ctx, q, g) {
   var tr = g.th * RAD, ax = q.axis || 'A', P = { A: [g.Ax, g.Ay], G: [g.Gx, g.Gy], B: [g.Bx, g.By] }[ax];
   var S = g.S, F = {
@@ -11852,7 +11875,8 @@ function mom3(ctx, q, g) {
     NB: { p: [g.Bx, g.By], d: [1, 0], L: g.nd * S, col: COL.norm },
     F:  { p: [g.Ax, g.Ay], d: [-1, 0], L: g.nd * S, col: COL.fric }
   }[q.mom];
-  var k = q.mom, M = MOM3[ax][k], ARM = '#0f7b3e';
+  var k = q.mom, M = MOM3[ax][k], ARM = '#0f7b3e', mk = mul3(q, k);
+  F.L *= mk;
   /* 作用線（破線、長めに） */
   if (F.d[1] === 0) seg(ctx, 20, F.p[1], 580, F.p[1], '#9aa3ac', 1.3, [6, 5]);          /* 作用線は図の中（右の文字の手前）まで */
   else seg(ctx, F.p[0], 30, F.p[0], g.fy + 44, '#9aa3ac', 1.3, [6, 5]);
@@ -11886,27 +11910,47 @@ function mom3(ctx, q, g) {
   /* 右：モーメントの計算と一覧 */
   var X0 = 590, nm = { A: '点 A', G: '棒の重心', B: '点 B' }[ax];
   label(ctx, nm + 'を軸としたモーメント', X0, 24, { size: 14, bold: true, align: 'left' });
-  var fv = fval3(k, g.th), fs = (k === 'mg' || k === 'NA') ? 'mg' : fmt(fv, 2) + 'mg';
+  var fv = fval3(k, g.th) * mk, fs = (Math.abs(fv - 1) < 1e-9) ? 'mg' : fmt(fv, 2) + 'mg';
   if (!M[1]) {
     label(ctx, FN3[k] + ' の作用線が軸を通る', X0, 56, { size: 13.5, bold: true, color: ARM, align: 'left' });
     label(ctx, '→ うで 0、モーメント 0', X0, 80, { size: 13.5, bold: true, color: ARM, align: 'left' });
   } else {
     var a = M[1](tr), v = fv * a;
-    label(ctx, FN3[k] + ' × ' + M[0], X0, 56, { size: 15, bold: true, color: ARM, align: 'left' });
+    label(ctx, FN3[k] + (Math.abs(mk - 1) > 1e-9 ? '（×' + fmt(mk, 1) + '）' : '') + ' × ' + M[0], X0, 56, { size: 15, bold: true, color: ARM, align: 'left' });
     label(ctx, '＝ ' + fs + ' × ' + fmt(a, 2) + 'ℓ ＝ ' + fmt(v, 2) + ' mgℓ', X0, 80, { size: 14, bold: true, color: ARM, align: 'left' });
     label(ctx, M[2] > 0 ? '（反時計回り）' : '（時計回り）', X0, 102, { size: 13, color: ARM, align: 'left' });
   }
   var y = 140, ccw = 0, cw = 0;
   label(ctx, '4 つの力（θ ＝ ' + fmt(g.th, 0) + '° のとき）', X0, y, { size: 12, color: COL.sub, align: 'left' });
   ['mg', 'NA', 'NB', 'F'].forEach(function (kk, i) {
-    var mm = MOM3[ax][kk], val = mm[1] ? fval3(kk, g.th) * mm[1](tr) : 0, yy = y + 26 + i * 24, on = kk === k;
+    var mm = MOM3[ax][kk], m2 = mul3(q, kk), val = mm[1] ? fval3(kk, g.th) * mm[1](tr) * m2 : 0, yy = y + 26 + i * 24, on = kk === k;
     if (mm[2] > 0) ccw += val; else if (mm[2] < 0) cw += val;
     if (on) { ctx.save(); ctx.fillStyle = '#e6f3ea'; ctx.fillRect(X0 - 4, yy - 11, 276, 22); ctx.restore(); }
-    label(ctx, FN3[kk], X0 + 6, yy, { size: 13.5, bold: true, color: on ? ARM : COL.ink, align: 'left', halo: false });
-    label(ctx, mm[1] ? fmt(val, 2) + ' mgℓ ' + (mm[2] > 0 ? '反時計回り' : '時計回り') : '0（作用線が軸を通る）', X0 + 52, yy, { size: 13, color: on ? ARM : COL.ink, align: 'left', halo: false });
+    label(ctx, FN3[kk] + (Math.abs(m2 - 1) > 1e-9 ? '×' + fmt(m2, 1) : ''), X0 + 6, yy, { size: 13.5, bold: true, color: on ? ARM : COL.ink, align: 'left', halo: false });
+    label(ctx, mm[1] ? fmt(val, 2) + ' mgℓ ' + (mm[2] > 0 ? '反時計回り' : '時計回り') : '0（作用線が軸を通る）', X0 + 78, yy, { size: 13, color: on ? ARM : COL.ink, align: 'left', halo: false });
   });
-  label(ctx, '反時計回り ' + fmt(ccw, 2) + ' ＝ 時計回り ' + fmt(cw, 2), X0, y + 26 + 4 * 24 + 6, { size: 13.5, bold: true, color: COL.ok, align: 'left' });
-  label(ctx, '→ どこを軸にしてもつりあう', X0, y + 26 + 4 * 24 + 30, { size: 12.5, color: COL.ok, align: 'left' });
+  var yS = y + 26 + 4 * 24 + 6;
+  if (Math.abs(ccw - cw) < 0.005) {
+    label(ctx, '反時計回り ' + fmt(ccw, 2) + ' ＝ 時計回り ' + fmt(cw, 2), X0, yS, { size: 13.5, bold: true, color: COL.ok, align: 'left' });
+    label(ctx, '→ つりあうので、回らない', X0, yS + 24, { size: 12.5, color: COL.ok, align: 'left' });
+  } else {
+    label(ctx, '反時計回り ' + fmt(ccw, 2) + (ccw > cw ? ' ＞ ' : ' ＜ ') + '時計回り ' + fmt(cw, 2), X0, yS, { size: 13.5, bold: true, color: COL.ng, align: 'left' });
+    label(ctx, '→ つりあわない！' + (ccw > cw ? '反時計回り' : '時計回り') + 'に回る', X0, yS + 24, { size: 13, bold: true, color: COL.ng, align: 'left' });
+  }
+  /* つりあわないとき：軸のまわりに回る棒（うすい棒は、もとの位置） */
+  if (Math.abs(g.phi) > 1e-4) {
+    var rot = function (x, y) { var c = Math.cos(-g.phi), s2 = Math.sin(-g.phi), dx2 = x - P[0], dy2 = y - P[1]; return [P[0] + dx2 * c - dy2 * s2, P[1] + dx2 * s2 + dy2 * c]; };
+    var A2 = rot(g.Ax, g.Ay), B2 = rot(g.Bx, g.By), G2 = rot(g.Gx, g.Gy);
+    rod(ctx, A2[0], A2[1], B2[0], B2[1]);
+    ctx.save(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(G2[0], G2[1], 3.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    /* 回る向きの曲がった矢印 */
+    var rr = 46, a0 = -Math.PI / 2, a1 = a0 - g.phi * 1.6, ccwv = g.phi > 0;
+    ctx.save(); ctx.strokeStyle = COL.ng; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(P[0], P[1], rr, a0, a1, ccwv); ctx.stroke();
+    var ex = P[0] + rr * Math.cos(a1), ey = P[1] + rr * Math.sin(a1), tx = ccwv ? Math.sin(a1) : -Math.sin(a1), ty = ccwv ? -Math.cos(a1) : Math.cos(a1);
+    ctx.fillStyle = COL.ng; ctx.beginPath(); ctx.moveTo(ex + tx * 10, ey + ty * 10); ctx.lineTo(ex - ty * 7, ey + tx * 7); ctx.lineTo(ex + ty * 7, ey - tx * 7); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(P[0], P[1], 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+
 }
 
 /* ---------------------------------------------------------------- 大問6 */
@@ -11925,25 +11969,52 @@ function panel6(ctx, y0, h, title) {
   ctx.save(); ctx.fillStyle = '#f6f4ef'; ctx.fillRect(12, y0, 600, h); ctx.restore();
   if (title) label(ctx, title, 22, y0 + 14, { size: 13, bold: true, color: '#7a5a2a', align: 'left' });
 }
+/* ばね：simple-harmonic-motion.html の springCoil・springDense と同じ形（縦長の楕円が少しずつずれて重なる＋両はしの引き出し線）。
+   巻き数は自然の長さ L0 だけで決まり、伸び縮みでは変えない。ばね定数が大きいほど太い */
+var TAU6 = Math.PI * 2;
+function springCoil6(ctx, x1, y1, x2, y2, o) {
+  o = o || {};
+  var L = Math.hypot(x2 - x1, y2 - y1); if (L < 1) return;
+  var ux = (x2 - x1) / L, uy = (y2 - y1) / L, nx = -uy, ny = ux;
+  var n = o.n || 8, r = o.r || 8, lead = (o.lead === undefined ? Math.min(14, L * 0.12) : o.lead), b = o.b || r * 0.62;
+  var Lc = L - 2 * lead, p = (Lc - 2 * b) / (n - 0.5);
+  if (p < 0.6) p = 0.6;
+  ctx.save(); ctx.strokeStyle = o.col || '#2b323c'; ctx.lineWidth = o.lw || 1.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1);
+  var N = Math.max(40, Math.round(36 * n)), t0 = -Math.PI / 2, t1 = Math.PI / 2 + TAU6 * (n - 1);
+  for (var i = 0; i <= N; i++) {
+    var t = t0 + (t1 - t0) * i / N, al = lead + b + p * (t + Math.PI / 2) / TAU6 + b * Math.sin(t), pe = r * Math.cos(t);
+    ctx.lineTo(x1 + ux * al + nx * pe, y1 + uy * al + ny * pe);
+  }
+  ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+}
+function coilN6(L0, b, lead) { return clamp(Math.round((L0 - 2 * lead - 2 * b) / (1.7 * b) + 0.5), 6, 26); }
+function springLW6(k) { return clamp(0.9 + 0.5 * Math.log(k / 2.5) / Math.LN2, 0.9, 3.6); }
+function spring6(ctx, x1, x2, y, L0, k, Lmin) {
+  var r = 9, b = r * 0.55, lead = 8, lw = springLW6(k), n = coilN6(L0, b, lead);
+  if (Lmin) n = Math.max(4, Math.min(n, Math.floor((Lmin - 2 * lead - 2 * b) / (0.4 * b + lw) + 0.5)));
+  springCoil6(ctx, x1, y, x2, y, { n: n, r: r, b: b, lead: lead, lw: lw });
+}
 function r6(ctx, q) {
   q.kB = KB6;
   var w = w6(q), LB = KA * LA / q.kB, l0B = (WR6 - O6() - BW6 / 2) / S6 - LB, O = O6();
-  var lwA = coilK(KA), lwB = coilK(q.kB), nA = WL6 + L0A * S6, nB = WR6 - l0B * S6;
+  var nA = WL6 + L0A * S6, nB = WR6 - l0B * S6, L0Apx = L0A * S6, L0Bpx = l0B * S6;
+  var LminA = (L0A + LA - q.x0) * S6, LminB = (l0B + LB - q.x0) * S6;      /* いちばん縮んだときの長さ（巻きがつぶれないように） */
   panel6(ctx, 22, 112, ''); panel6(ctx, 156, 112, ''); panel6(ctx, 290, 128, '');
   /* 自然の長さの位置：3 つの図をつらぬく縦の点線 */
   seg(ctx, nA, 40, nA, 412, '#b9a98a', 1.2, [3, 4]); seg(ctx, nB, 40, nB, 412, '#b9a98a', 1.2, [3, 4]);
   /* (1) 自然の長さ（物体なし） */
   var y1 = 82; panel6(ctx, 22, 0, '① 物体をつける前：どちらも自然の長さ');
   walls6(ctx, y1);
-  coil(ctx, WL6, nA, y1, 8, 12, lwA);
-  coil(ctx, nB, WR6, y1, 8, 12, lwB);
+  spring6(ctx, WL6, nA, y1, L0Apx, KA, LminA);
+  spring6(ctx, nB, WR6, y1, L0Bpx, q.kB, LminB);
   label(ctx, 'ばね A（k_A＝20 N/m）', (WL6 + nA) / 2, y1 + 38, { size: 12, color: COL.sub });
   label(ctx, 'ばね B（k_B＝' + q.kB + ' N/m）', (nB + WR6) / 2, y1 + 38, { size: 12, color: COL.sub });
   label(ctx, '自然の長さ', (nA + nB) / 2, y1, { size: 12, color: '#8a7a5a' });
   /* (2) つりあいの位置（静止） */
   var y2 = 214; panel6(ctx, 156, 0, '② つりあいの位置で静止（x＝0）');
   walls6(ctx, y2);
-  coil(ctx, WL6, O - BW6 / 2, y2, 8, 12, lwA); coil(ctx, O + BW6 / 2, WR6, y2, 8, 12, lwB);
+  spring6(ctx, WL6, O - BW6 / 2, y2, L0Apx, KA, LminA); spring6(ctx, O + BW6 / 2, WR6, y2, L0Bpx, q.kB, LminB);
   block6(ctx, O, y2);
   arrow(ctx, nA, y2 + 38, O - BW6 / 2, y2 + 38, 'dim'); arrow(ctx, O - BW6 / 2, y2 + 38, nA, y2 + 38, 'dim');
   label(ctx, 'L_A', (nA + O - BW6 / 2) / 2, y2 + 50, { size: 12.5, bold: true });
@@ -11961,7 +12032,7 @@ function r6(ctx, q) {
   panel6(ctx, 290, 0, '③ x＝x_0 までずらして、静かにはなす');
   walls6(ctx, y3);
   var xb = O + x * S6;
-  coil(ctx, WL6, xb - BW6 / 2, y3, 8, 12, lwA); coil(ctx, xb + BW6 / 2, WR6, y3, 8, 12, lwB);
+  spring6(ctx, WL6, xb - BW6 / 2, y3, L0Apx, KA, LminA); spring6(ctx, xb + BW6 / 2, WR6, y3, L0Bpx, q.kB, LminB);
   block6(ctx, xb, y3);
   seg(ctx, O, y3 - 36, O, y3 + 50, '#9aa3ac', 1.2, [5, 4]); label(ctx, 'O', O - 12, y3 + 40, { size: 13, bold: true });
   if (q.t === 0) { seg(ctx, xb, y3 + 23, xb, y3 + 32, '#333', 1.4); label(ctx, 'x_0', xb + 4, y3 + 40, { size: 13 }); }
@@ -12292,7 +12363,7 @@ function r8(ctx, q) {
     ctx.arc(gx + gw * s.al / Math.PI, clamp(gy0 - ksc * Nn, 100, 466), 5.5, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
   label(ctx, 'N が 0 より下 → 面から離れる', gx + gw / 2 + 6, 488, { size: 12, color: COL.sub });
 }
-return { r3: r3, tEnd3: tEnd3, need3: need3, r6: r6, w6: w6, T6MAX: T6MAX, r7: r7, c7: c7, TAU7: TAU7, r8: r8, tEnd8: tEnd8, state8: state8, N8: N8 };
+return { r3: r3, tEnd3: tEnd3, need3: need3, net3: net3, TFALL3: TFALL3, r6: r6, w6: w6, T6MAX: T6MAX, r7: r7, c7: c7, TAU7: TAU7, r8: r8, tEnd8: tEnd8, state8: state8, N8: N8 };
 })();
 /* ===================== 考査ページ（物理選択者）のセクション ===================== */
 var EXMAXW = 700;                                             /* 図をこれより大きくしない（広い画面では中央に置く） */
@@ -12308,7 +12379,15 @@ function x3Sync(s) {
   if (!s._momBox) return;
   s._momBox.querySelectorAll('[data-k]').forEach(function (b) { var on = s.mom === b.dataset.k; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
   s._momBox.querySelectorAll('[data-ax]').forEach(function (b) { b.classList.toggle('on', s.axis === b.dataset.ax); });
+  s._momBox.querySelectorAll('[data-mv]').forEach(function (e) { var m = s.mult[e.dataset.mv]; e.textContent = '×' + fmt(m, 1); e.classList.toggle('chg', Math.abs(m - 1) > 1e-9); });
   s.draw();
+}
+/* 力の大きさを変える（つりあいがくずれると、軸のまわりに回り出す） */
+function x3Mult(s, k, d) {
+  s.mult[k] = Math.round(clamp(s.mult[k] + d, 0, 2) * 10) / 10;
+  s.mom = k; s._fall = true;
+  s.playing = false; s.t = 0; s.ended = false; x3Sync(s);
+  if (Math.abs(EX.net3({ axis: s.axis, mult: s.mult }, s.v.th)) > 1e-6) s.togglePlay(); else { s.syncPlayLabel(); s.draw(); }
 }
 function exCard(title, body) { return '<div class="qcard"><p class="qt">' + title + '</p>' + body + '</div>'; }
 function exNow(rows) { return '<table class="cmpt"><tbody>' + rows.map(function (r) { return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>'; }
@@ -12322,27 +12401,36 @@ DEFS.x3 = {
   desc: 'あらい床となめらかな壁の間に、長さ $2\\ell$・質量 $m$ の一様な棒を角 $\\theta$ で立てかける。はじめは<b>手で棒をささえている</b>。<span class="todo">スタートで手をはなす。角 $\\theta$ と静止摩擦係数 $\\mu$ を変えて、すべるかどうかを確かめよう。</span>',
   vars: [{ k: 'th', label: '棒の角 $\\theta$', aria: '棒の角', min: 20, max: 80, step: 1, def: 50, fmt: function (x) { return x + '°'; } },
          { k: 'mu', label: '静止摩擦係数 $\\mu$', aria: '静止摩擦係数', min: 0.1, max: 1.0, step: 0.01, def: 0.5, dec: 2 }],
-  init: function (s) { s.mom = null; s.axis = 'A'; },
+  init: function (s) { s.mom = null; s.axis = 'A'; s.mult = { mg: 1, NA: 1, NB: 1, F: 1 }; s._fall = false; },
   afterBuild: function (s) {
+    /* 「力のモーメントを確かめる」は右上（スライダーの場所）へ、スライダーは図の下へ（2026-11-14 千葉さん） */
+    var ctr = s.L.querySelector('.ctrls'), sl = ctr.querySelector('.sliders');
     var box = el('div', 'exmom'), FK = [['mg', '<i>mg</i>'], ['NA', '<i>N</i><sub>A</sub>'], ['NB', '<i>N</i><sub>B</sub>'], ['F', '<i>F</i>']];
-    box.innerHTML = '<div class="exmrow"><span class="exml">力のモーメントを確かめる：</span>' + FK.map(function (f) { return '<button type="button" class="b chkb" data-k="' + f[0] + '">' + f[1] + ' のモーメント</button>'; }).join('') + '</div>' +
-      '<div class="exmrow"><span class="exml">軸：</span><div class="seg" role="group" aria-label="回転の軸">' +
+    box.innerHTML = '<p class="exmt">力のモーメントを確かめる</p>' +
+      FK.map(function (f) { return '<div class="exmrow"><button type="button" class="b chkb" data-k="' + f[0] + '">' + f[1] + ' のモーメント</button>' +
+        '<button type="button" class="b exsz" data-dk="' + f[0] + '" data-d="-0.1">' + f[1] + ' を小さくする</button><span class="exmv" data-mv="' + f[0] + '">×1.0</span>' +
+        '<button type="button" class="b exsz" data-dk="' + f[0] + '" data-d="0.1">' + f[1] + ' を大きくする</button></div>'; }).join('') +
+      '<div class="exmrow exax"><span class="exml">軸：</span><div class="seg" role="group" aria-label="回転の軸">' +
       [['A', '点 A を軸'], ['G', '棒の重心を軸'], ['B', '点 B を軸']].map(function (q) { return '<button type="button" class="b obs" data-ax="' + q[0] + '">' + q[1] + '</button>'; }).join('') + '</div></div>';
-    s.cw.parentNode.insertBefore(box, s.cw.nextSibling);
+    ctr.appendChild(box);
+    if (sl) { var w = el('div', 'ctrls exslider'); w.appendChild(sl); s.cw.parentNode.insertBefore(w, s.cw.nextSibling); }
     s._momBox = box;
-    box.querySelectorAll('[data-k]').forEach(function (b) { b.addEventListener('click', function () { s.mom = s.mom === b.dataset.k ? null : b.dataset.k; s.resetT(); x3Sync(s); }); });
+    box.querySelectorAll('[data-k]').forEach(function (b) { b.addEventListener('click', function () { s.mom = s.mom === b.dataset.k ? null : b.dataset.k; if (!s.mom) s._fall = false; s.resetT(); x3Sync(s); }); });
+    box.querySelectorAll('[data-dk]').forEach(function (b) { b.addEventListener('click', function () { x3Mult(s, b.dataset.dk, +b.dataset.d); }); });
     box.querySelectorAll('[data-ax]').forEach(function (b) { b.addEventListener('click', function () { s.axis = b.dataset.ax; if (!s.mom) s.mom = 'mg'; s.resetT(); x3Sync(s); }); });
     x3Sync(s);
   },
-  onDefaults: function (s) { s.mom = null; s.axis = 'A'; x3Sync(s); },
-  beforeStep: function (s) { if (s.mom) { s.mom = null; x3Sync(s); } },
+  onDefaults: function (s) { s.mom = null; s.axis = 'A'; s.mult = { mg: 1, NA: 1, NB: 1, F: 1 }; s._fall = false; x3Sync(s); },
+  beforeStep: function (s) { if (s.mom && !s._fall) { s.mom = null; x3Sync(s); } },
   onChanged: function () { return 'stop'; },
   height: exH(480),
-  tEnd: function (s) { return EX.tEnd3(s.v); },
-  draw: exDraw(480, function (c, q) { EX.r3(c, q); }, function (s) { return { th: s.v.th, mu: s.v.mu, mom: s.mom, axis: s.axis, t: s.t, showF: s.ms.showF }; }),
+  tEnd: function (s) { return (s.mom && s._fall && Math.abs(EX.net3({ axis: s.axis, mult: s.mult }, s.v.th)) > 1e-6) ? EX.TFALL3 : EX.tEnd3(s.v); },
+  draw: exDraw(480, function (c, q) { EX.r3(c, q); }, function (s) { return { th: s.v.th, mu: s.v.mu, mom: s.mom, axis: s.axis, mult: s.mult, t: s.t, showF: s.ms.showF }; }),
   msg: function (s) {
     var nd = EX.need3(s.v.th), slip = nd > s.v.mu + 1e-9;
-    if (s.mom) return '<b>力のモーメント</b>＝力の大きさ × うで（軸から作用線までの距離）。軸を「点 A」「棒の重心」「点 B」に切りかえて、4 つの力のモーメントがつりあうことを確かめよう。もう一度押すと、もとの図にもどる。';
+    if (s.mom) { var tau = EX.net3({ axis: s.axis, mult: s.mult }, s.v.th);
+      if (Math.abs(tau) > 1e-6) return '<b>力のモーメントがつりあっていない</b>：' + (tau > 0 ? '反時計回り' : '時計回り') + 'のモーメントのほうが大きいので、棒は軸のまわりに' + (tau > 0 ? '反時計回り' : '時計回り') + 'に回り出す（うすい棒がもとの位置）。「すべて最初の設定に戻す」で、力の大きさがもとにもどる。';
+      return '<b>力のモーメント</b>＝力の大きさ × うで（軸から作用線までの距離）。軸を「点 A」「棒の重心」「点 B」に切りかえて、4 つの力のモーメントがつりあうことを確かめよう。「〜を大きくする」「〜を小さくする」で力を変えると、つりあいがくずれて回り出す。'; }
     if (s.t === 0) return '▶ スタートで手をはなす。必要な摩擦力 $F=\\dfrac{mg}{2\\tan\\theta}=' + f2(nd) + 'mg$、最大摩擦力 $\\mu mg=' + f2(s.v.mu) + 'mg$。';
     return slip ? '<b>すべり出した</b>：必要な摩擦力 $' + f2(nd) + 'mg$ が、最大摩擦力 $' + f2(s.v.mu) + 'mg$ をこえている。$\\theta$ を大きく（棒を立てる）か、$\\mu$ を大きくしてみよう。'
       : '<b>すべらない</b>：必要な摩擦力 $' + f2(nd) + 'mg$ は、最大摩擦力 $' + f2(s.v.mu) + 'mg$ 以下。$\\theta$ を小さく（棒を寝かせる）するとどうなるか確かめよう。';
