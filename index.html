@@ -823,9 +823,14 @@ body{font-size:16px;line-height:1.75}
   text-shadow:0 5px 0 rgba(47,127,214,.35),0 18px 40px rgba(79,168,255,.25)}
 .hero h1 .h1a{display:block}
 .hero h1 .em{color:#8cc4ff}
-.hero-r{padding-top:0;padding-bottom:86px}
+.hero-r{padding-top:0;padding-bottom:0;padding-right:110px}
 /* アインシュタインは、右の列の下（前に「カテゴリから探す」ボタンがあった所の右） */
-.deco-r{top:auto;bottom:0}
+.deco-r{top:50%;bottom:auto;transform:translateY(-50%)}
+#heroSim{align-items:center}
+.hero{padding:30px 0 32px}
+/* 番号の後ろの分野名（番号と同じ色） */
+.cfd,.rfd{margin-left:.55em;font-family:var(--f-jph);font-weight:700;font-size:.92em;letter-spacing:.04em}
+.rfd{margin-left:.45em;font-size:.7em;vertical-align:.12em}
 .tagline{margin:0;max-width:none;color:rgba(222,232,245,.78);font-size:.98rem;line-height:1.95}
 .tagline b{color:#f4f7fb}
 .tocbtn{display:inline-flex;align-items:center;gap:10px;margin-top:18px;padding:11px 22px;border-radius:12px;
@@ -899,7 +904,7 @@ footer{background:linear-gradient(160deg,#121823 0%,#0b0e13 60%);color:rgba(222,
   .hero{padding:28px 0 30px}
   #heroSim{grid-template-columns:minmax(0,1fr);align-items:start}
   .hero-r{padding-top:0;padding-bottom:0;padding-right:76px}
-  .deco-r{width:60px;height:60px;right:16px;bottom:4px}
+  .deco-r{width:60px;height:60px;right:16px;top:auto;bottom:4px;transform:none}
   .hero h1{font-size:clamp(1.9rem,8vw,2.6rem)}
 }
 /* ---------- ほかのシミュレーションサイト ---------- */
@@ -1627,6 +1632,8 @@ const COMING = [
 
   /* ----- いまの選び方 ----- */
   var state = { cat:null, field:null, tag:"", q:"" };
+  /* カテゴリの番号の後ろに出す分野名（力学・波動…） */
+  var fieldName = function(c){ var g = groupOf(c.f); return g ? g.name : ""; };
   var groupOf = function(f){
     for (var k = 0; k < GROUPS.length; k++) if (GROUPS[k].key === f) return GROUPS[k];
     for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].ids.indexOf(f) >= 0) return GROUPS[i];
@@ -1668,7 +1675,7 @@ const COMING = [
       h += '<a class="cat' + (on ? ' on' : '') + '" href="#c' + esc(c.id) + '" data-cat="' + esc(c.id) + '"' +
            ' style="--fc:' + esc(c.color) + ';--fcl:' + tint(c.color, .12) + '"' + (on ? ' aria-current="true"' : '') + '>' +
            '<span class="cimg">' + (c.img ? '<img src="' + esc(c.img) + '?v=' + IMG_V + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') + '</span>' +
-           '<span class="cno">' + esc(c.id) + '</span>' +
+           '<span class="cno">' + esc(c.id) + '<span class="cfd">' + esc(fieldName(c)) + '</span></span>' +
            '<span class="cnm">' + esc(c.n) + '</span>' +
            '<span class="cen">' + esc(c.en || "") + '</span>' +
            '<span class="cct">' + (catCount[c.id] || 0) + '</span>' +
@@ -1758,7 +1765,7 @@ const COMING = [
   function renderList(){
     var hits = ENTRIES.filter(function(e){ return inScope(e) && hasTag(e, state.tag); });
     var label;
-    if (state.cat){ var c = catById[state.cat]; label = '<span class="rno" style="--fc:' + esc(c.color) + '">' + esc(c.id) + '</span>' + esc(c.n); }
+    if (state.cat){ var c = catById[state.cat]; label = '<span class="rno" style="--fc:' + esc(c.color) + '">' + esc(c.id) + '<span class="rfd">' + esc(fieldName(c)) + '</span></span>' + esc(c.n); }
     else if (state.field){ label = esc(state.field.name) + ' のすべて'; }
     else if (state.tag){ CHIPS.forEach(function(c){ if (c[0] === state.tag) label = esc(c[1]); }); }
     else label = 'すべてのシミュレーション';
@@ -1781,7 +1788,7 @@ const COMING = [
         if (state.field && state.field.ids.indexOf(c.f) < 0) return;
         if (!sub.length) return;
         h += '<section class="egroup" style="--fc:' + esc(c.color) + '">' +
-             '<h3><a href="#c' + esc(c.id) + '"><span class="rno">' + esc(c.id) + '</span>' + esc(c.n) +
+             '<h3><a href="#c' + esc(c.id) + '"><span class="rno">' + esc(c.id) + '<span class="rfd">' + esc(fieldName(c)) + '</span></span>' + esc(c.n) +
              '<span class="n">' + sub.length + ' 件</span></a></h3>' +
              listHtml(sub.sort(sortFor(c.id))) + '</section>';
       });

@@ -2817,9 +2817,18 @@ function drawCircuit2d(cv, o) {
   /* 4 つの辺 */
   var eR = edge(A, D, s.V, s.v.D, 0.42, '#e07b18');
   var eX = edge(D, B, s.v.D, 0, 0.42, '#e07b18');
-  var fl = 0.12 + 0.66 * s.L / 100, fr = 0.12 + 0.66 * (100 - s.L) / 100;
-  var eAP = edge(A, P, s.V, s.v.P, fl, '#5f6670', 'grad');
-  var ePB = edge(P, B, s.v.P, 0, fr, '#5f6670', 'grad');
+  var wb = s.wb, eAP, ePB;                                 /* wb：ホイートストンブリッジ（下の 2 辺も抵抗器） */
+  if (wb) { eAP = edge(A, P, s.V, s.v.P, 0.42, '#e07b18'); ePB = edge(P, B, s.v.P, 0, 0.42, '#e07b18'); }
+  else {
+    var fl = 0.12 + 0.66 * s.L / 100, fr = 0.12 + 0.66 * (100 - s.L) / 100;
+    eAP = edge(A, P, s.V, s.v.P, fl, '#5f6670', 'grad');
+    ePB = edge(P, B, s.v.P, 0, fr, '#5f6670', 'grad');
+  }
+  if (wb) {                                               /* 可変抵抗 R3 の記号：箱をななめに横切る矢印 */
+    var m3 = [(eX[0][0] + eX[1][0]) / 2, (eX[0][1] + eX[1][1]) / 2];
+    c.strokeStyle = '#14171c'; c.lineWidth = 2; c.beginPath(); c.moveTo(m3[0] - 30, m3[1] + 26); c.lineTo(m3[0] + 26, m3[1] - 30); c.stroke();
+    c.fillStyle = '#14171c'; arrowHead(c, m3[0] + 26, m3[1] - 30, 0.707, -0.707, 7);
+  }
   /* 検流計（D–P） */
   var gc = [320, 205], gr = 25;
   wire([D, [gc[0], gc[1] - gr]], s.v.D); wire([[gc[0], gc[1] + gr], P], s.v.P);
@@ -2843,7 +2852,8 @@ function drawCircuit2d(cv, o) {
   /* 点 */
   c.fillStyle = '#14171c'; [A, B, D, P].forEach(function (q) { c.beginPath(); c.arc(q[0], q[1], 5, 0, 7); c.fill(); });
   var lab = function (t, x, y) { c.font = 'italic ' + fz(21) + 'px ' + MATHF; c.fillStyle = '#14171c'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, x, y); };
-  lab('A', A[0] + 2, A[1] - 22); lab('B', B[0] - 2, B[1] - 22); lab('D', D[0], D[1] - 22); lab('P', P[0] + 22, P[1] + 16);
+  var NM = wb ? ['a', 'b', 'c', 'd'] : ['A', 'B', 'D', 'P'];
+  lab(NM[0], A[0] + 2, A[1] - 22); lab(NM[1], B[0] - 2, B[1] - 22); lab(NM[2], D[0], D[1] - 22); lab(NM[3], P[0] + 22, P[1] + 16);
 
   /* 値の名前 */
   var mid = function (e) { return [(e[0][0] + e[1][0]) / 2, (e[0][1] + e[1][1]) / 2]; };
@@ -2854,10 +2864,17 @@ function drawCircuit2d(cv, o) {
   };
   var om = function (r) { return fmt(r, r < 10 ? 2 : 1) + ' Ω'; };
   var lo = fz(13) * 1.2;                                 /* 値の行の高さ（文字の大きさに合わせてずらす） */
-  name2(eR, 'R', '', om(s.R), [-30, -lo - 6]);
-  name2(eX, 'X', '', o.hideX ? '？ Ω' : om(s.X), [30, -lo - 6]);
-  name2(eAP, 'R', 'AP', om(s.Rap), [-34, 36]);
-  name2(ePB, 'R', 'PB', om(s.Rpb), [34, 36]);
+  if (wb) {
+    name2(eR, 'R', '1', om(wb.R1), [-30, -lo - 6]);
+    name2(eX, 'R', '3', om(wb.R3), [34, -lo - 6]);
+    name2(eAP, 'R', '2', om(wb.R2), [-34, 36]);
+    name2(ePB, 'R', 'x', o.hideX ? '？ Ω' : om(wb.Rx), [34, 36]);
+  } else {
+    name2(eR, 'R', '', om(s.R), [-30, -lo - 6]);
+    name2(eX, 'X', '', o.hideX ? '？ Ω' : om(s.X), [30, -lo - 6]);
+    name2(eAP, 'R', 'AP', om(s.Rap), [-34, 36]);
+    name2(ePB, 'R', 'PB', om(s.Rpb), [34, 36]);
+  }
   if (o.labels === 'sym') {
     c.font = 'italic ' + fz(17) + 'px ' + MATHF;
     symText(c, 178, 190, 'I', '1', '#1c8f4a', fz(17), 'center'); symText(c, 462, 190, 'I', '1', '#1c8f4a', fz(17), 'center');
@@ -2868,7 +2885,7 @@ function drawCircuit2d(cv, o) {
   c.font = '700 ' + fz(13) + 'px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
   var z = Math.abs(s.I.G) < 5e-6;
   haloText(c, '検流計 ' + fmtIg(s.I.G), gc[0] + gr + 10, gc[1], z ? '#1c8f4a' : '#14171c');
-  c.font = fz(11.5) + 'px ' + FONT; haloText(c, z ? '電流が流れない' : (s.I.G > 0 ? '（P → D の向き）' : '（D → P の向き）'), gc[0] + gr + 10, gc[1] + 18, '#69717d');
+  c.font = fz(11.5) + 'px ' + FONT; haloText(c, z ? '電流が流れない' : (s.I.G > 0 ? '（' + NM[3] + ' → ' + NM[2] + ' の向き）' : '（' + NM[2] + ' → ' + NM[3] + ' の向き）'), gc[0] + gr + 10, gc[1] + 18, '#69717d');
   c.restore();
 }
 
@@ -2922,21 +2939,30 @@ var D3 = (function () {
     return [
       { id: 'cuA1', t: 'W', a: [0, 3], b: [0, 1], va: v.A, vb: v.A, I: s.I.R },         /* 銅板（A→上）。R へ向かう電流は上向き＝ b 向き */
       { id: 'cuA2', t: 'W', a: [0, 1], b: [1, 1], va: v.A, vb: v.A, I: s.I.R },
-      { id: 'R', t: 'R', a: [1, 1], b: [4, 1], va: v.A, vb: v.D, I: s.I.R, name: 'R', val: s.R },
+      { id: 'R', t: 'R', a: [1, 1], b: [4, 1], va: v.A, vb: v.D, I: s.I.R, name: s.wb ? 'R₁' : 'R', val: s.wb ? s.wb.R1 : s.R },
       { id: 'cuD1', t: 'W', a: [4, 1], b: [5, 1], va: v.D, vb: v.D, I: s.I.R },
       { id: 'cuD2', t: 'W', a: [5, 1], b: [6, 1], va: v.D, vb: v.D, I: s.I.X },
-      { id: 'X', t: 'R', a: [6, 1], b: [9, 1], va: v.D, vb: 0, I: s.I.X, name: 'X', val: s.X },
+      { id: 'X', t: 'R', a: [6, 1], b: [9, 1], va: v.D, vb: 0, I: s.I.X, name: s.wb ? 'R₃' : 'X', val: s.wb ? s.wb.R3 : s.X },
       { id: 'cuB1', t: 'W', a: [9, 1], b: [10, 1], va: 0, vb: 0, I: s.I.X },
       { id: 'cuB2', t: 'W', a: [10, 1], b: [10, 3], va: 0, vb: 0, I: s.I.X },
+    ].concat(s.wb ? [                                       /* ホイートストンブリッジ：下の段も抵抗器 R₂・Rₓ（d は x=5） */
+      { id: 'cuA3', t: 'W', a: [0, 3], b: [1, 3], va: v.A, vb: v.A, I: s.I.AP },
+      { id: 'AP', t: 'R', a: [1, 3], b: [4, 3], va: v.A, vb: v.P, I: s.I.AP, name: 'R₂', val: s.wb.R2 },
+      { id: 'cuP1', t: 'W', a: [4, 3], b: [5, 3], va: v.P, vb: v.P, I: s.I.AP },
+      { id: 'cuP2', t: 'W', a: [5, 3], b: [6, 3], va: v.P, vb: v.P, I: s.I.PB },
+      { id: 'PB', t: 'R', a: [6, 3], b: [9, 3], va: v.P, vb: 0, I: s.I.PB, name: 'Rₓ', val: s.wb.Rx },
+      { id: 'cuB3', t: 'W', a: [9, 3], b: [10, 3], va: 0, vb: 0, I: s.I.PB }
+    ] : [
       { id: 'AP', t: 'MW', a: [0, 3], b: [xp, 3], va: v.A, vb: v.P, I: s.I.AP },
-      { id: 'PB', t: 'MW', a: [xp, 3], b: [10, 3], va: v.P, vb: 0, I: s.I.PB },
+      { id: 'PB', t: 'MW', a: [xp, 3], b: [10, 3], va: v.P, vb: 0, I: s.I.PB }
+    ]).concat([
       { id: 'G', t: 'G', a: [xp, 3], b: [5, 1], va: v.P, vb: v.D, I: s.I.G },
       { id: 'bA', t: 'W', a: [0, 5], b: [0, 3], va: v.A, vb: v.A, I: s.Itot },
       { id: 'bA2', t: 'W', a: [4.5, 5], b: [0, 5], va: v.A, vb: v.A, I: s.Itot },
       { id: 'E', t: 'E', a: [5.5, 5], b: [4.5, 5], va: 0, vb: v.A, I: s.Itot },
       { id: 'bB2', t: 'W', a: [10, 5], b: [5.5, 5], va: 0, vb: 0, I: s.Itot },
       { id: 'bB', t: 'W', a: [10, 3], b: [10, 5], va: 0, vb: 0, I: s.Itot }
-    ];
+    ]);
   }
   function flowSpeed(I) { return Math.max(12, Math.min(260, Math.abs(I) * 200)); }
 
@@ -2971,7 +2997,7 @@ var D3 = (function () {
       }
     });
     /* 金属線の 10 cm ごとの柱（坂が見えるように） */
-    for (var cm = 10; cm < 100; cm += 10) (function (cm) { items.push({ d: depthXY(cm / 10, 3) - 2e-4, fn: function () { column(c, cm / 10, 3, Z(mbWireV(s, cm)), true); } }); })(cm);
+    if (!s.wb) for (var cm = 10; cm < 100; cm += 10) (function (cm) { items.push({ d: depthXY(cm / 10, 3) - 2e-4, fn: function () { column(c, cm / 10, 3, Z(mbWireV(s, cm)), true); } }); })(cm);
     /* P と D の電位の矢印・同じ高さの線 */
     var xp = s.L / 10;
     pdItems(items, c, s, Z, xp);
@@ -2979,7 +3005,8 @@ var D3 = (function () {
     items.forEach(function (it) { it.fn(); });
     /* 点の名前 */
     c.font = 'italic bold 15px ' + MATHF; c.textAlign = 'center'; c.textBaseline = 'bottom';
-    [['A', 0, 3, s.V, -12], ['B', 10, 3, 0, -12], ['D', 5, 1, s.v.D, 14], ['P', xp, 3, s.v.P, -14]].forEach(function (q) { var p = proj(q[1], q[2], Z(q[3])); label(c, q[0], p[0] + q[4], p[1] - 8, '#14171c'); });
+    var NM = s.wb ? ['a', 'b', 'c', 'd'] : ['A', 'B', 'D', 'P'];
+    [[NM[0], 0, 3, s.V, -12], [NM[1], 10, 3, 0, -12], [NM[2], 5, 1, s.v.D, 14], [NM[3], xp, 3, s.v.P, -14]].forEach(function (q) { var p = proj(q[1], q[2], Z(q[3])); label(c, q[0], p[0] + q[4], p[1] - 8, '#14171c'); });
     colorbar(c, s);
     c.fillStyle = 'rgba(70,90,110,.6)'; c.font = '11px ' + FONT; c.textAlign = 'right'; c.textBaseline = 'bottom';
     c.fillText('ドラッグで回転', V.cw - 8, V.ch - 6);
@@ -3035,7 +3062,7 @@ var D3 = (function () {
     if (h.t === 'R') {
       var m = proj((h.a[0] + h.b[0]) / 2, (h.a[1] + h.b[1]) / 2, (za + zb) / 2);
       c.font = 'bold 12px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'bottom';
-      label(c, h.name + ' ' + ((h.name === 'X' && st.hideX) ? '？' : fmt(h.val, h.val < 10 ? 1 : 0)) + ' Ω', m[0], m[1] - 12, '#9c4e06');
+      label(c, h.name + ' ' + (((h.name === 'X' || h.name === 'Rₓ') && st.hideX) ? '？' : fmt(h.val, h.val < 10 ? 1 : 0)) + ' Ω', m[0], m[1] - 12, '#9c4e06');
     }
   }
   function flow(c, A, B, I, phase, w) {
@@ -3091,7 +3118,8 @@ var D3 = (function () {
       c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.restore();
     } });
     var left = tp()[0] < td()[0];
-    [[xp, 3, s.v.P, 'P', left ? -1 : 1], [5, 1, s.v.D, 'D', left ? 1 : -1]].forEach(function (q) {
+    var NM = s.wb ? ['d', 'c'] : ['P', 'D'];
+    [[xp, 3, s.v.P, NM[0], left ? -1 : 1], [5, 1, s.v.D, NM[1], left ? 1 : -1]].forEach(function (q) {
       items.push({ d: depthXY(q[0], q[1]) + 0.05, fn: function () {
         var b = proj(q[0], q[1], 0), t = proj(q[0], q[1], Z(q[2]));
         c.lineCap = 'butt'; c.strokeStyle = '#151a20'; c.lineWidth = 5; c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke();
@@ -3108,7 +3136,7 @@ var D3 = (function () {
     });
     if (same) items.push({ d: 999, fn: function () {
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = 'bold 15px ' + FONT;
-      label(c, 'P と D が同じ高さ（等電位）：' + fmt(s.v.P, 2) + ' V', V.cw / 2 + 20, 24, '#1c8f4a');
+      label(c, (s.wb ? 'c と d' : 'P と D') + ' が同じ高さ（等電位）：' + fmt(s.v.P, 2) + ' V', V.cw / 2 + 20, 24, '#1c8f4a');
     } });
   }
   function colorbar(c, s) {
@@ -3156,7 +3184,7 @@ function plotFrame(c, W, H, o) {
   c.strokeStyle = '#eef1f4'; c.lineWidth = 1; c.font = '11px ' + FONT; c.fillStyle = '#69717d';
   var xs = o.xt || niceStep(o.xb - o.xa, 5), ys = o.yt || niceStep(o.yb - o.ya, 5);
   c.textAlign = 'center'; c.textBaseline = 'top';
-  for (var x = Math.ceil(o.xa / xs - 1e-9) * xs; x <= o.xb + 1e-9; x += xs) { var px = Math.round(X(x)) + .5; c.beginPath(); c.moveTo(px, T); c.lineTo(px, B); c.stroke(); c.fillText(fmt(x, xs < 1 ? 1 : 0), px, B + 5); }
+  for (var x = Math.ceil(o.xa / xs - 1e-9) * xs; x <= o.xb + 1e-9; x += xs) { var px = Math.round(X(x)) + .5; c.beginPath(); c.moveTo(px, T); c.lineTo(px, B); c.stroke(); c.fillText(o.xtl ? o.xtl(x) : fmt(x, xs < 1 ? 1 : 0), px, B + 5); }
   c.textAlign = 'right'; c.textBaseline = 'middle';
   for (var y = Math.ceil(o.ya / ys - 1e-9) * ys; y <= o.yb + 1e-9; y += ys) { var py = Math.round(Y(y)) + .5; c.beginPath(); c.moveTo(L, py); c.lineTo(R, py); c.stroke(); c.fillText(o.yfmt ? o.yfmt(y) : fmt(y, ys < 0.1 ? 2 : ys < 1 ? 1 : 0), L - 6, py); }
   if (o.ya < 0 && o.yb > 0) { c.strokeStyle = '#9aa1ab'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(L, Y(0)); c.lineTo(R, Y(0)); c.stroke(); }
@@ -3438,8 +3466,8 @@ function fmtR(r) { return fmt(r, r < 10 ? 2 : 1) + ' Ω'; }
 
 /* ====================== ①-1・①-2 で共通の部品 ====================== */
 var DRAG_HINT = '<span class="deschint">▶ 接点（オレンジの持ち手）をドラッグ</span><button type="button" class="b tiny zerob">0 A の接点にする</button>';
-var GO_P2 = '原理は <a href="#" class="golink" data-go="p2">②-2 つり合いの式の導き方</a> へ。';
-/* 説明文の中のリンク（②-2 へ移る） */
+var GO_P2 = '原理は <a href="#" class="golink" data-go="p2">③-2 つり合いの式の導き方</a> へ。';
+/* 説明文の中のリンク（③-2 へ移る） */
 function bindGoLinks(root) {
   root.querySelectorAll('a.golink').forEach(function (a) {
     a.addEventListener('click', function (ev) { ev.preventDefault(); var sid = a.dataset.go; activateMode(modeOfSec(sid).id); history.replaceState(null, '', '#' + addrOf(sid)); scrollToSec(sid); });
@@ -3504,7 +3532,7 @@ DEFS.s1 = {
     bTop.type = bSide.type = 'button'; vbtn.appendChild(bTop); vbtn.appendChild(bSide);
     var b3 = mkBox(Rh, '水流モデルの立体図', vbtn); b3.classList.add('box3d');
     var pbar = el('div', 'mbplay'); b3.appendChild(pbar);
-    var bPlay = el('button', 'b play', '▶ 水の流れを見る'); bPlay.type = 'button'; bPlay.id = 'bPlay'; pbar.appendChild(bPlay);
+    var bPlay = el('button', 'b play', '▶ 水の流れを見る'); bPlay.type = 'button'; bPlay.id = 'bPlayM'; pbar.appendChild(bPlay);
     pbar.appendChild(el('span', 'mbnote', '高さ＝電位、色＝電位の色、水の粒の速さ＝電流'));
     var hv = el('div', 'varbox mbvars hmvars'); b3.appendChild(hv);
     var slH = mkSlider(hv, { label: '縦の倍率（高さ＝電位の目盛り）', min: 0.5, max: 3, step: 0.1, get: function () { return st.hm; }, set: function (x) { st.hm = x; slH.sync(); requestDraw(draw3); }, fmtv: function (x) { return '× ' + fmt(x, 1); } });
@@ -3728,7 +3756,7 @@ DEFS.p2 = {
       '<li>A と D の電位差 ＝ A と P の電位差（D と P が等電位だから）<div class="eqbox">$RI_1 = R_{\\mathrm{AP}}I_2$　…①</div>' +
       'D と B の電位差 ＝ P と B の電位差<div class="eqbox">$XI_1 = R_{\\mathrm{PB}}I_2$　…②</div></li>' +
       '<li>① ÷ ② で $I_1$・$I_2$ が消える。<div class="eqbox">$\\dfrac{R}{X}=\\dfrac{R_{\\mathrm{AP}}}{R_{\\mathrm{PB}}}$</div></li>' +
-      '<li>金属線の抵抗は長さに比例する（②-1）ので <div class="eqbox">$\\dfrac{R}{X}=\\dfrac{L}{100-L}$　よって　$X=R\\times\\dfrac{100-L}{L}$</div></li></ol>' +
+      '<li>金属線の抵抗は長さに比例する（③-1）ので <div class="eqbox">$\\dfrac{R}{X}=\\dfrac{L}{100-L}$　よって　$X=R\\times\\dfrac{100-L}{L}$</div></li></ol>' +
       '<p class="mbcap">数値で確かめる：$\\dfrac{R}{X}=\\dfrac{' + MB_DEF.R + '}{' + MB_DEF.X + '}=' + fmt(MB_DEF.R / MB_DEF.X, 3) + '$、$\\dfrac{L}{100-L}=\\dfrac{' + fmt(s.L, 1) + '}{' + fmt(100 - s.L, 1) + '}=' + fmt(s.L / (100 - s.L), 3) + '$。<br>$I_1$ ＝ ' + fmtVal(s.I.R, 'A') + '、$I_2$ ＝ ' + fmtVal(s.I.AP, 'A') + '、$RI_1$ ＝ ' + fmt(s.U.R, 3) + ' V ＝ $R_{\\mathrm{AP}}I_2$ ＝ ' + fmt(s.U.AP, 3) + ' V。</p>');
     function draw() { drawCircuit2d(cv, { s: s, labels: 'sym', small: true }); drawVplot(cvV, { s: s, showBal: false, small: true }); }
     draw(); LIVE.push({ redraw: draw });
@@ -3749,7 +3777,7 @@ DEFS.p3 = {
     card.innerHTML = mathify('<p class="qt">つり合いの式に $R_g$ は出てこない</p><p>つり合いのとき検流計の電流は 0 なので、検流計の両はしの電圧 $R_g\\times 0$ も 0。$R_g$ がいくつでも P と D は等電位で、②-2 の式に $R_g$ は入らない。</p>' +
       '<p>グラフの曲線は $R_g$ によって<b>かたむき（感度）</b>が変わるが、<b>0 を横切る位置は同じ</b>である。</p>' +
       '<p class="qt">なぜ精密か</p><p>電流計・電圧計で抵抗を測るときは、計器の内部抵抗のぶんだけ電流や電圧がずれる。メートルブリッジは「電流が 0 かどうか」だけを見るので、計器の内部抵抗によるずれがない。$X$ は、正確な $R$ と、ものさしで読む長さだけで決まる。</p>' +
-      '<p class="mbcap">電源の電圧や金属線全体の抵抗も、つり合いの位置には影響しない（①-1 で $V$ を変えて確かめよう）。</p>');
+      '<p class="mbcap">電源の電圧や金属線全体の抵抗も、つり合いの位置には影響しない（②-1 で $V$ を変えて確かめよう）。</p>');
     var vals = el('p', 'mbcap'); bx.appendChild(vals);
     function draw() {
       drawIgPlot(cv, { V: MB_DEF.V, R: MB_DEF.R, X: MB_DEF.X, Rg: st.Rg, list: RG_LIST });
@@ -3763,16 +3791,426 @@ DEFS.p3 = {
 /* 画面の幅が変わったら描き直す */
 (function () { var t = 0, w = 0; window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(function () { if (innerWidth === w) return; w = innerWidth; LIVE.forEach(function (x) { x.redraw(); }); }, 120); }); })();
 
+/* ===== 52_wheatstone.js ===== */
+/* =========================================================================
+   52_wheatstone.js … モード① ホイートストンブリッジ（①-1 しくみ・①-2 未知の抵抗を求めよう）
+   ・回路（教科書の形）：a（左・電池の＋）、b（右）、c（上）、d（下）
+       R₁：a–c（既知）、R₃：c–b（可変抵抗＝すべり抵抗器）、R₂：a–d（既知）、Rₓ：d–b（未知）、検流計 G：d–c
+   ・つり合い：R₁/R₂ = R₃/Rₓ（検流計の電流 0）→ Rₓ = R₂R₃/R₁
+   ・解き方はメートルブリッジと同じ節点電位法（検流計の内部抵抗も入れて解く）。
+     ほかの描画（回路図・立体図）と共通に使えるよう、結果はメートルブリッジと同じ名前で返す：
+       節点 A=a、B=b、D=c、P=d。電流 I.R＝R₁（a→c）、I.X＝R₃（c→b）、I.AP＝R₂（a→d）、I.PB＝Rₓ（d→b）、I.G＝d→c（正）
+   ・すべり抵抗器：左はしに端子が 2 つ（コイルの左はし・つまみのレール）。右はしの端子は使わない。
+     つまみが左（端子の側）ほど抵抗が小さく、右へすべらせると大きい
+   ========================================================================= */
+'use strict';
+var WB = { R3MAX: 50, R3MIN: 0.5, SNAP: 0.5 };
+var WB_DEF = { V: 3.0, R1: 10, R2: 20, Rx: 30, R3: 5 };   /* つり合いは R₃ ＝ R₁Rₓ/R₂ ＝ 15 Ω */
+
+function wbSolve(o) {
+  var V = o.V, Rg = o.Rg || MB.RG, R1 = o.R1, R2 = o.R2, R3 = Math.max(WB.R3MIN, o.R3), Rx = o.Rx;
+  var el = [
+    { k: 'R', a: 'A', b: 'D', r: R1 }, { k: 'X', a: 'D', b: 'B', r: R3 },
+    { k: 'AP', a: 'A', b: 'P', r: R2 }, { k: 'PB', a: 'P', b: 'B', r: Rx }, { k: 'G', a: 'P', b: 'D', r: Rg }
+  ];
+  var known = { A: V, B: 0 }, idx = { P: 0, D: 1 }, G = [[0, 0], [0, 0]], b = [0, 0];
+  el.forEach(function (e) {
+    var g = 1 / e.r;
+    [[e.a, e.b], [e.b, e.a]].forEach(function (q) {
+      var n = q[0], m = q[1]; if (!(n in idx)) return;
+      G[idx[n]][idx[n]] += g; if (m in idx) G[idx[n]][idx[m]] -= g; else b[idx[n]] += g * known[m];
+    });
+  });
+  var x = mbLinSolve(G, b), v = { A: V, B: 0, P: x[0], D: x[1] }, I = {}, U = {};
+  el.forEach(function (e) { U[e.k] = v[e.a] - v[e.b]; I[e.k] = U[e.k] / e.r; });
+  return { V: V, Rg: Rg, L: 50, v: v, I: I, U: U, Itot: I.R + I.AP, wb: { R1: R1, R2: R2, R3: R3, Rx: Rx } };
+}
+function wbBalR3(st) { return st.R1 * st.Rx / st.R2; }                       /* つり合いの R₃ */
+function wbNearBal(st) { return Math.abs(st.R3 - wbBalR3(st)) < 0.05 || Math.abs(st.s.I.G) < 5e-6; }
+function wbSnap(st, R) { var b = wbBalR3(st); return (b >= WB.R3MIN && b <= WB.R3MAX && Math.abs(R - b) < WB.SNAP) ? b : null; }
+function wbDragR3(st, R) { var y = wbSnap(st, R); return y !== null ? y : +clamp(Math.round(R * 10) / 10, WB.R3MIN, WB.R3MAX).toFixed(1); }
+
+/* 状態のことば */
+function wbStatus(st, hide) {
+  var s = st.s, I = s.I.G, b = wbBalR3(st), pv = function (gt) { return hide ? '' : '（' + fmt(s.v.P, 2) + ' V ' + (gt ? '＞' : '＜') + ' ' + fmt(s.v.D, 2) + ' V）'; };
+  var out = (b < WB.R3MIN || b > WB.R3MAX) ? '<br>※ いまの $R_1$・$R_2$ では、可変抵抗の範囲（' + WB.R3MIN + '〜' + WB.R3MAX + ' Ω）で 0 A にできない。$R_1$ か $R_2$ を変えよう。' : '';
+  if (Math.abs(I) < 5e-6) return { cls: 'ok', html: mathify('<b>検流計に電流が流れない（針は 0）。</b>点 c と点 d が同じ電位（同じ高さ）になっている。これが<b>つり合いの状態</b>。') };
+  if (wbNearBal(st)) return { cls: 'ok', html: mathify('<b>ほぼ 0 A</b>（検流計 ' + fmtIg(I) + '）。可変抵抗の目盛り 0.1 Ω では、これ以上は合わせられない。ここがつり合いの状態。') };
+  if (I > 0) return { cls: '', html: mathify('検流計の針は<b>右</b>にふれる（電流は <b>d → c</b>）。点 d のほうが点 c より電位が高い' + pv(true) + '。可変抵抗のつまみを<b>右</b>へ（$R_3$ を大きく）すると、c の電位が上がる。' + out) };
+  return { cls: '', html: mathify('検流計の針は<b>左</b>にふれる（電流は <b>c → d</b>）。点 c のほうが点 d より電位が高い' + pv(false) + '。可変抵抗のつまみを<b>左</b>へ（$R_3$ を小さく）すると、c の電位が下がる。' + out) };
+}
+/* 回路図の右：つり合いの式（0 A のときだけ） */
+function wbFormula(box, st, hideX) {
+  if (!wbNearBal(st)) { box.hidden = true; return; }
+  box.hidden = false;
+  var s = st.s.wb, R3 = fmt(s.R3, 1);
+  var h = '<p class="fh">0 A になった！ つり合いの式</p><div class="fe">$\\dfrac{R_1}{R_2}=\\dfrac{R_3}{R_x}$</div>';
+  if (hideX) h += '<p>$R_1$ ＝ ' + s.R1 + ' Ω、$R_2$ ＝ ' + s.R2 + ' Ω、$R_3$ ＝ ' + R3 + ' Ω を入れると</p><div class="fe">$\\dfrac{' + s.R1 + '}{' + s.R2 + '}=\\dfrac{' + R3 + '}{R_x}$</div><p>が成り立つ。ここから $R_x$ を求めよう。</p>';
+  else h += '<div class="fe">$\\dfrac{R_1}{R_2}=\\dfrac{' + s.R1 + '}{' + s.R2 + '}\\fallingdotseq ' + fmt(s.R1 / s.R2, 3) + '$</div><div class="fe">$\\dfrac{R_3}{R_x}=\\dfrac{' + R3 + '}{' + s.Rx + '}\\fallingdotseq ' + fmt(s.R3 / s.Rx, 3) + '$</div><p class="ok">両辺が等しく、式が成り立っている。</p>';
+  box.innerHTML = mathify(h);
+}
+
+/* ---------------- 実験装置の図（仮の座標 1000×610） ---------------- */
+var WBA = { VH: 610, OFF: 0, RH: { x0: 640, x1: 920, y0: 112, y1: 176, dx: 24, dy: -22 } };
+function wbSliderX(R3) { var r = WBA.RH; return r.x0 + 30 + (R3 / WB.R3MAX) * (r.x1 - r.x0 - 60); }
+function wbSliderR(x) { var r = WBA.RH; return (x - r.x0 - 30) / (r.x1 - r.x0 - 60) * WB.R3MAX; }
+function drawWBApparatus(cv, o) {
+  var nar = (cv.clientWidth || 600) < 560;
+  WBA.OFF = nar ? 300 : 0;
+  var f = fitCanvas(cv, (WBA.VH + WBA.OFF) / 1000, 190, 780), c = f.c, k = f.W / 1000, s = o.s, w = s.wb;
+  var fz = function (px) { return Math.max(nar ? 9.5 : 10.5, px * k) / k; };
+  var F = function (px, wt) { c.font = (wt || '') + ' ' + fz(px) + 'px ' + FONT; };
+  var Fm = function (px) { c.font = 'italic ' + fz(px) + 'px ' + MATHF; };
+  c.clearRect(0, 0, f.W, f.H);
+  c.save(); c.scale(k, k); c.lineCap = 'round'; c.lineJoin = 'round';
+  if (nar) { galvZoom(c, s, o.fs || 0.05, 110, 6, 890, 288, F); c.translate(0, WBA.OFF); }
+  var curve = function (pts) { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (var i = 1; i < pts.length; i++) { var p = pts[i]; if (p.length === 6) c.bezierCurveTo(p[0], p[1], p[2], p[3], p[4], p[5]); else if (p.length === 4) c.quadraticCurveTo(p[0], p[1], p[2], p[3]); else c.lineTo(p[0], p[1]); } };
+  var lead = function (pts, col) { c.strokeStyle = 'rgba(20,23,28,.14)'; c.lineWidth = 5.5; curve(pts); c.stroke(); c.strokeStyle = col || '#2b3038'; c.lineWidth = 2.8; curve(pts); c.stroke(); };
+  var tag = function (t, x, y) { Fm(22); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#14171c'; c.fillText(t, x, y); };
+  var screw = function (p) { c.fillStyle = '#e9c88f'; c.beginPath(); c.arc(p[0], p[1], 3.2, 0, 7); c.fill(); c.strokeStyle = '#6b5a45'; c.lineWidth = 1; c.stroke(); };
+  var post = function (p, h) {
+    c.fillStyle = '#6b5a45'; c.beginPath(); c.ellipse(p[0], p[1] + h, 8, 4.5, 0, 0, 7); c.fill();
+    var g = c.createLinearGradient(p[0] - 6, 0, p[0] + 6, 0); g.addColorStop(0, '#a77c3e'); g.addColorStop(.5, '#e9c88f'); g.addColorStop(1, '#a77c3e');
+    c.fillStyle = g; c.fillRect(p[0] - 6, p[1], 12, h); c.fillStyle = '#c9a26a'; c.beginPath(); c.ellipse(p[0], p[1], 6, 3, 0, 0, 7); c.fill();
+  };
+  var block = function (p, name) {                       /* 導線をまとめてつなぐ端子台（a・b・d） */
+    c.save(); c.shadowColor = 'rgba(20,23,28,.18)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
+    c.fillStyle = '#3a414c'; rrect(c, p[0] - 18, p[1] + 6, 36, 18, 5); c.fill(); c.restore();
+    post([p[0], p[1] - 12], 20); tag(name, p[0] - 30, p[1] - 6);
+  };
+  var gL = [462, 46], gR = [538, 46], rL = [94, 104], rR = [206, 104];
+  var pa = [60, 372], pd = [500, 372], pb = [930, 372];                   /* 端子台 a・d・b（頭は y−12） */
+  var ta = [pa[0], pa[1] - 12], td = [pd[0], pd[1] - 12], tb = [pb[0], pb[1] - 12];
+  var RH = WBA.RH, xs = wbSliderX(w.R3);
+  var A1 = [RH.x0 + RH.dx * 0.7 - 16, RH.y0 + RH.dy * 0.7 - 16];        /* すべり抵抗器：レールの左はしの端子（つまみにつながる） */
+  var A2 = [RH.x0 - 14, RH.y0 + 26];                                      /* コイルの左はしの端子 */
+  var B1 = [RH.x1 + RH.dx * 0.7 + 16, RH.y0 + RH.dy * 0.7 - 16];        /* 右はしの端子（使わない） */
+  var bx0 = 330, bw = 250, bcy = 522, earL = [bx0 + 34.4 * bw / 720, bcy + 1], earR = [bx0 + 686.6 * bw / 720, bcy + 1];
+
+  /* ---- 抵抗箱 R₁ ---- */
+  (function () {
+    var cx = 150, cy = 118, rx = 84, ry = 26, h = 44;
+    c.save(); c.shadowColor = 'rgba(20,23,28,.18)'; c.shadowBlur = 12; c.shadowOffsetY = 4;
+    var g = c.createLinearGradient(cx - rx, 0, cx + rx, 0); g.addColorStop(0, '#d9dde2'); g.addColorStop(.5, '#f6f7f8'); g.addColorStop(1, '#c4cad1');
+    c.fillStyle = g; c.beginPath(); c.moveTo(cx - rx, cy); c.lineTo(cx - rx, cy + h); c.ellipse(cx, cy + h, rx, ry, 0, Math.PI, 0, true); c.lineTo(cx + rx, cy); c.closePath(); c.fill(); c.restore();
+    c.strokeStyle = '#4a4f57'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(cx - rx, cy); c.lineTo(cx - rx, cy + h); c.ellipse(cx, cy + h, rx, ry, 0, Math.PI, 0, true); c.lineTo(cx + rx, cy); c.stroke();
+    c.fillStyle = '#fbfaf7'; c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, 7); c.fill(); c.stroke();
+    [[-46, -4], [-18, -12], [14, -12], [44, -4], [-28, 10], [4, 12], [34, 10]].forEach(function (q) {
+      c.fillStyle = '#3a414c'; c.beginPath(); c.ellipse(cx + q[0], cy + q[1], 6, 4, 0, 0, 7); c.fill(); c.fillStyle = '#9aa1ab'; c.beginPath(); c.ellipse(cx + q[0], cy + q[1] - 1.5, 4, 2.4, 0, 0, 7); c.fill(); });
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    if (nar) { F(15, '700'); c.fillStyle = '#9c4e06'; c.fillText('R₁ ' + fmt(w.R1, 0) + ' Ω', cx, cy + h + ry + 8); }
+    else { F(14, '700'); c.fillStyle = '#14171c'; c.fillText('既知の抵抗', cx - 16, cy + h + ry + 6); symText(c, cx + 44, cy + h + ry + 22, 'R', '1', '#14171c', fz(17), 'left');
+      F(14, '700'); c.fillStyle = '#9c4e06'; c.fillText(fmt(w.R1, 0) + ' Ω', cx, cy + h + ry + 26); }
+  })();
+
+  /* ---- 板にのった抵抗（R₂・Rₓ）。x0 から 164 の幅、たんしは x0+28・x0+138 ---- */
+  var plate = function (x0, y0, base, sub, val) {
+    var x1 = x0 + 164, d = 16, pL = [x0 + 28, y0 - 10], pR = [x0 + 138, y0 - 10];
+    c.save(); c.shadowColor = 'rgba(20,23,28,.18)'; c.shadowBlur = 10; c.shadowOffsetY = 4;
+    c.fillStyle = '#e8d6b4'; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.lineTo(x1 + d, y0 - 22); c.lineTo(x0 + d, y0 - 22); c.closePath(); c.fill(); c.restore();
+    c.fillStyle = '#cdb489'; c.fillRect(x0, y0, x1 - x0, 9);
+    c.strokeStyle = 'rgba(110,78,36,.55)'; c.lineWidth = 1.2; c.strokeRect(x0, y0, x1 - x0, 9);
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + d, y0 - 22); c.lineTo(x1 + d, y0 - 22); c.lineTo(x1, y0); c.stroke();
+    c.fillStyle = '#fff'; rrect(c, x0 + 58, y0 - 22, 50, 14, 4); c.fill(); c.strokeStyle = '#e07b18'; c.lineWidth = 2; rrect(c, x0 + 58, y0 - 22, 50, 14, 4); c.stroke();
+    c.strokeStyle = '#4a4f57'; c.lineWidth = 2; c.beginPath(); c.moveTo(pL[0], pL[1] - 5); c.lineTo(x0 + 58, y0 - 15); c.moveTo(x0 + 108, y0 - 15); c.lineTo(pR[0], pR[1] - 5); c.stroke();
+    [pL, pR].forEach(function (p) { c.fillStyle = '#6b5a45'; c.beginPath(); c.ellipse(p[0], p[1] - 4, 7, 4.5, 0, 0, 7); c.fill(); c.fillStyle = '#c9a26a'; rrect(c, p[0] - 5, p[1] - 18, 10, 13, 3); c.fill(); });
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    if (nar) { F(15, '700'); c.fillStyle = '#9c4e06'; c.fillText(base + sub + ' ' + val, x0 + 82, y0 + 18); }
+    else { F(14, '700'); c.fillStyle = '#14171c'; c.fillText(sub === '₂' ? '既知の抵抗' : '未知の抵抗', x0 + 70, y0 + 16); symText(c, x0 + 122, y0 + 32, 'R', sub === '₂' ? '2' : 'x', '#14171c', fz(17), 'left');
+      F(14, '700'); c.fillStyle = '#9c4e06'; c.fillText(val, x0 + 82, y0 + 36); }
+    return [[pL[0], pL[1] - 18], [pR[0], pR[1] - 18]];
+  };
+  var p2 = plate(150, 368, 'R', '₂', fmt(w.R2, 0) + ' Ω');
+  var px = plate(640, 368, 'R', 'ₓ', o.hideX ? '？ Ω' : fmt(w.Rx, 0) + ' Ω');
+
+  /* ---- すべり抵抗器 R₃ ---- */
+  (function () {
+    var x0 = RH.x0, x1 = RH.x1, y0 = RH.y0, y1 = RH.y1, dx = RH.dx, dy = RH.dy;
+    var P = function (x, t) { return [x + dx * t, y0 + dy * t]; };
+    /* 右の面・上の面・前の面 */
+    c.save(); c.shadowColor = 'rgba(20,23,28,.2)'; c.shadowBlur = 12; c.shadowOffsetY = 5;
+    c.fillStyle = '#eef0f2'; rrect(c, x0, y0, x1 - x0, y1 - y0, 6); c.fill(); c.restore();
+    c.fillStyle = '#d8dbdf'; c.beginPath(); c.moveTo(x1, y0); c.lineTo(x1 + dx, y0 + dy); c.lineTo(x1 + dx, y1 + dy); c.lineTo(x1, y1); c.closePath(); c.fill();
+    c.fillStyle = '#f7f8f9'; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.lineTo(x1 + dx, y0 + dy); c.lineTo(x0 + dx, y0 + dy); c.closePath(); c.fill();
+    c.strokeStyle = '#7d858f'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + dx, y0 + dy); c.lineTo(x1 + dx, y0 + dy); c.lineTo(x1 + dx, y1 + dy); c.lineTo(x1, y1); c.stroke();
+    rrect(c, x0, y0, x1 - x0, y1 - y0, 6); c.stroke(); c.beginPath(); c.moveTo(x1, y0); c.lineTo(x1 + dx, y0 + dy); c.stroke();
+    /* 上の面のコイル（細かい巻き線）と目盛り */
+    var ca = P(x0 + 14, 0.3), cb = P(x1 - 14, 0.3);
+    c.fillStyle = '#b07a3a'; c.beginPath(); c.moveTo(ca[0], ca[1]); c.lineTo(cb[0], cb[1]); c.lineTo(cb[0] + dx * 0.35, cb[1] + dy * 0.35); c.lineTo(ca[0] + dx * 0.35, ca[1] + dy * 0.35); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(255,230,190,.8)'; c.lineWidth = 0.8;
+    for (var x = x0 + 16; x < x1 - 14; x += 3.2) { var q = P(x, 0.3); c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(q[0] + dx * 0.35 + 1.5, q[1] + dy * 0.35); c.stroke(); }
+    c.strokeStyle = '#5a6068'; c.lineWidth = 1;
+    for (var i = 0; i <= 10; i++) { var xx = x0 + 30 + i * (x1 - x0 - 60) / 10, q2 = P(xx, 0.05); c.beginPath(); c.moveTo(q2[0], q2[1]); c.lineTo(q2[0], q2[1] - (i % 5 ? 3 : 6)); c.stroke(); }
+    /* 前の面の窓と放熱のすき間 */
+    [0.18, 0.5, 0.82].forEach(function (t) { var cx = x0 + (x1 - x0) * t; c.fillStyle = '#2f3540'; rrect(c, cx - 30, y0 + 12, 60, 12, 6); c.fill(); });
+    c.strokeStyle = '#b6bcc4'; c.lineWidth = 2;
+    [0.34, 0.66].forEach(function (t) { var cx = x0 + (x1 - x0) * t; for (var j = 0; j < 4; j++) { c.beginPath(); c.moveTo(cx - 22, y0 + 34 + j * 8); c.lineTo(cx + 22, y0 + 34 + j * 8); c.stroke(); } });
+    /* 足 */
+    [[x0 + 10, y1 + 3], [x1 - 10, y1 + 3]].forEach(function (p) { c.fillStyle = '#5a6068'; c.beginPath(); c.ellipse(p[0], p[1], 9, 3.5, 0, 0, 7); c.fill(); });
+    /* レール（つまみがすべる棒） */
+    var ra = [x0 + dx * 0.7 - 8, y0 + dy * 0.7 - 16], rb = [x1 + dx * 0.7 + 8, y0 + dy * 0.7 - 16];
+    c.strokeStyle = '#8d96a0'; c.lineWidth = 5; c.beginPath(); c.moveTo(ra[0], ra[1]); c.lineTo(rb[0], rb[1]); c.stroke();
+    c.strokeStyle = '#eef1f4'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(ra[0], ra[1] - 1); c.lineTo(rb[0], rb[1] - 1); c.stroke();
+    [[x0 + dx * 0.7 - 4, 0], [x1 + dx * 0.7 + 4, 0]].forEach(function (p) { c.fillStyle = '#c9ced5'; c.fillRect(p[0] - 3, y0 + dy * 0.7 - 18, 6, 18); });
+    /* 端子（紺色のつまみ）：左はしに 2 つ、右はしに 1 つ */
+    var knob = function (p, dir) { c.fillStyle = '#23344d'; rrect(c, p[0] - 9, p[1] - 8, 18, 16, 5); c.fill(); c.fillStyle = '#3f5878'; rrect(c, p[0] - 9 + dir * 5, p[1] - 8, 6, 16, 3); c.fill(); };
+    knob(A1, -1); knob(A2, -1); knob(B1, 1);
+    /* つまみ（スライダー） */
+    var sx = xs + dx * 0.7, sy = y0 + dy * 0.7 - 16;
+    c.save(); c.shadowColor = 'rgba(20,23,28,.3)'; c.shadowBlur = 6; c.shadowOffsetY = 2;
+    c.fillStyle = '#23344d'; rrect(c, sx - 18, sy - 18, 36, 30, 6); c.fill(); c.restore();
+    c.fillStyle = '#3f5878'; rrect(c, sx - 18, sy - 18, 36, 9, 5); c.fill();
+    c.fillStyle = '#e07b18'; c.fillRect(sx - 2, sy - 6, 4, 14);
+    c.strokeStyle = '#c9ced5'; c.lineWidth = 2; c.beginPath(); c.moveTo(sx, sy + 12); c.lineTo(xs + dx * 0.45, y0 + dy * 0.45); c.stroke();   /* コイルにふれる接点 */
+    /* 名前と値 */
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    if (nar) { F(15, '700'); c.fillStyle = '#9c4e06'; c.fillText('R₃ ' + fmt(w.R3, 1) + ' Ω', (x0 + x1) / 2, y1 + 10); }
+    else { F(14, '700'); c.fillStyle = '#14171c'; c.fillText('可変抵抗（すべり抵抗器）', (x0 + x1) / 2 - 14, y1 + 10); symText(c, (x0 + x1) / 2 + 100, y1 + 26, 'R', '3', '#14171c', fz(17), 'left');
+      F(14, '700'); c.fillStyle = '#9c4e06'; c.fillText(fmt(w.R3, 1) + ' Ω', (x0 + x1) / 2, y1 + 30); }
+    F(11); c.fillStyle = '#69717d'; c.textAlign = 'left'; c.textBaseline = 'middle';
+    if (!nar) { c.fillText('← 小', x0 + 4, y0 + dy - 30); c.textAlign = 'right'; c.fillText('大 →', x1 + dx, y0 + dy - 30); }
+  })();
+
+  /* ---- 端子台・導線 ---- */
+  block(pa, 'a'); block(pd, 'd'); block(pb, 'b');
+  post(rL, 18); post(rR, 18);
+  lead([ta, [30, 300, 10, 450, earL[0] - 30, earL[1]], [earL[0] - 10, earL[1], earL[0], earL[1]]], '#c0392b');   /* a → 電池の＋ */
+  lead([tb, [990, 440, 760, 420, earR[0] + 40, earR[1]], [earR[0] + 10, earR[1], earR[0], earR[1]]]);                  /* b → 電池の− */
+  lead([rL, [20, 120, 40, 280, ta[0], ta[1]]]);                                  /* R₁ の左 → a */
+  lead([p2[0], [140, 320, 90, 330, ta[0], ta[1]]]);                              /* R₂ の左 → a */
+  lead([p2[1], [360, 300, 430, 300, td[0], td[1]]]);                             /* R₂ の右 → d */
+  lead([px[0], [600, 300, 560, 300, td[0], td[1]]]);                             /* Rₓ の左 → d */
+  lead([px[1], [850, 300, 900, 300, tb[0], tb[1]]]);                             /* Rₓ の右 → b */
+  lead([rR, [300, 70, 380, 20, gL[0], gL[1]]]);                                  /* R₁ の右 → c（検流計の左のたんし） */
+  lead([A2, [560, 140, 520, 10, gL[0], gL[1]]]);                                 /* すべり抵抗器（コイルの左はし）→ c */
+  lead([A1, [640, 10, 990, 40, tb[0] + 10, tb[1] - 60], [tb[0] + 6, tb[1] - 20, tb[0], tb[1]]]);   /* すべり抵抗器（つまみのレール）→ b */
+  [rL, rR, p2[0], p2[1], px[0], px[1], ta, td, tb].forEach(screw);
+
+  /* ---- 検流計 G ---- */
+  (function () {
+    var x0 = 432, x1 = 568, y0 = 58, y1 = 206, d = 12, cx = 500;
+    c.save(); c.shadowColor = 'rgba(20,23,28,.22)'; c.shadowBlur = 14; c.shadowOffsetY = 5;
+    var gb = c.createLinearGradient(x0, 0, x1, 0); gb.addColorStop(0, '#c9d9ec'); gb.addColorStop(.5, '#e4eef8'); gb.addColorStop(1, '#b7cbe2');
+    c.fillStyle = gb; rrect(c, x0, y0, x1 - x0, y1 - y0, 10); c.fill(); c.restore();
+    c.strokeStyle = '#1663b5'; c.lineWidth = 2; rrect(c, x0, y0, x1 - x0, y1 - y0, 10); c.stroke();
+    c.fillStyle = '#9fb8d6'; c.beginPath(); c.moveTo(x0 + 6, y0); c.lineTo(x0 + 6 + d, y0 - 10); c.lineTo(x1 - 6 + d, y0 - 10); c.lineTo(x1 - 6, y0); c.closePath(); c.fill();
+    [gL, gR].forEach(function (p) { c.fillStyle = '#9aa1ab'; rrect(c, p[0] - 6, p[1] - 4, 12, 14, 3); c.fill(); c.fillStyle = '#6b737e'; c.beginPath(); c.ellipse(p[0], p[1] - 4, 6, 3, 0, 0, 7); c.fill(); });
+    c.fillStyle = '#fbfaf7'; rrect(c, x0 + 10, y0 + 10, x1 - x0 - 20, 96, 8); c.fill();
+    var pcx = cx, pcy = y0 + 98, R = 68, Aa = 50 * Math.PI / 180;
+    c.strokeStyle = '#14171c'; c.fillStyle = '#14171c';
+    for (var j = -10; j <= 10; j++) { var a = -Math.PI / 2 + Aa * j / 10, big = j % 5 === 0, r0 = R - (big ? 12 : 7); c.lineWidth = big ? 1.6 : 1; c.beginPath(); c.moveTo(pcx + Math.cos(a) * r0, pcy + Math.sin(a) * r0); c.lineTo(pcx + Math.cos(a) * R, pcy + Math.sin(a) * R); c.stroke(); }
+    F(11, '800'); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('0', pcx, pcy - R + 20);
+    c.font = 'italic bold ' + fz(16) + 'px ' + MATHF; c.fillStyle = '#1663b5'; c.fillText('G', pcx, pcy - 26);
+    var I = s.I.G, fs = o.fs || 0.05, an = -Math.PI / 2 + Aa * clamp(I / fs, -1.08, 1.08);
+    c.strokeStyle = '#c0392b'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(pcx, pcy); c.lineTo(pcx + Math.cos(an) * (R - 4), pcy + Math.sin(an) * (R - 4)); c.stroke();
+    c.fillStyle = '#2b3038'; c.beginPath(); c.arc(pcx, pcy, 5, 0, 7); c.fill();
+    if (!nar) { F(14, '700'); c.fillStyle = '#14171c'; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText('検流計', x0 - 12, y0 + 72); }
+    tag('c', gL[0] - 22, gL[1] - 10);
+  })();
+  /* d → 検流計の右のたんし（検流計の前を通る） */
+  lead([td, [520, 300, 600, 60, gR[0], gR[1]]]);
+  screw(gR); screw(gL);
+  if (!nar) galvZoom(c, s, o.fs || 0.05, 690, 430, 990, 606, F);
+
+  /* ---- 電池（画像） ---- */
+  (function () {
+    var h = bw * 187 / 720, y0 = bcy - h / 2, sc = bw / 720;
+    if (BAT_IMG.complete && BAT_IMG.naturalWidth) c.drawImage(BAT_IMG, bx0, y0, bw, h);
+    F(14, '800'); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(fmt(s.V, 1) + ' V', bx0 + 368 * sc, y0 + 93 * sc);
+    F(13, '700'); c.fillStyle = '#14171c'; c.textBaseline = 'top'; c.fillText('電池', bx0 + bw / 2, y0 + h + 4);
+  })();
+  c.restore();
+}
+/* すべり抵抗器のつまみのドラッグ。onR(R3) を呼ぶ */
+function bindWBDrag(cv, getR, onR) {
+  var drag = false, off = 0;
+  var toV = function (ev) { var r = cv.getBoundingClientRect(), k = r.width / 1000; return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k - WBA.OFF }; };
+  var RH = WBA.RH, ky = function () { return RH.y0 + RH.dy * 0.7 - 16; };
+  var near = function (p) { var sx = wbSliderX(getR()) + RH.dx * 0.7; return Math.abs(p.x - sx) < 30 && Math.abs(p.y - ky()) < 30; };
+  var onRail = function (p) { return p.x > RH.x0 && p.x < RH.x1 + RH.dx && p.y > ky() - 26 && p.y < RH.y0 + 6; };
+  cv.style.touchAction = 'pan-y';
+  cv.addEventListener('pointerdown', function (ev) {
+    var p = toV(ev);
+    if (near(p)) { drag = true; off = p.x - (wbSliderX(getR()) + RH.dx * 0.7); }
+    else if (onRail(p)) { drag = true; off = 0; onR(wbSliderR(p.x - RH.dx * 0.7)); }
+    else return;
+    cv.setPointerCapture && cv.setPointerCapture(ev.pointerId); cv.style.cursor = 'grabbing'; ev.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (ev) {
+    var p = toV(ev);
+    if (drag) { onR(wbSliderR(p.x - off - RH.dx * 0.7)); return; }
+    cv.style.cursor = near(p) ? 'grab' : onRail(p) ? 'pointer' : 'default';
+  });
+  var end = function () { drag = false; cv.style.cursor = 'default'; };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+}
+
+/* ---------------- 2 つの道すじに沿った電位（a → c → b と a → d → b） ---------------- */
+function drawWBplot(cv, o) {
+  var f = fitCanvas(cv, 0.8, 170, 300), c = f.c, s = o.s;
+  c.clearRect(0, 0, f.W, f.H);
+  var P = plotFrame(c, f.W, f.H, { xa: -0.1, xb: 2.1, ya: 0, yb: s.V * 1.08, xt: 1, padL: 36, padR: 10, xtl: function (x) { return ['a', 'c・d', 'b'][Math.round(x)] || ''; }, xlab: '', ylab: '電位〔V〕' });
+  var line = function (vm, col, dash) {
+    c.save(); if (dash) c.setLineDash([7, 5]); c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.moveTo(P.X(0), P.Y(s.V)); c.lineTo(P.X(1), P.Y(vm)); c.lineTo(P.X(2), P.Y(0)); c.stroke(); c.restore();
+  };
+  line(s.v.D, '#e07b18', false); line(s.v.P, '#1663b5', true);
+  var yc = P.Y(s.v.D), yd = P.Y(s.v.P), x1 = P.X(1);
+  if (Math.abs(yc - yd) > 6) {
+    c.strokeStyle = '#14171c'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x1, yc); c.lineTo(x1, yd); c.stroke();
+    c.fillStyle = '#14171c'; var dn = yd > yc ? 1 : -1; arrowHead(c, x1, yd - dn * 5, 0, dn, 4.5); arrowHead(c, x1, yc + dn * 5, 0, -dn, 4.5);
+    c.font = '11.5px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle'; haloText(c, '電位差 ' + fmt(Math.abs(s.U.G), 3) + ' V', x1 + 8, (yc + yd) / 2, '#14171c');
+  }
+  var cUp = yc <= yd;                                     /* 上にある点の名前は上、下にある点の名前は下に書く */
+  [[yc, '#e07b18', 'c ' + fmt(s.v.D, 2) + ' V', cUp ? -1 : 1], [yd, '#1663b5', 'd ' + fmt(s.v.P, 2) + ' V', cUp ? 1 : -1]].forEach(function (q) {
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x1, q[0], 6, 0, 7); c.fill(); c.strokeStyle = q[1]; c.lineWidth = 2.4; c.stroke();
+    c.font = 'bold 12px ' + FONT; c.textAlign = 'right'; c.textBaseline = q[3] < 0 ? 'bottom' : 'top'; haloText(c, q[2], x1 - 9, q[0] + q[3] * 8, q[1]);
+  });
+  c.font = 'bold 11px ' + FONT; c.textAlign = 'right'; c.textBaseline = 'top';
+  haloText(c, '― a→c→b（R₁・R₃）', P.R - 4, P.T + 4, '#9c4e06'); haloText(c, '- - a→d→b（R₂・Rₓ）', P.R - 4, P.T + 20, '#1663b5');
+}
+
+/* ====================== ①-1 ホイートストンブリッジのしくみ ====================== */
+var WB_HINT = '<span class="deschint">▶ 可変抵抗のつまみ（紺色）をドラッグ</span><button type="button" class="b tiny zerob">0 A にする</button>';
+var WB_GO = '原理は <a href="#" class="golink" data-go="p2">③-2 つり合いの式の導き方</a> へ（メートルブリッジと同じ考え方）。';
+function wbCommon(Lh, Rh, st, opt) {
+  /* opt = { hideX, full }：full のとき ①-1（立体図・グラフ・表・内部抵抗） */
+  var solve = function () { st.s = wbSolve(st); }; solve();
+  bindGoLinks(Lh.parentNode);
+  var zb = Lh.parentNode.querySelector('.zerob');
+  if (zb) zb.addEventListener('click', function () { var b = wbBalR3(st); if (b >= WB.R3MIN && b <= WB.R3MAX) { st.R3 = b; changed(); } });
+  var bApp = mkBox(Lh, '実験装置'); var cvA = mkCanvas(bApp);
+  var msg = el('div', 'msgbox mbmsg'); Lh.appendChild(msg);
+  var cb = opt.full ? circBox(Lh, '回路図　<small>導線の色＝電位の色（立体図と同じ）、緑の矢印＝電流の向き</small>') : null;
+  var ctr = el('div', 'ctrls mbctrls'); Rh.appendChild(ctr);
+  var vb = el('div', 'varbox cols2 mbvars'); ctr.appendChild(vb);
+  var sl = [];
+  sl.push(mkSlider(vb, { label: '可変抵抗 $R_3$', cls: 'wide lrow', min: WB.R3MIN, max: WB.R3MAX, step: 0.1, num: true, unit: 'Ω', aria: '可変抵抗 R3', snap: function (x) { return wbSnap(st, x); }, get: function () { return st.R3; }, set: function (x) { st.R3 = x; changed(); } }));
+  sl.push(mkSlider(vb, { label: '既知の抵抗 $R_1$', min: 1, max: 50, step: 1, get: function () { return st.R1; }, set: function (x) { st.R1 = x; changed(); }, fmtv: function (x) { return x + ' Ω'; } }));
+  sl.push(mkSlider(vb, { label: '既知の抵抗 $R_2$', min: 1, max: 50, step: 1, get: function () { return st.R2; }, set: function (x) { st.R2 = x; changed(); }, fmtv: function (x) { return x + ' Ω'; } }));
+  sl.push(mkSlider(vb, { label: '電源の電圧 $V$', min: 1, max: 6, step: 0.5, get: function () { return st.V; }, set: function (x) { st.V = x; changed(); }, fmtv: function (x) { return fmt(x, 1) + ' V'; } }));
+  var segRg = null, seg = null;
+  if (opt.full) {
+    sl.push(mkSlider(vb, { label: '未知の抵抗 $R_x$', min: 1, max: 100, step: 1, get: function () { return st.Rx; }, set: function (x) { st.Rx = x; changed(); }, fmtv: function (x) { return x + ' Ω'; } }));
+    var rgc = el('div', 'vrow cell rgcell'); vb.appendChild(rgc);
+    segRg = mkSeg(rgc, mathify('検流計の内部抵抗 $R_g$'), [[1, '1 Ω'], [10, '10 Ω'], [100, '100 Ω'], [1000, '1000 Ω']], function () { return st.Rg; }, function (v) { st.Rg = v; changed(); });
+    var row = el('div', 'row1 mbrow'); ctr.appendChild(row);
+    seg = mkSeg(row, '検流計の目盛り', [[0.05, '±50 mA'], [0.001, '±1 mA（細かく）']], function () { return st.fs; }, function (v) { st.fs = v; draw(); });
+    var bDef = el('button', 'b tiny resetall', 'すべて最初の設定に戻す'); bDef.type = 'button'; row.appendChild(bDef);
+    bDef.addEventListener('click', function () { for (var k in WB_DEF) st[k] = WB_DEF[k]; st.Rg = MB.RG; st.fs = 0.05; seg.sync(); segRg.sync(); changed(); });
+  }
+  var R = { st: st, sl: sl, msg: msg, cb: cb, cvA: cvA, ctr: ctr, extra: [] };
+  var play = null, bPlay = null, cv3 = null, cvV = null, tbl = null;
+  if (opt.full) {
+    var vbtn = el('span', 'viewbtns'), bTop = el('button', 'b tiny viewb on', '斜め上'), bSide = el('button', 'b tiny viewb', '真横');
+    bTop.type = bSide.type = 'button'; vbtn.appendChild(bTop); vbtn.appendChild(bSide);
+    var b3 = mkBox(Rh, '水流モデルの立体図', vbtn); b3.classList.add('box3d');
+    var pbar = el('div', 'mbplay'); b3.appendChild(pbar);
+    bPlay = el('button', 'b play', '▶ 水の流れを見る'); bPlay.type = 'button'; bPlay.id = 'bPlay'; pbar.appendChild(bPlay);
+    pbar.appendChild(el('span', 'mbnote', '高さ＝電位、色＝電位の色、水の粒の速さ＝電流'));
+    var hv = el('div', 'varbox mbvars hmvars'); b3.appendChild(hv);
+    var slH = mkSlider(hv, { label: '縦の倍率（高さ＝電位の目盛り）', min: 0.5, max: 3, step: 0.1, get: function () { return st.hm; }, set: function (x) { st.hm = x; slH.sync(); requestDraw(draw3); }, fmtv: function (x) { return '× ' + fmt(x, 1); } });
+    cv3 = mkCanvas(b3, 'cv3d');
+    var pair = el('div', 'mbpair'); Rh.appendChild(pair);
+    var bV = mkBox(pair, '2 つの道すじに沿った電位'); cvV = mkCanvas(bV);
+    bV.appendChild(el('p', 'mbcap', mathify('上の道（a→c→b）と下の道（a→d→b）。c と d の高さがそろうと 0 A。')));
+    var bT = mkBox(pair, '各部分の電圧と電流'); tbl = el('div', 'mbtbl'); bT.appendChild(tbl);
+    var setView = function (top) { if (top) { st.view.az = D3.VIEW_TOP.az; st.view.tilt = D3.VIEW_TOP.tilt; } else st.view.tilt = 0.05; bTop.classList.toggle('on', top); bSide.classList.toggle('on', !top); draw3(); };
+    bTop.addEventListener('click', function () { setView(true); }); bSide.addEventListener('click', function () { setView(false); });
+    D3.bindDrag(cv3, st, function () { requestDraw(draw3); }, function () { bTop.classList.remove('on'); bSide.classList.remove('on'); });
+    play = { playing: false, tick: function (dt) { D3.advance(st, dt); draw3(); } };
+    PLAY.list.push(play);
+    bPlay.addEventListener('click', function () { play.playing = !play.playing; syncPlay(); if (play.playing) playKick(); else draw3(); });
+  }
+  function syncPlay() { if (bPlay) { bPlay.textContent = play.playing ? '❚❚ 一時停止' : '▶ 水の流れを見る'; bPlay.classList.toggle('on', play.playing); } }
+  bindWBDrag(cvA, function () { return st.R3; }, function (r) {
+    st.R3 = wbDragR3(st, r); changed();
+    if (play && !play.playing) { play.playing = true; syncPlay(); playKick(); }     /* つまみを動かしたら、水の流れを見せはじめる */
+  });
+  function draw3() { if (cv3) D3.render(cv3, st); }
+  function drawTbl() {
+    if (!tbl) return;
+    var s = st.s, w = s.wb, r = function (nm, Rv, U, I, cls) { return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><th>' + mathify(nm) + '</th><td>' + Rv + '</td><td>' + fmtVal(U, 'V') + '</td><td>' + fmtVal(I, 'A') + '</td></tr>'; };
+    tbl.innerHTML = '<table><thead><tr><th></th><th>抵抗</th><th>電圧</th><th>電流</th></tr></thead><tbody>' +
+      r('$R_1$', fmtR(w.R1), s.U.R, s.I.R) + r('$R_3$', fmtR(w.R3), s.U.X, s.I.X) +
+      r('$R_2$', fmtR(w.R2), s.U.AP, s.I.AP) + r('$R_x$', fmtR(w.Rx), s.U.PB, s.I.PB) +
+      r('検流計', fmtR(s.Rg), s.U.G, s.I.G, Math.abs(s.I.G) < 5e-6 ? 'zero' : 'g') + '</tbody></table>' +
+      '<p class="mbpot">c の電位 <b>' + fmt(s.v.D, 3) + ' V</b><br>d の電位 <b>' + fmt(s.v.P, 3) + ' V</b></p>' +
+      '<p class="mbfoot">b を 0 V とする。電流は電源の＋から出る向きが正（検流計は d → c が正）。</p>';
+  }
+  function draw() {
+    drawWBApparatus(cvA, { s: st.s, fs: st.fs, hideX: opt.hideX });
+    var cbx = cb || R.cb;
+    if (cbx) { drawCircuit2d(cbx.cv, { s: st.s, hideX: opt.hideX }); wbFormula(cbx.fm, st, opt.hideX); }
+    draw3(); if (cvV) drawWBplot(cvV, { s: st.s }); drawTbl();
+    var m = wbStatus(st, opt.hideX); msg.className = 'msgbox mbmsg ' + m.cls; msg.innerHTML = m.html;
+  }
+  function changed() { solve(); sl.forEach(function (q) { q.sync(); }); if (segRg) segRg.sync(); requestDraw(draw); }
+  R.draw = draw; R.changed = changed; R.syncPlay = syncPlay;
+  return R;
+}
+DEFS.w1 = {
+  num: 1, title: 'ホイートストンブリッジのしくみ', short: 'しくみ',
+  desc: '可変抵抗 $R_3$ のつまみを動かして、検流計の針が 0 を指すところを探そう。そのとき、点 c と点 d の電位（立体図の高さ）はどうなっているか。' + WB_GO + '<br>' + WB_HINT,
+  build: function (Lh, Rh) {
+    var st = { V: WB_DEF.V, R1: WB_DEF.R1, R2: WB_DEF.R2, R3: WB_DEF.R3, Rx: WB_DEF.Rx, Rg: MB.RG, fs: 0.05, hm: 1.6, view: { az: D3.VIEW_TOP.az, tilt: D3.VIEW_TOP.tilt }, phase: {} };
+    var R = wbCommon(Lh, Rh, st, { full: true });
+    R.syncPlay(); R.draw(); LIVE.push({ redraw: R.draw });
+    DEFS.w1.st = st; DEFS.w1.changed = R.changed;
+  }
+};
+/* ====================== ①-2 未知の抵抗を求めよう ====================== */
+var WB_XLIST = [12, 16, 22, 30, 36, 44, 50, 64, 80];
+DEFS.w2 = {
+  num: 2, title: '未知の抵抗を求めよう', short: '未知の抵抗を求めよう',
+  desc: '$R_x$ の値は隠してあります。可変抵抗 $R_3$ を調節して検流計の針を 0 にし、$\\dfrac{R_1}{R_2}=\\dfrac{R_3}{R_x}$ から $R_x$ を求めよう。' + WB_GO + '<br>' + WB_HINT,
+  build: function (Lh, Rh) {
+    var pick = function (not) { var c; do { c = WB_XLIST[Math.floor(Math.random() * WB_XLIST.length)]; } while (c === not); return c; };
+    var st = { V: WB_DEF.V, R1: WB_DEF.R1, R2: WB_DEF.R2, R3: WB_DEF.R3, Rx: 30, Rg: MB.RG, fs: 0.05 };   /* はじめの Rx は計算しやすい 30 Ω（R₃ ＝ 15 Ω でつり合う） */
+    var R = wbCommon(Lh, Rh, st, { hideX: true });
+    var card = el('div', 'qcard mbq'); Rh.appendChild(card);
+    card.innerHTML = mathify('<p class="qt">求め方</p>' +
+      '<ol class="mbsteps"><li>可変抵抗のつまみを動かして、検流計の針が 0 を指すところを探す。</li>' +
+      '<li>そのときの $R_3$ の値を読む。</li>' +
+      '<li>つり合いの式 $\\dfrac{R_1}{R_2}=\\dfrac{R_3}{R_x}$ を $R_x$ について解き、数値を入れて計算する（整数の位まで合っていれば正解）。</li></ol>' +
+      '<div class="mbans"><label>$R_x$ ＝ <span class="spin"><input type="number" class="numin ansin" step="any" min="0" inputmode="decimal" aria-label="Rx の値"><span class="spinb"><button type="button" class="sup" aria-label="1 大きく">▲</button><button type="button" class="sdn" aria-label="1 小さく">▼</button></span></span> Ω</label>' +
+      '<button type="button" class="b chk">答え合わせ</button></div>' +
+      '<div class="mbfb" aria-live="polite"></div>' +
+      '<div class="mbbtns"><button type="button" class="b tiny newx">新しい Rₓ にする</button><button type="button" class="b tiny show">答えを見る</button></div>');
+    R.cb = circBox(Rh, '回路図');
+    var ans = card.querySelector('.ansin'), fb = card.querySelector('.mbfb');
+    var stepAns = function (d) { var x = parseFloat(ans.value); x = isFinite(x) ? Math.round(x) + d : (d > 0 ? 1 : 0); ans.value = String(Math.max(0, Math.min(999, x))); };
+    card.querySelector('.sup').addEventListener('click', function () { stepAns(1); });
+    card.querySelector('.sdn').addEventListener('click', function () { stepAns(-1); });
+    ans.addEventListener('keydown', function (ev) { if (ev.key === 'ArrowUp') { ev.preventDefault(); stepAns(1); } else if (ev.key === 'ArrowDown') { ev.preventDefault(); stepAns(-1); } });
+    card.querySelector('.chk').addEventListener('click', function () {
+      var x = parseFloat(ans.value);
+      if (!isFinite(x) || x <= 0) { fb.className = 'mbfb ng'; fb.innerHTML = mathify('$R_x$ の値を数字で入れよう。'); return; }
+      if (Math.abs(x - st.Rx) < 1) { fb.className = 'mbfb ok'; fb.innerHTML = mathify('<b>正解！</b>　$R_x$ ＝ ' + st.Rx + ' Ω。'); }
+      else { fb.className = 'mbfb ng'; fb.innerHTML = mathify('<b>ちがうようです。</b>' + (wbNearBal(st) ? '式の $R_1$・$R_2$・$R_3$ の位置を確かめよう。' : '検流計の針はまだ 0 になっていない。つまみをもう少し動かそう。')); }
+    });
+    card.querySelector('.newx').addEventListener('click', function () { st.Rx = pick(st.Rx); st.R3 = WB_DEF.R3; ans.value = ''; fb.className = 'mbfb'; fb.innerHTML = ''; R.changed(); });
+    card.querySelector('.show').addEventListener('click', function () {
+      var b = wbBalR3(st);
+      fb.className = 'mbfb show'; fb.innerHTML = mathify('$R_x$ ＝ <b>' + st.Rx + ' Ω</b>。いまの $R_1$ ＝ ' + st.R1 + ' Ω、$R_2$ ＝ ' + st.R2 + ' Ω では、つり合いは $R_3$ ＝ ' + fmt(b, 1) + ' Ω。<br>$R_x = \\dfrac{R_2 R_3}{R_1} = \\dfrac{' + st.R2 + '\\times' + fmt(b, 1) + '}{' + st.R1 + '}\\fallingdotseq ' + fmt(st.R2 * +b.toFixed(1) / st.R1, 1) + '$ Ω');
+    });
+    R.draw(); LIVE.push({ redraw: R.draw });
+    DEFS.w2.st = st; DEFS.w2.changed = R.changed;
+  }
+};
+
 /* ===== 80_page.js ===== */
 /* =========================================================================
    80_page.js … ページの組み立て（photoelectric-effect.html と同じ骨組み：低い見出しの帯・モードのタブ・章の扉・セクションのカード）
-   モード ①メートルブリッジ（1-1・1-2）、②メートルブリッジの原理（2-1〜2-4）
+   モード ①ホイートストンブリッジ（1-1・1-2）、②メートルブリッジ（2-1・2-2）、③メートルブリッジの原理（3-1〜3-3）
    ========================================================================= */
 'use strict';
 var MODES = [
-  { id: 'mode1', name: 'メートルブリッジ', secs: ['s1', 's2'], en: 'The Meter Bridge',
+  { id: 'mode1', name: 'ホイートストンブリッジ', secs: ['w1', 'w2'], en: 'The Wheatstone Bridge',
+    lead: '4 つの抵抗をひし形につなぎ、まん中に検流計を入れた回路。可変抵抗を調節して検流計の電流を 0 にすると、未知の抵抗の値が分かる。' },
+  { id: 'mode2', name: 'メートルブリッジ', secs: ['s1', 's2'], en: 'The Meter Bridge',
     lead: '接点の位置を変えて、検流計に流れる電流の向きと大きさ、金属線の各点の電位を確かめよう。つり合いの位置が分かったら、隠された抵抗の値を求めよう。' },
-  { id: 'mode2', name: 'メートルブリッジの原理', secs: ['p1', 'p2', 'p3'], en: 'Why the Meter Bridge Works',
+  { id: 'mode3', name: 'メートルブリッジの原理', secs: ['p1', 'p2', 'p3'], en: 'Why the Meter Bridge Works',
     lead: 'つり合いの式 $\\dfrac{R}{X}=\\dfrac{L}{100-L}$ はどこから来るのか。なぜ精密に測れるのか。3 つの点から確かめよう。' }
 ];
 var SECS = [].concat.apply([], MODES.map(function (m) { return m.secs; }));
@@ -4111,6 +4549,9 @@ function check() {
   return out;
 }
 window.TEST = {
+  w1: function () { return DEFS.w1.st; },
+  setW1: function (o) { var st = DEFS.w1.st; for (var k in o) st[k] = o[k]; DEFS.w1.changed(); },
+  w2: function () { return DEFS.w2.st; },
   check: check,
   s1: function () { return DEFS.s1.st; },
   setL: function (L) { var st = DEFS.s1.st; st.L = L; DEFS.s1.changed(); },
