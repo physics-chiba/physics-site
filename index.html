@@ -625,19 +625,17 @@ footer p{margin:0}
 <!-- ===== カテゴリから探す版（2026-11-14）。上の 2 つの <style> はさわらない ===== -->
 <style>
 /* ---------- ヒーローの中：件数と検索 ---------- */
-.hero-find{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 18px;margin:14px auto 0}
-.hero-count{margin:0;display:flex;align-items:baseline;gap:6px;color:rgba(243,239,230,.72);font-size:.86rem}
-.hero-count b{font-size:2rem;line-height:1;font-weight:800;color:#f6f2e9;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.hero .search{display:flex;flex:0 1 380px;max-width:380px;width:100%;background:#fff;min-height:42px;padding:6px 16px;
-  box-shadow:0 8px 24px -10px rgba(0,0,0,.5)}
-.hero .search svg{width:15px;height:15px;color:var(--ink-3)}
-.hero .search input{font-size:.92rem;color:var(--ink)}
-.hero .search input::placeholder{color:var(--ink-4)}
-.hero .search:focus-within{outline:3px solid var(--brand);outline-offset:2px}
+/* 更新履歴（左半分）と検索（右） */
+#viewSim>.toprow{display:flex;align-items:flex-start;gap:14px;margin:20px 0 0}
+#viewSim>.toprow .updates{flex:0 0 50%;min-width:0}
+#viewSim>.toprow .search{display:flex;flex:1 1 auto;max-width:none;min-height:46px;padding:6px 18px;background:var(--surface);
+  box-shadow:var(--sh-1),0 0 0 1px var(--rule-2)}
+#viewSim>.toprow .search svg{width:16px;height:16px;color:var(--ink-3)}
+#viewSim>.toprow .search input{font-size:.95rem;color:var(--ink)}
+#viewSim>.toprow .search:focus-within{box-shadow:0 0 0 2px var(--brand)}
 
 /* ---------- 更新履歴（1 本の帯） ---------- */
-#viewSim>.updates{margin:20px 0 0}
-body.searching #updates,body.searching #finder{display:none}
+body.searching #finder{display:none}
 
 /* ---------- カテゴリから探す ---------- */
 .finder{margin:30px 0 0}
@@ -655,6 +653,8 @@ body.searching #updates,body.searching #finder{display:none}
 .fpill.on{background:var(--fc);color:#fff;box-shadow:none}
 .fpill.on i{background:#fff}
 .fpill.on .n{color:rgba(255,255,255,.8)}
+.fsep{width:1px;align-self:stretch;margin:4px 4px;background:var(--rule-2)}
+.tagpill{--fc:var(--ink);padding-left:13px}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
 .cat{position:relative;display:grid;grid-template-columns:88px minmax(0,1fr) auto;grid-template-rows:auto auto auto;
   column-gap:12px;align-items:center;padding:8px 14px 8px 8px;min-height:74px;
@@ -738,9 +738,9 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
   .elist{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:600px){
-  .hero .search{display:flex;flex-basis:100%;max-width:none}
-  .hero-find{margin-top:10px;gap:8px}
-  .hero-count b{font-size:1.6rem}
+  #viewSim>.toprow{flex-direction:column;align-items:stretch;gap:10px;margin-top:14px}
+  #viewSim>.toprow .updates{flex:none;width:100%}
+  #viewSim>.toprow .search{display:flex;width:100%}
   .finder{margin-top:24px}
   .fd-head h2,.rhead h2{font-size:1.15rem}
   .cats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -826,16 +826,6 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
         スマホでもパソコンでも、好きなだけWEB上で数値を変えて実験してみてください。
       </p>
 
-      <!-- 件数と検索（数は JS が数えます） -->
-      <div class="hero-find">
-        <p class="hero-count"><b id="nAll">&nbsp;</b><span>件のシミュレーション・読みもの</span></p>
-        <label class="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
-          </svg>
-          <input id="q" type="search" placeholder="題名で探す（例：ばね、衝突、定在波）" autocomplete="off" enterkeyhint="search" aria-label="題名で探す">
-        </label>
-      </div>
     </div>
 
   </div>
@@ -845,7 +835,8 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
 
 <div id="viewSim">
 
-  <!-- ============ 更新履歴（新しい 3 件） ============ -->
+  <!-- ============ 更新履歴（新しい 3 件）と検索 ============ -->
+  <div class="toprow">
   <section class="updates" id="updates">
     <button class="upd-bar" id="updMore" type="button" aria-expanded="false" aria-controls="updList">
       <span class="tag-new">更新履歴</span>
@@ -854,6 +845,14 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
     </button>
     <ol class="upd-list" id="updList"></ol>
   </section>
+
+  <label class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+    </svg>
+    <input id="q" type="search" placeholder="題名で探す（例：ばね、衝突、定在波）" autocomplete="off" enterkeyhint="search" aria-label="題名で探す">
+  </label>
+  </div>
 
   <!-- ============ カテゴリから探す（JS が CATS から作ります） ============ -->
   <section class="finder" id="finder" aria-labelledby="finderTitle">
@@ -874,7 +873,6 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
     <ol>
       <li>「こうなるはず」と<b>予想してから</b>ボタンを押そう。物理が身につくと、いつかその予想とこのシミュレーションが一致する日が来ます。</li>
       <li>グラフと図を<b>同時に</b>見る。どちらか片方だけだと気づけないことがあります。</li>
-      <li>分からなかったら遠慮なく質問してください。</li>
     </ol>
   </section>
 
@@ -956,7 +954,7 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
                               game ゲーム / read 読みもの / quiz クイズ（空白で区切って複数）
                          img … 一覧に出す小さな絵（省いてよい）。thumbs/sec/ に 360×240 で置く
                    ・ページで 1 件だけ出すとき（題名は t がそのまま出る）
-                       cat:"13"  （g:"quiz" なども付けられる）
+                       cat:"13"  （g:"quiz" なども付けられる。絵は simg:"thumbs/sec/…webp"）
                    ・parts も cat も書かないページは、一覧には出ない
                      （ほかのページの「ページ一覧」にはそのまま出る）
                  d:"…" の説明文は、今は画面に出さない（記録として残している）
@@ -1060,39 +1058,39 @@ const SITE = [
           { no:"1-8", n:"氷の上のカーリングゲーム 〜的にピタリと止めよう！〜", h:"#1-8", c:"01", g:"kiso game", img:"thumbs/sec/basics_1-8.webp" },
           { no:"2-1", n:"糸でつながれた 2 物体（糸・滑車・アトウッドの装置）", h:"#2-1", c:"01", g:"kiso", img:"thumbs/sec/basics_2-1.webp" },
           { no:"2-4", n:"なめらかな床の上の板とその上で滑る物体", h:"#2-4", c:"01", g:"kiso", img:"thumbs/sec/basics_2-4.webp" },
-          { no:"3-2", n:"放物運動（水平投射・斜方投射）", h:"#3-2", c:"02" },
-          { no:"3-4", n:"かごにボールを蹴り入れよう！", h:"#3-4", c:"02", g:"game" },
-          { no:"4-1", n:"2 物体の放物運動（空中での衝突・台車から発射）", h:"#4-1", c:"02" },
-          { no:"4-3", n:"モンキーハンティングゲーム 〜猿に当てるにはどうしたらいいか？〜", h:"#4-3", c:"02", g:"game" },
-          { no:"5-1", n:"入試物理（防衛大・横浜市大・東京大）", h:"#5-1", c:"02", g:"exam" } ] },
+          { no:"3-2", n:"放物運動（水平投射・斜方投射）", h:"#3-2", c:"02", img:"thumbs/sec/basics_3-2.webp" },
+          { no:"3-4", n:"かごにボールを蹴り入れよう！", h:"#3-4", c:"02", g:"game", img:"thumbs/sec/basics_3-4.webp" },
+          { no:"4-1", n:"2 物体の放物運動（空中での衝突・台車から発射）", h:"#4-1", c:"02", img:"thumbs/sec/basics_4-1.webp" },
+          { no:"4-3", n:"モンキーハンティングゲーム 〜猿に当てるにはどうしたらいいか？〜", h:"#4-3", c:"02", g:"game", img:"thumbs/sec/basics_4-3.webp" },
+          { no:"5-1", n:"入試物理（防衛大・横浜市大・東京大）", h:"#5-1", c:"02", g:"exam", img:"thumbs/sec/basics_5-1.webp" } ] },
       { t:"力学的エネルギーと非保存力の仕事の関係", tag:"sim", course:["kiso"], img:"thumbs/energy.gif",
         u:BASE+"mechanics/mechanical-energy.html",
         d:"E = K + U が保たれるのはどんなとき？　摩擦がはたらくとどうなる？　力を見ながら確かめる。",
         parts:[
-          { no:"1-3", n:"直線の滑台（すべり下りる・のぼる）", h:"#m1-3", c:"04", g:"kiso" },
-          { no:"1-5", n:"曲線の滑台", h:"#m1-5", c:"04", g:"kiso" },
-          { no:"1-6", n:"振り子", h:"#m1-6", c:"04", g:"kiso" },
-          { no:"1-7", n:"ジェットコースター", h:"#m1-7", c:"04", g:"kiso" },
-          { no:"1-8", n:"自由落下・斜方投射", h:"#m1-8", c:"04", g:"kiso" },
-          { no:"1-9", n:"水平ばね", h:"#m1-9", c:"04", g:"kiso" },
-          { no:"1-12", n:"鉛直ばね", h:"#m1-12", c:"04", g:"kiso" },
-          { no:"2-1", n:"摩擦があるとき（水平面・斜面・ばね）", h:"#m2-1", c:"04", g:"kiso" },
-          { no:"2-3", n:"鉛直のばね（手でゆっくり下ろす）", h:"#m2-3", c:"04", g:"kiso" },
-          { no:"3-2", n:"2 物体のエネルギー（糸と滑車・ばね）", h:"#m3-2", c:"04", g:"kiso" },
-          { no:"3-4", n:"2 物体のエネルギー（板の上で滑る物体）", h:"#m3-4", c:"04", g:"kiso" } ] },
+          { no:"1-3", n:"直線の滑台（すべり下りる・のぼる）", h:"#m1-3", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-3.webp" },
+          { no:"1-5", n:"曲線の滑台", h:"#m1-5", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-5.webp" },
+          { no:"1-6", n:"振り子", h:"#m1-6", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-6.webp" },
+          { no:"1-7", n:"ジェットコースター", h:"#m1-7", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-7.webp" },
+          { no:"1-8", n:"自由落下・斜方投射", h:"#m1-8", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-8.webp" },
+          { no:"1-9", n:"水平ばね", h:"#m1-9", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-9.webp" },
+          { no:"1-12", n:"鉛直ばね", h:"#m1-12", c:"04", g:"kiso", img:"thumbs/sec/energy_m1-12.webp" },
+          { no:"2-1", n:"摩擦があるとき（水平面・斜面・ばね）", h:"#m2-1", c:"04", g:"kiso", img:"thumbs/sec/energy_m2-1.webp" },
+          { no:"2-3", n:"鉛直のばね（手でゆっくり下ろす）", h:"#m2-3", c:"04", g:"kiso", img:"thumbs/sec/energy_m2-3.webp" },
+          { no:"3-2", n:"2 物体のエネルギー（糸と滑車・ばね）", h:"#m3-2", c:"04", g:"kiso", img:"thumbs/sec/energy_m3-2.webp" },
+          { no:"3-4", n:"2 物体のエネルギー（板の上で滑る物体）", h:"#m3-4", c:"04", g:"kiso", img:"thumbs/sec/energy_m3-4.webp" } ] },
       { t:"剛体と力のモーメント", tag:"sim", course:["but"], img:"thumbs/rigid-body.gif",
         u:BASE+"mechanics/rigid-body-dynamics.html",
         d:"力のモーメント＝力×軸からの距離。作用線をずらすと何が変わる？　力とモーメントが両方つりあう条件、重心の見つけ方まで、矢印やおもりをドラッグして確かめる。",
         parts:[
-          { no:"①-1", n:"力のモーメント（回転させるはたらき）とは何か", h:"#1-1", c:"03" },
-          { no:"①-2-(2)", n:"回転しないような力の加え方はあるか？ ～力 1 つ・2 つ・3 つ～", h:"#1-2-2", c:"03" },
-          { no:"②-1", n:"剛体のつりあい ～指の上のペン・糸でつるした棒～", h:"#2-1", c:"03" },
-          { no:"②-3", n:"壁に立てかけた棒 ～いつすべり出す？～", h:"#2-3", c:"03" },
-          { no:"③-1", n:"重心の求め方 ～質点・つないだ板～", h:"#3-1", c:"03" },
-          { no:"③-3", n:"穴のあいた円板 ～切り抜いた円板も質点～", h:"#3-3", c:"03" },
-          { no:"④-2", n:"箱の回転 ～傾くのが先か滑るのが先か～", h:"#4-2", c:"03" },
-          { no:"⑤-1", n:"安定なつりあい・不安定なつりあい", h:"#5-1", c:"03" },
-          { no:"⑥-1", n:"上級者向け解説・重心ミニ実験室", h:"#6-1", c:"05", g:"read" } ] },
+          { no:"①-1", n:"力のモーメント（回転させるはたらき）とは何か", h:"#1-1", c:"03", img:"thumbs/sec/rigid_1-1.webp" },
+          { no:"①-2-(2)", n:"回転しないような力の加え方はあるか？ ～力 1 つ・2 つ・3 つ～", h:"#1-2-2", c:"03", img:"thumbs/sec/rigid_1-2-2.webp" },
+          { no:"②-1", n:"剛体のつりあい ～指の上のペン・糸でつるした棒～", h:"#2-1", c:"03", img:"thumbs/sec/rigid_2-1.webp" },
+          { no:"②-3", n:"壁に立てかけた棒 ～いつすべり出す？～", h:"#2-3", c:"03", img:"thumbs/sec/rigid_2-3.webp" },
+          { no:"③-1", n:"重心の求め方 ～質点・つないだ板～", h:"#3-1", c:"03", img:"thumbs/sec/rigid_3-1.webp" },
+          { no:"③-3", n:"穴のあいた円板 ～切り抜いた円板も質点～", h:"#3-3", c:"03", img:"thumbs/sec/rigid_3-3.webp" },
+          { no:"④-2", n:"箱の回転 ～傾くのが先か滑るのが先か～", h:"#4-2", c:"03", img:"thumbs/sec/rigid_4-2.webp" },
+          { no:"⑤-1", n:"安定なつりあい・不安定なつりあい", h:"#5-1", c:"03", img:"thumbs/sec/rigid_5-1.webp" },
+          { no:"⑥-1", n:"上級者向け解説・重心ミニ実験室", h:"#6-1", c:"05", g:"read", img:"thumbs/sec/rigid_6-1.webp" } ] },
       { t:"箱の回転　～傾くのが先か滑るのが先か～", tag:"sim", course:["but"], img:"thumbs/rotation.gif",
         u:BASE+"mechanics/rotation-box_tip-or-slip.html",
         d:"板を傾けると、箱は倒れる？　すべる？　どちらが先かは、箱の形（幅a・高さb）と摩擦係数μで決まる。抗力の作用点が動くようすを見よう。" },
@@ -1100,29 +1098,29 @@ const SITE = [
         u:BASE+"mechanics/momentum-and-collision.html",
         d:"ハンマーでたたく、球どうしがぶつかる。力積 FΔt の分だけ運動量が変わるようすを、F–t図・v–t図と一緒に見る。弾性／非弾性／平面上の衝突まで。",
         parts:[
-          { no:"①-1", n:"直線上で動く物体に力積を加える（ハンマーでたたく）", h:"#1-1", c:"05" },
-          { no:"①-2", n:"平面上を動く物体に力積を加える（バットで向きを変える）", h:"#1-2", c:"05" },
-          { no:"②-1", n:"直線上の衝突", h:"#2-1", c:"05" },
-          { no:"②-2", n:"平面上の衝突（真上から見た図）", h:"#2-2", c:"05" },
-          { no:"②-3-1", n:"ニュートンのゆりかご", h:"#2-3-1", c:"05" },
-          { no:"③-1", n:"反発係数（床との衝突・2 物体）", h:"#3-1", c:"05" },
-          { no:"④-1", n:"2物体の衝突（様々な e）", h:"#4-1", c:"05" },
-          { no:"⑤-1", n:"「衝突」で覚えておくべき5つのこと", h:"#5-1", c:"05" },
-          { no:"⑤-4-1", n:"（上級者）衝突前後で、運動量が保存する向きの重心速度は一定", h:"#5-4-1", c:"05" },
-          { no:"⑤-4-2", n:"（上級者）衝突前後で、運動量が保存する向きの重心速度ベクトルは一定", h:"#5-4-2", c:"05" },
-          { no:"⑥-1", n:"分裂 ～ロケットの分離～", h:"#6-1", c:"05" },
-          { no:"⑥-2", n:"台の上を走るラジコンカー", h:"#6-2", c:"05" },
-          { no:"⑥-4", n:"摩擦のある板の上をすべる物体", h:"#6-4", c:"05", g:"exam" },
-          { no:"⑥-5", n:"ばね付き物体の衝突", h:"#6-5", c:"05", g:"exam" },
-          { no:"⑥-6", n:"斜め台をすべる物体（台は固定していない）", h:"#6-6", c:"05", g:"exam" } ] },
+          { no:"①-1", n:"直線上で動く物体に力積を加える（ハンマーでたたく）", h:"#1-1", c:"05", img:"thumbs/sec/momentum_1-1.webp" },
+          { no:"①-2", n:"平面上を動く物体に力積を加える（バットで向きを変える）", h:"#1-2", c:"05", img:"thumbs/sec/momentum_1-2.webp" },
+          { no:"②-1", n:"直線上の衝突", h:"#2-1", c:"05", img:"thumbs/sec/momentum_2-1.webp" },
+          { no:"②-2", n:"平面上の衝突（真上から見た図）", h:"#2-2", c:"05", img:"thumbs/sec/momentum_2-2.webp" },
+          { no:"②-3-1", n:"ニュートンのゆりかご", h:"#2-3-1", c:"05", img:"thumbs/sec/momentum_2-3-1.webp" },
+          { no:"③-1", n:"反発係数（床との衝突・2 物体）", h:"#3-1", c:"05", img:"thumbs/sec/momentum_3-1.webp" },
+          { no:"④-1", n:"2物体の衝突（様々な e）", h:"#4-1", c:"05", img:"thumbs/sec/momentum_4-1.webp" },
+          { no:"⑤-1", n:"「衝突」で覚えておくべき5つのこと", h:"#5-1", c:"05", img:"thumbs/sec/momentum_5-1.webp" },
+          { no:"⑤-4-1", n:"（上級者）衝突前後で、運動量が保存する向きの重心速度は一定", h:"#5-4-1", c:"05", img:"thumbs/sec/momentum_5-4-1.webp" },
+          { no:"⑤-4-2", n:"（上級者）衝突前後で、運動量が保存する向きの重心速度ベクトルは一定", h:"#5-4-2", c:"05", img:"thumbs/sec/momentum_5-4-2.webp" },
+          { no:"⑥-1", n:"分裂 ～ロケットの分離～", h:"#6-1", c:"05", img:"thumbs/sec/momentum_6-1.webp" },
+          { no:"⑥-2", n:"台の上を走るラジコンカー", h:"#6-2", c:"05", img:"thumbs/sec/momentum_6-2.webp" },
+          { no:"⑥-4", n:"摩擦のある板の上をすべる物体", h:"#6-4", c:"05", g:"exam", img:"thumbs/sec/momentum_6-4.webp" },
+          { no:"⑥-5", n:"ばね付き物体の衝突", h:"#6-5", c:"05", g:"exam", img:"thumbs/sec/momentum_6-5.webp" },
+          { no:"⑥-6", n:"斜め台をすべる物体（台は固定していない）", h:"#6-6", c:"05", g:"exam", img:"thumbs/sec/momentum_6-6.webp" } ] },
       { t:"保存則クイズ　基本編", tag:"quiz", course:["but"], img:"thumbs/quizb.gif",
         u:BASE+"mechanics/conservation-quiz-basic.html",
         d:"2つの保存則が「使える場面・使えない場面」をクイズで判定。",
-        cat:"05", g:"quiz" },
+        cat:"05", g:"quiz", simg:"thumbs/sec/quiz-basic.webp" },
       { t:"保存則クイズ　難関大受験編", tag:"quiz", course:["but"], img:"thumbs/quiza.gif",
         u:BASE+"mechanics/conservation-quiz-advanced.html",
         d:"共通テスト満点・二次試験で難関大を目指す人向けの応用編。",
-        cat:"05", g:"quiz" },
+        cat:"05", g:"quiz", simg:"thumbs/sec/quiz-advanced.webp" },
       { t:"上級者向け解説・重心ミニ実験室", tag:"note", course:["but"], img:"thumbs/cmlab.gif",
         u:BASE+"mechanics/conservation-quiz-advanced.html#advbox",
         d:"重心の運動から見ると、すべては 2 つの法則に行きつく。読みもの＋アニメーション。" },
@@ -1130,70 +1128,70 @@ const SITE = [
         u:BASE+"mechanics/circular-motion.html",
         d:"円運動は刻々と進む向きが変わる。外から見る観測者と、一緒に回る観測者の2つの立場で理解しよう。糸を切ると、小球はどちらへ飛ぶ？",
         parts:[
-          { no:"①-1", n:"等速円運動の基本的な物理量", h:"#1-1", c:"06" },
-          { no:"②-1", n:"ターンテーブルの上の物体（摩擦・ばね）", h:"#2-1", c:"06" },
-          { no:"②-4", n:"円錐振り子", h:"#2-4", c:"06" },
-          { no:"②-6", n:"正電荷の周りの負電荷の円運動", h:"#2-6", c:"06" },
-          { no:"②-7", n:"磁場中の荷電粒子の運動", h:"#2-7", c:"06 13" },
-          { no:"③-1", n:"円筒面・ループを上る小球", h:"#3-1", c:"06" },
-          { no:"③-3", n:"高さのあるループコースター", h:"#3-3", c:"06" },
-          { no:"③-4", n:"なめらかな円筒面を滑りおりる小球", h:"#3-4", c:"06" },
-          { no:"③-5", n:"糸による円運動", h:"#3-5", c:"06" },
-          { no:"④-1", n:"最高点まで昇る条件", h:"#4-1", c:"06" } ] },
+          { no:"①-1", n:"等速円運動の基本的な物理量", h:"#1-1", c:"06", img:"thumbs/sec/circular_1-1.webp" },
+          { no:"②-1", n:"ターンテーブルの上の物体（摩擦・ばね）", h:"#2-1", c:"06", img:"thumbs/sec/circular_2-1.webp" },
+          { no:"②-4", n:"円錐振り子", h:"#2-4", c:"06", img:"thumbs/sec/circular_2-4.webp" },
+          { no:"②-6", n:"正電荷の周りの負電荷の円運動", h:"#2-6", c:"06", img:"thumbs/sec/circular_2-6.webp" },
+          { no:"②-7", n:"磁場中の荷電粒子の運動", h:"#2-7", c:"06 13", img:"thumbs/sec/circular_2-7.webp" },
+          { no:"③-1", n:"円筒面・ループを上る小球", h:"#3-1", c:"06", img:"thumbs/sec/circular_3-1.webp" },
+          { no:"③-3", n:"高さのあるループコースター", h:"#3-3", c:"06", img:"thumbs/sec/circular_3-3.webp" },
+          { no:"③-4", n:"なめらかな円筒面を滑りおりる小球", h:"#3-4", c:"06", img:"thumbs/sec/circular_3-4.webp" },
+          { no:"③-5", n:"糸による円運動", h:"#3-5", c:"06", img:"thumbs/sec/circular_3-5.webp" },
+          { no:"④-1", n:"最高点まで昇る条件", h:"#4-1", c:"06", img:"thumbs/sec/circular_4-1.webp" } ] },
       { t:"慣性力　～外から見るか、一緒に加速して見るか～", tag:"sim", course:["but"], img:"thumbs/inertia.gif",
         u:BASE+"mechanics/inertia-force.html",
         d:"電車が急発進すると、中の人は後ろに押されたように感じる。外から見る観測者と、一緒に加速運動する観測者の2つの立場で理解しよう。",
         parts:[
-          { no:"①-1", n:"電車とエレベーター", h:"#1-1", c:"07" },
-          { no:"①-2", n:"エレベーターの中の小球・はかり", h:"#1-2", c:"07" },
-          { no:"①-4", n:"ミニコラム　慣性系・非慣性系とは何か", h:"#1-4", c:"07", g:"read" },
-          { no:"②-1", n:"電車の中で糸につるされた小球", h:"#2-1", c:"07" },
-          { no:"②-2", n:"動かされる斜め台の上の物体", h:"#2-2", c:"07" },
-          { no:"②-3", n:"（上級編）斜め台を滑る物体", h:"#2-3", c:"07" },
-          { no:"②-4", n:"（上級編）電車の中の振り子の周期", h:"#2-4", c:"07" },
-          { no:"③-1", n:"回転台の上の小球 ～遠心力～", h:"#3-1", c:"07" },
-          { no:"④-1", n:"入試物理（2016 東北大）", h:"#4-1", c:"07", g:"exam" } ] },
+          { no:"①-1", n:"電車とエレベーター", h:"#1-1", c:"07", img:"thumbs/sec/inertia_1-1.webp" },
+          { no:"①-2", n:"エレベーターの中の小球・はかり", h:"#1-2", c:"07", img:"thumbs/sec/inertia_1-2.webp" },
+          { no:"①-4", n:"ミニコラム　慣性系・非慣性系とは何か", h:"#1-4", c:"07", g:"read", img:"thumbs/sec/inertia_1-4.webp" },
+          { no:"②-1", n:"電車の中で糸につるされた小球", h:"#2-1", c:"07", img:"thumbs/sec/inertia_2-1.webp" },
+          { no:"②-2", n:"動かされる斜め台の上の物体", h:"#2-2", c:"07", img:"thumbs/sec/inertia_2-2.webp" },
+          { no:"②-3", n:"（上級編）斜め台を滑る物体", h:"#2-3", c:"07", img:"thumbs/sec/inertia_2-3.webp" },
+          { no:"②-4", n:"（上級編）電車の中の振り子の周期", h:"#2-4", c:"07", img:"thumbs/sec/inertia_2-4.webp" },
+          { no:"③-1", n:"回転台の上の小球 ～遠心力～", h:"#3-1", c:"07", img:"thumbs/sec/inertia_3-1.webp" },
+          { no:"④-1", n:"入試物理（2016 東北大）", h:"#4-1", c:"07", g:"exam", img:"thumbs/sec/inertia_4-1.webp" } ] },
       { t:"単振動　～等速円運動の影として見る～", tag:"sim", course:["but"], img:"thumbs/shm.gif",
         u:BASE+"mechanics/simple-harmonic-motion.html",
         d:"単振動は、等速円運動を真横から見た影。変位・速度・加速度のグラフと見くらべよう。ばね・斜面・浮力・ベルトコンベアまで、入試問題もそろえた。",
         parts:[
-          { no:"①-1", n:"単振動と等速円運動の関係", h:"#1-1", c:"08" },
-          { no:"①-2", n:"単振動の基本的な物理量", h:"#1-2", c:"08" },
-          { no:"①-3", n:"単振動のエネルギー（基本）", h:"#1-3", c:"08" },
-          { no:"②-1", n:"ばね振り子（水平・両側・鉛直・斜面）", h:"#2-1", c:"08" },
-          { no:"②-5", n:"摩擦がある場合", h:"#2-5", c:"08" },
-          { no:"②-6", n:"単振り子", h:"#2-6", c:"08" },
-          { no:"②-7", n:"浮力による単振動", h:"#2-7", c:"08" },
-          { no:"②-8", n:"地球トンネルの単振動", h:"#2-8", c:"08" },
-          { no:"③-1", n:"周期は何で決まるか", h:"#3-1", c:"08" },
-          { no:"③-2", n:"単振動のエネルギー U = ½kx²", h:"#3-2", c:"08" },
-          { no:"④-1", n:"ばねで打ち出される小球", h:"#4-1", c:"08", g:"exam" },
-          { no:"④-2", n:"台と一緒に単振動する物体（2016 広島大）", h:"#4-2", c:"08", g:"exam" },
-          { no:"④-3", n:"ばねでつながれた 2 球（入試頻出）", h:"#4-3", c:"08", g:"exam" },
-          { no:"④-4", n:"ベルトコンベアの上の単振動（ベルトが速いため必ず滑る）", h:"#4-4", c:"08", g:"exam" },
-          { no:"④-5", n:"ベルトコンベアの上の単振動（滑ったりくっついたり）", h:"#4-5", c:"08", g:"exam" },
-          { no:"④-6", n:"ゴムひもでつるした小球", h:"#4-6", c:"08", g:"exam" } ] },
+          { no:"①-1", n:"単振動と等速円運動の関係", h:"#1-1", c:"08", img:"thumbs/sec/shm_1-1.webp" },
+          { no:"①-2", n:"単振動の基本的な物理量", h:"#1-2", c:"08", img:"thumbs/sec/shm_1-2.webp" },
+          { no:"①-3", n:"単振動のエネルギー（基本）", h:"#1-3", c:"08", img:"thumbs/sec/shm_1-3.webp" },
+          { no:"②-1", n:"ばね振り子（水平・両側・鉛直・斜面）", h:"#2-1", c:"08", img:"thumbs/sec/shm_2-1.webp" },
+          { no:"②-5", n:"摩擦がある場合", h:"#2-5", c:"08", img:"thumbs/sec/shm_2-5.webp" },
+          { no:"②-6", n:"単振り子", h:"#2-6", c:"08", img:"thumbs/sec/shm_2-6.webp" },
+          { no:"②-7", n:"浮力による単振動", h:"#2-7", c:"08", img:"thumbs/sec/shm_2-7.webp" },
+          { no:"②-8", n:"地球トンネルの単振動", h:"#2-8", c:"08", img:"thumbs/sec/shm_2-8.webp" },
+          { no:"③-1", n:"周期は何で決まるか", h:"#3-1", c:"08", img:"thumbs/sec/shm_3-1.webp" },
+          { no:"③-2", n:"単振動のエネルギー U = ½kx²", h:"#3-2", c:"08", img:"thumbs/sec/shm_3-2.webp" },
+          { no:"④-1", n:"ばねで打ち出される小球", h:"#4-1", c:"08", g:"exam", img:"thumbs/sec/shm_4-1.webp" },
+          { no:"④-2", n:"台と一緒に単振動する物体（2016 広島大）", h:"#4-2", c:"08", g:"exam", img:"thumbs/sec/shm_4-2.webp" },
+          { no:"④-3", n:"ばねでつながれた 2 球（入試頻出）", h:"#4-3", c:"08", g:"exam", img:"thumbs/sec/shm_4-3.webp" },
+          { no:"④-4", n:"ベルトコンベアの上の単振動（ベルトが速いため必ず滑る）", h:"#4-4", c:"08", g:"exam", img:"thumbs/sec/shm_4-4.webp" },
+          { no:"④-5", n:"ベルトコンベアの上の単振動（滑ったりくっついたり）", h:"#4-5", c:"08", g:"exam", img:"thumbs/sec/shm_4-5.webp" },
+          { no:"④-6", n:"ゴムひもでつるした小球", h:"#4-6", c:"08", g:"exam", img:"thumbs/sec/shm_4-6.webp" } ] },
       { t:"万有引力とケプラーの法則", tag:"sim", course:["but"], img:"thumbs/kepler.gif",
         u:BASE+"mechanics/celestial-mechanics.html",
         d:"ケプラーの3法則は、目で見れば一発で分かります。第２宇宙速度で宇宙の果てまで！",
         parts:[
-          { no:"1-0", n:"太陽系の様子", h:"#m1-1", c:"09" },
-          { no:"1-1", n:"ケプラーの第1法則 ～楕円軌道～", h:"#m1-2", c:"09" },
-          { no:"1-2", n:"ケプラーの第2法則 ～面積速度一定～", h:"#m1-3", c:"09" },
-          { no:"1-3", n:"ケプラーの第3法則 ～T²/a³ = 一定～", h:"#m1-4", c:"09" },
-          { no:"補足", n:"補足：地動説とケプラーの法則の歴史 ～なぜ火星や土星を「惑星」と呼ぶのか～", h:"#m1-6", c:"09", g:"read" },
-          { no:"2-1", n:"万有引力と位置エネルギー", h:"#m2-2", c:"09" },
-          { no:"2-2", n:"軌道の種類と宇宙速度", h:"#m2-3", c:"09" },
-          { no:"2-3", n:"人工衛星の周期と、静止衛星", h:"#m2-4", c:"09" },
-          { no:"補足", n:"補足：なぜ面積速度が一定なのか ～角運動量の保存～", h:"#m4-2", c:"09", g:"read" },
-          { no:"補足", n:"補足：ケプラー則の本質 ～万有引力と運動方程式、角運動量保存則、質量比～", h:"#m2-1", c:"09", g:"read" },
-          { no:"3-1", n:"入試物理（楕円軌道への遷移・地球と月）", h:"#m3-1", c:"09", g:"exam" },
-          { no:"3-2", n:"地球トンネル（出典：名古屋大 2005）", h:"#m3-2", c:"09", g:"exam" },
-          { no:"4-3", n:"もっと深く知りたい人へ ～ハレー彗星・スイングバイ・現代天文学～", h:"#m4-4", c:"09", g:"read" } ] },
+          { no:"1-0", n:"太陽系の様子", h:"#m1-1", c:"09", img:"thumbs/sec/celestial_m1-1.webp" },
+          { no:"1-1", n:"ケプラーの第1法則 ～楕円軌道～", h:"#m1-2", c:"09", img:"thumbs/sec/celestial_m1-2.webp" },
+          { no:"1-2", n:"ケプラーの第2法則 ～面積速度一定～", h:"#m1-3", c:"09", img:"thumbs/sec/celestial_m1-3.webp" },
+          { no:"1-3", n:"ケプラーの第3法則 ～T²/a³ = 一定～", h:"#m1-4", c:"09", img:"thumbs/sec/celestial_m1-4.webp" },
+          { no:"補足", n:"補足：地動説とケプラーの法則の歴史 ～なぜ火星や土星を「惑星」と呼ぶのか～", h:"#m1-6", c:"09", g:"read", img:"thumbs/sec/celestial_m1-6.webp" },
+          { no:"2-1", n:"万有引力と位置エネルギー", h:"#m2-2", c:"09", img:"thumbs/sec/celestial_m2-2.webp" },
+          { no:"2-2", n:"軌道の種類と宇宙速度", h:"#m2-3", c:"09", img:"thumbs/sec/celestial_m2-3.webp" },
+          { no:"2-3", n:"人工衛星の周期と、静止衛星", h:"#m2-4", c:"09", img:"thumbs/sec/celestial_m2-4.webp" },
+          { no:"補足", n:"補足：なぜ面積速度が一定なのか ～角運動量の保存～", h:"#m4-2", c:"09", g:"read", img:"thumbs/sec/celestial_m4-2.webp" },
+          { no:"補足", n:"補足：ケプラー則の本質 ～万有引力と運動方程式、角運動量保存則、質量比～", h:"#m2-1", c:"09", g:"read", img:"thumbs/sec/celestial_m2-1.webp" },
+          { no:"3-1", n:"入試物理（楕円軌道への遷移・地球と月）", h:"#m3-1", c:"09", g:"exam", img:"thumbs/sec/celestial_m3-1.webp" },
+          { no:"3-2", n:"地球トンネル（出典：名古屋大 2005）", h:"#m3-2", c:"09", g:"exam", img:"thumbs/sec/celestial_m3-2.webp" },
+          { no:"4-3", n:"もっと深く知りたい人へ ～ハレー彗星・スイングバイ・現代天文学～", h:"#m4-4", c:"09", g:"read", img:"thumbs/sec/celestial_m4-4.webp" } ] },
       { t:"2026年8月 校内模試の力学の問題　動く台の上のばねと円弧面上の運動", tag:"exam", course:["but"], img:"thumbs/cart.gif",
         u:BASE+"mechanics/cart-spring-arc.html",
         d:"「ばね」と「円筒面」の2つを踏まえて、相対運動の問題を解き明かそう。",
-        cat:"05", g:"exam" }
+        cat:"05", g:"exam", simg:"thumbs/sec/cart.webp" }
     ]
   },
   {
@@ -1206,35 +1204,35 @@ const SITE = [
         u:BASE+"wave/wave-basics.html",
         d:"波はどう進み、重なるとどうなるか。y-xグラフとy-tグラフ、縦波、定在波の腹と節、弦と気柱の固有振動まで。倍音・和音・純正律を音で聞き比べることもできる。",
         parts:[
-          { no:"①-1", n:"波の発生と進み方と基本要素", h:"#1-1", c:"10", g:"kiso" },
-          { no:"①-2", n:"y-x グラフと y-t グラフ", h:"#1-2", c:"10", g:"kiso" },
-          { no:"①-3", n:"縦波", h:"#1-3", c:"10", g:"kiso" },
-          { no:"②-1", n:"左右の波源からの波 ～定在波～", h:"#2-1", c:"10", g:"kiso" },
-          { no:"②-2", n:"波の反射（自由端反射と固定端反射）", h:"#2-2", c:"10", g:"kiso" },
-          { no:"②-3", n:"固有振動と共振", h:"#2-3", c:"10", g:"kiso" },
-          { no:"③-1", n:"音の三要素", h:"#3-1", c:"11", g:"kiso" },
-          { no:"③-2", n:"うなり", h:"#3-2", c:"11", g:"kiso" },
-          { no:"③-3", n:"弦と気柱の固有振動と共鳴", h:"#3-3", c:"11", g:"kiso" },
-          { no:"③-4", n:"モノコード", h:"#3-4", c:"11", g:"kiso" },
-          { no:"③-5", n:"気柱の共鳴（水柱の実験）", h:"#3-5", c:"11", g:"kiso" },
-          { no:"④-1", n:"倍音と楽器ごとの音色 ～自由に音を作ろう～", h:"#4-1", c:"11" },
-          { no:"④-2", n:"歌声の原理", h:"#4-2", c:"11" },
-          { no:"④-3", n:"楽器のしくみ ～波長の違いの作り方・倍音だけの楽器～", h:"#4-3", c:"11" },
-          { no:"④-6", n:"和音（コード）とは何か", h:"#4-6", c:"11" },
-          { no:"④-7", n:"純正律と平均律", h:"#4-7", c:"11" },
-          { no:"⑤-1", n:"フーリエ変換 ～大学レベルの内容～", h:"#5-1", c:"11", g:"read" } ] },
+          { no:"①-1", n:"波の発生と進み方と基本要素", h:"#1-1", c:"10", g:"kiso", img:"thumbs/sec/wave_1-1.webp" },
+          { no:"①-2", n:"y-x グラフと y-t グラフ", h:"#1-2", c:"10", g:"kiso", img:"thumbs/sec/wave_1-2.webp" },
+          { no:"①-3", n:"縦波", h:"#1-3", c:"10", g:"kiso", img:"thumbs/sec/wave_1-3.webp" },
+          { no:"②-1", n:"左右の波源からの波 ～定在波～", h:"#2-1", c:"10", g:"kiso", img:"thumbs/sec/wave_2-1.webp" },
+          { no:"②-2", n:"波の反射（自由端反射と固定端反射）", h:"#2-2", c:"10", g:"kiso", img:"thumbs/sec/wave_2-2.webp" },
+          { no:"②-3", n:"固有振動と共振", h:"#2-3", c:"10", g:"kiso", img:"thumbs/sec/wave_2-3.webp" },
+          { no:"③-1", n:"音の三要素", h:"#3-1", c:"11", g:"kiso", img:"thumbs/sec/wave_3-1.webp" },
+          { no:"③-2", n:"うなり", h:"#3-2", c:"11", g:"kiso", img:"thumbs/sec/wave_3-2.webp" },
+          { no:"③-3", n:"弦と気柱の固有振動と共鳴", h:"#3-3", c:"11", g:"kiso", img:"thumbs/sec/wave_3-3.webp" },
+          { no:"③-4", n:"モノコード", h:"#3-4", c:"11", g:"kiso", img:"thumbs/sec/wave_3-4.webp" },
+          { no:"③-5", n:"気柱の共鳴（水柱の実験）", h:"#3-5", c:"11", g:"kiso", img:"thumbs/sec/wave_3-5.webp" },
+          { no:"④-1", n:"倍音と楽器ごとの音色 ～自由に音を作ろう～", h:"#4-1", c:"11", img:"thumbs/sec/wave_4-1.webp" },
+          { no:"④-2", n:"歌声の原理", h:"#4-2", c:"11", img:"thumbs/sec/wave_4-2.webp" },
+          { no:"④-3", n:"楽器のしくみ ～波長の違いの作り方・倍音だけの楽器～", h:"#4-3", c:"11", img:"thumbs/sec/wave_4-3.webp" },
+          { no:"④-6", n:"和音（コード）とは何か", h:"#4-6", c:"11", img:"thumbs/sec/wave_4-6.webp" },
+          { no:"④-7", n:"純正律と平均律", h:"#4-7", c:"11", img:"thumbs/sec/wave_4-7.webp" },
+          { no:"⑤-1", n:"フーリエ変換 ～大学レベルの内容～", h:"#5-1", c:"11", g:"read", img:"thumbs/sec/wave_5-1.webp" } ] },
       { t:"光の干渉①　ヤングの実験", tag:"sim", course:["but"], img:"thumbs/young.gif",
         u:BASE+"wave/youngs-experiment.html",
         d:"２つのスリットを出た光が重なって縞になるのはなぜ？　波の山と谷を目で追って確かめる。",
-        cat:"12" },
+        cat:"12", simg:"thumbs/sec/young.webp" },
       { t:"光の干渉②　回折格子", tag:"sim", course:["but"], img:"thumbs/grating.gif",
         u:BASE+"wave/diffraction_grating.html",
         d:"d sinθ = mλ が成り立つのはなぜ？　経路差の作図から確かめる。白色光にすると何が起きる？",
-        cat:"12" },
+        cat:"12", simg:"thumbs/sec/grating.webp" },
       { t:"光の干渉③　薄膜の干渉", tag:"sim", course:["but"], img:"thumbs/film.gif",
         u:BASE+"wave/Light-interference-thin-film.html",
         d:"シャボン玉に虹色が現れるのはなぜ？　教科書にない「真上から見た図」で理解できます。",
-        cat:"12" }
+        cat:"12", simg:"thumbs/sec/film.webp" }
     ]
   },
   {
@@ -1247,13 +1245,13 @@ const SITE = [
         u:BASE+"elemag/circuit-water-model-3d.html",
         d:"電気分野の８割はこれで分かります！電圧を高さ、電流を水の流れとして立体で見る。",
         parts:[
-          { no:"①", n:"抵抗の直流回路", h:"#dc", c:"13" },
-          { no:"②", n:"コンデンサー・コイルの直流回路", h:"#cl", c:"13" },
-          { no:"③", n:"交流回路", h:"#ac", c:"13" } ] },
+          { no:"①", n:"抵抗の直流回路", h:"#dc", c:"13", img:"thumbs/sec/circuit_dc.webp" },
+          { no:"②", n:"コンデンサー・コイルの直流回路", h:"#cl", c:"13", img:"thumbs/sec/circuit_cl.webp" },
+          { no:"③", n:"交流回路", h:"#ac", c:"13", img:"thumbs/sec/circuit_ac.webp" } ] },
       { t:"メートルブリッジ　～接点を動かして「同じ高さ」の点を探そう～", tag:"sim", course:["but"], new:true, img:"thumbs/meter-bridge.gif",
         u:BASE+"elemag/meter-bridge.html",
         d:"一様な金属線の上で接点をすべらせると、検流計の針が 0 を指すのはどこ？　電位を「高さ」で見ると、つり合いの意味がひと目で分かる。未知の抵抗を測る実験まで。",
-        cat:"13" }
+        cat:"13", simg:"thumbs/sec/meter-bridge.webp" }
     ]
   },
   {
@@ -1270,10 +1268,10 @@ const SITE = [
         u:BASE+"atomic/photoelectric-effect.html",
         d:"光を粒（光子）として考えると、弱い光でも電子が飛び出し、強い光でも飛び出さないことがあるのはなぜか。金属と振動数を変えて確かめ、光電管の実験で阻止電圧まで。",
         parts:[
-          { no:"①-1", n:"光電効果", h:"#1-1", c:"14" },
-          { no:"②-1", n:"X線の発生", h:"#2-1", c:"14" },
-          { no:"②-2", n:"X線の干渉とブラッグの条件", h:"#2-2", c:"14" },
-          { no:"②-4", n:"コンプトン効果", h:"#2-4", c:"14" } ] }
+          { no:"①-1", n:"光電効果", h:"#1-1", c:"14", img:"thumbs/sec/photo_1-1.webp" },
+          { no:"②-1", n:"X線の発生", h:"#2-1", c:"14", img:"thumbs/sec/photo_2-1.webp" },
+          { no:"②-2", n:"X線の干渉とブラッグの条件", h:"#2-2", c:"14", img:"thumbs/sec/photo_2-2.webp" },
+          { no:"②-4", n:"コンプトン効果", h:"#2-4", c:"14", img:"thumbs/sec/photo_2-4.webp" } ] }
     ]
   },
   {
@@ -1285,15 +1283,15 @@ const SITE = [
       { t:"慣性力のページができるまで　AIとの共同作業の記録", tag:"note", img:"thumbs/ailog-inertia.webp",
         u:BASE+"AI_log/inertia-force_AI-collaboration.html",
         d:"3日間・22回のやり取りで、1枚の教材ページを作った記録。どんな言葉で頼むと、ページがどう変わったのか。",
-        cat:"16", g:"read" },
+        cat:"16", g:"read", simg:"thumbs/sec/ailog-inertia.webp" },
       { t:"動画解析アプリができるまで　AIとの共同作業の記録", tag:"note", img:"thumbs/ailog-motion.webp",
         u:BASE+"AI_log/motion-analysis_AI-collaboration.html",
         d:"「動画解析・トラッキングツール」を6日間・42回のやり取りで作った記録。どう頼むとどう変わるかを、実際の画面で追いかけます。",
-        cat:"16", g:"read" },
+        cat:"16", g:"read", simg:"thumbs/sec/ailog-motion.webp" },
       { t:"薄膜の干渉ができるまで　AIとの共同作業の記録", tag:"note", img:"thumbs/digest.webp",
         u:BASE+"AI_log/Light-interference-thin-film_AI-collaboration.html",
         d:"AIで何か作りたい人へ。AIが間違える話もたくさん出てきます。",
-        cat:"16", g:"read" }
+        cat:"16", g:"read", simg:"thumbs/sec/ailog-film.webp" }
     ]
   }
 ];
@@ -1315,7 +1313,7 @@ const EXPSITE = [
         img:"thumbs/motion-analysis.png",
         u:BASE+"experiment/motion-analysis.html",
         d:"動画を読み込むか、その場で撮って、物体の位置を1コマずつ記録。位置・速度・加速度のグラフになります。落下・放物運動・衝突を、目の前でそのまま数値にしてみよう。",
-        cat:"15" }
+        cat:"15", simg:"thumbs/sec/motion-analysis.webp" }
     ]
   }
 ];
@@ -1378,7 +1376,7 @@ const COMING = [
     { ids:["wave"],      name:"波動" },
     { ids:["elemag"],    name:"電磁気" },
     { ids:["atom"],      name:"原子" },
-    { ids:["movie","note"], name:"そのほか", color:"#69717d" }
+    { ids:["movie","note"], name:"そのほか", color:"#69717d", key:"other" }
   ];
   var GTAG = { kiso:"物理基礎", exam:"入試問題", game:"ゲーム", read:"読みもの", quiz:"クイズ" };
   var ALL = SITE.concat(EXPSITE);
@@ -1397,7 +1395,7 @@ const COMING = [
       if (it.hide) return;
       var isPart = !!it.parts;
       var list = it.parts ? it.parts :
-                 (it.cat ? [{ no:"", n:it.t, h:"", c:it.cat, g:it.g || "" }] : []);
+                 (it.cat ? [{ no:"", n:it.t, h:"", c:it.cat, g:it.g || "", img:it.simg || "" }] : []);
       /* そのページでいちばん多いカテゴリ（ほかのカテゴリに重ねて出す件は、そのカテゴリの後ろへ回す） */
       var cnt = {}, main = null;
       list.forEach(function(p){
@@ -1428,11 +1426,11 @@ const COMING = [
   });
   var catCount = {};
   ENTRIES.forEach(function(e){ e.cats.forEach(function(c){ catCount[c] = (catCount[c] || 0) + 1; }); });
-  document.getElementById("nAll").textContent = ENTRIES.length;
 
   /* ----- いまの選び方 ----- */
   var state = { cat:null, field:null, tag:"", q:"" };
   var groupOf = function(f){
+    for (var k = 0; k < GROUPS.length; k++) if (GROUPS[k].key === f) return GROUPS[k];
     for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].ids.indexOf(f) >= 0) return GROUPS[i];
     return null;
   };
@@ -1448,8 +1446,17 @@ const COMING = [
       var col = g.color || secColor[g.ids[0]] || "#5b6672";
       var onF = (state.field === g);
       var n = ENTRIES.filter(function(e){ return e.cats.some(function(c){ return g.ids.indexOf(catById[c].f) >= 0; }); }).length;
-      h += '<a class="fpill' + (onF ? ' on' : '') + '" href="#sec-' + esc(g.ids[0]) + '" style="--fc:' + esc(col) + '"' +
+      h += '<a class="fpill' + (onF ? ' on' : '') + '" href="#sec-' + esc(g.key || g.ids[0]) + '" style="--fc:' + esc(col) + '"' +
            (onF ? ' aria-current="true"' : '') + '><i></i>' + esc(g.name) + '<span class="n">' + n + '</span></a>';
+    });
+    /* 印だけで選ぶ（カテゴリに関係なく、ゲームだけ・クイズだけ…） */
+    h += '<span class="fsep" aria-hidden="true"></span>';
+    ["game", "quiz", "exam", "read"].forEach(function(t){
+      var n = ENTRIES.filter(function(e){ return e.g.indexOf(t) >= 0; }).length;
+      if (!n) return;
+      var onT = (state.tag === t && !state.cat && !state.field);
+      h += '<a class="fpill tagpill' + (onT ? ' on' : '') + '" href="#tag-' + t + '" data-tag="' + t + '"' +
+           (onT ? ' aria-current="true"' : '') + '>' + esc(GTAG[t]) + 'だけ<span class="n">' + n + '</span></a>';
     });
     h += '</div><div class="cats">';
     /* タイル：カテゴリ 01〜16 */
@@ -1477,6 +1484,7 @@ const COMING = [
     if (!a) return;
     e.preventDefault();
     clearHash();
+    if (a.hasAttribute("data-tag")) state.tag = "";
     state.cat = null; state.field = null;
     renderAll();
   });
@@ -1547,9 +1555,10 @@ const COMING = [
     var label;
     if (state.cat){ var c = catById[state.cat]; label = '<span class="rno" style="--fc:' + esc(c.color) + '">' + esc(c.id) + '</span>' + esc(c.n); }
     else if (state.field){ label = esc(state.field.name) + ' のすべて'; }
+    else if (state.tag){ CHIPS.forEach(function(c){ if (c[0] === state.tag) label = esc(c[1]) + ' だけ'; }); }
     else label = 'すべてのシミュレーション';
     var sub = [];
-    if (state.tag){ CHIPS.forEach(function(c){ if (c[0] === state.tag) sub.push(c[1]); }); }
+    if (state.tag && (state.cat || state.field)){ CHIPS.forEach(function(c){ if (c[0] === state.tag) sub.push(c[1]); }); }
     if (state.q) sub.push('「' + state.q + '」');
     var any = state.cat || state.field || state.tag || state.q;
     rheadEl.innerHTML = '<h2>' + label + '</h2>' +
@@ -1645,7 +1654,9 @@ const COMING = [
                           例　https://…/physics-site/#c06
        #sec-mechanics  … 分野（力学）のすべて。#sec-wave / #sec-elemag / #sec-atom も同じ
        #experiment     … 15 実験ツール（前の「実験」タブのアドレス。そのまま生かしている）
-       #sec-note       … 16 作成後記                                                  */
+       #sec-note       … 16 作成後記
+       #sec-other      … そのほか（15 と 16）のすべて
+       #tag-game       … ゲームだけ（#tag-quiz クイズ / #tag-exam 入試問題 / #tag-read 読みもの）  */
   var HASHCAT = { "experiment":"15", "sec-movie":"15", "sec-note":"16" };
   function clearHash(){
     if (location.hash && history.replaceState) history.replaceState(null, "", location.pathname + location.search);
@@ -1656,6 +1667,11 @@ const COMING = [
   }
   function fromHash(smooth){
     var h = decodeURIComponent(location.hash.replace(/^#/, ""));
+    var tg = h.match(/^tag-(\w+)$/);
+    if (tg && GTAG[tg[1]]){
+      state.cat = null; state.field = null; state.tag = tg[1];
+      renderAll(); toResults(smooth); return;
+    }
     var m = h.match(/^c(\d\d)$/), cat = null, field = null;
     if (m && catById[m[1]]) cat = m[1];
     else if (HASHCAT[h]) cat = HASHCAT[h];
