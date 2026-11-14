@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>トップページ改装案 第2案</title>
+<style>
+:root{
+  --paper:#f5f3ee; --paper2:#ece8df; --card:#fff; --ink:#14171c; --ink2:#3a4048; --ink3:#6b7280; --ink4:#9aa0a8;
+  --rule:#d8d2c6; --brand:#e07b18; --brand6:#c9670c; --brand50:#fdf4e8; --night:#0e1115;
+  --ok:#1c8f4a; --warn:#b45309; --q:#b91c1c;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html{overflow-x:hidden;overflow-x:clip}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI","Meiryo",system-ui,sans-serif;line-height:1.7;font-size:15px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+h1{font-size:1.5rem;margin:28px 0 4px;letter-spacing:.02em}
+.lead{color:var(--ink2);margin:0 0 6px}
+.note{color:var(--ink3);font-size:.86rem}
+h2{font-size:1.15rem;margin:40px 0 10px;padding-left:12px;border-left:5px solid var(--brand)}
+h2 small{font-weight:400;color:var(--ink3);font-size:.82rem;margin-left:6px}
+.card{background:var(--card);border-radius:var(--r);padding:16px 18px;box-shadow:0 1px 2px rgba(20,23,28,.06),0 6px 18px rgba(20,23,28,.05)}
+.pts{margin:0;padding-left:1.2em}
+.pts li{margin:4px 0}
+.pts b{color:var(--ink)}
+
+/* ===== 動く見本（モック） ===== */
+.mock{border-radius:18px;overflow:hidden;background:var(--paper);box-shadow:0 0 0 1px var(--rule),0 10px 30px rgba(20,23,28,.10)}
+.mockbar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#e7e2d7;font-size:.75rem;color:var(--ink3)}
+.mockbar i{width:10px;height:10px;border-radius:50%;background:#cfc8ba;display:inline-block}
+.mockbar span{margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mhero{background:var(--night);color:#fff;padding:22px 20px 20px;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:22px 22px}
+.mhero .t{font-weight:700;font-size:1.25rem;letter-spacing:.02em}
+.mhero .t em{font-style:normal;color:var(--brand)}
+.mhero .big{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.mhero .big b{font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums}
+.mhero .big span{color:#c9ccd2;font-size:.9rem}
+.msearch{margin-top:12px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:6px 14px;max-width:420px}
+.msearch input{border:0;outline:0;font:inherit;flex:1;min-width:0;background:transparent;color:var(--ink)}
+.mbody{padding:18px 16px 22px}
+.msec{font-weight:700;font-size:1.05rem;margin:4px 0 10px;display:flex;align-items:baseline;gap:10px}
+.msec small{font-weight:400;color:var(--ink3);font-size:.78rem;letter-spacing:.08em}
+.fgroup{margin:12px 0 4px;font-size:.78rem;font-weight:700;color:var(--ink3);display:flex;align-items:center;gap:6px}
+.fgroup i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.cat{all:unset;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2px 10px;background:#fff;border-radius:12px;padding:10px 12px;border:1px solid transparent;box-shadow:0 1px 2px rgba(20,23,28,.06);position:relative;overflow:hidden}
+.cat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--fc)}
+.cat .no{grid-row:1/3;font-size:.8rem;font-weight:700;color:var(--fc);font-variant-numeric:tabular-nums}
+.cat .nm{font-weight:700;font-size:.92rem;line-height:1.35}
+.cat .en{grid-column:2;font-size:.62rem;letter-spacing:.1em;color:var(--ink4)}
+.cat .ct{grid-row:1/3;grid-column:3;font-size:1.35rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.cat:hover{border-color:var(--fc)}
+.cat:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.cat.on{background:var(--fc);color:#fff}
+.cat.on .no,.cat.on .en,.cat.on .ct{color:#fff}
+.cat.on::before{background:rgba(255,255,255,.35)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:18px 0 10px}
+.chip{all:unset;cursor:pointer;font-size:.8rem;padding:4px 12px;border-radius:999px;background:var(--paper2);color:var(--ink2)}
+.chip b{font-variant-numeric:tabular-nums;margin-left:4px}
+.chip.on{background:var(--ink);color:#fff}
+.chip:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.rhead{display:flex;align-items:baseline;gap:10px;margin:14px 0 8px;font-weight:700}
+.rhead .cnt{color:var(--ink3);font-weight:400;font-size:.85rem}
+.rhead .clr{all:unset;cursor:pointer;margin-left:auto;font-size:.78rem;color:var(--brand6);text-decoration:underline;font-weight:400}
+.ghead{margin:16px 0 6px;font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:8px}
+.ghead i{width:8px;height:8px;border-radius:50%;background:var(--fc)}
+.list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;list-style:none;margin:0;padding:0}
+.list a{display:flex;gap:10px;align-items:baseline;text-decoration:none;color:var(--ink);background:#fff;border-radius:10px;padding:8px 12px;box-shadow:0 1px 2px rgba(20,23,28,.05);height:100%}
+.list a:hover{box-shadow:0 0 0 2px var(--fc)}
+.list .bno{flex:none;font-size:.72rem;font-weight:700;color:#fff;background:var(--fc);border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums;min-width:2.6em;text-align:center}
+.list .tt{flex:1;min-width:0;line-height:1.45}
+.list .tt .sub{font-size:.78em;color:var(--ink3)}
+.list .pg{display:block;font-size:.7rem;color:var(--ink4);margin-top:1px}
+.list .nw{font-size:.62rem;font-weight:700;color:#fff;background:var(--brand);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:2px}
+.empty{color:var(--ink3);font-size:.9rem;padding:8px 0}
+
+/* ===== 分け方の表 ===== */
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.82rem;color:var(--ink2);margin:6px 0 12px}
+.how{display:inline-block;font-size:.7rem;font-weight:700;border-radius:6px;padding:1px 8px;white-space:nowrap}
+.how.split{background:#e8f3ec;color:var(--ok)}
+.how.merge{background:#fff3e2;color:var(--warn)}
+.how.one{background:#eef0f3;color:var(--ink2)}
+.how.q{background:#fde8e8;color:var(--q)}
+details.pg{background:#fff;border-radius:12px;margin:8px 0;box-shadow:0 1px 2px rgba(20,23,28,.06)}
+details.pg>summary{cursor:pointer;list-style:none;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+details.pg>summary::-webkit-details-marker{display:none}
+details.pg>summary::before{content:"▸";color:var(--brand);font-size:.8rem}
+details.pg[open]>summary::before{content:"▾"}
+.pgn{font-weight:700}
+.pgf{font-size:.72rem;color:var(--ink4);word-break:break-all}
+.pgc{margin-left:auto;font-size:.8rem;color:var(--ink2);white-space:nowrap}
+.pgc b{font-size:1rem}
+.tbl{width:100%;border-collapse:collapse;font-size:.86rem}
+.tblwrap{overflow-x:auto;padding:0 14px 12px}
+.tbl th,.tbl td{text-align:left;padding:6px 8px;border-top:1px solid #eee9df;vertical-align:top}
+.tbl th{font-size:.72rem;color:var(--ink3);font-weight:600;white-space:nowrap}
+.tbl td.no{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.tbl td.cat2{white-space:nowrap;font-size:.78rem}
+.tbl td.memo{font-size:.76rem;color:var(--q)}
+.tbl td.h{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.76rem;color:var(--ink3);white-space:nowrap}
+.tbl a{color:inherit}
+.tag{display:inline-block;font-size:.66rem;border:1px solid var(--rule);border-radius:999px;padding:0 6px;margin:0 2px;color:var(--ink3);white-space:nowrap}
+
+/* ===== 決めてほしいこと ===== */
+ol.qs{counter-reset:q;list-style:none;padding:0;margin:0}
+ol.qs>li{counter-increment:q;background:#fff;border-radius:12px;padding:12px 14px 12px 52px;margin:8px 0;position:relative;box-shadow:0 1px 2px rgba(20,23,28,.06)}
+ol.qs>li::before{content:counter(q,decimal);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;display:grid;place-items:center}
+ol.qs b.t{display:block}
+ol.qs .rec{display:inline-block;margin-top:4px;font-size:.82rem;color:var(--brand6)}
+ol.qs .rec::before{content:"私の案："; font-weight:700}
+
+.stat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.stat div{background:#fff;border-radius:12px;padding:10px 12px;box-shadow:0 1px 2px rgba(20,23,28,.06)}
+.stat b{display:block;font-size:1.5rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:.76rem;color:var(--ink3)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;background:var(--paper2);border-radius:4px;padding:0 4px}
+footer{margin:48px 0 32px;color:var(--ink4);font-size:.78rem;text-align:center}
+
+@media (max-width:720px){
+  .list{grid-template-columns:minmax(0,1fr)}
+  .stat{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cat{padding:8px 10px;gap:0 8px}
+  .cat .nm{font-size:.84rem}
+  .cat .en{display:none}
+  .cat .no{grid-row:1}
+  .cat .ct{grid-row:1}
+  .cat .ct{font-size:1.1rem}
+  .mhero .big b{font-size:2rem}
+  .pgc{margin-left:0}
+}
+@media (max-width:380px){
+  .cats{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>トップページ改装案　第2案（しぼりこみ版）</h1>
+<p class="lead">「全部は並べない。似たものは 1 つ、直線と曲線は分ける」というご意見をもとに、第1案の 176 件を <b id="nTotal0"></b> 件までしぼりました。まとめた件は、いちばん代表的なセクションへとびます（ほかのセクションもページの中にそのまま残ります）。</p>
+<p class="note">ご意見をいただいてから作ります。まだ index.html は何も変えていません。第1案との違いは、表の「まとめた中身」の列で見られます。</p>
+
+<div class="stat" id="stat"></div>
+
+<h2>方針<small>3 つ</small></h2>
+<div class="card">
+<ol class="pts">
+  <li><b>上に「カテゴリから探す」</b>。力学・波動・電磁気・原子を、単元ごとの <b>16 カテゴリ</b>（01〜16）に分け、それぞれに件数を出す。押すと、すぐ下にそのカテゴリの一覧が出る（ページは移動しない。アドレスは <code>#c06</code> のように変わるので、そのまま生徒に配れる）。</li>
+  <li><b>一覧は題名だけ</b>。番号のバッジ（②-4 など）と、どのページの中かを小さく添える。<b>今の説明文は消さずにデータの中に残し</b>（画面には出さない）、プロジェクトにも記録として保存する。</li>
+  <li><b>しぼりこみのルール</b>：①同じ装置で数値や面だけを変えたものは 1 件にまとめる　②<b>直線と曲線（直線の面と曲面、直線上と平面上）は分ける</b>　③入試物理は 1 ページ 1 件　④ゲームは残す　⑤補足の読みものは出さない（ページの中には残る）。今の中身で <b><span id="nTotal"></span> 件</b>。</li>
+</ol>
+</div>
+
+<h2>動く見本<small>カテゴリを押してみてください。各行はクリックすると本物のページの、そのセクションが開きます</small></h2>
+<div class="mock">
+  <div class="mockbar"><i></i><i></i><i></i><span>physics-chiba.github.io/physics-site/</span></div>
+  <div class="mhero">
+    <div class="t">楽楽（らくらく）高校物理 <em>シミュレーション集</em></div>
+    <div class="big"><b id="mTotal"></b><span>シミュレーション</span></div>
+    <label class="msearch">🔍<input id="q" type="search" placeholder="題名で探す（例：ばね、衝突、定在波）" autocomplete="off"></label>
+  </div>
+  <div class="mbody">
+    <div class="msec">カテゴリから探す<small>CATEGORIES</small></div>
+    <div id="cats"></div>
+    <div class="chips" id="chips"></div>
+    <div id="res"></div>
+  </div>
+</div>
+<p class="note">※ 見本なので、ヒーロー（黒い帯）・更新履歴・感想フォームのボタン・フッターは省いています。実物では今のものを残します（並べる順は決めてほしいこと⑧）。</p>
+
+<h2>ページごとの分け方<small>押すと開きます</small></h2>
+<div class="legend">
+  <span><span class="how split">分ける</span> セクションごとに 1 件</span>
+  <span><span class="how merge">まとめる</span> 似たセクションを 1 件に（代表へとぶ）</span>
+  <span><span class="how one">1 件</span> ページで 1 件</span>
+  <span><span class="how q">要確認</span> 作る前にページで確かめる</span>
+</div>
+<div id="pages"></div>
+
+<h2>決めてほしいこと</h2>
+<ol class="qs">
+  <li><b class="t">まとめ方でよいか（いちばん大事）</b>
+    下の表の「まとめた中身」を見て、「これは分けたい」「これもまとめてよい」を教えてください。迷ったところ：力学的エネルギーの「曲線の滑台・振り子」（振り子を分けるか）、単振動の「ばね振り子（水平・両側・鉛直・斜面）」（鉛直を分けるか）、万有引力のケプラーの法則（3 件のままか 1 件か）。
+    <span class="rec">表のまま。</span></li>
+  <li><b class="t">「箱の回転」は剛体のページの④に寄せるか</b>
+    <code>rotation-box_tip-or-slip.html</code> は剛体のページの④だけを出す版です。(a) 剛体のページ <code>#4-2</code> へとばす、(b) 今の「箱の回転」ページへとばす。
+    <span class="rec">(a)。行き先を 1 つにまとめる（箱の回転のページは残すが、一覧には出さない）。</span></li>
+  <li><b class="t">「上級者向け解説・重心ミニ実験室」の行き先</b>
+    今の一覧は <code>conservation-quiz-advanced.html#advbox</code>、剛体のページにも⑥-1 として同じ名前のものがあります。
+    <span class="rec">剛体のページ⑥-1。中身が同じか、作る前に確かめます。</span></li>
+  <li><b class="t">補足の読みもの（万有引力の歴史・スイングバイ・フィギュアスケーター など）を一覧から外してよいか</b>
+    慣性力のミニコラムだけは、考え方の中心なので残しました。
+    <span class="rec">外す（ページの中には残る）。</span></li>
+  <li><b class="t">円運動の「磁場中の荷電粒子の運動」を、電磁気にも重ねて出すか</b>
+    1 つの件を 2 つのカテゴリに出せます。
+    <span class="rec">重ねる（13 電気回路にも出す）。</span></li>
+  <li><b class="t">カテゴリの下の絞りこみ（タグ）を付けるか</b>
+    見本では「すべて／NEW／物理基礎／入試問題／ゲーム／読みもの／クイズ」。
+    <span class="rec">付ける。</span></li>
+  <li><b class="t">「シミュレーション／実験」のタブをやめて、実験をカテゴリ「15 実験ツール」に入れるか</b>
+    <span class="rec">入れる。#experiment のアドレスは 15 を開くようにして生かす。</span></li>
+  <li><b class="t">上から並べる順</b>
+    ヒーロー（全体の件数と検索を中に）→ 更新履歴（3 件）→ カテゴリから探す → 一覧 → 感想フォームへの呼びかけ → フッター。
+    <span class="rec">このとおり。</span></li>
+  <li><b class="t">はじめに開いたときの一覧</b>
+    (a) すべて（カテゴリごとの見出しつき）、(b) NEW だけ、(c) 何も出さず「カテゴリを選んでね」。
+    <span class="rec">(a)。</span></li>
+  <li><b class="t">サムネイル（今の GIF）をどこかに使うか</b>
+    (a) 使わない、(b) カテゴリのタイルに 1 枚ずつ小さく、(c) 一覧の各ページの最初の件にだけ。
+    <span class="rec">(b)。</span></li>
+</ol>
+
+<h2>中身を確かめられなかったページ</h2>
+<div class="card">
+<p style="margin:0 0 8px">PC のフォルダはつながった表示になっていますが、こちら側でファイルを読む機能がこの作業の始めに起動できず、まだ開けていません。次の <b id="nNone"></b> ページは中身を確かめられていません。表では「1 件のまま」か、設計メモから作った仮の分け方にしてあります。<b>作る前に必ず開いて確かめます</b>（つながったら教えてください）。</p>
+<ul class="pts" id="noneList"></ul>
+<p class="note" style="margin:8px 0 0">設計メモから作った仮の題名：一次元と平面の運動・力学的エネルギー・万有引力（いずれも 2026-10 上旬の設計メモ）。作るときに実物の題名に合わせます。</p>
+</div>
+
+<h2>作り方のメモ<small>技術的なこと</small></h2>
+<div class="card">
+<ul class="pts">
+  <li><b>ほかの全ページの「ページ一覧」は今のまま</b>（1 ファイル 1 行）。あれは index.html の <code>SITE</code> を文字列として読んでいるので、<code>SITE</code> の書き方は変えない。</li>
+  <li>分けた件は、<code>SITE</code> の各ページの中に <code>parts:[ { n:"円錐振り子", no:"②-4", h:"#2-4", c:"06" }, … ]</code> として足す。題名のキーを <code>t:</code> ではなく <code>n:</code> にするので、ほかのページの読みとり（<code>t:"…"</code> と <code>u:BASE+"…"</code> の組を探す）には引っかからない。</li>
+  <li>カテゴリは新しく <code>CATS</code> を 1 つ作る。新しいページを足すときは、今までどおり <code>SITE</code> に 1 つ足して、その中に <code>parts</code> を書くだけ。</li>
+  <li>説明文 <code>d:"…"</code> はデータに残す（画面には出さない）。ほかに「index_説明文の記録.md」としてプロジェクトに保存する。</li>
+  <li>アドレスでセクションへとべないページ（電気回路 3D のタブなど）は、そのページ側に小さな直しが要るかもしれません。分かったら別に相談します（index.html の作業では、ほかのページは書きかえない）。</li>
+</ul>
+</div>
+
+<footer>トップページ改装案 第2案・<span id="today"></span></footer>
+</div>
+
+<script>
+/* ===== トップページ改装案のデータ（第2案：しぼりこみ版） =====
+   ITEMS の 1 件 ＝ 一覧に出す 1 行
+     p   : どのページか（PAGES のキー）
+     no  : バッジに出す番号
+     t   : 題名（～…～ の部分は小さく出す）
+     h   : ページの中の行き先（#2-4 など）
+     c   : カテゴリ
+     g   : タグ（kiso 物理基礎 / exam 入試 / game ゲーム / read 読みもの / quiz クイズ）
+     inc : この 1 件にまとめたセクション（2 つ以上のときだけ書く）
+     q   : 要確認のメモ
+     nw  : NEW
+   DROP … 一覧に出さないセクション（ページの中にはそのまま残る）
+*/
+var BASE = "https://physics-chiba.github.io/physics-site/";
+
+var PAGES = {
+  basics:  { f:"mechanics/basics-of-motion-on-plane.html",   n:"一次元と平面の運動",           src:"memo" },
+  energy:  { f:"mechanics/mechanical-energy.html",           n:"力学的エネルギーと非保存力の仕事", src:"memo" },
+  rigid:   { f:"mechanics/rigid-body-dynamics.html",         n:"剛体と力のモーメント",          src:"page" },
+  mom:     { f:"mechanics/momentum-and-collision.html",      n:"運動量と力積、2物体の衝突",      src:"page" },
+  quizb:   { f:"mechanics/conservation-quiz-basic.html",     n:"保存則クイズ　基本編",          src:"page" },
+  quiza:   { f:"mechanics/conservation-quiz-advanced.html",  n:"保存則クイズ　難関大受験編",     src:"none" },
+  cart:    { f:"mechanics/cart-spring-arc.html",             n:"2026年8月 校内模試の力学の問題", src:"none" },
+  circ:    { f:"mechanics/circular-motion.html",             n:"円運動",                      src:"page" },
+  inert:   { f:"mechanics/inertia-force.html",               n:"慣性力",                      src:"page" },
+  shm:     { f:"mechanics/simple-harmonic-motion.html",      n:"単振動",                      src:"page" },
+  cel:     { f:"mechanics/celestial-mechanics.html",         n:"万有引力とケプラーの法則",       src:"memo" },
+  wb:      { f:"wave/wave-basics.html",                      n:"波の基礎",                    src:"page" },
+  young:   { f:"wave/youngs-experiment.html",                n:"光の干渉①　ヤングの実験",       src:"none" },
+  grat:    { f:"wave/diffraction_grating.html",              n:"光の干渉②　回折格子",          src:"none" },
+  film:    { f:"wave/Light-interference-thin-film.html",     n:"光の干渉③　薄膜の干渉",        src:"none" },
+  circuit: { f:"elemag/circuit-water-model-3d.html",         n:"電気回路３次元シミュレーター",   src:"memo" },
+  mb:      { f:"elemag/meter-bridge.html",                   n:"メートルブリッジ",              src:"page" },
+  pe:      { f:"atomic/photoelectric-effect.html",           n:"光電効果",                    src:"page" },
+  ma:      { f:"experiment/motion-analysis.html",            n:"動画解析・トラッキングツール",   src:"none" },
+  logI:    { f:"AI_log/inertia-force_AI-collaboration.html", n:"作成後記", src:"page" },
+  logM:    { f:"AI_log/motion-analysis_AI-collaboration.html", n:"作成後記", src:"page" },
+  logF:    { f:"AI_log/Light-interference-thin-film_AI-collaboration.html", n:"作成後記", src:"page" }
+};
+
+var FIELDS = {
+  mech:{ n:"力学",   c:"#1663b5" },
+  wave:{ n:"波動",   c:"#3ea0e0" },
+  elec:{ n:"電磁気", c:"#7b5bd6" },
+  atom:{ n:"原子",   c:"#c2185b" },
+  etc: { n:"そのほか", c:"#5b6672" }
+};
+
+var CATS = [
+  { id:"01", f:"mech", n:"直線運動と運動方程式",   en:"LINEAR MOTION" },
+  { id:"02", f:"mech", n:"平面運動・放物運動",     en:"PROJECTILES" },
+  { id:"03", f:"mech", n:"剛体のつりあい・重心",   en:"RIGID BODIES" },
+  { id:"04", f:"mech", n:"仕事と力学的エネルギー", en:"WORK / ENERGY" },
+  { id:"05", f:"mech", n:"運動量と衝突",          en:"MOMENTUM" },
+  { id:"06", f:"mech", n:"円運動",               en:"CIRCULAR MOTION" },
+  { id:"07", f:"mech", n:"慣性力",               en:"INERTIAL FORCE" },
+  { id:"08", f:"mech", n:"単振動",               en:"OSCILLATION" },
+  { id:"09", f:"mech", n:"万有引力",             en:"GRAVITATION" },
+  { id:"10", f:"wave", n:"波の性質",             en:"WAVES" },
+  { id:"11", f:"wave", n:"音・音楽",             en:"SOUND / MUSIC" },
+  { id:"12", f:"wave", n:"光の干渉",             en:"LIGHT" },
+  { id:"13", f:"elec", n:"電気回路",             en:"CIRCUITS" },
+  { id:"14", f:"atom", n:"原子",                 en:"ATOMIC PHYSICS" },
+  { id:"15", f:"etc",  n:"実験ツール",            en:"TOOLS" },
+  { id:"16", f:"etc",  n:"作成後記",              en:"MAKING-OF" }
+];
+
+var TAGS = { kiso:"物理基礎", exam:"入試問題", game:"ゲーム", read:"読みもの", quiz:"クイズ" };
+
+function S(o){ return { p:o.p, no:o.no||"", t:o.t, h:o.h||"", c:o.c, g:o.g||[], inc:o.inc||[], q:o.q||"", nw:!!o.nw }; }
+var MEMO = "題名・番号は設計メモ（2026-10 上旬）から。作る前にページで確かめます";
+
+var ITEMS = [
+  /* ===== 一次元と平面の運動　22 本 → 11 件 ===== */
+  S({p:"basics", no:"①-1", t:"なめらかな面をすべる物体（水平面・斜面）", h:"#1-1", c:"01", g:["kiso"], inc:["①-1","①-2"], q:MEMO}),
+  S({p:"basics", no:"①-4", t:"鉛直投げ上げ・自由落下", h:"#1-4", c:"01", g:["kiso"], inc:["①-3","①-4"]}),
+  S({p:"basics", no:"①-5", t:"力を加えて動かす（摩擦あり・なし）", h:"#1-5", c:"01", g:["kiso"], inc:["①-5","①-6","①-7"]}),
+  S({p:"basics", no:"①-8", t:"カーリングゲーム", h:"#1-8", c:"01", g:["kiso","game"]}),
+  S({p:"basics", no:"②-1", t:"糸でつながれた 2 物体（糸・滑車・アトウッドの装置）", h:"#2-1", c:"01", g:["kiso"], inc:["②-1","②-2","②-3"]}),
+  S({p:"basics", no:"②-4", t:"床の上の板と、その上を滑る物体", h:"#2-4", c:"01", g:["kiso"]}),
+  S({p:"basics", no:"③-2", t:"放物運動（水平投射・斜方投射）", h:"#3-2", c:"02", inc:["③-1","③-2","③-3"]}),
+  S({p:"basics", no:"③-4", t:"かごにボールを蹴り入れよう！", h:"#3-4", c:"02", g:["game"]}),
+  S({p:"basics", no:"④-1", t:"2 物体の放物運動（空中での衝突・台車から発射）", h:"#4-1", c:"02", inc:["④-1","④-2"]}),
+  S({p:"basics", no:"④-3", t:"モンキーハンティングゲーム", h:"#4-3", c:"02", g:["game"]}),
+  S({p:"basics", no:"⑤", t:"入試物理（防衛大・横浜市大・東京大）", h:"#5-1", c:"02", g:["exam"], inc:["⑤-1","⑤-2","⑤-3"]}),
+
+  /* ===== 力学的エネルギー　25 本 → 10 件 ===== */
+  S({p:"energy", no:"①-3", t:"直線の滑台（すべり下りる・のぼる）", h:"#m1-3", c:"04", g:["kiso"], inc:["①-1","①-3","①-4"], q:MEMO}),
+  S({p:"energy", no:"①-5", t:"曲線の滑台・振り子", h:"#m1-5", c:"04", g:["kiso"], inc:["①-5","①-6","①-13"]}),
+  S({p:"energy", no:"①-7", t:"ジェットコースター", h:"#m1-7", c:"04", g:["kiso"]}),
+  S({p:"energy", no:"①-8", t:"自由落下・斜方投射", h:"#m1-8", c:"04", g:["kiso"], inc:["①-2","①-8"]}),
+  S({p:"energy", no:"①-9", t:"水平ばね", h:"#m1-9", c:"04", g:["kiso"], inc:["①-9","①-10","①-11"]}),
+  S({p:"energy", no:"①-12", t:"鉛直ばね", h:"#m1-12", c:"04", g:["kiso"], q:"①-14 の中身が分からないので、作る前にどこへ入れるか決めます"}),
+  S({p:"energy", no:"②-1", t:"摩擦があるとき（水平面・斜面・ばね）", h:"#m2-1", c:"04", g:["kiso"], inc:["②-1","②-2","②-4","②-5"]}),
+  S({p:"energy", no:"②-3", t:"鉛直のばね（手でゆっくり下ろす）", h:"#m2-3", c:"04", g:["kiso"]}),
+  S({p:"energy", no:"③-2", t:"2 物体のエネルギー（糸と滑車・ばね）", h:"#m3-2", c:"04", g:["kiso"], inc:["③-1","③-2","③-3","③-5","③-6"]}),
+  S({p:"energy", no:"③-4", t:"2 物体のエネルギー（板の上で滑る物体）", h:"#m3-4", c:"04", g:["kiso"]}),
+
+  /* ===== 剛体　18 本 → 8 件（⑥ は運動量へ） ===== */
+  S({p:"rigid", no:"①-1", t:"力のモーメント（回転させるはたらき）とは何か", h:"#1-1", c:"03"}),
+  S({p:"rigid", no:"①-2", t:"回転しないような力の加え方はあるか？ ～力 1 つ・2 つ・3 つ～", h:"#1-2-2", c:"03", inc:["①-2-(1)","①-2-(2)","①-2-(3)","①-2-(4)"], q:"行き先は千葉さんがいちばん力を入れた ①-2-(2)"}),
+  S({p:"rigid", no:"②-1", t:"剛体のつりあい ～指の上のペン・糸でつるした棒～", h:"#2-1", c:"03", inc:["②-1","②-2"]}),
+  S({p:"rigid", no:"②-3", t:"壁に立てかけた棒 ～いつすべり出す？～", h:"#2-3", c:"03"}),
+  S({p:"rigid", no:"③-1", t:"重心の求め方 ～質点・つないだ板～", h:"#3-1", c:"03", inc:["③-1","③-2","③-4"]}),
+  S({p:"rigid", no:"③-3", t:"穴のあいた円板 ～切り抜いた円板も質点～", h:"#3-3", c:"03"}),
+  S({p:"rigid", no:"④", t:"箱の回転 ～傾くのが先か滑るのが先か～", h:"#4-2", c:"03", inc:["④-1","④-2","④-3"], q:"剛体ページの④へとばすか、「箱の回転」ページへとばすか → 決めてほしいこと②"}),
+  S({p:"rigid", no:"⑤", t:"安定なつりあい・不安定なつりあい", h:"#5-1", c:"03", inc:["⑤-1","⑤-2"]}),
+
+  /* ===== 運動量　23 本 → 9 件 ＋ クイズなど 4 件 ===== */
+  S({p:"mom", no:"①-1", t:"直線上で動く物体に力積を加える（ハンマーでたたく）", h:"#1-1", c:"05"}),
+  S({p:"mom", no:"①-2", t:"平面上を動く物体に力積を加える（バットで向きを変える）", h:"#1-2", c:"05"}),
+  S({p:"mom", no:"②-1", t:"直線上の衝突", h:"#2-1", c:"05"}),
+  S({p:"mom", no:"②-2", t:"平面上の衝突（真上から見た図）", h:"#2-2", c:"05"}),
+  S({p:"mom", no:"②-3", t:"ニュートンのゆりかご", h:"#2-3-1", c:"05", inc:["②-3-1","②-3-2"]}),
+  S({p:"mom", no:"③", t:"反発係数（床との衝突・2 物体）", h:"#3-1", c:"05", inc:["③-1","③-2","③-3"]}),
+  S({p:"mom", no:"④", t:"2物体の衝突（様々な e）", h:"#4-1", c:"05", inc:["④-1","④-2","④-3","④-4"]}),
+  S({p:"mom", no:"⑤", t:"「衝突」で覚えておくべき5つのこと", h:"#5-1", c:"05", inc:["⑤-1","⑤-2","⑤-3","⑤-4","⑤-5"]}),
+  S({p:"mom", no:"⑥", t:"入試物理（分裂・板の上・ばね付き・斜め台）", h:"#6-1", c:"05", g:["exam"], inc:["⑥-1","⑥-2","⑥-3","⑥-4"]}),
+  S({p:"quizb", t:"保存則クイズ　基本編", c:"05", g:["quiz"], inc:["問1〜問15"]}),
+  S({p:"quiza", t:"保存則クイズ　難関大受験編", c:"05", g:["quiz"], q:"ページを開けなかった"}),
+  S({p:"rigid", no:"⑥", t:"上級者向け解説・重心ミニ実験室", h:"#6-1", c:"05", g:["read"], q:"保存則クイズ（難関大）#advbox と同じ名前。どちらへとばすか → 決めてほしいこと③"}),
+  S({p:"cart", t:"2026年8月 校内模試の力学の問題 ～動く台の上のばねと円弧面上の運動～", c:"05", g:["exam"], q:"ページを開けなかった"}),
+
+  /* ===== 円運動　16 本 → 9 件 ===== */
+  S({p:"circ", no:"①-1", t:"等速円運動の基本的な物理量", h:"#1-1", c:"06", inc:["①-1","②-3"]}),
+  S({p:"circ", no:"②-1", t:"ターンテーブルの上の物体（摩擦・ばね）", h:"#2-1", c:"06", inc:["②-1","②-2"]}),
+  S({p:"circ", no:"②-4", t:"円錐振り子", h:"#2-4", c:"06"}),
+  S({p:"circ", no:"②-5", t:"太陽と地球・電荷のまわりの円運動", h:"#2-5", c:"06", inc:["②-5","②-6"]}),
+  S({p:"circ", no:"②-7", t:"磁場中の荷電粒子の運動", h:"#2-7", c:"06", q:"電磁気にも重ねて出すか → 決めてほしいこと⑤"}),
+  S({p:"circ", no:"③-1", t:"円筒面・ループを上る小球", h:"#3-1", c:"06", inc:["③-1","③-2","③-3"]}),
+  S({p:"circ", no:"③-4", t:"なめらかな円筒面を滑りおりる小球", h:"#3-4", c:"06"}),
+  S({p:"circ", no:"③-5", t:"糸による円運動", h:"#3-5", c:"06", inc:["③-5","③-6"]}),
+  S({p:"circ", no:"④", t:"最高点まで昇る条件", h:"#4-1", c:"06", inc:["④-1","④-2"]}),
+
+  /* ===== 慣性力　12 本 → 7 件 ===== */
+  S({p:"inert", no:"①-1", t:"電車とエレベーター", h:"#1-1", c:"07"}),
+  S({p:"inert", no:"①-2", t:"エレベーターの中の小球・はかり", h:"#1-2", c:"07", inc:["①-2","①-3"]}),
+  S({p:"inert", no:"①-4", t:"ミニコラム　慣性系・非慣性系とは何か", h:"#1-4", c:"07", g:["read"]}),
+  S({p:"inert", no:"②-1", t:"電車の中で糸につるされた小球", h:"#2-1", c:"07", inc:["②-1","②-4"]}),
+  S({p:"inert", no:"②-2", t:"斜め台の上の物体", h:"#2-2", c:"07", inc:["②-2","②-3"]}),
+  S({p:"inert", no:"③-1", t:"回転台の上の小球 ～遠心力～", h:"#3-1", c:"07"}),
+  S({p:"inert", no:"④", t:"入試物理（2016 東北大）", h:"#4-1", c:"07", g:["exam"], inc:["④-1","④-2","④-3"]}),
+
+  /* ===== 単振動　20 本 → 11 件 ===== */
+  S({p:"shm", no:"①-1", t:"単振動と等速円運動の関係", h:"#1-1", c:"08"}),
+  S({p:"shm", no:"①-2", t:"単振動の基本的な物理量", h:"#1-2", c:"08"}),
+  S({p:"shm", no:"①-3", t:"単振動のエネルギー（基本）", h:"#1-3", c:"08"}),
+  S({p:"shm", no:"②-1", t:"ばね振り子（水平・両側・鉛直・斜面）", h:"#2-1", c:"08", inc:["②-1","②-2","②-3","②-4"]}),
+  S({p:"shm", no:"②-5", t:"摩擦がある場合", h:"#2-5", c:"08"}),
+  S({p:"shm", no:"②-6", t:"単振り子", h:"#2-6", c:"08"}),
+  S({p:"shm", no:"②-7", t:"浮力による単振動", h:"#2-7", c:"08"}),
+  S({p:"shm", no:"②-8", t:"地球トンネルの単振動", h:"#2-8", c:"08"}),
+  S({p:"shm", no:"③-1", t:"周期がどの物理量に依存するのか", h:"#3-1", c:"08"}),
+  S({p:"shm", no:"③-2", t:"単振動のエネルギー U = ½kx²", h:"#3-2", c:"08", inc:["③-2","③-3"]}),
+  S({p:"shm", no:"④", t:"入試物理（ばねで打ち出される小球ほか 6 題）", h:"#4-1", c:"08", g:["exam"], inc:["④-1","④-2","④-3","④-4","④-5","④-6"]}),
+
+  /* ===== 万有引力　16 本 → 8 件 ===== */
+  S({p:"cel", no:"1-0", t:"太陽系の様子", h:"#m1-1", c:"09", q:MEMO}),
+  S({p:"cel", no:"1-1", t:"ケプラーの第1法則（楕円軌道）", h:"#m1-2", c:"09"}),
+  S({p:"cel", no:"1-2", t:"ケプラーの第2法則（面積速度）", h:"#m1-3", c:"09"}),
+  S({p:"cel", no:"1-3", t:"ケプラーの第3法則", h:"#m1-4", c:"09", inc:["1-3","1-4 まとめ"]}),
+  S({p:"cel", no:"2-1", t:"万有引力と位置エネルギー", h:"#m2-2", c:"09"}),
+  S({p:"cel", no:"2-2", t:"軌道の種類と宇宙速度", h:"#m2-3", c:"09"}),
+  S({p:"cel", no:"2-3", t:"人工衛星の周期・静止衛星", h:"#m2-4", c:"09"}),
+  S({p:"cel", no:"③", t:"入試物理（楕円軌道への遷移・地球トンネル・地球と月）", h:"#m3-1", c:"09", g:["exam"], inc:["3-1","3-2","3-3"]}),
+
+  /* ===== 波の基礎　19 本 → 13 件 ===== */
+  S({p:"wb", no:"①-1", t:"波の発生と進み方と基本要素", h:"#1-1", c:"10", g:["kiso"], inc:["①-1","①-4"], nw:true}),
+  S({p:"wb", no:"①-2", t:"y-x グラフと y-t グラフ", h:"#1-2", c:"10", g:["kiso"], nw:true}),
+  S({p:"wb", no:"①-3", t:"縦波", h:"#1-3", c:"10", g:["kiso"], nw:true}),
+  S({p:"wb", no:"②-1", t:"左右の波源からの波 ～定在波～", h:"#2-1", c:"10", g:["kiso"], nw:true}),
+  S({p:"wb", no:"②-2", t:"波の反射（固定端反射と自由端反射）", h:"#2-2", c:"10", g:["kiso"], nw:true}),
+  S({p:"wb", no:"②-3", t:"固有振動と共振", h:"#2-3", c:"10", g:["kiso"], nw:true}),
+  S({p:"wb", no:"③-1", t:"音の三要素", h:"#3-1", c:"11", g:["kiso"], nw:true}),
+  S({p:"wb", no:"③-2", t:"うなり", h:"#3-2", c:"11", g:["kiso"], nw:true}),
+  S({p:"wb", no:"③-3", t:"弦と気柱の固有振動と共鳴 ～モノコード・水柱の実験～", h:"#3-3", c:"11", g:["kiso"], inc:["③-3","③-4","③-5"], nw:true}),
+  S({p:"wb", no:"④-1", t:"倍音と楽器ごとの音色 ～自由に音を作ろう～", h:"#4-1", c:"11", nw:true}),
+  S({p:"wb", no:"④-2", t:"楽器のしくみ ～波長の違いの作り方・倍音だけの楽器～", h:"#4-2", c:"11", inc:["④-2","④-3","④-4"], nw:true}),
+  S({p:"wb", no:"④-5", t:"和音（コード）とは何か", h:"#4-5", c:"11", nw:true}),
+  S({p:"wb", no:"④-6", t:"純正律と平均律", h:"#4-6", c:"11", inc:["④-6","④-7"], nw:true}),
+
+  /* ===== 光の干渉 ===== */
+  S({p:"young", t:"光の干渉①　ヤングの実験", c:"12", q:"ページを開けなかった"}),
+  S({p:"grat",  t:"光の干渉②　回折格子", c:"12", q:"ページを開けなかった"}),
+  S({p:"film",  t:"光の干渉③　薄膜の干渉", c:"12", q:"ページを開けなかった"}),
+
+  /* ===== 電磁気 ===== */
+  S({p:"circuit", no:"①", t:"抵抗の直流回路", c:"13", q:"千葉さんの指定（各モード）。アドレスでタブを開けるか要確認"}),
+  S({p:"circuit", no:"②", t:"コンデンサー・コイルの直流回路", c:"13", q:"同上"}),
+  S({p:"circuit", no:"③", t:"交流回路", c:"13", q:"同上"}),
+  S({p:"mb", t:"メートルブリッジ ～接点を動かして「同じ高さ」の点を探そう～", c:"13", inc:["①-1〜②-3"], nw:true, q:"千葉さんの指定（1 件）"}),
+
+  /* ===== 原子 ===== */
+  S({p:"pe", no:"1", t:"光電効果の基礎", h:"#s1", c:"14", nw:true}),
+  S({p:"pe", no:"2", t:"光電効果の実験", h:"#s2", c:"14", nw:true}),
+
+  /* ===== そのほか ===== */
+  S({p:"ma", t:"動画解析・トラッキングツール", c:"15", q:"ページを開けなかった（ツールなので 1 件の予定）"}),
+  S({p:"logI", t:"慣性力のページができるまで　AIとの共同作業の記録", c:"16", g:["read"]}),
+  S({p:"logM", t:"動画解析アプリができるまで　AIとの共同作業の記録", c:"16", g:["read"]}),
+  S({p:"logF", t:"薄膜の干渉ができるまで　AIとの共同作業の記録", c:"16", g:["read"]})
+];
+
+/* 一覧に出さないもの（ページの中にはそのまま残る） */
+var DROP = {
+  energy: [["①-14","中身が分からない（作る前に確かめる）"]],
+  cel:    [["補足","地動説とケプラーの法則の歴史（読みもの）"],["補足","ケプラー則の本質（読みもの）"],["補足","スイングバイ（読みもの）"],
+           ["4-1","角運動量とフィギュアスケーター（読みもの）"],["4-2","ハレー彗星とニュートン（読みもの）"]]
+};
+
+</script>
+<script>
+(function(){
+  "use strict";
+  var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
+  var catById={}; CATS.forEach(function(c){ catById[c.id]=c; });
+  var fc=function(cid){ var c=catById[cid]; return FIELDS[c.f].c; };
+  var cnt={}; ITEMS.forEach(function(it){ cnt[it.c]=(cnt[it.c]||0)+1; });
+  var total=ITEMS.length;
+  document.getElementById("nTotal").textContent=total; document.getElementById("nTotal0").textContent=total;
+  document.getElementById("mTotal").textContent=total;
+  var d=new Date(); document.getElementById("today").textContent=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+
+  /* 題名：～…～ を小さく */
+  function title(t){
+    var m=String(t).match(/^(.*?)\s*(～.*～)\s*$/);
+    return m? esc(m[1])+' <span class="sub">'+esc(m[2])+'</span>' : esc(t);
+  }
+
+  /* --- 数字のまとめ --- */
+  var nPages=Object.keys(PAGES).length, nSplit=0, nMerge=0, nQ=0;
+  ITEMS.forEach(function(it){ it.how = it.inc.length>=2? "merge" : (it.h? "split" : "one"); if(it.how==="split")nSplit++; if(it.how==="merge")nMerge++; if(it.q)nQ++; });
+  document.getElementById("stat").innerHTML=
+    '<div><b>'+nPages+'</b><span>いまの HTML（作成後記ふくむ）</span></div>'+
+    '<div><b>176 → '+total+'</b><span>一覧に出す件数（第1案 → 第2案）</span></div>'+
+    '<div><b>'+CATS.length+'</b><span>カテゴリ</span></div>'+
+    '<div><b>'+nQ+'</b><span>要確認の件</span></div>';
+
+  /* --- カテゴリのタイル --- */
+  var state={cat:null, tag:null, q:""};
+  function renderCats(){
+    var html="", lastF=null;
+    CATS.forEach(function(c){
+      if(c.f!==lastF){
+        if(lastF!==null) html+='</div>';
+        html+='<div class="fgroup"><i style="background:'+FIELDS[c.f].c+'"></i>'+esc(FIELDS[c.f].n)+'</div><div class="cats">';
+        lastF=c.f;
+      }
+      html+='<button type="button" class="cat'+(state.cat===c.id?' on':'')+'" data-cat="'+c.id+'" style="--fc:'+FIELDS[c.f].c+'" aria-pressed="'+(state.cat===c.id)+'">'+
+        '<span class="no">'+c.id+'</span><span class="nm">'+esc(c.n)+'</span><span class="en">'+esc(c.en)+'</span><span class="ct">'+(cnt[c.id]||0)+'</span></button>';
+    });
+    html+='</div>';
+    var el=document.getElementById("cats"); el.innerHTML=html;
+    el.querySelectorAll(".cat").forEach(function(b){
+      b.addEventListener("click",function(){
+        state.cat=(state.cat===b.dataset.cat)? null : b.dataset.cat;
+        renderCats(); renderRes(true);
+      });
+    });
+  }
+
+  /* --- タグの絞りこみ --- */
+  function renderChips(){
+    var defs=[["","すべて",total],["new","NEW",ITEMS.filter(function(i){return i.nw;}).length]];
+    Object.keys(TAGS).forEach(function(k){ defs.push([k,TAGS[k],ITEMS.filter(function(i){return i.g.indexOf(k)>=0;}).length]); });
+    var el=document.getElementById("chips");
+    el.innerHTML=defs.map(function(d){
+      var on=(state.tag||"")===d[0];
+      return '<button type="button" class="chip'+(on?' on':'')+'" data-tag="'+d[0]+'">'+esc(d[1])+'<b>'+d[2]+'</b></button>';
+    }).join("");
+    el.querySelectorAll(".chip").forEach(function(b){
+      b.addEventListener("click",function(){ state.tag=b.dataset.tag||null; renderChips(); renderRes(false); });
+    });
+  }
+
+  /* --- 一覧 --- */
+  function href(it){ return BASE+PAGES[it.p].f+(it.h||""); }
+  function row(it){
+    var pg=PAGES[it.p].n;
+    return '<li><a href="'+esc(href(it))+'" target="_blank" rel="noopener" style="--fc:'+fc(it.c)+'">'+
+      '<span class="bno">'+(it.no?esc(it.no):'—')+'</span>'+
+      '<span class="tt">'+title(it.t)+(it.nw?'<span class="nw">NEW</span>':'')+'<span class="pg">'+esc(pg)+'</span></span></a></li>';
+  }
+  function renderRes(scroll){
+    var q=state.q.trim();
+    var list=ITEMS.filter(function(it){
+      if(state.cat && it.c!==state.cat) return false;
+      if(state.tag==="new" && !it.nw) return false;
+      if(state.tag && state.tag!=="new" && it.g.indexOf(state.tag)<0) return false;
+      if(q && (it.t+" "+PAGES[it.p].n).toLowerCase().indexOf(q.toLowerCase())<0) return false;
+      return true;
+    });
+    var head;
+    if(state.cat){ var c=catById[state.cat]; head=c.id+'　'+esc(c.n); }
+    else head='すべて';
+    if(state.tag) head+='　／　'+(state.tag==="new"?"NEW":esc(TAGS[state.tag]));
+    if(q) head+='　／　「'+esc(q)+'」';
+    var html='<div class="rhead">'+head+'<span class="cnt">'+list.length+' 件</span>'+
+      ((state.cat||state.tag||q)?'<button type="button" class="clr" id="clr">しぼりこみを外す</button>':'')+'</div>';
+    if(!list.length){ html+='<div class="empty">あてはまるものがありません。</div>'; }
+    else if(state.cat){ html+='<ul class="list">'+list.map(row).join("")+'</ul>'; }
+    else{
+      CATS.forEach(function(c){
+        var sub=list.filter(function(it){return it.c===c.id;}); if(!sub.length) return;
+        html+='<div class="ghead" style="--fc:'+FIELDS[c.f].c+'"><i></i>'+c.id+'　'+esc(c.n)+'<span class="cnt" style="font-weight:400;color:var(--ink3);font-size:.8rem">'+sub.length+' 件</span></div>';
+        html+='<ul class="list">'+sub.map(row).join("")+'</ul>';
+      });
+    }
+    var el=document.getElementById("res"); el.innerHTML=html;
+    var clr=document.getElementById("clr");
+    if(clr) clr.addEventListener("click",function(){ state.cat=null; state.tag=null; state.q=""; document.getElementById("q").value=""; renderCats(); renderChips(); renderRes(false); });
+    if(scroll){ var top=el.getBoundingClientRect().top+window.pageYOffset-12; window.scrollTo({top:top,behavior:"smooth"}); }
+  }
+  document.getElementById("q").addEventListener("input",function(e){ state.q=e.target.value; renderRes(false); });
+
+  /* --- ページごとの表 --- */
+  var HOWN={split:"分ける",merge:"まとめる",one:"1 件"};
+  function renderPages(){
+    var order=[]; ITEMS.forEach(function(it){ if(order.indexOf(it.p)<0) order.push(it.p); });
+    var html="";
+    order.forEach(function(k){
+      var P=PAGES[k], its=ITEMS.filter(function(i){return i.p===k;});
+      var hows={}; its.forEach(function(i){ hows[i.how]=1; });
+      var anyQ=its.some(function(i){return i.q;}) || P.src!=="page";
+      var badges=Object.keys(hows).map(function(h){return '<span class="how '+h+'">'+HOWN[h]+'</span>';}).join(" ")+(anyQ?' <span class="how q">要確認</span>':'');
+      var src=P.src==="page"?"ページを開いて確認":(P.src==="memo"?"設計メモから（ページは未確認）":"開けなかった");
+      html+='<details class="pg"><summary><span class="pgn">'+esc(P.n)+'</span>'+badges+
+        '<span class="pgc"><b>'+its.length+'</b> 件</span><span class="pgf" style="flex-basis:100%">'+esc(P.f)+'　·　'+src+'</span></summary>'+
+        '<div class="tblwrap"><table class="tbl"><thead><tr><th>番号</th><th>題名</th><th>まとめた中身</th><th>カテゴリ</th><th>行き先</th><th>扱い・メモ</th></tr></thead><tbody>'+
+        its.map(function(i){
+          var c=catById[i.c];
+          var tags=i.g.map(function(g){return '<span class="tag">'+esc(TAGS[g])+'</span>';}).join("");
+          return '<tr><td class="no">'+esc(i.no||"—")+'</td><td><a href="'+esc(href(i))+'" target="_blank" rel="noopener">'+title(i.t)+'</a> '+tags+(i.nw?' <span class="tag" style="color:var(--brand);border-color:var(--brand)">NEW</span>':'')+'</td>'+
+            '<td class="no" style="font-size:.76rem;white-space:normal">'+(i.inc.length?esc(i.inc.join('・')):'')+'</td>'+'<td class="cat2"><span style="color:'+FIELDS[c.f].c+';font-weight:700">'+c.id+'</span> '+esc(c.n)+'</td>'+
+            '<td class="h">'+esc(i.h||"（ページ）")+'</td>'+
+            '<td><span class="how '+i.how+'">'+HOWN[i.how]+'</span>'+(i.q?'<div class="memo" style="color:var(--q);font-size:.76rem;margin-top:2px">'+esc(i.q)+'</div>':'')+'</td></tr>';
+        }).join("")+'</tbody></table>'+
+        ((typeof DROP!=="undefined" && DROP[k])? '<p class="note" style="margin:8px 0 0"><b>一覧に出さないもの：</b>'+DROP[k].map(function(d){return esc(d[0])+' '+esc(d[1]);}).join("　／　")+'</p>' : '')+
+        '</div></details>';
+    });
+    document.getElementById("pages").innerHTML=html;
+
+    var none=Object.keys(PAGES).filter(function(k){return PAGES[k].src==="none";});
+    document.getElementById("nNone").textContent=none.length;
+    document.getElementById("noneList").innerHTML=none.map(function(k){return '<li>'+esc(PAGES[k].n)+'　<code>'+esc(PAGES[k].f)+'</code></li>';}).join("");
+  }
+
+  renderCats(); renderChips(); renderRes(false); renderPages();
+})();
+</script>
+</body>
+</html>
