@@ -650,9 +650,8 @@ body.searching #finder{display:none}
 .fpill .n{font-weight:400;font-variant-numeric:tabular-nums;color:var(--ink-4)}
 .fpill:hover{box-shadow:0 0 0 2px var(--fc);color:var(--ink)}
 .fpill:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
-.fpill.on{background:var(--fc);color:#fff;box-shadow:none}
-.fpill.on i{background:#fff}
-.fpill.on .n{color:rgba(255,255,255,.8)}
+.fpill.on{background:var(--fcl,var(--paper-2));color:var(--ink);box-shadow:0 0 0 2px var(--fc)}
+.fpill.on .n{color:var(--ink-3)}
 .fsep{width:1px;align-self:stretch;margin:4px 4px;background:var(--rule-2)}
 .tagpill{--fc:var(--ink);padding-left:13px}
 .cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
@@ -669,15 +668,18 @@ body.searching #finder{display:none}
 .cct{grid-column:3;grid-row:1/4;font-size:1.45rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:-.02em}
 a.cat:hover{box-shadow:var(--sh-2),0 0 0 2px var(--fc);transform:translateY(-1px)}
 a.cat:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
-a.cat.on{background:var(--fc);color:#fff;box-shadow:var(--sh-2)}
-a.cat.on .cno,a.cat.on .cen,a.cat.on .cct{color:#fff}
-a.cat.on::after{background:rgba(255,255,255,.5)}
+a.cat.on{background:var(--fcl);box-shadow:var(--sh-2),0 0 0 2px var(--fc)}
 .cat-soon{background:transparent;box-shadow:none;border:1.5px dashed var(--rule-2);color:var(--ink-3);grid-template-columns:minmax(0,1fr)}
 .cat-soon::after,.cat-soon .cimg{display:none}
 .cat-soon .cno{color:var(--ink-4);font-family:var(--f-jph);font-size:.68rem;letter-spacing:.1em}
 
 /* ---------- しぼりこみ ---------- */
 .results{margin:34px 0 0;scroll-margin-top:calc(var(--navh) + 12px)}
+/* カテゴリ（分野）を選んでいるときは、その色を薄くしいたエリアにする */
+.results.tinted{background:var(--tbg);box-shadow:0 0 0 1px var(--tbd);border-radius:var(--r-xl);padding:20px 20px 24px}
+.results.tinted .rhead h2{color:var(--ink)}
+.results.tinted .fchip{background:rgba(255,255,255,.7)}
+.results.tinted .fchip.on{background:var(--ink)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .fchip{font:inherit;font-family:var(--f-jph);font-size:.78rem;font-weight:700;cursor:pointer;border:0;border-radius:999px;
   padding:5px 13px;min-height:32px;background:var(--paper-2);color:var(--ink-2)}
@@ -764,6 +766,8 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
   .results{margin-top:26px}
   /* しぼりこみは 1 行にして、横にすべらせる（ページ全体は横にはみ出さない） */
   .chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px 12px;padding:2px 16px 4px;scrollbar-width:none}
+  .results.tinted{padding:14px 10px 16px;border-radius:var(--r-l)}
+  .results.tinted .chips{margin:0 -10px 12px;padding:2px 10px 4px}
   .chips::-webkit-scrollbar{display:none}
   .fchip{flex:none}
   .ent{padding:9px 12px;gap:10px}
@@ -1391,6 +1395,14 @@ const COMING = [
   var ALL = SITE.concat(EXPSITE);
   var secColor = {};
   ALL.forEach(function(sec){ secColor[sec.id] = sec.color; });
+  /* 色を白と混ぜて薄くする（a … 元の色の割合 0〜1） */
+  var tint = function(hex, a){
+    var m = String(hex).match(/^#([0-9a-f]{6})$/i);
+    if (!m) return "#f3f1ec";
+    var n = parseInt(m[1], 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    var f = function(v){ return Math.round(v * a + 255 * (1 - a)); };
+    return "rgb(" + f(r) + "," + f(g) + "," + f(b) + ")";
+  };
   var catById = {};
   CATS.forEach(function(c){ c.color = secColor[c.f] || "#5b6672"; catById[c.id] = c; });
   /* 文字のゆれ（全角・半角）をそろえて小文字に */
@@ -1455,7 +1467,7 @@ const COMING = [
       var col = g.color || secColor[g.ids[0]] || "#5b6672";
       var onF = (state.field === g);
       var n = ENTRIES.filter(function(e){ return e.cats.some(function(c){ return g.ids.indexOf(catById[c].f) >= 0; }); }).length;
-      h += '<a class="fpill' + (onF ? ' on' : '') + '" href="#sec-' + esc(g.key || g.ids[0]) + '" style="--fc:' + esc(col) + '"' +
+      h += '<a class="fpill' + (onF ? ' on' : '') + '" href="#sec-' + esc(g.key || g.ids[0]) + '" style="--fc:' + esc(col) + ';--fcl:' + tint(col, .12) + '"' +
            (onF ? ' aria-current="true"' : '') + '><i></i>' + esc(g.name) + '<span class="n">' + n + '</span></a>';
     });
     /* 印だけで選ぶ（カテゴリに関係なく、ゲームだけ・クイズだけ…） */
@@ -1472,7 +1484,7 @@ const COMING = [
     CATS.forEach(function(c){
       var on = (state.cat === c.id);
       h += '<a class="cat' + (on ? ' on' : '') + '" href="#c' + esc(c.id) + '" data-cat="' + esc(c.id) + '"' +
-           ' style="--fc:' + esc(c.color) + '"' + (on ? ' aria-current="true"' : '') + '>' +
+           ' style="--fc:' + esc(c.color) + ';--fcl:' + tint(c.color, .12) + '"' + (on ? ' aria-current="true"' : '') + '>' +
            '<span class="cimg">' + (c.img ? '<img src="' + esc(c.img) + '?v=' + IMG_V + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') + '</span>' +
            '<span class="cno">' + esc(c.id) + '</span>' +
            '<span class="cnm">' + esc(c.n) + '</span>' +
@@ -1592,6 +1604,16 @@ const COMING = [
       });
     }
     listEl.innerHTML = h;
+    /* 選んでいるカテゴリ（分野）の色を、一覧のエリアに薄くしく */
+    var rs = document.getElementById("results");
+    var col = state.cat ? catById[state.cat].color
+            : state.field ? (state.field.color || secColor[state.field.ids[0]]) : "";
+    rs.classList.toggle("tinted", !!col);
+    if (col){
+      rs.style.setProperty("--tc", col);
+      rs.style.setProperty("--tbg", tint(col, .07));
+      rs.style.setProperty("--tbd", tint(col, .28));
+    }
     var clr = document.getElementById("rclr");
     if (clr) clr.addEventListener("click", function(){
       state.cat = null; state.field = null; state.tag = ""; state.q = ""; q.value = "";
