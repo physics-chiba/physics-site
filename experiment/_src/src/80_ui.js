@@ -36,6 +36,7 @@ function busyProg(f){
 }
 /* 動画エリアの最初の案内（リセット後も同じ文にもどす） */
 var VPH_HTML='<span class="hl">ここをクリック</span>して<b>動画を選択</b>してください。<br>このエリアに<span class="hl">ドラッグ＆ドロップ</span>でもOK'+
+  '<div class="vphsamp hide" id="vphSamp"></div>'+
   '<div class="note vlimit"><b>解析できる動画のめやす</b><br>長さ <b>5〜30 秒</b>（<b>40 秒まで</b>。長いほど解析に時間がかかります）／'+
   '画質は <b>フルHD（1920×1080）まで</b>／ファイルは <b>100 MB 以内</b>。<br>'+
   '<span class="mini" style="color:inherit">40 秒より長い動画は開けません。見たい運動の前後だけを切り出してください。'+
@@ -807,13 +808,37 @@ function rewindToRangeStart(){
   var a=rangeStart(EXP());
   setTimeout(function(){ vidSeek(a).then(function(){ afterSeek(); }); }, 30);
 }
+/* サンプル動画を読む（上の［サンプルから］・動画エリアのリンク） */
+function loadSample(f){
+  if(!f) return;
+  var s0=SAMPLES.filter(function(x){ return x.f===f; })[0];
+  UI.loadingSample=true;
+  askKeepExp(function(){ loadVideoUrl(f, s0? s0.n : f); });
+}
+/* 動画エリアの「ここをクリックして動画を選択…」の下に「サンプルから始めることもできます」と、サンプルへのリンク。
+   上の［サンプルから］にあるもの（置いてあるもの）だけを出す。課題ファイルでは出さない */
+function renderVphSamples(){
+  var box=$('vphSamp'), ss=$('selSample'); if(!box || !ss) return;
+  var list=[]; for(var i=1;i<ss.options.length;i++) list.push({f:ss.options[i].value, n:ss.options[i].textContent});
+  if(!list.length || window.KADAI || ss.classList.contains('hide')){ box.classList.add('hide'); box.innerHTML=''; return; }
+  box.innerHTML='<span class="vs-t">サンプルから始めることもできます：</span>'+
+    list.map(function(x){ return '<a href="#" class="vs-a" data-f="'+esc(x.f)+'">'+esc(x.n)+'</a>'; }).join('');
+  box.classList.remove('hide');
+  els('#vphSamp .vs-a').forEach(function(a){
+    a.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); loadSample(a.dataset.f); });
+  });
+}
 /* いま押してほしいボタンを光らせる（2 の中の順番も案内する） */
 function updateGuide(){
   var e=EXP(), st=(APP.editStep&&APP.editStep<APP.step)?APP.editStep:APP.step;
   els('.btn.glow').forEach(function(b){ if(b.id!=='btnM2Live') b.classList.remove('glow'); });   /* ②の「動画と一緒に…」は m2ModeButtons が管理 */
   els('#tabs button.glow').forEach(function(b){ b.classList.remove('glow'); });
   /* 1：動画をえらぶまでは「動画ファイルを選択」を光らせる */
-  if(st===1 && !VID.ready) $('btnFile').classList.add('glow');
+  if(st===1 && !VID.ready){
+    $('btnFile').classList.add('glow');
+    /* はじめて開いたときは［サンプルから］もオレンジで光らせる（置いてあるときだけ。課題ファイルでは出さない） */
+    var ssg=$('selSample'); if(ssg && !ssg.classList.contains('hide') && ssg.options.length>1 && !window.KADAI) ssg.classList.add('glow');
+  }
   /* 4：まず「トラッキングを開始する」、押したら動画そのものを光らせる */
   /* 4 に入った直後：まず「進むフレーム数 N」を動画の真ん中で決めてもらう（決めるまで開始ボタンは出さない） */
   if(!UI.trimLock){
@@ -2969,7 +2994,7 @@ function bindUI(){
     VID.limit=null; VID.frames=[]; VID.ready=false; VID.cur=0; VID.name='';
     try{ VID.el.pause(); VID.el.removeAttribute('src'); VID.el.load(); }catch(err){}
     $('vph').classList.remove('hide');
-    $('vph').innerHTML=VPH_HTML;
+    $('vph').innerHTML=VPH_HTML; renderVphSamples();
     $('cvView').classList.add('hide'); $('cvOv').classList.add('hide');
     $('vinfo').textContent='動画はまだ読み込まれていません。';
     $('ftState').textContent='未測定'; $('vidErr').classList.add('hide');
@@ -3017,6 +3042,7 @@ function bindUI(){
     while(ss.options.length>1) ss.remove(1);
     list.forEach(function(s){ var o=document.createElement('option'); o.value=s.f; o.textContent=s.n; ss.appendChild(o); });
     ss.classList.toggle('hide', list.length===0);
+    renderVphSamples(); setTimeout(function(){ try{ updateGuide(); }catch(e){} }, 0);
   }
   fillSamples(SAMPLES);
   if(/^https?:$/.test(location.protocol) && window.fetch && SAMPLES.length){
@@ -3236,10 +3262,7 @@ function askResetPts(go){
   $('vph').onclick=function(){ if(!VID.ready) $('btnFile').click(); };
   $('selSample').onchange=function(){
     var f=this.value; this.value='';
-    if(!f) return;
-    var s0=SAMPLES.filter(function(x){ return x.f===f; })[0];
-    UI.loadingSample=true;
-    askKeepExp(function(){ loadVideoUrl(f, s0? s0.n : f); });
+    loadSample(f);
   };
   $('btnSbs').onclick=function(){
     setSbs(!el('.rightcol').classList.contains('sbs'));

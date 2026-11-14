@@ -861,6 +861,27 @@ async function setMovSource(page, type) {
     await p.context().close();
   }
 
+
+  console.log('X. はじめての画面：［サンプルから］を光らせる・動画エリアにサンプルのリンク');
+  {
+    const p = await L.newPage(browser, null, { flags: false });
+    await p.waitForTimeout(500);
+    const r = await p.evaluate(() => ({ glow: document.getElementById('selSample').classList.contains('glow'), shown: !document.getElementById('vphSamp').classList.contains('hide'),
+      txt: document.getElementById('vphSamp').textContent, links: [...document.querySelectorAll('#vphSamp .vs-a')].map(a => a.dataset.f) }));
+    check('はじめは［サンプルから］が光り、動画エリアに「サンプルから始めることもできます」とサンプルのリンク', r.glow && r.shown && /サンプルから始めることもできます/.test(r.txt) && r.links.length === 5 && r.links[0] === 'samples/1_tousoku.mp4', r);
+    let chooser = false; p.on('filechooser', () => { chooser = true; });
+    await p.evaluate(() => { window.__ld = null; window.loadVideoUrl = function (u, n) { window.__ld = [u, n]; }; });
+    await p.click('#vphSamp .vs-a >> nth=1'); await p.waitForTimeout(300);
+    const ld = await p.evaluate(() => window.__ld);
+    check('リンクを押すと、そのサンプルを読む（ファイルの選択は開かない）', ld && ld[0] === 'samples/2_nageage.mp4' && !chooser, { ld, chooser });
+    await p.context().close();
+    const q = await L.newPage(browser);
+    await L.setupTo4(q);
+    check('動画を読んだら［サンプルから］は光らない', await q.evaluate(() => !document.getElementById('selSample').classList.contains('glow')));
+    check('ページエラー 0', p.__errors.length === 0 && q.__errors.length === 0, [p.__errors, q.__errors]);
+    await q.context().close();
+  }
+
   await browser.close();
   process.exit(L.summary('run_test') ? 1 : 0);
 })();
