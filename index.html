@@ -725,6 +725,14 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
 .emeta{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;margin-top:2px}
 .epg{font-size:.72rem;color:var(--ink-4)}
 .etag{font-size:.64rem;line-height:1.5;padding:0 6px;border-radius:999px;border:1px solid var(--rule-2);color:var(--ink-3);white-space:nowrap}
+/* カード：題名と印を 1 行に（印は右に小さく 2 行） */
+.elist.cards .ebody{flex-direction:row;align-items:center;gap:6px}
+.elist.cards .en1{flex:1;min-width:0;font-size:.9rem;line-height:1.4}
+.etags{flex:none;display:flex;gap:3px;align-items:center}
+.etags .etag{display:inline-flex;align-items:center;justify-content:center;text-align:center;font-size:.54rem;font-weight:700;
+  line-height:1.15;padding:2px 4px;border-radius:5px;min-width:2.4em;white-space:normal}
+.etag.kiso{color:var(--ink-3)}
+.etag.new{background:var(--brand);border-color:var(--brand);color:#fff;letter-spacing:.04em}
 .etag.exam{color:#7a2f6d;border-color:#ecc9e4}
 .etag.game{color:#1c6b8f;border-color:#bfdcea}
 .etag.read{color:#166b40;border-color:#c2e2cf}
@@ -760,9 +768,9 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
   .fchip{flex:none}
   .ent{padding:9px 12px;gap:10px}
   .elist.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .elist.cards .ebody{flex-direction:column;gap:4px;padding:8px 10px 10px}
-  .elist.cards .bno{align-self:flex-start;margin-top:0}
-  .elist.cards .en1{font-size:.84rem}
+  .elist.cards .ebody{gap:4px;padding:7px 8px 8px}
+  .elist.cards .en1{font-size:.8rem;line-height:1.35}
+  .etags .etag{font-size:.5rem;padding:2px 3px}
   .en1{font-size:.9rem}
 }
 @media (prefers-reduced-motion:reduce){
@@ -1207,7 +1215,7 @@ const SITE = [
           { no:"①-1", n:"波の発生と進み方と基本要素", h:"#1-1", c:"10", g:"kiso", img:"thumbs/sec/wave_1-1.webp" },
           { no:"①-2", n:"y-x グラフと y-t グラフ", h:"#1-2", c:"10", g:"kiso", img:"thumbs/sec/wave_1-2.webp" },
           { no:"①-3", n:"縦波", h:"#1-3", c:"10", g:"kiso", img:"thumbs/sec/wave_1-3.webp" },
-          { no:"②-1", n:"左右の波源からの波 ～定在波～", h:"#2-1", c:"10", g:"kiso", img:"thumbs/sec/wave_2-1.webp" },
+          { no:"②-1", n:"定在波の発生", h:"#2-1", c:"10", g:"kiso", img:"thumbs/sec/wave_2-1.webp" },
           { no:"②-2", n:"波の反射（自由端反射と固定端反射）", h:"#2-2", c:"10", g:"kiso", img:"thumbs/sec/wave_2-2.webp" },
           { no:"②-3", n:"固有振動と共振", h:"#2-3", c:"10", g:"kiso", img:"thumbs/sec/wave_2-3.webp" },
           { no:"③-1", n:"音の三要素", h:"#3-1", c:"11", g:"kiso", img:"thumbs/sec/wave_3-1.webp" },
@@ -1379,6 +1387,7 @@ const COMING = [
     { ids:["movie","note"], name:"そのほか", color:"#69717d", key:"other" }
   ];
   var GTAG = { kiso:"物理基礎", exam:"入試問題", game:"ゲーム", read:"読みもの", quiz:"クイズ" };
+  var TAG2 = { kiso:"物理<br>基礎", exam:"入試<br>問題", game:"ゲー<br>ム", read:"読み<br>もの", quiz:"クイ<br>ズ" };
   var ALL = SITE.concat(EXPSITE);
   var secColor = {};
   ALL.forEach(function(sec){ secColor[sec.id] = sec.color; });
@@ -1531,13 +1540,14 @@ const COMING = [
     return m && m[1] ? esc(m[1]) + ' <small>' + esc(m[2]) + '</small>' : esc(t);
   }
   function row(e){
-    var tags = e.g.map(function(x){ return '<span class="etag ' + x + '">' + esc(GTAG[x]) + '</span>'; }).join("");
+    /* 題名の右に小さな印（2 文字ずつ 2 行）。番号とページ名は出さない（検索には使う） */
+    var tags = (e.isNew ? '<span class="etag new">NEW</span>' : '') +
+      e.g.map(function(x){ return '<span class="etag ' + x + '">' + TAG2[x] + '</span>'; }).join("");
     return '<li><a class="ent' + (e.img ? ' has-img' : '') + '" href="' + esc(e.href) + '" style="--fc:' + esc(e.color) + '">' +
       (e.img ? '<span class="eimg"><img src="' + esc(e.img) + '?v=' + IMG_V + '" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>' : '') +
-      '<span class="ebody"><span class="bno' + (e.no ? '' : ' one') + '">' + (e.no ? esc(e.no) : '▶') + '</span>' +
-      '<span class="et"><span class="en1">' + title(e.n) + (e.isNew ? '<span class="enew">NEW</span>' : '') + '</span>' +
-      ((e.page || tags) ? '<span class="emeta">' + (e.page ? '<span class="epg">' + esc(e.page) + '</span>' : '') + tags + '</span>' : '') +
-      '</span></span></a></li>';
+      '<span class="ebody"><span class="en1">' + title(e.n) + '</span>' +
+      (tags ? '<span class="etags">' + tags + '</span>' : '') +
+      '</span></a></li>';
   }
   /* 絵のある件が 1 つでもあれば、そのまとまりは「絵が上・題名が下」のカードで並べる */
   function listHtml(list){
