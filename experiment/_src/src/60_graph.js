@@ -616,7 +616,13 @@ function renderMode2(){
       if(nc===2 && w<250){ liveStack=true; w=Math.floor(leftW)-18; }   /* 見出し（d○/dt・最大化）が入る幅がないとき */
       w=Math.max(170, w);
     } else w=Math.round(APP.gsize*(twoCols?0.52:0.72));
+    /* はじめの大きさは、左の列いっぱい（4：6）の 60 %。ドラッグで決めた大きさ（APP.liveW）があればそれ */
+    w=(APP.liveW>0)? APP.liveW : Math.round(w*0.6);
+    w=Math.max(230, w);              /* 見出し（d○/dt・最大化）が入る幅より小さくしない */
     h=Math.round(w*0.62);
+    LIVE.nc=(twoCols && !liveStack)? 2 : 1;
+    /* 左の列の幅＝グラフの幅（max-content）。動画は残り全部。ドラッグ中だけ --livecol で決める */
+    if(bodyEl) bodyEl.style.removeProperty('--livecol');
   }
   if(!blocks.length){
     host.innerHTML='<div class="card mini">グラフに出せるデータがありません。①でいくつか点を記録してください。</div>';
@@ -743,6 +749,8 @@ function chartCard(title, spec, curves, w, h){
     lab.appendChild(document.createTextNode(dydtLabel(spec.ylab)+' を表示'));
     d.appendChild(lab);
   }
+  /* ②では、右下の角をドラッグしてグラフの大きさを変えられる */
+  if(APP.tab==='2' && typeof bindCardRsz==='function') bindCardRsz(d, cv, w);
   var b=document.createElement('button'); b.className='maxbtn';
   b.innerHTML=EXPAND_ICON+' 最大化';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };

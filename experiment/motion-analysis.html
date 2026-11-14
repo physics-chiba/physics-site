@@ -240,7 +240,8 @@ label.koma.sw.on{background:#1c8f4a;border-color:#166f3a;color:#fff}
   border-radius:9px;padding:7px 10px;font-size:.86rem;font-weight:700;line-height:1.5}
 /* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける）。
    左の列は「グラフの実際の幅」までにして、あいだに無駄なすき間を作らない */
-.m2body.live{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,6fr);   /* 左（グラフ）：右（動画）＝ 4：6 */
+/* 左（グラフ）の幅は、グラフの大きさから JS で決める（--livecol）。ドラッグで変えられる。動画は残り全部 */
+.m2body.live{display:grid;grid-template-columns:var(--livecol, max-content) minmax(0,1fr);
   gap:12px;align-items:start}
 .m2body.live .m2charts>*{width:max-content;max-width:100%}
 .m2body.live .m2charts{flex:none;min-width:0}
@@ -324,7 +325,8 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 /* 動画と表を並べる */
 /* 表の列は「右の列の 36 %（240〜420px）」。前は 280〜420px の固定で、iPad の横（1024px）では
    動画が 200px ほどにつぶれていた */
-.rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) clamp(240px,36%,420px);
+.rightcol{position:relative}
+.rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) var(--sbsw, clamp(240px,36%,420px));
   gap:12px;align-items:start}
 .rightcol.sbs .videobox{grid-column:1;grid-row:1}
 .rightcol.sbs .vidbar{grid-column:1;grid-row:2}
@@ -981,6 +983,26 @@ details.accnote>.accbody{margin-top:4px}
 #calMsg.ask.thru{display:flex;flex-direction:column}
 #calMsg.ask.thru .row{order:-1;justify-content:flex-end;margin:0 0 4px}
 #calMsg.ask.thru .btn{font-size:.72rem;padding:2px 8px;min-height:22px}
+
+/* ===== ドラッグで大きさを変えるつまみ（第75回） ===== */
+/* ① 動画｜表 のさかいめ */
+#sbsRsz{display:none;position:absolute;top:0;bottom:0;width:12px;z-index:6;cursor:ew-resize;touch-action:none;
+  left:calc(100% - var(--sbsw, clamp(240px,36%,420px)) - 12px)}
+.rightcol.sbs #sbsRsz{display:block}
+#sbsRsz::before,#liveRsz::before{content:"";position:absolute;left:4px;top:60px;width:4px;height:70px;border-radius:3px;background:#c9d0d8}
+#sbsRsz:hover::before,#sbsRsz.on::before,#liveRsz:hover::before,#liveRsz.on::before{background:var(--accent)}
+@media(max-width:860px){ #sbsRsz{display:none !important} }
+/* ② 動画と一緒に再生：グラフ｜動画 のさかいめ */
+.m2body{position:relative}
+#liveRsz{position:absolute;top:0;bottom:0;width:12px;z-index:6;cursor:ew-resize;touch-action:none}
+/* ② グラフの右下の角 */
+.chartcard{position:relative}
+.crsz{position:absolute;right:2px;bottom:2px;width:16px;height:16px;cursor:nwse-resize;touch-action:none;z-index:2;
+  background:linear-gradient(135deg, transparent 0 45%, #9aa7b4 45% 52%, transparent 52% 64%, #9aa7b4 64% 71%, transparent 71% 83%, #9aa7b4 83% 90%, transparent 90%)}
+.crsz:hover{background:linear-gradient(135deg, transparent 0 45%, var(--accent) 45% 52%, transparent 52% 64%, var(--accent) 64% 71%, transparent 71% 83%, var(--accent) 83% 90%, transparent 90%)}
+.chartcard.rszing{outline:2px dashed var(--accent);outline-offset:2px}
+@media print{ .crsz,#sbsRsz,#liveRsz{display:none !important} }
+.m2body.live .m2charts>#cgHost2{width:0;min-width:100%}   /* 比べるグラフは、左の列の幅を広げない */
 </style>
 </head>
 <body>
@@ -1353,6 +1375,7 @@ details.accnote>.accbody{margin-top:4px}
       <p class="mini hide" id="hintLine">タップした所にはルーペが出ます。そのままドラッグで微調整できます。</p>
     </div>
 
+    <div id="sbsRsz" title="左右にドラッグすると、動画と表の幅を変えられます（ダブルクリックで元の幅）"></div>
     <details class="card" id="tblCard" open><summary>測定した値（表）<button class="btn sm blue tblbtn" id="btnSbs" type="button">表を下に表示</button></summary>
       <div class="tblwrap"><table class="tbl" id="dataTbl"></table><div id="trkMk" class="hide" title="上下にドラッグすると、その時刻からやり直せます">&#9654;</div></div>
     </details>
@@ -1443,6 +1466,7 @@ details.accnote>.accbody{margin-top:4px}
       <div id="charts2"></div>
       <div id="cgHost2"></div>
     </div>
+    <div id="liveRsz" class="hide" title="左右にドラッグすると、グラフと動画の大きさを変えられます（ダブルクリックで元の大きさ）"></div>
     <div class="m2live hide" id="m2live">
       <div class="card">
         <p class="livenote">再生を押すと、「センサーを使ってリアルタイムに測定している様子」を再現できます。</p>
@@ -1787,7 +1811,7 @@ function newExp(n){
   return o;
 }
 var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1, aFit:false,
-  bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0,
+  bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0, liveW:0, sbsw:0,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, momOn:false, momAna:false, gMin:{}, fitRange:null, tblw:330,
@@ -2170,7 +2194,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, momAna:APP.momAna, autoTrack:!!APP.autoTrack, gMin:APP.gMin, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, momAna:APP.momAna, autoTrack:!!APP.autoTrack, gMin:APP.gMin, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, liveW:APP.liveW||0, sbsw:APP.sbsw||0, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -2222,6 +2246,8 @@ function applyState(st){
   APP.twoObj=!!st.twoObj;
   APP.aFit=!!st.aFit;
   if(st.panelw>=0 && st.panelw!==undefined) APP.panelw=st.panelw;
+  APP.liveW=(st.liveW>0)? st.liveW : 0;
+  APP.sbsw=(st.sbsw>0)? st.sbsw : 0;
   if(st.m2menu!==undefined) APP.m2menu=!!st.m2menu;
   if(st.m3menu!==undefined) APP.m3menu=!!st.m3menu;
   if(st.vidh>=0 && st.vidh!==undefined) APP.vidh=st.vidh;
@@ -4614,7 +4640,13 @@ function renderMode2(){
       if(nc===2 && w<250){ liveStack=true; w=Math.floor(leftW)-18; }   /* 見出し（d○/dt・最大化）が入る幅がないとき */
       w=Math.max(170, w);
     } else w=Math.round(APP.gsize*(twoCols?0.52:0.72));
+    /* はじめの大きさは、左の列いっぱい（4：6）の 60 %。ドラッグで決めた大きさ（APP.liveW）があればそれ */
+    w=(APP.liveW>0)? APP.liveW : Math.round(w*0.6);
+    w=Math.max(230, w);              /* 見出し（d○/dt・最大化）が入る幅より小さくしない */
     h=Math.round(w*0.62);
+    LIVE.nc=(twoCols && !liveStack)? 2 : 1;
+    /* 左の列の幅＝グラフの幅（max-content）。動画は残り全部。ドラッグ中だけ --livecol で決める */
+    if(bodyEl) bodyEl.style.removeProperty('--livecol');
   }
   if(!blocks.length){
     host.innerHTML='<div class="card mini">グラフに出せるデータがありません。①でいくつか点を記録してください。</div>';
@@ -4741,6 +4773,8 @@ function chartCard(title, spec, curves, w, h){
     lab.appendChild(document.createTextNode(dydtLabel(spec.ylab)+' を表示'));
     d.appendChild(lab);
   }
+  /* ②では、右下の角をドラッグしてグラフの大きさを変えられる */
+  if(APP.tab==='2' && typeof bindCardRsz==='function') bindCardRsz(d, cv, w);
   var b=document.createElement('button'); b.className='maxbtn';
   b.innerHTML=EXPAND_ICON+' 最大化';
   b.onclick=function(ev){ ev.preventDefault(); openBigChart(title, spec); };
@@ -8975,6 +9009,100 @@ function bindTblResize(){
   h.addEventListener('pointercancel', up);
 }
 
+/* ===== ドラッグで大きさを変える（第75回） ===== */
+/* ② グラフの右下の角：グラフを並べる → APP.gsize、動画と一緒に再生 → APP.liveW */
+function bindCardRsz(card, cv, w0){
+  var g=document.createElement('span'); g.className='crsz';
+  g.title='ドラッグでグラフの大きさを変えられます（ダブルクリックで元の大きさ）';
+  card.appendChild(g);
+  var st=null;
+  g.addEventListener('pointerdown', function(e){
+    e.preventDefault(); e.stopPropagation();
+    st={x:e.clientX, y:e.clientY, w:cv.getBoundingClientRect().width||w0};
+    try{ g.setPointerCapture(e.pointerId); }catch(x){}
+    card.classList.add('rszing');
+  });
+  g.addEventListener('pointermove', function(e){
+    if(!st) return;
+    var dx=e.clientX-st.x, dy=(e.clientY-st.y)/0.62;
+    st.nw=Math.max(150, Math.min(900, Math.round(st.w + (Math.abs(dx)>Math.abs(dy)? dx : dy))));
+    cv.style.width=st.nw+'px'; cv.style.height=Math.round(st.nw*0.62)+'px';   /* 動かしている間は、このグラフだけ伸び縮み */
+  });
+  function up(e){
+    if(!st) return; var nw=st.nw; st=null;
+    try{ g.releasePointerCapture(e.pointerId); }catch(x){}
+    card.classList.remove('rszing');
+    if(!nw) return;
+    if(LIVE.on) APP.liveW=nw; else APP.gsize=nw;
+    renderMode2(); saveLocal();
+  }
+  g.addEventListener('pointerup', up);
+  g.addEventListener('pointercancel', up);
+  g.addEventListener('dblclick', function(e){
+    e.preventDefault(); e.stopPropagation();
+    if(LIVE.on) APP.liveW=0; else APP.gsize=450;
+    renderMode2(); saveLocal();
+  });
+}
+/* ② 動画と一緒に再生：グラフと動画のさかいめ */
+function placeLiveRsz(){
+  var r=$('liveRsz'), body=el('.m2body'), ch=el('.m2body .m2charts');
+  if(!r || !body || !ch) return;
+  var on=body.classList.contains('live') && !$('mode2').classList.contains('hide') && window.innerWidth>700;
+  r.classList.toggle('hide', !on);
+  if(!on) return;
+  r.style.left=(ch.offsetLeft + ch.offsetWidth)+'px';
+}
+function bindLiveRsz(){
+  var r=$('liveRsz'); if(!r) return;
+  if(window.ResizeObserver){ var mb=el('.m2body'), mc=el('.m2body .m2charts');
+    var ro=new ResizeObserver(function(){ placeLiveRsz(); }); if(mb) ro.observe(mb); if(mc) ro.observe(mc); }
+  var st=null, tm=null;
+  function setW(leftW){
+    var body=el('.m2body'), bw=body.clientWidth, nc=LIVE.nc||1;
+    leftW=Math.max(180, Math.min(bw-12-260, leftW));                  /* 動画は 260px より小さくしない */
+    body.style.setProperty('--livecol', Math.round(leftW)+'px');
+    APP.liveW=Math.max(230, Math.min(900, Math.round((leftW-4-(nc-1)*12)/nc-18)));
+    placeLiveRsz();
+    clearTimeout(tm); tm=setTimeout(function(){ renderMode2(); if(st) body.style.setProperty('--livecol', Math.round(leftW)+'px'); placeLiveRsz(); if(VID.ready) render(); }, 90);
+  }
+  r.addEventListener('pointerdown', function(e){
+    var body=el('.m2body'); st={x:e.clientX, l:el('.m2body .m2charts').offsetWidth, bl:body.getBoundingClientRect().left};
+    try{ r.setPointerCapture(e.pointerId); }catch(x){}
+    e.preventDefault(); r.classList.add('on');
+  });
+  r.addEventListener('pointermove', function(e){ if(st) setW(st.l + (e.clientX-st.x)); });
+  function up(e){ if(!st) return; st=null; r.classList.remove('on'); try{ r.releasePointerCapture(e.pointerId); }catch(x){}
+    clearTimeout(tm); renderMode2(); placeLiveRsz(); if(VID.ready) setTimeout(render, 30); saveLocal(); }   /* はなしたら、列の幅はグラフに合わせる */
+  r.addEventListener('pointerup', up); r.addEventListener('pointercancel', up);
+  r.addEventListener('dblclick', function(e){ e.preventDefault(); APP.liveW=0; renderMode2(); saveLocal(); setTimeout(placeLiveRsz, 30); if(VID.ready) setTimeout(render, 60); });
+}
+/* ① 動画と表を並べているとき：動画と表のさかいめ */
+function applySbsW(){
+  els('.rightcol').forEach(function(rc){
+    if(APP.sbsw>0) rc.style.setProperty('--sbsw', APP.sbsw+'px'); else rc.style.removeProperty('--sbsw');
+  });
+}
+function bindSbsRsz(){
+  var r=$('sbsRsz'); if(!r) return;
+  var st=null;
+  r.addEventListener('pointerdown', function(e){
+    var rc=r.closest('.rightcol'), t=$('tblCard');
+    st={x:e.clientX, w:t.getBoundingClientRect().width, W:rc.clientWidth};
+    try{ r.setPointerCapture(e.pointerId); }catch(x){}
+    e.preventDefault(); r.classList.add('on');
+  });
+  r.addEventListener('pointermove', function(e){
+    if(!st) return;
+    APP.sbsw=Math.round(Math.max(220, Math.min(st.W-12-300, st.w-(e.clientX-st.x))));   /* 動画は 300px より小さくしない */
+    applySbsW();
+    if(VID.ready) render();
+  });
+  function up(e){ if(!st) return; st=null; r.classList.remove('on'); try{ r.releasePointerCapture(e.pointerId); }catch(x){} saveLocal(); if(VID.ready) setTimeout(render, 30); }
+  r.addEventListener('pointerup', up); r.addEventListener('pointercancel', up);
+  r.addEventListener('dblclick', function(e){ e.preventDefault(); APP.sbsw=0; applySbsW(); saveLocal(); if(VID.ready) setTimeout(render, 30); });
+}
+
 /* ---------- タブ ---------- */
 /* ===== ②「グラフを並べる」／「動画と一緒にグラフを再生する」 ===== */
 function m2ModeButtons(){
@@ -9009,8 +9137,9 @@ function setM2Mode(m, quiet){
   updateTblFold();
   updateGuide();                 /* ①用の案内（解析終了など）を出し入れする */
   if(!quiet){ renderMode2(); saveLocal(); }
-  setTimeout(function(){ if(VID.ready) render(); alignLive(); updateGuide(); }, 40);
-  setTimeout(alignLive, 200);
+  setTimeout(function(){ if(VID.ready) render(); alignLive(); updateGuide(); placeLiveRsz(); }, 40);
+  setTimeout(function(){ alignLive(); placeLiveRsz(); }, 200);
+  if(!live){ var mb=el('.m2body'); if(mb) mb.style.removeProperty('--livecol'); }
 }
 /* live のとき、グラフの上に空きを作らない
    （以前は動画の画像の上端に合わせていたが、そのぶん大きなすき間ができて見にくかった） */
@@ -9734,14 +9863,14 @@ function askResetPts(go){
   }
   function gSize(f){ APP.gsize=Math.max(240, Math.min(900, Math.round(APP.gsize*f))); reRender(); saveLocal(); }
   function gReset(){
-    gvReset(); APP.fitRange=null; APP.cgRange=null; APP.gsize=450; reRender(); saveLocal();
+    gvReset(); APP.fitRange=null; APP.cgRange=null; APP.gsize=450; APP.liveW=0; reRender(); saveLocal();
     toast('グラフのスケールと位置を元に戻しました');
   }
   ['btnGBig','btnGBig3'].forEach(function(id){ $(id).onclick=function(){ gSize(1.25); }; });
   ['btnGSmall','btnGSmall3'].forEach(function(id){ $(id).onclick=function(){ gSize(1/1.25); }; });
   ['btnGReset','btnGReset3'].forEach(function(id){ $(id).onclick=gReset; });
   ['btnGFitAll','btnGFitAll3'].forEach(function(id){ var q=$(id); if(q) q.onclick=function(){ fitAllCharts(); }; });
-  bindTblResize();
+  bindTblResize(); bindLiveRsz(); bindSbsRsz(); applySbsW();
   $('cgMomentum').onclick=function(){
     var c=APP.cg, e=APP.exps[c.expA];
     if(!e || !e.objs[1] || !e.objs[1].length){        /* 物体2が無いときは切りかえない */

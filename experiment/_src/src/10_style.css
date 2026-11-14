@@ -232,7 +232,8 @@ label.koma.sw.on{background:#1c8f4a;border-color:#166f3a;color:#fff}
   border-radius:9px;padding:7px 10px;font-size:.86rem;font-weight:700;line-height:1.5}
 /* 「動画と一緒に再生」は、画面が小さくてもグラフと動画を横にならべる（grid で幅を分ける）。
    左の列は「グラフの実際の幅」までにして、あいだに無駄なすき間を作らない */
-.m2body.live{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,6fr);   /* 左（グラフ）：右（動画）＝ 4：6 */
+/* 左（グラフ）の幅は、グラフの大きさから JS で決める（--livecol）。ドラッグで変えられる。動画は残り全部 */
+.m2body.live{display:grid;grid-template-columns:var(--livecol, max-content) minmax(0,1fr);
   gap:12px;align-items:start}
 .m2body.live .m2charts>*{width:max-content;max-width:100%}
 .m2body.live .m2charts{flex:none;min-width:0}
@@ -316,7 +317,8 @@ label.f.hot{background:#fff3d6;border:1px solid var(--orange);border-radius:9px;
 /* 動画と表を並べる */
 /* 表の列は「右の列の 36 %（240〜420px）」。前は 280〜420px の固定で、iPad の横（1024px）では
    動画が 200px ほどにつぶれていた */
-.rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) clamp(240px,36%,420px);
+.rightcol{position:relative}
+.rightcol.sbs{display:grid;grid-template-columns:minmax(0,1fr) var(--sbsw, clamp(240px,36%,420px));
   gap:12px;align-items:start}
 .rightcol.sbs .videobox{grid-column:1;grid-row:1}
 .rightcol.sbs .vidbar{grid-column:1;grid-row:2}
@@ -973,3 +975,23 @@ details.accnote>.accbody{margin-top:4px}
 #calMsg.ask.thru{display:flex;flex-direction:column}
 #calMsg.ask.thru .row{order:-1;justify-content:flex-end;margin:0 0 4px}
 #calMsg.ask.thru .btn{font-size:.72rem;padding:2px 8px;min-height:22px}
+
+/* ===== ドラッグで大きさを変えるつまみ（第75回） ===== */
+/* ① 動画｜表 のさかいめ */
+#sbsRsz{display:none;position:absolute;top:0;bottom:0;width:12px;z-index:6;cursor:ew-resize;touch-action:none;
+  left:calc(100% - var(--sbsw, clamp(240px,36%,420px)) - 12px)}
+.rightcol.sbs #sbsRsz{display:block}
+#sbsRsz::before,#liveRsz::before{content:"";position:absolute;left:4px;top:60px;width:4px;height:70px;border-radius:3px;background:#c9d0d8}
+#sbsRsz:hover::before,#sbsRsz.on::before,#liveRsz:hover::before,#liveRsz.on::before{background:var(--accent)}
+@media(max-width:860px){ #sbsRsz{display:none !important} }
+/* ② 動画と一緒に再生：グラフ｜動画 のさかいめ */
+.m2body{position:relative}
+#liveRsz{position:absolute;top:0;bottom:0;width:12px;z-index:6;cursor:ew-resize;touch-action:none}
+/* ② グラフの右下の角 */
+.chartcard{position:relative}
+.crsz{position:absolute;right:2px;bottom:2px;width:16px;height:16px;cursor:nwse-resize;touch-action:none;z-index:2;
+  background:linear-gradient(135deg, transparent 0 45%, #9aa7b4 45% 52%, transparent 52% 64%, #9aa7b4 64% 71%, transparent 71% 83%, #9aa7b4 83% 90%, transparent 90%)}
+.crsz:hover{background:linear-gradient(135deg, transparent 0 45%, var(--accent) 45% 52%, transparent 52% 64%, var(--accent) 64% 71%, transparent 71% 83%, var(--accent) 83% 90%, transparent 90%)}
+.chartcard.rszing{outline:2px dashed var(--accent);outline-offset:2px}
+@media print{ .crsz,#sbsRsz,#liveRsz{display:none !important} }
+.m2body.live .m2charts>#cgHost2{width:0;min-width:100%}   /* 比べるグラフは、左の列の幅を広げない */

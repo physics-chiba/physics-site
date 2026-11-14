@@ -657,7 +657,7 @@ async function setMovSource(page, type) {
         const cr = c.getBoundingClientRect(), vr = v.getBoundingClientRect();
         const cards = [...c.querySelectorAll('.chartcard')].map(x => x.getBoundingClientRect().right);
         return { ratio: cr.width / (cr.width + vr.width), fits: Math.max(...cards) <= vr.left + 1, over: document.documentElement.scrollWidth - document.documentElement.clientWidth }; });
-      check(`動画と一緒に再生（${W}px）：グラフ：動画 ＝ 4：6、グラフは左の列からはみ出さない`, Math.abs(r.ratio - 0.4) < 0.01 && r.fits && r.over === 0, r);
+      check(`動画と一緒に再生（${W}px）：グラフははじめ小さめ（左の列が 4：6 の 4 より細い）・左の列からはみ出さない`, r.ratio < 0.4 && r.ratio > 0.15 && r.fits && r.over === 0, r);
       check('ページエラー 0', q.__errors.length === 0, q.__errors);
       await q.context().close();
     }
@@ -833,6 +833,32 @@ async function setMovSource(page, type) {
       return { lmsg: v.classList.contains('lmsg'), cx: +(((m.left + m.right) / 2 - vr.left) / vr.width).toFixed(2) }; });
     check('せまい動画枠（スマホ）では左に寄せない（まん中）', !n.lmsg && Math.abs(n.cx - 0.5) < 0.05, n);
     await q.context().close();
+  }
+
+
+  console.log('W. ドラッグで大きさを変える（①動画｜表、②グラフの角、②グラフ｜動画）');
+  {
+    const p = await L.newPage(browser, null, { viewport: { width: 1366, height: 860 } });
+    await L.setupTo4(p); await L.addProjPoints(p, 3);
+    const s0 = await p.evaluate(() => { setSbs(true); const v = document.getElementById('videobox').getBoundingClientRect(), r = document.getElementById('sbsRsz').getBoundingClientRect(); return { vw: v.width, rx: r.left + r.width / 2, ry: r.top + 90, shown: r.width > 0 }; });
+    await p.waitForTimeout(150);
+    await p.mouse.move(s0.rx, s0.ry); await p.mouse.down(); await p.mouse.move(s0.rx + 100, s0.ry, { steps: 5 }); await p.mouse.up(); await p.waitForTimeout(150);
+    const s1 = await p.evaluate(() => ({ vw: document.getElementById('videobox').getBoundingClientRect().width, sbsw: APP.sbsw }));
+    check('① 動画と表のさかいめをドラッグすると、動画が広くなる（表がせまくなる）', s0.shown && s1.vw > s0.vw + 60 && s1.sbsw > 0, { s0, s1 });
+    await p.evaluate(() => setTab('2')); await p.waitForTimeout(500);
+    const c0 = await p.evaluate(() => { const g = document.querySelector('#charts2 .chartcard .crsz').getBoundingClientRect(); return { gx: g.left + 8, gy: g.top + 8 }; });
+    await p.mouse.move(c0.gx, c0.gy); await p.mouse.down(); await p.mouse.move(c0.gx - 100, c0.gy - 40, { steps: 5 }); await p.mouse.up(); await p.waitForTimeout(400);
+    const c1 = await p.evaluate(() => ({ gs: APP.gsize, w: document.querySelector('#charts2 .chartcard canvas').getBoundingClientRect().width }));
+    check('② グラフを並べる：グラフの右下の角をドラッグすると、グラフ全部の大きさが変わる', c1.gs < 450 && Math.abs(c1.w - c1.gs) < 2, c1);
+    await p.click('#btnM2Live'); await p.waitForTimeout(800);
+    const l0 = await p.evaluate(() => { const r = document.getElementById('liveRsz').getBoundingClientRect(); return { vw: document.getElementById('m2live').getBoundingClientRect().width, rx: r.left + 6, ry: r.top + 90, shown: r.width > 0 }; });
+    await p.mouse.move(l0.rx, l0.ry); await p.mouse.down(); await p.mouse.move(l0.rx + 140, l0.ry, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(500);
+    const l1 = await p.evaluate(() => ({ vw: document.getElementById('m2live').getBoundingClientRect().width, liveW: APP.liveW, gw: document.querySelector('#charts2 .chartcard canvas').getBoundingClientRect().width }));
+    check('② 動画と一緒に再生：グラフと動画のさかいめをドラッグすると、グラフが大きく・動画が小さくなる', l0.shown && l1.liveW > 0 && l1.vw < l0.vw - 80 && Math.abs(l1.gw - l1.liveW) < 2, { l0, l1 });
+    const st = await p.evaluate(() => { const o = JSON.parse(JSON.stringify(packState())); return { liveW: o.liveW, sbsw: o.sbsw }; });
+    check('ドラッグで決めた大きさは保存される', st.liveW > 0 && st.sbsw > 0, st);
+    check('ページエラー 0', p.__errors.length === 0, p.__errors);
+    await p.context().close();
   }
 
   await browser.close();

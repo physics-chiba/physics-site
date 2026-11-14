@@ -2614,6 +2614,100 @@ function bindTblResize(){
   h.addEventListener('pointercancel', up);
 }
 
+/* ===== ドラッグで大きさを変える（第75回） ===== */
+/* ② グラフの右下の角：グラフを並べる → APP.gsize、動画と一緒に再生 → APP.liveW */
+function bindCardRsz(card, cv, w0){
+  var g=document.createElement('span'); g.className='crsz';
+  g.title='ドラッグでグラフの大きさを変えられます（ダブルクリックで元の大きさ）';
+  card.appendChild(g);
+  var st=null;
+  g.addEventListener('pointerdown', function(e){
+    e.preventDefault(); e.stopPropagation();
+    st={x:e.clientX, y:e.clientY, w:cv.getBoundingClientRect().width||w0};
+    try{ g.setPointerCapture(e.pointerId); }catch(x){}
+    card.classList.add('rszing');
+  });
+  g.addEventListener('pointermove', function(e){
+    if(!st) return;
+    var dx=e.clientX-st.x, dy=(e.clientY-st.y)/0.62;
+    st.nw=Math.max(150, Math.min(900, Math.round(st.w + (Math.abs(dx)>Math.abs(dy)? dx : dy))));
+    cv.style.width=st.nw+'px'; cv.style.height=Math.round(st.nw*0.62)+'px';   /* 動かしている間は、このグラフだけ伸び縮み */
+  });
+  function up(e){
+    if(!st) return; var nw=st.nw; st=null;
+    try{ g.releasePointerCapture(e.pointerId); }catch(x){}
+    card.classList.remove('rszing');
+    if(!nw) return;
+    if(LIVE.on) APP.liveW=nw; else APP.gsize=nw;
+    renderMode2(); saveLocal();
+  }
+  g.addEventListener('pointerup', up);
+  g.addEventListener('pointercancel', up);
+  g.addEventListener('dblclick', function(e){
+    e.preventDefault(); e.stopPropagation();
+    if(LIVE.on) APP.liveW=0; else APP.gsize=450;
+    renderMode2(); saveLocal();
+  });
+}
+/* ② 動画と一緒に再生：グラフと動画のさかいめ */
+function placeLiveRsz(){
+  var r=$('liveRsz'), body=el('.m2body'), ch=el('.m2body .m2charts');
+  if(!r || !body || !ch) return;
+  var on=body.classList.contains('live') && !$('mode2').classList.contains('hide') && window.innerWidth>700;
+  r.classList.toggle('hide', !on);
+  if(!on) return;
+  r.style.left=(ch.offsetLeft + ch.offsetWidth)+'px';
+}
+function bindLiveRsz(){
+  var r=$('liveRsz'); if(!r) return;
+  if(window.ResizeObserver){ var mb=el('.m2body'), mc=el('.m2body .m2charts');
+    var ro=new ResizeObserver(function(){ placeLiveRsz(); }); if(mb) ro.observe(mb); if(mc) ro.observe(mc); }
+  var st=null, tm=null;
+  function setW(leftW){
+    var body=el('.m2body'), bw=body.clientWidth, nc=LIVE.nc||1;
+    leftW=Math.max(180, Math.min(bw-12-260, leftW));                  /* 動画は 260px より小さくしない */
+    body.style.setProperty('--livecol', Math.round(leftW)+'px');
+    APP.liveW=Math.max(230, Math.min(900, Math.round((leftW-4-(nc-1)*12)/nc-18)));
+    placeLiveRsz();
+    clearTimeout(tm); tm=setTimeout(function(){ renderMode2(); if(st) body.style.setProperty('--livecol', Math.round(leftW)+'px'); placeLiveRsz(); if(VID.ready) render(); }, 90);
+  }
+  r.addEventListener('pointerdown', function(e){
+    var body=el('.m2body'); st={x:e.clientX, l:el('.m2body .m2charts').offsetWidth, bl:body.getBoundingClientRect().left};
+    try{ r.setPointerCapture(e.pointerId); }catch(x){}
+    e.preventDefault(); r.classList.add('on');
+  });
+  r.addEventListener('pointermove', function(e){ if(st) setW(st.l + (e.clientX-st.x)); });
+  function up(e){ if(!st) return; st=null; r.classList.remove('on'); try{ r.releasePointerCapture(e.pointerId); }catch(x){}
+    clearTimeout(tm); renderMode2(); placeLiveRsz(); if(VID.ready) setTimeout(render, 30); saveLocal(); }   /* はなしたら、列の幅はグラフに合わせる */
+  r.addEventListener('pointerup', up); r.addEventListener('pointercancel', up);
+  r.addEventListener('dblclick', function(e){ e.preventDefault(); APP.liveW=0; renderMode2(); saveLocal(); setTimeout(placeLiveRsz, 30); if(VID.ready) setTimeout(render, 60); });
+}
+/* ① 動画と表を並べているとき：動画と表のさかいめ */
+function applySbsW(){
+  els('.rightcol').forEach(function(rc){
+    if(APP.sbsw>0) rc.style.setProperty('--sbsw', APP.sbsw+'px'); else rc.style.removeProperty('--sbsw');
+  });
+}
+function bindSbsRsz(){
+  var r=$('sbsRsz'); if(!r) return;
+  var st=null;
+  r.addEventListener('pointerdown', function(e){
+    var rc=r.closest('.rightcol'), t=$('tblCard');
+    st={x:e.clientX, w:t.getBoundingClientRect().width, W:rc.clientWidth};
+    try{ r.setPointerCapture(e.pointerId); }catch(x){}
+    e.preventDefault(); r.classList.add('on');
+  });
+  r.addEventListener('pointermove', function(e){
+    if(!st) return;
+    APP.sbsw=Math.round(Math.max(220, Math.min(st.W-12-300, st.w-(e.clientX-st.x))));   /* 動画は 300px より小さくしない */
+    applySbsW();
+    if(VID.ready) render();
+  });
+  function up(e){ if(!st) return; st=null; r.classList.remove('on'); try{ r.releasePointerCapture(e.pointerId); }catch(x){} saveLocal(); if(VID.ready) setTimeout(render, 30); }
+  r.addEventListener('pointerup', up); r.addEventListener('pointercancel', up);
+  r.addEventListener('dblclick', function(e){ e.preventDefault(); APP.sbsw=0; applySbsW(); saveLocal(); if(VID.ready) setTimeout(render, 30); });
+}
+
 /* ---------- タブ ---------- */
 /* ===== ②「グラフを並べる」／「動画と一緒にグラフを再生する」 ===== */
 function m2ModeButtons(){
@@ -2648,8 +2742,9 @@ function setM2Mode(m, quiet){
   updateTblFold();
   updateGuide();                 /* ①用の案内（解析終了など）を出し入れする */
   if(!quiet){ renderMode2(); saveLocal(); }
-  setTimeout(function(){ if(VID.ready) render(); alignLive(); updateGuide(); }, 40);
-  setTimeout(alignLive, 200);
+  setTimeout(function(){ if(VID.ready) render(); alignLive(); updateGuide(); placeLiveRsz(); }, 40);
+  setTimeout(function(){ alignLive(); placeLiveRsz(); }, 200);
+  if(!live){ var mb=el('.m2body'); if(mb) mb.style.removeProperty('--livecol'); }
 }
 /* live のとき、グラフの上に空きを作らない
    （以前は動画の画像の上端に合わせていたが、そのぶん大きなすき間ができて見にくかった） */
@@ -3373,14 +3468,14 @@ function askResetPts(go){
   }
   function gSize(f){ APP.gsize=Math.max(240, Math.min(900, Math.round(APP.gsize*f))); reRender(); saveLocal(); }
   function gReset(){
-    gvReset(); APP.fitRange=null; APP.cgRange=null; APP.gsize=450; reRender(); saveLocal();
+    gvReset(); APP.fitRange=null; APP.cgRange=null; APP.gsize=450; APP.liveW=0; reRender(); saveLocal();
     toast('グラフのスケールと位置を元に戻しました');
   }
   ['btnGBig','btnGBig3'].forEach(function(id){ $(id).onclick=function(){ gSize(1.25); }; });
   ['btnGSmall','btnGSmall3'].forEach(function(id){ $(id).onclick=function(){ gSize(1/1.25); }; });
   ['btnGReset','btnGReset3'].forEach(function(id){ $(id).onclick=gReset; });
   ['btnGFitAll','btnGFitAll3'].forEach(function(id){ var q=$(id); if(q) q.onclick=function(){ fitAllCharts(); }; });
-  bindTblResize();
+  bindTblResize(); bindLiveRsz(); bindSbsRsz(); applySbsW();
   $('cgMomentum').onclick=function(){
     var c=APP.cg, e=APP.exps[c.expA];
     if(!e || !e.objs[1] || !e.objs[1].length){        /* 物体2が無いときは切りかえない */

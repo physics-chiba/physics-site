@@ -39,7 +39,7 @@ function newExp(n){
   return o;
 }
 var APP = { exps:[newExp(1)], cur:0, autosave:true, menuPos:'left', axisDisp:'x', step:1, aFit:false,
-  bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0,
+  bigView:false, m2menu:true, m3menu:true, panelw:352, vidh:0, liveW:0, sbsw:0,
   cg:{ expA:0, objA:0, qA:'x', invA:false, expB:0, objB:0, qB:'x', invB:false,
        xq:'t', invX:false, two:false, line:true }, cgFit:null,
   editStep:0, lastEdit:0, played:false, gsize:450, energyOn:false, momOn:false, momAna:false, gMin:{}, fitRange:null, tblw:330,
@@ -422,7 +422,7 @@ function fitLabel(fit){
 /* ---------- 保存（localStorage） ---------- */
 var LSKEY = 'motion-analysis-v1';
 function packState(){
-  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, momAna:APP.momAna, autoTrack:!!APP.autoTrack, gMin:APP.gMin, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
+  return { ver:VER, cur:APP.cur, menuPos:APP.menuPos, axisDisp:APP.axisDisp, cg:APP.cg, gsize:APP.gsize, energyOn:APP.energyOn, momOn:APP.momOn, momAna:APP.momAna, autoTrack:!!APP.autoTrack, gMin:APP.gMin, tblw:APP.tblw, m2mode:APP.m2mode, twoObj:APP.twoObj, aFit:APP.aFit, panelw:APP.panelw, liveW:APP.liveW||0, sbsw:APP.sbsw||0, m2menu:APP.m2menu, m3menu:APP.m3menu, vidh:APP.vidh,
            exps:APP.exps.map(function(e){
              var o=JSON.parse(JSON.stringify(e));
              return o;                                  /* 動画そのものは保存しない */
@@ -474,6 +474,8 @@ function applyState(st){
   APP.twoObj=!!st.twoObj;
   APP.aFit=!!st.aFit;
   if(st.panelw>=0 && st.panelw!==undefined) APP.panelw=st.panelw;
+  APP.liveW=(st.liveW>0)? st.liveW : 0;
+  APP.sbsw=(st.sbsw>0)? st.sbsw : 0;
   if(st.m2menu!==undefined) APP.m2menu=!!st.m2menu;
   if(st.m3menu!==undefined) APP.m3menu=!!st.m3menu;
   if(st.vidh>=0 && st.vidh!==undefined) APP.vidh=st.vidh;
