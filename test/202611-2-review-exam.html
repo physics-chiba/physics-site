@@ -11867,6 +11867,10 @@ function net3(q, th) {
 }
 var PHI3 = 50 * Math.PI / 180, TFALL3 = 1.6;
 function fall3(q, th) { var tau = net3(q, th); if (Math.abs(tau) < 1e-6 || q.t <= 0) return 0; return (tau > 0 ? 1 : -1) * Math.min(PHI3, 2.0 * Math.abs(tau) * q.t * q.t); }
+function axisDot3(ctx, P) {
+  ctx.save(); ctx.fillStyle = '#111'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(P[0], P[1], 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+}
 function mom3(ctx, q, g) {
   var tr = g.th * RAD, ax = q.axis || 'A', P = { A: [g.Ax, g.Ay], G: [g.Gx, g.Gy], B: [g.Bx, g.By] }[ax];
   var S = g.S, F = {
@@ -11901,12 +11905,15 @@ function mom3(ctx, q, g) {
   var lx = F.p[0] + F.d[0] * F.L, ly = F.p[1] + F.d[1] * F.L;
   if (k === 'F') label(ctx, 'F', lx + 6, ly + 26, { size: 15, bold: true, color: F.col });
   else label(ctx, FN3[k], lx + (F.d[0] === 0 ? 14 : F.d[0] * 14), ly + (F.d[1] === 0 ? -14 : F.d[1] * 6), { size: 15, bold: true, color: F.col, align: F.d[0] < 0 ? 'right' : 'left' });
-  /* 軸の印 */
-  ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 2.2;
-  ctx.beginPath(); ctx.arc(P[0], P[1], 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(P[0], P[1], 2.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  var axl = { A: [P[0] + 14, P[1] + 26, 'left'], G: [P[0] - 14, P[1] - 18, 'right'], B: [P[0] - 14, P[1] + 22, 'right'] }[ax];
-  label(ctx, '軸', axl[0], axl[1], { size: 13, bold: true, align: axl[2] });
+  /* 軸の印：黒い大きめの点。ボタンを押した直後は吹き出し「ここが軸」（矢印の先が軸） */
+  axisDot3(ctx, P);
+  if (q.axFlash) {
+    if (ax === 'B') bubble(ctx, 'ここが軸', P[0], P[1] - 14, { side: 'down', size: 14, bg: '#1b1f24', border: '#1b1f24', color: '#fff' });
+    else bubble(ctx, 'ここが軸', P[0] + 14, P[1] + (ax === 'A' ? -16 : 0), { side: 'left', size: 14, bg: '#1b1f24', border: '#1b1f24', color: '#fff' });
+  } else {
+    var axl = { A: [P[0] + 16, P[1] + 26, 'left'], G: [P[0] - 16, P[1] - 18, 'right'], B: [P[0] - 16, P[1] + 22, 'right'] }[ax];
+    label(ctx, '軸', axl[0], axl[1], { size: 13, bold: true, align: axl[2] });
+  }
   /* 右：モーメントの計算と一覧 */
   var X0 = 590, nm = { A: '点 A', G: '棒の重心', B: '点 B' }[ax];
   label(ctx, nm + 'を軸としたモーメント', X0, 24, { size: 14, bold: true, align: 'left' });
@@ -11914,6 +11921,7 @@ function mom3(ctx, q, g) {
   if (!M[1]) {
     label(ctx, FN3[k] + ' の作用線が軸を通る', X0, 56, { size: 13.5, bold: true, color: ARM, align: 'left' });
     label(ctx, '→ うで 0、モーメント 0', X0, 80, { size: 13.5, bold: true, color: ARM, align: 'left' });
+    if (Math.abs(mk - 1) > 1e-9) label(ctx, '大きくしても、そもそもモーメントは 0', X0, 104, { size: 13.5, bold: true, color: COL.ng, align: 'left' });
   } else {
     var a = M[1](tr), v = fv * a;
     label(ctx, FN3[k] + (Math.abs(mk - 1) > 1e-9 ? '（×' + fmt(mk, 1) + '）' : '') + ' × ' + M[0], X0, 56, { size: 15, bold: true, color: ARM, align: 'left' });
@@ -11948,7 +11956,7 @@ function mom3(ctx, q, g) {
     ctx.save(); ctx.strokeStyle = COL.ng; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(P[0], P[1], rr, a0, a1, ccwv); ctx.stroke();
     var ex = P[0] + rr * Math.cos(a1), ey = P[1] + rr * Math.sin(a1), tx = ccwv ? Math.sin(a1) : -Math.sin(a1), ty = ccwv ? -Math.cos(a1) : Math.cos(a1);
     ctx.fillStyle = COL.ng; ctx.beginPath(); ctx.moveTo(ex + tx * 10, ey + ty * 10); ctx.lineTo(ex - ty * 7, ey + tx * 7); ctx.lineTo(ex + ty * 7, ey - tx * 7); ctx.closePath(); ctx.fill(); ctx.restore();
-    ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#111'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(P[0], P[1], 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+    axisDot3(ctx, P);
   }
 
 }
@@ -12021,7 +12029,7 @@ function r6(ctx, q) {
   arrow(ctx, O + BW6 / 2, y2 + 38, nB, y2 + 38, 'dim'); arrow(ctx, nB, y2 + 38, O + BW6 / 2, y2 + 38, 'dim');
   label(ctx, 'L_B', (O + BW6 / 2 + nB) / 2, y2 + 50, { size: 12.5, bold: true });
   if (q.showF) {
-    var sc = 3.4;
+    var sc = 4.4;
     arrow(ctx, O - BW6 / 2, y2, O - BW6 / 2 - KA * LA * sc, y2, 'force', COL.hand);
     arrow(ctx, O + BW6 / 2, y2, O + BW6 / 2 + KA * LA * sc, y2, 'force', COL.handB);
     label(ctx, 'k_AL_A', O - BW6 / 2 - KA * LA * sc / 2, y2 - 24, { size: 13, bold: true, color: COL.hand });
@@ -12037,11 +12045,13 @@ function r6(ctx, q) {
   seg(ctx, O, y3 - 36, O, y3 + 50, '#9aa3ac', 1.2, [5, 4]); label(ctx, 'O', O - 12, y3 + 40, { size: 13, bold: true });
   if (q.t === 0) { seg(ctx, xb, y3 + 23, xb, y3 + 32, '#333', 1.4); label(ctx, 'x_0', xb + 4, y3 + 40, { size: 13 }); }
   if (q.showF) {
-    var sc3 = 3.4, FA = KA * (LA + x), FB = q.kB * (LB - x);
+    var sc3 = 4.4, FA = KA * (LA + x), FB = q.kB * (LB - x);
     arrow(ctx, xb - BW6 / 2, y3, xb - BW6 / 2 - FA * sc3, y3, 'force', COL.hand);
     arrow(ctx, xb + BW6 / 2, y3, xb + BW6 / 2 + FB * sc3, y3, 'force', COL.handB);
     label(ctx, 'k_A(L_A＋x)', xb - BW6 / 2 - FA * sc3 / 2, y3 - 26, { size: 12.5, bold: true, color: COL.hand });
-    label(ctx, 'k_B(L_B−x)', xb + BW6 / 2 + Math.max(FB, 8) * sc3 / 2 + 18, y3 - 26, { size: 12.5, bold: true, color: COL.handB });
+    if (Math.abs(FB) < 0.05) { label(ctx, 'k_B(L_B−x) ＝ 0', xb + BW6 / 2 + 6, y3 - 26, { size: 12.5, bold: true, color: COL.handB, align: 'left' });
+      label(ctx, '（x ＝ L_B：B は自然の長さ）', xb + BW6 / 2 + 8, y3 + 40, { size: 11.5, color: COL.handB, align: 'left' }); }
+    else label(ctx, 'k_B(L_B−x)', xb + BW6 / 2 + Math.max(Math.abs(FB), 8) * sc3 / 2 + 18, y3 - 26, { size: 12.5, bold: true, color: COL.handB });
   }
   if (Math.abs(v) > 0.02) {
     arrow(ctx, xb, y3 + 58, xb + v * 16, y3 + 58, 'vel', COL.vel);
@@ -12383,6 +12393,9 @@ function x3Sync(s) {
   s.draw();
 }
 /* 力の大きさを変える（つりあいがくずれると、軸のまわりに回り出す） */
+function x3Flash(s) {                                   /* 軸の点を強調し、吹き出し「ここが軸」を 3 秒 */
+  s._axT = performance.now(); clearTimeout(s._axTm); s._axTm = setTimeout(function () { s.draw(); }, 3050);
+}
 function x3Mult(s, k, d) {
   s.mult[k] = Math.round(clamp(s.mult[k] + d, 0, 2) * 10) / 10;
   s.mom = k; s._fall = true;
@@ -12408,16 +12421,16 @@ DEFS.x3 = {
     var box = el('div', 'exmom'), FK = [['mg', '<i>mg</i>'], ['NA', '<i>N</i><sub>A</sub>'], ['NB', '<i>N</i><sub>B</sub>'], ['F', '<i>F</i>']];
     box.innerHTML = '<p class="exmt">力のモーメントを確かめる</p>' +
       FK.map(function (f) { return '<div class="exmrow"><button type="button" class="b chkb" data-k="' + f[0] + '">' + f[1] + ' のモーメント</button>' +
-        '<button type="button" class="b exsz" data-dk="' + f[0] + '" data-d="-0.1">' + f[1] + ' を小さくする</button><span class="exmv" data-mv="' + f[0] + '">×1.0</span>' +
+        '<span class="exmv" data-mv="' + f[0] + '">×1.0</span>' +
         '<button type="button" class="b exsz" data-dk="' + f[0] + '" data-d="0.1">' + f[1] + ' を大きくする</button></div>'; }).join('') +
       '<div class="exmrow exax"><span class="exml">軸：</span><div class="seg" role="group" aria-label="回転の軸">' +
       [['A', '点 A を軸'], ['G', '棒の重心を軸'], ['B', '点 B を軸']].map(function (q) { return '<button type="button" class="b obs" data-ax="' + q[0] + '">' + q[1] + '</button>'; }).join('') + '</div></div>';
     ctr.appendChild(box);
     if (sl) { var w = el('div', 'ctrls exslider'); w.appendChild(sl); s.cw.parentNode.insertBefore(w, s.cw.nextSibling); }
     s._momBox = box;
-    box.querySelectorAll('[data-k]').forEach(function (b) { b.addEventListener('click', function () { s.mom = s.mom === b.dataset.k ? null : b.dataset.k; if (!s.mom) s._fall = false; s.resetT(); x3Sync(s); }); });
+    box.querySelectorAll('[data-k]').forEach(function (b) { b.addEventListener('click', function () { s.mom = s.mom === b.dataset.k ? null : b.dataset.k; if (!s.mom) s._fall = false; else x3Flash(s); s.resetT(); x3Sync(s); }); });
     box.querySelectorAll('[data-dk]').forEach(function (b) { b.addEventListener('click', function () { x3Mult(s, b.dataset.dk, +b.dataset.d); }); });
-    box.querySelectorAll('[data-ax]').forEach(function (b) { b.addEventListener('click', function () { s.axis = b.dataset.ax; if (!s.mom) s.mom = 'mg'; s.resetT(); x3Sync(s); }); });
+    box.querySelectorAll('[data-ax]').forEach(function (b) { b.addEventListener('click', function () { s.axis = b.dataset.ax; if (!s.mom) s.mom = 'mg'; x3Flash(s); s.resetT(); x3Sync(s); }); });
     x3Sync(s);
   },
   onDefaults: function (s) { s.mom = null; s.axis = 'A'; s.mult = { mg: 1, NA: 1, NB: 1, F: 1 }; s._fall = false; x3Sync(s); },
@@ -12425,12 +12438,12 @@ DEFS.x3 = {
   onChanged: function () { return 'stop'; },
   height: exH(480),
   tEnd: function (s) { return (s.mom && s._fall && Math.abs(EX.net3({ axis: s.axis, mult: s.mult }, s.v.th)) > 1e-6) ? EX.TFALL3 : EX.tEnd3(s.v); },
-  draw: exDraw(480, function (c, q) { EX.r3(c, q); }, function (s) { return { th: s.v.th, mu: s.v.mu, mom: s.mom, axis: s.axis, mult: s.mult, t: s.t, showF: s.ms.showF }; }),
+  draw: exDraw(480, function (c, q) { EX.r3(c, q); }, function (s) { return { th: s.v.th, mu: s.v.mu, mom: s.mom, axis: s.axis, mult: s.mult, axFlash: !!s._axT && performance.now() - s._axT < 3000, t: s.t, showF: s.ms.showF }; }),
   msg: function (s) {
     var nd = EX.need3(s.v.th), slip = nd > s.v.mu + 1e-9;
     if (s.mom) { var tau = EX.net3({ axis: s.axis, mult: s.mult }, s.v.th);
       if (Math.abs(tau) > 1e-6) return '<b>力のモーメントがつりあっていない</b>：' + (tau > 0 ? '反時計回り' : '時計回り') + 'のモーメントのほうが大きいので、棒は軸のまわりに' + (tau > 0 ? '反時計回り' : '時計回り') + 'に回り出す（うすい棒がもとの位置）。「すべて最初の設定に戻す」で、力の大きさがもとにもどる。';
-      return '<b>力のモーメント</b>＝力の大きさ × うで（軸から作用線までの距離）。軸を「点 A」「棒の重心」「点 B」に切りかえて、4 つの力のモーメントがつりあうことを確かめよう。「〜を大きくする」「〜を小さくする」で力を変えると、つりあいがくずれて回り出す。'; }
+      return '<b>力のモーメント</b>＝力の大きさ × うで（軸から作用線までの距離）。軸を「点 A」「棒の重心」「点 B」に切りかえて、4 つの力のモーメントがつりあうことを確かめよう。「〜を大きくする」で力を大きくすると、つりあいがくずれて回り出す（うでが 0 の力は、大きくしてもそもそもモーメントが 0）。'; }
     if (s.t === 0) return '▶ スタートで手をはなす。必要な摩擦力 $F=\\dfrac{mg}{2\\tan\\theta}=' + f2(nd) + 'mg$、最大摩擦力 $\\mu mg=' + f2(s.v.mu) + 'mg$。';
     return slip ? '<b>すべり出した</b>：必要な摩擦力 $' + f2(nd) + 'mg$ が、最大摩擦力 $' + f2(s.v.mu) + 'mg$ をこえている。$\\theta$ を大きく（棒を立てる）か、$\\mu$ を大きくしてみよう。'
       : '<b>すべらない</b>：必要な摩擦力 $' + f2(nd) + 'mg$ は、最大摩擦力 $' + f2(s.v.mu) + 'mg$ 以下。$\\theta$ を小さく（棒を寝かせる）するとどうなるか確かめよう。';
@@ -12526,7 +12539,7 @@ function exMirror(draw0) {
 DEFS.x6 = {
   id: 'x6', wide: true, full: true, num: 6, title: '2 本のばねにはさまれた物体の単振動', mode: 'q6', showFBtn: true, strobe: false, baseRate: 0.5,
   desc: '上から順に、①物体をつける前（2 本のばねはどちらも自然の長さ）→ ②物体をつけて静止（つりあいの位置）→ ③今回の場面（$x_0$ だけずらして静かにはなす）。<span class="todo">スタートで手をはなし、x–t グラフと v–t グラフの形を確かめよう。</span>',
-  vars: [{ k: 'x0', label: 'ずらす距離 $x_0$', aria: 'ずらす距離', min: 0.1, max: 0.6, step: 0.01, def: 0.4, dec: 2, unit: 'm' }],
+  vars: [{ k: 'x0', label: 'ずらす距離 $x_0$', aria: 'ずらす距離', min: 0.1, max: 0.6, step: 0.01, def: 0.2, dec: 2, unit: 'm' }],
   live: exLive,
   onChanged: function () { return 'stop'; },
   height: exH(430, 960),

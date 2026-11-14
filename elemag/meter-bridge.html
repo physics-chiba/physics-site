@@ -2383,6 +2383,8 @@ button.b.tiny.segb .katex{font-size:1em}
 .dragtip.downr{transform:translate(-14px,calc(-100% - 12px))}
 .dragtip.downr span::after{left:5px}
 @media(max-width:560px){ .dragtip span{font-size:.68rem;padding:.26em .6em} .dragtip span::before{inset:-5px} }
+.b.tiny.zerob{line-height:1.2;padding-top:.3em;padding-bottom:.3em}
+.finenote{margin:.3rem 0 0;font-size:.85rem;color:#1d6b3a;background:#eef8f1;border-radius:8px;padding:.35em .7em}
 
 </style>
 </head>
@@ -2776,22 +2778,25 @@ function galvZoom(c, s, fs, x0, y0, x1, y1, F, nm) {
 }
 
 /* 接点のドラッグ。onL(L) を呼ぶ */
-function bindApparatusDrag(cv, getL, onL) {
-  var drag = false, off = 0, tol = 34;
+/* getGain：ドラッグの動きの倍率。1 ならふつう。±1 mA の目盛りで針が目盛りの中にあるときは小さい値（マウスを大きく動かしても接点は少しだけ動く＝細かく合わせられる）。
+   動かすたびに倍率を読みなおすので、針がふり切れているあいだはふつうの速さ、目盛りに入るとゆっくりになる */
+function bindApparatusDrag(cv, getL, onL, getGain) {
+  var drag = false, tol = 34, lx = 0, v = 0;
+  var gain = function () { return getGain ? getGain() : 1; };
   var toV = function (ev) { var r = cv.getBoundingClientRect(), k = r.width / APP.VW; tol = Math.max(34, 22 / k); return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k }; };
   var near = function (p) { var xp = appX(getL()); return p.y > APP.WY - 100 && p.y < APP.WY + 16 && Math.abs(p.x - (xp + (APP.WY - p.y) * 0.5)) < tol; };   /* ペンはななめなので、上ほど右 */
   var onRail = function (p) { return p.x > APP.X0 - 30 && p.x < APP.X1 + 30 && p.y > APP.WY - 20 && p.y < BAR.bot + APP.OFF + 4; };
   cv.style.touchAction = 'pan-y';
   cv.addEventListener('pointerdown', function (ev) {
     var p = toV(ev);
-    if (near(p)) { drag = true; off = p.x - appX(getL()); }
-    else if (onRail(p)) { drag = true; off = 0; onL(appL(p.x)); }
-    else return;
+    if (!near(p) && !onRail(p)) return;
+    drag = true; lx = p.x; v = getL();
+    if (!near(p) && gain() === 1) { v = appL(p.x); onL(v); }   /* 金属線をおすと、そこへ（細かく合わせているときは飛ばない） */
     cv.setPointerCapture && cv.setPointerCapture(ev.pointerId); cv.style.cursor = 'grabbing'; ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
     var p = toV(ev);
-    if (drag) { onL(appL(p.x - off)); return; }
+    if (drag) { v = clamp(v + (appL(p.x) - appL(lx)) * gain(), MB.LMIN, MB.LMAX); lx = p.x; onL(v); return; }
     cv.style.cursor = near(p) ? 'grab' : onRail(p) ? 'pointer' : 'default';
   });
   var end = function () { drag = false; cv.style.cursor = 'default'; };
@@ -3414,14 +3419,17 @@ var ELEC = (function () {
         c.fillStyle = g; c.beginPath(); c.arc(p[0], p[1], 5, 0, 7); c.fill();
         c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(p[0] - 2.6, p[1]); c.lineTo(p[0] + 2.6, p[1]); c.stroke();
       });
-      /* 電子の流れる向き（太い矢印） */
-      var ay = yc + ry + 22, ax1 = x0 + 8, ax0 = Math.max(x0 + 90, Math.min(x1 - 10, x0 + 120));
+      /* 電子の流れる向き（太い矢印）：抵抗の長さに合わせて、矢印の中央を抵抗の真ん中に（文字は矢印の右。はみ出すときは左へ寄せる。左の導線とは重ねない） */
+      c.font = 'bold 13px ' + FONT; var t1 = '電子の流れ', w1 = c.measureText(t1).width;
+      c.font = 'bold 12px ' + FONT; var t2 = '（電流の向きは逆の →）', w2 = c.measureText(t2).width;
+      var La = clamp((x1 - x0) * 0.4, 56, 110), gw = La + 8 + Math.max(w1, w2);
+      var gx = clamp((x0 + x1) / 2 - La / 2, x0 + 6, G.W - gw - 28), ay = yc + ry + 22, ax1 = gx, ax0 = gx + La;
       c.fillStyle = '#1d5a86';
       c.beginPath(); c.moveTo(ax1, ay); c.lineTo(ax1 + 16, ay - 11); c.lineTo(ax1 + 16, ay - 4.5); c.lineTo(ax0, ay - 4.5); c.lineTo(ax0, ay + 4.5); c.lineTo(ax1 + 16, ay + 4.5); c.lineTo(ax1 + 16, ay + 11); c.closePath(); c.fill();
-      c.font = 'bold 13px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('電子の流れ', ax0 + 8, ay);
+      c.font = 'bold 13px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(t1, ax0 + 8, ay);
       /* 電流の向き（電子と逆） */
-      c.fillStyle = '#1c8f4a'; c.font = 'bold 12px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
-      c.fillText('（電流の向きは逆の →）', ax0 + 8, ay + 19);
+      c.fillStyle = '#1c8f4a'; c.font = 'bold 12px ' + FONT;
+      c.fillText(t2, ax0 + 8, ay + 19);
     };
     return E;
   }
@@ -3512,7 +3520,7 @@ function mbStatus(s, opt) {
 function fmtR(r) { return fmt(r, r < 10 ? 2 : 1) + ' Ω'; }
 
 /* ====================== ①-1・①-2 で共通の部品 ====================== */
-var DRAG_HINT = '<span class="deschint">▶ 接点（オレンジの持ち手）をドラッグ</span><button type="button" class="b tiny zerob">0 A の接点にする</button>';
+var DRAG_HINT = '<span class="deschint">▶ 接点（オレンジの持ち手）をドラッグ</span><button type="button" class="b tiny zerob">0 A の接点<br>位置にする</button>';
 var GO_P2 = '原理は <a href="#" class="golink" data-go="p2">③-2 つり合いの式の導き方</a> へ。';
 /* 説明文の中のリンク（③-2 へ移る） */
 function bindGoLinks(root) {
@@ -3522,9 +3530,9 @@ function bindGoLinks(root) {
 }
 /* 0 A の位置に吸いつく：つり合いの位置 Lb から SNAP cm 以内なら Lb ちょうどにする。それ以外は null */
 var SNAP = 0.5;
-function snapBal(st, L) { var Lb = mbBalanceL(st.R, st.X); return Math.abs(L - Lb) < SNAP ? Lb : null; }
+function snapBal(st, L) { var Lb = mbBalanceL(st.R, st.X); return Math.abs(L - Lb) < (st.fs < 0.01 ? 0.05 : SNAP) ? Lb : null; }   /* ±1 mA の目盛りのときは 0.05 cm */
 /* 接点のドラッグ・スライダーで動かしたときの位置（吸いつき → 0.1 cm 刻み） */
-function dragL(st, L) { var y = snapBal(st, L); return y !== null ? y : +clamp(Math.round(L * 10) / 10, MB.LMIN, MB.LMAX).toFixed(1); }
+function dragL(st, L) { var y = snapBal(st, L), q = st.fs < 0.01 ? 100 : 10; return y !== null ? y : +clamp(Math.round(L * q) / q, MB.LMIN, MB.LMAX).toFixed(2); }
 /* はじめは「これをドラッグ」の吹き出し（接点のペンの持ち手をさす）。ドラッグしたら消す */
 function mbTip(cvA, st) {
   var tip = el('div', 'dragtip left', '<span>これをドラッグ</span>'); cvA.parentNode.appendChild(tip);
@@ -3577,9 +3585,10 @@ DEFS.s1 = {
     var rgc = el('div', 'vrow cell rgcell'); vb.appendChild(rgc);
     var segRg = mkSeg(rgc, mathify('検流計の内部抵抗 $R_g$'), [[1, '1 Ω'], [10, '10 Ω'], [100, '100 Ω'], [1000, '1000 Ω']], function () { return st.Rg; }, function (v) { st.Rg = v; changed(); });
     var row = el('div', 'row1 mbrow'); ctr.appendChild(row);
-    var seg = mkSeg(row, '検流計の目盛り', [[0.05, '±50 mA'], [0.001, '±1 mA（細かく）']], function () { return st.fs; }, function (v) { st.fs = v; draw(); });
+    var seg = mkSeg(row, '検流計の目盛り', [[0.05, '±50 mA'], [0.001, '±1 mA（細かく）']], function () { return st.fs; }, function (v) { st.fs = v; fineNote.hidden = v > 0.01; draw(); });
+    var fineNote = el('p', 'finenote', '±1 mA のときは、針が目盛りの中に入ると、接点がゆっくり動く（針を見ながら細かく合わせられる）。'); fineNote.hidden = true; ctr.appendChild(fineNote);
     var bDef = el('button', 'b tiny resetall', 'すべて最初の設定に戻す'); bDef.type = 'button'; row.appendChild(bDef);
-    bDef.addEventListener('click', function () { st.V = MB_DEF.V; st.R = MB_DEF.R; st.X = MB_DEF.X; st.L = MB_DEF.L; st.Rg = MB.RG; st.fs = 0.05; seg.sync(); segRg.sync(); changed(); });
+    bDef.addEventListener('click', function () { st.V = MB_DEF.V; st.R = MB_DEF.R; st.X = MB_DEF.X; st.L = MB_DEF.L; st.Rg = MB.RG; st.fs = 0.05; fineNote.hidden = true; seg.sync(); segRg.sync(); changed(); });
 
     var vbtn = el('span', 'viewbtns'), bTop = el('button', 'b tiny viewb on', '斜め上'), bSide = el('button', 'b tiny viewb', '真横');
     bTop.type = bSide.type = 'button'; vbtn.appendChild(bTop); vbtn.appendChild(bSide);
@@ -3604,7 +3613,7 @@ DEFS.s1 = {
     bindApparatusDrag(cvA, function () { return st.L; }, function (L) {
       tip.hide(); st.L = dragL(st, L); changed();
       if (!play.playing) { play.playing = true; syncPlay(); playKick(); }   /* 接点をドラッグしたら、水の流れを見せはじめる */
-    });
+     }, function () { return (st.fs < 0.01 && Math.abs(st.s.I.G) < st.fs * 1.05) ? 0.06 : 1; });   /* ±1 mA で針が目盛りの中にあるときだけゆっくり */
 
     var play = { playing: false, tick: function (dt) { D3.advance(st, dt); draw3(); } };
     PLAY.list.push(play);
@@ -3881,8 +3890,9 @@ function wbSolve(o) {
 }
 function wbBalR3(st) { return st.R1 * st.Rx / st.R2; }                       /* つり合いの R₃ */
 function wbNearBal(st) { return Math.abs(st.R3 - wbBalR3(st)) < 0.05 || Math.abs(st.s.I.G) < 5e-6; }
-function wbSnap(st, R) { var b = wbBalR3(st); return (b >= WB.R3MIN && b <= WB.R3MAX && Math.abs(R - b) < WB.SNAP) ? b : null; }
-function wbDragR3(st, R) { var y = wbSnap(st, R); return y !== null ? y : +clamp(Math.round(R * 10) / 10, WB.R3MIN, WB.R3MAX).toFixed(1); }
+/* ±1 mA の目盛り（st.fs が小さい）のときは、吸いつきを 0.05 Ω にせまくして 0.01 Ω 刻み（針が 0 に近づくようすが見える） */
+function wbSnap(st, R) { var b = wbBalR3(st), sn = st.fs < 0.01 ? 0.05 : WB.SNAP; return (b >= WB.R3MIN && b <= WB.R3MAX && Math.abs(R - b) < sn) ? b : null; }
+function wbDragR3(st, R) { var y = wbSnap(st, R), q = st.fs < 0.01 ? 100 : 10; return y !== null ? y : +clamp(Math.round(R * q) / q, WB.R3MIN, WB.R3MAX).toFixed(2); }
 
 /* 状態のことば */
 function wbStatus(st, hide) {
@@ -4046,22 +4056,23 @@ function drawWBApparatus(cv, o) {
   c.restore();
 }
 /* すべり抵抗器のつまみのドラッグ。onR(R3) を呼ぶ */
-function bindWBDrag(cv, getR, onR) {
-  var drag = false, off = 0;
+function bindWBDrag(cv, getR, onR, getGain) {   /* getGain は bindApparatusDrag と同じ */
+  var drag = false, lx = 0, v = 0;
+  var gain = function () { return getGain ? getGain() : 1; };
   var toV = function (ev) { var r = cv.getBoundingClientRect(), k = r.width / 1000; return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k - WBA.OFF }; };
   var near = function (p) { var q = wbKnobV(getR()); return Math.abs(p.x - q[0]) < 40 && p.y > q[1] - 40 && p.y < q[1] + 16; };
   var onRail = function (p) { var a = wbKnobV(0), b = wbKnobV(WB.R3MAX); if (p.x < a[0] - 10 || p.x > b[0] + 10) return false; var t = (p.x - a[0]) / (b[0] - a[0]), yr = a[1] + (b[1] - a[1]) * t; return Math.abs(p.y - yr) < 22; };
   cv.style.touchAction = 'pan-y';
   cv.addEventListener('pointerdown', function (ev) {
     var p = toV(ev);
-    if (near(p)) { drag = true; off = p.x - wbKnobV(getR())[0]; }
-    else if (onRail(p)) { drag = true; off = 0; onR(wbR3FromX(p.x)); }
-    else return;
+    if (!near(p) && !onRail(p)) return;
+    drag = true; lx = p.x; v = getR();
+    if (!near(p) && gain() === 1) { v = wbR3FromX(p.x); onR(v); }
     cv.setPointerCapture && cv.setPointerCapture(ev.pointerId); cv.style.cursor = 'grabbing'; ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
     var p = toV(ev);
-    if (drag) { onR(wbR3FromX(p.x - off)); return; }
+    if (drag) { v = clamp(v + (wbR3FromX(p.x) - wbR3FromX(lx)) * gain(), WB.R3MIN, WB.R3MAX); lx = p.x; onR(v); return; }
     cv.style.cursor = near(p) ? 'grab' : onRail(p) ? 'pointer' : 'default';
   });
   var end = function () { drag = false; cv.style.cursor = 'default'; };
@@ -4093,7 +4104,7 @@ function drawWBplot(cv, o) {
 }
 
 /* ====================== ①-1 ホイートストンブリッジのしくみ ====================== */
-var WB_HINT = '<span class="deschint">▶ 可変抵抗のつまみ（紺色）をドラッグ</span><button type="button" class="b tiny zerob">0 A のスライダーにする</button>';
+var WB_HINT = '<span class="deschint">▶ 可変抵抗のつまみ（紺色）をドラッグ</span><button type="button" class="b tiny zerob">0 A のスライダー<br>位置にする</button>';
 var WB_GO = '原理は <a href="#" class="golink" data-go="p2">③-2 つり合いの式の導き方</a> へ（メートルブリッジと同じ考え方）。';
 function wbCommon(Lh, Rh, st, opt) {
   /* opt = { hideX, full }：full のとき ①-1（立体図・グラフ・表・内部抵抗） */
@@ -4118,9 +4129,10 @@ function wbCommon(Lh, Rh, st, opt) {
     var rgc = el('div', 'vrow cell rgcell wide'); vb.appendChild(rgc);
     segRg = mkSeg(rgc, mathify('検流計の内部抵抗 $R_g$'), [[1, '1 Ω'], [10, '10 Ω'], [100, '100 Ω'], [1000, '1000 Ω']], function () { return st.Rg; }, function (v) { st.Rg = v; changed(); });
     var row = el('div', 'row1 mbrow'); ctr.appendChild(row);
-    seg = mkSeg(row, '検流計の目盛り', [[0.05, '±50 mA'], [0.001, '±1 mA（細かく）']], function () { return st.fs; }, function (v) { st.fs = v; draw(); });
+    seg = mkSeg(row, '検流計の目盛り', [[0.05, '±50 mA'], [0.001, '±1 mA（細かく）']], function () { return st.fs; }, function (v) { st.fs = v; fineNote.hidden = v > 0.01; draw(); });
+    var fineNote = el('p', 'finenote', '±1 mA のときは、針が目盛りの中に入ると、つまみがゆっくり動く（針を見ながら細かく合わせられる）。'); fineNote.hidden = true; ctr.appendChild(fineNote);
     var bDef = el('button', 'b tiny resetall', 'すべて最初の設定に戻す'); bDef.type = 'button'; row.appendChild(bDef);
-    bDef.addEventListener('click', function () { for (var k in WB_DEF) st[k] = WB_DEF[k]; st.Rg = MB.RG; st.fs = 0.05; seg.sync(); segRg.sync(); changed(); });
+    bDef.addEventListener('click', function () { for (var k in WB_DEF) st[k] = WB_DEF[k]; st.Rg = MB.RG; st.fs = 0.05; fineNote.hidden = true; seg.sync(); segRg.sync(); changed(); });
   }
   var R = { st: st, sl: sl, msg: msg, cb: cb, cvA: cvA, ctr: ctr, extra: [] };
   var play = null, bPlay = null, cv3 = null, cvV = null, tbl = null;
@@ -4153,7 +4165,7 @@ function wbCommon(Lh, Rh, st, opt) {
   bindWBDrag(cvA, function () { return st.R3; }, function (r) {
     hideTip(); st.R3 = wbDragR3(st, r); changed();
     if (play && !play.playing) { play.playing = true; syncPlay(); playKick(); }     /* つまみを動かしたら、水の流れを見せはじめる */
-  });
+   }, function () { return (st.fs < 0.01 && Math.abs(st.s.I.G) < st.fs * 1.05) ? 0.03 : 1; });   /* ±1 mA で針が目盛りの中にあるときだけゆっくり */
   function draw3() { if (cv3) D3.render(cv3, st); }
   function drawTbl() {
     if (!tbl) return;
