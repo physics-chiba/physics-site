@@ -708,6 +708,15 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
 .bno{flex:none;min-width:3em;margin-top:2px;padding:1px 7px;border-radius:6px;background:var(--fc);color:#fff;text-align:center;
   font-size:.74rem;font-weight:700;line-height:1.6;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bno.one{font-size:.62rem}
+.ebody{flex:1;min-width:0;display:flex;gap:12px;align-items:flex-start}
+/* 絵つきのカード（img を書いた件があるまとまり） */
+.elist.cards{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.elist.cards .ent{flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden;border-radius:var(--r)}
+.elist.cards .ebody{padding:10px 12px 12px;gap:8px}
+.eimg{display:block;aspect-ratio:3/2;background:#fff;border-bottom:1px solid var(--rule);overflow:hidden}
+.eimg img{display:block;width:100%;height:100%;object-fit:cover}
+.elist.cards .ent:not(.has-img)::before{content:"";display:block;aspect-ratio:3/2;border-bottom:1px solid var(--rule);
+  background:linear-gradient(135deg,var(--paper) 0%,var(--paper-2) 100%)}
 .et{flex:1;min-width:0}
 .en1{display:block;font-family:var(--f-jph);font-weight:700;font-size:.93rem;line-height:1.5;overflow-wrap:anywhere}
 .en1 small{font-size:.8em;font-weight:500;color:var(--ink-3)}
@@ -750,6 +759,10 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
   .chips::-webkit-scrollbar{display:none}
   .fchip{flex:none}
   .ent{padding:9px 12px;gap:10px}
+  .elist.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .elist.cards .ebody{flex-direction:column;gap:4px;padding:8px 10px 10px}
+  .elist.cards .bno{align-self:flex-start;margin-top:0}
+  .elist.cards .en1{font-size:.84rem}
   .en1{font-size:.9rem}
 }
 @media (prefers-reduced-motion:reduce){
@@ -941,6 +954,7 @@ a.cat.on::after{background:rgba(255,255,255,.5)}
                          c  … カテゴリの番号（下の CATS）。空白で区切ると 2 つのカテゴリに出る
                          g  … 絞りこみの印（省いてよい）kiso 物理基礎 / exam 入試問題 /
                               game ゲーム / read 読みもの / quiz クイズ（空白で区切って複数）
+                         img … 一覧に出す小さな絵（省いてよい）。thumbs/sec/ に 360×240 で置く
                    ・ページで 1 件だけ出すとき（題名は t がそのまま出る）
                        cat:"13"  （g:"quiz" なども付けられる）
                    ・parts も cat も書かないページは、一覧には出ない
@@ -1040,12 +1054,12 @@ const SITE = [
         u:BASE+"mechanics/basics-of-motion-on-plane.html",
         d:"等加速度・平面内の運動・運動方程式を、数値を変えて確かめる。v–t図を答える問題つき。",
         parts:[
-          { no:"1-1", n:"なめらかな面をすべる物体（水平面・斜面）", h:"#1-1", c:"01", g:"kiso" },
-          { no:"1-4", n:"鉛直投げ上げ・自由落下", h:"#1-4", c:"01", g:"kiso" },
-          { no:"1-5", n:"力を加えて動かす（摩擦あり・なし）", h:"#1-5", c:"01", g:"kiso" },
-          { no:"1-8", n:"氷の上のカーリングゲーム 〜的にピタリと止めよう！〜", h:"#1-8", c:"01", g:"kiso game" },
-          { no:"2-1", n:"糸でつながれた 2 物体（糸・滑車・アトウッドの装置）", h:"#2-1", c:"01", g:"kiso" },
-          { no:"2-4", n:"なめらかな床の上の板とその上で滑る物体", h:"#2-4", c:"01", g:"kiso" },
+          { no:"1-1", n:"なめらかな面をすべる物体（水平面・斜面）", h:"#1-1", c:"01", g:"kiso", img:"thumbs/sec/basics_1-1.webp" },
+          { no:"1-4", n:"鉛直投げ上げ・自由落下", h:"#1-4", c:"01", g:"kiso", img:"thumbs/sec/basics_1-4.webp" },
+          { no:"1-5", n:"力を加えて動かす（摩擦あり・なし）", h:"#1-5", c:"01", g:"kiso", img:"thumbs/sec/basics_1-5.webp" },
+          { no:"1-8", n:"氷の上のカーリングゲーム 〜的にピタリと止めよう！〜", h:"#1-8", c:"01", g:"kiso game", img:"thumbs/sec/basics_1-8.webp" },
+          { no:"2-1", n:"糸でつながれた 2 物体（糸・滑車・アトウッドの装置）", h:"#2-1", c:"01", g:"kiso", img:"thumbs/sec/basics_2-1.webp" },
+          { no:"2-4", n:"なめらかな床の上の板とその上で滑る物体", h:"#2-4", c:"01", g:"kiso", img:"thumbs/sec/basics_2-4.webp" },
           { no:"3-2", n:"放物運動（水平投射・斜方投射）", h:"#3-2", c:"02" },
           { no:"3-4", n:"かごにボールを蹴り入れよう！", h:"#3-4", c:"02", g:"game" },
           { no:"4-1", n:"2 物体の放物運動（空中での衝突・台車から発射）", h:"#4-1", c:"02" },
@@ -1398,7 +1412,7 @@ const COMING = [
         if (!cs.length) return;
         var g = String(p.g || "").split(/\s+/).filter(function(x){ return GTAG[x]; });
         var e = {
-          no:p.no || "", n:p.n || it.t, href:it.u + (p.h || ""),
+          no:p.no || "", n:p.n || it.t, href:it.u + (p.h || ""), img:p.img || "",
           cats:cs, main:main, g:g, color:sec.color,
           isNew:!!(it["new"] && first),
           page:isPart ? shortName(it.t) : "",
@@ -1510,11 +1524,17 @@ const COMING = [
   }
   function row(e){
     var tags = e.g.map(function(x){ return '<span class="etag ' + x + '">' + esc(GTAG[x]) + '</span>'; }).join("");
-    return '<li><a class="ent" href="' + esc(e.href) + '" style="--fc:' + esc(e.color) + '">' +
-      '<span class="bno' + (e.no ? '' : ' one') + '">' + (e.no ? esc(e.no) : '▶') + '</span>' +
+    return '<li><a class="ent' + (e.img ? ' has-img' : '') + '" href="' + esc(e.href) + '" style="--fc:' + esc(e.color) + '">' +
+      (e.img ? '<span class="eimg"><img src="' + esc(e.img) + '?v=' + IMG_V + '" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span>' : '') +
+      '<span class="ebody"><span class="bno' + (e.no ? '' : ' one') + '">' + (e.no ? esc(e.no) : '▶') + '</span>' +
       '<span class="et"><span class="en1">' + title(e.n) + (e.isNew ? '<span class="enew">NEW</span>' : '') + '</span>' +
       ((e.page || tags) ? '<span class="emeta">' + (e.page ? '<span class="epg">' + esc(e.page) + '</span>' : '') + tags + '</span>' : '') +
-      '</span></a></li>';
+      '</span></span></a></li>';
+  }
+  /* 絵のある件が 1 つでもあれば、そのまとまりは「絵が上・題名が下」のカードで並べる */
+  function listHtml(list){
+    var cards = list.some(function(e){ return e.img; });
+    return '<ul class="elist' + (cards ? ' cards' : '') + '">' + list.map(row).join("") + '</ul>';
   }
   function sortFor(cid){
     return function(a, b){
@@ -1540,7 +1560,7 @@ const COMING = [
     if (!hits.length){
       h = '<p class="empty">見つかりませんでした。別の言葉で試してみてください。</p>';
     } else if (state.cat){
-      h = '<ul class="elist">' + hits.slice().sort(sortFor(state.cat)).map(row).join("") + '</ul>';
+      h = listHtml(hits.slice().sort(sortFor(state.cat)));
     } else {
       CATS.forEach(function(c){
         var sub = hits.filter(function(e){ return e.cats.indexOf(c.id) >= 0; });
@@ -1549,7 +1569,7 @@ const COMING = [
         h += '<section class="egroup" style="--fc:' + esc(c.color) + '">' +
              '<h3><a href="#c' + esc(c.id) + '"><span class="rno">' + esc(c.id) + '</span>' + esc(c.n) +
              '<span class="n">' + sub.length + ' 件</span></a></h3>' +
-             '<ul class="elist">' + sub.sort(sortFor(c.id)).map(row).join("") + '</ul></section>';
+             listHtml(sub.sort(sortFor(c.id))) + '</section>';
       });
     }
     listEl.innerHTML = h;
