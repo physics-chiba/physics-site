@@ -6687,7 +6687,8 @@ DEFS['m2s3'] = {
   guides: [{ key: 'm2s3', x: 0 }],
   title: '②-3　壁に立てかけた棒　～いつすべり出す？～',
   sub: '<b>壁はなめらか（摩擦なし）</b>、床には摩擦がある。',
-  playNote: 'スタートを押すと θ が小さくなっていき、すべり出す角で止まる',
+  playNote: 'スタートで手をはなす。θ が小さくなっていき、すべり出す角で止まる',
+  playDelay: 0.4,                 /* 第 70 回：はじめは手で棒をささえている。スタートで手をはなす（0.4 秒で消える） */
   playRate: -9,
   zone2: ['すべる', 'すべらない'], zone2Rev: true,
   momentInPlay: true, tickInline: true, plainSide: true,   /* 操作パネルをたてに短く */
@@ -6702,7 +6703,7 @@ DEFS['m2s3'] = {
   tickMain: function (s, dt) { return mfTick('m2s3')(s, dt); },
   reset: function (s) { s._mf = null; },
   vars: [
-    { k: 'th', label: '棒の角度 $\\theta$', unit: '°', min: 15, max: 85, step: 1, dec: 0, def: 80,
+    { k: 'th', label: '棒の角度 $\\theta$', unit: '°', min: 15, max: 85, step: 1, dec: 0, def: 60,
       tick: function (v) { var c = DEFS['m2s3'].thc(v); return { at: null, at2: c, label2: 'すべる角 $\\theta_c = ' + fmt(c, 1) + '^\\circ$' }; } },
     { k: 'mu', label: '床の静止摩擦係数 $\\mu$', unit: '', min: 0.10, max: 1.00, step: 0.05, dec: 2, def: 0.60 }
   ],
@@ -6713,7 +6714,8 @@ DEFS['m2s3'] = {
   draw: function (ctx, s, W, H) {
     var v = V(s), th = v.th * DEG;
     var thc = DEFS['m2s3'].thc(v);
-    var slip = v.th < thc - 1e-9;
+    var held = !s.started && !s.anim;                       /* 第 70 回：スタート前は手でささえている（すべらない） */
+    var slip = !held && v.th < thc - 1e-9;
     var S = Math.min((W - 330) / Q3.L, (H - 110) / Q3.L);
     var gy = H - 52, wx = 110;
     /* すべり出したら、棒は壁と床に沿ったまま少したおれる（見た目の角 thd） */
@@ -6733,7 +6735,7 @@ DEFS['m2s3'] = {
     label(ctx, 'A', wx - 40, Ap.y, { size: 15, bold: true });
     label(ctx, 'B', Bp.x + 16, Bp.y + 18, { size: 15, bold: true });
     var rl3 = Math.hypot(Bp.x - Ap.x, Bp.y - Ap.y) || 1;             /* 「棒」：棒の右上がわ */
-    label(ctx, '棒', Ap.x + (Bp.x - Ap.x) * 0.3 + (Bp.y - Ap.y) / rl3 * 24, Ap.y + (Bp.y - Ap.y) * 0.3 - (Bp.x - Ap.x) / rl3 * 24, { size: 14, bold: true, color: '#8a5a2b' });
+    label(ctx, '棒', Ap.x + (Bp.x - Ap.x) * 0.18 + (Bp.y - Ap.y) / rl3 * 24, Ap.y + (Bp.y - Ap.y) * 0.18 - (Bp.x - Ap.x) / rl3 * 24, { size: 14, bold: true, color: '#8a5a2b' });
     var G = { x: (Ap.x + Bp.x) / 2, y: (Ap.y + Bp.y) / 2 };
     angArc(ctx, Bp.x, Bp.y, 40, Math.PI, Math.PI + thd, '', 0, 0);
     label(ctx, 'θ', Bp.x + 56 * Math.cos(Math.PI + thd / 2), Bp.y + 56 * Math.sin(Math.PI + thd / 2), { size: 15, bold: true, color: '#3d4c5a' });
@@ -6777,8 +6779,16 @@ DEFS['m2s3'] = {
     label(ctx, '必要な摩擦力　f = ' + fmt(N1, 1) + ' N', rx, 88, { size: 15, bold: true, color: '#3d4c5a', align: 'right' });
     label(ctx, '最大摩擦力　μN₂ = ' + fmt(v.mu * Q3.W, 1) + ' N', rx, 114, { size: 15, bold: true, color: '#3d4c5a', align: 'right' });
     var bx = Math.min(W - 120, Math.max(G.x + 170, 230)), by = 150;
-    if (slip) verdictBubble(ctx, 'slip', G.x + 78, G.y - 26, 'down', 15);      /* 棒のすぐ近く */
-    else calmBubble(ctx, 'まだすべらない', G.x + 92, G.y - 26, 15);   /* 「すべった！」と同じく棒の近く */
+    /* 手：棒をささえている。スタートで手をはなし、0.4 秒で消えていく（202611-2-review-exam.html の大問3 と同じ） */
+    var rel = s.started && s._pdl > 0 ? 1 - s._pdl / 0.4 : (held ? 0 : 1);
+    if (rel < 1) {
+      var hx = Ap.x + (Bp.x - Ap.x) * 0.36, hy = Ap.y + (Bp.y - Ap.y) * 0.36;
+      ctx.save(); ctx.globalAlpha = 1 - rel;
+      hand(ctx, hx + 16 + rel * 40, hy - 4 - rel * 30, -0.5);
+      ctx.restore();
+      if (held) calmBubble(ctx, '手で棒をささえている。▶ スタートで手をはなす', Math.min(W - 190, hx + 200), hy - 40, 14);
+    } else if (slip) verdictBubble(ctx, 'slip', G.x + 78, G.y - 26, 'down', 15);      /* 棒のすぐ近く */
+    if (rel >= 1 && !slip) calmBubble(ctx, 'まだすべらない', G.x + 92, G.y - 26, 15);   /* 「すべった！」と同じく棒の近く */
     mfMainAxis(ctx, s, 'm2s3', { A: [Ap.x, Ap.y], G: [G.x, G.y], B: [Bp.x, Bp.y] }, W, H);   /* 第 68 回 */
   },
   result: function (v) {
@@ -7093,7 +7103,7 @@ function mfDraw(id) {
     if (en && en.textContent !== et) en.textContent = et;   /* ②-3 ですべっているとき */
     var S, ox, oy;                                           /* 図の座標（L を 1、y は上）→ 画面 */
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
-    if (id === 'm2s2') { S = 190; ox = 80; oy = 196; }
+    if (id === 'm2s2') { oy = 150; ox = 80; S = Math.min(200, (oy - 18) / Math.tan(th)); }   /* 第 71 回：棒を上げて、下に回るぶんの場所をとる */
     else { S = Math.min(215, 170 / Math.sin(th), 230 / Math.cos(th)); ox = 70; oy = 222; }
     function P(p) { return [ox + p[0] * S, oy - p[1] * S]; }
     var A = P(g.A), B = P(g.B), Gp = P(g.G), fpx = 46;     /* 力 W ＝ 46 px */
@@ -7107,10 +7117,10 @@ function mfDraw(id) {
     NO_SHIFT = true;
     /* 背景：壁・床・糸 */
     ctx.save(); ctx.fillStyle = '#e4e8ec'; ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.1;
-    if (id === 'm2s2') { ctx.beginPath(); ctx.rect(ox - 20, 22, 16, oy + 30 - 22); ctx.fill(); ctx.stroke(); }
+    if (id === 'm2s2') { ctx.beginPath(); ctx.rect(ox - 20, 10, 16, MF_FH - 20); ctx.fill(); ctx.stroke(); }
     else { ctx.beginPath(); ctx.rect(ox - 20, 18, 16, oy - 18); ctx.fill(); ctx.stroke(); }
     ctx.restore();
-    if (id === 'm2s2') hatchLine(ctx, ox - 4, 22, ox - 4, oy + 30, 1);
+    if (id === 'm2s2') hatchLine(ctx, ox - 4, 10, ox - 4, MF_FH - 10, 1);
     else { hatchLine(ctx, ox - 4, 18, ox - 4, oy, 1); ground(ctx, ox - 20, W - 12, oy); }
     if (id === 'm2s2') {
       var C = [ox, oy - S * Math.tan(th)];
@@ -7223,13 +7233,29 @@ function mfDraw(id) {
     if (performance.now() - m.axT < 3000) mfAxisBubble(ctx, Pa[0], Pa[1], m.ax !== 'A' || id === 'm2s2');
     /* つりあわないとき：軸のまわりに回る棒 */
     if (Math.abs(phi) > 1e-4) {
-      var rot = function (q) { var c = Math.cos(-phi), sn = Math.sin(-phi), ddx = q[0] - Pa[0], ddy = q[1] - Pa[1]; return [Pa[0] + ddx * c - ddy * sn, Pa[1] + ddx * sn + ddy * c]; };
+      /* 第 72 回：図の端に来ても止めない（最大 50° まで回り続ける。図の外は切りぬき） */
+      var rotBy = function (q, ph) { var c = Math.cos(-ph), sn = Math.sin(-ph), ddx = q[0] - Pa[0], ddy = q[1] - Pa[1]; return [Pa[0] + ddx * c - ddy * sn, Pa[1] + ddx * sn + ddy * c]; };
+      var rot = function (q) { return rotBy(q, phi); };
       var A2 = rot(A), B2 = rot(B), G2 = rot(Gp);
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, MF_FH); ctx.clip();          /* 下の文字にかからないように */
       mfRod(ctx, A2, B2); actPoint(ctx, G2[0], G2[1], '#1b1f24');
-      var rr = 34, a0 = -Math.PI / 2, a1 = a0 - phi * 1.6, ccw = phi > 0;
-      ctx.save(); ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.arc(Pa[0], Pa[1], rr, a0, a1, ccw); ctx.stroke();
-      var ex = Pa[0] + rr * Math.cos(a1), ey = Pa[1] + rr * Math.sin(a1), tx = ccw ? Math.sin(a1) : -Math.sin(a1), tyy = ccw ? -Math.cos(a1) : Math.cos(a1);
-      ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(ex + tx * 9, ey + tyy * 9); ctx.lineTo(ex - tyy * 6, ey + tx * 6); ctx.lineTo(ex + tyy * 6, ey - tx * 6); ctx.closePath(); ctx.fill(); ctx.restore();
+      /* 回る向きの曲がった矢印：棒の先端（軸からいちばん遠い端。軸が重心なら両端）から、回る向きに（第 71 回） */
+      var ccw = phi > 0, dA = Math.hypot(A2[0] - Pa[0], A2[1] - Pa[1]), dB = Math.hypot(B2[0] - Pa[0], B2[1] - Pa[1]);
+      var tips = Math.abs(dA - dB) < 2 ? [A2, B2] : [dA > dB ? A2 : B2];
+      ctx.save(); ctx.strokeStyle = '#c0392b'; ctx.fillStyle = '#c0392b'; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+      tips.forEach(function (tp) {
+        var rr = Math.hypot(tp[0] - Pa[0], tp[1] - Pa[1]); if (rr < 10) return;
+        var inF = function (q) { return q[0] > 50 && q[0] < W - 50 && q[1] > 50 && q[1] < MF_FH - 50; };
+        while (rr > 40 && !inF(tp)) {                    /* 先端が図の外に出たら、図の中に残っている棒のいちばん先から */
+          rr -= 4; tp = [Pa[0] + (tp[0] - Pa[0]) * rr / (rr + 4), Pa[1] + (tp[1] - Pa[1]) * rr / (rr + 4)];
+        }
+        var a0 = Math.atan2(tp[1] - Pa[1], tp[0] - Pa[0]), sw = Math.min(0.6, 64 / rr), a1 = ccw ? a0 - sw : a0 + sw;
+        ctx.beginPath(); ctx.arc(Pa[0], Pa[1], rr, a0, a1, ccw); ctx.stroke();
+        var ex = Pa[0] + rr * Math.cos(a1), ey = Pa[1] + rr * Math.sin(a1), tx = ccw ? Math.sin(a1) : -Math.sin(a1), tyy = ccw ? -Math.cos(a1) : Math.cos(a1);
+        ctx.beginPath(); ctx.moveTo(ex + tx * 11, ey + tyy * 11); ctx.lineTo(ex - tyy * 7, ey + tx * 7); ctx.lineTo(ex + tyy * 7, ey - tx * 7); ctx.closePath(); ctx.fill();
+      });
+      ctx.restore();
+      ctx.restore();
       axisDot(ctx, Pa[0], Pa[1]);
     }
     /* 下：計算と一覧 */
@@ -9568,7 +9594,7 @@ function onPlay() {
   if (s.playing) { s.playing = false; setPlayLabel(); return; }
   s.anim = null;
   var stopAt = playStopAt(d, s, vd);
-  if (!s.started || playAtEnd(d, s.v[vd.k], stopAt)) { s.v[vd.k] = vd.def; s.started = true; }
+  if (!s.started || playAtEnd(d, s.v[vd.k], stopAt)) { s._pdl = d.playDelay || 0; s.v[vd.k] = vd.def; s.started = true; }
   s.playing = true; s.touched = true;
   setPlayLabel(); syncVarVals(); refreshActs(); renderActive();
 }
@@ -10028,7 +10054,10 @@ function tick(ts) {
   if (typeof MW !== 'undefined' && MW.run) mwStep(dt);          /* 1-1 の「力のモーメントの 2 通りの求め方」（第 55 回：輪をこの 1 本にまとめた） */
   if (typeof soloWatch === 'function') soloWatch(ts);           /* 画面の外に出たシムは止める */
   if (window.heroTick) window.heroTick(ts);                      /* 第 58 回：ヒーローのステージもこの 1 本の輪で動かす */
-  if (s && s.playing && !s.anim && playVar(d)) {
+  if (s && s.playing && !s.anim && playVar(d) && s._pdl > 0) {   /* 第 70 回：スタート直後に手をはなす時間（d.playDelay）。この間は変数を動かさない */
+    s._pdl = Math.max(0, s._pdl - dt * (s.slow ? 0.25 : 1));
+    renderActive();
+  } else if (s && s.playing && !s.anim && playVar(d)) {
     var vd = playVar(d), rate = (d.playRate || 5) * (s.slow ? 0.25 : 1);
     var nv = s.v[vd.k] + rate * dt;
     var stopAt = playStopAt(d, s, vd);            /* 動きだしたら、ほどよく止める */
