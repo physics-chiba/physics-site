@@ -621,6 +621,148 @@ button.pulse:hover{background:var(--orange-d);border-color:var(--orange-d)}
 
 
 </style>
+<style>
+/* ===== 新レイアウト（2026-11 試作）=====
+   ・オレンジは「▶ スタート」と「見ること」のマーカーだけ
+   ・上から 見ること → 図とグラフ（見る）→ 動かす → 考える */
+body{background:#f4f3ef}
+.proto{display:inline-block;font-size:.72rem;font-weight:700;color:#5b6672;border:1px solid #c9c5ba;
+  border-radius:999px;padding:1px 10px;margin-left:8px;vertical-align:middle;background:#fff}
+
+/* --- タブの帯：モードは下線、シミュレーションは小さな丸ボタン --- */
+.tabbar{background:#f4f3ef;box-shadow:none;border-bottom:1px solid #e0dcd2;padding:6px 0 7px}
+.tabbar .moderow > .tabs button{background:transparent;border:0;border-bottom:3px solid transparent;
+  border-radius:0;box-shadow:none;color:#77756e;padding:6px 10px 5px;font-weight:700}
+.tabbar .moderow > .tabs button:hover{background:transparent;color:#1b1f24}
+.tabbar .moderow > .tabs button.on{background:transparent;color:#1b1f24;border-bottom-color:var(--orange);box-shadow:none}
+.tabs.sub button{background:#fff;border:1px solid #d8d4ca;color:#3d4c5a;border-radius:999px;padding:3px 13px}
+.tabs.sub button:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+.tabs.sub button.on{background:#1b1f24;border-color:#1b1f24;color:#fff}
+.tabs.sub button.game{background:#fff;border-color:#d8d4ca;color:#3d4c5a}
+.tabs.sub button.game.on{background:#1b1f24;border-color:#1b1f24;color:#fff}
+#modetip{color:#66737f}
+#modetip:not(:empty)::before{color:#b9b5aa}
+/* 問題モードのスイッチは小さく */
+.qswitch{font-size:.84rem;gap:7px;padding:5px 14px;border-width:1px;border-color:#d8d4ca;color:#3d4c5a;box-shadow:none}
+.qswitch input{width:16px;height:16px}
+
+/* --- カード --- */
+#simhost{border-radius:22px;padding:22px 26px 20px;border-color:#e6e2d8;box-shadow:0 2px 14px rgba(40,34,20,.06)}
+.simsec{margin-bottom:26px}
+.simhead{justify-content:flex-start;align-items:center;gap:12px;margin-bottom:6px}
+.simno{flex:none;background:#1b1f24;color:#fff;font-weight:700;font-size:.9rem;border-radius:999px;padding:2px 13px;line-height:1.6}
+.simtitle{font-size:1.28rem;color:#1b1f24;margin:0}
+.simask{margin:2px 0 16px;font-size:1.02rem;line-height:1.7;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.asklab{flex:none;font-size:.72rem;font-weight:700;color:#a85c0c;border:1px solid #e6bb85;border-radius:999px;padding:0 9px;line-height:1.7;background:#fff}
+.asktxt{font-weight:700;color:#7a4307;background:linear-gradient(transparent 58%,#fde3c4 58%)}
+
+.simgrid{gap:22px;align-items:flex-start}
+.simgrid .cv{flex:5 1 480px;max-width:700px}
+.simgrid .side{flex:4 1 400px}
+
+/* --- 動かす --- */
+.ctrl.playctrl{background:#faf9f6;border-color:#e6e2d8;border-radius:16px;padding:12px 14px;margin:10px 0 8px}
+.ctrl .btnrow #bPlay{min-width:9.5em;font-size:1rem;padding:8px 18px;border-radius:999px}
+#bSlow,#bReset{border-color:#d8d4ca;color:#3d4c5a;border-radius:999px;font-weight:600}
+#bSlow:not(.sub){background:#1b1f24;border-color:#1b1f24;color:#fff}
+#bSlow.sub:hover,#bReset:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+.tspan input[type=range]{max-width:none}
+/* 「変えてみよう」は青で（オレンジはスタートだけ） */
+.vrow.focus > .vlab,.vrow.focus > .vval{color:var(--accent-d)}
+.vrow.focus > .stp{background:var(--accent);border-color:var(--accent);animation:none}
+.vrow.focus > .stp:hover{background:var(--accent-d);border-color:var(--accent-d)}
+.vrow.focus > .vsl{box-shadow:0 0 0 3px rgba(22,99,181,.16)}
+.tryme{background:var(--accent);animation:none}
+
+/* 条件の例のボタンは白地（次に押すボタン .pulse だけ色つき） */
+.cvbar .acts button,.cvbar .acts.n3 button,.cvbar .acts.n4 button,.cvbar .acts.n5 button{font-size:.8rem;padding:3px 12px;letter-spacing:0;
+  background:#fff;border-color:#d8d4ca;color:#3d4c5a}
+.cvbar .acts button:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+.cvbar .acts button.on{background:#eceae4;border-color:#b9b5aa;color:#1b1f24;box-shadow:none}
+.cvbar .acts button.on:hover{background:#e4e1d9}
+
+/* --- 考える --- */
+.think{margin-top:16px;border-top:1px solid #ece8de;padding-top:12px}
+.thinkbar{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.thinklab{font-size:.86rem;font-weight:700;color:#5b6672;margin-right:4px}
+button.tk{background:#fff;border:1px solid #d8d4ca;color:#3d4c5a;border-radius:999px;padding:4px 15px;font-size:.88rem;font-weight:600}
+button.tk:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+button.tk.on{background:#1b1f24;border-color:#1b1f24;color:#fff}
+button.tk.cue{border-color:var(--accent);color:var(--accent-d);box-shadow:0 0 0 3px rgba(22,99,181,.16)}
+.thinkpane{margin-top:10px}
+.thinkpane.hide{display:none}
+.note{background:#faf9f6;border:1px solid #e6e2d8;border-left:1px solid #e6e2d8;border-radius:14px;padding:12px 16px;font-size:.95rem;margin-top:0;line-height:1.85}
+.note b{color:#1b1f24}
+table.read#readout{margin:0;background:#faf9f6;border-color:#e6e2d8;border-radius:14px;padding:8px 14px}
+.longbox{border-radius:22px;border-color:#e6e2d8}
+/* スタートはいつもオレンジ（このページでオレンジのボタンはこれだけ） */
+#bPlay{background:var(--orange);border-color:var(--orange);color:#fff}
+#bPlay:hover{background:var(--orange-d);border-color:var(--orange-d)}
+.ctrl.playctrl{margin:0 0 10px}
+
+
+/* --- 図：もとの小さい並べ方（左上に値、右上に矢印の出し入れ）。色だけ落ち着かせる --- */
+.cvstage canvas,.cvstage.nobar canvas{border-radius:14px;border-color:#e6e2d8}
+.cvvars,.cvside .opts,.cvside .cvopts{border-color:#e0dcd2;box-shadow:0 1px 4px rgba(40,34,20,.06)}
+.cvside .opts label.vflash{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d)}
+.cvside .opts label.vflash input[type=checkbox]{accent-color:var(--accent)}
+@keyframes vflash{0%,100%{box-shadow:0 0 0 0 rgba(22,99,181,0)}45%{box-shadow:0 0 0 6px rgba(22,99,181,.25)}}
+
+/* --- 右の列のいちばん上：ほかの値・条件の例（開いたまま） --- */
+.morebox{background:#faf9f6;border:1px solid #e6e2d8;border-radius:14px;padding:8px 12px;margin:0 0 10px}
+.morerow{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.morerow + .morerow{margin-top:6px;padding-top:6px;border-top:1px dashed #e0dcd2}
+.morelab{flex:none;font-size:.72rem;font-weight:700;color:#8a877e;min-width:4.6em}
+.morebox .cvbar{background:transparent;border:0;padding:0;flex:1 1 0;min-width:0}
+.morevals{flex:1 1 0;min-width:0}
+.morevars{position:static;background:transparent;border:0;box-shadow:none;padding:0;width:auto;max-width:340px}
+.moreopts .row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:.82rem}
+
+/* --- グラフ：並べ方はもとのまま。色だけ落ち着かせる --- */
+.gsec{border-color:#e6e2d8;border-radius:12px}
+#bOpenAll{background:#fff;border-color:var(--accent);color:var(--accent-d);border-radius:999px}
+#bOpenAll:hover{background:var(--accent-l)}
+#bBigFml{border-color:#d8d4ca;color:#3d4c5a;border-radius:999px}
+.gform .fl.f3 .fk{background:#1b1f24}
+.thinkpane .eqwrap{margin-top:0}
+.thinkpane .cvsub{font-size:.9rem;color:#3d4c5a;line-height:1.85;margin:10px 2px 0}
+
+/* 面積の解説は、ボタンを押すと開く */
+details.fnbox{margin-top:9px;padding-top:8px;border-top:1px dashed var(--line2)}
+details.fnbox > summary{cursor:pointer;list-style:none;display:inline-block;font-size:.82rem;font-weight:700;color:var(--accent-d);
+  background:#fff;border:1px solid var(--accent);border-radius:999px;padding:2px 14px}
+details.fnbox > summary::-webkit-details-marker{display:none}
+details.fnbox > summary::before{content:'▶ ';font-size:.7em}
+details.fnbox[open] > summary::before{content:'▼ '}
+details.fnbox > summary:hover{background:var(--accent-l)}
+details.fnbox .fnote{border-top:0;margin-top:6px;padding-top:0}
+
+/* --- 図とグラフ 3 つが 1 画面に入るように：右の列を広めに、グラフの枠をつめる --- */
+.simgrid .cv{flex:1 1 420px;max-width:700px}
+.simgrid .side{flex:1.2 1 440px}
+.gsec{margin:6px 0}
+.ghead{padding:5px 12px;font-size:.88rem}
+.gbody{padding:6px 10px;gap:8px}
+.gbody .gleft{flex:1 1 240px;min-width:215px}
+.gform{min-width:175px}
+.btnrow.openrow{margin:0 0 4px}
+.ghint1.ghintb{display:block;margin:6px 2px 0;font-size:.72rem;color:#8a877e}
+
+.gform{flex:1 1 180px}
+.gsec{margin:5px 0}
+.ghead{padding:4px 12px}
+.gbody{padding:4px 10px 6px}
+.ctrl.playctrl{padding:9px 12px;margin:0 0 8px}
+.morebox{padding:6px 12px;margin:0 0 6px}
+/* スタートの帯：広い画面では 1 行、せまい画面では時間バーだけ 2 行目へ */
+.ctrl .btnrow #bPlay{min-width:8.6em;padding:7px 14px}
+#bSlow,#bReset{padding-left:11px;padding-right:11px}
+.ctrl .btnrow{gap:6px}
+.ctrl .btnrow > button{flex:none;white-space:nowrap}
+.tspan{flex:1 1 170px;min-width:170px}
+.tspan input[type=range]{min-width:50px}
+
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -2154,7 +2296,7 @@ function worldAxes(ctx, vw, box, xlabel, ylabel, signY) {
 /* ===== 折れ線グラフ ===== */
 /* spec: {xlabel,ylabel,xmin,xmax,ymin,ymax,series:[{color,dash,pts,name}],cursors:[{color,x,y}],zeroNote} */
 function plot(cv, spec) {
-  var W = 320, H = 174;
+  var W = cv._W || 320, H = cv._H || 174;   /* 大きさは fitGraphs() が決める */
   var ctx = prep(cv, W, H);
   var pad = { l: 46, r: 16, t: 20, b: 26 };
   var gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
@@ -2333,7 +2475,7 @@ function posWord(d, s, word) {
 }
 /* 図の右上（時刻の下）に「正の向き：○○」を出す。位置も全シムでそろえる。 */
 function drawPosNote(ctx, d, s, W, y, word) {
-  label(ctx, '正の向き：' + posWord(d, s, word), W - 10, y === undefined ? 36 : y,
+  label(ctx, '正の向き：' + posWord(d, s, word), W - 10, y === undefined ? 18 : y,
     { align: 'right', size: 11, color: COL.sub });
 }
 
@@ -2478,6 +2620,53 @@ function plank(ctx, cx, yTop, w, h) {
   ctx.beginPath(); ctx.rect(cx - w / 2, yTop, w, h);
   ctx.fillStyle = '#e9d9bd'; ctx.fill();
   ctx.strokeStyle = '#a5854f'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+}
+
+/* ボールを真上に投げ上げる人（右向き）。
+   t=0 ではしゃがんで、足もとのボールを手のひらにのせている。
+   はなしたあと（0.3 s ほど）で立ち上がり、腕を真上にふり上げたまま見上げる。
+   (bx, by)＝投げ始めのボールの中心、r＝ボールの半径、h＝立ったときの身長 [px] */
+function thrower(ctx, bx, by, r, h, t) {
+  var k = Math.max(0, Math.min(1, (t || 0) / 0.3));
+  k = k * k * (3 - 2 * k);
+  function L(a, b) { return a + (b - a) * k; }
+  var px = bx - r - 0.30 * h;                       /* 体の中心（ボールの左） */
+  var J = {
+    footB: [px - 0.13 * h, 0], footF: [px + 0.12 * h, 0],
+    kneeB: [L(px - 0.02 * h, px - 0.08 * h), L(-0.26 * h, -0.25 * h)],
+    kneeF: [L(px + 0.24 * h, px + 0.09 * h), L(-0.24 * h, -0.25 * h)],
+    hip: [L(px - 0.06 * h, px), L(-0.24 * h, -0.48 * h)],
+    sh: [L(px + 0.12 * h, px + 0.03 * h), L(-0.50 * h, -0.80 * h)],
+    head: [L(px + 0.19 * h, px + 0.02 * h), L(-0.63 * h, -0.93 * h)],
+    elb: [L(px + 0.26 * h, px + 0.13 * h), L(-0.24 * h, -1.00 * h)],
+    hand: [L(bx - r * 0.2, px + 0.22 * h), L(r + 2.5, -1.20 * h)],   /* はじめはボールの下 */
+    elb2: [L(px - 0.06 * h, px - 0.12 * h), L(-0.34 * h, -0.62 * h)],
+    hand2: [L(px + 0.02 * h, px - 0.20 * h), L(-0.18 * h, -0.46 * h)]
+  };
+  ctx.save();
+  ctx.translate(0, by);
+  ctx.strokeStyle = '#2c3e50'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  function seg(a, b, c, w) {
+    ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
+    if (c) ctx.lineTo(c[0], c[1]); ctx.stroke();
+  }
+  var w = Math.max(2.2, h * 0.05);
+  seg(J.sh, J.elb2, J.hand2, w * 0.9);               /* うしろの腕 */
+  seg(J.hip, J.kneeB, J.footB, w);                   /* うしろ足 */
+  seg(J.hip, J.kneeF, J.footF, w);                   /* 前足 */
+  seg(J.hip, J.sh, null, w * 1.5);                   /* 胴 */
+  seg(J.sh, J.elb, J.hand, w);                       /* 投げる腕 */
+  /* 手のひら（上向きの小さな受け皿） */
+  ctx.lineWidth = w;
+  ctx.beginPath(); ctx.moveTo(J.hand[0] - 0.06 * h, J.hand[1]); ctx.lineTo(J.hand[0] + 0.06 * h, J.hand[1]); ctx.stroke();
+  /* 頭（投げたあとは上を見る：目の位置を上へ） */
+  var hr = 0.105 * h;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(J.head[0], J.head[1], hr, 0, Math.PI * 2);
+  ctx.fillStyle = '#fdf2e2'; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#2c3e50';
+  ctx.beginPath(); ctx.arc(J.head[0] + hr * 0.45, J.head[1] - hr * L(0.05, 0.50), Math.max(1.1, hr * 0.16), 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -2748,7 +2937,7 @@ function smoothSlideDef(o) {
       { label: '速度0にする（v₀＝0）', fn: function (s) { s.v.v0 = 0; }, is: function (v) { return v.v0 === 0; } },
       { label: '下り坂にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
       { label: '斜面にする（θ＝−30°）', fn: function (s) { s.v.th = -30; }, is: function (v) { return v.th === -30; } },
-      { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
+      { label: '水平にする（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
     ],
     tEnd: function (v) { return P.m11.tEnd(v); },
     sample: function (v, t) { return P.m11.sample(v, t); },
@@ -2858,7 +3047,6 @@ function smoothSlideDef(o) {
             { size: 12, color: COL.acc, align: 'right' });
         }
       }
-      label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
       drawPosNote(ctx, DEFS[o.id], s, W, 36, dirWord(-v.th, s.sign));
     },
     info: function (s, t) {
@@ -2969,7 +3157,7 @@ DEFS['m1-3'] = {
     originMark(ctx, axX, Y(0), -13, 13);
     drawPosNote(ctx, DEFS['m1-3'], s, W, 36);
 
-    arrow(ctx, bx + 92, topY, bx + 92, gndY, 'dim');
+    arrow(ctx, bx + 92, topY, bx + 92, gndY, 'dim'); arrow(ctx, bx + 92, gndY, bx + 92, topY, 'dim');
     label(ctx, 'h = ' + fmt(v.h, 1) + ' m', bx + 98, (topY + gndY) / 2, { align: 'left', size: 11.5 });
 
     var kz = mSize(DEFS['m1-3'], v);
@@ -2994,7 +3182,6 @@ DEFS['m1-3'] = {
       arrow(ctx, 42, H - 118, 42, H - 72, 'acc');
       label(ctx, '加速度 g（一定）', 42, H - 56, { size: 11.5, color: COL.acc });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     if (t >= T - 1e-9) label(ctx, '着地！', bx, gndY - 22, { size: 14, bold: true, color: COL.ng });
   },
   info: function (s, t) {
@@ -3074,7 +3261,7 @@ DEFS['m1-4'] = {
         return ['v = v_0 + at', 'v = v_0 - gt',
           'v = ' + fmt(v.v0 * sg, 1) + ' + (' + fmt(-G * sg, 2) + ')t'];
       },
-      fnote: function (v, s2) { return m13AreaNote(v, s2); } },
+      fnote: function (v, s2) { return m13AreaNote(v, s2); }, fnoteFold: '面積についての考察' },
     { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（加速度）　※ a の運動方程式による導出', ylabel: 'a [m/s²]', open: false, signed: true,
       series: [{ color: COL.acc, f: function (m) { return m.a; } }],
       fml: function (v, sg) {
@@ -3102,9 +3289,9 @@ DEFS['m1-4'] = {
       }
       ctx.restore();
       label(ctx, 'ビル ' + fmt(v.H, 1) + ' m', bx - 78, (Y(v.y0) + Y(yG)) / 2, { align: 'right', size: 11, color: COL.sub });
-      person(ctx, bx - 18, Y(v.y0), 34, false);
+      thrower(ctx, bx, Y(v.y0), 9 * mSize(DEFS['m1-4'], v), clamp(1.7 * sc, 46, 60), t);
     } else {
-      person(ctx, bx - 24, Y(yG), 38, false);
+      thrower(ctx, bx, Y(yG), 9 * mSize(DEFS['m1-4'], v), clamp(1.7 * sc, 46, 84), t);
     }
 
     var axX = W * 0.20;
@@ -3141,7 +3328,6 @@ DEFS['m1-4'] = {
       /* 「正の向き：…」（y=36）とぶつからないよう、1行下げる */
       label(ctx, '負の加速度の原因＝下向きの力（重力）', W - 10, 54, { align: 'right', size: 11, color: COL.force });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     if (t >= T - 1e-9) label(ctx, '着地！', bx, Y(yG) - 22, { size: 14, bold: true, color: COL.ng });
   },
   info: function (s, t) {
@@ -3186,7 +3372,7 @@ DEFS['m1-5'] = {
     { label: '左に 5 N、右に 8 N にする', fn: function (s) { s.v.F = 8; s.v.F2 = 5; },
       is: function (v) { return v.F === 8 && v.F2 === 5; } },
     { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
+    { label: '水平にする（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
     { label: 'はじめの設定にもどす', fn: function (s) { s.v.F = 10; s.v.F2 = 0; s.v.th = 0; s.v.m = 2; s.v.v0 = 0; },
       is: function (v) { return v.F === 10 && v.F2 === 0 && v.th === 0 && v.m === 2 && v.v0 === 0; } }
   ],
@@ -3296,7 +3482,6 @@ DEFS['m1-5'] = {
         label(ctx, 'F₁ と F₂ がつり合っている　a = 0', W * 0.26, 56, { size: 12.5, bold: true, color: COL.acc, align: 'left' });
       }
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-5'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
@@ -3341,7 +3526,7 @@ DEFS['m1-6'] = {
   toggles: [],
   actions: [
     { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
+    { label: '水平にする（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
   ],
   tEnd: function (v) { return Math.min(P.m14.tStop(v) + 0.6, P.m14.tEnd(v)); },
   sample: function (v, t) { return P.m14.sample(v, t); },
@@ -3450,7 +3635,6 @@ DEFS['m1-6'] = {
         label(ctx, m.still ? '止まった（静止摩擦でつり合い）' : 'a = 0', W * 0.3, 56, { size: 12.5, bold: true, color: COL.acc, align: 'left' });
       }
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-6'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
@@ -3494,7 +3678,7 @@ DEFS['m1-7'] = {
   toggles: [],
   actions: [
     { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
+    { label: '水平にする（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
     { label: 'F を小さくして動かなくする（F＝5 N）', fn: function (s) { s.v.F = 5; }, is: function (v) { return v.F === 5; } },
     { label: 'はじめの設定にもどす', fn: function (s) { s.v.F = 20; s.v.th = 30; s.v.m = 2; s.v.mu = 0.5; s.v.mud = 0.3; s.v.v0 = 0; },
       is: function (v) { return v.F === 20 && v.th === 30 && v.m === 2 && v.mu === 0.5 && v.mud === 0.3 && v.v0 === 0; } }
@@ -3592,7 +3776,6 @@ DEFS['m1-7'] = {
       }
       if (m.still) label(ctx, '|F − mg sinθ| ≦ μN なので動かない', W * 0.28, 74, { size: 11, color: COL.sub, align: 'left' });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-7'], s, W, 36, dirWord(v.th, s.sign));
   },
   info: function (s, t) {
@@ -3643,7 +3826,7 @@ DEFS['m1-8'] = {
       is: function (v) { return v.mud <= 0.005 + 1e-9; } },
     { label: '氷をもとにもどす（μ′＝0.050）', fn: function (s) { s.v.mud = 0.050; }, is: function (v) { return Math.abs(v.mud - 0.05) < 1e-9; } },
     { label: '斜面にする（θ＝3°ののぼり）', fn: function (s) { s.v.th = 3; }, is: function (v) { return v.th === 3; } },
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
+    { label: '水平にする（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } }
   ],
   dragStart: true,                            /* スタートはボタンではなくドラッグで */
   HOUSE: 1.6,
@@ -3784,7 +3967,6 @@ DEFS['m1-8'] = {
         12, 60, flashK());
     }
     var done = t >= DEFS['m1-8'].tEnd(v) - 1e-9;
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 16, { align: 'right', size: 13, bold: true });
     drawPosNote(ctx, DEFS['m1-8'], s, W, 34);
 
 
@@ -3973,7 +4155,6 @@ DEFS['m1-9'] = {
       label(ctx, '糸でつながっているので、A も B も同じ加速度・同じ速さ', 12, 40,
         { size: 11.5, bold: true, color: COL.acc, align: 'left' });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-9'], s, W, 36);
   },
   info: function (s, t) {
@@ -4018,7 +4199,7 @@ DEFS['m1-10'] = {
   vars: [{ k: 'th', label: '面の傾き $\\theta$', unit: '°', min: 0, max: 45, step: 5, dec: 0, def: 0 }].concat(twoMassVars(1.0, 2.0)),
   toggles: [],
   actions: [
-    { label: '水平にもどす（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
+    { label: '水平にする（θ＝0°）', fn: function (s) { s.v.th = 0; }, is: function (v) { return v.th === 0; } },
     { label: '斜面にする（θ＝30°）', fn: function (s) { s.v.th = 30; }, is: function (v) { return v.th === 30; } },
     { label: 'つり合う直前にする', fn: function (s) { s.v.th = 30; s.v.m = 4; s.v.M = 2; },
       is: function (v) { return v.th === 30 && v.m === 4 && v.M === 2; } },
@@ -4161,7 +4342,6 @@ DEFS['m1-10'] = {
       label(ctx, '糸でつながっているので、A が上る速さ＝B が下りる速さ', 12, H - 36,
         { size: 11.5, bold: true, color: COL.acc, align: 'left' });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-10'], s, W, 36);
   },
   info: function (s, t) {
@@ -4293,7 +4473,6 @@ DEFS['m1-11'] = {
           { size: 11.5, bold: true, color: COL.acc, align: 'left' });
       }
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-11'], s, W, 36);
   },
   info: function (s, t) {
@@ -4542,7 +4721,6 @@ DEFS['m1-12'] = {
           (Math.abs(m.slid) > 0.01 ? '　すべった距離 ' + fmt(Math.abs(m.slid), 2) + ' m' : ''));
       label(ctx, msg2, 12, 56, { size: 11.5, bold: true, color: COL.acc, align: 'left' });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', W - 10, 18, { align: 'right', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m1-12'], s, W, 36);
   },
   info: function (s, t) {
@@ -4904,7 +5082,7 @@ DEFS['m2-2'] = {
     { key: 'vy', short: '$v_y$–$t$ 図', title: '$v_y$–$t$ 図（鉛直方向の速度）', ylabel: 'vy [m/s]', open: true, signed: true,
       series: [{ color: COL.vely, area: true, f: function (m) { return m.vy; } }],
       fml: function (v, sg) { return projFml(v, sg, 'vy'); },
-      fnote: function (v) { return m22AreaNote(v); } },
+      fnote: function (v) { return m22AreaNote(v); }, fnoteFold: '面積についての考察' },
     { key: 'a', short: '$a$–$t$ 図', title: '$a$–$t$ 図（鉛直方向の加速度）　※ a の運動方程式による導出', ylabel: 'ay [m/s²]', open: false, signed: true,
       series: [{ color: COL.acc, f: function (m) { return m.ay; } }], fml: function (v, sg) { return projFml(v, sg, 'a'); } }
   ],
@@ -4926,7 +5104,6 @@ DEFS['m2-2'] = {
       label(ctx, '重力 mg', px - 9, py + 42, { align: 'right', size: 11.5, color: COL.force });
     }
     drawVel(ctx, px, py, m, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m2-2'], s, W, 34);
     if (hintOn(s, t)) label(ctx, '水平は等速、鉛直だけが等加速度', W - 10, 16, { align: 'right', size: 11, color: COL.sub });
   },
@@ -5022,7 +5199,6 @@ DEFS['m2-3'] = {
       label(ctx, 'mg', px - 8, py + 40, { align: 'right', size: 11.5, color: COL.force });
     }
     drawVel(ctx, px, py, m, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m2-3'], s, W, 34);
     var on = { launch: '投げた点', base: 'ビルの足元', landing: '着地点' }[v.org];
     label(ctx, '原点：' + on, W - 10, 16, { align: 'right', size: 12, bold: true, color: COL.sub });
@@ -5117,7 +5293,6 @@ DEFS['m2-4'] = {
     ball(ctx, px, py, 8);
     if (s.o.showF) arrow(ctx, px, py, px, py + 42, 'force');
     drawVel(ctx, px, py, m, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45));
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 15, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m2-4'], s, W, 33);
     if (hintOn(s, t)) label(ctx, '到達距離 = v_0²sin2θ/g = ' + fmt(v.v0 * v.v0 * Math.sin(2 * v.th * DEG) / G, 1) + ' m',
       W - 10, 15, { align: 'right', size: 11, color: COL.sub });
@@ -5235,12 +5410,12 @@ DEFS['m3-1'] = {
       var q = P.m31.sample(v, i * 0.2);
       ball(ctx, ax, Y(q.yA), 5, 'faint'); ball(ctx, bx, Y(q.yB), 5, 'faint');
     }
-    person(ctx, ax - 26, Y(0), 32, false);
+    thrower(ctx, ax, Y(0), 9, clamp(Y(0) - Y(1.7), 44, 70), t);
     hatchLine(ctx, bx - 26, Y(v.H), bx + 26, Y(v.H), -1);
     label(ctx, 'H = ' + fmt(v.H, 0) + ' m', bx + 30, Y(v.H) - 9, { align: 'left', size: 11, color: COL.sub });
 
     var yA = Y(m.yA), yB = Y(m.yB);
-    ball(ctx, ax, yA, 9, 'A'); label(ctx, 'A', ax - 15, yA, { size: 12, bold: true, color: COL.A });
+    ball(ctx, ax, yA, 9, 'A'); label(ctx, 'A', ax + 15, yA, { size: 12, bold: true, color: COL.A });
     ball(ctx, bx, yB, 9, 'B'); label(ctx, 'B', bx + 15, yB, { size: 12, bold: true, color: COL.B });
 
     var fs = 4.4;
@@ -5254,7 +5429,7 @@ DEFS['m3-1'] = {
     if (s.o.showV) {
       if (Math.abs(m.vA) > 0.2) {
         var la = 10 + 34 * Math.min(1, Math.abs(m.vA) / 30);
-        arrow(ctx, ax - 26, yA, ax - 26, yA - (m.vA > 0 ? 1 : -1) * la, 'vel');
+        arrow(ctx, ax - 46, yA, ax - 46, yA - (m.vA > 0 ? 1 : -1) * la, 'vel');
       }
       if (Math.abs(m.vB) > 0.2) {
         var lb = 10 + 34 * Math.min(1, Math.abs(m.vB) / 30);
@@ -5285,7 +5460,6 @@ DEFS['m3-1'] = {
     label(ctx, 'A', lx - 15, Y(m.yA), { size: 11, bold: true, color: COL.A });
     label(ctx, 'B', lx + 15, Y(m.yB), { size: 11, bold: true, color: COL.B });
 
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 18, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m3-1'], s, W, 36);
     if (hintOn(s, t)) label(ctx, '相対速度 v_A − v_B = ' + fmt((m.vA - m.vB) * s.sign, 1) + ' m/s（一定）', mainW - 14, 18,
       { align: 'right', size: 11, color: COL.sub });
@@ -5341,7 +5515,7 @@ DEFS['m3-2'] = {
       : '小球B の $v_y$–$t$ 図（地上から見た鉛直方向）';
   },
   title: '4-2　等速直線運動する台車Aから、真上に発射される小球B',
-  desc: 'まずクイズに答えてから再生しよう。台車Aは等速で進み、<b>x＝5 m のところで</b>小球Bを<b>真上に</b>発射する。Bはどこに落ちる？',
+  desc: '台車Aは等速で進み、<b>x＝5 m のところで</b>小球Bを<b>真上に</b>発射する。Bはどこに落ちる？',
   sub: 'はじめは台車を止めた状態（V＝0）。まっすぐ上がってまっすぐもどることを確かめてから、V を大きくしてみよう。<br><b>「台車Aの上の観測者」</b>に切りかえると、台車は止まって見え、<b>地面のほうが後ろへ流れていく</b>。そのときBは<b>ただの鉛直投げ上げ</b>——ずっと真上にいて、水平方向には少しも動かない。',
   cw: 520, ch: 340,
   vis: ['F', 'V', 'Vc'],
@@ -5362,12 +5536,6 @@ DEFS['m3-2'] = {
       /* 止まった台車で一度見終わったら、「次はこれ」と光らせる */
       next: function (s, t, v) { return v.V < 0.05 && t >= P.m32.tEnd(v) - 1e-9; } }
   ],
-  quiz: {
-    q: 'Aが進んでいる間に真上にBを発射すると、Bはどこに落ちる？',
-    choices: ['台車Aの手前（後ろ）', '台車Aの真上（発射口にもどる）', '台車Aの先（前）'],
-    answer: 1,
-    explain: '水平方向には力がはたらかないので、Bの水平方向の速度は<b>ずっと V のまま</b>（台車と同じ）。だからBはいつも台車の真上にいて、発射口にもどってくる。'
-  },
   tEnd: function (v) { return P.m32.tEnd(v); },
   sample: function (v, t) { return P.m32.sample(v, t); },
   graphs: [
@@ -5539,7 +5707,6 @@ DEFS['m3-2'] = {
       }
       drawVelAngle(ctx, bpx, bpy, { vx: vxSee, vy: m.vyB }, 4);
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m3-2'], s, W, 34);
     if (v.V > 0.05 && t < tL && hintOn(s, t)) {
       label(ctx, crt ? '地面が後ろへ流れていく（まだ発射しない）' : '等速で進んでいる（まだ発射しない）',
@@ -5645,9 +5812,9 @@ DEFS['m3-3'] = {
       ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(v.mx), Y(v.my)); ctx.stroke(); ctx.restore();
     }
     /* 猿の位置 x・y を寸法線で示す */
-    arrow(ctx, X(0), Y(0) + 18, X(v.mx), Y(0) + 18, 'dim');
+    arrow(ctx, X(0), Y(0) + 18, X(v.mx), Y(0) + 18, 'dim'); arrow(ctx, X(v.mx), Y(0) + 18, X(0), Y(0) + 18, 'dim');
     label(ctx, 'x', (X(0) + X(v.mx)) / 2, Y(0) + 32, { size: 13, bold: true });
-    arrow(ctx, X(v.mx) + 26, Y(0), X(v.mx) + 26, Y(v.my), 'dim');
+    arrow(ctx, X(v.mx) + 26, Y(0), X(v.mx) + 26, Y(v.my), 'dim'); arrow(ctx, X(v.mx) + 26, Y(v.my), X(v.mx) + 26, Y(0), 'dim');
     label(ctx, 'y', X(v.mx) + 38, (Y(0) + Y(v.my)) / 2, { size: 13, bold: true });
     ctx.save(); ctx.strokeStyle = '#c0392b'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(X(0), Y(0));
@@ -5705,7 +5872,6 @@ DEFS['m3-3'] = {
       arrow(ctx, X(bx), Y(by), X(bx), Y(by) - bvy * 2.1, 'vely');
       drawVelAngle(ctx, X(bx), Y(by), { vx: bvx, vy: bvy }, 2.1);
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m3-3'], s, W, 16);
     if (t > 1e-9 && t < 0.28) impact(ctx, X(0) + 34, Y(0) - 26, 16, 'ばん！');
     /* 発射の音におどろいて、猿はこの瞬間に枝から手を放す */
@@ -5941,11 +6107,10 @@ DEFS['m4-1'] = {
     /* 高さ h の寸法 */
     if (!bal) {
       var hx = vw.X(box.x0) + 16;
-      arrow(ctx, hx, vw.Y(0), hx, vw.Y(v.h), 'dim');
+      arrow(ctx, hx, vw.Y(0), hx, vw.Y(v.h), 'dim'); arrow(ctx, hx, vw.Y(v.h), hx, vw.Y(0), 'dim');
       label(ctx, 'h = ' + fmt(v.h, 0) + ' m', hx - 5, (vw.Y(0) + vw.Y(v.h)) / 2,
         { align: 'right', size: 11, color: COL.sub });
     }
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m4-1'], s, W, 34);
     label(ctx, bal ? '気球に乗った観測者' : '地上の観測者', W - 10, 16,
       { align: 'right', size: 12, bold: true, color: COL.sub });
@@ -6419,7 +6584,6 @@ DEFS['m4-3'] = {
       ball(ctx, FX(m.x), FY(m.y), 6);
     }
 
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m4-3'], s, W, 34);
     label(ctx, '方位 ' + fmt(s.cam.az, 0) + '°　仰角 ' + fmt(s.cam.el, 0) + '°　（ドラッグで回転／ホイールで拡大縮小）',
       flat ? W - 172 : W - 10, 16, { align: 'right', size: 10.5, color: COL.sub });
@@ -6730,7 +6894,6 @@ DEFS['m4-2'] = {
     }
     drawVel(ctx, px, py, md, s.o.showV, s.o.showVc, Math.max(6, v.v0 * 1.45),
       sl ? ['v_X', 'v_Y'] : null);
-    label(ctx, 't = ' + fmt(t, 2) + ' s', 10, 16, { align: 'left', size: 13.5, bold: true });
     drawPosNote(ctx, DEFS['m4-2'], s, W, 34);
     label(ctx, sl ? '斜面の上の観測者（X・Y）' : '水平面の観測者（x・y）', W - 10, 16,
       { align: 'right', size: 12, bold: true, color: COL.sub });
@@ -6978,16 +7141,17 @@ function fitStageHeight() {
   if (col._fitKey === key) return;
   col._fitKey = key;
   col.style.maxWidth = '';
-  if (vh > 620 || vw < 600) return;          /* 縦長の画面・狭い画面はそのまま */
+  if (vh > 900 || vw < 600) return;          /* 縦に十分広い画面・狭い画面はそのまま */
   var r = cv.getBoundingClientRect();
   if (r.width < 1 || r.height < 1) return;
   var tb = $('tabbar');
   var tbH = tb ? tb.offsetHeight : 0;        /* 上に残るタブの帯のぶん */
-  var avail = vh - 196 - tbH;                /* 再生ボタン・帯・見出しのぶんを空ける */
+  var stg0 = col.querySelector('.cvstage');
+  var avail = vh - tbH - 20 - (stg0 ? stg0.getBoundingClientRect().top - col.getBoundingClientRect().top : 0);   /* スタートの帯のぶんを空ける */
   /* 高さから決まる幅。ただし小さくしすぎると図が読めなくなるので 420px は確保し、
      右のグラフ列を残すための横の上限（画面幅 − 268px）を超えないようにする。 */
   var byH = avail * (r.width / r.height);
-  var maxW = Math.min(vw - 268, Math.max(420, byH));
+  var maxW = Math.min(vw - 268, Math.max(400, byH));
   if (maxW < 340) maxW = 340;
   if (r.width > maxW) col.style.maxWidth = Math.round(maxW) + 'px';
 }
@@ -7003,6 +7167,31 @@ function placeModeTip() {
   tip.style.paddingLeft = Math.min(pad, Math.max(0, mt.clientWidth - 260)) + 'px';
 }
 
+/* 各シミュレーションの「見ること」（1 行）。画面の番号で引く。 */
+var ASK = {
+  '1-1': 'なめらかな水平面を滑る物体の速さは、変わる？ 変わらない？',
+  '1-2': '斜面を滑りおりる物体の速さは、どんな増え方をする？',
+  '1-3': '落ちる物体の速さは、1 秒ごとにどれだけ増える？',
+  '1-4': 'いちばん高い点で、速度と加速度はそれぞれどうなっている？',
+  '1-5': '一定の力で引きつづけると、速さはどう変わる？',
+  '1-6': '摩擦力がはたらくと、$v$–$t$ 図の傾きはどう変わる？',
+  '1-7': '押す力を変えていくと、加速度の向きはどこで入れかわる？',
+  '1-8': '的にピタリと止めるには、初速度をいくつにすればよい？',
+  '2-1': '糸でつないだ 2 つの物体の加速度は、同じ？ 違う？',
+  '2-2': '糸の張力は、つるした B にはたらく重力と比べて大きい？ 小さい？',
+  '2-3': 'おもりの加速度は、$g$ と比べて大きい？ 小さい？',
+  '2-4': '板の上を滑る物体と板の速度は、やがてどうなる？',
+  '3-1': '2 つの運動で、同じ時刻の高さは同じ？ 違う？',
+  '3-2': '投射角を変えると、$v_x$–$t$ 図と $v_y$–$t$ 図はそれぞれどう変わる？',
+  '3-3': '原点を変えると、どの式が変わり、どの式が変わらない？',
+  '3-4': 'かごに入る角度は、何通りある？',
+  '4-1': 'A と B がぶつかる時刻は、何で決まる？',
+  '4-2': '台車から真上に発射した小球は、台車にもどってくる？',
+  '4-3': '猿に当てるには、どこをねらえばよい？',
+  '5-1': '観測者を切りかえると、$v_y$–$t$ 図はどう変わる？',
+  '5-2': '飛距離が最大になる角 $\Phi$ は、45° より大きい？ 小さい？',
+  '5-3': '斜面の上から見ると、小球の運動はどう見える？'
+};
 /* ===== パネルの組み立て ===== */
 function buildPanel() {
   var d = DEFS[st.cur], s = st.sims[st.cur];
@@ -7010,9 +7199,21 @@ function buildPanel() {
   s._hintT0 = (window.performance && performance.now) ? performance.now() : Date.now();
   s._eq = null;                       /* DOM を作り直すのでキャッシュを捨てる */
   var h = [];
-  h.push('<div class="simhead"><div class="simtitle">' + d.title + '</div></div>');
+  /* ===== 新レイアウト（2026-11 試作 2）：見ること → 動かす → 図 ／ 右の列は 条件の例・グラフ ／ 下に 考える ===== */
+  var ttl0 = String(d.title), mno = ttl0.match(/^(\d+-\d+)[\s　]+([\s\S]*)$/);
+  h.push('<div class="simhead">' + (mno ? '<span class="simno">' + mno[1] + '</span>' : '') +
+    '<div class="simtitle">' + (mno ? mno[2] : ttl0) + '</div></div>');
+  var ask = ASK[NUM[st.cur]];
+  if (ask) h.push('<p class="simask"><span class="asktxt">' + mathHtml(ask) + '</span></p>');
   h.push('<div class="simgrid"><div class="cv">');
-  /* 左上：再生ボタンと時間バー */
+  var mainKeys = mainVarKeys(d);
+  var mainList = [];
+  mainKeys.forEach(function (k) {
+    d.vars.forEach(function (vd) { if (vd.k === k) mainList.push(vd); });
+  });
+  var topSel = d.mainOpts ? (d.selects || []) : [];
+  var topTog = d.mainOpts ? (d.toggles || []) : [];
+  /* --- 動かす：スタートと時間バー --- */
   h.push('<div class="ctrl playctrl">');
   h.push('<div class="btnrow">');
   h.push('<button id="bPlay">▶ スタート</button>');
@@ -7022,25 +7223,14 @@ function buildPanel() {
   h.push('</div>');
   h.push('<div class="mini" id="qhint" style="display:none"></div>');
   h.push('</div>');
-  /* 図（キャンバス）と、その左上にのせる操作エリア
-     ＝ 左：よく変える値のカード／右：選択メニュー（上）＋表示チェック（下） */
-  var mainKeys = mainVarKeys(d);
-  /* カードの並びは mainVars に書いた順（vars の宣言順ではない） */
-  var mainList = [];
-  mainKeys.forEach(function (k) {
-    d.vars.forEach(function (vd) { if (vd.k === k) mainList.push(vd); });
-  });
-  var topSel = d.mainOpts ? (d.selects || []) : [];
-  var topTog = d.mainOpts ? (d.toggles || []) : [];
-  h.push('<div class="cvstage' + ((d.actions && d.actions.length) ? '' : ' nobar') + '">');
+  /* --- 見る：図（左上に値、右上に矢印の出し入れ。もとの小さい並べ方） --- */
+  h.push('<div class="cvstage nobar">');
   h.push('<canvas id="mainCv"' + (d.drag || d.drag3d ? ' class="dragcv"' : '') + '></canvas>');
-  h.push('<div class="cvtop" id="cvtop">');
-  h.push('<div class="cvvars' + (mainList.length > 3 ? ' two' : '') + '" id="cvvars">');
+  h.push('<div class="cvtop" id="cvtop"><div class="cvvars' + (mainList.length > 3 ? ' two' : '') + '" id="cvvars">');
   mainList.forEach(function (vd) {
     h.push(varRowHtml(vd, 'a', focusOn(d, s, vd), d.mainVarFocus === vd.k));
   });
-  h.push('</div>');
-  h.push('<div class="cvside">');
+  h.push('</div><div class="cvside">');
   if (topSel.length || topTog.length) {
     h.push('<div class="cvopts">');
     topSel.forEach(function (sd) {
@@ -7051,7 +7241,7 @@ function buildPanel() {
     topTog.forEach(function (td) {
       h.push('<label><input type="checkbox" data-tog="' + td.k + '"' + (s.o[td.k] ? ' checked' : '') + '> ' + mathHtml(td.label) + '</label>');
     });
-    if (d.optSlider && s.o[d.optSlider.when]) {          /* チェックを入れたときだけ出るスライダー */
+    if (d.optSlider && s.o[d.optSlider.when]) {
       var sv = null;
       d.vars.forEach(function (x) { if (x.k === d.optSlider.k) sv = x; });
       if (sv) {
@@ -7065,7 +7255,6 @@ function buildPanel() {
   if (d.vis && d.vis.length) {
     h.push('<div class="opts">');
     d.vis.forEach(function (k) {
-      /* d.visFlash に指定したものは、チェックが入るまで目立たせて光らせる */
       var fl = (d.visFlash === k && !s.o['show' + k]) ? ' class="vflash"' : '';
       h.push('<label' + fl + '><input type="checkbox" data-vis="show' + k + '"' +
         (s.o['show' + k] ? ' checked' : '') + '> ' + VIS_LABEL[k] + '</label>');
@@ -7073,24 +7262,38 @@ function buildPanel() {
     h.push('</div>');
   }
   h.push('</div></div></div>');
-  /* 図の下のバー：状況を変えるオレンジのボタン */
-  if (d.actions && d.actions.length) {
-    h.push('<div class="cvbar"><div class="acts n' + Math.min(5, d.actions.length) + '">');
-    d.actions.forEach(function (a, i) { h.push('<button class="warm" data-act="' + i + '" id="act_' + i + '">' + a.label + '</button>'); });
-    h.push('</div></div>');
-  }
-  if (d.sub) h.push('<p class="cvsub">' + mathHtml(d.sub) + '</p>');
-  h.push('<div class="eqwrap"><div class="eqttl" id="eqttl" style="display:none"></div>' +
-    '<div class="eq" id="eqbox"></div></div>');
   h.push('</div><div class="side">');
+
+  /* --- 右の列のいちばん上：ほかの値・条件の例（開いたまま） --- */
+  var more = [];
+  var mrows = [], mopts = [];
+  d.vars.forEach(function (vd) { if (mainKeys.indexOf(vd.k) < 0) mrows.push(varRowHtml(vd, 'a')); });
+  (d.mainOpts ? [] : (d.selects || [])).forEach(function (sd) {
+    mopts.push('<div class="row"><label>' + sd.label + '</label><select data-sel="' + sd.k + '">' +
+      sd.options.map(function (o) { return '<option value="' + o.v + '"' + (o.v === s.o[sd.k] ? ' selected' : '') + '>' + o.label + '</option>'; }).join('') +
+      '</select></div>');
+  });
+  (d.mainOpts ? [] : (d.toggles || [])).forEach(function (td) {
+    mopts.push('<div class="row"><label><input type="checkbox" data-tog="' + td.k + '"' + (s.o[td.k] ? ' checked' : '') + '> ' + td.label + '</label></div>');
+  });
+  if (d.actions && d.actions.length) {
+    var a2 = ['<div class="cvbar"><div class="acts n' + Math.min(5, d.actions.length) + '">'];
+    d.actions.forEach(function (a, i) { a2.push('<button class="warm" data-act="' + i + '" id="act_' + i + '">' + a.label + '</button>'); });
+    a2.push('</div></div>');
+    more.push('<div class="morerow"><span class="morelab">条件の例</span>' + a2.join('') + '</div>');
+  }
+  if (mrows.length || mopts.length) {
+    more.push('<div class="morerow"><span class="morelab">ほかの値</span><div class="morevals">' +
+      (mrows.length ? '<div class="cvvars morevars">' + mrows.join('') + '</div>' : '') +
+      (mopts.length ? '<div class="moreopts">' + mopts.join('') + '</div>' : '') + '</div></div>');
+  }
+  if (more.length) h.push('<div class="morebox">' + more.join('') + '</div>');
 
   if (d.quiz) {
     h.push('<div class="quiz"><b>クイズ</b>：' + d.quiz.q + '<div class="qbtns">');
     d.quiz.choices.forEach(function (c, i) { h.push('<button data-q="' + i + '">' + c + '</button>'); });
     h.push('</div><div class="ans" id="quizans">まず3つの中から予想を選ぼう。選んでから「スタート」！</div></div>');
   }
-
-  /* 問題モードの3択（ゲームには問題を出さない） */
   if (!d.game) h.push('<div class="gquiz" id="gquiz" style="display:none"><b>問題</b>：' + mathHtml(quizName(d)) +
     ' はどれ？<span class="qsign" id="qsign"></span>' +
     '<div class="gqrow" id="gqrow">');
@@ -7099,10 +7302,9 @@ function buildPanel() {
   }
   if (!d.game) h.push('</div><div class="gqmsg" id="gqmsg"></div></div>');
 
+  /* --- グラフ：もとのまま、右の列に縦に並べる --- */
   h.push('<div class="btnrow openrow"><button class="warm" id="bOpenAll">' + openAllLabel() + '</button>' +
-    '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button>' +
-    '<span class="ghint1">グラフは ドラッグ＝移動／目盛りの上でドラッグ＝軸の拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動</span></div>');
-
+    '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button></div>');
   graphsOf(d, s).forEach(function (g) {
     h.push('<div class="gsec"><button class="ghead" data-g="' + g.key + '"><span class="tri">' +
       (s.open[g.key] ? '▼' : '▶') + '</span>' + mathHtml(g.title) + '</button>' +
@@ -7119,33 +7321,43 @@ function buildPanel() {
       '横軸<select id="selFx">' + FREE_AXES.map(function (a) { return '<option value="' + a.k + '"' + (a.k === s.fx ? ' selected' : '') + '>' + a.label + '</option>'; }).join('') + '</select>' +
       '</div><canvas id="gc__free"></canvas></div></div></div>');
   }
+  h.push('<div class="ghint1 ghintb">グラフは ドラッグ＝移動／目盛りの上でドラッグ＝軸の拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動</div>');
+  h.push('</div></div>');
 
-  /* note も sub と同じく「$…$」を KaTeX に変換する（<span class="tex"> 直書きも可） */
-  h.push('<div class="note" id="notebox"><b>見るポイント</b>：' + mathHtml(d.note) + '</div>');
-
-  h.push('<div class="ctrl">');
-  (d.mainOpts ? [] : (d.selects || [])).forEach(function (sd) {
-    h.push('<div class="row"><label>' + sd.label + '</label><select data-sel="' + sd.k + '">' +
-      sd.options.map(function (o) { return '<option value="' + o.v + '"' + (o.v === s.o[sd.k] ? ' selected' : '') + '>' + o.label + '</option>'; }).join('') +
-      '</select></div>');
-  });
-  (d.mainOpts ? [] : (d.toggles || [])).forEach(function (td) {
-    h.push('<div class="row"><label><input type="checkbox" data-tog="' + td.k + '"' + (s.o[td.k] ? ' checked' : '') + '> ' + td.label + '</label></div>');
-  });
-  var restCount = 0;
-  d.vars.forEach(function (vd) {
-    if (mainKeys.indexOf(vd.k) >= 0) return;
-    restCount++;
-    h.push(varRowHtml(vd, 'b'));
+  /* --- 考える：選んだ 1 つだけを開く --- */
+  var panes = [['note', '見るポイント'], ['exp', '式と解説'], ['num', '数値']];
+  if (s.pane && !panes.some(function (p) { return p[0] === s.pane; })) s.pane = null;
+  h.push('<div class="think"><div class="thinkbar"><span class="thinklab">クリックしよう→</span>');
+  panes.forEach(function (p) {
+    h.push('<button class="tk' + (s.pane === p[0] ? ' on' : '') + '" data-pane="' + p[0] + '"' +
+      (p[0] === 'note' ? ' id="tkNote"' : '') + '>' + p[1] + '</button>');
   });
   h.push('</div>');
-  if (restCount === 0 && (d.mainOpts || (!(d.selects || []).length && !(d.toggles || []).length))) {
-    h[h.length - 1] = '';   /* 変えるものが残っていなければ、下のブロックは出さない */
-    h[h.length - 2] = '';
-  }
-  h.push('<table class="read" id="readout"></table>');
-  h.push('</div></div>');
+  function paneOpen(k) { return '<div class="thinkpane' + (s.pane === k ? '' : ' hide') + '" data-pane="' + k + '">'; }
+  h.push(paneOpen('note') + '<div class="note" id="notebox">' + mathHtml(d.note) + '</div></div>');
+  h.push(paneOpen('exp') + '<div class="eqwrap"><div class="eqttl" id="eqttl" style="display:none"></div>' +
+    '<div class="eq" id="eqbox"></div></div>' + (d.sub ? '<p class="cvsub">' + mathHtml(d.sub) + '</p>' : '') + '</div>');
+  h.push(paneOpen('num') + '<table class="read" id="readout"></table></div>');
+  h.push('</div>');
   $('simhost').innerHTML = h.join('');
+  /* 「考える」のタブ：押したものだけ開く（もう一度押すと閉じる） */
+  function applyPane() {
+    Array.prototype.forEach.call($('simhost').querySelectorAll('.tk'), function (x) {
+      x.className = 'tk' + (x.getAttribute('data-pane') === s.pane ? ' on' : '');
+    });
+    Array.prototype.forEach.call($('simhost').querySelectorAll('.thinkpane'), function (x) {
+      x.className = 'thinkpane' + (x.getAttribute('data-pane') === s.pane ? '' : ' hide');
+    });
+  }
+  Array.prototype.forEach.call($('simhost').querySelectorAll('.tk'), function (bt) {
+    bt.addEventListener('click', function () {
+      var k = bt.getAttribute('data-pane');
+      s.pane = (s.pane === k) ? null : k;
+      applyPane();
+      Array.prototype.forEach.call($('simhost').querySelectorAll('.gform'), function (g) { g._key = null; });
+      renderActive();
+    });
+  });
   /* くわしい解説は、パネルを差しかえた「あと」に出す
      （中で renderActive() が走るので、先に呼ぶと運動方程式の欄が空になる） */
   renderLong(d);
@@ -7419,6 +7631,97 @@ function onPlay() {
   if (s.playing && s.t < 1e-9 && d.startSfx) sfx(d.startSfx);
   setPlayLabel();
   renderActive();
+  if (s.playing) { var sc0 = st.cur; requestAnimationFrame(function () { if (st.cur === sc0) scrollToStage(); }); }
+}
+
+
+/* 右の列で開いているグラフが、図といっしょに 1 画面に入るように、グラフの大きさを決める。
+   （開いている数が多いほど、1 つあたりを低く・横長にする。字の大きさはなるべく保つ） */
+function fitGraphs() {
+  var host = $('simhost');
+  var grid = host && host.querySelector('.simgrid'), side = host && host.querySelector('.side');
+  if (!grid || !side) return false;
+  var secs = side.querySelectorAll('.gsec');
+  if (!secs.length) return false;
+  var open = [];
+  Array.prototype.forEach.call(secs, function (sec) {
+    var b = sec.querySelector('.gbody'), cv = sec.querySelector('.gleft canvas');
+    if (b && cv && cv.id !== 'gc__free' && b.className.indexOf('hide') < 0) open.push(cv);
+  });
+  var vh = window.innerHeight, vw = window.innerWidth;
+  var key = vh + 'x' + vw + '|' + side.clientWidth + '|' + open.map(function (c) { return c.id; }).join(',');
+  if (side._gKey === key) return false;
+  side._gKey = key;
+  if (!open.length) return false;
+  var gr = grid.getBoundingClientRect(), sr = side.getBoundingClientRect();
+  var twoCol = (sr.top - gr.top) < 40;                 /* 図の右にグラフの列がある並び */
+  var tb = $('tabbar'), tbH = tb ? tb.offsetHeight : 0;
+  var first = secs[0].getBoundingClientRect(), last = secs[secs.length - 1].getBoundingClientRect();
+  var sumCv = 0;
+  open.forEach(function (cv) { sumCv += cv.offsetHeight; });
+  var fixed = (last.bottom - first.top) - sumCv;       /* 見出しや余白など、グラフ以外の高さ */
+  var over = first.top - gr.top;                       /* 列の上（条件の例・ボタン）のぶん */
+  var each = (vh - tbH - 18 - over - fixed) / open.length;
+  /* それでも入りきらないときは、スタートの帯のぶんだけ上へ送る前提で考える（scrollToStage と対） */
+  var stage = host.querySelector('.cvstage');
+  var lift = stage ? Math.max(0, Math.min(stage.getBoundingClientRect().top, first.top) - gr.top) : 0;
+  var each2 = (vh - tbH - 18 - (over - lift) - fixed) / open.length;
+  var changed = false;
+  open.forEach(function (cv) {
+    var cssW = Math.min(390, cv.parentNode.clientWidth || 300);
+    var W = 320, H = 174, mw = '';
+    if (twoCol && !st.bigFml) {
+      var HMIN = 108;
+      W = clamp(Math.round(cssW / 0.94), 250, 320);
+      var e = each;
+      if (e / (cssW / W) < 125) e = each2;             /* 低くなりすぎるなら、帯のぶんも使う */
+      H = Math.round(e / (cssW / W));
+      if (H < HMIN) {                                  /* まだ足りなければ、幅もつめる */
+        H = HMIN;
+        var w2 = Math.max(215, Math.floor(e * W / H));
+        if (w2 < cssW) mw = w2 + 'px';
+      }
+      H = clamp(H, HMIN, 174);
+    }
+    if (cv.style.maxWidth !== mw) cv.style.maxWidth = mw;
+    if (cv._W !== W || cv._H !== H) { cv._W = W; cv._H = H; changed = true; }
+  });
+  return changed;
+}
+var _renderGraphs0 = renderGraphs;
+renderGraphs = function (d, s, T, t) {
+  _renderGraphs0(d, s, T, t);
+  if (fitGraphs()) _renderGraphs0(d, s, T, t);
+};
+
+/* 「スタート」を押したら、図と、開いているグラフがぜんぶ見える位置まで少しだけスクロールする */
+function scrollToStage() {
+  var host = $('simhost');
+  var grid = host && host.querySelector('.simgrid'), stage = host && host.querySelector('.cvstage');
+  if (!grid || !stage) return;
+  var tb = $('tabbar'), top = (tb ? tb.offsetHeight : 0) + 8;
+  var gr = grid.getBoundingClientRect();
+  var bottom = stage.getBoundingClientRect().bottom;
+  Array.prototype.forEach.call(host.querySelectorAll('.side .gsec'), function (sec) {
+    var b = sec.querySelector('.gbody');
+    if (b && b.className.indexOf('hide') < 0) bottom = Math.max(bottom, sec.getBoundingClientRect().bottom);
+  });
+  var firstTop = stage.getBoundingClientRect().top, seen = false;
+  Array.prototype.forEach.call(host.querySelectorAll('.side .gsec'), function (sec) {
+    var b2 = sec.querySelector('.gbody');
+    if (!seen && b2 && b2.className.indexOf('hide') < 0) { seen = true; firstTop = Math.min(firstTop, sec.getBoundingClientRect().top); }
+  });
+  var vh = window.innerHeight, dy = 0;
+  if (gr.top < top) dy = gr.top - top;                                   /* 上が帯にかくれている */
+  else if (bottom > vh - 6) {                                            /* 下がはみ出している */
+    var need = bottom - (vh - 6);
+    /* まずはスタートの帯を残せる範囲で。足りなければ、図とグラフの上端がかくれない所まで */
+    dy = (need <= gr.top - top) ? need : Math.min(need, firstTop - top);
+    if (dy < gr.top - top && need > gr.top - top) dy = Math.max(dy, gr.top - top);
+  }
+  if (Math.abs(dy) < 3) return;
+  try { window.scrollBy({ top: Math.round(dy), behavior: 'smooth' }); }
+  catch (e) { window.scrollBy(0, Math.round(dy)); }
 }
 
 /* 問題モードの表示を state に合わせる */
@@ -7945,7 +8248,11 @@ function renderFormulas(d, s) {
     var names = ['公式', '代入', '数値'];
     box.innerHTML = arr.map(function (x, i) {
       return '<div class="fl f' + (i + 1) + '"><span class="fk">' + names[i] + '</span><span class="fv"><span class="tex">' + x + '</span></span></div>';
-    }).join('') + (fn ? '<div class="fnote">' + mathHtml(fn) + '</div>' : '');
+    }).join('') + (fn ? (g.fnoteFold
+      ? '<details class="fnbox"' + (s.fnOpen && s.fnOpen[g.key] ? ' open' : '') + '><summary>' + g.fnoteFold + '</summary><div class="fnote">' + mathHtml(fn) + '</div></details>'
+      : '<div class="fnote">' + mathHtml(fn) + '</div>') : '');
+    var fnb = box.querySelector('details.fnbox');
+    if (fnb) fnb.addEventListener('toggle', function () { s.fnOpen = s.fnOpen || {}; s.fnOpen[g.key] = fnb.open; });
     renderMath(box);
     fitFormula(box);
     /* KaTeX のフォントが読み込まれたあとに幅が変わることがあるので、次のフレームでもう一度そろえる */
@@ -8069,6 +8376,8 @@ function renderActive() {
     $('tVal').textContent = fmt(s.t, 2) + ' s';
   }
   renderMath($('notebox'));
+  var tkN = $('tkNote');
+  if (tkN) tkN.classList.toggle('cue', T > 0 && s.t >= T - 1e-9 && !s.pane);
   fitStageHeight();
 }
 

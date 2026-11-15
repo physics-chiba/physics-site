@@ -737,6 +737,31 @@ details.fnbox[open] > summary::before{content:'▼ '}
 details.fnbox > summary:hover{background:var(--accent-l)}
 details.fnbox .fnote{border-top:0;margin-top:6px;padding-top:0}
 
+/* --- 図とグラフ 3 つが 1 画面に入るように：右の列を広めに、グラフの枠をつめる --- */
+.simgrid .cv{flex:1 1 420px;max-width:700px}
+.simgrid .side{flex:1.2 1 440px}
+.gsec{margin:6px 0}
+.ghead{padding:5px 12px;font-size:.88rem}
+.gbody{padding:6px 10px;gap:8px}
+.gbody .gleft{flex:1 1 240px;min-width:215px}
+.gform{min-width:175px}
+.btnrow.openrow{margin:0 0 4px}
+.ghint1.ghintb{display:block;margin:6px 2px 0;font-size:.72rem;color:#8a877e}
+
+.gform{flex:1 1 180px}
+.gsec{margin:5px 0}
+.ghead{padding:4px 12px}
+.gbody{padding:4px 10px 6px}
+.ctrl.playctrl{padding:9px 12px;margin:0 0 8px}
+.morebox{padding:6px 12px;margin:0 0 6px}
+/* スタートの帯：広い画面では 1 行、せまい画面では時間バーだけ 2 行目へ */
+.ctrl .btnrow #bPlay{min-width:8.6em;padding:7px 14px}
+#bSlow,#bReset{padding-left:11px;padding-right:11px}
+.ctrl .btnrow{gap:6px}
+.ctrl .btnrow > button{flex:none;white-space:nowrap}
+.tspan{flex:1 1 170px;min-width:170px}
+.tspan input[type=range]{min-width:50px}
+
 </style>
 </head>
 <body>
@@ -2271,7 +2296,7 @@ function worldAxes(ctx, vw, box, xlabel, ylabel, signY) {
 /* ===== 折れ線グラフ ===== */
 /* spec: {xlabel,ylabel,xmin,xmax,ymin,ymax,series:[{color,dash,pts,name}],cursors:[{color,x,y}],zeroNote} */
 function plot(cv, spec) {
-  var W = 320, H = 174;
+  var W = cv._W || 320, H = cv._H || 174;   /* 大きさは fitGraphs() が決める */
   var ctx = prep(cv, W, H);
   var pad = { l: 46, r: 16, t: 20, b: 26 };
   var gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
@@ -7116,16 +7141,17 @@ function fitStageHeight() {
   if (col._fitKey === key) return;
   col._fitKey = key;
   col.style.maxWidth = '';
-  if (vh > 620 || vw < 600) return;          /* 縦長の画面・狭い画面はそのまま */
+  if (vh > 900 || vw < 600) return;          /* 縦に十分広い画面・狭い画面はそのまま */
   var r = cv.getBoundingClientRect();
   if (r.width < 1 || r.height < 1) return;
   var tb = $('tabbar');
   var tbH = tb ? tb.offsetHeight : 0;        /* 上に残るタブの帯のぶん */
-  var avail = vh - 196 - tbH;                /* 再生ボタン・帯・見出しのぶんを空ける */
+  var stg0 = col.querySelector('.cvstage');
+  var avail = vh - tbH - 20 - (stg0 ? stg0.getBoundingClientRect().top - col.getBoundingClientRect().top : 0);   /* スタートの帯のぶんを空ける */
   /* 高さから決まる幅。ただし小さくしすぎると図が読めなくなるので 420px は確保し、
      右のグラフ列を残すための横の上限（画面幅 − 268px）を超えないようにする。 */
   var byH = avail * (r.width / r.height);
-  var maxW = Math.min(vw - 268, Math.max(420, byH));
+  var maxW = Math.min(vw - 268, Math.max(400, byH));
   if (maxW < 340) maxW = 340;
   if (r.width > maxW) col.style.maxWidth = Math.round(maxW) + 'px';
 }
@@ -7278,8 +7304,7 @@ function buildPanel() {
 
   /* --- グラフ：もとのまま、右の列に縦に並べる --- */
   h.push('<div class="btnrow openrow"><button class="warm" id="bOpenAll">' + openAllLabel() + '</button>' +
-    '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button>' +
-    '<span class="ghint1">グラフは ドラッグ＝移動／目盛りの上でドラッグ＝軸の拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動</span></div>');
+    '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button></div>');
   graphsOf(d, s).forEach(function (g) {
     h.push('<div class="gsec"><button class="ghead" data-g="' + g.key + '"><span class="tri">' +
       (s.open[g.key] ? '▼' : '▶') + '</span>' + mathHtml(g.title) + '</button>' +
@@ -7296,6 +7321,7 @@ function buildPanel() {
       '横軸<select id="selFx">' + FREE_AXES.map(function (a) { return '<option value="' + a.k + '"' + (a.k === s.fx ? ' selected' : '') + '>' + a.label + '</option>'; }).join('') + '</select>' +
       '</div><canvas id="gc__free"></canvas></div></div></div>');
   }
+  h.push('<div class="ghint1 ghintb">グラフは ドラッグ＝移動／目盛りの上でドラッグ＝軸の拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動</div>');
   h.push('</div></div>');
 
   /* --- 考える：選んだ 1 つだけを開く --- */
@@ -7605,6 +7631,97 @@ function onPlay() {
   if (s.playing && s.t < 1e-9 && d.startSfx) sfx(d.startSfx);
   setPlayLabel();
   renderActive();
+  if (s.playing) { var sc0 = st.cur; requestAnimationFrame(function () { if (st.cur === sc0) scrollToStage(); }); }
+}
+
+
+/* 右の列で開いているグラフが、図といっしょに 1 画面に入るように、グラフの大きさを決める。
+   （開いている数が多いほど、1 つあたりを低く・横長にする。字の大きさはなるべく保つ） */
+function fitGraphs() {
+  var host = $('simhost');
+  var grid = host && host.querySelector('.simgrid'), side = host && host.querySelector('.side');
+  if (!grid || !side) return false;
+  var secs = side.querySelectorAll('.gsec');
+  if (!secs.length) return false;
+  var open = [];
+  Array.prototype.forEach.call(secs, function (sec) {
+    var b = sec.querySelector('.gbody'), cv = sec.querySelector('.gleft canvas');
+    if (b && cv && cv.id !== 'gc__free' && b.className.indexOf('hide') < 0) open.push(cv);
+  });
+  var vh = window.innerHeight, vw = window.innerWidth;
+  var key = vh + 'x' + vw + '|' + side.clientWidth + '|' + open.map(function (c) { return c.id; }).join(',');
+  if (side._gKey === key) return false;
+  side._gKey = key;
+  if (!open.length) return false;
+  var gr = grid.getBoundingClientRect(), sr = side.getBoundingClientRect();
+  var twoCol = (sr.top - gr.top) < 40;                 /* 図の右にグラフの列がある並び */
+  var tb = $('tabbar'), tbH = tb ? tb.offsetHeight : 0;
+  var first = secs[0].getBoundingClientRect(), last = secs[secs.length - 1].getBoundingClientRect();
+  var sumCv = 0;
+  open.forEach(function (cv) { sumCv += cv.offsetHeight; });
+  var fixed = (last.bottom - first.top) - sumCv;       /* 見出しや余白など、グラフ以外の高さ */
+  var over = first.top - gr.top;                       /* 列の上（条件の例・ボタン）のぶん */
+  var each = (vh - tbH - 18 - over - fixed) / open.length;
+  /* それでも入りきらないときは、スタートの帯のぶんだけ上へ送る前提で考える（scrollToStage と対） */
+  var stage = host.querySelector('.cvstage');
+  var lift = stage ? Math.max(0, Math.min(stage.getBoundingClientRect().top, first.top) - gr.top) : 0;
+  var each2 = (vh - tbH - 18 - (over - lift) - fixed) / open.length;
+  var changed = false;
+  open.forEach(function (cv) {
+    var cssW = Math.min(390, cv.parentNode.clientWidth || 300);
+    var W = 320, H = 174, mw = '';
+    if (twoCol && !st.bigFml) {
+      var HMIN = 108;
+      W = clamp(Math.round(cssW / 0.94), 250, 320);
+      var e = each;
+      if (e / (cssW / W) < 125) e = each2;             /* 低くなりすぎるなら、帯のぶんも使う */
+      H = Math.round(e / (cssW / W));
+      if (H < HMIN) {                                  /* まだ足りなければ、幅もつめる */
+        H = HMIN;
+        var w2 = Math.max(215, Math.floor(e * W / H));
+        if (w2 < cssW) mw = w2 + 'px';
+      }
+      H = clamp(H, HMIN, 174);
+    }
+    if (cv.style.maxWidth !== mw) cv.style.maxWidth = mw;
+    if (cv._W !== W || cv._H !== H) { cv._W = W; cv._H = H; changed = true; }
+  });
+  return changed;
+}
+var _renderGraphs0 = renderGraphs;
+renderGraphs = function (d, s, T, t) {
+  _renderGraphs0(d, s, T, t);
+  if (fitGraphs()) _renderGraphs0(d, s, T, t);
+};
+
+/* 「スタート」を押したら、図と、開いているグラフがぜんぶ見える位置まで少しだけスクロールする */
+function scrollToStage() {
+  var host = $('simhost');
+  var grid = host && host.querySelector('.simgrid'), stage = host && host.querySelector('.cvstage');
+  if (!grid || !stage) return;
+  var tb = $('tabbar'), top = (tb ? tb.offsetHeight : 0) + 8;
+  var gr = grid.getBoundingClientRect();
+  var bottom = stage.getBoundingClientRect().bottom;
+  Array.prototype.forEach.call(host.querySelectorAll('.side .gsec'), function (sec) {
+    var b = sec.querySelector('.gbody');
+    if (b && b.className.indexOf('hide') < 0) bottom = Math.max(bottom, sec.getBoundingClientRect().bottom);
+  });
+  var firstTop = stage.getBoundingClientRect().top, seen = false;
+  Array.prototype.forEach.call(host.querySelectorAll('.side .gsec'), function (sec) {
+    var b2 = sec.querySelector('.gbody');
+    if (!seen && b2 && b2.className.indexOf('hide') < 0) { seen = true; firstTop = Math.min(firstTop, sec.getBoundingClientRect().top); }
+  });
+  var vh = window.innerHeight, dy = 0;
+  if (gr.top < top) dy = gr.top - top;                                   /* 上が帯にかくれている */
+  else if (bottom > vh - 6) {                                            /* 下がはみ出している */
+    var need = bottom - (vh - 6);
+    /* まずはスタートの帯を残せる範囲で。足りなければ、図とグラフの上端がかくれない所まで */
+    dy = (need <= gr.top - top) ? need : Math.min(need, firstTop - top);
+    if (dy < gr.top - top && need > gr.top - top) dy = Math.max(dy, gr.top - top);
+  }
+  if (Math.abs(dy) < 3) return;
+  try { window.scrollBy({ top: Math.round(dy), behavior: 'smooth' }); }
+  catch (e) { window.scrollBy(0, Math.round(dy)); }
 }
 
 /* 問題モードの表示を state に合わせる */

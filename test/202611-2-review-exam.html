@@ -12535,8 +12535,14 @@ function main3b(ctx, q, W, H) {
   label(ctx, 'B', wx - 40, B.y, { size: 15, bold: true });
   label(ctx, 'A', A.x + 4, A.y + 26, { size: 15, bold: true });
   var rl = Math.hypot(A.x - B.x, A.y - B.y) || 1;        /* 「棒」：棒の右上がわ */
-  var up = thd > 40 * RAD || thd < 14 * RAD, rk = up ? 0.3 : 0.2, sd = up ? 24 : -24;   /* 寝かせたときは、B の近くの棒の下がわ（重心・重力・壁の垂直抗力の名前とかさならない） */
-  label(ctx, '棒', B.x + (A.x - B.x) * rk + (A.y - B.y) / rl * sd, B.y + (A.y - B.y) * rk - (A.x - B.x) / rl * sd, { size: 14, bold: true, color: '#8a5a2b' });
+  /* 「棒」と、棒の半分ずつの長さ「ℓ」（2026-11-15 千葉さん）。棒の角で置く側を変える（壁・重力・垂直抗力・手とかさならない） */
+  var nxU = (A.y - B.y) / rl, nyU = -(A.x - B.x) / rl;     /* 棒の右上がわへの単位ベクトル */
+  var onRod = function (txt, fr, side, off, o) { label(ctx, txt, B.x + (A.x - B.x) * fr + nxU * side * off, B.y + (A.y - B.y) * fr + nyU * side * off, o); };
+  var dg = thd / RAD, BO = { size: 14, bold: true, color: '#8a5a2b' }, LO = { size: 15, bold: true, color: '#1b1f24' };
+  if (dg > 68) { onRod('棒', 0.12, 1, 24, BO); onRod('ℓ', 0.22, 1, 16, LO); onRod('ℓ', 0.8, -1, 16, LO); }
+  else if (dg > 40) { onRod('棒', 0.3, 1, 24, BO); onRod('ℓ', 0.25, -1, 16, LO); onRod('ℓ', 0.75, -1, 16, LO); }
+  else if (dg >= 14) { onRod('棒', 0.2, -1, 24, BO); onRod('ℓ', 0.18, 1, 16, LO); onRod('ℓ', 0.75, -1, 16, LO); }
+  else onRod('棒', 0.3, 1, 24, BO);
   angArc(ctx, A.x, A.y, 40, Math.PI, Math.PI + thd, '', 0);
   label(ctx, 'θ', A.x + 56 * Math.cos(Math.PI + thd / 2), A.y + 56 * Math.sin(Math.PI + thd / 2), { size: 15, bold: true, color: '#3d4c5a' });
   label(ctx, 'θ = ' + Math.round(thd / RAD) + '°', A.x + 22, A.y - 18, { size: 15, bold: true, color: '#1f3b57', align: 'left' });
@@ -12740,6 +12746,10 @@ function side3f(ctx, m, th, mu, W, H) {
   lb('A', A[0] + 20, A[1] + 16, { size: 13, bold: true });
   lb('G', Gp[0] + 12, Gp[1] - 8, { size: 13, bold: true });
   angArc(ctx, A[0], A[1], 26, Math.PI, Math.PI + tr, '', 0);
+  /* B のところにも θ（水平と棒のなす角。2026-11-15 千葉さん） */
+  ctx.save(); ctx.strokeStyle = '#9aa3ac'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(B[0], B[1]); ctx.lineTo(B[0] + 40, B[1]); ctx.stroke(); ctx.restore();
+  angArc(ctx, B[0], B[1], 24, 0, tr, '', 0);
+  lb('θ', B[0] + 36 * Math.cos(tr / 2), B[1] + 36 * Math.sin(tr / 2) + 2, { size: 12, color: '#3d4c5a' });
   lb('θ', A[0] - 38 * Math.cos(tr / 2), A[1] - 38 * Math.sin(tr / 2), { size: 12, color: '#3d4c5a' });
   function fArrow(k, mult, withLab, only) {
     var F = sp.force(th, k), p = P(F.p), L = F.f * (mult || 1) * fpx;
