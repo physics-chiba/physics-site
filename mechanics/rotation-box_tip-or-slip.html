@@ -1655,6 +1655,33 @@ footer.sitefoot{margin:56px 0 0;padding:0;border:0;background:var(--night);color
   box-shadow:0 0 0 2px rgba(224,123,24,.55),0 0 12px 2px rgba(224,123,24,.45);opacity:0;animation:ringPulse 1.4s ease-in-out infinite;will-change:opacity,transform}
 @media (prefers-reduced-motion:reduce){ .mfbox button.mfglow::before{animation:none;opacity:.8} }
 .sidefig .mfbox + canvas{margin-top:0}
+/* 第 67 回：図の下の「力のモーメントのつりあいの式」3 つ（②-2・②-3） */
+.stagerow > .stageleft{flex:0 0 calc(60% - 4px);min-width:0}
+@media (max-width:640px){ .stagerow > .stageleft{flex:none;width:100%} }
+@media (max-height:560px) and (orientation:landscape){ .stagerow > .stageleft{flex:none;width:100%} }
+.mfeq{margin:10px 0 0;padding:10px 14px 12px;background:var(--paper,#f5f3ee);border-radius:14px}
+.mfeq .mfeqt{margin:0 0 6px;font-weight:800;font-size:.9rem;color:#1f3b57}
+.mfeq .mfeqs{font-weight:600;font-size:.78rem;color:#5b6672;margin-left:.4em}
+.mfeq .mfeqn{font-weight:700;font-size:.8rem;color:#9b2418;margin-left:.6em}
+.mfeq .mfeqr{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:4px 8px;border-radius:8px;overflow-x:auto}
+.mfeq .mfeqr.on{background:#e6f3ea}
+.mfeq .mfeqk{flex:0 0 7.6em;font-weight:700;font-size:.85rem;color:#1f3b57}
+.mfeq .mfeqr .katex{font-size:1.02em;color:#7a1710}
+/* 第 68 回：式の見出しの右はしに軸のボタン／軸の光る輪（左の図・右の図） */
+.mfeq .mfeqt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.mfeq .mfeqax{margin-left:auto}
+.mfeq .mfeqk{flex:0 0 12.5em}
+.mfeq .mfseg{display:inline-flex;flex-wrap:wrap;border-radius:999px;background:#e9e4da;padding:3px}
+.mfeq .mfseg button{border:0;border-radius:999px;background:transparent;color:#5b6672;font-size:.74rem;padding:.38em .85em;line-height:1.3}
+.mfeq .mfseg button.on{background:var(--ink);color:#fff}
+.sidefig{position:relative}
+.mfgd{position:absolute;width:0;height:0;pointer-events:none;z-index:2}
+.mfgd::before{content:"";position:absolute;left:-16px;top:-16px;width:32px;height:32px;border-radius:50%;
+  background:radial-gradient(circle,rgba(224,123,24,0) 45%,rgba(224,123,24,.35) 62%,rgba(224,123,24,0) 75%);
+  box-shadow:0 0 0 4px rgba(224,123,24,.85),0 0 22px 9px rgba(224,123,24,.6);
+  opacity:0;animation:ringPulse 1.2s ease-in-out infinite;will-change:opacity,transform}
+@media (prefers-reduced-motion:reduce){ .mfgd::before{animation:none;opacity:.85} }
+.mfeq .mfeqr .mfeqk{flex:0 0 auto;min-width:13.6em;white-space:nowrap;font-size:.82rem}
 </style>
 </head>
 <body>
@@ -6547,7 +6574,8 @@ DEFS['m2s2'] = {
   ch: function () { return 460; },
   /* 第 66 回：右の列は「それぞれの力のモーメントの効果」（202611-2-review-exam.html の大問3 と同じしくみ。55_momfx.js） */
   drawSide: function (ctx, s, W, H) { mfDraw('m2s2')(ctx, s, W, H); },
-  sideTopHtml: function () { return mfHtml('m2s2'); }, sideW: 400, sideH: 510,
+  sideTopHtml: function () { return mfHtml('m2s2'); },
+  belowStage: function () { return mfEqHtml('m2s2'); },          /* 第 67 回：前の右の列の 3 つの式は、図の下に */ sideW: 400, sideH: 510,
   wire: function (s, host) { mfWire('m2s2')(s, host); },
   tickMain: function (s, dt) { return mfTick('m2s2')(s, dt); },
   reset: function (s) { s._mf = null; },
@@ -6630,6 +6658,7 @@ DEFS['m2s2'] = {
       }
       NO_SHIFT = false;
     }
+    mfMainAxis(ctx, s, 'm2s2', { A: [A.x, A.y], G: [O.x, O.y], B: [B.x, B.y] }, W, H);   /* 第 68 回：右の列でえらんだ軸を、この図でも黒い点＋光る輪で */
   },
   result: function (v) {
     var th = v.th * DEG, TB = v.W / (2 * Math.sin(th));
@@ -6667,7 +6696,8 @@ DEFS['m2s3'] = {
   ch: function () { return 440; },
   /* 第 66 回：右の列は「それぞれの力のモーメントの効果」（55_momfx.js） */
   drawSide: function (ctx, s, W, H) { mfDraw('m2s3')(ctx, s, W, H); },
-  sideTopHtml: function () { return mfHtml('m2s3'); }, sideW: 400, sideH: 510,
+  sideTopHtml: function () { return mfHtml('m2s3'); },
+  belowStage: function () { return mfEqHtml('m2s3'); }, sideW: 400, sideH: 510,
   wire: function (s, host) { mfWire('m2s3')(s, host); },
   tickMain: function (s, dt) { return mfTick('m2s3')(s, dt); },
   reset: function (s) { s._mf = null; },
@@ -6749,6 +6779,7 @@ DEFS['m2s3'] = {
     var bx = Math.min(W - 120, Math.max(G.x + 170, 230)), by = 150;
     if (slip) verdictBubble(ctx, 'slip', G.x + 78, G.y - 26, 'down', 15);      /* 棒のすぐ近く */
     else calmBubble(ctx, 'まだすべらない', G.x + 92, G.y - 26, 15);   /* 「すべった！」と同じく棒の近く */
+    mfMainAxis(ctx, s, 'm2s3', { A: [Ap.x, Ap.y], G: [G.x, G.y], B: [Bp.x, Bp.y] }, W, H);   /* 第 68 回 */
   },
   result: function (v) {
     var thc = DEFS['m2s3'].thc(v), th = v.th * DEG, N1 = Q3.W / (2 * Math.tan(th));
@@ -6931,6 +6962,23 @@ function mfPhi(sp, v, m) {
   return (tau > 0 ? 1 : -1) * Math.min(MF_PHI, 1.6 * Math.abs(tau) * m.t * m.t);
 }
 
+/* ---------- 図の下：力のモーメントのつりあいの式 3 つ（第 66 回までの右の列の式。第 67 回で図の下へ）---------- */
+var MF_EQ = {
+  m2s2: [['A', '点 A を軸とした式なら', 'T_B\\sin\\theta \\times L - W \\times \\tfrac{L}{2} = 0'],
+         ['G', '棒の重心 O を軸とした式なら', 'T_B\\sin\\theta \\times \\tfrac{L}{2} - T_A \\times \\tfrac{L}{2} = 0'],
+         ['B', '点 B を軸とした式なら', 'W \\times \\tfrac{L}{2} - T_A \\times L = 0']],
+  m2s3: [['B', '点 B を軸とした式なら', 'W \\times \\tfrac{L}{2}\\cos\\theta - N_1 \\times L\\sin\\theta = 0'],
+         ['G', '棒の重心 G を軸とした式なら', 'N_2 \\times \\tfrac{L}{2}\\cos\\theta - N_1 \\times \\tfrac{L}{2}\\sin\\theta - f \\times \\tfrac{L}{2}\\sin\\theta = 0'],
+         ['A', '点 A を軸とした式なら', 'N_2 \\times L\\cos\\theta - W \\times \\tfrac{L}{2}\\cos\\theta - f \\times L\\sin\\theta = 0']]
+};
+function mfEqHtml(id) {
+  return '<div class="mfeq" id="mfeq"><p class="mfeqt">＜力のモーメントのつりあいの式＞<span class="mfeqs">（反時計回りを正）</span>' +
+    '<span class="mfeqn" id="mfeqn"></span>' +
+    '<span class="mfseg mfeqax" role="group" aria-label="回転の軸">' +            /* 第 68 回：右の列の軸のボタンと連動 */
+    MF[id].axes.map(function (a) { return '<button type="button" class="sub" data-mfax="' + a[0] + '">' + a[1] + '</button>'; }).join('') + '</span></p>' +
+    MF_EQ[id].map(function (e) { return '<div class="mfeqr" data-mfeq="' + e[0] + '"><span class="mfeqk">' + e[1] + '</span><span class="tex">' + e[2] + '</span></div>'; }).join('') + '</div>';
+}
+
 /* ---------- 右の列の HTML（ボタン）---------- */
 function mfHtml(id) {
   var sp = MF[id];
@@ -6958,9 +7006,12 @@ function mfSync(s, id) {
     b.innerHTML = big ? 'もとの ' + sp.html[k] + ' にもどす' : '仮に ' + sp.html[k] + ' がもっと大きかったら？';
     b.classList.toggle('mfglow', m.k === k && !big);           /* えらんだ力の「もっと大きかったら？」を光らせる */
   });
-  Array.prototype.forEach.call(box.querySelectorAll('[data-mfax]'), function (b) {
+  Array.prototype.forEach.call(document.querySelectorAll('#mfbox [data-mfax], #mfeq [data-mfax]'), function (b) {
     var on = m.ax === b.getAttribute('data-mfax');
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#mfeq [data-mfeq]'), function (r2) {   /* 図の下の式：いまの軸の行に印 */
+    r2.classList.toggle('on', m.ax === r2.getAttribute('data-mfeq'));
   });
 }
 function mfReset(m) { m.mult = {}; m.t = 0; }
@@ -6986,7 +7037,7 @@ function mfWire(id) {
         go();
       });
     });
-    Array.prototype.forEach.call(box.querySelectorAll('[data-mfax]'), function (b) {
+    Array.prototype.forEach.call(host.querySelectorAll('#mfbox [data-mfax], #mfeq [data-mfax]'), function (b) {
       b.addEventListener('click', function () {
         mfReset(m); m.ax = b.getAttribute('data-mfax');
         if (!m.k) m.k = MF[id].keys[0];
@@ -7038,6 +7089,8 @@ var MF_W = 400, MF_FH = 250, MF_H = 510;
 function mfDraw(id) {
   return function (ctx, s, W, H) {
     var sp = MF[id], v = V(s), m = mfState(s, id), th = v.th * DEG, g = sp.geom(v);
+    var en = document.getElementById('mfeqn'), et = (id === 'm2s3' && sp.note(v)) ? '（すべっているので成り立たない）' : '';
+    if (en && en.textContent !== et) en.textContent = et;   /* ②-3 ですべっているとき */
     var S, ox, oy;                                           /* 図の座標（L を 1、y は上）→ 画面 */
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore();
     if (id === 'm2s2') { S = 190; ox = 80; oy = 196; }
@@ -7094,6 +7147,7 @@ function mfDraw(id) {
     if (!m.k) {                                             /* 何もえらんでいないとき：4 つの力を全部 */
       sp.keys.forEach(function (k) { fArrow(k, 1, true); });
       NO_SHIFT = false;
+      var P0 = P(g[m.ax]); axisDot(ctx, P0[0], P0[1]); mfGlowAt(ctx.canvas, P0[0], P0[1], W, H);   /* 第 68 回：軸はいつも見せる */
       label(ctx, '上のボタンで力をえらぶと、', 16, ty + 18, { size: 14, bold: true, color: '#1f3b57', align: 'left', avoid: false });
       label(ctx, 'その力のうでとモーメントが出る', 16, ty + 42, { size: 14, bold: true, color: '#1f3b57', align: 'left', avoid: false });
       if (sp.note && sp.note(v)) label(ctx, sp.note(v), 16, ty + 74, { size: 12, bold: true, color: '#9b2418', align: 'left', avoid: false });
@@ -7165,7 +7219,7 @@ function mfDraw(id) {
     fArrow(k, mk, true);
     NO_SHIFT = false;
     ctx.restore();
-    axisDot(ctx, Pa[0], Pa[1]);
+    axisDot(ctx, Pa[0], Pa[1]); mfGlowAt(ctx.canvas, Pa[0], Pa[1], W, H);
     if (performance.now() - m.axT < 3000) mfAxisBubble(ctx, Pa[0], Pa[1], m.ax !== 'A' || id === 'm2s2');
     /* つりあわないとき：軸のまわりに回る棒 */
     if (Math.abs(phi) > 1e-4) {
@@ -7210,6 +7264,26 @@ function mfDraw(id) {
     }
     if (sp.note && sp.note(v)) L1(sp.note(v), H - 12, { size: 11.5, color: '#9b2418' });
   };
+}
+
+/* ---------- 第 68 回：軸をもっと光らせる ----------
+   canvas に描く黒い点はそのまま、その上に光る輪（DOM の span。CSS の ::before で opacity と transform だけを動かす）を重ねる。
+   canvas を毎フレーム描き直さなくてよいので軽い。 */
+function mfGlowAt(cv, x, y, cw, ch) {
+  var par = cv && cv.parentNode; if (!par) return;
+  var el = null, i;
+  for (i = 0; i < par.children.length; i++) if (par.children[i].classList.contains('mfgd')) el = par.children[i];
+  if (!el) { el = document.createElement('span'); el.className = 'mfgd'; el.setAttribute('aria-hidden', 'true'); par.appendChild(el); }
+  var pr = par.getBoundingClientRect(), cr = cv.getBoundingClientRect();
+  if (!cr.width) return;
+  el.style.left = (cr.left - pr.left + x / cw * cr.width) + 'px';
+  el.style.top = (cr.top - pr.top + y / ch * cr.height) + 'px';
+}
+/* 左の図（アニメエリア）にも、右の列でえらんでいる軸を：黒い点＋光る輪 */
+function mfMainAxis(ctx, s, id, pts, W, H) {
+  var m = mfState(s, id), P = pts[m.ax];
+  axisDot(ctx, P[0], P[1]);
+  mfGlowAt(ctx.canvas, P[0], P[1], W, H);
 }
 /* ===== 56_mode3.js ===== */
 /* ============================================================
@@ -9316,6 +9390,7 @@ function buildPanel() {
   h.push('</div></div>');
   /* 図 */
   if (d.drawSide || d.stageSide) h.push('<div class="stagerow">');     /* モード 2：左 60 % が図、右 40 % に 3 つの図 */
+  if (d.belowStage) h.push('<div class="stageleft">');                /* 第 67 回：図とその下の式（②-2・②-3）をひとまとめに */
   h.push('<div class="cvstage' + ((d.actions && d.actions.length && !d.actionsInCv) ? '' : ' nobar') + '">');
   h.push('<canvas id="mainCv" class="dragcv"></canvas>');
   /* ＜説明文＞（モード 1〜3）：図の左上。d.guides = [{ key, x（左はしの位置 0〜1）, cls }] */
@@ -9346,6 +9421,7 @@ function buildPanel() {
     h.push('</div>');
   }
   h.push('</div>');
+  if (d.belowStage) h.push(d.belowStage(s) + '</div>');
   if (d.drawSide) h.push('<div class="sidefig">' + (d.sideTopHtml ? d.sideTopHtml(s) : '') + '<canvas id="sideCv"></canvas></div></div>');   /* 第 66 回：sideTopHtml … 右の図の上のボタン（②-2・②-3） */
   else if (d.stageSide) h.push('<div class="sidefig sidehtml">' + d.stageSide(s) + '</div></div>');   /* 右 40 % に HTML（2-1：説明とリンク） */
   if (d.actions && d.actions.length && !d.actionsInCv) {
