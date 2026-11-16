@@ -117,15 +117,8 @@ body.fig-full .figfull-note{
 .figfull-note{display:none}
 canvas#view{width:100%;min-width:620px;height:auto;display:block;border:1px solid #e3e6e9;border-radius:6px;background:#fff;touch-action:pan-y}
 
-/* ---- モードタブ ---- */
-.tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.tab{
-  appearance:none;border:1px solid var(--line);background:#fff;color:var(--sub);
-  padding:8px 14px;border-radius:999px;font-size:13px;cursor:pointer;font-family:inherit;
-}
-.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
-.tab.tab-alt{margin-left:26px;border-color:#c98bd8;color:#8b3fa8;background:#faf3fd}
-.tab.tab-alt[aria-selected="true"]{background:#8b3fa8;border-color:#8b3fa8;color:#fff}
+/* ---- モードタブ ----
+   タブは、上に固定したタブ列（<nav id="tabs">）へ移した。見た目は 12_shell.css（meter-bridge.html と同じ）。 */
 
 /* ---- 操作 ---- */
 .controls{margin-top:12px}
@@ -300,34 +293,368 @@ details.more[open]>summary::before{content:"▼ "}
 footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
 .kbd{font-family:var(--mono);border:1px solid #ccc;border-bottom-width:2px;border-radius:4px;padding:0 5px;background:#fafafa;font-size:12px}
 
+/* =========================================================================
+   12_shell.css … ページの骨組みと見た目を meter-bridge.html にそろえる層（2026-11-16）
+   ・meter-bridge.html（elemag）の CSS から、見出しの帯（低いヒーロー）・上に固定するタブ列・章の扉・
+     フッター・ページ一覧・コンテンツ一覧の決まりを取り出してまとめたもの。
+   ・10_style.css（もとの見た目）のあとに読む。図（canvas）の中の色や書体には一切さわらない。
+   ・光の干渉 3 ページ（ヤングの実験・回折格子・薄膜）で同じファイルを使う。
+     ページごとのちがいは 13_shell_page.css に書く。
+   ========================================================================= */
+:root{
+  --paper:#f5f3ee; --paper-2:#ede9e1; --paper-3:#e4dfd5; --surface:#ffffff;
+  --ink:#14171c; --ink-2:#3a414c; --ink-3:#69717d; --ink-4:#9aa1ab;
+  --rule:#e6e1d7; --rule-2:#d5cfc3;
+  --brand:#e07b18; --brand-600:#c9670c; --brand-700:#9c4e06; --brand-50:#fdf4e8; --brand-100:#fae4c8;
+  --night:#0e1115; --night-2:#161a20; --night-rule:rgba(255,255,255,.09);
+  --r-s:10px; --r:14px; --r-l:20px; --r-xl:28px;
+  --sh-1:0 1px 2px rgba(20,23,28,.05);
+  --sh-2:0 1px 2px rgba(20,23,28,.04),0 12px 32px -12px rgba(20,23,28,.14);
+  --sh-3:0 30px 80px -20px rgba(14,17,21,.38),0 4px 14px rgba(14,17,21,.08);
+  --ease:cubic-bezier(.2,.75,.2,1);
+  --f-jp:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",YuGothic,"Noto Sans JP","Noto Sans CJK JP",Meiryo,system-ui,sans-serif;
+  --f-jph:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,"Noto Sans JP","Noto Sans CJK JP",Meiryo,system-ui,sans-serif;
+  --f-serif:"KaTeX_Main","Times New Roman",serif;
+  --navh:58px;
+  /* もとの変数も新しい色にそろえる（--accent ＝ 図のまわりの青 はそのまま） */
+  --bg:var(--paper); --card:var(--surface); --sub:var(--ink-3); --line:var(--rule); --panel:#faf8f4;
+}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden;overflow-x:clip}
+/* body に overflow を付けると、上に固定するタブ列（position:sticky）が効かなくなる */
+body{background:var(--paper);color:var(--ink);font-family:var(--f-jp);font-size:16px;line-height:1.8;overflow-x:visible;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+::selection{background:var(--brand-100);color:var(--ink)}
+:focus-visible{outline:3px solid rgba(224,123,24,.55);outline-offset:2px;border-radius:8px}
+h1,h2,h3{font-family:var(--f-jph)}
+
+/* ---------- 見出しの帯（低いヒーロー：白 → 水色） ---------- */
+.hero{position:relative;overflow:hidden;isolation:isolate;
+  --h-sky:#e8f7fd;--h-aqua:#7fd3f0;--h-light:#36b6e8;--h-lake:#0e5c86;--h-ink:#0a2540;--h-slate:#5b7a90;--h-line:rgba(14,92,134,.14);
+  background:linear-gradient(100deg,#ffffff 0%,#eefaff 30%,#d9f2fb 68%,#c4e9f7 100%);color:var(--h-ink);
+  border-radius:0 0 clamp(20px,3vw,40px) clamp(20px,3vw,40px)}
+.hero::before{content:"";position:absolute;inset:0;z-index:-2;
+  background:radial-gradient(ellipse 60% 80% at -5% 30%,rgba(255,255,255,.95),rgba(255,255,255,0) 70%)}
+.hero::after{content:"";position:absolute;z-index:-1;width:900px;height:620px;right:-220px;bottom:-260px;filter:blur(30px);pointer-events:none;
+  background:radial-gradient(closest-side,rgba(127,211,240,.55),rgba(127,211,240,.18) 60%,transparent 80%)}
+.hero-in{position:relative;max-width:1240px;margin:0 auto;padding:20px 24px 22px}
+.hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+.hero-title{margin:14px 0 0;padding:0;line-height:1.08;font-weight:800;letter-spacing:-.03em;color:var(--h-ink);font-size:1rem}
+.hero-title .t1{display:block;font-size:clamp(2rem,4.2vw,3rem);font-weight:900}
+.hero-title .t2{display:block;margin-top:.45em;font-size:clamp(.95rem,1.6vw,1.2rem);font-weight:700;letter-spacing:.02em;color:var(--brand-700)}
+.introrow{display:flex;align-items:stretch;gap:22px;margin-top:8px;max-width:980px}
+.lead2{flex:0 1 auto;margin:0;font-size:clamp(.9rem,1.15vw,1rem);line-height:1.8;color:#2c4a63;max-width:36em}
+.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
+  font:inherit;font-family:var(--f-jph);font-size:.92rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
+  color:#fff;background:var(--h-ink);border:0;box-shadow:0 0 0 1px rgba(255,255,255,.4) inset,0 16px 32px -14px rgba(10,37,64,.55);
+  transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s}
+.tocbtn:hover{background:var(--h-lake);transform:translateY(-1px);box-shadow:0 18px 36px -14px rgba(14,92,134,.6)}
+.tocbtn:active{transform:translateY(0)}
+.tocbtn .ti{width:14px;height:11px;display:inline-block;background:
+  linear-gradient(currentColor,currentColor) 0 0/100% 2px no-repeat,
+  linear-gradient(currentColor,currentColor) 0 50%/72% 2px no-repeat,
+  linear-gradient(currentColor,currentColor) 0 100%/86% 2px no-repeat}
+.hero :focus-visible{outline-color:rgba(54,182,232,.7)}
+@media(min-width:1000px){
+  .hero-in{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:clamp(32px,5vw,72px);align-items:end}
+  .hero-in > *{grid-column:1/-1}
+  .hero-in > .hero-title{grid-column:1}
+  .hero-in > .introrow{grid-column:2;flex-direction:column;align-items:flex-start;gap:18px;margin-top:0;padding-bottom:.35em;max-width:46em}
+  .introrow .tocbtn{min-height:3em;align-self:flex-start}
+}
+/* パンくず */
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;color:var(--h-slate)}
+.crumbs a{color:#2c4a63;text-decoration:none;border-radius:6px;transition:color .16s}
+.crumbs a:hover{color:var(--h-lake)}
+.crumb-home{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 6px;margin-left:-6px;border-radius:999px !important;background:rgba(255,255,255,.7);border:1px solid var(--h-line)}
+.crumb-home:hover{background:#fff}
+.crumbs .atom{width:20px;height:20px;flex:0 0 auto}
+.crumbs .cs{color:rgba(10,37,64,.25)}
+.crumbs .now{color:var(--h-ink)}
+.crumbs .kdot{width:4px;height:4px;border-radius:50%;background:var(--h-light);margin-left:6px}
+.crumbs .en{font-family:var(--f-serif);font-style:italic;letter-spacing:.04em;font-weight:400;font-size:.95rem;color:var(--h-slate)}
+@keyframes heroIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:no-preference){
+  .hero-top{animation:heroIn .7s var(--ease) both}
+  .hero-title .t1{animation:heroIn .8s .06s var(--ease) both}
+  .hero-title .t2{animation:heroIn .8s .14s var(--ease) both}
+  .hero .introrow{animation:heroIn .8s .2s var(--ease) both}
+}
+
+/* ---------- タブ列（章のナビ）：画面の上に固定 ---------- */
+.tabs{position:sticky;top:0;z-index:40;margin:0;padding:0;display:block;
+  background:rgba(245,243,238,.97);border-bottom:1px solid var(--rule)}
+.tabs-in{max-width:1440px;margin:0 auto;padding:0 16px;display:flex;gap:2px;align-items:stretch;min-height:46px;
+  overflow-x:auto;scrollbar-width:none}
+.tabs-in::-webkit-scrollbar{display:none}
+.tab{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;margin:0;font:inherit;font-family:var(--f-jph);font-size:.88rem;font-weight:700;
+  line-height:1.3;padding:0 13px;border:0;border-radius:0;background:none;color:var(--ink-3);cursor:pointer;white-space:nowrap;
+  -webkit-appearance:none;appearance:none;transition:color .18s}
+.tab .tn{font-size:1.02rem;color:var(--ink-4);transition:color .18s}
+.tab::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--brand);
+  transform:scaleX(0);transform-origin:center;transition:transform .28s var(--ease)}
+.tab:hover{color:var(--ink)}
+.tab:hover .tn{color:var(--brand)}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"] .tn{color:var(--brand)}
+.tab[aria-selected="true"]::after{transform:scaleX(1)}
+.tab:focus-visible{outline-offset:-4px}
+.tab:disabled{opacity:.4;cursor:default}
+.tprog{position:absolute;left:0;bottom:-1px;height:2px;width:100%;transform-origin:0 50%;transform:scaleX(var(--prog,0));
+  background:linear-gradient(90deg,rgba(224,123,24,.25),rgba(224,123,24,.9));pointer-events:none}
+/* タブ列の左：ホーム（家）とページ一覧 */
+.navsite{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding-right:12px;margin-right:6px;border-right:1px solid var(--rule-2);align-self:center}
+.navhome,.navpages{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;border-radius:999px;cursor:pointer;
+  color:var(--ink);background:var(--surface);border:1px solid var(--rule-2);text-decoration:none;font:inherit;font-family:var(--f-jph);font-size:.8rem;font-weight:700;
+  transition:background .16s,border-color .16s,color .16s,transform .12s var(--ease)}
+.navhome{width:36px;padding:0}
+.navpages{padding:0 13px 0 11px}
+.navhome svg,.navpages svg{width:17px;height:17px;flex:0 0 auto}
+.navpages svg{color:var(--brand)}
+.navhome:hover,.navpages:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.navpages:hover svg{color:var(--brand)}
+.navhome:active,.navpages:active{transform:scale(.96)}
+
+/* ---------- 本文 ---------- */
+.wrap{position:relative;max-width:1240px;margin:0 auto;padding:8px 16px 40px}
+/* 章の扉 */
+.modehead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:26px;align-items:start;margin:46px 0 22px;padding:0;background:none;border:0;border-radius:0}
+.mh-num{width:84px;height:84px;border-radius:50%;border:1.5px solid var(--ink);display:grid;place-items:center;margin-top:4px;position:relative}
+.mh-num::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px dashed var(--rule-2)}
+.mh-num span{font-family:var(--f-serif);font-size:2.7rem;line-height:1;color:var(--ink);transform:translateY(1px)}
+.mh-en{margin:0 0 6px;font-family:var(--f-serif);font-style:italic;font-size:1rem;color:var(--brand-600);letter-spacing:.01em}
+.modehead h2{margin:0;padding:0;border:0;background:none;border-radius:0;font-size:clamp(1.6rem,3vw,2.35rem);font-weight:800;line-height:1.25;letter-spacing:-.02em;color:var(--ink)}
+.modehead h2 .mh-c{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.modehead .mh-lead{margin:12px 0 0;font-size:1.02rem;line-height:1.95;color:var(--ink-2);max-width:52em}
+@keyframes modeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.modehead.in{animation:modeIn .45s var(--ease) both}
+@media(prefers-reduced-motion:reduce){.modehead.in{animation:none}}
+/* ページの中のほかの場所へ（ピル） */
+.seclinks{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;padding:0 0 0 110px;font-size:.86rem}
+.seclinks a{display:inline-flex;align-items:center;padding:.38em .95em;border:1px solid var(--rule-2);border-radius:999px;text-decoration:none;
+  color:var(--ink-2);background:transparent;font-weight:600;transition:background .18s,border-color .18s,color .18s}
+.seclinks a:hover{background:var(--surface);border-color:var(--ink);color:var(--ink)}
+
+/* ---------- フッター（暗い地・章の目次つき） ---------- */
+footer.pagefoot{margin:56px 0 0;padding:0;background:var(--night);color:rgba(243,239,230,.55);font-size:.8rem;letter-spacing:0;text-align:left}
+.ft-in{max-width:1240px;margin:0 auto;padding:46px 24px 40px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px 60px}
+.ft-mark{margin:0;font-family:var(--f-serif);font-style:italic;font-size:clamp(1.6rem,3vw,2.3rem);color:#f3efe6;line-height:1.15}
+.ft-mark span{display:block;font-family:var(--f-jph);font-style:normal;font-weight:700;font-size:.9rem;letter-spacing:.06em;color:rgba(243,239,230,.55);margin-top:10px}
+.ft-nav{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+.ft-nav a{display:flex;gap:10px;align-items:baseline;padding:6px 0;color:rgba(243,239,230,.75);text-decoration:none;font-size:.86rem;border-bottom:1px solid rgba(255,255,255,.07);transition:color .16s}
+.ft-nav a:hover{color:#fff}
+.ft-nav a b{font-family:var(--f-serif);font-weight:400;color:var(--brand);min-width:1.4em}
+.ft-base{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);font-size:.76rem;color:rgba(243,239,230,.4)}
+.ft-base a{color:rgba(243,239,230,.7)}
+.ft-base .ft-home{color:rgba(243,239,230,.85);text-decoration:none;font-weight:700}
+.ft-base .ft-home:hover{color:#fff;text-decoration:underline}
+.ft-r{display:inline-flex;gap:18px;align-items:center}
+.ft-pages{font:inherit;font-size:.76rem;color:rgba(243,239,230,.7);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.ft-pages:hover{color:#fff}
+@media(max-width:760px){.ft-in{grid-template-columns:1fr}.ft-nav{grid-template-columns:1fr}}
+
+/* ---------- コンテンツ一覧のパネル ---------- */
+.tocpanel{position:absolute;z-index:300;left:50%;transform:translateX(-50%);top:70px;width:min(640px,calc(100vw - 24px));
+  max-height:calc(100vh - 100px);overflow:auto;color:var(--ink);background:var(--surface);border:0;border-radius:var(--r-l);
+  box-shadow:var(--sh-3),0 0 0 1px rgba(20,23,28,.06);padding:18px 22px 22px}
+.tocpanel[hidden]{display:none}
+.tochead{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:6px;font-size:1.05rem;font-family:var(--f-jph)}
+.tocx{font:inherit;background:none;border:none;cursor:pointer;line-height:1;width:34px;height:34px;border-radius:50%;padding:0;display:grid;place-items:center;font-size:1.25rem;color:var(--ink-3);transition:background .16s}
+.tocx:hover{background:var(--paper)}
+.tocmode{font-family:var(--f-jph);font-weight:800;font-size:.92rem;color:var(--ink);margin:16px 0 4px;padding-bottom:4px;border-bottom:1px dashed var(--rule)}
+.tocpanel ul{list-style:none;margin:0;padding:0}
+.tocpanel li{margin:0;font-size:.88rem}
+.tocpanel a{display:block;padding:.38em .6em;border-radius:10px;color:var(--ink-2);text-decoration:none;transition:background .14s,color .14s}
+.tocpanel a:hover{background:var(--paper);color:var(--ink)}
+
+/* ---------- 左から出る「ページ一覧」のパネル ---------- */
+.drawer-scrim{position:fixed;inset:0;z-index:90;background:rgba(14,17,21,.5);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;transition:opacity .25s var(--ease)}
+.drawer-scrim.on{opacity:1}
+.drawer{position:fixed;z-index:91;top:0;left:0;bottom:0;width:min(400px,88vw);overflow-y:auto;overscroll-behavior:contain;
+  background:var(--night);color:#f3efe6;padding:0 0 28px;box-shadow:20px 0 60px -20px rgba(0,0,0,.5);
+  transform:translateX(-102%);transition:transform .3s var(--ease)}
+.drawer.on{transform:none}
+.drawer[hidden],.drawer-scrim[hidden]{display:none}
+html.drawer-open{overflow:hidden}
+.dr-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 16px 14px 20px;background:rgba(14,17,21,.94);border-bottom:1px solid var(--night-rule)}
+.dr-brand{display:inline-flex;align-items:center;gap:10px;color:#f3efe6;text-decoration:none;font-family:var(--f-jph);font-weight:800;font-size:.95rem}
+.dr-brand .atom{width:26px;height:26px}
+.dr-x{width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.07);color:#f3efe6;font-size:1.3rem;line-height:1;cursor:pointer}
+.dr-x:hover{background:rgba(255,255,255,.14)}
+.dr-home{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;margin:16px 16px 6px;padding:12px 14px;border-radius:var(--r);
+  background:var(--brand);color:#1a1206;text-decoration:none;transition:filter .16s,transform .16s var(--ease)}
+.dr-home:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.dr-hi{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:rgba(26,18,6,.12)}
+.dr-hi svg{width:20px;height:20px}
+.dr-home b{display:block;font-family:var(--f-jph);font-size:1rem}
+.dr-home small{display:block;font-size:.72rem;opacity:.8;line-height:1.5}
+.dr-go{font-family:var(--f-serif);font-size:1.2rem}
+.dr-g{margin:22px 20px 6px;font-size:.7rem;font-weight:700;letter-spacing:.18em;color:rgba(243,239,230,.45)}
+.dr-sec{margin:0 12px 6px}
+.dr-sec h3{display:flex;align-items:center;gap:9px;margin:8px 8px 4px;font-size:.86rem;font-weight:800;color:#f3efe6}
+.dr-sec h3 i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.dr-sec ul{list-style:none;margin:0;padding:0}
+.dr-sec a{display:block;padding:8px 12px 8px 27px;border-radius:10px;font-size:.84rem;line-height:1.55;color:rgba(243,239,230,.78);text-decoration:none;position:relative;transition:background .14s,color .14s}
+.dr-sec a:hover{background:rgba(255,255,255,.07);color:#fff}
+.dr-sec a.cur{background:rgba(255,255,255,.06);color:#fff;box-shadow:inset 3px 0 0 var(--brand)}
+.dr-sec a em{display:block;font-style:normal;font-size:.68rem;font-weight:700;letter-spacing:.06em;color:var(--brand);margin-top:2px}
+.dr-form{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:22px 16px 0;padding:12px 14px;border-radius:var(--r);
+  border:1px solid var(--night-rule);color:rgba(243,239,230,.8);text-decoration:none;font-size:.8rem;transition:background .16s}
+.dr-form:hover{background:rgba(255,255,255,.06);color:#fff}
+@media(prefers-reduced-motion:reduce){.drawer,.drawer-scrim{transition:none}}
+
+/* ---------- 画面の幅ごとの調整（骨組み） ---------- */
+@media(min-width:1240px) and (max-width:1399px){
+  .navpages span{display:none} .navpages{width:36px;padding:0}
+  .tab{padding:0 10px;font-size:.86rem}
+}
+/* タブレット幅：タブを折り返す（隠れたタブを作らない） */
+@media(min-width:641px) and (max-width:1239px){
+  .tabs-in{flex-wrap:wrap;overflow:visible;row-gap:0;padding-top:4px;padding-bottom:4px}
+  .tab{min-height:42px}
+}
+/* 小さいタブレット（たて置き）：タブが 3 段にならないように、字と間を少しつめ、「ページ一覧」はアイコンだけにする */
+@media(min-width:641px) and (max-width:900px){
+  .tab{font-size:.8rem;padding:0 8px;gap:5px}
+  .tab .tn{font-size:.92rem}
+  .navpages span{display:none} .navpages{width:36px;padding:0}
+  .navsite{padding-right:8px;margin-right:2px}
+}
+@media(max-width:980px){ .seclinks{padding-left:0} }
+/* スマホ：1 段で横に送る。右はしをぼかして「続きがある」と示す */
+@media(max-width:640px){
+  :root{--navh:50px}
+  .tabs-in{-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent);padding-right:40px}
+  .tab{min-height:var(--navh);font-size:.82rem;padding:0 11px}
+  .navpages span{display:none} .navpages{width:36px;padding:0} .navsite{padding-right:8px;margin-right:2px}
+  .crumbs .en,.crumbs .kdot{display:none}
+  .hero-top{align-items:flex-start}
+  .introrow{flex-direction:column;gap:12px}
+  .tocbtn{min-height:0;padding:.75em 1.2em;align-self:flex-start}
+  .modehead{grid-template-columns:1fr;gap:12px;margin:30px 0 16px}
+  .mh-num{width:58px;height:58px}
+  .mh-num span{font-size:1.9rem}
+}
+@media(max-width:560px){
+  body{font-size:15px}
+  .hero-in{padding:14px 14px 16px}
+  .wrap{padding:8px 10px 32px}
+}
+/* 横置きのスマホなど、高さのない画面：タブ列を固定すると図が見えなくなるので固定しない */
+@media(max-height:560px){ .tabs{position:static} }
+
+/* =========================================================================
+   もとの部品（カード・ボタン・スライドバーなど）の見た目を、同じ決まりにそろえる
+   ・枠線で囲まず、面の色（紙＝くぼみ、白＝カード）と、やわらかい影で区切る
+   ・ボタンはピル。▶ スタート・次へ だけオレンジで塗る。選択中は墨
+   ========================================================================= */
+a{color:#1663b5}
+h2{font-family:var(--f-jph)}
+h3{color:var(--ink)}
+.mini{color:var(--ink-3)}
+/* 節の見出し（目的・練習問題・補足） */
+.blockhead{margin:54px 0 16px;scroll-margin-top:calc(var(--navh) + 12px)}
+.blockhead .mh-en{margin:0 0 2px}
+.blockhead h2{margin:0;padding:0;border:0;background:none;border-radius:0;font-size:clamp(1.3rem,2.2vw,1.7rem);font-weight:800;line-height:1.35;letter-spacing:-.01em;color:var(--ink)}
+.blockhead p.mini{margin:.5em 0 0}
+/* カード */
+.card,.stage,.panel,.q,details.more{border:1px solid rgba(20,23,28,.06);border-radius:var(--r-l);box-shadow:var(--sh-2)}
+.stage{border-radius:var(--r-xl);padding:18px}
+.card.purpose{border:1px solid rgba(20,23,28,.06);border-radius:var(--r-xl);padding:26px 30px;margin:0 0 18px}
+.purpose .lead{font-size:.78rem;letter-spacing:.14em;color:var(--brand-700);margin:0 0 .4em}
+details.more{padding:14px 20px}
+details.more>summary{color:var(--ink);font-family:var(--f-jph)}
+details.more>summary::before{color:var(--brand)}
+.q{padding:18px 20px}
+.opt{border-radius:var(--r-s);border-color:var(--rule-2)}
+.opt:hover{background:var(--paper)}
+/* 図のまわりの小さなカード・操作の列（くぼみ＝紙色） */
+.ctlcard,.dirbox{border-radius:var(--r)}
+.toprow{background:var(--paper);border:0;border-radius:var(--r);padding:8px 10px}
+canvas#view{border-color:var(--rule);border-radius:var(--r-s)}
+/* ボタン */
+button.ctl{font-family:var(--f-jph);font-weight:600;border-radius:999px;border-color:var(--rule-2);color:var(--ink);
+  transition:background .16s,border-color .16s,transform .12s var(--ease)}
+button.ctl:hover{background:var(--paper);border-color:var(--ink-4)}
+button.ctl:active:not(:disabled){transform:scale(.97)}
+button.ctl[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+button.ctl.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:800;letter-spacing:.02em;
+  box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 10px 24px -10px rgba(224,123,24,.85)}
+button.ctl.primary:hover{background:#ec8526;border-color:#ec8526;filter:none}
+button.ctl.primary:disabled{box-shadow:none}
+@keyframes nextpulse{0%,100%{box-shadow:0 0 0 0 rgba(224,123,24,.6)}55%{box-shadow:0 0 0 9px rgba(224,123,24,0)}}
+button.ctl.alt{background:var(--brand-50);border-color:rgba(224,123,24,.45);color:var(--brand-700)}
+button.ctl.alt:hover{background:var(--brand-100)}
+.seg .seg-b{border-radius:0}
+.seg .seg-b:first-child{border-radius:999px 0 0 999px}
+.seg .seg-b:last-child{border-radius:0 999px 999px 0}
+.seg .seg-b[aria-pressed="true"],button.ctl.ord[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.ctl.stepb{border-radius:50%;width:28px;height:28px;min-width:28px;padding:0;display:inline-grid;place-items:center;color:var(--ink-2)}
+.ctl.stepb:hover:not(:disabled){background:var(--ink);border-color:var(--ink);color:#fff}
+/* スライドバー：細い溝＋塗り（--p は JS が入れる）＋白縁のつまみ */
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:22px;cursor:pointer;--p:0%;--c:var(--ink)}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:linear-gradient(90deg,var(--c) var(--p),var(--rule-2) var(--p))}
+input[type=range]::-moz-range-track{height:4px;border-radius:999px;background:var(--rule-2)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:999px;background:var(--c)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:var(--surface);
+  border:5px solid var(--c);box-shadow:0 1px 4px rgba(20,23,28,.25);transition:transform .15s var(--ease)}
+input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--surface);border:5px solid var(--c);box-shadow:0 1px 4px rgba(20,23,28,.25)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.18)}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 5px rgba(224,123,24,.3)}
+input[type=range]:disabled{opacity:.45;cursor:default}
+
+@media(max-width:700px){
+  .stage{padding:12px 11px;border-radius:var(--r-l)}
+  .card.purpose{padding:18px 16px;border-radius:var(--r-l)}
+  .q{padding:14px 14px}
+  .blockhead{margin-top:38px}
+}
+
+/* 図だけを大きく表示しているあいだ・実寸モードのあいだは、骨組みを出さない */
+body.scale-only .hero,body.scale-only .modehead,body.scale-only .seclinks,body.scale-only .blockhead,body.scale-only footer.pagefoot{display:none !important}
+body.fig-full .tabs{z-index:1}
+
+/* 印刷：飾りを外して、本文だけを白地で */
+@media print{
+  body{background:#fff}
+  .hero{background:#fff;color:#000;border-radius:0}
+  .hero::before,.hero::after,.tocbtn,.tabs,.navsite,.drawer,.drawer-scrim,footer.pagefoot .ft-nav{display:none !important}
+  .hero-title,.hero .lead2{color:#000}
+  .card,.stage,.panel,.q,details.more{box-shadow:none;border:1px solid #ccc}
+  .modehead.in{animation:none}
+}
+
+/* =========================================================================
+   13_shell_page.css … 薄膜のページだけの調整（12_shell.css のあとに読む）
+   ========================================================================= */
+
 </style>
 </head>
-<body>
-<div class="wrap">
+<body id="top">
+<!-- 見出しの帯（中身は 87_shell.js が 86_shellcfg.js の文から作る） -->
+<header class="hero low" id="hero"></header>
 
-<h1>光の干渉　～薄膜の場合～</h1>
-<p class="mini page-sub">高校物理／シミュレーション教材　－　上から進んできた光が薄膜で 2 つに分かれ、強めあうか弱めあうかを確かめよう</p>
+<!-- 上に固定するタブ列：左はしにホームとページ一覧、つづいてモードのタブ（id は tab-モード名。70_ui.js がこの id で切りかえる） -->
+<nav class="tabs" id="tabs" aria-label="モードの切りかえ">
+  <div class="tabs-in" role="tablist">
+    <div class="navsite"><a class="navhome" href="https://physics-chiba.github.io/physics-site/" aria-label="ホーム（楽楽高校物理のトップページ）" title="ホーム（楽楽高校物理のトップページ）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></a><button class="navpages" id="bPages" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="siteDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor"/></svg><span>ページ一覧</span></button></div>
+    <button class="tab" id="tab-wave" role="tab" type="button" aria-selected="true"><span class="tn">①</span><span class="tl">実際の波の動きを見る</span></button>
+    <button class="tab" id="tab-path" role="tab" type="button" aria-selected="false"><span class="tn">②</span><span class="tl">光路差の位置と式の原理</span></button>
+    <button class="tab" id="tab-bubble" role="tab" type="button" aria-selected="false"><span class="tn">③</span><span class="tl">薄膜が虹色に見える原理</span></button>
+  </div>
+  <span class="tprog" aria-hidden="true"></span>
+</nav>
 
-<div class="card purpose aim">
-  <p class="lead">【目的】</p>
-  <ol>
-    <li>薄膜の<b>経路差の式</b>が成り立つ原理を理解し、実際の波の動きと干渉をビジュアル的に納得する。</li>
-    <li>反射のときに<b>位相が π ずれる場合とずれない場合</b>があり、それで条件式が入れかわることを理解する。</li>
-    <li>膜の厚さ・波長・屈折率・入射角 i を自分で変えて、<b>強めあう／弱めあう</b>が切りかわるのを体験する。</li>
-    <li>薄膜の干渉は「<b>真上から覗いた場合</b>」と「<b>斜めから覗いた場合</b>」を<b>同じ考えでとらえればよい</b>ことを理解する。</li>
-  </ol>
-</div>
+<div class="wrap" id="wrap">
 
-<h2>1. シミュレーション</h2>
+<!-- 章の扉（いま開いているモードの番号・名前・リード。87_shell.js が書きかえる）と、ページの中のほかの場所へのピル -->
+<header class="modehead" id="modehead"></header>
+<div class="seclinks" id="seclinks"></div>
 
-<div class="sim">
+<!-- シミュレーション（モードのタブは、上に固定したタブ列へ移した） -->
+<div class="sim" id="sim">
   <!-- 左：ステージ -->
   <div class="stage">
-    <div class="tabs" role="tablist">
-      <button class="tab" id="tab-path" role="tab" aria-selected="true">光路差の位置と式の原理</button>
-      <button class="tab" id="tab-wave" role="tab" aria-selected="false">実際の波の動きを見る</button>
-      <button class="tab tab-alt" id="tab-bubble" role="tab" aria-selected="false">🌈 薄膜が虹色に見える原理</button>
-    </div>
 
     <!-- 操作列（アニメの上・入射角も同じ列） -->
     <div class="btnrow toprow">
@@ -527,14 +854,29 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
   </div>
 </div>
 
-<h2>2. 練習問題</h2>
-<p class="mini hide-on-scale">選んだらすぐに正誤と解説が出ます。シミュレーションで確かめながら答えてみましょう。</p>
+<section class="block" id="sec-purpose">
+<header class="blockhead"><p class="mh-en">Goals</p><h2>このページの目的</h2></header>
+<div class="card purpose aim">
+  <p class="lead">【目的】</p>
+  <ol>
+    <li>薄膜の<b>経路差の式</b>が成り立つ原理を理解し、実際の波の動きと干渉をビジュアル的に納得する。</li>
+    <li>反射のときに<b>位相が π ずれる場合とずれない場合</b>があり、それで条件式が入れかわることを理解する。</li>
+    <li>膜の厚さ・波長・屈折率・入射角 i を自分で変えて、<b>強めあう／弱めあう</b>が切りかわるのを体験する。</li>
+    <li>薄膜の干渉は「<b>真上から覗いた場合</b>」と「<b>斜めから覗いた場合</b>」を<b>同じ考えでとらえればよい</b>ことを理解する。</li>
+  </ol>
+</div>
+</section>
+
+<section class="block" id="sec-quiz">
+<header class="blockhead"><p class="mh-en">Practice</p><h2>練習問題</h2><p class="mini hide-on-scale">選んだらすぐに正誤と解説が出ます。シミュレーションで確かめながら答えてみましょう。</p></header>
 <div class="quiz" id="quiz"></div>
 <p class="hide-on-scale" style="text-align:center;margin-top:14px">
   <button class="ctl" id="btn-quiz-reset">もう一度</button>
 </p>
+</section>
 
-<h2>3. 補足：もっと深く知りたい人へ</h2>
+<section class="block" id="sec-more">
+<header class="blockhead"><p class="mh-en">Going Deeper</p><h2>補足：もっと深く知りたい人へ</h2></header>
 
 <details class="more">
   <summary>反射防止コーティング（λ/4 膜）— メガネやカメラのレンズが青紫に見える理由</summary>
@@ -584,9 +926,7 @@ footer{margin-top:40px;font-size:12px;color:var(--sub);text-align:center}
   </p>
 </details>
 
-<footer>
-  高校物理 シミュレーション教材　／　図はすべてこのページ内の JavaScript で描画しています（外部の画像・CDN を使いません）
-</footer>
+</section>
 
 </div>
 
@@ -3751,7 +4091,7 @@ TF.ui = (function () {
   function groupOf(m) { return (m === 'bubble') ? 'bubble' : 'main'; }
 
   var st = {
-    mode: 'path',                       // 'path' | 'wave' | 'bubble'
+    mode: 'wave',                       // 'wave' | 'path' | 'bubble'。最初に開くのは ①実際の波の動きを見る（2026-11-16 タブの順を入れかえ）
     light: 'mono',                      // 'mono' | 'white'（シャボン玉モード）
     lambda: 550, d: 620, n1: 1.33, n2: 1.00, theta: 0,
     playing: false, slow: false, speed: 1.0, t: 0,
@@ -4249,7 +4589,7 @@ TF.ui = (function () {
 
     // 既定は d = 620 nm：i = 0° で光路差 3λ、46° で 2.5λ になる（授業の導入用）
     syncAll();                // スライダーのつまみを既定値に合わせる
-    setMode('path');
+    setMode('wave');
     setLight('mono');
     updatePlayBtn();
     updateScaleBtn();
@@ -4534,6 +4874,362 @@ TF.quiz = (function () {
   return { init: init, QS: QS, drawMini: drawMini };
 })();
 
+/* =========================================================================
+   サイト全体へのナビ（第 28 回）
+   ・ホーム（楽楽高校物理のトップページ）へのリンク：ヒーローのパンくずと、上に固定したタブ列の左はし（家のアイコン）。
+   ・「ページ一覧」：タブ列の左はしのボタンで、左から引き出すパネル（ドロワー）を開く。分野ごとに全ページのリンク。
+   ・一覧のもとはトップページ（index.html）の SITE・EXPSITE。
+       - この中に「写し」を持つ（オフラインでも出る）。
+       - 公開先（https://physics-chiba.github.io）で開いたときは、トップページを読みこんで最新の一覧に置きかえる
+         （トップページにページを足せば、このページの一覧にも自動で出る）。
+   ========================================================================= */
+const SITE_HOME = "https://physics-chiba.github.io/physics-site/";
+const SITE_FORM = "https://docs.google.com/forms/d/e/1FAIpQLScU1DzFTmUDGSvP3UE5Lr7RY8NvjukkzBHmQYtmOac44twPwQ/viewform";
+/* 写し（2026-11-16 のトップページから）。g＝大きな見出し（シミュレーション／実験／作成後記） */
+const SITE_SNAPSHOT = [
+  { g:"シミュレーション", id:"mechanics", name:"力学", color:"#1663b5", items:[
+    { t:"一次元と平面の運動　～v-tグラフで理解する～", u:"mechanics/basics-of-motion-on-plane.html" },
+    { t:"力学的エネルギーと非保存力の仕事の関係", u:"mechanics/mechanical-energy.html" },
+    { t:"剛体と力のモーメント", u:"mechanics/rigid-body-dynamics.html" },
+    { t:"箱の回転　～傾くのが先か滑るのが先か～", u:"mechanics/rotation-box_tip-or-slip.html" },
+    { t:"運動量と力積、2物体の衝突と反発係数", u:"mechanics/momentum-and-collision.html" },
+    { t:"保存則クイズ　基本編", u:"mechanics/conservation-quiz-basic.html" },
+    { t:"保存則クイズ　難関大受験編", u:"mechanics/conservation-quiz-advanced.html" },
+    { t:"上級者向け解説・重心ミニ実験室", u:"mechanics/conservation-quiz-advanced.html#advbox" },
+    { t:"円運動　～外から見るか、一緒に回って見るか～", u:"mechanics/circular-motion.html" },
+    { t:"慣性力　～外から見るか、一緒に加速して見るか～", u:"mechanics/inertia-force.html" },
+    { t:"単振動　～等速円運動の影として見る～", u:"mechanics/simple-harmonic-motion.html" },
+    { t:"万有引力とケプラーの法則", u:"mechanics/celestial-mechanics.html" },
+    { t:"2026年8月 校内模試の力学の問題　動く台の上のばねと円弧面上の運動", u:"mechanics/cart-spring-arc.html" } ]},
+  { g:"シミュレーション", id:"wave", name:"波動", color:"#0d9488", items:[
+    { t:"波の基礎　～重ね合わせ・定在波・音波～", u:"wave/wave-basics.html" },
+    { t:"光の干渉①　ヤングの実験", u:"wave/youngs-experiment.html" },
+    { t:"光の干渉②　回折格子", u:"wave/diffraction_grating.html" },
+    { t:"光の干渉③　薄膜の干渉", u:"wave/Light-interference-thin-film.html" } ]},
+  { g:"シミュレーション", id:"elemag", name:"電磁気", color:"#7b5bd6", items:[
+    { t:"電気回路３次元シミュレーター", u:"elemag/circuit-water-model-3d.html" },
+    { t:"メートルブリッジ　～接点を動かして「同じ高さ」の点を探そう～", u:"elemag/meter-bridge.html" } ]},
+  { g:"シミュレーション", id:"atom", name:"原子", color:"#c2185b", items:[
+    { t:"光電効果　～光を粒として見る～", u:"atomic/photoelectric-effect.html" } ]},
+  { g:"実験", id:"movie", name:"動画をつかう", color:"#0e7490", items:[
+    { t:"動画解析・トラッキングツール", u:"experiment/motion-analysis.html" } ]},
+  { g:"作成後記", id:"note", name:"作成後記", color:"#1c8f4a", items:[
+    { t:"慣性力のページができるまで　AIとの共同作業の記録", u:"AI_log/inertia-force_AI-collaboration.html" },
+    { t:"動画解析アプリができるまで　AIとの共同作業の記録", u:"AI_log/motion-analysis_AI-collaboration.html" },
+    { t:"薄膜の干渉ができるまで　AIとの共同作業の記録", u:"AI_log/Light-interference-thin-film_AI-collaboration.html" } ]}
+];
+
+/* トップページの文字列から SITE・EXPSITE の中身を取り出す（失敗したら null） */
+function parseSiteIndex(txt){
+  try{
+    const grab = (name)=>{ const i = txt.indexOf("const "+name+" = ["); if(i<0) return "";
+      const j = txt.indexOf("\nconst ", i+10); return txt.slice(i, j<0? undefined : j); };
+    const out = [];
+    [["SITE","シミュレーション"],["EXPSITE","実験"]].forEach(([nm, g])=>{
+      const src = grab(nm); if(!src) return;
+      src.split(/\{\s*\n\s*id:"/).slice(1).forEach(chunk=>{
+        const id = (chunk.match(/^([\w-]+)"/)||[])[1], name = (chunk.match(/name:"([^"]+)"/)||[])[1], color = (chunk.match(/color:"(#[0-9a-fA-F]{3,8})"/)||[])[1];
+        const items = []; const re = /\bt:"([^"]+)"[\s\S]*?\bu:BASE\+"([^"]+)"/g; let m;
+        while((m = re.exec(chunk))) items.push({ t:m[1], u:m[2] });
+        if(id && name && items.length) out.push({ g:(id==="note"? "作成後記" : g), id, name, color:color||"#5b6672", items });
+      });
+    });
+    const ORD = {"シミュレーション":0, "実験":1, "作成後記":2};
+    out.sort((a,b)=>(ORD[a.g]||0)-(ORD[b.g]||0));       // 見出しの順（シミュレーション → 実験 → 作成後記）。同じ見出しの中はトップページの順のまま
+    const n = out.reduce((a,s)=>a+s.items.length, 0);
+    return (n >= 5)? out : null;               // 取り出しが明らかにおかしいときは写しのまま
+  }catch(e){ return null; }
+}
+
+function buildSiteDrawer(){
+  const nav = document.getElementById("tabs"); if(!nav) return;
+  const dr = document.createElement("aside");
+  dr.id = "siteDrawer"; dr.className = "drawer"; dr.setAttribute("role","dialog"); dr.setAttribute("aria-modal","true");
+  dr.setAttribute("aria-label","楽楽（らくらく）高校物理のページ一覧"); dr.hidden = true;
+  const scrim = document.createElement("div"); scrim.className = "drawer-scrim"; scrim.hidden = true;
+  document.body.appendChild(scrim); document.body.appendChild(dr);
+  const here = (location.pathname.match(/physics-site\/(.+)$/)||[])[1] || ((window.SHELL_CFG && window.SHELL_CFG.here) || "");   /* このページの場所は 86_shellcfg.js の here */
+  const esc = (s)=>String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const render = (data)=>{
+    let h = '<div class="dr-head"><a class="dr-brand" href="'+SITE_HOME+'">'+(document.querySelector("#hero .atom")? document.querySelector("#hero .atom").outerHTML : "")+
+      '<span>楽楽（らくらく）高校物理</span></a><button type="button" class="dr-x" aria-label="閉じる">×</button></div>'+
+      '<a class="dr-home" href="'+SITE_HOME+'"><span class="dr-hi" aria-hidden="true">'+(nav.querySelector(".navhome svg")||{outerHTML:""}).outerHTML+'</span>'+
+      '<span><b>ホーム</b><small>トップページ（分野ごとの一覧・検索・更新履歴）</small></span><span class="dr-go" aria-hidden="true">→</span></a>';
+    let lastG = "";
+    data.forEach(sec=>{
+      if(sec.g !== lastG){ h += '<p class="dr-g">'+esc(sec.g)+'</p>'; lastG = sec.g; }
+      h += '<section class="dr-sec" style="--c:'+esc(sec.color)+'"><h3><i></i>'+esc(sec.name)+'</h3><ul>';
+      sec.items.forEach(it=>{
+        const cur = (it.u === here);
+        h += '<li><a href="'+esc(SITE_HOME+it.u)+'"'+(cur? ' aria-current="page" class="cur"' : '')+'>'+esc(it.t)+(cur? '<em>いま見ているページ</em>' : '')+'</a></li>';
+      });
+      h += '</ul></section>';
+    });
+    h += '<a class="dr-form" href="'+SITE_FORM+'" target="_blank" rel="noopener">感想・励ましの言葉・要望・バグ報告はこちら<span aria-hidden="true">↗</span></a>';
+    dr.innerHTML = h;
+    dr.querySelector(".dr-x").addEventListener("click", ()=>close());
+  };
+  render(SITE_SNAPSHOT);
+  const btn = document.getElementById("bPages");
+  let lastFocus = null;
+  function open(){ lastFocus = document.activeElement; dr.hidden = false; scrim.hidden = false;
+    requestAnimationFrame(()=>{ dr.classList.add("on"); scrim.classList.add("on"); });
+    document.documentElement.classList.add("drawer-open"); if(btn) btn.setAttribute("aria-expanded","true");
+    const cur = dr.querySelector("a.cur") || dr.querySelector("a"); if(cur) setTimeout(()=>{ cur.focus({preventScroll:true}); cur.scrollIntoView({block:"center"}); }, 60); }
+  function close(){ if(dr.hidden) return; dr.classList.remove("on"); scrim.classList.remove("on");
+    document.documentElement.classList.remove("drawer-open"); if(btn) btn.setAttribute("aria-expanded","false");
+    setTimeout(()=>{ dr.hidden = true; scrim.hidden = true; }, 260); if(lastFocus && lastFocus.focus) lastFocus.focus({preventScroll:true}); }
+  if(btn) btn.addEventListener("click", ()=>{ dr.hidden? open() : close(); });
+  scrim.addEventListener("click", close);
+  document.addEventListener("keydown", (ev)=>{
+    if(dr.hidden) return;
+    if(ev.key === "Escape"){ ev.preventDefault(); close(); return; }
+    if(ev.key === "Tab"){                                  // パネルの中だけでフォーカスを回す
+      const f = dr.querySelectorAll("a[href],button"); if(!f.length) return;
+      const a = f[0], z = f[f.length-1];
+      if(ev.shiftKey && document.activeElement === a){ ev.preventDefault(); z.focus(); }
+      else if(!ev.shiftKey && document.activeElement === z){ ev.preventDefault(); a.focus(); }
+    }
+  });
+  window.SITENAV = { open, close, render };
+  /* 公開先で開いたときだけ、トップページから最新の一覧を読みこむ（失敗したら写しのまま） */
+  if(location.protocol === "https:" && /physics-chiba\.github\.io$/.test(location.hostname) && window.fetch){
+    fetch(SITE_HOME + "index.html", {cache:"no-cache"}).then(r=> r.ok? r.text() : "").then(txt=>{
+      const d = txt && parseSiteIndex(txt); if(d) render(d);
+    }).catch(()=>{});
+  }
+}
+document.addEventListener("DOMContentLoaded", ()=>{ buildSiteDrawer(); });
+
+
+
+/* =========================================================================
+   86_shellcfg.js … このページの見出しの帯・章の扉・目次に出す文（87_shell.js が読む）
+   タブの名前と並びは 20_body.html の <nav id="tabs"> に書いてある（ここは英字の副題とリードだけ）。
+   ========================================================================= */
+window.SHELL_CFG = {
+  here: 'wave/Light-interference-thin-film.html',
+  crumb: '薄膜の干渉',
+  en: 'Thin-Film Interference',
+  t1: '光の干渉',
+  t2: '〜薄膜の場合〜',
+  lead: '上から進んできた光が薄膜で 2 つに分かれ、強めあうか弱めあうかを確かめよう。まず波の動きを見て、そのあと経路差の作図と式へ進みます。',
+  modes: {
+    wave:   { en: 'Watching the Waves',
+              lead: '薄膜の上の面で反射した光と、下の面で反射した光を、それぞれ 1 本の波として動かして見ます。山と山が重なれば強めあい、山と谷が重なれば弱めあいます。' },
+    path:   { en: 'Where the Path Difference Appears',
+              lead: '2 つの光の経路差が図のどこに現れるのかを、教科書と同じ作図で 4 つのステップに分けてたどり、光路差 2n₁d cos r の式まで進みます。' },
+    bubble: { en: 'Why Thin Films Look Rainbow-Colored',
+              lead: 'シャボン玉や油の膜が虹色に見えるのは、見る角度によって強めあう波長が変わるからです。白色光に切りかえて確かめよう。' }
+  },
+  secs: [
+    { id: 'sec-purpose', name: 'このページの目的' },
+    { id: 'sec-quiz', name: '練習問題' },
+    { id: 'sec-more', name: '補足：もっと深く知りたい人へ' }
+  ]
+};
+/* =========================================================================
+   87_shell.js … ページの骨組み（meter-bridge.html と同じ並び）を組み立てる（2026-11-16）
+   ・見出しの帯（パンくず・題名・リード・コンテンツ一覧）
+   ・上に固定するタブ列（タブそのものは 20_body.html に書いてある。ここでは見た目と動きだけ）
+   ・章の扉（いま開いているモードの番号・英字の副題・名前・リード）
+   ・コンテンツ一覧のパネル、暗い地のフッター、スライドバーの塗り、読み進みの線
+   ページごとの文は 86_shellcfg.js（window.SHELL_CFG）。
+   モードの切りかえそのものは、もとの 70_ui.js の setMode がおこなう。
+   ここでは「どのタブが選ばれているか（aria-selected）」を見はって、章の扉などを合わせるだけ。
+   ========================================================================= */
+(function () {
+  'use strict';
+  var CFG = window.SHELL_CFG || {};
+  var CIRC = '①②③④⑤⑥⑦⑧⑨';
+  var HOME = 'https://physics-chiba.github.io/physics-site/';
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function tabList() { return [].slice.call(document.querySelectorAll('#tabs .tab')); }
+  function modeOf(b) { return b.id.replace(/^tab-/, ''); }
+  /* 章の扉・目次に出す名前。タブ列では短い名前にしたモードは、data-full に長い名前を持たせてある */
+  function nameOf(b) { var f = b.getAttribute('data-full'); if (f) return f; var t = b.querySelector('.tl'); return (t ? t.textContent : b.textContent).trim(); }
+  function curTab() { var a = tabList(); for (var i = 0; i < a.length; i++) if (a[i].getAttribute('aria-selected') === 'true') return a[i]; return a[0] || null; }
+  function modeCfg(id) { return (CFG.modes && CFG.modes[id]) || {}; }
+  function secs() { return (CFG.secs || []).filter(function (s) { return $(s.id); }); }
+
+  /* 本文の始まり（見出しの帯のすぐ下）。タブを押したらここまでもどす */
+  function contentTop() { var h = $('hero'); return h ? h.offsetTop + h.offsetHeight : 0; }
+  /* 上に固定したタブ列の高さ（固定していないときは 0） */
+  function tabbarH() { var tb = $('tabs'); if (!tb) return 0; return (getComputedStyle(tb).position === 'sticky') ? tb.getBoundingClientRect().height : 0; }
+  function scrollToEl(el) {
+    var go = function () { if (!el) return; var y = el.getBoundingClientRect().top + window.pageYOffset - tabbarH() - 8; window.scrollTo({ top: Math.max(0, y), behavior: 'auto' }); };
+    go(); requestAnimationFrame(function () { requestAnimationFrame(go); }); setTimeout(go, 180);
+  }
+
+  /* ---------- 見出しの帯 ---------- */
+  function buildHero() {
+    var hero = $('hero'); if (!hero) return;
+    hero.innerHTML =
+      '<div class="hero-in">' +
+        '<div class="hero-top">' +
+          '<nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="' + HOME + '" title="楽楽（らくらく）高校物理のトップページへ"><svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg><span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="' + HOME + '#sec-wave">波動</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">' + esc(CFG.crumb || '') + '</span><span class="kdot"></span><span class="en">' + esc(CFG.en || '') + '</span></nav>' +
+        '</div>' +
+        '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
+        '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
+          '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+      '</div>';
+  }
+
+  /* ---------- 章の扉・タブの印 ---------- */
+  var lastMode = null;
+  function showTab() {                       /* スマホ：選んだタブが見えるように、タブ列だけを横に送る（ページは動かさない） */
+    var row = document.querySelector('#tabs .tabs-in'), on = curTab(); if (!row || !on || row.scrollWidth <= row.clientWidth) return;
+    var l = on.offsetLeft - 24, r = on.offsetLeft + on.offsetWidth + 44;
+    if (l < row.scrollLeft) row.scrollLeft = l; else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth;
+  }
+  function syncMode() {
+    var a = tabList(), on = curTab(); if (!on) return;
+    var id = modeOf(on), i = a.indexOf(on), m = modeCfg(id);
+    a.forEach(function (b) { if (b === on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (id === lastMode) return;
+    var first = (lastMode === null); lastMode = id;
+    var mh = $('modehead');
+    if (mh) {
+      mh.innerHTML = '<div class="mh-num" aria-hidden="true"><span>' + (i + 1) + '</span></div><div class="mh-body">' +
+        '<p class="mh-en">Chapter ' + ('0' + (i + 1)).slice(-2) + ' — ' + esc(m.en || '') + '</p>' +
+        '<h2><span class="mh-c">' + CIRC.charAt(i) + '</span>' + esc(nameOf(on)) + '</h2>' +
+        '<p class="mh-lead">' + esc(m.lead || '') + '</p></div>';
+      if (!first) { mh.classList.remove('in'); void mh.offsetWidth; mh.classList.add('in'); }
+    }
+    document.body.setAttribute('data-shellmode', id);
+    showTab();
+  }
+  function goMode(id, scroll) {
+    var b = $('tab-' + id); if (!b || b.disabled) return false;
+    if (b.getAttribute('aria-selected') !== 'true') b.click();
+    else if (scroll) window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });
+    return true;
+  }
+  function goSec(id) {
+    var e = $(id); if (!e) return false;
+    if (e.tagName === 'DETAILS') e.open = true;
+    history.replaceState(null, '', '#' + id); scrollToEl(e); return true;
+  }
+  function initTabs() {
+    tabList().forEach(function (b) {
+      /* タブを押したら、本文の頭まで一気にもどす（ゆっくりスクロールはしない） */
+      b.addEventListener('click', function () {
+        setTimeout(function () {
+          try { history.replaceState(null, '', '#' + modeOf(b)); } catch (e) { /* file:// で失敗しても動きには関係ない */ }
+          window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });
+        }, 0);
+      });
+    });
+    var nav = $('tabs');
+    if (nav && 'MutationObserver' in window) {
+      new MutationObserver(function () { syncMode(); }).observe(nav, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    }
+    syncMode();
+  }
+  /* アドレス：#wave・#path などのモード、#sec-quiz などの節 */
+  function gotoHash(first) {
+    var h = String(location.hash || '').replace('#', ''); if (!h) return;
+    if ($('tab-' + h)) { goMode(h, !first); if (first) window.scrollTo({ top: contentTop(), behavior: 'auto' }); return; }
+    var e = $(h); if (e && e.closest && e.closest('#wrap')) { if (e.tagName === 'DETAILS') e.open = true; scrollToEl(e); }
+  }
+
+  /* ---------- 節へのピル（章の扉の下） ---------- */
+  function buildSecLinks() {
+    var box = $('seclinks'); if (!box) return;
+    box.innerHTML = secs().map(function (s) { return '<a href="#' + s.id + '" data-sec="' + s.id + '">' + esc(s.name) + '</a>'; }).join('');
+    box.querySelectorAll('a[data-sec]').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); goSec(a.getAttribute('data-sec')); }); });
+  }
+
+  /* ---------- コンテンツ一覧 ---------- */
+  function subItems(sec) {                   /* 節の中の「補足」の見出し（details の summary）を拾う */
+    var out = [], root = $(sec.id); if (!root) return out;
+    var list = root.querySelectorAll('details.more');
+    [].forEach.call(list, function (d, k) {
+      var sm = d.querySelector('summary'); if (!sm) return;
+      if (!d.id) d.id = sec.id + '-' + (k + 1);
+      var c = sm.cloneNode(true); [].forEach.call(c.querySelectorAll('.katex-mathml,annotation'), function (x) { x.parentNode.removeChild(x); });
+      out.push({ id: d.id, name: c.textContent.replace(/\s+/g, ' ').trim() });
+    });
+    return out;
+  }
+  function buildToc() {
+    var b = $('bToc'); if (!b) return;
+    var p = document.createElement('div'); p.id = 'tocpanel'; p.className = 'tocpanel'; p.hidden = true;
+    document.body.appendChild(p);            /* 見出しの帯は overflow:hidden なので、その外に置く */
+    var built = false;
+    var close = function () { p.hidden = true; b.setAttribute('aria-expanded', 'false'); };
+    var fill = function () {
+      var h = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>';
+      h += '<div class="tocmode">シミュレーション（上のタブで切りかえ）</div><ul>';
+      tabList().forEach(function (t, i) { h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a></li>'; });
+      h += '</ul>';
+      secs().forEach(function (s) {
+        h += '<div class="tocmode"><a href="#' + s.id + '" data-sec="' + s.id + '" style="padding:0;display:inline">' + esc(s.name) + '</a></div><ul>';
+        subItems(s).forEach(function (q) { h += '<li><a href="#' + q.id + '" data-sec="' + q.id + '">' + esc(q.name) + '</a></li>'; });
+        h += '</ul>';
+      });
+      p.innerHTML = h;
+      p.querySelector('.tocx').addEventListener('click', close);
+      p.querySelectorAll('a[data-mode]').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); close(); goMode(a.getAttribute('data-mode'), true); window.scrollTo({ top: contentTop(), behavior: 'auto' }); }); });
+      p.querySelectorAll('a[data-sec]').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); close(); goSec(a.getAttribute('data-sec')); }); });
+    };
+    /* 一覧は画面に固定して、ボタンのすぐ下に出す */
+    var place = function () { if (p.hidden) return; var r = b.getBoundingClientRect(), top = Math.max(8, r.bottom + 8); p.style.position = 'fixed'; p.style.top = top + 'px'; p.style.maxHeight = (innerHeight - top - 12) + 'px'; };
+    b.addEventListener('click', function (ev) { ev.stopPropagation(); if (!built) { fill(); built = true; } p.hidden = !p.hidden; b.setAttribute('aria-expanded', p.hidden ? 'false' : 'true'); place(); });
+    window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true });
+    document.addEventListener('click', function (ev) { if (!p.hidden && !p.contains(ev.target) && ev.target !== b) close(); });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') close(); });
+  }
+
+  /* ---------- フッター（暗い地・目次つき） ---------- */
+  function buildFooter() {
+    var f = document.createElement('footer'); f.className = 'pagefoot'; f.id = 'pagefoot';
+    var items = tabList().map(function (t, i) { return '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '"><b>' + CIRC.charAt(i) + '</b>' + esc(nameOf(t)) + '</a></li>'; }).join('') +
+      secs().map(function (s) { return '<li><a href="#' + s.id + '" data-sec="' + s.id + '"><b>—</b>' + esc(s.name) + '</a></li>'; }).join('');
+    f.innerHTML = '<div class="ft-in"><p class="ft-mark">' + esc(CFG.en || '') + '<span>' + esc((CFG.t1 || '') + ' ' + (CFG.t2 || '')) + '</span></p>' +
+      '<ul class="ft-nav">' + items + '</ul>' +
+      '<div class="ft-base"><span><a class="ft-home" href="' + HOME + '">⌂ 楽楽（らくらく）高校物理 トップページ</a>　／　高校物理 ・ 波動</span><span class="ft-r"><button type="button" class="ft-pages">ほかのページ一覧</button><a href="#top" class="ft-top">▲ ページの一番上へ</a></span></div></div>';
+    var w = $('wrap'); if (w && w.parentNode) w.parentNode.insertBefore(f, w.nextSibling); else document.body.appendChild(f);
+    f.querySelectorAll('a[data-mode]').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); goMode(a.getAttribute('data-mode'), true); window.scrollTo({ top: contentTop(), behavior: 'auto' }); }); });
+    f.querySelectorAll('a[data-sec]').forEach(function (a) { a.addEventListener('click', function (ev) { ev.preventDefault(); goSec(a.getAttribute('data-sec')); }); });
+    var fp = f.querySelector('.ft-pages'); if (fp) fp.addEventListener('click', function () { if (window.SITENAV) window.SITENAV.open(); });
+    var tp = f.querySelector('.ft-top'); if (tp) tp.addEventListener('click', function (ev) { ev.preventDefault(); window.scrollTo({ top: 0, behavior: 'auto' }); });
+  }
+
+  /* ---------- スライドバーの塗り（--p）・読み進みの線（--prog）・タブ列の .stuck ---------- */
+  function syncRange(e) {
+    var mn = parseFloat(e.min) || 0, mx = parseFloat(e.max), v = parseFloat(e.value);
+    var p = (isFinite(mx) && mx > mn) ? (v - mn) / (mx - mn) * 100 : 0, s = p.toFixed(1) + '%';
+    if (e._p !== s) { e._p = s; e.style.setProperty('--p', s); }
+  }
+  function initRanges() {
+    document.addEventListener('input', function (ev) { if (ev.target && ev.target.type === 'range') syncRange(ev.target); }, true);
+    var sweep = function () { if (document.hidden) return; [].forEach.call(document.querySelectorAll('input[type=range]'), syncRange); };
+    sweep(); setInterval(sweep, 150);
+  }
+  function initProgress() {
+    var nav = $('tabs'); if (!nav) return;
+    var pend = false;
+    var upd = function () { pend = false; var h = document.documentElement, max = h.scrollHeight - innerHeight; nav.style.setProperty('--prog', max > 0 ? Math.min(1, Math.max(0, window.pageYOffset / max)).toFixed(4) : 0); };
+    window.addEventListener('scroll', function () { if (!pend) { pend = true; requestAnimationFrame(upd); } }, { passive: true });
+    window.addEventListener('resize', function () { upd(); showTab(); }); upd();
+  }
+  function initStuck() {
+    var hero = $('hero'), nav = $('tabs'); if (!hero || !nav || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function (es) { es.forEach(function (en) { nav.classList.toggle('stuck', !en.isIntersecting); }); }, { threshold: 0 }).observe(hero);
+  }
+
+  /* 見出しの帯とタブの印は、このスクリプトを読んだ時点で作る（このあとの起動処理より先に、画面の形を決めておく） */
+  buildHero(); buildSecLinks(); buildFooter(); initTabs();
+  function ready() {
+    buildToc(); initRanges(); initProgress(); initStuck();
+    window.addEventListener('hashchange', function () { gotoHash(false); });
+    setTimeout(function () { syncMode(); gotoHash(true); }, 0);      /* もとの起動処理（最初のモードを開く）が済んでから */
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready); else ready();
+  window.SHELL = { contentTop: contentTop, tabbarH: tabbarH, goMode: goMode, goSec: goSec, sync: syncMode };
+})();
 /* ===== 90_boot.js ===== */
 /* 起動 */
 (function () {
@@ -4555,10 +5251,26 @@ TF.quiz = (function () {
 })();
 
 </script>
-<!-- アクセス数のカウント（GoatCounter・Cookieなし） -->
-<script data-goatcounter="https://physics-chiba.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
-<!-- ▶スタートを光らせて「ここを押す」と知らせる（共通パーツ・2026-09-02 追加） -->
+<!-- ============ 公開用の共通フッター（全ページ同じ・ここから） ============ -->
+
+<!-- ① アクセス数のカウント（GoatCounter・Cookie を使わない）
+     file:// で開いたとき（オフライン利用・自動テスト）は読みこまない。
+     GitHub Pages（https）で開いたときだけ動く。 -->
+<script>
+(function () {
+  if (location.protocol.indexOf('http') !== 0) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://physics-chiba.goatcounter.com/count');
+  document.head.appendChild(s);
+})();
+</script>
+
+<!-- ② ▶スタートを光らせて「ここを押す」と知らせる
+     ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
+     ・光り終わり … そのボタンを押したとき／動きはじめたとき
+     ページ本体のしくみにはさわらず、外から付け外しするだけ。 -->
 <style>
 @keyframes sgPulse{
   0%{box-shadow:0 0 0 0 rgba(224,123,24,.85)}
@@ -4577,26 +5289,16 @@ TF.quiz = (function () {
 }
 </style>
 <script>
-/* スタートボタンの光らせ方
-   ・光りはじめ … ページを開いたとき／タブ・プリセットを開いたとき
-   ・光り終わり … そのボタンを押したとき／動きはじめたとき
-   ページ本体のしくみには一切さわらず、外から見て付け外しするだけ。 */
 (function () {
   'use strict';
-  var IDS = ['bPlay', 'playBtn', 'btn-play', 'btn-convert', 'btn-convert2'];
+  /* 主役の再生ボタンは id="bPlay"。古いページのための予備もいくつか見る */
+  var SEL  = '#bPlay, #playBtn, #btn-play, #btn-convert, #btn-convert2, button.b.play';
   var TABS = '.tabs button, .presets button, .tab, .pbtn, [role="tab"]';
-  var RUN = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
+  var RUN  = /一時停止|❚❚|⏸|停止中/;          /* この文字が出ていたら「動いている」 */
 
-  function btns() {
-    var a = [];
-    for (var i = 0; i < IDS.length; i++) {
-      var e = document.getElementById(IDS[i]);
-      if (e) a.push(e);
-    }
-    return a;
-  }
-  function shown(e) { return e.offsetParent !== null && !e.disabled; }
-  function running(e) { return RUN.test(e.textContent || ''); }
+  function btns()    { return [].slice.call(document.querySelectorAll(SEL)); }
+  function shown(e)  { return e.offsetParent !== null && !e.disabled; }
+  function running(e){ return RUN.test(e.textContent || ''); }
 
   function arm() {                              /* 光らせるのは、いつも1つだけ */
     var all = btns(), first = null;
@@ -4617,11 +5319,11 @@ TF.quiz = (function () {
     var t = ev.target;
     if (!t || !t.closest) return;
     var b = t.closest('button');
-    if (b && IDS.indexOf(b.id) >= 0) {                       /* 押したら、もう光らせない */
-      btns().forEach(function (x) { x.__sgDone = 1; });      /* 同じ働きの予備ボタンもまとめて */
+    if (b && btns().indexOf(b) >= 0) {                     /* 押したら、もう光らせない */
+      btns().forEach(function (x) { x.__sgDone = 1; });    /* 同じ働きの予備ボタンもまとめて */
       disarm(); return;
     }
-    if (t.closest(TABS)) {                       /* タブ・プリセットを開いたら光らせ直す */
+    if (t.closest(TABS)) {                     /* タブ・プリセットを開いたら光らせ直す */
       btns().forEach(function (x) { x.__sgDone = 0; });
       setTimeout(arm, 90);
     }
@@ -4646,5 +5348,8 @@ TF.quiz = (function () {
   else boot();
 })();
 </script>
+
+<!-- ============ 公開用の共通フッター（ここまで） ============ -->
+
 </body>
 </html>
