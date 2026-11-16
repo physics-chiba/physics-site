@@ -760,6 +760,145 @@ table.ptab.wide td.ce .num{font-size:.8rem}
 @media (prefers-reduced-motion: reduce){.eq3click{animation:none}}
 
 </style>
+<style>
+/* ===== 新レイアウト（2026-11）=====
+   ・オレンジのボタンは「▶ スタート」だけ
+   ・上から 問い → スタートの帯・値・図 ／ 右の列は 条件の例・グラフ ／ 下に「クリックしよう→」 */
+body{background:#f4f3ef}
+.proto{display:inline-block;font-size:.72rem;font-weight:700;color:#5b6672;border:1px solid #c9c5ba;
+  border-radius:999px;padding:1px 10px;margin-left:8px;vertical-align:middle;background:#fff}
+
+/* --- タブの帯：モードは下線、シミュレーションは小さな丸ボタン --- */
+#tabbar{background:#f4f3ef;box-shadow:none;border-bottom:1px solid #e0dcd2;padding:6px 0 7px}
+#tabbar #modetabs button{background:transparent;border:0;border-bottom:3px solid transparent;
+  border-radius:0;box-shadow:none;color:#77756e;padding:6px 10px 5px;font-weight:700}
+#tabbar #modetabs button:hover{background:transparent;color:#1b1f24}
+#tabbar #modetabs button.on{background:transparent;color:#1b1f24;border-bottom-color:var(--orange);box-shadow:none}
+#tabbar .tabs.sub button{background:#fff;border:1px solid #d8d4ca;color:#3d4c5a;border-radius:999px;padding:3px 13px;box-shadow:none;font-weight:600}
+#tabbar .tabs.sub button:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+#tabbar .tabs.sub button.on{background:#1b1f24;border-color:#1b1f24;color:#fff}
+#modetip{color:#66737f}
+#modetip:not(:empty)::before{color:#b9b5aa}
+
+/* --- カード --- */
+#simhost{border-radius:22px;padding:22px 26px 20px;border-color:#e6e2d8;box-shadow:0 2px 14px rgba(40,34,20,.06)}
+.simhead{display:flex;justify-content:flex-start;align-items:center;gap:12px;margin-bottom:6px}
+.simno{flex:none;background:#1b1f24;color:#fff;font-weight:700;font-size:.9rem;border-radius:999px;padding:2px 13px;line-height:1.6}
+.simtitle{font-size:1.28rem;color:#1b1f24;margin:0}
+.simask{margin:2px 0 14px;font-size:1.02rem;line-height:1.7}
+.asktxt{font-weight:700;color:#7a4307;background:linear-gradient(transparent 58%,#fde3c4 58%)}
+.simgrid{gap:22px;align-items:flex-start}
+.simgrid .cv{flex:1 1 420px;max-width:700px}
+.simgrid .side{flex:1.2 1 440px}
+
+/* --- スタートの帯 --- */
+.ctrl.playctrl{background:#faf9f6;border:1px solid #e6e2d8;border-radius:16px;padding:9px 12px;margin:0 0 8px}
+.ctrl .btnrow{gap:6px}
+.ctrl .btnrow > button{flex:none;white-space:nowrap}
+.ctrl .btnrow #bPlay{min-width:8.6em;font-size:1rem;padding:7px 14px;border-radius:999px;
+  background:var(--orange);border-color:var(--orange);color:#fff}
+#bPlay:hover{background:var(--orange-d);border-color:var(--orange-d)}
+#bSlow,#bReset{border-color:#d8d4ca;color:#3d4c5a;border-radius:999px;font-weight:600;padding-left:11px;padding-right:11px}
+#bSlow:not(.sub){background:#1b1f24;border-color:#1b1f24;color:#fff}
+#bSlow.sub:hover,#bReset:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+.tspan{flex:1 1 170px;min-width:170px}
+.tspan input[type=range]{max-width:none;min-width:50px}
+
+/* --- 値とチェック・図 --- */
+.cvtop.toprow{margin:0 0 6px}
+.cvvars,.cvside .opts{border-color:#e0dcd2;box-shadow:0 1px 4px rgba(40,34,20,.06)}
+.cvtop.toprow .cvvars{box-shadow:0 1px 4px rgba(40,34,20,.06)}
+.cvstage canvas,.cvstage.nobar canvas{border-radius:14px;border-color:#e6e2d8}
+/* 図の下のひとこと：行の高さをはじめから取っておき、出ても図や下の欄が動かないようにする */
+.cvhint{min-height:1.7em;margin:6px 2px 0}
+.cvhint[hidden]{display:block;visibility:hidden}
+/* 「変えてみよう」は青で（オレンジはスタートだけ） */
+.vrow.focus > .vlab,.vrow.focus > .vval{color:var(--accent-d)}
+.vrow.focus > .stp{background:var(--accent);border-color:var(--accent);animation:none}
+.vrow.focus > .stp:hover{background:var(--accent-d);border-color:var(--accent-d)}
+.vrow.focus > .vsl{box-shadow:0 0 0 3px rgba(22,99,181,.16)}
+.tryme{background:var(--accent);animation:none}
+
+/* --- 右の列のいちばん上：条件の例・ほかの値（開いたまま） --- */
+.morebox{background:#faf9f6;border:1px solid #e6e2d8;border-radius:14px;padding:6px 12px;margin:0 0 6px}
+.morerow{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.morerow + .morerow{margin-top:6px;padding-top:6px;border-top:1px dashed #e0dcd2}
+.morelab{flex:none;font-size:.72rem;font-weight:700;color:#8a877e;min-width:4.6em}
+.morebox .cvbar{background:transparent;border:0;padding:0;flex:1 1 0;min-width:0;border-radius:0;margin:0}
+.morevals{flex:1 1 0;min-width:0}
+.morevars{position:static;background:transparent;border:0;box-shadow:none;padding:0;width:auto;max-width:340px}
+.cvbar .acts button,.cvbar .acts.n3 button,.cvbar .acts.n4 button{font-size:.8rem;padding:3px 12px;letter-spacing:0;
+  background:#fff;border-color:#d8d4ca;color:#3d4c5a}
+.cvbar .acts button:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+.cvbar .acts button.on{background:#eceae4;border-color:#b9b5aa;color:#1b1f24;box-shadow:none}
+.cvbar .acts button.on:hover{background:#e4e1d9}
+.cvbar .acts button.pulse{background:var(--accent);border-color:var(--accent);color:#fff;animation:pulseBlue 1.35s ease-out infinite}
+@keyframes pulseBlue{0%{box-shadow:0 0 0 0 rgba(22,99,181,.7)}60%{box-shadow:0 0 0 12px rgba(22,99,181,0)}100%{box-shadow:0 0 0 0 rgba(22,99,181,0)}}
+.cvbar .acts button.pulse:hover{background:var(--accent-d);border-color:var(--accent-d)}
+
+/* --- グラフ ⇄ 仕事の分析 の切りかえ（2 つ並んだスイッチ） --- */
+.wkbar{margin:0 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wkbar .acts{gap:0;flex-wrap:nowrap}
+.wkbar .acts button{background:#fff;border:1px solid #d8d4ca;color:#3d4c5a;border-radius:0;padding:4px 14px;font-size:.82rem;font-weight:600}
+.wkbar .acts button:first-child{border-radius:999px 0 0 999px}
+.wkbar .acts button:last-child{border-radius:0 999px 999px 0;border-left:0}
+.wkbar .acts button:hover{background:#faf9f6;border-color:#d8d4ca;color:#1b1f24}
+.wkbar .acts button.on,.wkbar .acts button.on:hover{background:#1b1f24;border-color:#1b1f24;color:#fff}
+.wkbarhint{display:inline;margin:0}
+.wkbarhint:empty{display:none}
+
+/* --- グラフ：並べ方はもとのまま。枠をつめ、色を落ち着かせる --- */
+.btnrow.openrow{margin:0 0 4px}
+#bOpenAll{background:#fff;border-color:var(--accent);color:var(--accent-d);border-radius:999px}
+#bOpenAll:hover{background:var(--accent-l)}
+#bBigFml{border-color:#d8d4ca;color:#3d4c5a;border-radius:999px}
+.gsec{border-color:#e6e2d8;border-radius:12px;margin:5px 0}
+.ghead{padding:4px 12px;font-size:.88rem}
+.gbody{padding:4px 10px 6px;gap:8px}
+.gbody .gleft{flex:1 1 240px;min-width:215px}
+.gform,.gspacer{flex:1 1 180px;min-width:175px}
+.gform .fl.f3 .fk{background:#1b1f24}
+/* 拡大・縮小のボタンは、グラフの右上に小さく重ねる */
+.gzoom{position:absolute;top:0;right:0;z-index:2;margin:0;gap:2px;opacity:.75}
+.gzoom:hover{opacity:1}
+.gzoom button{font-size:.72rem;padding:1px 6px;min-width:0}
+.gzoom .gzr{font-size:.64rem}
+.ghint1.ghintb{display:block;margin:6px 2px 0;font-size:.72rem;color:#8a877e}
+
+/* --- クリックしよう→ --- */
+.think{margin-top:16px;border-top:1px solid #ece8de;padding-top:12px}
+.thinkbar{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.thinklab{font-size:.86rem;font-weight:700;color:#5b6672;margin-right:4px}
+button.tk{background:#fff;border:1px solid #d8d4ca;color:#3d4c5a;border-radius:999px;padding:4px 15px;font-size:.88rem;font-weight:600}
+button.tk:hover{background:#fff;border-color:#1b1f24;color:#1b1f24}
+button.tk.on{background:#1b1f24;border-color:#1b1f24;color:#fff}
+button.tk.cue{border-color:var(--accent);color:var(--accent-d);box-shadow:0 0 0 3px rgba(22,99,181,.16)}
+.thinkpane{margin-top:10px}
+.thinkpane.hide{display:none}
+.note{background:#faf9f6;border:1px solid #e6e2d8;border-left:1px solid #e6e2d8;border-radius:14px;padding:12px 16px;font-size:.95rem;margin:0;line-height:1.85}
+.note b{color:#1b1f24}
+.nexthint{margin:8px 4px 0;font-size:.9rem;color:#3d4c5a}
+.nexthint:empty{display:none}
+.eqwait{display:none;margin:0;padding:12px 16px;background:#faf9f6;border:1px dashed #d8d4ca;border-radius:14px;color:#66737f;font-size:.92rem}
+#eqzone[hidden] + .eqwait{display:block}
+.thinkpane .eqzone{margin-top:0;max-width:820px}
+.thinkpane .stepcard{border:0;box-shadow:none;padding:0;margin:0;background:transparent}
+.thinkpane .resbar{margin-top:0}
+.thinkpane .ptabwrap{max-width:620px}
+.thinkpane table.read{max-width:620px}
+.thinkpane .cvsub{font-size:.9rem;color:#3d4c5a;line-height:1.85;margin:0 2px 8px}
+
+/* --- ページの下 --- */
+#urlbar{display:none}
+#legend{color:#8a877e}
+details.hintcard{border-radius:16px;border-color:#e6e2d8;box-shadow:none;padding:10px 16px}
+details.hintcard > summary{cursor:pointer;font-weight:700;color:#3d4c5a;font-size:.92rem}
+details.hintcard[open] > summary{margin-bottom:8px}
+/* 1 つのモードのシミュレーションを縦に並べる */
+.simsec{margin:0 0 26px;scroll-margin-top:120px}
+.simsec > .card{margin:0}
+
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -780,14 +919,7 @@ table.ptab.wide td.ce .num{font-size:.8rem}
   <div class="tabs sub" id="simtabs"></div>
 </div>
 
-<div class="card stepcard">
-  <div class="stephead">立式のステップ　<span class="mini">— いま見ているシミュレーションに合わせて変わります</span></div>
-  <canvas id="stepCv"></canvas>
-  <!-- ★第24回★ モード3のとき、ケース1／ケース2 の説明をここ（立式のステップの最後）に出す -->
-  <div id="stepCase" class="eq3case" hidden></div>
-</div>
-
-<div class="card" id="simhost"></div>
+<div id="secstack"></div>
 
 <div id="legend">
   <span class="lg"><canvas data-kind="line" data-col="eK"></canvas>運動エネルギー K</span>
@@ -810,20 +942,19 @@ table.ptab.wide td.ce .num{font-size:.8rem}
   <span id="urlmsg"></span>
 </div>
 
-<div class="card">
-  <h3>使い方のヒント</h3>
+<details class="card hintcard">
+  <summary>使い方のヒント</summary>
   <p class="mini">
-  ・図の上の<b>オレンジのボタン</b>で状況を変え、<b>スライドバー</b>で数値を変えられます。変えると自動的にはじめに戻ります。<br>
-  ・<b>時間バー</b>を手で動かすと、好きな瞬間で止めて矢印とグラフの点を見くらべられます。<br>
+  ・右上の<b>「条件の例」のボタン</b>で状況を変え、図の上の<b>スライドバー</b>で数値を変えられます。変えると自動的にはじめに戻ります。<br>
+  ・<b>時間バー</b>を手で動かすと、好きな瞬間で止めて矢印とグラフの点を見比べられます。<br>
   ・<b>運動が終わると</b>、図の中に「その点の力学的エネルギー」の吹きだしが出て、その点に物体・速度・高さが描きもどされます。<br>
-  ・そのとき図の下に<b>3つの立式</b>（力学的エネルギー保存則／力学的エネルギー変化量と非保存力の仕事の関係／運動エネルギー変化量と仕事の関係）が出ます。見出しをおすと開きます。<b>「3つの式を表示」</b>にチェックを入れると、どのシミュレーションでも3つとも開いた状態になります。<br>
-  ・くらべる点が3つ以上あるシミュレーションでは、<b>「A点とB点」「A点とC点」…</b>をおして、どの2点で立式するかを選べます。<br>
-  ・右上の<b>「仕事の分析」</b>ボタンをおすと、グラフの欄が<b>力ごとの仕事</b>に切りかわります（正・負・0 になる理由つき）。<b>「エネルギーのグラフを表示」</b>でもとにもどります。<b>図の中の力をクリック</b>すると、その力の欄が光ります。<br>
-  ・右の列の<b>「K・U・E をまとめて開く」</b>ボタンで、3つのグラフを一度に開いて見くらべられます。<br>
+  ・そのとき、下の<b>「2点で立式する」</b>を押すと<b>3つの立式</b>（力学的エネルギー保存則／力学的エネルギー変化量と非保存力の仕事の関係／運動エネルギー変化量と仕事の関係）が出ます。見出しを押すと開きます。<b>「3つの式を表示」</b>にチェックを入れると、どのシミュレーションでも3つとも開いた状態になります。<br>
+  ・比べる点が3つ以上あるシミュレーションでは、<b>「A点とB点」「A点とC点」…</b>を押して、どの2点で立式するかを選べます。<br>
+  ・右の列の<b>「仕事の分析」</b>ボタンを押すと、グラフの欄が<b>力ごとの仕事</b>に切りかわります（正・負・0 になる理由つき）。<b>「エネルギーのグラフを表示」</b>でもとにもどります。<b>図の中の力をクリック</b>すると、その力の欄が光ります。<br>
+  ・右の列の<b>「まとめて開く」</b>ボタンで、3つのグラフを一度に開いて見比べられます。<br>
   ・各グラフの右には、<b>公式 → 記号を代入した式 → 数値を代入した式</b>の3段が出ます。<br>
-  ・グラフは<b>ドラッグで移動</b>、<b>目盛りの上でドラッグすると軸の拡大縮小</b>、<b>ホイールで拡大縮小</b>、<b>ダブルクリックで自動</b>にもどります。<br>
   ・このページは1つのファイルで動きます（インターネット不要）。</p>
-</div>
+</details>
 
 <div class="card purpose">
   <p class="lead">【このシミュレーションの目的】</p>
@@ -2903,7 +3034,7 @@ function worldAxes(ctx, vw, box, xlabel, ylabel, signY) {
 /* ===== 折れ線グラフ ===== */
 /* spec: {xlabel,ylabel,xmin,xmax,ymin,ymax,series:[{color,dash,pts,name}],cursors:[{color,x,y}],zeroNote} */
 function plot(cv, spec) {
-  var W = 320, H = spec.H || 174;
+  var W = cv._W || 320, H = cv._H || spec.H || 174;   /* 大きさは fitGraphs() が決める */
   var ctx = prep(cv, W, H);
   var pad = { l: 46, r: 16, t: 20, b: 26 };
   var gw = W - pad.l - pad.r, gh = H - pad.t - pad.b;
@@ -3695,7 +3826,7 @@ function boxEdge(b, px, py) {
 }
 
 /* map(p, m) → {x, y}（その点の画面での位置）。運動が終わってから出す。
-   決めた置き場所は st._ptPos に入れて、HTML の吹きだし（80_ui.js）がそこへ移動する。 */
+   決めた置き場所は SIMST()._ptPos に入れて、HTML の吹きだし（80_ui.js）がそこへ移動する。 */
 /* map(p, m) が返せるもの
      x, y      … 吹きだしの引き出し線がさす点（必須）
      ox, oy    … 物体をもう一度描く場所（省略すると x, y）
@@ -3814,8 +3945,8 @@ function legend3(ctx) {
 }
 
 function drawPts(ctx, d, s, t, map) {
-  st._ptPos = null;
-  st._vGhost = [];        /* 検算用：ゴーストの速度ベクトルの「速さ」と「長さ」 */
+  SIMST()._ptPos = null;
+  SIMST()._vGhost = [];        /* 検算用：ゴーストの速度ベクトルの「速さ」と「長さ」 */
   if (!endOn(d, s, t)) return;
   var ps = bubPts(d, V(s)), i, taken = [], out = [], qs = [];
   var live = d.sample(V(s), t);          /* いまの物体の場所（二重に描かないための照合用） */
@@ -3859,7 +3990,7 @@ function drawPts(ctx, d, s, t, map) {
   /* ② そのうえで吹きだしを置く */
   var sizes = [];
   for (i = 0; i < ps.length; i++) {
-    sizes.push((st._ptSz && st._ptSz[ps[i].name]) || { w: 132, h: 40 });
+    sizes.push((SIMST()._ptSz && SIMST()._ptSz[ps[i].name]) || { w: 132, h: 40 });
   }
   var rows = (d.ptSide === 'row' && _ptRowY !== null) ? rowPlace(qs, sizes) : null;
   for (i = 0; i < ps.length; i++) {
@@ -3891,7 +4022,7 @@ function drawPts(ctx, d, s, t, map) {
       window.__labelLog.push({ cv: CVID, text: '吹:' + p.name, x: b.x, y: b.y + b.h / 2, w: b.w, h: b.h });
     }
   }
-  st._ptPos = out;
+  SIMST()._ptPos = out;
 }
 
 /* くらべる点の「物体・速度ベクトル・高さ」をうすく描き直す */
@@ -3932,7 +4063,7 @@ function ptGhost(ctx, d, s, p, q, here) {
     var gnx = q.vy, gny = -q.vx;             /* 速度と垂直 */
     if (gny > 0) { gnx = -gnx; gny = -gny; } /* 画面の上向き（横向きの速度なら真上）にそろえる */
     var va = velArrow(ctx, ox, oy, gnx, gny, off, q.vx, q.vy, L);
-    if (st._vGhost) st._vGhost.push({ n: p.name, v: p.m.v, L: L });
+    if (SIMST()._vGhost) SIMST()._vGhost.push({ n: p.name, v: p.m.v, L: L });
     label(ctx, 'v', va.tx + q.vx * 10, va.ty + q.vy * 10, { size: 11, color: COL.vel });
   }
   ctx.restore();
@@ -4042,9 +4173,7 @@ function drawEnergyBar(ctx, d, s, t, W, H, m) {
 }
 
 /* 図の右上の時刻 */
-function drawClock(ctx, W, t) {
-  label(ctx, 't = ' + fmt(t, 2) + ' s', W - 78, 18, { align: 'right', size: 13.5, bold: true });
-}
+function drawClock(ctx, W, t) { /* 時刻は時間バーに出ているので、図には書かない */ }
 
 /* ===== 47_step.js ===== */
 /* ページのいちばん上の「立式のステップ図」。
@@ -4376,7 +4505,7 @@ DEFS['m1-1'] = {
   hintFig: '<b>速さが変わらない → K が変わらない</b>（基準面を床にとったので $U=0$ のまま。だから $E$ も変わらない）',
   step1: '重力と垂直抗力しかはたらかず、どちらも運動の向きに垂直なので仕事をしない',
   datum: '床（物体のある水平面）',
-  hint2: '<b>次は</b>：オレンジのボタンで速さや質量を変えて、グラフの高さがどう変わるか見てみよう（形は変わらない）。',
+  hint2: '<b>次は</b>：「条件の例」のボタンで速さや質量を変えて、グラフの高さがどう変わるか見てみよう（形は変わらない）。',
   tEnd: function (v) { return P.m11.tEnd(v); },
   sample: function (v, t) { return P.m11.sample(v, t); },
   pts: [
@@ -8789,7 +8918,7 @@ DEFS['m3-4'] = {
       why: '引く力は<b>非保存力</b>。動く向きと同じ向きなので正の仕事。' }],
   hintFig: '<b>すべった相対距離 × 摩擦力 の分だけ、2物体全体の $E$ が減る</b>（引く力があれば、その分は増える）',
   datum: '床（板の上面は高さ $H$ = ' + fmt(P.plank2.HB, 2) + ' m）',
-  hint2: '<b>次は</b>：オレンジのボタンで「一体」「初速度」に変えて、<b>摩擦の仕事の合計</b>が' +
+  hint2: '<b>次は</b>：「条件の例」のボタンで「一体」「初速度」に変えて、<b>摩擦の仕事の合計</b>が' +
     'どう変わるか見てみよう。落ちたあと（飛んでいるあいだ）は摩擦がないので、$E$ は減らない。',
   ptSide: 'row',
   bub3: 'merge',             /* ★板と物体2 は近いので、吹きだしは点ごとに 1 つ（2行）にまとめる★ */
@@ -9215,7 +9344,87 @@ function V(s) {
   return o;
 }
 
-function $(id) { return document.getElementById(id); }
+/* シミュレーションごとの一時的な状態（吹きだしの置き場所・選んでいる力など） */
+function SIMST() { return st.sims[st.cur] || st; }
+
+/* 要素を id で探す。
+   ★同じ作りのセクションが縦に並ぶので、mainCv・bPlay などの id はセクションごとに同じものがある★
+   そこで「いま扱っているセクション（st.root）」の中から探す。
+   見つからなければ、セクションの外にある要素（タブの帯など）だけを返す。 */
+function $(id) {
+  var r = st.root;
+  if (r) {
+    var e = r.querySelector('#' + id);
+    if (e) return e;
+  }
+  var g = document.getElementById(id);
+  return (g && !(g.closest && g.closest('.simsec'))) ? g : null;
+}
+
+/* st.cur … いま扱っているシミュレーション／st.root … そのセクション
+   st.focus … 生徒が最後にさわった（タブ・目次で選んだ）セクション
+   st.shown … いま画面に並んでいるセクション（上から順）
+   st.view … タブとアドレス欄に出すセクション（画面の上にあるもの） */
+function secEl(id) { return document.querySelector('.simsec[data-sim="' + id + '"]'); }
+function useSim(id) { st.cur = id; st.root = secEl(id); }
+function eachShown(fn) {
+  var keep = st.focus;
+  (st.shown || []).forEach(function (id) { useSim(id); fn(id); });
+  if (keep) useSim(keep);
+}
+
+/* モードを開く：そのモードのセクションをぜんぶ縦に並べて、ひとつずつ組み立てる */
+function showMode(n, focusId) {
+  var M = MODES[0];
+  MODES.forEach(function (m) { if (m.n === n) M = m; });
+  (st.shown || []).forEach(function (id) { if (st.sims[id]) st.sims[id].playing = false; });
+  var ids = M.ids.filter(function (id) { return !!DEFS[id]; });
+  var box = document.getElementById('secstack');
+  box.innerHTML = ids.map(function (id) {
+    return '<article class="simsec" data-sim="' + id + '"><div class="card" id="simhost"></div></article>';
+  }).join('');
+  st.shown = ids;
+  /* セクションの中をさわったら、そのセクションを「いま扱っている」ことにする（capture＝中の処理より先） */
+  var EVS = ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'mousedown', 'mousemove', 'touchstart',
+    'click', 'dblclick', 'input', 'change', 'wheel', 'keydown', 'focusin'];
+  Array.prototype.forEach.call(box.querySelectorAll('.simsec'), function (el) {
+    var id = el.getAttribute('data-sim');
+    EVS.forEach(function (ev) {
+      el.addEventListener(ev, function () { st.focus = id; useSim(id); }, { capture: true, passive: true });
+    });
+  });
+  ids.forEach(function (id) { useSim(id); buildPanel(); renderActive(); });
+  st.focus = (focusId && ids.indexOf(focusId) >= 0) ? focusId : ids[0];
+  st.view = st.focus;
+  useSim(st.focus);
+}
+
+/* 画面をスクロールしたら、いま上に見えているセクションをタブとアドレス欄に出す */
+function spyScroll() {
+  if (!st.shown || !st.shown.length) return;
+  var tb = document.getElementById('tabbar'), line = (tb ? tb.getBoundingClientRect().bottom : 0) + 90;
+  var view = st.shown[0];
+  st.shown.forEach(function (id) {
+    var el = secEl(id);
+    if (el && el.getBoundingClientRect().top <= line) view = id;
+  });
+  if (view === st.view) return;
+  st.view = view;
+  markSimTab();
+  if (window.history && history.replaceState) history.replaceState(null, '', '#' + view);
+}
+function markSimTab() {
+  var stb = document.getElementById('simtabs'), cur = null;
+  if (!stb) return;
+  Array.prototype.forEach.call(stb.querySelectorAll('button'), function (b) {
+    var on = b.getAttribute('data-id') === st.view;
+    b.className = on ? 'on' : '';
+    if (on) cur = b;
+  });
+  if (cur && stb.scrollWidth > stb.clientWidth + 1) {
+    stb.scrollLeft = Math.max(0, cur.offsetLeft - (stb.clientWidth - cur.offsetWidth) / 2);
+  }
+}
 
 function graphsOf(d, s) {
   var list = d.graphs || [];
@@ -9368,14 +9577,15 @@ function drawLegend() {
 
 /* ===== タブ ===== */
 function buildTabs() {
-  var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[st.cur];
+  var vid = st.view || st.cur;
+  var mt = $('modetabs'), stb = $('simtabs'), cur = DEFS[vid];
   mt.innerHTML = '';
   var curBtn = null, curMode = null;
   MODES.forEach(function (M) {
     var b = document.createElement('button');
     b.textContent = M.label;
     if (M.n === cur.mode) { b.className = 'on'; curBtn = b; curMode = M; }
-    b.addEventListener('click', function () { if (M.n !== DEFS[st.cur].mode) gotoSim(M.ids[0]); });
+    b.addEventListener('click', function () { if (M.n !== DEFS[st.view || st.cur].mode) gotoSim(M.ids[0]); });
     mt.appendChild(b);
   });
   var tip = $('modetip');
@@ -9400,8 +9610,9 @@ function buildTabs() {
     M.ids.forEach(function (id) {
       var b = document.createElement('button');
       b.textContent = DEFS[id].tab;
-      b.className = (id === st.cur ? 'on' : '');
-      if (id === st.cur) curSim = b;
+      b.setAttribute('data-id', id);
+      b.className = (id === vid ? 'on' : '');
+      if (id === vid) curSim = b;
       b.addEventListener('click', function () { gotoSim(id); });
       stb.appendChild(b);
     });
@@ -9415,6 +9626,7 @@ function buildTabs() {
 }
 
 function updateUrlBar() {
+  if (!$('urltext')) return;
   var h = '#' + hashOf();
   setText($('urltext'), (location.protocol === 'file:' || location.origin === 'null')
     ? (location.pathname.split('/').pop() + h)
@@ -9437,15 +9649,48 @@ function placeModeTip() {
    ① 再生ボタンと時間バー ② 変数のスライドバー ③ オレンジの状況ボタン
    ④ 表示チェック ⑤ キャンバス ⑥ 計算結果の帯 ⑦ 2点をくらべる式
    （② と ④ は1行に並べて図の上に置く） */
+/* 各シミュレーションの問い（1 行）。画面の番号で引く。 */
+var ASK = {
+  '1-1': '一定の速さで滑る物体の $K$・$U$・$E$ は、時間とともにどうなる？',
+  '1-2': '落ちる物体の $K$ と $U$ は、どのように入れかわる？',
+  '1-3': '斜面の傾きを変えると、下端の速さは変わる？',
+  '1-4': '斜面の傾きを変えると、上がる高さは変わる？',
+  '1-5': '曲がった滑台と直線の滑台で、下端の速さは違う？',
+  '1-6': '振り子の $K$ と $U$ は、それぞれどこで最大になる？',
+  '1-7': 'ループを回ったあと、物体はどの高さまで上がる？',
+  '1-8': '投げる角を変えると、着地の速さは変わる？',
+  '1-9': 'ばねにつけた物体の $K$ と $U$ は、どのように入れかわる？',
+  '1-10': 'ばねにぶつかった物体は、ばねをどこまで縮める？',
+  '1-11': 'ばねではじかれた物体は、滑台をどの高さまで昇る？',
+  '1-12': '手をはなしたおもりは、どこまで下がる？',
+  '1-13': '曲面から飛び出した物体は、はじめの高さまで上がる？',
+  '1-14': 'ばねの縮みを変えると、飛び出す速さはどう変わる？',
+  '2-1': '摩擦力がはたらくと、力学的エネルギー $E$ はどうなる？',
+  '2-2': '失われた力学的エネルギーは、どの力の仕事と等しい？',
+  '2-3': '手でゆっくり下ろすと、手をはなしたときと何が違う？',
+  '2-4': '摩擦があると、ばねの振れ幅はどう変わる？',
+  '2-5': '糸で引き上げると、力学的エネルギー $E$ はどれだけ増える？',
+  '3-1': '2 物体全体の $E$ は保存される？ 物体 1 つだけではどう？',
+  '3-2': '糸の張力がする仕事は、2 物体全体ではどうなる？',
+  '3-3': 'ばねがつくと、つるした物体はどこまで下がる？',
+  '3-4': '板と物体の間の摩擦で、2 物体全体の $E$ はどうなる？',
+  '3-5': '摩擦があると、2 物体全体の $E$ はどう変わる？',
+  '3-6': '斜面の摩擦で失われるエネルギーは、どの力の仕事と等しい？'
+};
 function buildPanel() {
   var d = DEFS[st.cur], s = st.sims[st.cur];
   s._eq = null;
-  st._ptSz = null; st._ptPos = null;
+  SIMST()._ptSz = null; SIMST()._ptPos = null;
   var h = [];
-  h.push('<div class="simhead"><div class="simtitle">' + mathHtml(d.title) + '</div></div>');
+  /* ===== 新レイアウト（2026-11）：問い → スタートの帯・値・図 ／ 右の列は 条件の例・グラフ ／ 下に「クリックしよう→」 ===== */
+  var ttl0 = String(d.title), mno = ttl0.match(/^(\d+-\d+)[\s　]+([\s\S]*)$/);
+  h.push('<div class="simhead">' + (mno ? '<span class="simno">' + mno[1] + '</span>' : '') +
+    '<div class="simtitle">' + mathHtml(mno ? mno[2] : ttl0) + '</div></div>');
+  var ask = mno ? ASK[mno[1]] : null;
+  if (ask) h.push('<p class="simask"><span class="asktxt">' + mathHtml(ask) + '</span></p>');
   h.push('<div class="simgrid"><div class="cv">');
 
-  /* ① 再生ボタンと時間バー */
+  /* ① スタートの帯 */
   h.push('<div class="ctrl playctrl">');
   h.push('<div class="btnrow">');
   h.push('<button id="bPlay">▶ スタート</button>');
@@ -9453,10 +9698,9 @@ function buildPanel() {
   h.push('<button id="bReset" class="sub">↺ リセット</button>');
   h.push('<span class="tspan"><label>時間 t</label><input type="range" id="tBar" min="0" max="1" step="0.01" value="0"><span class="tval" id="tVal">0.00 s</span></span>');
   h.push('</div>');
-  h.push('<div class="mini" id="qhint"></div>');
   h.push('</div>');
 
-  /* ②④ 変数のカード（左）と表示チェック（右） */
+  /* ② 値のカード（左）と表示チェック（右）。もとの小さい並べ方のまま */
   var mainKeys = mainVarKeys(d);
   var mainList = [];
   mainKeys.forEach(function (k) {
@@ -9478,56 +9722,50 @@ function buildPanel() {
   }
   h.push('</div></div>');
 
-  /* ③⑤ オレンジの状況ボタン（図の上）＋ キャンバス */
-  h.push('<div class="cvstage' + ((d.actions && d.actions.length) ? ' topbar' : ' nobar') + '">');
-  if (d.actions && d.actions.length) {
-    h.push('<div class="cvbar top"><div class="acts n' + Math.min(4, d.actions.length) + '">');
-    d.actions.forEach(function (a, i) {
-      h.push('<button class="' + (a.jump ? 'sub jump' : 'warm') + '" data-act="' + i + '" id="act_' + i + '">' + a.label + '</button>');
-    });
-    h.push('</div></div>');
-  }
+  /* ③ 図 */
+  h.push('<div class="cvstage nobar">');
   h.push('<div class="cvwrap"><canvas id="mainCv"></canvas><div class="ptbubs" id="ptbubs"></div></div>');
   h.push('</div>');
-
-  /* 図のすぐ下の「ひとこと」（スタートを押してから出る） */
+  /* 図のすぐ下の「ひとこと」（スタートを押してから出る。行の高さははじめから取っておく） */
   h.push('<div class="cvhint" id="cvhint" hidden></div>');
-  /* ⑥ 計算結果の帯 */
-  h.push('<div class="resbar" id="resbar"></div>');
-  /* ⑦ 立式（3つ）と「仕事を表示」。★図の下・左★（先生の指示・第4回）
-        中身は renderEqZone が作る。運動が終わってから出す。 */
-  h.push('<div class="eqzone" id="eqzone" hidden></div>');
-
-  if (d.sub) h.push('<p class="cvsub">' + mathHtml(d.sub) + '</p>');
-  h.push('<div class="eq" id="eqbox"></div>');
   h.push('</div><div class="side">');
 
-  /* 右の列 */
-  /* ★右の欄の切りかえ（先生の指示・第6回）★
-     「エネルギーのグラフを表示」と「仕事の分析」を2つとも出し、
-     いま選んでいるほうをオレンジに塗る（図の上のオレンジの状況ボタンと同じ作法）。 */
+  /* --- 右の列のいちばん上：条件の例・ほかの値（開いたまま） --- */
+  var more = [];
+  if (d.actions && d.actions.length) {
+    var a2 = ['<div class="cvbar"><div class="acts n' + Math.min(4, d.actions.length) + '">'];
+    d.actions.forEach(function (a, i) {
+      a2.push('<button class="' + (a.jump ? 'sub jump' : 'warm') + '" data-act="' + i + '" id="act_' + i + '">' + a.label + '</button>');
+    });
+    a2.push('</div></div>');
+    more.push('<div class="morerow"><span class="morelab">条件の例</span>' + a2.join('') + '</div>');
+  }
+  var rest = [];
+  d.vars.forEach(function (vd) {
+    if (mainKeys.indexOf(vd.k) >= 0) return;
+    if (vd.when && !vd.when(V(s))) return;
+    rest.push(varRowHtml(vd, 'a'));
+  });
+  if (rest.length) more.push('<div class="morerow"><span class="morelab">ほかの値</span><div class="morevals"><div class="cvvars morevars">' + rest.join('') + '</div></div></div>');
+  if (more.length) h.push('<div class="morebox">' + more.join('') + '</div>');
+
+  /* --- グラフ ⇄ 仕事の分析 の切りかえ --- */
   h.push('<div class="wkbar"><div class="acts n2">' +
     '<button class="warm' + (st.workMode ? '' : ' on') + '" id="bGraphMode">エネルギーのグラフを表示</button>' +
     '<button class="warm' + (st.workMode ? ' on' : '') + '" id="bWork">仕事の分析</button>' +
     '</div><span class="wkbarhint">' + (st.workMode
       ? '力ごとの仕事が出ています。図の中の力をクリックしてみよう'
-      : '「仕事の分析」にすると、力ごとの仕事に切りかわります') + '</span></div>');
-  /* ★「仕事の分析」モードでは、グラフの欄をまるごとこれに入れかえる★ */
+      : '') + '</span></div>');
   h.push('<div class="wkpanel" id="wkpanel"' + (st.workMode ? '' : ' hidden') + '></div>');
   h.push('<div id="gwrap"' + (st.workMode ? ' hidden' : '') + '>');
   h.push('<div class="btnrow openrow"><button class="warm" id="bOpenAll">' + openAllLabel() + '</button>' +
-    '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button>' +
-    '<span class="ghint1">グラフの右上の <b>＋</b>／<b>－</b>／<b>もどす</b> で大きさを変えられます' +
-    '（ドラッグ＝移動／目盛りの上でドラッグ＝その軸だけ拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動）</span></div>');
+    '<button class="sub" id="bBigFml">' + bigFmlLabel() + '</button></div>');
 
   graphsOf(d, s).forEach(function (g) {
     h.push('<div class="gsec"><button class="ghead" data-g="' + g.key + '"><span class="tri">' +
       (s.open[g.key] ? '▼' : '▶') + '</span>' + mathHtml(g.title) + '</button>' +
       '<div class="gbody' + (s.open[g.key] ? '' : ' hide') + (st.bigFml ? ' bigf' : '') + '" id="gb_' + g.key + '">' +
-      /* ★グラフの拡大・縮小ボタン★（第9回）
-         ドラッグだけだと、はじめて見る生徒やスマホ・タブレットでは分かりにくいので、
-         右上に ＋ / － / もどす を出す。 */
-      '<div class="gleft"><div class="gzoom"><span class="gzl">グラフの大きさ</span>' +
+      '<div class="gleft"><div class="gzoom">' +
       '<button type="button" data-gz="in" data-gk="' + g.key + '" title="拡大">＋</button>' +
       '<button type="button" data-gz="out" data-gk="' + g.key + '" title="縮小">－</button>' +
       '<button type="button" class="gzr" data-gz="reset" data-gk="' + g.key +
@@ -9536,23 +9774,49 @@ function buildPanel() {
       (g.fml ? '<div class="gform" id="gf_' + g.key + '"></div>' : '<div class="gspacer"></div>') +
       '</div></div>');
   });
-
+  h.push('<div class="ghint1 ghintb">グラフは <b>＋</b>／<b>－</b>／<b>もどす</b> で大きさを変えられます' +
+    '（ドラッグ＝移動／目盛りの上でドラッグ＝その軸だけ拡大縮小／ホイール＝拡大縮小／ダブルクリック＝自動）</div>');
   h.push('</div>');       /* #gwrap ここまで */
-  /* ★第4回：右の列にあった「関係の箱」「保存則の箱」は、図の下の立式（#eqzone）へ移した★ */
-  h.push('<div class="ptabwrap"><table class="ptab" id="ptab"></table></div>');
-  h.push('<div class="note" id="notebox"><b>見るポイント</b>：' + mathHtml(d.note) + '</div>');
+  h.push('</div></div>'); /* .side・.simgrid ここまで */
 
-  var restCount = 0, rest = [];
-  d.vars.forEach(function (vd) {
-    if (mainKeys.indexOf(vd.k) >= 0) return;
-    if (vd.when && !vd.when(V(s))) return;
-    restCount++;
-    rest.push(varRowHtml(vd, 'b'));
+  /* --- クリックしよう→：選んだ 1 つだけを開く --- */
+  var panes = [['note', '見るポイント'], ['eq', '2点で立式する'], ['step', '立式のステップ'], ['num', '数値'], ['exp', '式と解説']];
+  h.push('<div class="think"><div class="thinkbar"><span class="thinklab">クリックしよう→</span>');
+  panes.forEach(function (p) {
+    h.push('<button class="tk' + (s.pane === p[0] ? ' on' : '') + '" data-pane="' + p[0] + '" id="tk_' + p[0] + '">' + p[1] + '</button>');
   });
-  if (restCount) h.push('<div class="ctrl">' + rest.join('') + '</div>');
-  h.push('<table class="read" id="readout"></table>');
-  h.push('</div></div>');
+  h.push('</div>');
+  function paneOpen(k) { return '<div class="thinkpane' + (s.pane === k ? '' : ' hide') + '" data-pane="' + k + '">'; }
+  h.push(paneOpen('note') + '<div class="note" id="notebox">' + mathHtml(d.note) + '</div>' +
+    '<div class="mini nexthint" id="qhint"></div></div>');
+  /* 立式（3つ）。中身は renderEqZone が作る。運動が終わってから出る */
+  h.push(paneOpen('eq') + '<div class="eqzone" id="eqzone" hidden></div>' +
+    '<p class="eqwait">運動を最後まで見ると、ここに 2 点をくらべる式が出ます。まず「スタート」を押そう。</p></div>');
+  h.push(paneOpen('step') + '<div class="stepcard"><canvas id="stepCv"></canvas>' +
+    '<div id="stepCase" class="eq3case" hidden></div></div></div>');
+  h.push(paneOpen('num') + '<div class="resbar" id="resbar"></div>' +
+    '<div class="ptabwrap"><table class="ptab" id="ptab"></table></div>' +
+    '<table class="read" id="readout"></table></div>');
+  h.push(paneOpen('exp') + (d.sub ? '<p class="cvsub">' + mathHtml(d.sub) + '</p>' : '') +
+    '<div class="eq" id="eqbox"></div></div>');
+  h.push('</div>');
   $('simhost').innerHTML = h.join('');
+  /* 「クリックしよう→」のタブ：押したものだけ開く（もう一度押すと閉じる） */
+  Array.prototype.forEach.call($('simhost').querySelectorAll('.tk'), function (bt) {
+    bt.addEventListener('click', function () {
+      var k = bt.getAttribute('data-pane');
+      s.pane = (s.pane === k) ? null : k;
+      Array.prototype.forEach.call($('simhost').querySelectorAll('.tk'), function (x) {
+        x.className = 'tk' + (x.getAttribute('data-pane') === s.pane ? ' on' : '');
+      });
+      Array.prototype.forEach.call($('simhost').querySelectorAll('.thinkpane'), function (x) {
+        x.className = 'thinkpane' + (x.getAttribute('data-pane') === s.pane ? '' : ' hide');
+      });
+      if ($('eqzone')) $('eqzone')._key = null;
+      renderActive();
+      fitFormula($('eqzone'));
+    });
+  });
 
   /* --- イベント --- */
   $('bPlay').addEventListener('click', onPlay);
@@ -9573,7 +9837,7 @@ function buildPanel() {
     while (el && el !== this) {
       if (el.getAttribute && el.getAttribute('data-pair')) {
         s.eqPair = +el.getAttribute('data-pair');
-        st._fSel = null;
+        SIMST()._fSel = null;
         renderActive();
         return;
       }
@@ -9592,11 +9856,11 @@ function buildPanel() {
       var b = hitAt(pt), k = b ? b.key : null;
       var want = b ? 'pointer' : '';
       if (cv.style.cursor !== want) cv.style.cursor = want;
-      if (st._fHover !== k) { st._fHover = k; renderActive(); }
+      if (SIMST()._fHover !== k) { SIMST()._fHover = k; renderActive(); }
     });
     cv.addEventListener('mouseleave', function () {
       cv.style.cursor = '';
-      if (st._fHover) { st._fHover = null; renderActive(); }
+      if (SIMST()._fHover) { SIMST()._fHover = null; renderActive(); }
     });
     cv.addEventListener('click', function (e) {
       if (!st.workMode) return;
@@ -9611,9 +9875,10 @@ function buildPanel() {
   function setWorkMode(on) {
     if (st.workMode === on) return;
     st.workMode = on;
-    st._fSel = null;
-    buildPanel();
-    renderActive();
+    var sec0 = st.root, y0 = sec0 ? sec0.getBoundingClientRect().top : 0;
+    eachShown(function (id) { st.sims[id]._fSel = null; buildPanel(); renderActive(); });
+    /* 上のセクションの高さが変わっても、いま見ているセクションの位置は動かさない */
+    if (sec0) { var dy0 = sec0.getBoundingClientRect().top - y0; if (Math.abs(dy0) > 1) window.scrollBy(0, dy0); }
   }
   $('bWork').addEventListener('click', function () { setWorkMode(true); });
   $('bGraphMode').addEventListener('click', function () { setWorkMode(false); });
@@ -9657,7 +9922,7 @@ function buildPanel() {
       fitFormula($('eqzone'));
     } else if (pr !== null) {
       s.eqPair = pr;
-      st._fSel = null;            /* 2点を変えたら、力の選択はいったん解除 */
+      SIMST()._fSel = null;            /* 2点を変えたら、力の選択はいったん解除 */
       renderActive();
     }
   });
@@ -9667,6 +9932,7 @@ function buildPanel() {
     /* ★全シムで共有★ ON にしたら、どのシミュレーションでも3つとも開く */
     Object.keys(st.sims).forEach(function (id) { st.sims[id].eqOpen = null; });
     if (!st.allEq) s.eqOpen = null;
+    eachShown(function () { var z = $('eqzone'); if (z) z._key = null; renderActive(); });
     applyEqOpen(d, s);
     fitFormula($('eqzone'));
   });
@@ -9740,6 +10006,98 @@ function onPlay() {
   if (s.playing && s.t < 1e-9 && d.startSfx) sfx(d.startSfx);
   setPlayLabel();
   renderActive();
+  if (s.playing) requestAnimationFrame(scrollToStage);
+}
+
+/* 右の列で開いているグラフが、図といっしょに 1 画面に入るように、グラフの大きさを決める */
+function fitGraphs() {
+  var host = $('simhost');
+  var grid = host && host.querySelector('.simgrid'), side = host && host.querySelector('.side');
+  var gw = $('gwrap');
+  if (!grid || !side || !gw || gw.hidden) return false;
+  var secs = gw.querySelectorAll('.gsec');
+  if (!secs.length) return false;
+  var open = [];
+  Array.prototype.forEach.call(secs, function (sec) {
+    var b = sec.querySelector('.gbody'), cv = sec.querySelector('.gleft canvas');
+    if (b && cv && b.className.indexOf('hide') < 0) open.push(cv);
+  });
+  var vh = window.innerHeight, vw = window.innerWidth;
+  var key = vh + 'x' + vw + '|' + side.clientWidth + '|' + (st.bigFml ? 1 : 0) + '|' + open.map(function (c) { return c.id; }).join(',');
+  if (side._gKey === key) return false;
+  side._gKey = key;
+  if (!open.length) return false;
+  var gr = grid.getBoundingClientRect(), sr = side.getBoundingClientRect();
+  var twoCol = (sr.top - gr.top) < 40;
+  var tb = $('tabbar'), tbH = tb ? tb.offsetHeight : 0;
+  var first = secs[0].getBoundingClientRect(), last = secs[secs.length - 1].getBoundingClientRect();
+  var sumCv = 0;
+  open.forEach(function (cv) { sumCv += cv.offsetHeight; });
+  var fixed = (last.bottom - first.top) - sumCv;
+  var over = first.top - gr.top;
+  var each = (vh - tbH - 18 - over - fixed) / open.length;
+  var top0 = $('cvtop') || host.querySelector('.cvstage');
+  var lift = top0 ? Math.max(0, Math.min(top0.getBoundingClientRect().top, first.top) - gr.top) : 0;
+  var each2 = (vh - tbH - 18 - (over - lift) - fixed) / open.length;
+  var changed = false;
+  open.forEach(function (cv) {
+    var cssW = Math.min(390, cv.parentNode.clientWidth || 300);
+    var W = 0, H = 0, mw = '';
+    if (twoCol && !st.bigFml && open.length > 1) {
+      var HMIN = 108;
+      W = Math.max(250, Math.min(320, Math.round(cssW / 0.94)));
+      var e = each;
+      if (e / (cssW / W) < 125) e = each2;
+      H = Math.round(e / (cssW / W));
+      if (H < HMIN) {
+        H = HMIN;
+        var w2 = Math.max(215, Math.floor(e * W / H));
+        if (w2 < cssW) mw = w2 + 'px';
+      }
+      H = Math.max(HMIN, Math.min(174, H));
+    }
+    if (cv.style.maxWidth !== mw) cv.style.maxWidth = mw;
+    if ((cv._W || 0) !== W || (cv._H || 0) !== H) { cv._W = W; cv._H = H; changed = true; }
+  });
+  return changed;
+}
+var _renderGraphs0 = renderGraphs;
+renderGraphs = function (d, s, T, t) {
+  _renderGraphs0(d, s, T, t);
+  if (fitGraphs()) _renderGraphs0(d, s, T, t);
+};
+
+/* 「スタート」を押したら、図と、開いているグラフがぜんぶ見える位置まで少しだけスクロールする */
+function scrollToStage() {
+  var host = $('simhost');
+  var grid = host && host.querySelector('.simgrid'), stage = host && host.querySelector('.cvstage');
+  if (!grid || !stage) return;
+  var tb = $('tabbar'), top = (tb ? tb.offsetHeight : 0) + 8;
+  var gr = grid.getBoundingClientRect();
+  var hintEl = $('cvhint');
+  var bottom = (hintEl || stage).getBoundingClientRect().bottom;
+  var top0 = $('cvtop') || stage;
+  var firstTop = top0.getBoundingClientRect().top, seen = false;
+  var gw = $('gwrap');
+  if (gw && !gw.hidden) {
+    Array.prototype.forEach.call(gw.querySelectorAll('.gsec'), function (sec) {
+      var b = sec.querySelector('.gbody');
+      if (b && b.className.indexOf('hide') < 0) {
+        bottom = Math.max(bottom, sec.getBoundingClientRect().bottom);
+        if (!seen) { seen = true; firstTop = Math.min(firstTop, sec.getBoundingClientRect().top); }
+      }
+    });
+  }
+  var vh = window.innerHeight, dy = 0;
+  if (gr.top < top) dy = gr.top - top;
+  else if (bottom > vh - 6) {
+    var need = bottom - (vh - 6);
+    dy = (need <= gr.top - top) ? need : Math.min(need, firstTop - top);
+    if (dy < gr.top - top && need > gr.top - top) dy = Math.max(dy, gr.top - top);
+  }
+  if (Math.abs(dy) < 3) return;
+  try { window.scrollBy({ top: Math.round(dy), behavior: 'smooth' }); }
+  catch (e) { window.scrollBy(0, Math.round(dy)); }
 }
 
 /* いまの状態がすでに条件を満たしているボタンを、少し濃く見せる。
@@ -9772,8 +10130,10 @@ function toggleBigFml() {
   Array.prototype.forEach.call(document.querySelectorAll('#simhost .gbody'), function (b) {
     b.className = b.className.replace(' bigf', '') + (st.bigFml ? ' bigf' : '');
   });
-  var bt = $('bBigFml');
-  if (bt) { bt.textContent = bigFmlLabel(); bt.className = st.bigFml ? '' : 'sub'; }
+  eachShown(function () {
+    var bt = $('bBigFml');
+    if (bt) { bt.textContent = bigFmlLabel(); bt.className = st.bigFml ? '' : 'sub'; }
+  });
   refitFormulas();
 }
 
@@ -9885,7 +10245,7 @@ function setPlayLabel() {
   if (hint) {
     var d = DEFS[st.cur];
     var txt = mathHtml(s._played ? (d.hint2 || '')
-      : '<span class="nextmark">① まず「スタート」</span>：運動を最後まで見ると、図に吹きだしと式が出ます。');
+      : '');
     if (hint.innerHTML !== txt) { hint.innerHTML = txt; renderMath(hint); }
     hint.style.display = txt ? '' : 'none';
   }
@@ -10031,7 +10391,7 @@ function fitFormula(box) {
 
 function refitFormulas() {
   Array.prototype.forEach.call(document.querySelectorAll('.gform'), function (b) { b._key = null; });
-  renderActive();
+  eachShown(function () { renderActive(); });
 }
 
 /* ===== ⑥ 計算結果の帯 ===== */
@@ -10071,7 +10431,7 @@ function renderResult(d, s, t) {
 
 /* ===== 点のエネルギーの吹きだし（HTML・KaTeX） =====
    ★点のすぐ近くに置く。置き場所は canvas 側（drawPts）が
-   　「物体・文字と重ならないところ」を選んで st._ptPos に入れる。★
+   　「物体・文字と重ならないところ」を選んで SIMST()._ptPos に入れる。★
    文字の大きさは canvas の表示倍率 --ptk に合わせるので、
    どの画面幅でも「図に対する大きさ」が変わらない（＝置き場所の計算がずれない）。 */
 function preparePtBubbles(d, s, t) {
@@ -10103,20 +10463,20 @@ function preparePtBubbles(d, s, t) {
         '<span class="pv">= ' + fmtJ(p.m.E) + '</span></div>';
     }).join('');
     renderMath(host);
-    st._ptSz = null;
+    SIMST()._ptSz = null;
   }
-  if (!st._ptSz) {                         /* 大きさを測るのは中身が変わったときだけ */
-    st._ptSz = {};
+  if (!SIMST()._ptSz) {                         /* 大きさを測るのは中身が変わったときだけ */
+    SIMST()._ptSz = {};
     Array.prototype.forEach.call(host.children, function (el) {
-      st._ptSz[el.getAttribute('data-pt')] = { w: el.offsetWidth / k, h: el.offsetHeight / k };
+      SIMST()._ptSz[el.getAttribute('data-pt')] = { w: el.offsetWidth / k, h: el.offsetHeight / k };
     });
   }
 }
 
 function placePtBubbles(d, ch) {
   var host = $('ptbubs');
-  if (!host || !st._ptPos) return;
-  st._ptPos.forEach(function (q) {
+  if (!host || !SIMST()._ptPos) return;
+  SIMST()._ptPos.forEach(function (q) {
     var el = host.querySelector('[data-pt="' + q.name + '"]');
     if (!el) return;
     var L = (q.x / d.cw * 100).toFixed(3) + '%', T = (q.y / ch * 100).toFixed(3) + '%';
@@ -10387,11 +10747,11 @@ function renderWorkPanel(d, s, t) {
 
 /* 力の欄と、図の中のその力を、いっしょに光らせる。
    ・図の力をクリック → この関数（欄が光る）
-   ・欄をクリック    → この関数（★図のその力が光る★＝ st._fSel。先生の指示・第7回） */
+   ・欄をクリック    → この関数（★図のその力が光る★＝ SIMST()._fSel。先生の指示・第7回） */
 function flashWork(key) {
   var el = $('wkc_' + key);
   if (!el) return;
-  if (st._fSel !== key) { st._fSel = key; renderActive(); }
+  if (SIMST()._fSel !== key) { SIMST()._fSel = key; renderActive(); }
   Array.prototype.forEach.call(document.querySelectorAll('#wkpanel .wkcard'), function (c) {
     c.className = c.className.replace(' flash', '').replace(' sel', '');
   });
@@ -10495,9 +10855,9 @@ function activeForceHits(d, s, t) {
 /* 図の上に、クリックできる場所の合図（うすい枠）と、ホバー中の指差しマークを描く */
 function drawForceHints(ctx, d, s, t) {
   var hits = activeForceHits(d, s, t);
-  st._fHits = hits;
+  SIMST()._fHits = hits;
   if (!hits.length) return;
-  var i, hv = st._fHover, sel = st._fSel;
+  var i, hv = SIMST()._fHover, sel = SIMST()._fSel;
   for (i = 0; i < hits.length; i++) {
     var b = hits[i], on = (b.key === hv), pick = (b.key === sel);
     ctx.save();
@@ -10530,7 +10890,7 @@ function cvPoint(cv, d, s, e) {
   return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k };
 }
 function hitAt(pt) {
-  var hits = st._fHits || [], i;
+  var hits = SIMST()._fHits || [], i;
   for (i = 0; i < hits.length; i++) {
     var b = hits[i];
     if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) return b;
@@ -10580,6 +10940,8 @@ function renderActive() {
   refreshActs();
   renderReadout(d, s, s.t);
   renderEq(d, s);
+  var tkE = $('tk_eq');
+  if (tkE) tkE.classList.toggle('cue', endOn(d, s, s.t) && !s.pane);
   var bar = $('tBar');
   if (bar) {
     var mx = T.toFixed(2);
@@ -10608,7 +10970,7 @@ function renderMath(root) {
    第27回にいったん「#1-1」に変えたが、配ったリンクの書き方は変えない方針にもどした。
    新しく作った「#1-1」の形も読めるようにしてあるので、第27〜28回のあいだに
    コピーされたリンクも開ける（開いたあと、アドレス欄だけ #m1-1 の形にそろえる）。 */
-function hashOf() { return st.cur; }
+function hashOf() { return st.view || st.cur; }
 function parseHash(h) {
   h = (h || '').replace('#', '');
   var i = h.search(/[!?]/);
@@ -10695,28 +11057,25 @@ function buildToc() {
 
 function gotoSim(id) {
   if (!DEFS[id]) return;
-  /* ★第26回★ タブや「1-9 を見る →」で別のシミュレーションへ移ったら、画面のいちばん上へ。
-     （physics-sim-page スキル §3.5。smooth にすると画面が流れて目が回るので auto） */
-  if (typeof window !== 'undefined' && window.scrollTo && st.cur !== id) {
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) { window.scrollTo(0, 0); }
-  }
-  st.cur = id;
-  st._fSel = null; st._fHover = null;    /* 力の選択はシムごとにリセット */
+  if (!st.shown || st.shown.indexOf(id) < 0) showMode(DEFS[id].mode, id);
+  st.focus = id; st.view = id;
+  useSim(id);
   buildTabs();
-  buildPanel();
-  renderActive();
+  scrollSimIntoView();
   syncHash();
-  updateUrlBar();
 }
 
 /* ===== アニメーション ===== */
 var lastTs = null;
 function tick(ts) {
-  var s = st.sims[st.cur], d = DEFS[st.cur];
   if (lastTs === null) lastTs = ts;
   var dt = Math.min(0.033, (ts - lastTs) / 1000);
   lastTs = ts;
-  if (s && s.playing) {
+  var any = false;
+  (st.shown || []).forEach(function (id) {
+    var s = st.sims[id], d = DEFS[id];
+    if (!s || !s.playing) return;
+    useSim(id); any = true;
     var T = d.tEnd(V(s));
     var rate = d.rate ? d.rate(V(s)) : 1;
     s.t = Math.min(T, s.t + dt * rate * (s.slow ? 0.25 : 1));
@@ -10725,7 +11084,8 @@ function tick(ts) {
       else { s.playing = false; setPlayLabel(); }
     }
     renderActive();
-  }
+  });
+  if (any && st.focus) useSim(st.focus);
   requestAnimationFrame(tick);
 }
 
@@ -10739,12 +11099,18 @@ function tick(ts) {
 
   var hp = parseHash(location.hash);
   if (!DEFS[hp.id]) hp.id = 'm1-1';
+  var hadHash = !!(location.hash && location.hash.length > 1);
   st.cur = hp.id;
+  showMode(DEFS[hp.id].mode, hp.id);
   buildTabs();
-  buildPanel();
-  renderActive();
-  updateUrlBar();
   buildToc();
+  if (hadHash && st.shown[0] !== hp.id) scrollSimIntoView();
+  var spyT = false;
+  window.addEventListener('scroll', function () {
+    if (spyT) return;
+    spyT = true;
+    requestAnimationFrame(function () { spyT = false; spyScroll(); });
+  }, { passive: true });
   /* ★第29回★ 第27〜28回の書き方（#1-1）で開かれたら、アドレス欄だけ #m1-1 の形にそろえる
      （履歴を増やさないよう replaceState。開いている画面は変えない） */
   if (location.hash && location.hash !== '#' + hashOf() &&
@@ -10756,10 +11122,10 @@ function tick(ts) {
     if (st._skipHash) { st._skipHash = false; return; }
     var q = parseHash(location.hash);
     if (!DEFS[q.id]) return;
-    if (q.id !== st.cur) gotoSim(q.id);
+    if (q.id !== (st.view || st.cur)) gotoSim(q.id);
   });
 
-  $('urlcopy').addEventListener('click', function () {
+  if ($('urlcopy')) $('urlcopy').addEventListener('click', function () {
     var txt = location.href.indexOf('#') >= 0 ? location.href : location.href + '#' + hashOf();
     var done = function () { $('urlmsg').textContent = 'コピーしました'; };
     try {
@@ -10780,7 +11146,7 @@ function tick(ts) {
     document.fonts.ready.then(function () { refitFormulas(); placeModeTip(); });
   }
   window.addEventListener('resize', function () {
-    refitFormulas(); placeModeTip(); drawStep($('stepCv'));
+    refitFormulas(); placeModeTip();
   });
   /* 説明文の中の「1-10 を見る」などのリンクで、そのシミュレーションへ飛ぶ */
   document.addEventListener('click', function (e) {
@@ -10947,7 +11313,7 @@ function tick(ts) {
     /* ★検算用★ ゴーストの速度ベクトルの「長さ ÷ 速さ」が全点で同じか
        （＝矢印の長さの比が速さの比と合っているか）。第7回の直しの見張り。 */
     ghostVel: function () {
-      var g = st._vGhost || [], out = [], i, r, r0 = null, err = 0;
+      var g = SIMST()._vGhost || [], out = [], i, r, r0 = null, err = 0;
       for (i = 0; i < g.length; i++) {
         if (!(g[i].v > 0.02)) continue;
         r = g[i].L / g[i].v;
@@ -10958,7 +11324,7 @@ function tick(ts) {
       return { pts: out, ratio_err: +err.toFixed(6) };
     },
     forceHits: function () {
-      return (st._fHits || []).map(function (h) {
+      return (SIMST()._fHits || []).map(function (h) {
         return { key: h.key, x: Math.round(h.x), y: Math.round(h.y),
           w: Math.round(h.w), h: Math.round(h.h) };
       });
