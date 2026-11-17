@@ -341,9 +341,21 @@ h1,h2,h3{font-family:var(--f-jph)}
 .hero-title{margin:14px 0 0;padding:0;line-height:1.08;font-weight:800;letter-spacing:-.03em;color:var(--h-ink);font-size:1rem}
 .hero-title .t1{display:block;font-size:clamp(2rem,4.2vw,3rem);font-weight:900}
 .hero-title .t2{display:block;margin-top:.45em;font-size:clamp(.95rem,1.6vw,1.2rem);font-weight:700;letter-spacing:.02em;color:var(--brand-700)}
-.introrow{display:flex;align-items:stretch;gap:22px;margin-top:8px;max-width:980px}
-.lead2{flex:0 1 auto;margin:0;font-size:clamp(.9rem,1.15vw,1rem);line-height:1.8;color:#2c4a63;max-width:36em}
-.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
+/* 帯の中：左＝題名・リード・このページの目的、右上＝式の流れの図（千葉さん指定 2026-11-17） */
+.hero-cols{display:flex;gap:clamp(24px,4vw,56px);align-items:flex-start}
+.hero-main{flex:1 1 0;min-width:0}
+.hero-side{flex:0 0 auto}
+.hero-cols.noside .hero-side{display:none}
+.introrow{display:flex;align-items:center;gap:14px 22px;flex-wrap:wrap;margin-top:10px}
+.lead2{flex:0 1 auto;margin:0;font-size:clamp(.92rem,1.2vw,1.05rem);font-weight:600;line-height:1.8;color:#2c4a63;max-width:40em}
+.hero-aim{margin:14px 0 0;max-width:52em}
+.hero-aim .aim-cap{margin:0 0 .2em;font-family:var(--f-jph);font-size:.78rem;font-weight:800;letter-spacing:.14em;color:var(--brand-700)}
+.hero-aim ol{margin:0;padding-left:1.4em;font-size:.92rem;line-height:1.75;color:#1d3a52}
+.hero-aim li{margin:.2em 0}
+.hero-aim li::marker{font-family:var(--f-serif);color:var(--h-lake)}
+.hero .aimflow{margin:14px 0 0;padding:12px 14px 14px;border-radius:var(--r-l);background:rgba(255,255,255,.78);box-shadow:0 0 0 1px var(--h-line),0 14px 30px -18px rgba(10,37,64,.35)}
+.hero .aimflow-cap{color:var(--h-slate)}
+.tocbtn{flex:0 0 auto;min-height:2.9em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
   font:inherit;font-family:var(--f-jph);font-size:.92rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
   color:#fff;background:var(--h-ink);border:0;box-shadow:0 0 0 1px rgba(255,255,255,.4) inset,0 16px 32px -14px rgba(10,37,64,.55);
   transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s}
@@ -354,12 +366,10 @@ h1,h2,h3{font-family:var(--f-jph)}
   linear-gradient(currentColor,currentColor) 0 50%/72% 2px no-repeat,
   linear-gradient(currentColor,currentColor) 0 100%/86% 2px no-repeat}
 .hero :focus-visible{outline-color:rgba(54,182,232,.7)}
-@media(min-width:1000px){
-  .hero-in{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:clamp(32px,5vw,72px);align-items:end}
-  .hero-in > *{grid-column:1/-1}
-  .hero-in > .hero-title{grid-column:1}
-  .hero-in > .introrow{grid-column:2;flex-direction:column;align-items:flex-start;gap:18px;margin-top:0;padding-bottom:.35em;max-width:46em}
-  .introrow .tocbtn{min-height:3em;align-self:flex-start}
+/* せまい画面（スマホ）では、流れの図を目的の下へ送る。タブレット（760 px 以上）は右上のまま */
+@media(max-width:759px){
+  .hero-cols{flex-direction:column;gap:0}
+  .hero-side{align-self:center;max-width:100%}
 }
 /* パンくず */
 .crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;color:var(--h-slate)}
@@ -378,6 +388,7 @@ h1,h2,h3{font-family:var(--f-jph)}
   .hero-title .t1{animation:heroIn .8s .06s var(--ease) both}
   .hero-title .t2{animation:heroIn .8s .14s var(--ease) both}
   .hero .introrow{animation:heroIn .8s .2s var(--ease) both}
+  .hero-aim,.hero .aimflow{animation:heroIn .8s .26s var(--ease) both}
 }
 
 /* ---------- タブ列（章のナビ）：画面の上に固定 ---------- */
@@ -433,6 +444,14 @@ h1,h2,h3{font-family:var(--f-jph)}
 .seclinks a{display:inline-flex;align-items:center;padding:.38em .95em;border:1px solid var(--rule-2);border-radius:999px;text-decoration:none;
   color:var(--ink-2);background:transparent;font-weight:600;transition:background .18s,border-color .18s,color .18s}
 .seclinks a:hover{background:var(--surface);border-color:var(--ink);color:var(--ink)}
+.seclinks:empty{display:none}
+/* 図のないタブ（補足）：ふだんは節をしまっておき、そのタブを開いたら、シミュレーションをたたんで節を出す。
+   シミュレーションは display:none にしない（幅 0 になると、中の図や行の高さの測りなおしがくるうため。高さだけ 0 にする） */
+.pageblock{display:none}
+body[data-shellpage="more"] #sec-more{display:block}
+body[data-shellpage] #sim{height:0 !important;min-height:0 !important;overflow:hidden !important;visibility:hidden;margin:0 !important;padding-top:0 !important;padding-bottom:0 !important;border:0 !important;box-shadow:none !important}
+body[data-shellpage] .probbar-out{display:none}
+.tocpanel ul.tocsub{margin:0 0 .3em 2.3em;font-size:.94em}
 
 /* ---------- フッター（暗い地・章の目次つき） ---------- */
 footer.pagefoot{margin:56px 0 0;padding:0;background:var(--night);color:rgba(243,239,230,.55);font-size:.8rem;letter-spacing:0;text-align:left}
@@ -528,7 +547,7 @@ html.drawer-open{overflow:hidden}
   .navpages span{display:none} .navpages{width:36px;padding:0} .navsite{padding-right:8px;margin-right:2px}
   .crumbs .en,.crumbs .kdot{display:none}
   .hero-top{align-items:flex-start}
-  .introrow{flex-direction:column;gap:12px}
+  .introrow{flex-direction:column;align-items:flex-start;gap:12px}
   .tocbtn{min-height:0;padding:.75em 1.2em;align-self:flex-start}
   .modehead{grid-template-columns:1fr;gap:12px;margin:30px 0 16px}
   .mh-num{width:58px;height:58px}
@@ -628,11 +647,71 @@ body.fig-full .tabs{z-index:1}
    13_shell_page.css … 薄膜のページだけの調整（12_shell.css のあとに読む）
    ========================================================================= */
 
+/* ---- 見出しの帯の右上：式の流れの図（2026-11-17）----
+   ヤング・回折格子の 10_style.css にある流れの図の決まりと同じ（薄膜の 10_style.css には無かったのでここに書く） */
+.aimflow{flex:0 0 auto;width:300px;max-width:100%;margin:0 auto}
+.aimflow-cap{text-align:center;margin:0 0 4px;font-size:.78rem}
+.flowchart{display:flex;flex-direction:column;align-items:stretch}
+.flowbox{border:1.4px solid #1663b5;background:#eaf1fa;border-radius:9px;padding:7px 10px;text-align:center;box-sizing:border-box}
+.flowbox b{display:block;font-size:.82rem;color:#1a4e86;margin-bottom:1px}
+.flowbox .eq{margin:2px 0 0;font-size:.95rem}
+.flowarrow{display:flex;align-items:center;justify-content:center;gap:6px;color:#8a94a0;font-size:1.15rem;line-height:1;padding:3px 0}
+.flowcond{font-size:.72rem;color:#a12a1c;background:#fdeeec;border:1px solid #e2a89f;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.flowbox.flow2{display:flex;justify-content:center;gap:0;padding:6px 6px}
+.flowbox.flow2 .fcol{flex:1 1 0;min-width:0;padding:0 4px}
+.flowbox.flow2 .fcol.dark{border-left:1px dashed #9fb3cc}
+.flowbox.flow2 .fcol.dark b{color:#4a5560}
+/* 薄膜だけの部品：小さな注・2 列の表（左＝正味 1 回、右＝0 回・2 回。上の箱の 2 列とそろえる） */
+.flowbox .fnote,.flowbox .fsub{display:block;font-size:.7rem;line-height:1.45;color:#4a5f78}
+.flowbox.fgrid{display:grid;grid-template-columns:1fr 1fr;padding:5px 6px 6px;row-gap:1px}
+.fgrid .fhead{grid-column:1/-1;font-size:.76rem;font-weight:700;color:#1a4e86;padding-top:2px}
+.fgrid .fhead.weak{color:#4a5560;border-top:1px solid #c6d4e6;margin-top:3px;padding-top:4px}
+.fgrid .fhead .eq{font-size:.86rem;font-weight:400}
+.fgrid .fc{padding:0 4px;white-space:nowrap}
+.fgrid .fc .eq{font-size:.86rem}
+.fgrid .fc.dark{border-left:1px dashed #9fb3cc}
+.fgrid .fswap{grid-column:1/-1;margin-top:4px;font-size:.7rem;color:#a12a1c}
+
 </style>
 </head>
 <body id="top">
-<!-- 見出しの帯（中身は 87_shell.js が 86_shellcfg.js の文から作る） -->
-<header class="hero low" id="hero"></header>
+<!-- 見出しの帯。87_shell.js が、パンくず・題名・リード（86_shellcfg.js の文）を組み立て、
+     下の「このページの目的」を左に、「式の流れの図」を右上に入れる（2026-11-17 千葉さん指定：目的と流れをいちばん上に） -->
+<header class="hero" id="hero">
+  <div class="hero-aim" id="heroAim">
+    <p class="aim-cap">このページの目的</p>
+    <ol>
+    <li>薄膜の<b>経路差の式</b>が成り立つ原理を理解し、実際の波の動きと干渉をビジュアル的に納得する。</li>
+    <li>反射のときに<b>位相が π ずれる場合とずれない場合</b>があり、それで条件式が入れかわることを理解する。</li>
+    <li>膜の厚さ・波長・屈折率・入射角 i を自分で変えて、<b>強めあう／弱めあう</b>が切りかわるのを体験する。</li>
+    <li>薄膜の干渉は「<b>真上から覗いた場合</b>」と「<b>斜めから覗いた場合</b>」を<b>同じ考えでとらえればよい</b>ことを理解する。</li>
+  </ol>
+  </div>
+  <!-- 式の流れの図（2026-11-17。ヤング・回折格子と同じ形。右の「光の干渉の考え方（3 ステップ）」と「虹色に見える原理」の順にそろえた） -->
+  <div class="aimflow" id="heroFlow">
+    <p class="aimflow-cap mini">↓の流れが重要</p>
+    <div class="flowchart" role="img" aria-label="①光路差 2n₁d cos r を求める → ②反射で位相が π ずれる回数を数える（正味 1 回なら逆位相、0 回か 2 回なら同位相）→ ③条件式を立てる（正味 1 回では強めあう条件と弱めあう条件が入れかわる）→ 正味 1 回・m＝0 のとき、虹色に見える色 λ₀＝4n₁d cos r">
+      <div class="flowbox"><b>① 光路差</b><p class="eq" data-tex="2n_1 d\cos r"></p><span class="fnote">真上から見る（i ＝ 0°）と 2n₁d</span></div>
+      <div class="flowarrow">↓<span class="flowcond">② 反射で位相が π ずれる回数</span></div>
+      <div class="flowbox flow2">
+        <span class="fcol"><b>正味 1 回</b><span class="fsub">2 つの光は逆位相</span></span>
+        <span class="fcol dark"><b>0 回・2 回</b><span class="fsub">2 つの光は同位相</span></span>
+      </div>
+      <div class="flowarrow">↓<span class="flowcond">③ 条件式を立てる</span></div>
+      <div class="flowbox fgrid">
+        <span class="fhead">強めあう　<span class="eq" data-tex="2n_1 d\cos r="></span></span>
+        <span class="fc"><span class="eq" data-tex="\left(m+\tfrac12\right)\lambda"></span></span>
+        <span class="fc dark"><span class="eq" data-tex="m\lambda"></span></span>
+        <span class="fhead weak">弱めあう　<span class="eq" data-tex="2n_1 d\cos r="></span></span>
+        <span class="fc"><span class="eq" data-tex="m\lambda"></span></span>
+        <span class="fc dark"><span class="eq" data-tex="\left(m+\tfrac12\right)\lambda"></span></span>
+        <span class="fswap">π ずれが正味 1 回だと、条件式が入れかわる</span>
+      </div>
+      <div class="flowarrow">↓<span class="flowcond">正味 1 回・m ＝ 0</span></div>
+      <div class="flowbox"><b>虹色に見える色</b><p class="eq" data-tex="\lambda_0=4n_1 d\cos r"></p><span class="fnote">見る角度で cos r が変わる → 色が変わる</span></div>
+    </div>
+  </div>
+</header>
 
 <!-- 上に固定するタブ列：左はしにホームとページ一覧、つづいてモードのタブ（id は tab-モード名。70_ui.js がこの id で切りかえる） -->
 <nav class="tabs" id="tabs" aria-label="モードの切りかえ">
@@ -641,6 +720,8 @@ body.fig-full .tabs{z-index:1}
     <button class="tab" id="tab-wave" role="tab" type="button" aria-selected="true"><span class="tn">①</span><span class="tl">実際の波の動きを見る</span></button>
     <button class="tab" id="tab-path" role="tab" type="button" aria-selected="false"><span class="tn">②</span><span class="tl">光路差の位置と式の原理</span></button>
     <button class="tab" id="tab-bubble" role="tab" type="button" aria-selected="false"><span class="tn">③</span><span class="tl">薄膜が虹色に見える原理</span></button>
+    <!-- 図のないタブ（data-page）。押すとシミュレーションをたたんで、下の <section id="sec-more"> を出す（87_shell.js） -->
+    <button class="tab" id="tab-more" role="tab" type="button" data-page="more" data-full="補足：もっと深く知りたい人へ" aria-selected="false"><span class="tn">④</span><span class="tl">もっと深く知りたい人へ</span></button>
   </div>
   <span class="tprog" aria-hidden="true"></span>
 </nav>
@@ -854,29 +935,8 @@ body.fig-full .tabs{z-index:1}
   </div>
 </div>
 
-<section class="block" id="sec-purpose">
-<header class="blockhead"><p class="mh-en">Goals</p><h2>このページの目的</h2></header>
-<div class="card purpose aim">
-  <p class="lead">【目的】</p>
-  <ol>
-    <li>薄膜の<b>経路差の式</b>が成り立つ原理を理解し、実際の波の動きと干渉をビジュアル的に納得する。</li>
-    <li>反射のときに<b>位相が π ずれる場合とずれない場合</b>があり、それで条件式が入れかわることを理解する。</li>
-    <li>膜の厚さ・波長・屈折率・入射角 i を自分で変えて、<b>強めあう／弱めあう</b>が切りかわるのを体験する。</li>
-    <li>薄膜の干渉は「<b>真上から覗いた場合</b>」と「<b>斜めから覗いた場合</b>」を<b>同じ考えでとらえればよい</b>ことを理解する。</li>
-  </ol>
-</div>
-</section>
-
-<section class="block" id="sec-quiz">
-<header class="blockhead"><p class="mh-en">Practice</p><h2>練習問題</h2><p class="mini hide-on-scale">選んだらすぐに正誤と解説が出ます。シミュレーションで確かめながら答えてみましょう。</p></header>
-<div class="quiz" id="quiz"></div>
-<p class="hide-on-scale" style="text-align:center;margin-top:14px">
-  <button class="ctl" id="btn-quiz-reset">もう一度</button>
-</p>
-</section>
-
-<section class="block" id="sec-more">
-<header class="blockhead"><p class="mh-en">Going Deeper</p><h2>補足：もっと深く知りたい人へ</h2></header>
+<!-- 補足（最後のタブ「もっと深く知りたい人へ」を開いたときだけ出る。見出しは章の扉が出す） -->
+<section class="block pageblock" id="sec-more">
 
 <details class="more">
   <summary>反射防止コーティング（λ/4 膜）— メガネやカメラのレンズが青紫に見える理由</summary>
@@ -4659,221 +4719,6 @@ TF.ui = (function () {
   };
 })();
 
-/* ===== 80_quiz.js ===== */
-/* 練習問題：選択式・即時フィードバック */
-window.TF = window.TF || {};
-TF.quiz = (function () {
-  'use strict';
-  var P = TF.phys;
-
-  /* ---------- 問 2 用のミニ図（入射角 40° の薄膜） ---------- */
-  var MW = 236, MH = 148;
-
-  function miniGeom() {
-    var th = 40 * Math.PI / 180, n1 = 1.5;
-    var r = P.refractAngle(40, n1);
-    var surfY = 52, dpx = 44, botY = surfY + dpx;
-    var dxt = dpx * Math.tan(r);
-    var A2 = { x: 84 - dxt, y: surfY };
-    var B1 = { x: 84 + dxt, y: surfY };
-    var C = { x: 84, y: botY };
-    var u = { x: Math.sin(th), y: Math.cos(th) };
-    var v = { x: Math.sin(r), y: Math.cos(r) };
-    // A₁：A₂ を通る入射波面と光線1 の交点／B₂：B₁ から A₂C に下ろした垂線の足
-    var q = (B1.x - A2.x) * u.x + (B1.y - A2.y) * u.y;
-    var A1 = { x: B1.x - u.x * q, y: B1.y - u.y * q };
-    var p2 = (B1.x - A2.x) * v.x + (B1.y - A2.y) * v.y;
-    var B2 = { x: A2.x + v.x * p2, y: A2.y + v.y * p2 };
-    return { th: th, r: r, surfY: surfY, botY: botY, A2: A2, B1: B1, C: C, A1: A1, B2: B2, u: u, v: v };
-  }
-
-  function drawMini(cv, kind) {
-    var g = cv.getContext('2d');
-    var dpr = Math.min(3, Math.max(2, (window.devicePixelRatio || 1) * 1.5));
-    cv.width = MW * dpr; cv.height = MH * dpr;
-    cv.style.width = MW + 'px'; cv.style.height = MH + 'px';
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.textRendering = 'geometricPrecision';
-
-    var m = miniGeom();
-    g.fillStyle = '#fdf8e6'; g.fillRect(0, 0, MW, m.surfY);
-    g.fillStyle = '#ebe4f8'; g.fillRect(0, m.surfY, MW, m.botY - m.surfY);
-    g.fillStyle = '#fdf8e6'; g.fillRect(0, m.botY, MW, MH - m.botY);
-    g.strokeStyle = '#7f8c93'; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(0, m.surfY + .5); g.lineTo(MW, m.surfY + .5);
-    g.moveTo(0, m.botY + .5); g.lineTo(MW, m.botY + .5); g.stroke();
-
-    function line(a, b, col, w, dash) {
-      g.save(); g.setLineDash(dash || []); g.strokeStyle = col; g.lineWidth = w;
-      g.lineCap = 'round';
-      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
-    }
-    var uUp = { x: m.u.x, y: -m.u.y };
-    var back = function (p, k) { return { x: p.x - m.u.x * k, y: p.y - m.u.y * k }; };
-    var fwd = function (p, k) { return { x: p.x + uUp.x * k, y: p.y + uUp.y * k }; };
-
-    // 光線
-    line(back(m.B1, 62), m.B1, '#e2542c', 1.8);
-    line(m.B1, fwd(m.B1, 58), '#e2542c', 1.8);
-    line(back(m.A2, 62), m.A2, '#1f74d0', 1.8);
-    line(m.A2, m.C, '#1f74d0', 1.8);
-    line(m.C, m.B1, '#1f74d0', 1.8);
-    line(m.B1, fwd(m.B1, 58), '#1f74d0', 1.2);
-    // 波面（薄い破線）
-    line(m.A1, m.A2, '#b9a8d0', 1, [4, 3]);
-    line(m.B1, m.B2, '#b9a8d0', 1, [4, 3]);
-
-    // ハイライト
-    g.save(); g.lineCap = 'round'; g.globalAlpha = 0.85;
-    g.strokeStyle = '#0f9d58'; g.lineWidth = 5;
-    if (kind === 'correct') {          // B₂C + CB₁
-      g.beginPath(); g.moveTo(m.B2.x, m.B2.y); g.lineTo(m.C.x, m.C.y); g.lineTo(m.B1.x, m.B1.y); g.stroke();
-    } else if (kind === 'full') {      // A₂C + CB₁
-      g.beginPath(); g.moveTo(m.A2.x, m.A2.y); g.lineTo(m.C.x, m.C.y); g.lineTo(m.B1.x, m.B1.y); g.stroke();
-    } else if (kind === 'air') {       // A₁B₁ + A₂B₂
-      g.beginPath(); g.moveTo(m.A1.x, m.A1.y); g.lineTo(m.B1.x, m.B1.y); g.stroke();
-      g.beginPath(); g.moveTo(m.A2.x, m.A2.y); g.lineTo(m.B2.x, m.B2.y); g.stroke();
-    }
-    g.restore();
-
-    // 点の名前
-    function pt(p, t, dx, dy) {
-      g.save();
-      g.beginPath(); g.arc(p.x, p.y, 2.6, 0, Math.PI * 2); g.fillStyle = '#222'; g.fill();
-      g.font = TF.draw.font(11, true); g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillStyle = 'rgba(255,255,255,.85)';
-      var w = g.measureText(t).width;
-      g.fillRect(p.x + dx - w / 2 - 2, p.y + dy - 7, w + 4, 14);
-      g.fillStyle = '#222'; g.fillText(t, p.x + dx, p.y + dy);
-      g.restore();
-    }
-    pt(m.A1, 'A₁', -13, -10);
-    pt(m.A2, 'A₂', -14, -10);
-    pt(m.B1, 'B₁', 14, -10);
-    pt(m.B2, 'B₂', -15, 7);
-    pt(m.C, 'C', -13, 12);
-
-    g.font = '10.5px "Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif';
-    g.fillStyle = '#666'; g.textAlign = 'left'; g.textBaseline = 'bottom';
-    g.fillText('θ = 40°', 6, MH - 6);
-  }
-
-  /* ---------- 問題 ---------- */
-  var QS = [
-    {
-      q: '屈折率 n₁、厚さ d の薄膜に、光を垂直に当てます。上面で反射した光と、薄膜を通って下面で反射してきた光の【光路差】はどれですか。',
-      opts: [{ t: '2d' }, { t: '2n₁d' }, { t: '2d / n₁' }],
-      row: true,
-      ans: 1,
-      why: '薄膜の中を「下って上る」ので、実際に進んだ道のり（経路差）は 2d です。'
-        + 'ただし膜の中は屈折率 n₁ なので、光路差になおすときは n₁ 倍して 2n₁d となります。'
-        + '（斜めに入射するときは 2n₁d cos r です。）'
-    },
-    {
-      q: '入射角 40° で光を当てました。光路差 2n₁d cos r のもとになっている部分（緑で示した経路差）を正しく表しているのはどれですか。',
-      opts: [
-        { t: 'A₂C + CB₁（薄膜の中を実際に進んだ長さ）', fig: 'full' },
-        { t: 'B₂C + CB₁（屈折波の波面 B₁B₂ から先）', fig: 'correct' },
-        { t: 'A₁B₁ と A₂B₂（境界に着くまでの部分）', fig: 'air' }
-      ],
-      ans: 1,
-      why: 'A₁B₁（空気）と A₂B₂（薄膜）は光路が等しいので、屈折波の波面 B₁B₂ の上では光①と光②は同位相です。'
-        + 'つまり位相差をもたらすのは、そこから先の B₂C + CB₁ だけ。'
-        + '下面に関する B₁ の対称点を D とすると CB₁ = CD なので、B₂C + CB₁ = B₂D = 2d cos r。'
-        + 'これを n₁ 倍したものが光路差 2n₁d cos r です。'
-        + '「A₂C + CB₁ = 2d / cos r」は膜の中を実際に進んだ長さで、経路差ではありません。'
-    },
-    {
-      q: '白色光を当てると、薄膜が虹色に見えます。その理由として最も適切なものはどれですか。',
-      opts: [
-        { t: '薄膜の材質が光を色ごとに吸収し、残った色が見えるから' },
-        { t: '白色光には色んな波長が含まれており、薄膜の干渉の結果強めあう角度は波長ごとに異なるため、人の目には色が分かれて見えるから' },
-        { t: '薄膜の中で屈折率が波長ごとにちがい、プリズムと同じしくみで光が分かれるから' }
-      ],
-      ans: 1,
-      why: '強めあう条件 2n₁d cos r =（m + 1/2）λ には cos r が入っているので、'
-        + '同じ膜でも見る角度がちがえば強めあう波長がちがいます。'
-        + '白色光にはあらゆる波長が含まれるので、角度ごとにちがう色が強く反射され、全体としては虹色に見えます。'
-        + '色素による吸収ではありません。また、プリズムの虹は屈折率の波長依存（分散）によるもので、'
-        + 'しくみが別です（薄膜は干渉）。'
-    }
-  ];
-
-  var answered = [];
-
-  function init() {
-    var root = document.getElementById('quiz');
-    root.innerHTML = '';
-    answered = QS.map(function () { return null; });
-
-    QS.forEach(function (item, qi) {
-      var card = document.createElement('div');
-      card.className = 'q';
-
-      var h = document.createElement('div');
-      h.className = 'qh';
-      h.textContent = '問' + (qi + 1) + '　' + item.q;
-      card.appendChild(h);
-
-      var opts = document.createElement('div');
-      opts.className = 'opts' + (item.opts[0].fig ? ' opts-fig' : (item.row ? ' opts-row' : ''));
-      item.opts.forEach(function (o, oi) {
-        var b = document.createElement('button');
-        b.className = 'opt' + (o.fig ? ' opt-fig' : '');
-        b.type = 'button';
-        var mk = document.createElement('span');
-        mk.className = 'mk';
-        mk.textContent = 'アイウエ'.charAt(oi);
-        b.appendChild(mk);
-        var body = document.createElement('span');
-        body.className = 'optbody';
-        if (o.fig) {
-          var cv = document.createElement('canvas');
-          cv.className = 'minifig';
-          body.appendChild(cv);
-          setTimeout(function () { drawMini(cv, o.fig); }, 0);
-        }
-        var sp = document.createElement('span');
-        sp.textContent = o.t;
-        body.appendChild(sp);
-        b.appendChild(body);
-        b.addEventListener('click', function () { choose(qi, oi, card, item); });
-        opts.appendChild(b);
-      });
-      card.appendChild(opts);
-
-      var fb = document.createElement('div');
-      fb.className = 'fb fixed-quiz';
-      fb.textContent = '選択肢を選んでください。';
-      card.appendChild(fb);
-
-      root.appendChild(card);
-    });
-  }
-
-  function choose(qi, oi, card, item) {
-    if (answered[qi] !== null) return;
-    answered[qi] = oi;
-    var buttons = card.querySelectorAll('.opt');
-    for (var i = 0; i < buttons.length; i++) {
-      buttons[i].disabled = true;
-      if (i === item.ans) {
-        buttons[i].classList.add('correct');
-        buttons[i].querySelector('.mk').textContent = '○';
-      } else if (i === oi) {
-        buttons[i].classList.add('wrong');
-        buttons[i].querySelector('.mk').textContent = '×';
-      }
-    }
-    var fb = card.querySelector('.fb');
-    var ok = (oi === item.ans);
-    fb.className = 'fb fixed-quiz ' + (ok ? 'ok' : 'ng');
-    fb.textContent = (ok ? '正解！　' : 'おしい。正解は「' + 'アイウエ'.charAt(item.ans) + '」です。　') + item.why;
-  }
-
-  return { init: init, QS: QS, drawMini: drawMini };
-})();
-
 /* =========================================================================
    サイト全体へのナビ（第 28 回）
    ・ホーム（楽楽高校物理のトップページ）へのリンク：ヒーローのパンくずと、上に固定したタブ列の左はし（家のアイコン）。
@@ -5013,20 +4858,18 @@ window.SHELL_CFG = {
   en: 'Thin-Film Interference',
   t1: '光の干渉',
   t2: '〜薄膜の場合〜',
-  lead: '上から進んできた光が薄膜で 2 つに分かれ、強めあうか弱めあうかを確かめよう。まず波の動きを見て、そのあと経路差の作図と式へ進みます。',
+  lead: '上から進んできた光が薄膜で 2 つに分かれ、強めあうか弱めあうかを確かめよう。',
   modes: {
     wave:   { en: 'Watching the Waves',
               lead: '薄膜の上の面で反射した光と、下の面で反射した光を、それぞれ 1 本の波として動かして見ます。山と山が重なれば強めあい、山と谷が重なれば弱めあいます。' },
     path:   { en: 'Where the Path Difference Appears',
               lead: '2 つの光の経路差が図のどこに現れるのかを、教科書と同じ作図で 4 つのステップに分けてたどり、光路差 2n₁d cos r の式まで進みます。' },
     bubble: { en: 'Why Thin Films Look Rainbow-Colored',
-              lead: 'シャボン玉や油の膜が虹色に見えるのは、見る角度によって強めあう波長が変わるからです。白色光に切りかえて確かめよう。' }
+              lead: 'シャボン玉や油の膜が虹色に見えるのは、見る角度によって強めあう波長が変わるからです。白色光に切りかえて確かめよう。' },
+    more:   { en: 'Going Deeper',
+              lead: 'ここまでの内容を、もう一歩深く知りたい人のための読み物です。見出しを押すと開きます。' }
   },
-  secs: [
-    { id: 'sec-purpose', name: 'このページの目的' },
-    { id: 'sec-quiz', name: '練習問題' },
-    { id: 'sec-more', name: '補足：もっと深く知りたい人へ' }
-  ]
+  secs: []      // タブのほかに、ピルと目次に出す節（いまは無し。目的は見出しの帯へ、補足は最後のタブへ移した）
 };
 /* =========================================================================
    87_shell.js … ページの骨組み（meter-bridge.html と同じ並び）を組み立てる（2026-11-16）
@@ -5065,15 +4908,25 @@ window.SHELL_CFG = {
   /* ---------- 見出しの帯 ---------- */
   function buildHero() {
     var hero = $('hero'); if (!hero) return;
+    /* 20_body.html の <header id="hero"> の中に書いてある「このページの目的」（#heroAim）と「式の流れの図」（#heroFlow）を、
+       いったん外して、組み立てた帯の中へ入れなおす（左＝題名・リード・目的、右上＝流れの図） */
+    var aim = $('heroAim'), flow = $('heroFlow');
+    if (aim) aim.parentNode.removeChild(aim);
+    if (flow) flow.parentNode.removeChild(flow);
     hero.innerHTML =
       '<div class="hero-in">' +
         '<div class="hero-top">' +
           '<nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="' + HOME + '" title="楽楽（らくらく）高校物理のトップページへ"><svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg><span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="' + HOME + '#sec-wave">波動</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">' + esc(CFG.crumb || '') + '</span><span class="kdot"></span><span class="en">' + esc(CFG.en || '') + '</span></nav>' +
         '</div>' +
-        '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
-        '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
-          '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+        '<div class="hero-cols"><div class="hero-main">' +
+          '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
+          '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
+            '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+          '<div class="hero-aimslot"></div>' +
+        '</div><div class="hero-side"></div></div>' +
       '</div>';
+    if (aim) hero.querySelector('.hero-aimslot').appendChild(aim);
+    if (flow) hero.querySelector('.hero-side').appendChild(flow); else hero.querySelector('.hero-cols').classList.add('noside');
   }
 
   /* ---------- 章の扉・タブの印 ---------- */
@@ -5100,6 +4953,22 @@ window.SHELL_CFG = {
     document.body.setAttribute('data-shellmode', id);
     showTab();
   }
+  /* 図のないタブ（data-page。いまは「補足：もっと深く知りたい人へ」だけ）
+     もとの setMode はこのタブを知らないので、選択中の印（aria-selected）はここで付けはずしする。
+     開いているあいだは body[data-shellpage] を付け、CSS でシミュレーションをたたんで、その節（#sec-○○）を出す。 */
+  function isPage(b) { return !!(b && b.getAttribute('data-page')); }
+  function enterPage(b) {
+    tabList().forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+    document.body.setAttribute('data-shellpage', b.getAttribute('data-page'));
+    syncMode();
+  }
+  function leavePage(b) {                    /* b ＝ 押されたモードのタブ */
+    if (!document.body.hasAttribute('data-shellpage')) return;
+    document.body.removeAttribute('data-shellpage');
+    tabList().forEach(function (x) { if (isPage(x)) x.setAttribute('aria-selected', 'false'); });
+    /* 同じモードにもどるとき、もとの setMode は何もしないことがあるので、印はここでも付ける */
+    setTimeout(function () { if (!document.body.hasAttribute('data-shellpage')) { b.setAttribute('aria-selected', 'true'); syncMode(); window.dispatchEvent(new Event('resize')); } }, 0);
+  }
   function goMode(id, scroll) {
     var b = $('tab-' + id); if (!b || b.disabled) return false;
     if (b.getAttribute('aria-selected') !== 'true') b.click();
@@ -5108,13 +4977,17 @@ window.SHELL_CFG = {
   }
   function goSec(id) {
     var e = $(id); if (!e) return false;
+    var blk = e.closest ? e.closest('.pageblock') : null;      /* 図のないタブの中にあるなら、先にそのタブを開く */
+    if (blk) { var t = $('tab-' + blk.id.replace(/^sec-/, '')); if (t && t.getAttribute('aria-selected') !== 'true') enterPage(t); }
     if (e.tagName === 'DETAILS') e.open = true;
-    history.replaceState(null, '', '#' + id); scrollToEl(e); return true;
+    try { history.replaceState(null, '', '#' + id); } catch (err) { /* file:// で失敗しても動きには関係ない */ }
+    scrollToEl(e); return true;
   }
   function initTabs() {
     tabList().forEach(function (b) {
       /* タブを押したら、本文の頭まで一気にもどす（ゆっくりスクロールはしない） */
       b.addEventListener('click', function () {
+        if (isPage(b)) enterPage(b); else leavePage(b);
         setTimeout(function () {
           try { history.replaceState(null, '', '#' + modeOf(b)); } catch (e) { /* file:// で失敗しても動きには関係ない */ }
           window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });
@@ -5131,7 +5004,7 @@ window.SHELL_CFG = {
   function gotoHash(first) {
     var h = String(location.hash || '').replace('#', ''); if (!h) return;
     if ($('tab-' + h)) { goMode(h, !first); if (first) window.scrollTo({ top: contentTop(), behavior: 'auto' }); return; }
-    var e = $(h); if (e && e.closest && e.closest('#wrap')) { if (e.tagName === 'DETAILS') e.open = true; scrollToEl(e); }
+    var e = $(h); if (e && e.closest && e.closest('#wrap')) goSec(h);
   }
 
   /* ---------- 節へのピル（章の扉の下） ---------- */
@@ -5161,8 +5034,12 @@ window.SHELL_CFG = {
     var close = function () { p.hidden = true; b.setAttribute('aria-expanded', 'false'); };
     var fill = function () {
       var h = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>';
-      h += '<div class="tocmode">シミュレーション（上のタブで切りかえ）</div><ul>';
-      tabList().forEach(function (t, i) { h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a></li>'; });
+      h += '<div class="tocmode">上のタブで切りかえ</div><ul>';
+      tabList().forEach(function (t, i) {
+        h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a>';
+        if (isPage(t)) { var sub = subItems({ id: 'sec-' + modeOf(t) }); if (sub.length) h += '<ul class="tocsub">' + sub.map(function (q) { return '<li><a href="#' + q.id + '" data-sec="' + q.id + '">' + esc(q.name) + '</a></li>'; }).join('') + '</ul>'; }
+        h += '</li>';
+      });
       h += '</ul>';
       secs().forEach(function (s) {
         h += '<div class="tocmode"><a href="#' + s.id + '" data-sec="' + s.id + '" style="padding:0;display:inline">' + esc(s.name) + '</a></div><ul>';
@@ -5236,10 +5113,7 @@ window.SHELL_CFG = {
   'use strict';
   function boot() {
     TF.ui.init();
-    TF.quiz.init();
-    document.getElementById('btn-quiz-reset').addEventListener('click', function () {
-      TF.quiz.init();
-    });
+    // 練習問題は 2026-11-17 に外した（cut/80_quiz.js）
     // 自動テストから触れるようにする
     window.TFTEST = TF.ui.api;
   }

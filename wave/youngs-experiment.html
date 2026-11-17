@@ -661,9 +661,21 @@ h1,h2,h3{font-family:var(--f-jph)}
 .hero-title{margin:14px 0 0;padding:0;line-height:1.08;font-weight:800;letter-spacing:-.03em;color:var(--h-ink);font-size:1rem}
 .hero-title .t1{display:block;font-size:clamp(2rem,4.2vw,3rem);font-weight:900}
 .hero-title .t2{display:block;margin-top:.45em;font-size:clamp(.95rem,1.6vw,1.2rem);font-weight:700;letter-spacing:.02em;color:var(--brand-700)}
-.introrow{display:flex;align-items:stretch;gap:22px;margin-top:8px;max-width:980px}
-.lead2{flex:0 1 auto;margin:0;font-size:clamp(.9rem,1.15vw,1rem);line-height:1.8;color:#2c4a63;max-width:36em}
-.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
+/* 帯の中：左＝題名・リード・このページの目的、右上＝式の流れの図（千葉さん指定 2026-11-17） */
+.hero-cols{display:flex;gap:clamp(24px,4vw,56px);align-items:flex-start}
+.hero-main{flex:1 1 0;min-width:0}
+.hero-side{flex:0 0 auto}
+.hero-cols.noside .hero-side{display:none}
+.introrow{display:flex;align-items:center;gap:14px 22px;flex-wrap:wrap;margin-top:10px}
+.lead2{flex:0 1 auto;margin:0;font-size:clamp(.92rem,1.2vw,1.05rem);font-weight:600;line-height:1.8;color:#2c4a63;max-width:40em}
+.hero-aim{margin:14px 0 0;max-width:52em}
+.hero-aim .aim-cap{margin:0 0 .2em;font-family:var(--f-jph);font-size:.78rem;font-weight:800;letter-spacing:.14em;color:var(--brand-700)}
+.hero-aim ol{margin:0;padding-left:1.4em;font-size:.92rem;line-height:1.75;color:#1d3a52}
+.hero-aim li{margin:.2em 0}
+.hero-aim li::marker{font-family:var(--f-serif);color:var(--h-lake)}
+.hero .aimflow{margin:14px 0 0;padding:12px 14px 14px;border-radius:var(--r-l);background:rgba(255,255,255,.78);box-shadow:0 0 0 1px var(--h-line),0 14px 30px -18px rgba(10,37,64,.35)}
+.hero .aimflow-cap{color:var(--h-slate)}
+.tocbtn{flex:0 0 auto;min-height:2.9em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
   font:inherit;font-family:var(--f-jph);font-size:.92rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
   color:#fff;background:var(--h-ink);border:0;box-shadow:0 0 0 1px rgba(255,255,255,.4) inset,0 16px 32px -14px rgba(10,37,64,.55);
   transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s}
@@ -674,12 +686,10 @@ h1,h2,h3{font-family:var(--f-jph)}
   linear-gradient(currentColor,currentColor) 0 50%/72% 2px no-repeat,
   linear-gradient(currentColor,currentColor) 0 100%/86% 2px no-repeat}
 .hero :focus-visible{outline-color:rgba(54,182,232,.7)}
-@media(min-width:1000px){
-  .hero-in{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:clamp(32px,5vw,72px);align-items:end}
-  .hero-in > *{grid-column:1/-1}
-  .hero-in > .hero-title{grid-column:1}
-  .hero-in > .introrow{grid-column:2;flex-direction:column;align-items:flex-start;gap:18px;margin-top:0;padding-bottom:.35em;max-width:46em}
-  .introrow .tocbtn{min-height:3em;align-self:flex-start}
+/* せまい画面（スマホ）では、流れの図を目的の下へ送る。タブレット（760 px 以上）は右上のまま */
+@media(max-width:759px){
+  .hero-cols{flex-direction:column;gap:0}
+  .hero-side{align-self:center;max-width:100%}
 }
 /* パンくず */
 .crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;color:var(--h-slate)}
@@ -698,6 +708,7 @@ h1,h2,h3{font-family:var(--f-jph)}
   .hero-title .t1{animation:heroIn .8s .06s var(--ease) both}
   .hero-title .t2{animation:heroIn .8s .14s var(--ease) both}
   .hero .introrow{animation:heroIn .8s .2s var(--ease) both}
+  .hero-aim,.hero .aimflow{animation:heroIn .8s .26s var(--ease) both}
 }
 
 /* ---------- タブ列（章のナビ）：画面の上に固定 ---------- */
@@ -753,6 +764,14 @@ h1,h2,h3{font-family:var(--f-jph)}
 .seclinks a{display:inline-flex;align-items:center;padding:.38em .95em;border:1px solid var(--rule-2);border-radius:999px;text-decoration:none;
   color:var(--ink-2);background:transparent;font-weight:600;transition:background .18s,border-color .18s,color .18s}
 .seclinks a:hover{background:var(--surface);border-color:var(--ink);color:var(--ink)}
+.seclinks:empty{display:none}
+/* 図のないタブ（補足）：ふだんは節をしまっておき、そのタブを開いたら、シミュレーションをたたんで節を出す。
+   シミュレーションは display:none にしない（幅 0 になると、中の図や行の高さの測りなおしがくるうため。高さだけ 0 にする） */
+.pageblock{display:none}
+body[data-shellpage="more"] #sec-more{display:block}
+body[data-shellpage] #sim{height:0 !important;min-height:0 !important;overflow:hidden !important;visibility:hidden;margin:0 !important;padding-top:0 !important;padding-bottom:0 !important;border:0 !important;box-shadow:none !important}
+body[data-shellpage] .probbar-out{display:none}
+.tocpanel ul.tocsub{margin:0 0 .3em 2.3em;font-size:.94em}
 
 /* ---------- フッター（暗い地・章の目次つき） ---------- */
 footer.pagefoot{margin:56px 0 0;padding:0;background:var(--night);color:rgba(243,239,230,.55);font-size:.8rem;letter-spacing:0;text-align:left}
@@ -848,7 +867,7 @@ html.drawer-open{overflow:hidden}
   .navpages span{display:none} .navpages{width:36px;padding:0} .navsite{padding-right:8px;margin-right:2px}
   .crumbs .en,.crumbs .kdot{display:none}
   .hero-top{align-items:flex-start}
-  .introrow{flex-direction:column;gap:12px}
+  .introrow{flex-direction:column;align-items:flex-start;gap:12px}
   .tocbtn{min-height:0;padding:.75em 1.2em;align-self:flex-start}
   .modehead{grid-template-columns:1fr;gap:12px;margin:30px 0 16px}
   .mh-num{width:58px;height:58px}
@@ -957,11 +976,52 @@ body.fig-full .tabs{z-index:1}
   .figfull-btn{display:block;width:100%;margin:6px 0 2px;font-weight:700}
 }
 
+/* タブが 7 つある（2026-11-17「もっと深く知りたい人へ」を足した）ので、12_shell.css の決まりのままでは 1 段に入らない。
+   ・1400 px 以上：字と間を少しつめ、「ページ一覧」をアイコンだけにして 1 段に収める
+   ・1399 px 以下：2 段に折り返す（かくれたタブを作らない） */
+@media(min-width:1400px){
+  .tab{font-size:.82rem;padding:0 8px;gap:5px}
+  .navpages span{display:none} .navpages{width:36px;padding:0}
+}
+@media(min-width:641px) and (max-width:1399px){
+  .tabs-in{flex-wrap:wrap;overflow:visible;row-gap:0;padding-top:4px;padding-bottom:4px}
+  .tab{min-height:42px}
+}
+
 </style>
 </head>
 <body id="top">
-<!-- 見出しの帯（中身は 87_shell.js が 86_shellcfg.js の文から作る） -->
-<header class="hero low" id="hero"></header>
+<!-- 見出しの帯。87_shell.js が、パンくず・題名・リード（86_shellcfg.js の文）を組み立て、
+     下の「このページの目的」を左に、「式の流れの図」を右上に入れる（2026-11-17 千葉さん指定：目的と流れをいちばん上に） -->
+<header class="hero" id="hero">
+  <div class="hero-aim" id="heroAim">
+    <p class="aim-cap">このページの目的</p>
+    <ol>
+        <li>ヤングの実験で、隣りあう 2 つのスリットからの光の<b>経路差がどこに現れるか</b>を、作図から理解する。</li>
+        <li><b>明線の条件 |l₁ − l₂| ＝ mλ</b> を、θ が小さいときの形 <span class="eq" data-tex="\dfrac{d\,x_m}{L}=m\lambda"></span> に書きかえ、スクリーン上の位置 <span class="eq" data-tex="x_m\fallingdotseq\dfrac{m\lambda L}{d}"></span> と結びつけて理解する。</li>
+        <li>d・L・λ を変えて、<b>明線・暗線の間隔</b> <span class="eq" data-tex="\Delta x\fallingdotseq\dfrac{\lambda L}{d}"></span> がどう変わるかを体験する。</li>
+        <li>スリットの片方の手前に<b>薄膜（厚さ t・屈折率 n′）</b>を置くと、光路差が変わって<b>縞全体がずれる</b>ことを理解する（入試の典型問題）。</li>
+      </ol>
+  </div>
+  <div class="aimflow" id="heroFlow">
+      <p class="aimflow-cap mini">↓の流れが重要</p>
+      <div class="flowchart">
+        <div class="flowbox"><b>経路差</b><p class="eq" data-tex="|l_1-l_2|=d\sin\theta"></p></div>
+        <div class="flowarrow">↓<span class="flowcond">明るくなる条件</span><span class="flowcond">θ が小さい</span></div>
+        <div class="flowbox flow2">
+          <span class="fcol"><b>明線</b><p class="eq" data-tex="\dfrac{d\,x_m}{L}\fallingdotseq m\lambda"></p></span>
+          <span class="fcol dark"><b>暗線</b><p class="eq" data-tex="\dfrac{d\,x_m}{L}\fallingdotseq\left(m+\tfrac12\right)\lambda"></p></span>
+        </div>
+        <div class="flowarrow">↓</div>
+        <div class="flowbox flow2">
+          <span class="fcol"><b>明線の位置</b><p class="eq" data-tex="x_m\fallingdotseq\dfrac{m\lambda L}{d}"></p></span>
+          <span class="fcol dark"><b>暗線の位置</b><p class="eq" data-tex="x_m\fallingdotseq\dfrac{\left(m+\tfrac12\right)\lambda L}{d}"></p></span>
+        </div>
+        <div class="flowarrow">↓<span class="flowcond">となりとの差</span></div>
+        <div class="flowbox"><b>明線・暗線の間隔</b><p class="eq" data-tex="\Delta x\fallingdotseq\dfrac{\lambda L}{d}"></p></div>
+      </div>
+    </div>
+</header>
 
 <!-- 上に固定するタブ列：左はしにホームとページ一覧、つづいてモードのタブ（id は tab-モード名。70_ui.js がこの id で切りかえる） -->
 <nav class="tabs" id="tabs" aria-label="モードの切りかえ">
@@ -973,6 +1033,8 @@ body.fig-full .tabs{z-index:1}
     <button class="tab" id="tab-setup" role="tab" type="button" aria-selected="false"><span class="tn">④</span><span class="tl">実験の概要</span></button>
     <button class="tab" id="tab-liquid" role="tab" type="button" aria-selected="false"><span class="tn">⑤</span><span class="tl">装置を液体の中に入れる</span></button>
     <button class="tab" id="tab-film" role="tab" type="button" aria-selected="false"><span class="tn">⑥</span><span class="tl">ダブルスリットの前に薄膜を置く</span></button>
+    <!-- 図のないタブ（data-page）。押すとシミュレーションをたたんで、下の <section id="sec-more"> を出す（87_shell.js） -->
+    <button class="tab" id="tab-more" role="tab" type="button" data-page="more" data-full="補足：もっと深く知りたい人へ" aria-selected="false"><span class="tn">⑦</span><span class="tl">もっと深く知りたい人へ</span></button>
   </div>
   <span class="tprog" aria-hidden="true"></span>
 </nav>
@@ -1347,48 +1409,8 @@ body.fig-full .tabs{z-index:1}
   </div>
 </div>
 
-<section class="block" id="sec-purpose">
-<header class="blockhead"><p class="mh-en">Goals</p><h2>このページの目的と式の流れ</h2></header>
-<div class="card purpose aim">
-  <div class="aimrow">
-    <div class="aimtext">
-      <p class="lead">【目的】</p>
-      <ol>
-        <li>ヤングの実験で、隣りあう 2 つのスリットからの光の<b>経路差がどこに現れるか</b>を、作図から理解する。</li>
-        <li><b>明線の条件 |l₁ − l₂| ＝ mλ</b> を、θ が小さいときの形 <span class="eq" data-tex="\dfrac{d\,x_m}{L}=m\lambda"></span> に書きかえ、スクリーン上の位置 <span class="eq" data-tex="x_m\fallingdotseq\dfrac{m\lambda L}{d}"></span> と結びつけて理解する。</li>
-        <li>d・L・λ を変えて、<b>明線・暗線の間隔</b> <span class="eq" data-tex="\Delta x\fallingdotseq\dfrac{\lambda L}{d}"></span> がどう変わるかを体験する。</li>
-        <li>スリットの片方の手前に<b>薄膜（厚さ t・屈折率 n′）</b>を置くと、光路差が変わって<b>縞全体がずれる</b>ことを理解する（入試の典型問題）。</li>
-      </ol>
-    </div>
-    <div class="aimflow">
-      <p class="aimflow-cap mini">↓の流れが重要</p>
-      <div class="flowchart">
-        <div class="flowbox"><b>経路差</b><p class="eq" data-tex="|l_1-l_2|=d\sin\theta"></p></div>
-        <div class="flowarrow">↓<span class="flowcond">明るくなる条件</span><span class="flowcond">θ が小さい</span></div>
-        <div class="flowbox flow2">
-          <span class="fcol"><b>明線</b><p class="eq" data-tex="\dfrac{d\,x_m}{L}\fallingdotseq m\lambda"></p></span>
-          <span class="fcol dark"><b>暗線</b><p class="eq" data-tex="\dfrac{d\,x_m}{L}\fallingdotseq\left(m+\tfrac12\right)\lambda"></p></span>
-        </div>
-        <div class="flowarrow">↓</div>
-        <div class="flowbox flow2">
-          <span class="fcol"><b>明線の位置</b><p class="eq" data-tex="x_m\fallingdotseq\dfrac{m\lambda L}{d}"></p></span>
-          <span class="fcol dark"><b>暗線の位置</b><p class="eq" data-tex="x_m\fallingdotseq\dfrac{\left(m+\tfrac12\right)\lambda L}{d}"></p></span>
-        </div>
-        <div class="flowarrow">↓<span class="flowcond">となりとの差</span></div>
-        <div class="flowbox"><b>明線・暗線の間隔</b><p class="eq" data-tex="\Delta x\fallingdotseq\dfrac{\lambda L}{d}"></p></div>
-      </div>
-    </div>
-  </div>
-</div>
-</section>
-
-<section class="block" id="sec-quiz">
-<header class="blockhead"><p class="mh-en">Practice</p><h2>練習問題</h2><p class="mini">選ぶとすぐに正誤と解説が出ます。まちがえても何度でも選びなおせます。</p></header>
-<div class="quiz" id="quiz"></div>
-</section>
-
-<section class="block" id="sec-more">
-<header class="blockhead"><p class="mh-en">Going Deeper</p><h2>補足：もっと深く知りたい人へ</h2></header>
+<!-- 補足（最後のタブ「もっと深く知りたい人へ」を開いたときだけ出る。見出しは章の扉が出す） -->
+<section class="block pageblock" id="sec-more">
 
 <details class="more" open>
   <summary>① なぜシングルスリット S₀ が必要なのか － 「干渉できる光」を作る必要性</summary>
@@ -6297,103 +6319,6 @@ YG.ui = (function () {
 })();
 
 
-/* ===== 80_quiz.js ===== */
-/* 練習問題（3 問）。選ぶとすぐに正誤と解説が出る。 */
-window.YG = window.YG || {};
-YG.quiz = (function () {
-  'use strict';
-
-  var QUESTIONS = [
-    {
-      q: '明線の位置 x<sub>m</sub> ≒ mλL/d を導く途中で、次のうちどの近似を使いましたか。',
-      opts: [
-        { t: 'θ が小さいので sinθ ≒ tanθ とした', ok: true },
-        { t: 'd が小さいので d sinθ ≒ 0 とした', ok: false },
-        { t: 'λ が小さいので λ ≒ 0 とした', ok: false },
-        { t: '近似はまったく使っていない', ok: false }
-      ],
-      fb: [
-        '正解。d sinθ ＝ mλ の sinθ を、tanθ ＝ x/L で置きかえるところが唯一の近似です。1 次の明線でも θ は 0.2° ほどしかないので、sinθ と tanθ の差は 0.001 % 以下。図でも見分けがつきません。',
-        'ちがいます。d sinθ こそが経路差そのもので、これを 0 にしてしまうと干渉が起きなくなります。',
-        'ちがいます。λ は明線の間隔を決める主役です。0 にはできません。',
-        'いいえ、1 つだけ使っています。「L が d や x よりずっと大きい」ことを根拠にした近似です。'
-      ]
-    },
-    {
-      q: 'λ と L はそのままで、スリットの間隔 d だけを<b>半分</b>にしました。明線の間隔 Δx はどうなりますか。',
-      opts: [
-        { t: '2 倍になる', ok: true },
-        { t: '半分になる', ok: false },
-        { t: '変わらない', ok: false },
-        { t: '4 倍になる', ok: false }
-      ],
-      fb: [
-        '正解。Δx ≒ λL/d で、Δx は d に<b>反比例</b>します。d を半分にすれば Δx は 2 倍。③のタブで d のスライダーを動かして確かめてみましょう。',
-        '逆です。d は分母にあるので、d を小さくすると Δx は<b>大きく</b>なります。',
-        'いいえ。Δx ≒ λL/d なので、d が変われば Δx も変わります。',
-        '比例の関係を 2 回かけてしまっています。Δx は d の 1 乗に反比例するので 2 倍です。'
-      ]
-    },
-    {
-      q: '図のように S₀ → S₂ の光路に、厚さ t ＝ 2.0 μm・屈折率 n′ ＝ 1.5 の薄膜を差し入れました。d ＝ 0.20 mm、L ＝ 1.0 m です。もとは O にあった m ＝ 0 の明線は、どちらへどれだけ動きますか。',
-      opts: [
-        { t: 'S₂ 側（下）へ 5.0 mm', ok: true },
-        { t: 'S₁ 側（上）へ 5.0 mm', ok: false },
-        { t: 'S₂ 側（下）へ 10 mm', ok: false },
-        { t: '動かない（間隔 Δx だけが変わる）', ok: false }
-      ],
-      fb: [
-        '正解。(n′−1)t ＝ 0.5 × 2.0 μm ＝ 1.0 μm。x ＝ −(n′−1)tL/d ＝ −(1.0×10⁻⁶ × 1.0) / (0.20×10⁻³) ＝ −5.0×10⁻³ m ＝ −5.0 mm。負の符号は S₂ 側（下）を意味します。間隔 Δx ＝ 3.0 mm は変わりません。',
-        '向きが逆です。S₂ 側の光路が長くなったので、それを取り返せるのは<b>幾何的に S₂ が近くなる側</b>、つまり S₂ 側（下）です。',
-        '(n′−1) を n′ と取りちがえていませんか。長くなるのは n′t ではなく (n′−1)t ＝ 1.0 μm のぶんだけです。',
-        '動きます。第 2 項 −(n′−1)tL/d は m によらない一定のずれなので、<b>間隔は変えずに縞全体が平行移動</b>します。'
-      ]
-    }
-  ];
-
-  function build() {
-    var box = document.getElementById('quiz');
-    if (!box) return;
-    QUESTIONS.forEach(function (Q, qi) {
-      var card = document.createElement('div');
-      card.className = 'q';
-      var h = document.createElement('div');
-      h.className = 'qh';
-      h.innerHTML = '問 ' + (qi + 1) + '　' + Q.q;
-      card.appendChild(h);
-
-      var opts = document.createElement('div');
-      opts.className = 'opts';
-      var fb = document.createElement('div');
-      fb.className = 'fb';
-      fb.textContent = '選んでみましょう。';
-
-      Q.opts.forEach(function (o, oi) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'opt';
-        b.innerHTML = '<span class="mk">' + 'アイウエ'.charAt(oi) + '</span>'
-          + '<span class="optbody"><span>' + o.t + '</span></span>';
-        b.addEventListener('click', function () {
-          var all = opts.querySelectorAll('.opt');
-          for (var i = 0; i < all.length; i++) all[i].classList.remove('correct', 'wrong');
-          b.classList.add(o.ok ? 'correct' : 'wrong');
-          fb.className = 'fb ' + (o.ok ? 'ok' : 'ng');
-          fb.innerHTML = (o.ok ? '◯　' : '✕　') + Q.fb[oi];
-          if (YG.ui) YG.ui.renderKatexIn(fb);
-        });
-        opts.appendChild(b);
-      });
-      card.appendChild(opts);
-      card.appendChild(fb);
-      box.appendChild(card);
-    });
-  }
-
-  return { build: build, QUESTIONS: QUESTIONS };
-})();
-
-
 /* =========================================================================
    サイト全体へのナビ（第 28 回）
    ・ホーム（楽楽高校物理のトップページ）へのリンク：ヒーローのパンくずと、上に固定したタブ列の左はし（家のアイコン）。
@@ -6678,7 +6603,7 @@ window.SHELL_CFG = {
   en: 'Young’s Double-Slit Experiment',
   t1: '光の干渉',
   t2: '〜ヤングの実験〜',
-  lead: '2 つのスリットを通った光が、スクリーンのどこで明るくなるのかを確かめよう。まず波の動きを見て、そのあと経路差の作図と式へ進みます。',
+  lead: '2 つのスリットを通った光が、スクリーンのどこで明るくなるのかを確かめよう。',
   modes: {
     wave:   { en: 'Watching the Waves',
               lead: 'S₁ と S₂ を出た 2 つの波を動かして見ます。スクリーン上の点 P で山と山が重なれば明線、山と谷が重なれば暗線です。' },
@@ -6691,13 +6616,11 @@ window.SHELL_CFG = {
     liquid: { en: 'Immersed in a Liquid',
               lead: '装置をまるごと屈折率 n の液体の中に入れると、波長が λ/n に縮み、縞の間隔も 1/n になります。' },
     film:   { en: 'A Thin Film in Front of a Slit',
-              lead: 'S₂ の手前に薄膜（厚さ t・屈折率 n′）を置くと、光路差が (n′ − 1)t だけ変わり、縞全体がずれます（入試の典型問題）。' }
+              lead: 'S₂ の手前に薄膜（厚さ t・屈折率 n′）を置くと、光路差が (n′ − 1)t だけ変わり、縞全体がずれます（入試の典型問題）。' },
+    more:   { en: 'Going Deeper',
+              lead: 'ここまでの内容を、もう一歩深く知りたい人のための読み物です。見出しを押すと開きます。' }
   },
-  secs: [
-    { id: 'sec-purpose', name: 'このページの目的と式の流れ' },
-    { id: 'sec-quiz', name: '練習問題' },
-    { id: 'sec-more', name: '補足：もっと深く知りたい人へ' }
-  ]
+  secs: []      // タブのほかに、ピルと目次に出す節（いまは無し。目的は見出しの帯へ、補足は最後のタブへ移した）
 };
 
 
@@ -6738,15 +6661,25 @@ window.SHELL_CFG = {
   /* ---------- 見出しの帯 ---------- */
   function buildHero() {
     var hero = $('hero'); if (!hero) return;
+    /* 20_body.html の <header id="hero"> の中に書いてある「このページの目的」（#heroAim）と「式の流れの図」（#heroFlow）を、
+       いったん外して、組み立てた帯の中へ入れなおす（左＝題名・リード・目的、右上＝流れの図） */
+    var aim = $('heroAim'), flow = $('heroFlow');
+    if (aim) aim.parentNode.removeChild(aim);
+    if (flow) flow.parentNode.removeChild(flow);
     hero.innerHTML =
       '<div class="hero-in">' +
         '<div class="hero-top">' +
           '<nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="' + HOME + '" title="楽楽（らくらく）高校物理のトップページへ"><svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg><span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="' + HOME + '#sec-wave">波動</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">' + esc(CFG.crumb || '') + '</span><span class="kdot"></span><span class="en">' + esc(CFG.en || '') + '</span></nav>' +
         '</div>' +
-        '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
-        '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
-          '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+        '<div class="hero-cols"><div class="hero-main">' +
+          '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
+          '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
+            '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+          '<div class="hero-aimslot"></div>' +
+        '</div><div class="hero-side"></div></div>' +
       '</div>';
+    if (aim) hero.querySelector('.hero-aimslot').appendChild(aim);
+    if (flow) hero.querySelector('.hero-side').appendChild(flow); else hero.querySelector('.hero-cols').classList.add('noside');
   }
 
   /* ---------- 章の扉・タブの印 ---------- */
@@ -6773,6 +6706,22 @@ window.SHELL_CFG = {
     document.body.setAttribute('data-shellmode', id);
     showTab();
   }
+  /* 図のないタブ（data-page。いまは「補足：もっと深く知りたい人へ」だけ）
+     もとの setMode はこのタブを知らないので、選択中の印（aria-selected）はここで付けはずしする。
+     開いているあいだは body[data-shellpage] を付け、CSS でシミュレーションをたたんで、その節（#sec-○○）を出す。 */
+  function isPage(b) { return !!(b && b.getAttribute('data-page')); }
+  function enterPage(b) {
+    tabList().forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+    document.body.setAttribute('data-shellpage', b.getAttribute('data-page'));
+    syncMode();
+  }
+  function leavePage(b) {                    /* b ＝ 押されたモードのタブ */
+    if (!document.body.hasAttribute('data-shellpage')) return;
+    document.body.removeAttribute('data-shellpage');
+    tabList().forEach(function (x) { if (isPage(x)) x.setAttribute('aria-selected', 'false'); });
+    /* 同じモードにもどるとき、もとの setMode は何もしないことがあるので、印はここでも付ける */
+    setTimeout(function () { if (!document.body.hasAttribute('data-shellpage')) { b.setAttribute('aria-selected', 'true'); syncMode(); window.dispatchEvent(new Event('resize')); } }, 0);
+  }
   function goMode(id, scroll) {
     var b = $('tab-' + id); if (!b || b.disabled) return false;
     if (b.getAttribute('aria-selected') !== 'true') b.click();
@@ -6781,13 +6730,17 @@ window.SHELL_CFG = {
   }
   function goSec(id) {
     var e = $(id); if (!e) return false;
+    var blk = e.closest ? e.closest('.pageblock') : null;      /* 図のないタブの中にあるなら、先にそのタブを開く */
+    if (blk) { var t = $('tab-' + blk.id.replace(/^sec-/, '')); if (t && t.getAttribute('aria-selected') !== 'true') enterPage(t); }
     if (e.tagName === 'DETAILS') e.open = true;
-    history.replaceState(null, '', '#' + id); scrollToEl(e); return true;
+    try { history.replaceState(null, '', '#' + id); } catch (err) { /* file:// で失敗しても動きには関係ない */ }
+    scrollToEl(e); return true;
   }
   function initTabs() {
     tabList().forEach(function (b) {
       /* タブを押したら、本文の頭まで一気にもどす（ゆっくりスクロールはしない） */
       b.addEventListener('click', function () {
+        if (isPage(b)) enterPage(b); else leavePage(b);
         setTimeout(function () {
           try { history.replaceState(null, '', '#' + modeOf(b)); } catch (e) { /* file:// で失敗しても動きには関係ない */ }
           window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });
@@ -6804,7 +6757,7 @@ window.SHELL_CFG = {
   function gotoHash(first) {
     var h = String(location.hash || '').replace('#', ''); if (!h) return;
     if ($('tab-' + h)) { goMode(h, !first); if (first) window.scrollTo({ top: contentTop(), behavior: 'auto' }); return; }
-    var e = $(h); if (e && e.closest && e.closest('#wrap')) { if (e.tagName === 'DETAILS') e.open = true; scrollToEl(e); }
+    var e = $(h); if (e && e.closest && e.closest('#wrap')) goSec(h);
   }
 
   /* ---------- 節へのピル（章の扉の下） ---------- */
@@ -6834,8 +6787,12 @@ window.SHELL_CFG = {
     var close = function () { p.hidden = true; b.setAttribute('aria-expanded', 'false'); };
     var fill = function () {
       var h = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>';
-      h += '<div class="tocmode">シミュレーション（上のタブで切りかえ）</div><ul>';
-      tabList().forEach(function (t, i) { h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a></li>'; });
+      h += '<div class="tocmode">上のタブで切りかえ</div><ul>';
+      tabList().forEach(function (t, i) {
+        h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a>';
+        if (isPage(t)) { var sub = subItems({ id: 'sec-' + modeOf(t) }); if (sub.length) h += '<ul class="tocsub">' + sub.map(function (q) { return '<li><a href="#' + q.id + '" data-sec="' + q.id + '">' + esc(q.name) + '</a></li>'; }).join('') + '</ul>'; }
+        h += '</li>';
+      });
       h += '</ul>';
       secs().forEach(function (s) {
         h += '<div class="tocmode"><a href="#' + s.id + '" data-sec="' + s.id + '" style="padding:0;display:inline">' + esc(s.name) + '</a></div><ul>';
@@ -6909,7 +6866,6 @@ window.SHELL_CFG = {
 (function () {
   'use strict';
   function boot() {
-    try { YG.quiz.build(); } catch (e) { /* 練習問題が出なくてもシミュレーションは動く */ }
     YG.ui.start();
   }
   if (document.readyState === 'loading') {

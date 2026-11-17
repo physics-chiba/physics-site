@@ -574,9 +574,21 @@ h1,h2,h3{font-family:var(--f-jph)}
 .hero-title{margin:14px 0 0;padding:0;line-height:1.08;font-weight:800;letter-spacing:-.03em;color:var(--h-ink);font-size:1rem}
 .hero-title .t1{display:block;font-size:clamp(2rem,4.2vw,3rem);font-weight:900}
 .hero-title .t2{display:block;margin-top:.45em;font-size:clamp(.95rem,1.6vw,1.2rem);font-weight:700;letter-spacing:.02em;color:var(--brand-700)}
-.introrow{display:flex;align-items:stretch;gap:22px;margin-top:8px;max-width:980px}
-.lead2{flex:0 1 auto;margin:0;font-size:clamp(.9rem,1.15vw,1rem);line-height:1.8;color:#2c4a63;max-width:36em}
-.tocbtn{flex:0 0 auto;align-self:stretch;min-height:3.2em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
+/* 帯の中：左＝題名・リード・このページの目的、右上＝式の流れの図（千葉さん指定 2026-11-17） */
+.hero-cols{display:flex;gap:clamp(24px,4vw,56px);align-items:flex-start}
+.hero-main{flex:1 1 0;min-width:0}
+.hero-side{flex:0 0 auto}
+.hero-cols.noside .hero-side{display:none}
+.introrow{display:flex;align-items:center;gap:14px 22px;flex-wrap:wrap;margin-top:10px}
+.lead2{flex:0 1 auto;margin:0;font-size:clamp(.92rem,1.2vw,1.05rem);font-weight:600;line-height:1.8;color:#2c4a63;max-width:40em}
+.hero-aim{margin:14px 0 0;max-width:52em}
+.hero-aim .aim-cap{margin:0 0 .2em;font-family:var(--f-jph);font-size:.78rem;font-weight:800;letter-spacing:.14em;color:var(--brand-700)}
+.hero-aim ol{margin:0;padding-left:1.4em;font-size:.92rem;line-height:1.75;color:#1d3a52}
+.hero-aim li{margin:.2em 0}
+.hero-aim li::marker{font-family:var(--f-serif);color:var(--h-lake)}
+.hero .aimflow{margin:14px 0 0;padding:12px 14px 14px;border-radius:var(--r-l);background:rgba(255,255,255,.78);box-shadow:0 0 0 1px var(--h-line),0 14px 30px -18px rgba(10,37,64,.35)}
+.hero .aimflow-cap{color:var(--h-slate)}
+.tocbtn{flex:0 0 auto;min-height:2.9em;display:inline-flex;align-items:center;gap:.6em;padding:0 22px;border-radius:12px;
   font:inherit;font-family:var(--f-jph);font-size:.92rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
   color:#fff;background:var(--h-ink);border:0;box-shadow:0 0 0 1px rgba(255,255,255,.4) inset,0 16px 32px -14px rgba(10,37,64,.55);
   transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s}
@@ -587,12 +599,10 @@ h1,h2,h3{font-family:var(--f-jph)}
   linear-gradient(currentColor,currentColor) 0 50%/72% 2px no-repeat,
   linear-gradient(currentColor,currentColor) 0 100%/86% 2px no-repeat}
 .hero :focus-visible{outline-color:rgba(54,182,232,.7)}
-@media(min-width:1000px){
-  .hero-in{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:clamp(32px,5vw,72px);align-items:end}
-  .hero-in > *{grid-column:1/-1}
-  .hero-in > .hero-title{grid-column:1}
-  .hero-in > .introrow{grid-column:2;flex-direction:column;align-items:flex-start;gap:18px;margin-top:0;padding-bottom:.35em;max-width:46em}
-  .introrow .tocbtn{min-height:3em;align-self:flex-start}
+/* せまい画面（スマホ）では、流れの図を目的の下へ送る。タブレット（760 px 以上）は右上のまま */
+@media(max-width:759px){
+  .hero-cols{flex-direction:column;gap:0}
+  .hero-side{align-self:center;max-width:100%}
 }
 /* パンくず */
 .crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0;font-size:.8rem;font-weight:600;letter-spacing:.06em;color:var(--h-slate)}
@@ -611,6 +621,7 @@ h1,h2,h3{font-family:var(--f-jph)}
   .hero-title .t1{animation:heroIn .8s .06s var(--ease) both}
   .hero-title .t2{animation:heroIn .8s .14s var(--ease) both}
   .hero .introrow{animation:heroIn .8s .2s var(--ease) both}
+  .hero-aim,.hero .aimflow{animation:heroIn .8s .26s var(--ease) both}
 }
 
 /* ---------- タブ列（章のナビ）：画面の上に固定 ---------- */
@@ -666,6 +677,14 @@ h1,h2,h3{font-family:var(--f-jph)}
 .seclinks a{display:inline-flex;align-items:center;padding:.38em .95em;border:1px solid var(--rule-2);border-radius:999px;text-decoration:none;
   color:var(--ink-2);background:transparent;font-weight:600;transition:background .18s,border-color .18s,color .18s}
 .seclinks a:hover{background:var(--surface);border-color:var(--ink);color:var(--ink)}
+.seclinks:empty{display:none}
+/* 図のないタブ（補足）：ふだんは節をしまっておき、そのタブを開いたら、シミュレーションをたたんで節を出す。
+   シミュレーションは display:none にしない（幅 0 になると、中の図や行の高さの測りなおしがくるうため。高さだけ 0 にする） */
+.pageblock{display:none}
+body[data-shellpage="more"] #sec-more{display:block}
+body[data-shellpage] #sim{height:0 !important;min-height:0 !important;overflow:hidden !important;visibility:hidden;margin:0 !important;padding-top:0 !important;padding-bottom:0 !important;border:0 !important;box-shadow:none !important}
+body[data-shellpage] .probbar-out{display:none}
+.tocpanel ul.tocsub{margin:0 0 .3em 2.3em;font-size:.94em}
 
 /* ---------- フッター（暗い地・章の目次つき） ---------- */
 footer.pagefoot{margin:56px 0 0;padding:0;background:var(--night);color:rgba(243,239,230,.55);font-size:.8rem;letter-spacing:0;text-align:left}
@@ -761,7 +780,7 @@ html.drawer-open{overflow:hidden}
   .navpages span{display:none} .navpages{width:36px;padding:0} .navsite{padding-right:8px;margin-right:2px}
   .crumbs .en,.crumbs .kdot{display:none}
   .hero-top{align-items:flex-start}
-  .introrow{flex-direction:column;gap:12px}
+  .introrow{flex-direction:column;align-items:flex-start;gap:12px}
   .tocbtn{min-height:0;padding:.75em 1.2em;align-self:flex-start}
   .modehead{grid-template-columns:1fr;gap:12px;margin:30px 0 16px}
   .mh-num{width:58px;height:58px}
@@ -870,12 +889,47 @@ body.fig-full .tabs{z-index:1}
   .figfull-btn{display:block;width:100%;margin:6px 0 2px;font-weight:700}
 }
 
+/* タブが 7 つある（2026-11-17「もっと深く知りたい人へ」を足した）ので、12_shell.css の決まりのままでは 1 段に入らない。
+   ・1400 px 以上：字と間を少しつめ、「ページ一覧」をアイコンだけにして 1 段に収める
+   ・1399 px 以下：2 段に折り返す（かくれたタブを作らない） */
+@media(min-width:1400px){
+  .tab{font-size:.82rem;padding:0 8px;gap:5px}
+  .navpages span{display:none} .navpages{width:36px;padding:0}
+}
+@media(min-width:641px) and (max-width:1399px){
+  .tabs-in{flex-wrap:wrap;overflow:visible;row-gap:0;padding-top:4px;padding-bottom:4px}
+  .tab{min-height:42px}
+}
+
 </style>
 </head>
 <body id="top">
 
-<!-- 見出しの帯（中身は 87_shell.js が 86_shellcfg.js の文から作る） -->
-<header class="hero low" id="hero"></header>
+<!-- 見出しの帯。87_shell.js が、パンくず・題名・リード（86_shellcfg.js の文）を組み立て、
+     下の「このページの目的」を左に、「式の流れの図」を右上に入れる（2026-11-17 千葉さん指定：目的と流れをいちばん上に） -->
+<header class="hero" id="hero">
+  <div class="hero-aim" id="heroAim">
+    <p class="aim-cap">このページの目的</p>
+    <ol>
+        <li>回折格子の<b>明線の条件 d sinθ ＝ mλ</b> が成り立つ理由を、経路差の作図から理解する。</li>
+        <li><b>どの方向を見ているか（何次の明線か）</b>と、スクリーン上のどこが明るいかを結びつけ、波の動きと合わせて理解する。</li>
+        <li>格子定数 d・波長 λ・スクリーンまでの距離 L を変えて、<b>明線の間隔がどう変わるか</b>を体験する。</li>
+        <li>条件からずれた方向では、多数のスリットからの波が<b>打ち消しあう</b>ことを、波の重ね合わせで納得する。</li>
+      </ol>
+  </div>
+  <div class="aimflow" id="heroFlow">
+      <p class="mini aimflow-cap">このシミュレーションで確かめる流れ</p>
+      <div class="flowchart" role="img" aria-label="①経路差を求める→②明線条件を立てる（θが小さいとき）→③明線の位置を求める→④明線間隔を求める、という4つのステップの流れを示す図">
+        <div class="flowbox"><b>① 経路差を求める</b>d sinθ</div>
+        <div class="flowarrow">↓</div>
+        <div class="flowbox"><b>② 明線条件を立てる</b>d sinθ ＝ mλ</div>
+        <div class="flowarrow"><span class="flowcond">θ が小さいとき</span>↓</div>
+        <div class="flowbox"><b>③ 明線の位置を求める</b><span class="eq" data-tex="x_m \fallingdotseq \dfrac{m\lambda L}{d}"></span></div>
+        <div class="flowarrow">↓</div>
+        <div class="flowbox"><b>④ 明線間隔を求める</b><span class="eq" data-tex="\Delta x \fallingdotseq \dfrac{\lambda L}{d}"></span></div>
+      </div>
+    </div>
+</header>
 
 <!-- 上に固定するタブ列：左はしにホームとページ一覧、つづいてモードのタブ（id は tab-モード名。70_ui.js がこの id で切りかえる） -->
 <nav class="tabs" id="tabs" aria-label="モードの切りかえ">
@@ -887,6 +941,8 @@ body.fig-full .tabs{z-index:1}
     <button class="tab" id="tab-field" role="tab" type="button" aria-selected="false" data-full="補足：多数の格子からの波がどう重なり合うか"><span class="tn">④</span><span class="tl">補足：多数の格子</span></button>
     <button class="tab" id="tab-scale" role="tab" type="button" aria-selected="false" data-full="実験の概要（「回折」格子と呼ばれる理由）"><span class="tn">⑤</span><span class="tl">実験の概要</span></button>
     <button class="tab" id="tab-slit" role="tab" type="button" aria-selected="false" data-full="補足：単スリットの問題（難関大頻出）"><span class="tn">⑥</span><span class="tl">補足：単スリットの問題</span></button>
+    <!-- 図のないタブ（data-page）。押すとシミュレーションをたたんで、下の <section id="sec-more"> を出す（87_shell.js） -->
+    <button class="tab" id="tab-more" role="tab" type="button" data-page="more" data-full="補足：もっと深く知りたい人へ" aria-selected="false"><span class="tn">⑦</span><span class="tl">もっと深く知りたい人へ</span></button>
   </div>
   <span class="tprog" aria-hidden="true"></span>
 </nav>
@@ -1254,45 +1310,8 @@ body.fig-full .tabs{z-index:1}
   </div>
 </div>
 
-<section class="block" id="sec-purpose">
-<header class="blockhead"><p class="mh-en">Goals</p><h2>このページの目的と式の流れ</h2></header>
-<div class="card purpose aim">
-  <div class="aimrow">
-    <div class="aimtext">
-      <p class="lead">【目的】</p>
-      <ol>
-        <li>回折格子の<b>明線の条件 d sinθ ＝ mλ</b> が成り立つ理由を、経路差の作図から理解する。</li>
-        <li><b>どの方向を見ているか（何次の明線か）</b>と、スクリーン上のどこが明るいかを結びつけ、波の動きと合わせて理解する。</li>
-        <li>格子定数 d・波長 λ・スクリーンまでの距離 L を変えて、<b>明線の間隔がどう変わるか</b>を体験する。</li>
-        <li>条件からずれた方向では、多数のスリットからの波が<b>打ち消しあう</b>ことを、波の重ね合わせで納得する。</li>
-      </ol>
-    </div>
-    <div class="aimflow">
-      <p class="mini aimflow-cap">このシミュレーションで確かめる流れ</p>
-      <div class="flowchart" role="img" aria-label="①経路差を求める→②明線条件を立てる（θが小さいとき）→③明線の位置を求める→④明線間隔を求める、という4つのステップの流れを示す図">
-        <div class="flowbox"><b>① 経路差を求める</b>d sinθ</div>
-        <div class="flowarrow">↓</div>
-        <div class="flowbox"><b>② 明線条件を立てる</b>d sinθ ＝ mλ</div>
-        <div class="flowarrow"><span class="flowcond">θ が小さいとき</span>↓</div>
-        <div class="flowbox"><b>③ 明線の位置を求める</b><span class="eq" data-tex="x_m \fallingdotseq \dfrac{m\lambda L}{d}"></span></div>
-        <div class="flowarrow">↓</div>
-        <div class="flowbox"><b>④ 明線間隔を求める</b><span class="eq" data-tex="\Delta x \fallingdotseq \dfrac{\lambda L}{d}"></span></div>
-      </div>
-    </div>
-  </div>
-</div>
-</section>
-
-<section class="block" id="sec-quiz">
-<header class="blockhead"><p class="mh-en">Practice</p><h2>練習問題</h2><p class="mini hide-on-scale">選んだらすぐに正誤と解説が出ます。上のシミュレーションで確かめながら答えてみましょう。</p></header>
-<div class="quiz" id="quiz"></div>
-<p class="hide-on-scale" style="text-align:center;margin-top:14px">
-  <button class="ctl" id="btn-quiz-reset">もう一度</button>
-</p>
-</section>
-
-<section class="block" id="sec-more">
-<header class="blockhead"><p class="mh-en">Going Deeper</p><h2>補足：もっと深く知りたい人へ　－　分光でわかること</h2></header>
+<!-- 補足（最後のタブ「もっと深く知りたい人へ」を開いたときだけ出る。見出しは章の扉が出す） -->
+<section class="block pageblock" id="sec-more">
 
 <p class="mini hide-on-scale">回折格子は「虹をつくる道具」ではなく、<b>光にどの波長がどれだけ含まれているかを測る道具</b>です。d sinθ ＝ mλ の式ひとつで、手もとの炎から数十億光年かなたの銀河まで、何でできているかが読めます。</p>
 
@@ -7935,165 +7954,6 @@ DG.ui = (function () {
   };
 })();
 
-/* ===== 80_quiz.js ===== */
-/* 練習問題（2 問）
- * ・答えは、上のシミュレーションで実際に確かめられるものにする。
- * ・選んだらすぐに正誤と解説が出る。まちがえた選択肢にも「なぜちがうか」を書く。
- * ・数値は 30_physics.js の関数から計算するので、式と図と問題がずれない。
- */
-window.DG = window.DG || {};
-DG.quiz = (function () {
-  'use strict';
-  var P = DG.phys;
-
-  /* ---- 問題づくり（数値はここで計算する） ---- */
-  function build() {
-    var LAM = 600, L = 1.0;
-    var d1 = 2000, d2 = 1000;                   // d を半分にする
-    var x1 = P.xOnScreen(P.thetaOf(1, LAM, d1), L) * 100;   // cm
-    var x2 = P.xOnScreen(P.thetaOf(1, LAM, d2), L) * 100;   // cm
-    var s1 = P.sinThetaOf(1, LAM, d1), s2 = P.sinThetaOf(1, LAM, d2);
-
-    return [
-      {
-        h: '問 1　格子定数 d を半分にすると、1 次の明線 (m = 1) の位置はどうなる？',
-        lead: 'λ = ' + LAM + ' nm、L = ' + L.toFixed(2) + ' m のまま、'
-          + '格子定数を d = ' + (d1 / 1000).toFixed(2) + ' μm（' + Math.round(P.linesPerCmFromD(d1))
-          + ' 本/cm）から d = ' + (d2 / 1000).toFixed(2) + ' μm（'
-          + Math.round(P.linesPerCmFromD(d2)) + ' 本/cm）に変えます。',
-        opts: [
-          {
-            t: '中心 O から遠ざかる（明線の間隔が広がる）',
-            ok: true,
-            fb: '正解。sinθ = mλ/d で、d が小さくなると sinθ は大きくなります。'
-              + '実際 sinθ は ' + s1.toFixed(3) + ' → ' + s2.toFixed(3) + '、'
-              + 'x = L tanθ は ' + x1.toFixed(1) + ' cm → ' + x2.toFixed(1) + ' cm。'
-              + '「筋を細かくするほど、虹は大きく広がる」ということです。'
-          },
-          {
-            t: '中心 O に近づく（明線の間隔がせまくなる）',
-            ok: false,
-            fb: 'ちがいます。d は分母にあります（sinθ = mλ/d）。'
-              + 'd を小さくすると sinθ は<b>大きく</b>なるので、明線は外へ動きます。'
-              + '上の図で d のスライダーを動かして確かめてみましょう。'
-          },
-          {
-            t: '変わらない（d は明線の位置に関係ない）',
-            ok: false,
-            fb: 'ちがいます。d sinθ = mλ には d が入っています。'
-              + 'd が変われば、同じ m でも θ が変わります。'
-          },
-          {
-            t: '明線が消えてしまう',
-            ok: false,
-            fb: 'ちがいます。消えるのは sinθ = mλ/d が 1 をこえるときだけです。'
-              + 'ここでは sinθ = ' + s2.toFixed(3) + ' なので、1 次はちゃんと出ます。'
-              + '（d をもっと小さく、たとえば ' + LAM + ' nm より小さくすると、1 次も出なくなります。）'
-          }
-        ]
-      },
-      {
-        h: '問 2　白色光を当てると、まん中（m = 0）だけが白く見えるのはなぜ？',
-        lead: '白色光には、紫（約 380 nm）から赤（約 780 nm）までいろいろな波長が混ざっています。'
-          + '回折格子に当てると、1 次からは虹色に分かれるのに、まん中だけは白いままです。',
-        opts: [
-          {
-            t: 'm = 0 では経路差が 0 で、波長に関係なくすべての色が同じ向き（θ = 0）に強めあうから',
-            ok: true,
-            fb: '正解。d sinθ = mλ に m = 0 を入れると d sinθ = 0、つまり θ = 0。'
-              + 'この式に λ が残らないので、<b>どの色も同じ向き</b>に出ます。'
-              + 'そこで全部の色が重なって白く見えます。'
-              + '1 次以上は sinθ = mλ/d が λ に比例するので、'
-              + '波長の短い紫が内側、長い赤が外側に分かれます。'
-          },
-          {
-            t: 'まん中には格子を素通りした光だけが来て、干渉していないから',
-            ok: false,
-            fb: 'ちがいます。m = 0 の光も、ちゃんと全部のスリットからの光が重なった'
-              + '<b>干渉の結果</b>です。ただ経路差が 0 なので、どの色もそろうというだけです。'
-          },
-          {
-            t: '白い光だけが回折しにくく、まっすぐ進むから',
-            ok: false,
-            fb: 'ちがいます。「白い光」という 1 つの波長があるわけではありません。'
-              + '白色光はいろいろな波長の混ざりもので、どの波長も同じように回折します。'
-          },
-          {
-            t: 'まん中では紫と赤が打ち消しあって、色が消えるから',
-            ok: false,
-            fb: 'ちがいます。ちがう波長の光どうしは打ち消しあいません。'
-              + 'まん中が白いのは、色が消えたからではなく、<b>全部の色が重なった</b>からです。'
-          }
-        ]
-      }
-    ];
-  }
-
-  var MARK = ['ア', 'イ', 'ウ', 'エ'];
-
-  function init() {
-    var root = document.getElementById('quiz');
-    if (!root) return;
-    root.innerHTML = '';
-    var qs = build();
-    for (var i = 0; i < qs.length; i++) render(root, qs[i], i);
-  }
-
-  function render(root, q, qi) {
-    var box = document.createElement('div');
-    box.className = 'q';
-    box.setAttribute('data-q', String(qi + 1));
-
-    var h = document.createElement('div');
-    h.className = 'qh';
-    h.textContent = q.h;
-    box.appendChild(h);
-
-    var lead = document.createElement('p');
-    lead.className = 'note';
-    lead.textContent = q.lead;
-    box.appendChild(lead);
-
-    var opts = document.createElement('div');
-    opts.className = 'opts';
-    var fb = document.createElement('div');
-    fb.className = 'fb';
-    fb.hidden = true;
-
-    var btns = [];
-    for (var k = 0; k < q.opts.length; k++) {
-      (function (k) {
-        var o = q.opts[k];
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'opt';
-        b.setAttribute('data-ok', o.ok ? '1' : '0');
-        b.innerHTML = '<span class="mk">' + MARK[k] + '</span>'
-          + '<span class="optbody"><span>' + o.t + '</span></span>';
-        b.addEventListener('click', function () {
-          for (var j = 0; j < btns.length; j++) {
-            btns[j].disabled = true;
-            btns[j].classList.remove('correct', 'wrong');
-            if (q.opts[j].ok) btns[j].classList.add('correct');
-          }
-          if (!o.ok) b.classList.add('wrong');
-          fb.hidden = false;
-          fb.className = 'fb ' + (o.ok ? 'ok' : 'ng');
-          fb.innerHTML = (o.ok ? '◯　' : '✕　') + o.fb;
-          box.setAttribute('data-answered', o.ok ? 'correct' : 'wrong');
-        });
-        btns.push(b);
-        opts.appendChild(b);
-      })(k);
-    }
-    box.appendChild(opts);
-    box.appendChild(fb);
-    root.appendChild(box);
-  }
-
-  return { init: init, build: build };
-})();
-
 /* =========================================================================
    サイト全体へのナビ（第 28 回）
    ・ホーム（楽楽高校物理のトップページ）へのリンク：ヒーローのパンくずと、上に固定したタブ列の左はし（家のアイコン）。
@@ -8234,7 +8094,7 @@ window.SHELL_CFG = {
   en: 'Diffraction Grating',
   t1: '光の干渉',
   t2: '〜回折格子〜',
-  lead: 'たくさんのスリットを通った光が、どの方向で強めあうのかを確かめよう。まず波の動きを見て、そのあと経路差の作図と式へ進みます。',
+  lead: 'たくさんのスリットを通った光が、どの方向で強めあうのかを確かめよう。',
   modes: {
     wave:   { en: 'Watching the Waves',
               lead: '隣りあうスリットを出た波を動かして見ます。経路差 d sinθ が波長の整数倍になる方向では、波面の上で山と山がそろって強めあいます。' },
@@ -8247,13 +8107,11 @@ window.SHELL_CFG = {
     scale:  { en: 'The Real Scale of the Apparatus',
               lead: '装置の並びから格子の表面まで、本当の大きさをたどります。スリットを通った光が回折して広がることが、干渉の出発点です。' },
     slit:   { en: 'Single-Slit Diffraction',
-              lead: '幅 D のスリットの中をいくつもの点に分けて考え、暗線の条件 D sinθ ＝ mλ を確かめます。入試問題（改題）と解答つき。' }
+              lead: '幅 D のスリットの中をいくつもの点に分けて考え、暗線の条件 D sinθ ＝ mλ を確かめます。入試問題（改題）と解答つき。' },
+    more:   { en: 'Going Deeper',
+              lead: 'ここまでの内容を、もう一歩深く知りたい人のための読み物です。見出しを押すと開きます。' }
   },
-  secs: [
-    { id: 'sec-purpose', name: 'このページの目的と式の流れ' },
-    { id: 'sec-quiz', name: '練習問題' },
-    { id: 'sec-more', name: '補足：もっと深く知りたい人へ' }
-  ]
+  secs: []      // タブのほかに、ピルと目次に出す節（いまは無し。目的は見出しの帯へ、補足は最後のタブへ移した）
 };
 
 /* =========================================================================
@@ -8293,15 +8151,25 @@ window.SHELL_CFG = {
   /* ---------- 見出しの帯 ---------- */
   function buildHero() {
     var hero = $('hero'); if (!hero) return;
+    /* 20_body.html の <header id="hero"> の中に書いてある「このページの目的」（#heroAim）と「式の流れの図」（#heroFlow）を、
+       いったん外して、組み立てた帯の中へ入れなおす（左＝題名・リード・目的、右上＝流れの図） */
+    var aim = $('heroAim'), flow = $('heroFlow');
+    if (aim) aim.parentNode.removeChild(aim);
+    if (flow) flow.parentNode.removeChild(flow);
     hero.innerHTML =
       '<div class="hero-in">' +
         '<div class="hero-top">' +
           '<nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="' + HOME + '" title="楽楽（らくらく）高校物理のトップページへ"><svg class="atom" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#3ea0e0" stroke-width="2"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#7b5bd6" stroke-width="2" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="5.6" fill="none" stroke="#e07b18" stroke-width="2" transform="rotate(120 16 16)"/><circle cx="16" cy="16" r="3.6" fill="#5aa7ff"/></svg><span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="' + HOME + '#sec-wave">波動</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">' + esc(CFG.crumb || '') + '</span><span class="kdot"></span><span class="en">' + esc(CFG.en || '') + '</span></nav>' +
         '</div>' +
-        '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
-        '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
-          '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+        '<div class="hero-cols"><div class="hero-main">' +
+          '<h1 class="hero-title"><span class="t1">' + esc(CFG.t1 || '') + '</span><span class="t2">' + esc(CFG.t2 || '') + '</span></h1>' +
+          '<div class="introrow"><p class="lead2">' + esc(CFG.lead || '') + '</p>' +
+            '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>' +
+          '<div class="hero-aimslot"></div>' +
+        '</div><div class="hero-side"></div></div>' +
       '</div>';
+    if (aim) hero.querySelector('.hero-aimslot').appendChild(aim);
+    if (flow) hero.querySelector('.hero-side').appendChild(flow); else hero.querySelector('.hero-cols').classList.add('noside');
   }
 
   /* ---------- 章の扉・タブの印 ---------- */
@@ -8328,6 +8196,22 @@ window.SHELL_CFG = {
     document.body.setAttribute('data-shellmode', id);
     showTab();
   }
+  /* 図のないタブ（data-page。いまは「補足：もっと深く知りたい人へ」だけ）
+     もとの setMode はこのタブを知らないので、選択中の印（aria-selected）はここで付けはずしする。
+     開いているあいだは body[data-shellpage] を付け、CSS でシミュレーションをたたんで、その節（#sec-○○）を出す。 */
+  function isPage(b) { return !!(b && b.getAttribute('data-page')); }
+  function enterPage(b) {
+    tabList().forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+    document.body.setAttribute('data-shellpage', b.getAttribute('data-page'));
+    syncMode();
+  }
+  function leavePage(b) {                    /* b ＝ 押されたモードのタブ */
+    if (!document.body.hasAttribute('data-shellpage')) return;
+    document.body.removeAttribute('data-shellpage');
+    tabList().forEach(function (x) { if (isPage(x)) x.setAttribute('aria-selected', 'false'); });
+    /* 同じモードにもどるとき、もとの setMode は何もしないことがあるので、印はここでも付ける */
+    setTimeout(function () { if (!document.body.hasAttribute('data-shellpage')) { b.setAttribute('aria-selected', 'true'); syncMode(); window.dispatchEvent(new Event('resize')); } }, 0);
+  }
   function goMode(id, scroll) {
     var b = $('tab-' + id); if (!b || b.disabled) return false;
     if (b.getAttribute('aria-selected') !== 'true') b.click();
@@ -8336,13 +8220,17 @@ window.SHELL_CFG = {
   }
   function goSec(id) {
     var e = $(id); if (!e) return false;
+    var blk = e.closest ? e.closest('.pageblock') : null;      /* 図のないタブの中にあるなら、先にそのタブを開く */
+    if (blk) { var t = $('tab-' + blk.id.replace(/^sec-/, '')); if (t && t.getAttribute('aria-selected') !== 'true') enterPage(t); }
     if (e.tagName === 'DETAILS') e.open = true;
-    history.replaceState(null, '', '#' + id); scrollToEl(e); return true;
+    try { history.replaceState(null, '', '#' + id); } catch (err) { /* file:// で失敗しても動きには関係ない */ }
+    scrollToEl(e); return true;
   }
   function initTabs() {
     tabList().forEach(function (b) {
       /* タブを押したら、本文の頭まで一気にもどす（ゆっくりスクロールはしない） */
       b.addEventListener('click', function () {
+        if (isPage(b)) enterPage(b); else leavePage(b);
         setTimeout(function () {
           try { history.replaceState(null, '', '#' + modeOf(b)); } catch (e) { /* file:// で失敗しても動きには関係ない */ }
           window.scrollTo({ top: Math.min(window.pageYOffset, contentTop()), behavior: 'auto' });
@@ -8359,7 +8247,7 @@ window.SHELL_CFG = {
   function gotoHash(first) {
     var h = String(location.hash || '').replace('#', ''); if (!h) return;
     if ($('tab-' + h)) { goMode(h, !first); if (first) window.scrollTo({ top: contentTop(), behavior: 'auto' }); return; }
-    var e = $(h); if (e && e.closest && e.closest('#wrap')) { if (e.tagName === 'DETAILS') e.open = true; scrollToEl(e); }
+    var e = $(h); if (e && e.closest && e.closest('#wrap')) goSec(h);
   }
 
   /* ---------- 節へのピル（章の扉の下） ---------- */
@@ -8389,8 +8277,12 @@ window.SHELL_CFG = {
     var close = function () { p.hidden = true; b.setAttribute('aria-expanded', 'false'); };
     var fill = function () {
       var h = '<div class="tochead"><b>コンテンツ一覧</b><button type="button" class="tocx" aria-label="閉じる">×</button></div>';
-      h += '<div class="tocmode">シミュレーション（上のタブで切りかえ）</div><ul>';
-      tabList().forEach(function (t, i) { h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a></li>'; });
+      h += '<div class="tocmode">上のタブで切りかえ</div><ul>';
+      tabList().forEach(function (t, i) {
+        h += '<li><a href="#' + modeOf(t) + '" data-mode="' + modeOf(t) + '">' + CIRC.charAt(i) + '　' + esc(nameOf(t)) + '</a>';
+        if (isPage(t)) { var sub = subItems({ id: 'sec-' + modeOf(t) }); if (sub.length) h += '<ul class="tocsub">' + sub.map(function (q) { return '<li><a href="#' + q.id + '" data-sec="' + q.id + '">' + esc(q.name) + '</a></li>'; }).join('') + '</ul>'; }
+        h += '</li>';
+      });
       h += '</ul>';
       secs().forEach(function (s) {
         h += '<div class="tocmode"><a href="#' + s.id + '" data-sec="' + s.id + '" style="padding:0;display:inline">' + esc(s.name) + '</a></div><ul>';
@@ -8465,16 +8357,7 @@ window.SHELL_CFG = {
   'use strict';
   function boot() {
     DG.ui.init();
-    if (DG.quiz) {
-      DG.quiz.init();
-      var b = document.getElementById('btn-quiz-reset');
-      if (b) b.addEventListener('click', function () { DG.quiz.init(); });
-    } else {
-      var q = document.getElementById('quiz');
-      if (q) q.innerHTML = '<div class="q"><div class="qh">練習問題は次の段階で作ります。</div></div>';
-      var rb = document.getElementById('btn-quiz-reset');
-      if (rb) rb.disabled = true;
-    }
+    // 練習問題は 2026-11-17 に外した（cut/80_quiz.js）
     // 自動テストから触れるようにする
     window.DGTEST = DG.ui.api;
   }
