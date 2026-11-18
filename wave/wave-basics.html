@@ -2448,6 +2448,18 @@ button.b.spdb.on,button.b.spdbq.on{background:#ffd678;border-color:#c9952a;color
 .voxhowi p.voxhowt{font-weight:800;color:var(--ink);margin-bottom:.2em}
 @media(max-width:760px){.voxhow{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.voxhow{grid-template-columns:minmax(0,1fr)}}
+/* ④-2：図の中の「右の顔の定在波」（34 回目） */
+#m4v .voxL .cvwrap{position:relative}
+.voxmsel{position:absolute;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.35em .5em;z-index:2}
+.voxmsel.side{flex-direction:column;align-items:center}
+.voxmsel .seg{flex-wrap:wrap;justify-content:center}
+.voxmsel .seg button{white-space:nowrap}
+.voxmsel .seglbl{font-weight:800;color:#c9670c}
+/* 章 ④：整数倍音のみ／非整数倍音を考慮（35 回目） */
+.m4rsw{display:flex;flex-wrap:wrap;align-items:center;gap:.35em .55em;flex-basis:100%;margin:.15em 0}
+.m4rsw .seg{flex-wrap:wrap}
+.m4rsw .seg button{white-space:nowrap}
+.m4rsw .m4rnote{flex-basis:100%;margin:.1em 0 0;font-size:.8rem;color:var(--sub);line-height:1.6}
 
 </style>
 </head>
@@ -2817,6 +2829,15 @@ var AUDIO = (function () {
     g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(A, now + 0.006);
     if (tau) g.gain.setTargetAtTime(0, now + 0.01, tau); else { g.gain.setValueAtTime(A, now + Math.max(0.02, dur - 0.12)); g.gain.linearRampToValueAtTime(0, now + dur); }
     g.connect(ownerGain(owner));
+    if (v.data) {   /* 作った音のデータを 1 回だけ鳴らす（章 ④ の「非整数倍音を考慮」。35 回目）。減り方はデータに入っているので、ここでは減らさない */
+      g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(A, now + 0.004);
+      var bf = c.createBuffer(1, v.data.length, v.sr || c.sampleRate); bf.getChannelData(0).set(v.data);
+      var bs = c.createBufferSource(); bs.buffer = bf; bs.connect(g); bs.start(now);
+      var dd = v.data.length / (v.sr || c.sampleRate), mb = { owner: owner, g: g, oscs: [bs], t0: now, n: 1, once: true, f: v.f, lfo: null, tEnd: now + dd };
+      cur = mb; notify();
+      setTimeout(function () { if (cur === mb) { cur = null; notify(); } try { g.disconnect(); } catch (e) { } }, (dd + 0.1) * 1000);
+      return true;
+    }
     var o = c.createOscillator();
     if (v.partials && v.partials.length) {
       var N = 0; v.partials.forEach(function (p) { N = Math.max(N, p[0]); });
@@ -7302,12 +7323,19 @@ var M3_TEND = 1e6;
    s.dB：縦軸を dB にする（22 回目）。いちばん大きい線（振幅 A = 1 のとき）を 0 dB、下の端を −60 dB とする */
 var M3_DBMIN = 60;
 function m3SpecDBv(a, mx, A) { return 20 * Math.log10(Math.max(1e-9, Math.abs(a) / mx * A)); }
+/* 何倍かの表し方：整数ならそのまま、そうでなければ小数 2 けた（章 ④ の非整数倍音。35 回目） */
+function m3Rt(r) { return Math.abs(r - Math.round(r)) < 1e-6 ? String(Math.round(r)) : r.toFixed(2); }
 function m3SpecBars(c2, s, parts, f1, A, XF, fy0, fy1, FM, mult, dim) {   /* dim(p)：true の線はうすく描く（⑤-1 の使わなかった成分。24 回目） */
   var mx = 0; parts.forEach(function (p) { mx = Math.max(mx, Math.abs(p[1])); });
   var gap = XF(f1) - XF(0), hits = [], hm = fy1 - fy0 - 12;
   if (s.dB) {   /* dB の目盛り：0・−20・−40 dB の横線と数字（左のすき間に） */
     c2.save(); c2.strokeStyle = 'rgba(120,220,170,.22)'; c2.lineWidth = 1; c2.setLineDash([3, 3]); c2.font = '600 9px ' + FONT; c2.fillStyle = 'rgba(190,240,215,.8)'; c2.textAlign = 'right'; c2.textBaseline = 'middle';
     for (var d = 0; d < M3_DBMIN; d += 20) { var gy = Math.round(fy1 - (1 - d / M3_DBMIN) * hm) + 0.5; c2.beginPath(); c2.moveTo(XF(0), gy); c2.lineTo(XF(FM), gy); c2.stroke(); c2.fillText(d ? '−' + d : '0 dB', XF(0) - 3, gy); }
+    c2.restore();
+  }
+  if (mult && parts.some(function (p) { return Math.abs(p[0] - Math.round(p[0])) > 1e-6; })) {   /* 整数倍でない成分があるときは、整数倍の位置に灰色の印 */
+    c2.save(); c2.strokeStyle = 'rgba(200,210,205,.55)'; c2.lineWidth = 1.2;
+    for (var kk = 1; kk * f1 <= FM; kk++) { var ix = Math.round(XF(kk * f1)) + 0.5; c2.beginPath(); c2.moveTo(ix, fy1 + 1); c2.lineTo(ix, fy1 - 7); c2.stroke(); }
     c2.restore();
   }
   c2.save(); c2.font = '700 9.5px ' + FONT; c2.textAlign = 'center'; c2.textBaseline = 'bottom';
@@ -7318,11 +7346,12 @@ function m3SpecBars(c2, s, parts, f1, A, XF, fy0, fy1, FM, mult, dim) {   /* dim
     c2.fillStyle = sel ? '#ffd678' : (dim && dim(p) ? 'rgba(125,255,180,.3)' : '#7dffb4'); c2.shadowColor = c2.fillStyle; c2.shadowBlur = dim && dim(p) && !sel ? 0 : 6; c2.fillRect(x - 2, fy1 - h, 4, h); c2.shadowBlur = 0;
     hits.push({ x: x, y: fy1 - h, n: p[0], f: f, db: m3SpecDBv(p[1], mx, A) });
     var big = !s.dB && Math.abs(p[1]) / mx > 0.3;   /* dB では線が高くなりがちなので、すき間があるときだけ書く */
-    if (mult && (gap >= 17 || big || p[0] === 1)) { c2.fillStyle = 'rgba(255,214,120,.9)'; c2.fillText(p[0] === 1 ? '基音' : '×' + p[0], x, fy1 - h - 2); }
+    var fr = Math.abs(p[0] - Math.round(p[0])) > 1e-6, one = Math.abs(p[0] - 1) < 0.01;   /* 整数でないときは字が長いので、すき間が広いときだけ書く */
+    if (mult && (gap >= (fr ? 32 : 17) || (big && !fr) || one)) { c2.fillStyle = 'rgba(255,214,120,.9)'; c2.fillText(one ? '基音' : '×' + m3Rt(p[0]), x, fy1 - h - 2); }
   });
   var hs = hits.filter(function (o) { return o.n === s._spSel; })[0];
   if (hs) {
-    var t = 'f = ' + Math.round(hs.f) + ' Hz' + (!mult ? '' : hs.n === 1 ? '（基音）' : '（基音の ' + hs.n + ' 倍）') + (s.dB ? '　' + (Math.round(hs.db) < 0 ? '−' + Math.abs(Math.round(hs.db)) : '0') + ' dB' : ''), W = c2.canvas.clientWidth || 300;
+    var t = 'f = ' + Math.round(hs.f) + ' Hz' + (!mult ? '' : Math.abs(hs.n - 1) < 0.01 ? '（基音）' : '（基音の ' + m3Rt(hs.n) + ' 倍）') + (s.dB ? '　' + (Math.round(hs.db) < 0 ? '−' + Math.abs(Math.round(hs.db)) : '0') + ' dB' : ''), W = c2.canvas.clientWidth || 300;
     c2.font = '700 11px ' + FONT; var w = c2.measureText(t).width + 12, bx = clamp(hs.x - w / 2, 4, W - w - 4), by = fy0 - 4;
     c2.fillStyle = '#ffd678'; rrect(c2, bx, by - 14, w, 18, 5); c2.fill(); c2.fillStyle = '#2a2006'; c2.textAlign = 'left'; c2.textBaseline = 'middle'; c2.fillText(t, bx + 6, by - 5);
   }
@@ -8733,18 +8762,221 @@ function m3s5Dx(s) {
   label(ctx, '（拡大図）', W - 6, H - 8, { size: 10, color: COL.sub, align: 'right' });
 }
 
+/* =====================================================================
+   ④-2 非整数次倍音が強い楽器の音色 ～ピアノ・ギター・鉄琴～（36 回目。35 回目に ④-1・④-3・④-4 に付けた切りかえを、この節 1 つにまとめた）
+   ・「整数倍音のみ」と「非整数倍音を考慮（より本物に近い）」を切りかえて、音とスペクトルを比べる。custom の節（Sim は使わない。id m4ih）
+   ・弦（ギター・ピアノ）：硬さのため、n 番目の成分は f_n = n f₁ √(1 + B n²) と整数倍より少し高い（インハーモニシティ）
+       B：ピアノ 0.0004、ギター 0.0001。高い成分ほど早く消える。ギターは胴（ボディ）の共鳴を掛ける
+   ・鉄琴：板の振動は 1 : 2.756 : 5.404 : 8.933（両端が自由な一様な棒）で、整数倍ではない
+   ・はじく・たたく瞬間の短い雑音（アタック）も入れる
+   ・音は、ここで作ったデータを 1 回だけ鳴らす（AUDIO.pluck の data）。スペクトルは、同じ成分の表（m4rParts）から描く
+   ・「整数倍音のみ」は、これまでの章 ④ の音（m4Note：M4_TIM の倍音がそろって減る）
+   ===================================================================== */
+var M4R_DEF = {
+  guitar: { B: 0.0001, n: 12, dk: 0.18, dur: 2.6, tau: 0.8, body: [[100, 25, 0.8], [205, 30, 0.7], [400, 60, 0.35], [560, 80, 0.2]], atk: 0.25, atkT: 0.006 },
+  mono: { B: 0.0001, n: 10, dk: 0.15, dur: 3 * M3S4.tau + 0.5, tau: M3S4.tau, body: [[150, 30, 0.6], [310, 50, 0.35]], atk: 0.2, atkT: 0.006 },
+  piano: { B: 0.0004, n: 12, dk: 0.25, dur: 1.8, tau: 0.55, body: null, atk: 0.15, atkT: 0.015, low: true,
+    amp: [1, 0.45, 0.25, 0.14, 0.08, 0.05, 0.035, 0.025, 0.018, 0.013, 0.01, 0.008] },
+  glock: { modes: [[1, 1], [2.756, 0.25], [5.404, 0.08], [8.933, 0.03]], dk: 1.2, dur: 2.2, tau: 0.6, body: null, atk: 0.3, atkT: 0.003 }
+};
+var M4R_SR = 32000;
+/* 胴の共鳴：H(f) = 1 + Σ（山の高さ w の共鳴）。山どうしは逆向きに足す（m3BankRes と同じ作り） */
+function m4rBody(d) {
+  if (!d.body) return null;
+  if (!d._R) d._R = d.body.map(function (p, i) {
+    var C = -Math.exp(-TAU * p[1] / M4R_SR), B = 2 * Math.exp(-Math.PI * p[1] / M4R_SR) * Math.cos(TAU * p[0] / M4R_SR), r = { A: 1 - B - C, B: B, C: C }, g = m4rCx(r, p[0]);
+    r.A *= p[2] / Math.sqrt(g[0] * g[0] + g[1] * g[1]) * (i % 2 ? -1 : 1); return r;
+  });
+  return d._R;
+}
+function m4rCx(r, f) { var w = TAU * f / M4R_SR, re = 1 - r.B * Math.cos(w) - r.C * Math.cos(2 * w), im = r.B * Math.sin(w) + r.C * Math.sin(2 * w), dd = re * re + im * im; return [r.A * re / dd, -r.A * im / dd]; }
+function m4rGain(d, f) { var R = m4rBody(d); if (!R) return 1; var re = 1, im = 0; R.forEach(function (r) { var c = m4rCx(r, f); re += c[0]; im += c[1]; }); return Math.sqrt(re * re + im * im); }
+/* 成分の表 [[f₁ の何倍（整数とは限らない）, 強さ]]。base（整数倍音の表）のいちばん大きい強さにそろえる */
+function m4rParts(inst, f1, base) {
+  var d = M4R_DEF[inst], out = [], bm = 0;
+  (base || []).forEach(function (p) { bm = Math.max(bm, Math.abs(p[1])); }); if (!bm) bm = 1;
+  if (d.modes) out = d.modes.map(function (m) { return [m[0], m[1]]; });
+  else {
+    var amp = d.amp || null, src = base && base.length ? base : [[1, 1]], N = d.n;
+    for (var n = 1; n <= N; n++) {
+      var a = amp ? amp[n - 1] : (src[n - 1] ? Math.abs(src[n - 1][1]) : 0); if (!a) continue;
+      var r = n * Math.sqrt(1 + d.B * n * n); out.push([r, a * m4rGain(d, r * f1)]);
+    }
+  }
+  var mx = 0; out.forEach(function (p) { mx = Math.max(mx, p[1]); });
+  return out.map(function (p) { return [p[0], p[1] / mx * bm]; });
+}
+/* 音のデータ（1 回だけ鳴らす）。成分ごとに時定数 τₖ = τ / (1 + dk(k − 1)) で減る＋アタックの雑音（胴があれば胴を鳴らす） */
+var _m4rBuf = {};
+function m4rBuf(inst, f1, base) {
+  var key = inst + '|' + Math.round(f1 * 100) + '|' + JSON.stringify(base || []); if (_m4rBuf[key]) return _m4rBuf[key];
+  var d = M4R_DEF[inst], P = m4rParts(inst, f1, base), sr = M4R_SR, L = Math.round(d.dur * sr), out = new Float32Array(L), k, i;
+  P.forEach(function (p, j) {
+    var f = p[0] * f1; if (f > 15000) return;
+    var tau = d.tau / (1 + d.dk * j), dec = Math.exp(-1 / (tau * sr)), e = p[1], w = TAU * f / sr, ph = j * 1.7;
+    for (k = 0; k < L; k++) { out[k] += e * Math.sin(w * k + ph); e *= dec; if (e < 1e-5) break; }
+  });
+  /* アタック：短い雑音。ピアノは低めのにぶい音、ほかは明るい音 */
+  var r = 777, nA = Math.round(d.atkT * sr), lp = 0, mxP = 0; P.forEach(function (p) { mxP = Math.max(mxP, p[1]); });
+  var R = m4rBody(d), st = R ? R.map(function () { return [0, 0]; }) : null;
+  for (k = 0; k < L; k++) {
+    var x = 0;
+    if (k < nA) { r = (r * 1103515245 + 12345) & 0x7fffffff; x = ((r / 0x7fffffff) * 2 - 1) * d.atk * mxP * (1 - k / nA); if (d.low) { lp += 0.15 * (x - lp); x = lp * 3; } }
+    var y = x;
+    if (R) for (i = 0; i < R.length; i++) { var q = R[i], yy = q.A * (x + out[k]) + q.B * st[i][0] + q.C * st[i][1]; st[i][1] = st[i][0]; st[i][0] = yy; y += yy; }   /* 胴は弦の振動とアタックの両方で鳴る */
+    out[k] += y;
+  }
+  var mx = 0; for (k = 0; k < L; k++) mx = Math.max(mx, Math.abs(out[k]));
+  var fo = Math.round(0.05 * sr); for (k = 0; k < L; k++) { var g = k > L - fo ? (L - k) / fo : 1; out[k] = out[k] / mx * 0.9 * g; }
+  _m4rBuf[key] = out; return out;
+}
+/* 鳴らす（m4Note・④-1 から） */
+function m4rPlay(owner, inst, f1, base, vol) {
+  var d = M4R_DEF[inst];
+  return AUDIO.pluck(owner, { f: f1, data: m4rBuf(inst, f1, base), sr: M4R_SR }, vol === undefined ? 0.9 : vol, d.dur);
+}
+/* ---------- ④-2 の節 ---------- */
+var M4IH_INS = [['piano', 'ピアノ'], ['guitar', 'ギター'], ['glock', '鉄琴']];
+var M4IH_NOTE = [[60, 'ド'], [64, 'ミ'], [67, 'ソ'], [72, '高いド']];
+var M4IH_TAU = { guitar: [2.6, 0.8], piano: [1.8, 0.55], glock: [2.2, 0.6] };   /* 整数倍音のみの音（m4Note と同じ）：[長さ, 時定数] */
+DEFS.m4ih = {
+  id: 'm4ih', mode: 'mode4', num: 2, custom: true,
+  title: '非整数次倍音が強い楽器の音色 ～ピアノ・ギター・鉄琴～', short: '非整数次倍音が強い楽器',
+  html: function () { return '<div class="ihhost"></div>'; },
+  build: function (art) { M4IH_S = { ins: 'piano', nm: 60, real: false }; m4ihBuild(M4IH_S, art.querySelector('.ihhost')); }
+};
+var M4IH_S = null;
+function m4ihBuild(S, host) {
+  host.innerHTML = mathify('<p class="voxlead">ピアノ・ギター・鉄琴の音には、基本振動の整数倍からずれた成分（<b>非整数次倍音</b>）が含まれている。この「ずれ」が楽器らしい音色をつくる。</p>' +
+    '<p class="todo voxtodo">楽器を選び、「整数倍音のみ」と「非整数倍音を考慮」を切りかえて、音とスペクトルを比べよう。「続けて聞き比べ」で 2 つを続けて鳴らせる。</p>');
+  var c1 = el('div', 'voxctl'), c2 = el('div', 'voxctl'), c3 = el('div', 'voxctl');
+  var mkSeg = function (row, lbl, items, get, set) {
+    var sg = el('div', 'seg'), bs = [];
+    items.forEach(function (q) { var b = el('button', 'b', q[1]); b.type = 'button'; b.addEventListener('click', function () { set(q[0]); }); sg.appendChild(b); bs.push([q[0], b]); });
+    row.appendChild(el('span', 'seglbl', lbl)); row.appendChild(sg);
+    return function () { bs.forEach(function (x) { x[1].classList.toggle('on', get() === x[0]); }); };
+  };
+  var syncs = [];
+  syncs.push(mkSeg(c1, '楽器', M4IH_INS, function () { return S.ins; }, function (k) { S.ins = k; m4ihChanged(S); }));
+  syncs.push(mkSeg(c1, '音の高さ', M4IH_NOTE.map(function (q) { return [q[0], q[1] + '（' + Math.round(MUS.fET(q[0])) + ' Hz）']; }), function () { return S.nm; }, function (k) { S.nm = k; m4ihChanged(S); }));
+  syncs.push(mkSeg(c2, '音の成分', [[false, '整数倍音のみ'], [true, '非整数倍音を考慮（より本物に近い）']], function () { return S.real; }, function (k) { S.real = k; m4ihChanged(S); }));
+  var spk = el('button', 'b spk', '🔊 音を鳴らす'); spk.type = 'button';
+  spk.addEventListener('click', function () { if (AUDIO.owner() === 'm4ih') { m4ihStop(S); return; } m4ihPlay(S, S.real); });
+  var cmp = el('button', 'b', '▶ 続けて聞き比べ（整数倍音のみ → 非整数倍音を考慮）'); cmp.type = 'button';
+  cmp.addEventListener('click', function () { m4ihCompare(S); });
+  c3.appendChild(spk); spkVol(spk, 'm4ih'); c3.appendChild(cmp);
+  host.appendChild(c1); host.appendChild(c2); host.appendChild(c3);
+  var body = el('div', 'voxbody ihbody'), L = el('div', 'voxL'), R = el('div', 'voxR'), cw = el('div', 'cvwrap'), cv = el('canvas');
+  cw.appendChild(cv); L.appendChild(cw); body.appendChild(L); body.appendChild(R); host.appendChild(body);
+  S.cv = cv; S.R = R; S.spk = spk; S.cmp = cmp; S.syncs = syncs;
+  cv.addEventListener('click', function (ev) {   /* スペクトルの枠をクリックすると、その音を選ぶ */
+    var r = cv.getBoundingClientRect(), y = ev.clientY - r.top;
+    (S._boxes || []).forEach(function (b) { if (y >= b[0] && y <= b[1] && S.real !== b[2]) { S.real = b[2]; m4ihChanged(S); } });
+  });
+  AUDIO.onChange(function () { m4ihSync(S); if (AUDIO.owner() !== 'm4ih') S.pm = null; m4ihDraw(S); });
+  window.addEventListener('resize', function () { m4ihDraw(S); });
+  m4ihSync(S); m4ihDraw(S);
+}
+function m4ihChanged(S) { if (AUDIO.owner() === 'm4ih') m4ihStop(S); m4ihSync(S); m4ihDraw(S); }
+function m4ihStop(S) { clearTimeout(S._seq); S._seq = null; S.pm = null; AUDIO.stop(); }
+function m4ihPlay(S, real) {
+  var f = MUS.fET(S.nm), ok = real ? m4rPlay('m4ih', S.ins, f, M4_TIM[S.ins]) : m4Note('m4ih', f, S.ins);
+  if (!ok) return false;
+  S.pm = real; S.t0 = performance.now(); if (S.real !== real) { S.real = real; m4ihSync(S); }
+  var loop = function () { if (AUDIO.owner() !== 'm4ih' || S.pm === null) { m4ihDraw(S); return; } m4ihDraw(S); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+  return true;
+}
+function m4ihCompare(S) {
+  m4ihStop(S);
+  if (!m4ihPlay(S, false)) return;
+  var d = M4IH_TAU[S.ins][0];
+  S._seq = setTimeout(function () { S._seq = null; m4ihPlay(S, true); }, (d + 0.35) * 1000);
+}
+function m4ihSync(S) {
+  S.syncs.forEach(function (f) { f(); });
+  var on = AUDIO.owner() === 'm4ih';
+  S.spk.textContent = on ? '■ 音を止める' : '🔊 音を鳴らす'; S.spk.classList.toggle('on', on); S.spk.classList.toggle('glow', !on);
+  var nm = { piano: 'ピアノ', guitar: 'ギター', glock: '鉄琴' }[S.ins];
+  S.R.innerHTML = mathify('<div class="qcard"><p class="qt">整数倍音と非整数次倍音</p>' +
+    '<p>弦や板の振動は、理想的には基本振動の整数倍（2 倍・3 倍 …）の成分でできている。本物の楽器では、その振動数が少しずれる。</p>' +
+    '<table class="reltab grid1 voxtab"><thead><tr><th>楽器</th><th>なぜずれるか</th><th>ずれ方</th></tr></thead><tbody>' +
+    '<tr' + (S.ins === 'piano' ? ' class="on"' : '') + '><th>ピアノ</th><td class="l">太くて硬い鋼の弦。曲げにくさのため、高い成分ほど振動数が高くなる</td><td class="l">第 $n$ 成分は $n\\sqrt{1 + Bn^2}$ 倍（$B \\fallingdotseq 0.0004$）。第 12 成分で約 50 セント高い</td></tr>' +
+    '<tr' + (S.ins === 'guitar' ? ' class="on"' : '') + '><th>ギター</th><td class="l">弦の硬さ（ピアノより小さい）と、胴（ボディ）の共鳴</td><td class="l">少し高くなる（$B \\fallingdotseq 0.0001$）。100〜600 Hz の成分が胴で強まる</td></tr>' +
+    '<tr' + (S.ins === 'glock' ? ' class="on"' : '') + '><th>鉄琴</th><td class="l">板（棒）の振動は、弦とは違う式に従う</td><td class="l">$1 : 2.76 : 5.40 : 8.93$。整数倍から大きく離れる</td></tr></tbody></table>' +
+    '<p class="qnote">鳴らしている間、スペクトルの線の長さが変わる。本物に近い音では、高い成分ほど早く消える。はじく・たたく瞬間の雑音も音色の一部。</p>' +
+    '<p class="qnote">④-1 のつまみは、整数倍音だけで音を作る。楽器らしさには、非整数次倍音と、音の大きさの時間変化も効いている。</p>' +
+    '<p class="qnote">いま：' + nm + '・' + MUS.jp(S.nm) + '（' + Math.round(MUS.fET(S.nm)) + ' Hz）・' + (S.real ? '非整数倍音を考慮' : '整数倍音のみ') + '</p></div>');
+}
+/* 成分の表と、成分ごとの時定数 */
+function m4ihParts(S, real) {
+  var f = MUS.fET(S.nm), d = M4R_DEF[S.ins];
+  if (!real) { var tI = M4IH_TAU[S.ins][1]; return M4_TIM[S.ins].map(function (p) { return { r: p[0], a: Math.abs(p[1]), tau: tI }; }); }
+  return m4rParts(S.ins, f, M4_TIM[S.ins]).map(function (p, j) { return { r: p[0], a: p[1], tau: d.tau / (1 + d.dk * j) }; });
+}
+function m4ihDraw(S) {
+  var cv = S.cv; if (!cv || !cv.offsetParent) return;
+  var W = Math.max(280, Math.floor(cv.parentNode.clientWidth || 300)), nar = W < 560, WH = 120, SH = nar ? 160 : 185, G = 12, H = 10 + WH + G + (SH + G) * 2 + 14;
+  var ctx = prep(cv, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  var f = MUS.fET(S.nm), FM = f * (S.ins === 'glock' ? 10 : 13.5), t = S.pm !== null && S.pm !== undefined ? (performance.now() - S.t0) / 1000 : -1;
+  /* 波形（いま選んでいる音。減衰は入れず、成分の重なりだけ） */
+  var P = m4ihParts(S, S.real), y0 = 10;
+  ctx.save(); ctx.fillStyle = '#0d1a14'; rrect(ctx, 0, y0, W, WH, 8); ctx.fill(); ctx.restore();
+  label(ctx, '波形（' + (S.real ? '非整数倍音を考慮' : '整数倍音のみ') + '、横 15 ms）', 10, y0 + 12, { size: 10.5, bold: true, color: 'rgba(190,240,215,.95)', align: 'left', halo: false });
+  var span = 0.015, mxA = 0; P.forEach(function (p) { mxA += p.a; });
+  ctx.save(); ctx.strokeStyle = '#7dffb4'; ctx.lineWidth = 1.8; ctx.shadowColor = '#7dffb4'; ctx.shadowBlur = 4; ctx.beginPath();
+  for (var i = 0; i <= 600; i++) {
+    var tt = span * i / 600, y = 0; P.forEach(function (p, j) { y += p.a * Math.sin(TAU * p.r * f * tt + (S.real ? j * 1.7 : 0)); });
+    var X = 10 + (W - 20) * i / 600, Y = y0 + WH / 2 + 10 - y / mxA * (WH / 2 - 16); if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y);
+  }
+  ctx.stroke(); ctx.restore();
+  /* スペクトル 2 つ（上：整数倍音のみ、下：非整数倍音を考慮）。整数倍の位置に、2 つを通す点線 */
+  var fx0 = 14, fx1 = W - 14, XF = function (fr) { return fx0 + fr / FM * (fx1 - fx0); }, ys = [y0 + WH + G, y0 + WH + G + SH + G];
+  S._boxes = [];
+  [false, true].forEach(function (real, bi) {
+    var y = ys[bi], sel = S.real === real, Q = m4ihParts(S, real), am = 0, by1 = y + SH - 22, by0 = y + 46;
+    Q.forEach(function (q) { am = Math.max(am, q.a); });
+    S._boxes.push([y, y + SH, real]);
+    ctx.save(); ctx.fillStyle = '#0d1a14'; rrect(ctx, 0, y, W, SH, 8); ctx.fill();
+    if (sel) { ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 2.5; rrect(ctx, 1.5, y + 1.5, W - 3, SH - 3, 8); ctx.stroke(); }
+    ctx.restore();
+    label(ctx, real ? '非整数倍音を考慮（より本物に近い）' : '整数倍音のみ', 10, y + 13, { size: 11.5, bold: true, color: sel ? '#ffd27a' : 'rgba(190,240,215,.85)', align: 'left', halo: false });
+    if (sel) label(ctx, nar ? '選んでいる音' : '選んでいる音（🔊 で鳴る）', W - 10, y + 13, { size: 10, bold: true, color: '#ffd27a', align: 'right', halo: false });
+    else label(ctx, nar ? 'クリックで選ぶ' : 'ここをクリックで選ぶ', W - 10, y + 13, { size: 9.5, color: 'rgba(190,240,215,.6)', align: 'right', halo: false });
+    /* 整数倍の位置（点線） */
+    ctx.save(); ctx.strokeStyle = 'rgba(200,210,205,.35)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    for (var k = 1; k * f <= FM; k++) { var gx = Math.round(XF(k * f)) + 0.5; ctx.beginPath(); ctx.moveTo(gx, by0 - 4); ctx.lineTo(gx, by1); ctx.stroke(); }
+    ctx.restore();
+    ctx.save(); ctx.strokeStyle = 'rgba(120,220,170,.35)'; ctx.beginPath(); ctx.moveTo(fx0, by1 + 0.5); ctx.lineTo(fx1, by1 + 0.5); ctx.stroke(); ctx.restore();
+    for (k = 0; k <= 4; k++) { var fk = Math.round(FM * k / 4 / 100) * 100; label(ctx, fk + (k === 4 ? ' Hz' : ''), XF(fk), by1 + 10, { size: 9, color: 'rgba(190,240,215,.75)', align: k === 4 ? 'right' : 'center', halo: false }); }
+    var gap = XF(f) - XF(0);
+    Q.forEach(function (q, j) {
+      var fr = q.r * f; if (fr > FM) return;
+      var dec = t >= 0 && S.pm === real ? Math.exp(-t / q.tau) : (t >= 0 ? 0.25 : 1);   /* 鳴らしている方は時間とともに減る。鳴らしていない方はうすく */
+      var h = q.a / am * (by1 - by0) * dec, X = Math.round(XF(fr)) + 0.5;
+      ctx.save(); ctx.strokeStyle = sel ? '#7dffb4' : 'rgba(125,255,180,.45)'; ctx.lineWidth = nar ? 2.4 : 3.2; ctx.shadowColor = '#7dffb4'; ctx.shadowBlur = sel ? 6 : 0;
+      ctx.beginPath(); ctx.moveTo(X, by1); ctx.lineTo(X, by1 - Math.max(h, 1.5)); ctx.stroke(); ctx.restore();
+      var frac = Math.abs(q.r - Math.round(q.r)) > 1e-6, room = gap >= (frac ? 34 : 18) || j === 0 || S.ins === 'glock';
+      if (room) label(ctx, Math.abs(q.r - 1) < 0.01 ? '基音' : '×' + m3Rt(q.r), X, by0 - 16, { size: 9.5, bold: true, color: 'rgba(255,214,120,.95)', halo: false });
+      if (real && frac && S.ins !== 'glock' && gap >= 34 && j > 0) { var ct = Math.round(1200 * Math.log2(q.r / Math.round(q.r))); if (ct) label(ctx, '+' + ct + ' セント', X, by0 - 4, { size: 8.5, color: 'rgba(255,190,120,.85)', halo: false }); }
+    });
+  });
+  label(ctx, '点線：整数倍（2 倍・3 倍 …）の位置', W / 2, H - 8, { size: 9.5, color: '#5b6470' });
+}
+
 /* ===== 75_m4.js ===== */
 /* =========================================================================
    章 ④ 音波（芸術の範囲）— 2026-11-05 千葉さん 8 回目
    ④-1 倍音と楽器ごとの音色 ～自由に音を作ろう～ … 77_m4h.js（id は m4h）
-   ④-2 歌声の原理 … 78_m4v.js（id は m4v。28 回目に新しく入れた）
-   ④-3 波長（長さ）の違いを手で作る楽器（リコーダー・オーボエ・モノコード（ギター））… id m4s1
-   ④-4 波長（長さ）の違いが最初からある楽器（試験管の笛・ピアノ・鉄琴）… 76_m4p.js（id は m4p）
-   ④-5 倍音のみで演奏する楽器（ナチュラルトランペット・ブランデンブルク協奏曲）… id m4s2
-   ④-6 和音（コード）とは何か … id m4s3
-   ④-7 純正律とは何か・平均律とは何か … id m4s4
-   ④-8 純正律と平均律を聞き比べよう … id m4s5
-   （15 回目・16 回目・28 回目に節を入れたので、番号はずれた。id はそのまま）
+   ④-2 非整数次倍音が強い楽器の音色 … 74_m4real.js（id は m4ih。36 回目に新しく入れた）
+   ④-3 歌声の原理 … 78_m4v.js（id は m4v。28 回目に新しく入れた）
+   ④-4 波長（長さ）の違いを手で作る楽器（リコーダー・オーボエ・モノコード（ギター））… id m4s1
+   ④-5 波長（長さ）の違いが最初からある楽器（試験管の笛・ピアノ・鉄琴）… 76_m4p.js（id は m4p）
+   ④-6 倍音のみで演奏する楽器（ナチュラルトランペット・ブランデンブルク協奏曲）… id m4s2
+   ④-7 和音（コード）とは何か … id m4s3
+   ④-8 純正律とは何か・平均律とは何か … id m4s4
+   ④-9 純正律と平均律を聞き比べよう … id m4s5
+   （15 回目・16 回目・28 回目・36 回目に節を入れたので、番号はずれた。id はそのまま）
    ★ 音と図は同じ値から：音色は倍音の表 [[n, aₙ], …]。図・オシロスコープ・スペクトル・音（AUDIO）に同じ表を渡す
    ★ 音はボタン（音符・鍵盤のクリックも）を押したときだけ。同時に 1 つ。章を切りかえると止まる
    ========================================================================= */
@@ -8835,7 +9067,7 @@ function m4Scope(s, f, parts, cap, FM, span) {
 var M4S1_INS = [['recorder', 'リコーダー'], ['oboe', 'オーボエ'], ['guitar', 'モノコード（ギター）']];   /* 順番を変えた（2026-11-07 千葉さん 14 回目） */
 var M4S1_NOTES = [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83, 84];   /* C4〜C6 の白鍵 */
 DEFS.m4s1 = {
-  id: 'm4s1', mode: 'mode4', num: 3,
+  id: 'm4s1', mode: 'mode4', num: 4,
   title: '波長（長さ）の違いを手で作る楽器', short: '長さを手で変える楽器',
   desc: '楽器は、弦や管の<b>長さ</b>を変えて音の高さ（振動数）を変える。<span class="todo">楽器を選び、穴・こまか五線譜の音符をクリック。<b>Enter キー</b>（または弦・管をクリック）で音を出そう。</span>',
   strobe: false, stepDiv: 16,
@@ -8961,9 +9193,9 @@ function rightM4S1(s, R) {
    ===================================================================== */
 var M4S2_F1 = M4_C4 / 2;
 DEFS.m4s2 = {
-  id: 'm4s2', mode: 'mode4', num: 5,
+  id: 'm4s2', mode: 'mode4', num: 6,
   title: '倍音のみで演奏する楽器', short: '倍音のみの楽器',
-  desc: '基本振動数 $f_1$ の整数倍の振動数の音を<b>倍音</b>という。ナチュラルトランペットは ④-3 で見た現代の楽器と違い、穴（バルブ）もピストンも持たない古楽器であり、倍音のみで演奏する。<span class="todo">出せる音を五線譜からクリックしよう。</span>',
+  desc: '基本振動数 $f_1$ の整数倍の振動数の音を<b>倍音</b>という。ナチュラルトランペットは ④-4 で見た現代の楽器と違い、穴（バルブ）もピストンも持たない古楽器であり、倍音のみで演奏する。<span class="todo">出せる音を五線譜からクリックしよう。</span>',
   strobe: false, stepDiv: 16,
   vars: [],
   init: function (s) { s.n = null; s.tN = 0; },
@@ -9119,7 +9351,7 @@ function m4s3Qc(c) { var f0 = M4_C4 * (c.base || 1) / c.r[0]; return { c: c, f: 
 function m4s3Q(s) { return m4s3Qc(M4S3_CH[s.ci]); }
 function m4s3Qi(s) { return m4s3Qc(M4S3_IV[s.ii]); }
 DEFS.m4s3 = {
-  id: 'm4s3', mode: 'mode4', num: 6,
+  id: 'm4s3', mode: 'mode4', num: 7,
   title: '和音（コード）とは何か', short: '和音（コード）',
   desc: '高さの違う音を同時に鳴らしたものを<b>和音</b>（コード）という。振動数の比が簡単な整数比だと、よく調和して聞こえる。<span class="todo">2 つの音・3 つの音を選ぶと音が鳴る。合成した波を比べよう。</span>なお、ここでは振動数をちょうど整数比にしている（純正律）。',
   strobe: false, stepDiv: 16,
@@ -9219,7 +9451,7 @@ function rightM4S3(s, R) {
     '<tr><td>ド・ド（オクターブ上）</td><td>$1:2$</td><td>とけ合って 1 つの音のよう</td></tr><tr><td>ド・ソ（5 度）</td><td>$2:3$</td><td>よく協和する</td></tr><tr><td>ド・ファ（4 度）</td><td>$3:4$</td><td>協和する</td></tr><tr><td>ド・ミ（長 3 度）</td><td>$4:5$</td><td>明るく協和する</td></tr><tr><td>ド・ド♯（半音）</td><td>$15:16$</td><td>にごる（不協和）</td></tr>' +
     '<tr><td>ド・ミ・ソ、ソ・シ・レ</td><td>$4:5:6$</td><td>明るい（長 3 和音）</td></tr><tr><td>ド・ファ・ラ</td><td>$3:4:5$</td><td>協和する</td></tr><tr><td>ド・ド♯・レ</td><td>$120:128:135$</td><td>にごる（不協和）</td></tr></tbody></table>' +
     '<p class="qnow"><span class="qtag now">いま</span>' + c.nm + '：' + q.f.map(function (f) { return sig(f, 4) + ' Hz'; }).join('・') + '（比 $' + c.r.join(':') + '$）</p>' +
-    '<p class="qnote">ここでは振動数をちょうど整数比にしている（純正律）。ピアノなどの平均律では少しずれる（④-7）。</p></div>';
+    '<p class="qnote">ここでは振動数をちょうど整数比にしている（純正律）。ピアノなどの平均律では少しずれる（④-8）。</p></div>';
   R.innerHTML = mathify(h);
 }
 
@@ -9231,7 +9463,7 @@ function rightM4S3(s, R) {
 var M4_JUST = [[60, 1, 1, '1'], [62, 9, 8, '9/8'], [64, 5, 4, '5/4'], [65, 4, 3, '4/3'], [67, 3, 2, '3/2'], [69, 5, 3, '5/3'], [71, 15, 8, '15/8'], [72, 2, 1, '2']];
 function m4Just(m) { for (var i = 0; i < M4_JUST.length; i++) if (M4_JUST[i][0] === m) return MUS.fET(60) * M4_JUST[i][1] / M4_JUST[i][2]; return null; }
 DEFS.m4s4 = {
-  id: 'm4s4', mode: 'mode4', num: 7,
+  id: 'm4s4', mode: 'mode4', num: 8,
   title: '純正律とは何か・平均律とは何か', short: '純正律・平均律とは',
   desc: '<b>純正律</b>は振動数の比を簡単な整数比にした音階、<b>平均律</b>は 1 オクターブを 12 の半音に等しい比で分けた音階。<span class="todo">鍵盤をクリックして、2 つの音階の振動数を比べよう。</span>',
   strobe: false, stepDiv: 16,
@@ -9359,7 +9591,7 @@ function m4s5Pairs(q) {
 /* いちばん目立つ組（オシロスコープに出す）：長 3 度は 5 倍音と 4 倍音、完全 5 度は 3 倍音と 2 倍音 */
 function m4s5Main(q, P) { var want = q.iv.k === 'P5' ? [3, 2] : [5, 4]; for (var k = 0; k < P.length; k++) if (P[k].a === 0 && P[k].i === want[0] && P[k].j === want[1]) return P[k]; return P[0]; }
 DEFS.m4s5 = {
-  id: 'm4s5', mode: 'mode4', num: 8,
+  id: 'm4s5', mode: 'mode4', num: 9,
   title: '純正律と平均律を聞き比べよう', short: '純正律・平均律聞き比べ',
   desc: '楽器の音には<b>倍音</b>が含まれる。2 つの音の倍音どうしが少しだけずれると、<b>うなり</b>が生じて音が揺れる。<span class="todo">音程と調律を切りかえて聞き比べよう（切りかえると 4 秒鳴る）。</span>',
   strobe: false, stepDiv: 16,
@@ -9488,7 +9720,7 @@ function m4pLen(ins, f) {
 }
 function m4pLam(ins, f) { var L = m4pLen(ins, f); return ins === 'tube' ? 4 * (L + M4P.dx) : (ins === 'piano' ? 2 * L : 2 * Math.PI * L / 4.730); }
 DEFS.m4p = {
-  id: 'm4p', mode: 'mode4', num: 4,
+  id: 'm4p', mode: 'mode4', num: 5,
   title: '波長（長さ）の違いが最初からある楽器', short: '長さが最初から違う楽器',
   desc: '試験管の笛・ピアノ・鉄琴は、音ごとに長さの違う管・弦・板が並んでいる。<span class="todo">楽器を選び、管・弦・板か五線譜の音符をクリックしよう。短いほど波長が短く、振動数が大きい（高い音）。</span>',
   strobe: false, stepDiv: 16,
@@ -9978,7 +10210,7 @@ function m4hNoiseScope(s) {
 }
 
 /* =====================================================================
-   ④-2 歌声の原理（27 回目に ④-2 の下に作り、28 回目に独立した節にした。id は m4v。custom の節で、Sim は使わない）
+   ④-3 歌声の原理（27 回目に作り、28 回目に独立した節 ④-2 にした。36 回目から ④-3。id は m4v。custom の節で、Sim は使わない）
    ・顔を横から切った図（解剖図）：肺からの息 → 声帯（喉頭の中）→ 咽頭・口腔（声道）で共鳴 → 口から声
    ・声の種類（地声・裏声・合唱の声・オペラの声・ハスキーボイス・ウィスパーボイス）ごとに、
      喉頭の高さ・軟口蓋・咽頭の広さ・口の開き・舌の位置・声帯の振動のしかたを変えて描く（切りかえるとなめらかに変わる）
@@ -9997,7 +10229,7 @@ var M4V_TYPES = [
     snd: { f0: 220, tilt: 1.0, vib: 0.004, vr: 5.5, set: M4V_SET_A, noise: 0.03 } },
   { k: 'head', nm: '裏声', lar: -2, vel: 0.5, phar: 1, jaw: 9, tng: 0.25, fold: 0.45, cq: 0.08, gap: 0.12, amp: 0.7, vibr: true, loud: 0.55,
     snd: { f0: 523, tilt: 1.9, vib: 0.008, vr: 5.5, set: M4V_SET_A, noise: 0.08 } },
-  { k: 'choir', nm: '合唱の声', lar: 5, vel: 1, phar: 5, jaw: 13, tng: 0.7, fold: 0.65, cq: 0.3, gap: 0.03, amp: 0.85, vibr: true, loud: 0.75,
+  { k: 'choir', nm: '合唱の声', aim: 1, lar: 5, vel: 1, phar: 5, jaw: 13, tng: 0.7, fold: 0.65, cq: 0.3, gap: 0.03, amp: 0.85, vibr: true, loud: 0.75,
     snd: { f0: 392, tilt: 1.3, vib: 0.007, vr: 5.5, set: M4V_SET_C, noise: 0.05 } },
   { k: 'opera', nm: 'オペラの声', lar: 12, vel: 1, phar: 9, jaw: 17, tng: 0.85, fold: 0.9, cq: 0.45, gap: 0, amp: 1, vibr: true, loud: 1,
     snd: { f0: 440, tilt: 0.6, vib: 0.035, vr: 5.5, set: M3_OPERA.hi, noise: 0.04 } },
@@ -10014,7 +10246,7 @@ var M4V_HOW = {
     ['特徴', '倍音が多く、力強い声。高い音を無理に出すと、のどをしめつけやすい']],
   head: [['声帯', '引きのばされて薄くなり、ふちだけが振動する。閉じきらない'], ['のど', '少し上がりやすい。力を抜く'], ['口', 'ふつうに開く'],
     ['特徴', '倍音が少なく、やわらかく細い声。高い音が楽に出せる']],
-  choir: [['声帯', '裏声のような軽い使い方に、地声のしっかりした閉じ方を少し混ぜる'], ['のど', 'あくびの始めのように奥を広げる（軟口蓋を上げる）。喉頭はふだんより少し低め'],
+  choir: [['声帯', '裏声のような軽い使い方に、地声のしっかりした閉じ方を少し混ぜる'], ['のど', 'あくびの始めのように奥を広げる（軟口蓋を上げる）。息（響き）を軟口蓋に当てるようにする。喉頭はふだんより少し低め'],
     ['口', '縦に開け、舌の先は下の前歯の裏に置く'], ['特徴', 'やわらかく響き、まわりの声と溶け合いやすい。ビブラートは小さい']],
   opera: [['声帯', 'しっかり閉じ、強い息の圧力を、おなかで支える'], ['のど', '喉頭を下げ、咽頭を大きく広げる。軟口蓋を高く上げる'], ['口', '縦に大きく開け、舌を下げる'],
     ['特徴', '2.5〜3.5 kHz に強い共鳴（歌手のフォルマント）ができ、オーケストラの中でも遠くまで届く。ビブラートが大きい（1 秒に 5〜7 回）']],
@@ -10025,7 +10257,7 @@ var M4V_HOW = {
 };
 
 DEFS.m4v = {
-  id: 'm4v', mode: 'mode4', num: 2, custom: true,
+  id: 'm4v', mode: 'mode4', num: 3, custom: true,
   title: '歌声の原理', short: '歌声の原理',
   html: function () { return '<div class="voxhost"></div>'; },
   build: function (art) { var host = art.querySelector('.voxhost'); M4V_S = {}; m4vBuild(M4V_S, host); }
@@ -10046,18 +10278,26 @@ function m4vBuild(s, art) {
     b.addEventListener('click', function () { m4vSel(s, v.k); });
     seg.appendChild(b); V.btns[v.k] = b;
   });
-  var lb = el('span', 'seglbl', '声の種類'); ctl.appendChild(lb); ctl.appendChild(seg);
+  /* 34 回目：左から ▶ スタート・🐢 スロー・↺ リセット｜🔊 声を鳴らす・音量｜声の種類 */
+  V.run = false; V.slowM = false;
+  var bp = el('button', 'b play', '▶ スタート'), bsl = el('button', 'b', '🐢 スロー'), brs = el('button', 'b', '↺ リセット');
+  [bp, bsl, brs].forEach(function (b) { b.type = 'button'; ctl.appendChild(b); });
+  bp.addEventListener('click', function () { V.run = !V.run; m4vSync(s); m4vLoop(s); });
+  bsl.addEventListener('click', function () { V.slowM = !V.slowM; m4vSync(s); });
+  brs.addEventListener('click', function () { V.run = false; V.t = 0; m4vSync(s); m4vDraw(s); });
+  V.bp = bp; V.bsl = bsl;
   var spk = el('button', 'b spk voxspk', '🔊 声を鳴らす'); spk.type = 'button';
   spk.addEventListener('click', function () { if (AUDIO.owner() === 'm4v') { AUDIO.stop(); return; } m4vSound(s); });
   ctl.appendChild(spk); V.spk = spk; spkVol(spk, 'm4v');
+  var lb = el('span', 'seglbl', '声の種類'); ctl.appendChild(lb); ctl.appendChild(seg);
   box.appendChild(ctl);
-  /* 右の顔に描く定在波（第 1〜3 共鳴）を選ぶ（32 回目） */
-  var ctl2 = el('div', 'voxctl'), seg2 = el('div', 'seg'); V.swm = 1; V.mbtns = [];
+  /* 右の顔に描く定在波（第 1〜3 共鳴）を選ぶ（32 回目）。34 回目：図の中（右上、狭い画面では右の顔の上）に置く */
+  var msel = el('div', 'voxmsel'), seg2 = el('div', 'seg'); V.swm = 1; V.mbtns = [];
   [1, 2, 3].forEach(function (m) { var b = el('button', 'b', '第 ' + m + ' 共鳴'); b.type = 'button'; b.addEventListener('click', function () { V.swm = m; m4vSync(s); m4vDraw(s); }); seg2.appendChild(b); V.mbtns.push(b); });
-  ctl2.appendChild(el('span', 'seglbl', '右の顔の定在波')); ctl2.appendChild(seg2); box.appendChild(ctl2);
+  msel.appendChild(el('span', 'seglbl', '右の顔の定在波')); msel.appendChild(seg2); V.msel = msel;
   /* 31 回目：図は横長に 1 つ（左：声を出している顔、右：① 振動体の振動・② 声道の定在波）。出し方はその下に横長に */
   var body = el('div', 'voxone'), L = el('div', 'voxL'), R = el('div', 'voxR voxhowR'), cw = el('div', 'cvwrap'), cv = el('canvas');
-  cw.appendChild(cv); L.appendChild(cw); L.appendChild(el('p', 'voxslow', '')); body.appendChild(L); body.appendChild(R); box.appendChild(body);
+  cw.appendChild(cv); cw.appendChild(V.msel); L.appendChild(cw); L.appendChild(el('p', 'voxslow', '')); body.appendChild(L); body.appendChild(R); box.appendChild(body);
   V.cv = cv; V.R = R; V.slow = L.querySelector('.voxslow');
   /* 声の振動体と定在波（30 回目） */
   var sw = el('div', 'voxsw');
@@ -10112,9 +10352,9 @@ function m4vBuild(s, art) {
   window.addEventListener('resize', function () { m4vDraw(s); });
   m4vLoop(s);
 }
-function m4vParam(v) { return { lar: v.lar, vel: v.vel, phar: v.phar, jaw: v.jaw, tng: v.tng, fold: v.fold, cq: v.cq, gap: v.gap, amp: v.amp, loud: v.loud }; }
+function m4vParam(v) { return { aim: v.aim || 0, lar: v.lar, vel: v.vel, phar: v.phar, jaw: v.jaw, tng: v.tng, fold: v.fold, cq: v.cq, gap: v.gap, amp: v.amp, loud: v.loud }; }
 function m4vSel(s, k) {
-  var V = s.vox; V.from = V.p; V.tSw = V.t; V.cur = k; m4vSync(s);
+  var V = s.vox; V.from = V.p; V.tSw = V.rt || 0; V.cur = k; m4vSync(s);
   if (AUDIO.owner() === 'm4v') m4vSound(s);
 }
 function m4vSound(s) { var v = M4V_BY[s.vox.cur]; AUDIO.play('m4v', [{ f: v.snd.f0 || 300, data: m3SungBuf(v.snd), sr: M3_OPSR }], 0.8); }
@@ -10140,6 +10380,7 @@ function m4vSync(s) {
   M4V_TYPES.forEach(function (v) { V.btns[v.k].classList.toggle('on', V.cur === v.k); V.btns[v.k].setAttribute('aria-pressed', V.cur === v.k ? 'true' : 'false'); });
   Object.keys(V.cbtns).forEach(function (k) { V.cbtns[k].classList.toggle('on', V.choir === k); });
   if (V.mbtns) V.mbtns.forEach(function (b, i) { b.classList.toggle('on', V.swm === i + 1); });
+  if (V.bp) { V.bp.textContent = V.run ? '❚❚ 一時停止' : '▶ スタート'; V.bsl.classList.toggle('on', !!V.slowM); }
   var on = AUDIO.owner() === 'm4v', con = AUDIO.owner() === 'm4vc';
   V.spk.textContent = on ? '■ 音を止める' : '🔊 声を鳴らす'; V.spk.classList.toggle('on', on); V.spk.classList.toggle('glow', !on);
   V.cspk.textContent = con ? '■ 音を止める' : '🔊 4 人の声を鳴らす'; V.cspk.classList.toggle('on', con); V.cspk.classList.toggle('glow', !con);
@@ -10159,7 +10400,8 @@ function m4vLoop(s) {
   var step = function (now) {
     V.raf = null;
     if (!V.vis || document.hidden) return;
-    V.t += Math.min(0.05, (now - last) / 1000); last = now;
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    V.rt = (V.rt || 0) + dt; if (V.run) V.t += dt * (V.slowM ? 0.3 : 1);   /* 形の切りかえは止めていても進める（V.rt） */
     m4vDraw(s);
     V.raf = requestAnimationFrame(step);
   };
@@ -10168,7 +10410,7 @@ function m4vLoop(s) {
 /* 切りかえのとき、0.7 s でなめらかに変える */
 function m4vCurP(s) {
   var V = s.vox, to = m4vParam(M4V_BY[V.cur]); if (!V.from) return (V.p = to);
-  var u = clamp((V.t - V.tSw) / 0.7, 0, 1), e = u * u * (3 - 2 * u), o = {};
+  var u = clamp(((V.rt || 0) - V.tSw) / 0.7, 0, 1), e = u * u * (3 - 2 * u), o = {};
   Object.keys(to).forEach(function (k) { o[k] = V.from[k] + (to[k] - V.from[k]) * e; });
   if (u >= 1) V.from = null;
   return (V.p = o);
@@ -10182,20 +10424,40 @@ function m4vDraw(s) {
   var V = s.vox, cv = V.cv; if (!cv || !cv.offsetParent) return;
   var W = Math.max(280, Math.floor(cv.parentNode.clientWidth || 300)), p = m4vCurP(s), v = M4V_BY[V.cur], ph = (V.t * M4V_FSHOW) % 1, m = V.swm || 1;
   /* 32 回目：顔を 2 つ（左：息の流れと声、右：振動体と定在波）。その下（広い画面では右）に ① 声帯の振動、② 定在波（まっすぐな管）とスペクトル */
-  var lay = W >= 1000 ? 3 : (W >= 600 ? 2 : 1), GH = 150, GR = 118, TH = 3 * (W < 560 ? 84 : 70) + 44, SH = 140, k, f1, f2, H, L = {};
+  var lay = W >= 1000 ? 3 : (W >= 600 ? 2 : 1), GH = 150, GR = 118, TH = 3 * (W < 560 ? 84 : 70) + 44, SH = 150, k, f1, f2, H, L = {}, ms;
   var TOP = 24;
-  if (lay === 1) { k = Math.min((W - 10) / 300, 1.2); f1 = [(W - 300 * k) / 2, TOP]; f2 = [(W - 300 * k) / 2, TOP + 345 * k + 30]; var yb = f2[1] + 345 * k + 26; L.h1 = [8, W - 16, yb]; L.g = [8, yb + 16, W - 16]; L.gr = [8, yb + 16 + GH + 14, W - 16]; var y3 = yb + 16 + GH + 14 + GR + 32; L.h2 = [8, W - 16, y3]; L.t = [8, y3 + 16, W - 16]; var y5 = y3 + 16 + TH + 22; L.h3 = [8, W - 16, y5]; L.sp = [8, y5 + 16, W - 16]; H = L.sp[1] + SH + 8; }
-  else if (lay === 2) { k = Math.min((W - 30) / 600, 1.2); f1 = [W / 2 - 300 * k - 8, TOP]; f2 = [W / 2 + 8, TOP]; var yb2 = TOP + 345 * k + 26, hw = (W - 24) / 2; L.h1 = [8, W - 16, yb2]; L.g = [8, yb2 + 16, hw]; L.gr = [16 + hw, yb2 + 16 + 16, hw]; var y4 = yb2 + 16 + GH + 30; L.h2 = [8, W - 16, y4]; L.t = [8, y4 + 16, W - 16]; var y6 = y4 + 16 + TH + 22; L.h3 = [8, W - 16, y6]; L.sp = [8, y6 + 16, W - 16]; H = L.sp[1] + SH + 8; }
-  else { k = Math.min((W * 0.62 - 24) / 600, 1.25); f1 = [6, TOP]; f2 = [6 + 300 * k + 12, TOP]; var cx = f2[0] + 300 * k + 18, cw = W - cx - 8, yb3 = TOP + 345 * k + 26; L.h1 = [cx, cw, 10]; L.g = [cx, 26, cw]; L.gr = [cx, 26 + GH + 14, cw]; var yh = Math.max(yb3, 26 + GH + 14 + GR + 26), hw3 = (W - 32) / 2; L.h2 = [8, hw3, yh]; L.h3 = [24 + hw3, hw3, yh]; L.t = [8, yh + 16, hw3]; L.sp = [24 + hw3, yh + 22, hw3]; H = Math.max(L.t[1] + TH + 8, L.sp[1] + SH + 8); }
+  /* 34 回目：上の段＝顔 2 つ（と「右の顔の定在波」）、下の段＝① 振動体｜② まっすぐな管｜③ スペクトル */
+  if (lay === 1) {
+    k = Math.min((W - 10) / 300, 1.2); f1 = [(W - 300 * k) / 2, TOP]; ms = [8, TOP + 345 * k + 14, W - 16]; f2 = [(W - 300 * k) / 2, TOP + 345 * k + 86];
+    var yb = f2[1] + 345 * k + 26; L.h1 = [8, W - 16, yb]; L.g = [8, yb + 16, W - 16]; L.gr = [8, yb + 16 + GH + 14, W - 16];
+    var y3 = yb + 16 + GH + 14 + GR + 32; L.h2 = [8, W - 16, y3]; L.t = [8, y3 + 16, W - 16]; var y5 = y3 + 16 + TH + 22; L.h3 = [8, W - 16, y5]; L.sp = [8, y5 + 16, W - 16]; H = L.sp[1] + SH + 8;
+  } else if (lay === 2) {
+    k = Math.min((W - 30) / 600, 1.2); f1 = [W / 2 - 300 * k - 8, TOP]; f2 = [W / 2 + 8, TOP]; ms = [8, TOP + 345 * k + 10, W - 16];
+    var yb2 = TOP + 345 * k + 80, c1w = Math.round((W - 24) * 0.42), c2x = 16 + c1w, c2w = W - c2x - 8;
+    L.h1 = [8, c1w, yb2]; L.g = [8, yb2 + 16, c1w]; L.gr = [8, yb2 + 16 + GH + 14, c1w];
+    L.h2 = [c2x, c2w, yb2]; L.t = [c2x, yb2 + 16, c2w];
+    var y6 = Math.max(yb2 + 16 + GH + 14 + GR, yb2 + 16 + TH) + 22; L.h3 = [8, W - 16, y6]; L.sp = [8, y6 + 16, W - 16]; H = L.sp[1] + SH + 8;
+  } else {
+    k = Math.min((W * 0.66 - 24) / 600, 1.25); f1 = [6, TOP]; f2 = [6 + 300 * k + 12, TOP];
+    var rx = f2[0] + 300 * k + 18; ms = [rx, TOP + 40, W - rx - 8];
+    var yb3 = TOP + 345 * k + 26, cw1 = Math.round((W - 32) * 0.28), cw3 = Math.round((W - 32) * 0.3), cw2 = W - 32 - cw1 - cw3, x2 = 8 + cw1 + 8, x3 = x2 + cw2 + 8;
+    L.h1 = [8, cw1, yb3]; L.g = [8, yb3 + 16, cw1]; L.gr = [8, yb3 + 16 + GH + 14, cw1];
+    L.h2 = [x2, cw2, yb3]; L.t = [x2, yb3 + 16, cw2];
+    L.h3 = [x3, cw3, yb3]; L.sp = [x3, yb3 + 22, cw3];
+    H = Math.max(L.gr[1] + GR + 8, L.t[1] + TH + 8, L.sp[1] + SH + 8);
+  }
+  /* 「右の顔の定在波」の操作を図の中に置く（canvas のまわりのすき間を足す） */
+  V.msel.style.left = (cv.offsetLeft + ms[0]) + 'px'; V.msel.style.top = (cv.offsetTop + ms[1]) + 'px'; V.msel.style.width = ms[2] + 'px';
+  V.msel.classList.toggle('side', lay === 3);
   var ctx = prep(cv, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
   label(ctx, '息の流れと声', f1[0] + 150 * k, f1[1] - 12, { size: 12, bold: true, color: '#2d63b8' });
   label(ctx, '振動体と定在波（第 ' + m + ' 共鳴）', f2[0] + 150 * k, f2[1] - 12, { size: 12, bold: true, color: '#c9670c' });
   m4vAnat(ctx, p, v, ph, V.t, f1[0], f1[1], k, 0);
   m4vAnat(ctx, p, v, ph, V.t, f2[0], f2[1], k, m);
   var hd = function (tx, h, col) { var y = h[2]; ctx.save(); ctx.fillStyle = col; ctx.globalAlpha = 0.1; rrect(ctx, h[0], y - 9, h[1], 19, 6); ctx.fill(); ctx.restore(); label(ctx, tx, h[0] + h[1] / 2, y, { size: 11.5, bold: true, color: col }); };
-  hd('① 振動体（声帯）の振動をくわしく', L.h1, '#c0262d');
+  hd(lay === 3 ? '① 振動体（声帯）の振動' : '① 振動体（声帯）の振動をくわしく', L.h1, '#c0262d');
   hd('② 声道を、まっすぐな管（閉管）として見ると', L.h2, '#c9670c');
-  hd('③ 声のスペクトル（声帯の音 × 声道の共鳴）', L.h3, '#1f7a52');
+  hd(lay === 3 ? '③ 声のスペクトル' : '③ 声のスペクトル（声帯の音 × 声道の共鳴）', L.h3, '#1f7a52');
   m4vGlottis(ctx, p, v, ph, L.g[0], L.g[1], L.g[2], GH);
   m4vGraph(ctx, p, v, V.t, L.gr[0], L.gr[1], L.gr[2], GR);
   m4vTubes(ctx, p, V.t, L.t[0], L.t[1], L.t[2], W < 560, m);
@@ -10271,7 +10533,8 @@ function m4vAnat(ctx, p, v, ph, t, ax, ay, k, sw) {   /* sw：0＝息の流れ�
   ctx.beginPath(); ctx.moveTo(176, gy - th); ctx.lineTo(167 + op * 4, gy); ctx.lineTo(176, gy + th); ctx.closePath(); ctx.fill();
   if (!sw) {
   /* 息の流れ（下から上へ、口から外へ） */
-  var path = [[167, 345], [167, gy + 4], [167, gy - 8], [172 + F * 0.2, 190], [170, 150], [140, 128 + p.tng * 6], [100, 126 + j * 0.4], [68, 131 + j * 0.5], [30, 131 + j * 0.5]];
+  var am = p.aim || 0;   /* 合唱の声：息（響き）を軟口蓋に当てるように、のどから上へ向かい、軟口蓋のあたりを通って口へ（34 回目） */
+  var path = [[167, 345], [167, gy + 4], [167, gy - 8], [172 + F * 0.2, 190], [170 + am * 2, 150 - am * 24], [140 + am * 12, 128 + p.tng * 6 - am * 10], [100, 126 + j * 0.4 - am * 3], [68, 131 + j * 0.5], [30, 131 + j * 0.5]];
   var segL = [], tot = 0; for (var i = 1; i < path.length; i++) { var d = Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); segL.push(d); tot += d; }
   var nP = 14, sp = 70 * (v.k === 'whisper' || v.k === 'husky' ? 1.25 : 1);
   ctx.fillStyle = 'rgba(70,130,220,.75)';
@@ -10315,6 +10578,7 @@ function m4vAnat(ctx, p, v, ph, t, ax, ay, k, sw) {   /* sw：0＝息の流れ�
   var note = [];
   if (p.lar > 4) note.push(['喉頭を下げる ↓', 70, gy + 52]);
   if (p.vel > 0.8) note.push(['軟口蓋を上げる ↑', 215, 62]);
+  if (am > 0.5) note.push(['息を軟口蓋に当てる ↘', 112, 74]);
   if (p.jaw > 12) note.push(['口を縦に開く ↕', 34, 205]);
   if (!sw) note.forEach(function (n) { var a = P(n[1], n[2]); label(ctx, n[0], a[0], a[1], { size: 10.5, bold: true, color: '#c9670c' }); });
 }
@@ -10466,8 +10730,9 @@ var M4V_TUBE = { L: 0.17, V: 340 };
 function m4vTubes(ctx, p, t, x, y, w, nar, sel) {
   /* 33 回目：顔の図と同じ向きに。左＝くちびる側（開いた端＝自由端）、右＝声帯側（閉じた端＝固定端） */
   var Lm = M4V_TUBE.L + p.lar * 0.001, rowH = nar ? 84 : 70, x0 = x + (nar ? 10 : 70), x1 = x + w - (nar ? 10 : 64);   /* 喉頭を下げると声道が長くなる（1 単位 ≒ 1 mm） */
-  label(ctx, nar ? 'くちびる側（自由端）' : 'くちびる側（開いた端＝自由端）', x0, y + 6, { size: 9.5, bold: true, color: '#2d63b8', align: 'left' });
-  label(ctx, nar ? '声帯側（固定端）' : '声帯側（閉じた端＝固定端）', x1, y + 6, { size: 9.5, bold: true, color: '#c0262d', align: 'right' });
+  var sh = nar || w < 520;
+  label(ctx, sh ? 'くちびる側（自由端）' : 'くちびる側（開いた端＝自由端）', x0, y + 6, { size: 9.5, bold: true, color: '#2d63b8', align: 'left' });
+  label(ctx, sh ? '声帯側（固定端）' : '声帯側（閉じた端＝固定端）', x1, y + 6, { size: 9.5, bold: true, color: '#c0262d', align: 'right' });
   for (var m = 1; m <= 3; m++) {
     var cy = y + 20 + rowH * (m - 1) + rowH / 2 - 6, hh = 17, f = (2 * m - 1) * M4V_TUBE.V / (4 * Lm);
     if (m === sel) { ctx.save(); ctx.fillStyle = 'rgba(224,123,24,.1)'; rrect(ctx, x + 2, cy - hh - 16, w - 4, 2 * hh + (nar ? 40 : 30), 6); ctx.fill(); ctx.restore(); }   /* 顔の図に描いている共鳴 */
@@ -11050,12 +11315,12 @@ var MODES = [
   { id: 'mode3', name: '音波（物理基礎の範囲）', secs: ['m3s1', 'm3s2', 'm3s3', 'm3s4', 'm3s5'], rotSwitch: false,
     en: 'Sound Waves',
     lead: '音は空気を伝わる縦波である。音の三要素・うなり・弦と気柱の固有振動と共鳴・モノコード・気柱共鳴実験を、音を聞きながら確かめよう。' },
-  { id: 'mode4', name: '音波（芸術の範囲）', secs: ['m4h', 'm4v', 'm4s1', 'm4p', 'm4s2', 'm4s3', 'm4s4', 'm4s5'], rotSwitch: false,
+  { id: 'mode4', name: '音波（芸術の範囲）', secs: ['m4h', 'm4ih', 'm4v', 'm4s1', 'm4p', 'm4s2', 'm4s3', 'm4s4', 'm4s5'], rotSwitch: false,
     en: 'Sound and Music',
     lead: 'このページは、あなたのより深い音楽への理解のために作りました。特に合唱・合奏で「長 3 度の音（ドに対するミの音）は下げ気味で」と聞いたことがある人は、その理由が理解できると思います。<br>これまで学んだように、弦と気柱は、基音の整数倍の振動数の音、倍音を発生させる（特に <a class="xlink" href="#3-3">③-3</a> と <a class="xlink" href="#3-4">③-4</a> から理解できる）。弦は弦楽器、気柱は管楽器と私たちの体から出る声の発音原理を理解できる。倍音の構成比の違いから、声や言葉、楽器は音色（y-t グラフの波形、オシロの波形）が違う。音色の原理、和音・平均律と純正律を、振動数の比から見てみよう。' },
   { id: 'mode5', name: 'より知りたい人へ：フーリエ変換などの大学レベルの内容', secs: ['m5s1', 'm5s2', 'm5s3', 'm5s4', 'm5s5'], rotSwitch: false,
     en: 'Fourier Transform',
-    lead: '①〜④では、波を「いろいろな振動数の正弦波の重ね合わせ」として見てきた。特に ④ では、音を振動数の成分（倍音）に分けて見ることで、音色の正体（<a class="xlink" href="#4-1">④-1</a>）や、和音がきれいに響く理由（<a class="xlink" href="#4-6">④-6</a>・<a class="xlink" href="#4-7">④-7</a>）まで説明できた。成分に分けて見ることが、とても役に立つと分かったはずだ。<br>どんな波でも、その振動数の成分を計算で求める方法が<b>フーリエ変換</b>である。音・電波・画像など、波として表せるものなら何でも扱えるので、身の回りの技術で広く使われている。ここは大学で学ぶ内容なので、興味がある人が読めばよい（詳しくは <a class="xlink" href="#5-5">⑤-5</a> の参考サイトで）。' }
+    lead: '①〜④では、波を「いろいろな振動数の正弦波の重ね合わせ」として見てきた。特に ④ では、音を振動数の成分（倍音）に分けて見ることで、音色の正体（<a class="xlink" href="#4-1">④-1</a>）や、和音がきれいに響く理由（<a class="xlink" href="#4-7">④-7</a>・<a class="xlink" href="#4-8">④-8</a>）まで説明できた。成分に分けて見ることが、とても役に立つと分かったはずだ。<br>どんな波でも、その振動数の成分を計算で求める方法が<b>フーリエ変換</b>である。音・電波・画像など、波として表せるものなら何でも扱えるので、身の回りの技術で広く使われている。ここは大学で学ぶ内容なので、興味がある人が読めばよい（詳しくは <a class="xlink" href="#5-5">⑤-5</a> の参考サイトで）。' }
 ];
 var CIRC = '①②③④⑤⑥⑦⑧⑨';
 var GLOBAL = { hideEq: false, rot: false };
