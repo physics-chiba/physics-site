@@ -2460,6 +2460,10 @@ button.b.spdb.on,button.b.spdbq.on{background:#ffd678;border-color:#c9952a;color
 .m4rsw .seg{flex-wrap:wrap}
 .m4rsw .seg button{white-space:nowrap}
 .m4rsw .m4rnote{flex-basis:100%;margin:.1em 0 0;font-size:.8rem;color:var(--sub);line-height:1.6}
+/* ④-3：「声の種類」とボタンをひとまとまりに（37 回目）。名前の右にボタン、入りきらなければボタンの中で折り返す */
+.voxkind{display:flex;align-items:center;gap:.5em;flex:1 1 100%;min-width:0}
+.voxkind .seglbl{flex:0 0 auto}
+.voxkind .seg{flex:0 1 auto;min-width:0;flex-wrap:wrap}
 
 </style>
 </head>
@@ -10253,7 +10257,7 @@ var M4V_HOW = {
   husky: [['声帯', '振動はしているが、後ろの方にすき間が残り、閉じきらない'], ['のど', 'ふだんの位置'], ['口', 'ふつうに開く'],
     ['特徴', 'すき間からもれる息のノイズ（サー）が音に混ざった、かすれた声。声帯が疲れて腫れたとき（声がれ）にもなる']],
   whisper: [['声帯', '振動させない。すき間を開けたまま息を通す'], ['のど', 'ふだんの位置'], ['口', '小さめに開く'],
-    ['特徴', '狭いすき間を通る息の乱れ（ノイズ）が、口の形で「あ」の響きになる。声帯が振動しないので、音の高さはない']]
+    ['特徴', '狭いすき間を通る息の乱れ（ノイズ）が、口の形で「あ」の響きになる。声帯が振動しないので、音の高さはない。声帯側が少し開いているので、共鳴はふつうの声より高め']]
 };
 
 DEFS.m4v = {
@@ -10289,12 +10293,12 @@ function m4vBuild(s, art) {
   var spk = el('button', 'b spk voxspk', '🔊 声を鳴らす'); spk.type = 'button';
   spk.addEventListener('click', function () { if (AUDIO.owner() === 'm4v') { AUDIO.stop(); return; } m4vSound(s); });
   ctl.appendChild(spk); V.spk = spk; spkVol(spk, 'm4v');
-  var lb = el('span', 'seglbl', '声の種類'); ctl.appendChild(lb); ctl.appendChild(seg);
+  var kind = el('div', 'voxkind'), lb = el('span', 'seglbl', '声の種類'); kind.appendChild(lb); kind.appendChild(seg); ctl.appendChild(kind);   /* 「声の種類」の右に必ずボタンが来るように、ひとまとまりにする（37 回目） */
   box.appendChild(ctl);
   /* 右の顔に描く定在波（第 1〜3 共鳴）を選ぶ（32 回目）。34 回目：図の中（右上、狭い画面では右の顔の上）に置く */
   var msel = el('div', 'voxmsel'), seg2 = el('div', 'seg'); V.swm = 1; V.mbtns = [];
   [1, 2, 3].forEach(function (m) { var b = el('button', 'b', '第 ' + m + ' 共鳴'); b.type = 'button'; b.addEventListener('click', function () { V.swm = m; m4vSync(s); m4vDraw(s); }); seg2.appendChild(b); V.mbtns.push(b); });
-  msel.appendChild(el('span', 'seglbl', '右の顔の定在波')); msel.appendChild(seg2); V.msel = msel;
+  V.mlbl = el('span', 'seglbl', '左の顔の定在波'); msel.appendChild(V.mlbl); msel.appendChild(seg2); V.msel = msel;
   /* 31 回目：図は横長に 1 つ（左：声を出している顔、右：① 振動体の振動・② 声道の定在波）。出し方はその下に横長に */
   var body = el('div', 'voxone'), L = el('div', 'voxL'), R = el('div', 'voxR voxhowR'), cw = el('div', 'cvwrap'), cv = el('canvas');
   cw.appendChild(cv); cw.appendChild(V.msel); L.appendChild(cw); L.appendChild(el('p', 'voxslow', '')); body.appendChild(L); body.appendChild(R); box.appendChild(body);
@@ -10308,7 +10312,7 @@ function m4vBuild(s, art) {
     '<tr><th>ふつうの声（母音）</th><td class="l">声帯</td><td class="l">声道（声帯〜くちびる）。声帯側はほぼ閉じ、口側は開いた<b>閉管</b>に近い</td></tr>' +
     '<tr><th>オペラの声</th><td class="l">声帯</td><td class="l">声道に加えて、声帯のすぐ上の小さな部屋（喉頭腔）。約 3 kHz の共鳴（歌手のフォルマント）</td></tr>' +
     '<tr><th>「ん」「ま」・鼻声</th><td class="l">声帯</td><td class="l">声道と鼻腔（軟口蓋を下げて、鼻へも息を通す）</td></tr>' +
-    '<tr><th>ささやき声</th><td class="l">なし（声帯のすき間を通る息の乱れ＝ノイズ）</td><td class="l">声道（だから母音は分かる）</td></tr>' +
+    '<tr><th>ささやき声</th><td class="l">なし（声帯のすき間を通る息の乱れ＝ノイズ）</td><td class="l">声道（だから母音は分かる）。ただし雑音で不規則にゆすられ、決まった形の定在波がずっと続くわけではない。声帯側が少し開いているので、共鳴はふつうの声より高い（第 1 共鳴で約 1.45 倍）</td></tr>' +
     '<tr><th>「す」「し」</th><td class="l">なし（歯と舌のすき間を通る息の乱れ）</td><td class="l">口の前の方の小さな空間</td></tr>' +
     '</tbody></table>' +
     '<p class="qnote">リコーダーなどの管楽器では、管の定在波が音の高さを決める。声では、高さは声帯の振動数で決まり、声道の定在波は「どの倍音を強めるか」（音色）を決める。だから、同じ高さのまま「あ」「い」「う」と母音だけを変えられる。</p>' +
@@ -10352,7 +10356,9 @@ function m4vBuild(s, art) {
   window.addEventListener('resize', function () { m4vDraw(s); });
   m4vLoop(s);
 }
-function m4vParam(v) { return { aim: v.aim || 0, lar: v.lar, vel: v.vel, phar: v.phar, jaw: v.jaw, tng: v.tng, fold: v.fold, cq: v.cq, gap: v.gap, amp: v.amp, loud: v.loud }; }
+/* wsp：ささやき声（声帯側が少し開いている）。共鳴が高くなり、定在波の節が口の方へずれる（37 回目） */
+var M4V_WSP = [1.45, 1.09, 1.05];   /* 共鳴の振動数の比（ささやき声 ÷ ふつうの声）：第 1〜3 共鳴（Swerdlin ほか 2010 の平均） */
+function m4vParam(v) { return { wsp: v.k === 'whisper' ? 1 : 0, aim: v.aim || 0, lar: v.lar, vel: v.vel, phar: v.phar, jaw: v.jaw, tng: v.tng, fold: v.fold, cq: v.cq, gap: v.gap, amp: v.amp, loud: v.loud }; }
 function m4vSel(s, k) {
   var V = s.vox; V.from = V.p; V.tSw = V.rt || 0; V.cur = k; m4vSync(s);
   if (AUDIO.owner() === 'm4v') m4vSound(s);
@@ -10428,18 +10434,18 @@ function m4vDraw(s) {
   var TOP = 24;
   /* 34 回目：上の段＝顔 2 つ（と「右の顔の定在波」）、下の段＝① 振動体｜② まっすぐな管｜③ スペクトル */
   if (lay === 1) {
-    k = Math.min((W - 10) / 300, 1.2); f1 = [(W - 300 * k) / 2, TOP]; ms = [8, TOP + 345 * k + 14, W - 16]; f2 = [(W - 300 * k) / 2, TOP + 345 * k + 86];
-    var yb = f2[1] + 345 * k + 26; L.h1 = [8, W - 16, yb]; L.g = [8, yb + 16, W - 16]; L.gr = [8, yb + 16 + GH + 14, W - 16];
+    k = Math.min((W - 10) / 300, 1.2); ms = [8, TOP - 16, W - 16]; f2 = [(W - 300 * k) / 2, TOP + 84]; f1 = [(W - 300 * k) / 2, f2[1] + 345 * k + 34];   /* 37 回目：定在波の顔を先（上）に */
+    var yb = f1[1] + 345 * k + 26; L.h1 = [8, W - 16, yb]; L.g = [8, yb + 16, W - 16]; L.gr = [8, yb + 16 + GH + 14, W - 16];
     var y3 = yb + 16 + GH + 14 + GR + 32; L.h2 = [8, W - 16, y3]; L.t = [8, y3 + 16, W - 16]; var y5 = y3 + 16 + TH + 22; L.h3 = [8, W - 16, y5]; L.sp = [8, y5 + 16, W - 16]; H = L.sp[1] + SH + 8;
   } else if (lay === 2) {
-    k = Math.min((W - 30) / 600, 1.2); f1 = [W / 2 - 300 * k - 8, TOP]; f2 = [W / 2 + 8, TOP]; ms = [8, TOP + 345 * k + 10, W - 16];
+    k = Math.min((W - 30) / 600, 1.2); f2 = [W / 2 - 300 * k - 8, TOP]; f1 = [W / 2 + 8, TOP];   /* 37 回目：定在波の顔を左に */ ms = [8, TOP + 345 * k + 10, W - 16];
     var yb2 = TOP + 345 * k + 80, c1w = Math.round((W - 24) * 0.42), c2x = 16 + c1w, c2w = W - c2x - 8;
     L.h1 = [8, c1w, yb2]; L.g = [8, yb2 + 16, c1w]; L.gr = [8, yb2 + 16 + GH + 14, c1w];
     L.h2 = [c2x, c2w, yb2]; L.t = [c2x, yb2 + 16, c2w];
     var y6 = Math.max(yb2 + 16 + GH + 14 + GR, yb2 + 16 + TH) + 22; L.h3 = [8, W - 16, y6]; L.sp = [8, y6 + 16, W - 16]; H = L.sp[1] + SH + 8;
   } else {
-    k = Math.min((W * 0.66 - 24) / 600, 1.25); f1 = [6, TOP]; f2 = [6 + 300 * k + 12, TOP];
-    var rx = f2[0] + 300 * k + 18; ms = [rx, TOP + 40, W - rx - 8];
+    k = Math.min((W * 0.66 - 24) / 600, 1.25); f2 = [6, TOP]; f1 = [6 + 300 * k + 12, TOP];   /* 37 回目：定在波の顔を左に */
+    var rx = f1[0] + 300 * k + 18; ms = [rx, TOP + 40, W - rx - 8];
     var yb3 = TOP + 345 * k + 26, cw1 = Math.round((W - 32) * 0.28), cw3 = Math.round((W - 32) * 0.3), cw2 = W - 32 - cw1 - cw3, x2 = 8 + cw1 + 8, x3 = x2 + cw2 + 8;
     L.h1 = [8, cw1, yb3]; L.g = [8, yb3 + 16, cw1]; L.gr = [8, yb3 + 16 + GH + 14, cw1];
     L.h2 = [x2, cw2, yb3]; L.t = [x2, yb3 + 16, cw2];
@@ -10449,9 +10455,10 @@ function m4vDraw(s) {
   /* 「右の顔の定在波」の操作を図の中に置く（canvas のまわりのすき間を足す） */
   V.msel.style.left = (cv.offsetLeft + ms[0]) + 'px'; V.msel.style.top = (cv.offsetTop + ms[1]) + 'px'; V.msel.style.width = ms[2] + 'px';
   V.msel.classList.toggle('side', lay === 3);
+  var mt = lay === 1 ? '上の顔の定在波' : '左の顔の定在波'; if (V.mlbl.textContent !== mt) V.mlbl.textContent = mt;
   var ctx = prep(cv, W, H); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
   label(ctx, '息の流れと声', f1[0] + 150 * k, f1[1] - 12, { size: 12, bold: true, color: '#2d63b8' });
-  label(ctx, '振動体と定在波（第 ' + m + ' 共鳴）', f2[0] + 150 * k, f2[1] - 12, { size: 12, bold: true, color: '#c9670c' });
+  label(ctx, (v.vibr ? '振動体と定在波（第 ' : '音のもとと共鳴（第 ') + m + ' 共鳴）', f2[0] + 150 * k, f2[1] - 12, { size: 12, bold: true, color: '#c9670c' });
   m4vAnat(ctx, p, v, ph, V.t, f1[0], f1[1], k, 0);
   m4vAnat(ctx, p, v, ph, V.t, f2[0], f2[1], k, m);
   var hd = function (tx, h, col) { var y = h[2]; ctx.save(); ctx.fillStyle = col; ctx.globalAlpha = 0.1; rrect(ctx, h[0], y - 9, h[1], 19, 6); ctx.fill(); ctx.restore(); label(ctx, tx, h[0] + h[1] / 2, y, { size: 11.5, bold: true, color: col }); };
@@ -10597,7 +10604,9 @@ function m4vAnatSW(ctx, p, v, ph, t, ax, ay, k, m, gy, j, F) {
     var a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
     return [-dy / d, dx / d];
   });
-  var amp = function (i) { return Math.sin((2 * m - 1) * Math.PI / 2 * len[i] / S); }, A = 6.5, c = Math.cos(TAU * 0.5 * (2 * m - 1) * t);
+  var w = p.wsp || 0, u0 = w * (1 - 1 / M4V_WSP[m - 1]);   /* ささやき声：節が口の方へ u0 だけずれる（声帯の所は少し動く） */
+  var amp = function (i) { return Math.sin((2 * m - 1) * Math.PI / 2 * (len[i] / S - u0) / (1 - u0)); }, A = 6.5;
+  var c = Math.cos(TAU * 0.5 * (2 * m - 1) * t) * (1 - w + w * (0.25 + 0.75 * Math.abs(Math.sin(t * 2.3) * Math.sin(t * 1.7 + 1))));   /* ささやき声：雑音でゆすられるので、大きさが不規則に変わる */
   ctx.save(); ctx.translate(ax, ay); ctx.scale(k, k); ctx.lineJoin = 'round';
   /* 包み線（点線）といまの形（太線） */
   ctx.setLineDash([2.5, 2]); ctx.strokeStyle = 'rgba(224,123,24,.75)'; ctx.lineWidth = 1.1;
@@ -10612,16 +10621,25 @@ function m4vAnatSW(ctx, p, v, ph, t, ax, ay, k, m, gy, j, F) {
   /* 節と腹 */
   var at = function (u) { var target = u * S, i = 0; while (i < len.length - 1 && len[i] < target) i++; return i; };
   for (var n = 0; n <= 2 * m - 1; n++) {
-    var u = n / (2 * m - 1), ii = at(u), pt = pts[ii], tg = nrm[ii], isN = n % 2 === 0, vert = Math.abs(tg[0]) > Math.abs(tg[1]);
+    var u = u0 + (1 - u0) * n / (2 * m - 1), ii = at(u), pt = pts[ii], tg = nrm[ii], isN = n % 2 === 0, vert = Math.abs(tg[0]) > Math.abs(tg[1]);
     var sp = P(pt[0], pt[1]); ctx.save(); ctx.fillStyle = isN ? '#3a414c' : '#c9670c'; ctx.beginPath(); ctx.arc(sp[0], sp[1], 3, 0, TAU); ctx.fill(); ctx.restore();
-    if (n === 0) continue;   /* 声帯の所の節は、下の「振動体」の名前で示す */
+    if (n === 0 && !w) continue;   /* 声帯の所の節は、下の「振動体」の名前で示す */
     var lp = vert ? P(pt[0] + 16, pt[1]) : P(pt[0], pt[1] - 13);
     label(ctx, isN ? '節' : '腹', lp[0], lp[1], { size: 10.5, bold: true, color: isN ? '#3a414c' : '#c9670c' });
   }
-  var g1 = P(186, gy + 4); label(ctx, '振動体：声帯', g1[0], g1[1], { size: 11, bold: true, color: '#c0262d', align: 'left' });
-  var g2 = P(186, gy + 18); label(ctx, '（ここで音が生まれる。節）', g2[0], g2[1], { size: 9.5, color: '#c0262d', align: 'left' });
-  var g3 = P(18, 232); label(ctx, '定在波：声道の中', g3[0], g3[1], { size: 11, bold: true, color: '#c9670c', align: 'left' });
-  var g4 = P(18, 246); label(ctx, '声帯側＝節、くちびる側＝腹', g4[0], g4[1], { size: 9.5, color: '#c9670c', align: 'left' });
+  var g1 = P(186, gy + 4), g2 = P(186, gy + 18), g3 = P(18, 232), g4 = P(18, 246), g5 = P(18, 260);
+  if (v.vibr) {
+    label(ctx, '振動体：声帯', g1[0], g1[1], { size: 11, bold: true, color: '#c0262d', align: 'left' });
+    label(ctx, '（ここで音が生まれる。節）', g2[0], g2[1], { size: 9.5, color: '#c0262d', align: 'left' });
+    label(ctx, '定在波：声道の中', g3[0], g3[1], { size: 11, bold: true, color: '#c9670c', align: 'left' });
+    label(ctx, '声帯側＝節、くちびる側＝腹', g4[0], g4[1], { size: 9.5, color: '#c9670c', align: 'left' });
+  } else {   /* ささやき声：振動体はない。音のもとは息の乱れ（雑音） */
+    label(ctx, '振動体はない', g1[0], g1[1], { size: 11, bold: true, color: '#c0262d', align: 'left' });
+    label(ctx, '（すき間を通る息の乱れ＝雑音）', g2[0], g2[1], { size: 9.5, color: '#c0262d', align: 'left' });
+    label(ctx, '共鳴：声道の中', g3[0], g3[1], { size: 11, bold: true, color: '#c9670c', align: 'left' });
+    label(ctx, '雑音で不規則にゆすられる', g4[0], g4[1], { size: 9.5, color: '#c9670c', align: 'left' });
+    label(ctx, '声帯側が開き、節が口側へずれる', g5[0], g5[1], { size: 9.5, color: '#c9670c', align: 'left' });
+  }
 }
 /* ---------- 声帯を上から見た図（上が前＝のどぼとけ側） ---------- */
 function m4vGlottis(ctx, p, v, ph, x, y, w, h) {
@@ -10734,25 +10752,62 @@ function m4vTubes(ctx, p, t, x, y, w, nar, sel) {
   label(ctx, sh ? 'くちびる側（自由端）' : 'くちびる側（開いた端＝自由端）', x0, y + 6, { size: 9.5, bold: true, color: '#2d63b8', align: 'left' });
   label(ctx, sh ? '声帯側（固定端）' : '声帯側（閉じた端＝固定端）', x1, y + 6, { size: 9.5, bold: true, color: '#c0262d', align: 'right' });
   for (var m = 1; m <= 3; m++) {
-    var cy = y + 20 + rowH * (m - 1) + rowH / 2 - 6, hh = 17, f = (2 * m - 1) * M4V_TUBE.V / (4 * Lm);
+    var wq = p.wsp || 0, u0 = wq * (1 - 1 / M4V_WSP[m - 1]), cy = y + 20 + rowH * (m - 1) + rowH / 2 - 6, hh = 17, f = (2 * m - 1) * M4V_TUBE.V / (4 * Lm) * (1 + wq * (M4V_WSP[m - 1] - 1));   /* ささやき声は共鳴が高い */
     if (m === sel) { ctx.save(); ctx.fillStyle = 'rgba(224,123,24,.1)'; rrect(ctx, x + 2, cy - hh - 16, w - 4, 2 * hh + (nar ? 40 : 30), 6); ctx.fill(); ctx.restore(); }   /* 顔の図に描いている共鳴 */
     ctx.save(); ctx.fillStyle = '#fffaf2'; ctx.fillRect(x0, cy - hh, x1 - x0, 2 * hh);
     ctx.strokeStyle = '#b07d66'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, cy - hh); ctx.lineTo(x1, cy - hh); ctx.lineTo(x1, cy + hh); ctx.lineTo(x0, cy + hh); ctx.stroke();
-    ctx.fillStyle = '#d23c43'; ctx.fillRect(x1, cy - hh, 5, 2 * hh); ctx.restore();   /* 声帯（振動体）は右の端 */
-    var A = hh * 0.82, kx = function (xx) { return (2 * m - 1) * Math.PI / 2 * (x1 - xx) / (x1 - x0); }, c = Math.cos(TAU * 0.5 * (2 * m - 1) * t);   /* 右の端からの距離で：右＝節、左＝腹 */
+    ctx.fillStyle = '#d23c43'; if (wq > 0.5) { ctx.fillRect(x1, cy - hh, 5, hh * 0.6); ctx.fillRect(x1, cy + hh * 0.4, 5, hh * 0.6); } else ctx.fillRect(x1, cy - hh, 5, 2 * hh); ctx.restore();   /* 声帯は右の端（ささやき声は少し開いている） */
+    var A = hh * 0.82, kx = function (xx) { return (2 * m - 1) * Math.PI / 2 * ((x1 - xx) / (x1 - x0) - u0) / (1 - u0); }, c = Math.cos(TAU * 0.5 * (2 * m - 1) * t) * (1 - wq + wq * (0.25 + 0.75 * Math.abs(Math.sin(t * 2.3) * Math.sin(t * 1.7 + 1))));   /* 右の端からの距離で：右＝節、左＝腹 */
     ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(224,123,24,.55)'; ctx.lineWidth = 1.2;
     [-1, 1].forEach(function (sg) { ctx.beginPath(); for (var i = 0; i <= 120; i++) { var xx = x0 + (x1 - x0) * i / 120, yy = cy - sg * A * Math.sin(kx(xx)); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); } ctx.stroke(); });
     ctx.setLineDash([]); ctx.strokeStyle = '#e07b18'; ctx.lineWidth = 2.4; ctx.beginPath();
     for (var i = 0; i <= 120; i++) { var xx = x0 + (x1 - x0) * i / 120, yy = cy - A * c * Math.sin(kx(xx)); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }
     ctx.stroke(); ctx.restore();
-    for (var j = 0; j < m; j++) { var xn = x1 - (x1 - x0) * (2 * j) / (2 * m - 1); label(ctx, '節', xn - (j ? 0 : 9), cy + hh + 8, { size: 9, bold: true, color: '#5b6470' }); }
-    for (j = 0; j < m; j++) { var xa = x1 - (x1 - x0) * (2 * j + 1) / (2 * m - 1); label(ctx, '腹', xa + (j === m - 1 ? 8 : 0), cy - hh - 7, { size: 9, bold: true, color: '#5b6470' }); }
+    for (var j = 0; j < m; j++) { var xn = x1 - (x1 - x0) * (u0 + (1 - u0) * (2 * j) / (2 * m - 1)); label(ctx, '節', xn - (j || wq > 0.5 ? 0 : 9), cy + hh + 8, { size: 9, bold: true, color: '#5b6470' }); }
+    for (j = 0; j < m; j++) { var xa = x1 - (x1 - x0) * (u0 + (1 - u0) * (2 * j + 1) / (2 * m - 1)); label(ctx, '腹', xa + (j === m - 1 ? 8 : 0), cy - hh - 7, { size: 9, bold: true, color: '#5b6470' }); }
     var nm = ['第 1 共鳴', '第 2 共鳴', '第 3 共鳴'][m - 1], q = ['λ/4', '3λ/4', '5λ/4'][m - 1];
     if (nar) label(ctx, nm + '：L = ' + q + '　f ≈ ' + Math.round(f / 10) * 10 + ' Hz', x0 + 18, cy + hh + 21, { size: 9, bold: true, color: '#c9670c', align: 'left' });
     else { label(ctx, nm, x + 34, cy - 7, { size: 10.5, bold: true, color: '#2a2f37' }); label(ctx, 'L = ' + q, x + 34, cy + 8, { size: 9.5, color: '#5b6470' }); label(ctx, '≈ ' + Math.round(f / 10) * 10 + ' Hz', x1 + 36, cy, { size: 10.5, bold: true, color: '#c9670c' }); }
   }
-  label(ctx, '空気の変位の定在波。L ≈ ' + Math.round(Lm * 100) + ' cm、音速 340 m/s、f = (2m − 1)V/(4L)', x + w / 2, y + 20 + rowH * 3 + 4, { size: nar ? 8.5 : 9.5, color: '#5b6470' });
+  label(ctx, (p.wsp > 0.5 ? 'ささやき声：声帯側が少し開いているので、共鳴は高め（第 1 共鳴で約 1.45 倍）' : '空気の変位の定在波。L ≈ ' + Math.round(Lm * 100) + ' cm、音速 340 m/s、f = (2m − 1)V/(4L)'), x + w / 2, y + 20 + rowH * 3 + 4, { size: nar ? 8.5 : 9.5, color: '#5b6470' });
 }
+
+/* =====================================================================
+   ④-10 さらに勉強したい人のためのページと参考サイト（38 回目。⑤-5 と同じ作り。custom・文だけ）
+   ・リンク先は 2026-11-22 に開いて、内容を確かめたもの。外部のサイトなので、ページを開いたときには読みこまない（リンクだけ）
+   ===================================================================== */
+DEFS.m4ref = {
+  id: 'm4ref', mode: 'mode4', num: 10, custom: true,
+  title: 'さらに勉強したい人のためのページと参考サイト', short: '勉強したい人へ・参考サイト',
+  html: function () {
+    var li = function (t, d) { return '<li><b>' + t + '</b>：' + d + '</li>'; };
+    var a = function (u, t, d) { return '<li><a href="' + u + '" target="_blank" rel="noopener">' + t + '</a>：' + d + '</li>'; };
+    return '<div class="secdesc">モード ④ で見たことを、さらに詳しく知るためのページ。<span class="todo">気になったテーマから調べてみよう。</span></div>' +
+      '<div class="m5ideas"><ul>' +
+      li('音色の違いはどこから？（④-1）', '同じ高さでも楽器や声で音色が違うのは、倍音の混ざり方と、音の大きさの時間変化（立ち上がり方・減り方）が違うから。スマートフォンのスペクトル表示アプリで、自分の声や身近な楽器を見てみよう。') +
+      li('本物の楽器の倍音（④-2）', 'ピアノの弦は硬いので、高い成分ほど整数倍より少し高くなる。そのためピアノの調律では、高い音を少し高めに合わせることが多い。鉄琴の板は、弦とは違う式で振動する。') +
+      li('声の振動体と定在波（④-3）', '音のもとは声帯（振動体）、音色を決めるのは声道（声帯〜くちびる）の共鳴。音の高さは声帯、母音は口の形で、別々に変えられる。ささやき声では声帯は振動せず、息の乱れ（雑音）が声道を共鳴させる。') +
+      li('歌う人の工夫（④-3）', 'オペラ歌手は約 3 kHz の共鳴（歌手のフォルマント）で声を遠くまで届かせる。ソプラノは高い音で口の開け方を変え、声道の共鳴を歌う音の高さに合わせることがある。合唱では、まわりと溶け合う声（ビブラートが小さく、母音の形をそろえる）が大切。') +
+      li('のどを大切に', '声帯は使いすぎると腫れて、声がかすれる（声がれ）。のどが痛いときやかすれているときは、無理に大きな声を出さない。') +
+      li('長さと音の高さ・音律（④-4〜④-9）', '弦・管・板の長さと振動数の関係、和音がきれいに聞こえる振動数の比、純正律と平均律の違いを、身近な楽器で確かめてみよう。') +
+      '</ul></div>' +
+      '<div class="m5refs"><p class="m5rt">参考サイト：声・歌声（④-3）</p><ul>' +
+      a('https://newt.phys.unsw.edu.au/jw/voice.html', 'Voice Acoustics: an introduction to the science of speech and singing（ニューサウスウェールズ大学、英語）', '声帯（音のもと）と声道（共鳴）、フォルマント、声区、歌手のフォルマントまで、図と音つきで説明') +
+      a('https://newt.phys.unsw.edu.au/jw/glottis-vocal-tract-voice.html', 'Glottal signal, vocal tract resonances and output sound（同、英語）', '声帯の音・声道の共鳴・口から出る声を並べて比べる。ささやき声の例もある') +
+      a('https://www.phys.unsw.edu.au/jw/reprints/whisper.pdf', 'Swerdlin, Smith, Wolfe「The effect of whisper and creak vocal mechanisms on vocal tract resonances」（論文 PDF、英語）', 'ささやき声では声帯側が少し開いているので、声道の共鳴が高くなる（④-3 のウィスパーボイスのもと）') +
+      a('https://newt.phys.unsw.edu.au/jw/soprane.html', 'Vocal resonance tuning and vowel changes, especially for sopranos（ニューサウスウェールズ大学、英語）', 'ソプラノが高い音で、声道の共鳴を歌う音の高さに合わせるしくみ') +
+      a('https://ir.lib.shimane-u.ac.jp/6846/files/10187', '佐々木直樹「合唱指導における発声練習に関する研究（1）―ヴァルター・シュナイダーの発声練習の理論と方法（呼吸と共鳴）―」（島根大学教育学部紀要 第 42 巻、2008、PDF）', '合唱の発声練習の考え方。呼吸の支え方や、共鳴（頭声・軟口蓋など）の練習') +
+      '</ul><p class="m5rt">参考サイト：非整数次倍音・楽器のしくみ（④-2・④-4・④-5）</p><ul>' +
+      a('https://www.acs.psu.edu/drussell/Demos/Stiffness-Inharmonicity/Stiffness-B.html', 'D. A. Russell「Inharmonicity due to Stiffness for Guitar Strings」（ペンシルベニア州立大学、英語）', '硬い弦の振動数 fₙ = n f₁ √(1 + B n²)（④-2 の式）の説明') +
+      a('https://www.acs.psu.edu/drussell/Demos/Flexural-Bar/flexural.html', 'D. A. Russell「Flexural Vibration of a Rectangular Bar」（同、英語）', '板（棒）の曲げ振動のアニメーションと振動数。鉄琴の板の振動数が整数倍にならないことが分かる') +
+      a('https://www.yamaha.com/ja/musical_instrument_guide/piano/mechanism/mechanism004.html', 'ヤマハ 楽器解体全書「ピアノのしくみ：音を豊かにする弦の工夫」', '弦の太さ・長さ・本数と、響きを豊かにする工夫') +
+      a('https://www.yamaha.com/ja/musical_instrument_guide/acoustic_guitar/mechanism/', 'ヤマハ 楽器解体全書「アコースティックギター：音が鳴るしくみは？」', '弦の振動が胴に伝わって大きな音になるしくみ。サウンドホールや表板の実験もある') +
+      a('https://newt.phys.unsw.edu.au/~jw/guitarintro.html', 'How does a guitar work?（ニューサウスウェールズ大学、英語）', '弦・胴・サウンドホールの共鳴') +
+      a('https://www.yamaha.com/ja/musical_instrument_guide/piano/', 'ヤマハ 楽器解体全書「ピアノ」', 'ピアノのしくみ全体（音が出るしくみ、アクション、実験）') +
+      '</ul><p class="m5note">外部のサイトです（内容は各サイトのもの）。英語のページは、ブラウザの翻訳機能を使うと読みやすい。</p></div>';
+  },
+  build: function (art) { }
+};
 
 /* ===== 79_m5.js ===== */
 /* =========================================================================
@@ -11315,7 +11370,7 @@ var MODES = [
   { id: 'mode3', name: '音波（物理基礎の範囲）', secs: ['m3s1', 'm3s2', 'm3s3', 'm3s4', 'm3s5'], rotSwitch: false,
     en: 'Sound Waves',
     lead: '音は空気を伝わる縦波である。音の三要素・うなり・弦と気柱の固有振動と共鳴・モノコード・気柱共鳴実験を、音を聞きながら確かめよう。' },
-  { id: 'mode4', name: '音波（芸術の範囲）', secs: ['m4h', 'm4ih', 'm4v', 'm4s1', 'm4p', 'm4s2', 'm4s3', 'm4s4', 'm4s5'], rotSwitch: false,
+  { id: 'mode4', name: '音波（芸術の範囲）', secs: ['m4h', 'm4ih', 'm4v', 'm4s1', 'm4p', 'm4s2', 'm4s3', 'm4s4', 'm4s5', 'm4ref'], rotSwitch: false,
     en: 'Sound and Music',
     lead: 'このページは、あなたのより深い音楽への理解のために作りました。特に合唱・合奏で「長 3 度の音（ドに対するミの音）は下げ気味で」と聞いたことがある人は、その理由が理解できると思います。<br>これまで学んだように、弦と気柱は、基音の整数倍の振動数の音、倍音を発生させる（特に <a class="xlink" href="#3-3">③-3</a> と <a class="xlink" href="#3-4">③-4</a> から理解できる）。弦は弦楽器、気柱は管楽器と私たちの体から出る声の発音原理を理解できる。倍音の構成比の違いから、声や言葉、楽器は音色（y-t グラフの波形、オシロの波形）が違う。音色の原理、和音・平均律と純正律を、振動数の比から見てみよう。' },
   { id: 'mode5', name: 'より知りたい人へ：フーリエ変換などの大学レベルの内容', secs: ['m5s1', 'm5s2', 'm5s3', 'm5s4', 'm5s5'], rotSwitch: false,
