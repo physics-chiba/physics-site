@@ -141,6 +141,15 @@ button.v3btn.pglow{border-color:var(--brand);color:var(--brand-700);font-weight:
 .cticks::before{content:attr(data-lo);margin-right:.3em;color:#9aa1ab}
 .cticks::after{content:"大";margin-left:.3em;color:#9aa1ab}
 .fcell.live .livehead{justify-content:flex-end}
+/* 第10回：浮力の節（1-5・2-2）のならび。左＝見出し・説明・(a)〜(c)、右＝いちばん右の図 */
+.wgrid{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,2.1fr);gap:12px;align-items:start}
+.wgrid .wleft{min-width:0}
+.threegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;margin-top:.4em}
+@media(max-width:1000px){ .wgrid{grid-template-columns:1fr} }
+/* 第10回：名前の目盛りは、つまみの止まる位置に置く（位置は alignTicks で計算） */
+.cticks{position:relative;display:block;height:1.35em;padding:0;margin:.05em 0 .25em}
+.cticks::before,.cticks::after{content:none !important}
+.cticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
 </style>
 </head>
 <body id="top">
@@ -465,7 +474,7 @@ Runner.prototype.touch = function(){ if(this.state==="done" || this.state==="pau
   this.label(); };                                            /* ドラッグ中も、高さ・深さの表示をその場で変える */
 
 /* ---------------- 操作の HTML ---------------- */
-function H_reset(){ return '<button class="b resetall" type="button">すべて最初の<br>設定に戻す</button>'; }
+function H_reset(){ return '<button class="b resetall" type="button">全て最初の<br>設定に戻す</button>'; }
 function H_play(first, mid, tail){
   return '<div class="playbar"><div class="row1"><div class="btns"><button class="b play" type="button"'+(first? ' id="bPlay"':'')+'>▶ スタート</button>'+
          '<button class="b slowb" type="button">🐢 スロー</button><button class="b gapL rst" type="button">↺ リセット</button></div></div>'+
@@ -537,6 +546,19 @@ function dragHint(c, label, x, y, o){
   else { T(c,label,x+aw+6,y,{size:size,col:col,halo:true}); x=x+aw/2; }
   c.save(); c.strokeStyle="rgba(255,255,255,.9)"; c.lineWidth=5; c.lineCap="round"; c.beginPath(); c.moveTo(x,y-ah/2); c.lineTo(x,y+ah/2); c.stroke(); c.restore();
   arrow(c,x,y,x,y-ah/2,col,2,7); arrow(c,x,y,x,y+ah/2,col,2,7);
+}
+/* 第10回：スライダーの下の名前の目盛りを、つまみの止まる位置にぴったり合わせる（つまみの直径 18 px） */
+function alignTicks(tk){
+  var row=tk.previousElementSibling, inp=row && row.querySelector('input[type=range]'); if(!inp) return;
+  var tr=tk.getBoundingClientRect(), ir=inp.getBoundingClientRect(); if(!ir.width || !tr.width) return;
+  var th=9, sp=tk.querySelectorAll('span'), n=sp.length;
+  for(var i=0;i<n;i++){ sp[i].style.left=(ir.left-tr.left+th+(n>1? i/(n-1) : 0.5)*(ir.width-2*th)).toFixed(1)+"px"; }
+}
+function watchTicks(root){
+  (root||document).querySelectorAll('.cticks').forEach(function(tk){
+    alignTicks(tk);
+    if(window.ResizeObserver && !tk._ro){ tk._ro=new ResizeObserver(function(){ alignTicks(tk); }); tk._ro.observe(tk); }
+  });
 }
 
 /* ---------------- ①-1 圧力と力の違い（吸盤） ----------------
@@ -644,7 +666,6 @@ var S10 = {
     /* 力 F：S の中心から下向き（テーブルの中へ、いちばん前に描く） */
     var Lf=this.Flen();
     fArrow(c, X(0), Y(0), X(0), Y(-Lf), COL.faceF, 6, 15);
-    oneArrowNote(c, X(0)+70, Y(-Lf*0.45), X(0)+6, Y(-Lf*0.45));
     SYM(c,"F",null,X(0)-10,Y(-Lf*0.7),{size:15,bold:true,col:COL.faceF,halo:true,align:"right"}); T(c,"力 ",X(0)-24,Y(-Lf*0.7),{size:13,bold:true,col:COL.faceF,halo:true,align:"right"});
     var lS=T(c,"面積 ",X(R)+8,Y(0)-10,{size:12.5,bold:true,col:"#9c4e06",halo:true}); SYM(c,"S",null,X(R)+8+lS,Y(0)-10,{size:14,bold:true,col:"#9c4e06",halo:true});
     T(c,"分子は大きく描いています（真横から見た断面）", W-8, 12, {size:10.5, col:COL.sub, align:"right", halo:true});
@@ -685,7 +706,6 @@ var S10 = {
     /* 力 F：S の中心から下向き（いちばん前） */
     var Lf=this.Flen(), f0=P([0,0,0]), f1=P([0,0,-Lf]);
     fArrow(c, f0.x, f0.y, f1.x, f1.y, COL.faceF, 6, 15);
-    oneArrowNote(c, Math.max(f0.x,f1.x)+80, (f0.y+f1.y)/2+34, (f0.x+f1.x)/2+6, (f0.y+f1.y)/2+10);
     var lF=T(c,"力 ",f1.x+12,(f0.y+f1.y)/2+10,{size:13,bold:true,col:COL.faceF,halo:true}); SYM(c,"F",null,f1.x+12+lF,(f0.y+f1.y)/2+10,{size:15,bold:true,col:COL.faceF,halo:true});
     var pS=P([R*0.72,-R*0.72,0]); var lS=T(c,"面積 ",pS.x+14,pS.y+12,{size:12.5,bold:true,col:"#9c4e06",halo:true}); SYM(c,"S",null,pS.x+14+lS,pS.y+12,{size:14,bold:true,col:"#9c4e06",halo:true});
     var pa=P([-R,0,this.cupZ(0)+La+0.6]); var wp=T(c,"圧力 ",pa.x-36,pa.y,{size:13,bold:true,col:"#8a6a00",halo:true,align:"right"}); SYM(c,"p",null,pa.x-34,pa.y,{size:15,bold:true,col:"#8a6a00",halo:true});
@@ -854,7 +874,7 @@ var S12 = {
     var b3=sec.querySelector(".v3btn"), vb=document.createElement("div"); vb.className="viewbtns3"; vb.hidden=true;
     vb.innerHTML='<button class="b tiny3" type="button" data-az="-35" data-el="25">斜め上から</button><button class="b tiny3" type="button" data-az="0" data-el="0">横から</button>';
     this.cv.parentElement.style.position="relative"; this.cv.parentElement.appendChild(vb); this.vb=vb;
-    b3.addEventListener("click", function(){ b3.classList.remove("pglow"); self.v3=!self.v3; b3.classList.toggle("on", self.v3); b3.setAttribute("aria-pressed", self.v3); b3.textContent=self.v3? "２次元表示にもどす" : "３次元表示"; vb.hidden=!self.v3; self.draw(); });
+    b3.addEventListener("click", function(){ b3.classList.remove("pglow"); self.v3=!self.v3; b3.classList.toggle("on", self.v3); b3.setAttribute("aria-pressed", self.v3); b3.textContent=self.v3? "２次元表示に戻す" : "３次元表示"; vb.hidden=!self.v3; self.draw(); });
     vb.querySelectorAll("button").forEach(function(b){ b.addEventListener("click", function(){ self.cam.az=parseFloat(b.dataset.az); self.cam.el=parseFloat(b.dataset.el); self.draw(); }); });
     S12_attach3d(this);
     onResize(this.cv.parentElement, function(){ self.draw(); });
@@ -984,7 +1004,7 @@ var S13 = {
       arrow(c,x,yB+gp+Lb,x,yB+gp,COL.press,2,8); });
     [0.2,0.5,0.8].forEach(function(fz){ var d=self.h+self.BH*fz, y=yT+(yB-yT)*fz, L=LEN(pAt(d));
       if(L>1){ arrow(c,xc-bw/2-gp-L,y,xc-bw/2-gp,y,COL.press,2,8); arrow(c,xc+bw/2+gp+L,y,xc+bw/2+gp,y,COL.press,2,8); } });
-    if(this.run.state==="idle") dragHint(c,"物体は上下にドラッグできる", tx1-6, bot-14, {size:11,align:"right"});
+    if(this.run.state==="idle") dragHint(c,"物体をドラッグ", xc-bw/2-gp-LEN(pAt(this.h+this.BH*0.5))-12, (yT+yB)/2+20, {size:11.5,align:"right"});   /* 第10回：1-3 と同じ書き方・置き方 */
     var xd=tx0+30; if(this.h>0.8){ dimArrow(c,xd,top+1,xd,yT-1,"#2f6f9f"); T(c,"h = "+this.h.toFixed(1)+" m", xd+6, (top+yT)/2, {size:12,col:"#2f6f9f",halo:true,bold:true}); }
     c.save(); c.strokeStyle="rgba(47,111,159,.55)"; c.setLineDash([3,3]); c.beginPath(); c.moveTo(xd-4,yT); c.lineTo(xc-bw/2-4,yT); c.stroke(); c.restore();
     /* 右：式と、上の面・下の面の棒グラフ */
@@ -1000,11 +1020,11 @@ var S13 = {
       var ly=(b[3]<0)? y0-9 : y0+bh+10;
       T(c, b[0]+"　"+sci(base+pw)+" Pa", gx0+4, ly, {size:11,bold:true,halo:true});
     });
-    if(this.withAir) T(c,"うすい色：大気圧　こい色：水圧", gx0+gw/2, 56, {size:10,col:COL.sub,align:"center"});
+    if(this.withAir) T(c,"薄い色：大気圧　濃い色：水圧", gx0+gw/2, 56, {size:10,col:COL.sub,align:"center"});
     notebook(c,W,H);
     var pt=pAt(this.h), pb=pAt(this.h+this.BH);
     this.msg.innerHTML = '上の面（深さ <span class="num">'+this.h.toFixed(1)+'</span> m）：<span class="num">'+sci(pt,3)+'</span> Pa　／　下の面（深さ <span class="num">'+(this.h+this.BH).toFixed(1)+'</span> m）：<span class="num">'+sci(pb,3)+'</span> Pa<br>'+
-      '下の面と上の面の差：<span class="num">'+sci(pb-pt)+'</span> Pa（物体の高さ '+this.BH+' m ぶんの水圧。深さを変えても同じ）';
+      '下の面と上の面の差：<span class="num">'+sci(pb-pt)+'</span> Pa（物体の高さ '+this.BH+' m 分の水圧。深さを変えても同じ）';
   }
 };
 
@@ -1202,10 +1222,11 @@ var S14 = {
     var lr=live.getBoundingClientRect(), dY=this.cv.getBoundingClientRect().top + this.g.Y(0);
     [[this.cvA,this.gA],[this.cvB,this.gB],[this.cvC,this.gC]].forEach(function(p){
       var cv=p[0], g=p[1]; if(!g) return;
+      /* 第10回：すき間はカードの上にあける（白い枠の中に空白を作らない） → 見出しがビーカーの図のすぐ上に来る */
       var cell=cv.parentElement, cr=cell.getBoundingClientRect();
-      if(Math.abs(cr.top-lr.top)>30){ cv.style.marginTop="0px"; return; }        // 縦に並んでいる（せまい画面）
-      var cur=parseFloat(cv.style.marginTop)||0, sY=cv.getBoundingClientRect().top + g.Y(0);
-      var nm=Math.max(0, cur + (dY - sY)); if(Math.abs(nm-cur)>0.5) cv.style.marginTop=nm.toFixed(1)+"px";
+      if(cr.left>=lr.left-4 || cr.top>lr.bottom){ cell.style.marginTop="0px"; return; }        // 縦に並んでいる（せまい画面）
+      var cur=parseFloat(cell.style.marginTop)||0, sY=cv.getBoundingClientRect().top + g.Y(0);
+      var nm=Math.max(0, cur + (dY - sY)); if(Math.abs(nm-cur)>0.5) cell.style.marginTop=nm.toFixed(1)+"px";
     });
   }
 };
@@ -1424,7 +1445,7 @@ var S21 = {
     c.save(); c.fillStyle="#e07b18"; c.beginPath(); c.moveTo(x0-6,Y(this.z)); c.lineTo(x0-14,Y(this.z)-5); c.lineTo(x0-14,Y(this.z)+5); c.closePath(); c.fill(); c.restore();
     if(this.col){ c.save(); c.fillStyle="rgba(47,111,159,.14)"; c.fillRect(xo-bw/2, yT, bw, yc-bh/2-yT);
       c.setLineDash([5,4]); c.strokeStyle=COL.dashed; c.lineWidth=1.4; c.strokeRect(xo-bw/2, yT, bw, yc-bh/2-yT); c.restore();
-      if(yc-bh/2-yT>60) T(c,"上にのっている空気の柱", xo+bw/2+6, yT+18, {size:11.5,col:COL.dashed,bold:true,halo:true}); }
+      if(yc-bh/2-yT>60) T(c,"上に載っている空気の柱", xo+bw/2+6, yT+18, {size:11.5,col:COL.dashed,bold:true,halo:true}); }
     /* 第7回：矢印の長さは、その矢印の位置の高さ（物体を目盛りどおりの大きさとみなす）の気圧に比例させる。
        こうすると、上の面と下の面の差が目に見える。物体の中心の高さを this.z とする */
     var zAt=function(y){ return self.z + (yc-y)/s; }, LB=46, LEN=function(y){ return LB*pAir(zAt(y))/P0; };
@@ -1457,7 +1478,7 @@ var S21 = {
     notebook(c,W,H);
     var top=(ball? yc-r : yc-bh/2), bot=(ball? yc+r : yc+bh/2);
     this.msg.innerHTML='高さ <span class="num">'+(this.z/1000).toFixed(1)+'</span> km の大気圧：<span class="num">'+sci(pAir(this.z),3)+'</span> Pa（<span class="num">'+Math.round(hpa)+'</span> hPa）　地上の <span class="num">'+Math.round(pAir(this.z)/P0*100)+'</span> %<br>'+
-      '上の面 <span class="num">'+Math.round(pAir(zAt(top))/100)+'</span> hPa　＜　下の面 <span class="num">'+Math.round(pAir(zAt(bot))/100)+'</span> hPa（物体を目盛りどおりの大きさとみなした値）';
+      '上の面 <span class="num">'+Math.round(pAir(zAt(top))/100)+'</span> hPa　＜　下の面 <span class="num">'+Math.round(pAir(zAt(bot))/100)+'</span> hPa（物体を目盛り通りの大きさとみなした値）';
   }
 };
 
@@ -1859,12 +1880,12 @@ function molArrows(x, y, s, L){
 }
 function molKunSVG(){
   var s=30, x0=18, y0=66, h='';
-  h += '<svg class="molkun" viewBox="0 0 380 262" role="img" aria-label="水分子をイメージした図。深いところの水分子ほど、上にのっている仲間が多く、強く押されている">';
+  h += '<svg class="molkun" viewBox="0 0 380 262" role="img" aria-label="水分子をイメージした図。深いところの水分子ほど、上に載っている仲間が多く、強く押されている">';
   /* 吹き出し */
   h += '<rect x="6" y="4" width="196" height="44" rx="14" fill="#fff" stroke="#2f6f9f" stroke-width="1.3"/>'+
        '<path d="M74 47 l8 12 l6 -12" fill="#fff" stroke="#2f6f9f" stroke-width="1.3"/><path d="M75 46 h12" stroke="#fff" stroke-width="2.4"/>'+
-       '<text x="104" y="22" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">ぼくたち水分子は、すき間なく</text>'+
-       '<text x="104" y="38" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">ならんで、おし合っているよ</text>';
+       '<text x="104" y="22" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">ぼくたち水分子は、隙間なく</text>'+
+       '<text x="104" y="38" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">並んで、押し合っているよ</text>';
   /* 水そう */
   h += '<path d="M'+(x0-4)+' '+(y0-6)+' V'+(y0+5*s+4)+' H'+(x0+5*s+4)+' V'+(y0-6)+'" fill="none" stroke="#3a414c" stroke-width="2"/>';
   h += '<path d="M'+(x0-4)+' '+y0+' H'+(x0+5*s+4)+'" stroke="#4f8fc0" stroke-width="2"/>';
@@ -1925,7 +1946,7 @@ function airKunSVG(){
   h += '<svg class="molkun" viewBox="0 0 380 262" role="img" aria-label="空気の分子をイメージした図。地上に近いほど分子が多く、物体に強く押す">';
   h += '<rect x="6" y="4" width="200" height="44" rx="14" fill="#fff" stroke="#2f6f9f" stroke-width="1.3"/>'+
        '<path d="M70 47 l8 12 l6 -12" fill="#fff" stroke="#2f6f9f" stroke-width="1.3"/><path d="M71 46 h12" stroke="#fff" stroke-width="2.4"/>'+
-       '<text x="106" y="22" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">ぼくたち空気の分子は、飛びまわって</text>'+
+       '<text x="106" y="22" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">ぼくたち空気の分子は、飛び回って</text>'+
        '<text x="106" y="38" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1f4e79">ものにぶつかっているよ</text>';
   /* 空の柱：上ほど分子が少ない */
   var bx=14, by=64, bw=170, bh=180;
@@ -1961,13 +1982,13 @@ function airKunSVG(){
    ========================================================================= */
 var MODES = [
   {id:"mode1", name:"水から受ける力", en:"Forces from Water",
-   lead:"水の中の物体は、まわりの水から押される。その 1 m² あたりの力が<b>水圧</b>。水圧は面に垂直にはたらき、深いほど大きい。物体の上の面と下の面の水圧の差が、<b>浮力</b>になる。",
+   lead:"水の中の物体は、周りの水から押される。その 1 m² あたりの力が<b>水圧</b>。水圧は面に垂直にはたらき、深いほど大きい。物体の上の面と下の面の水圧の差が、<b>浮力</b>になる。",
    secs:["s10","s11","s12","s13","s14"]},
   {id:"mode2", name:"気体から受ける力", en:"Forces from Air",
-   lead:"空気にも重さがあるので、空気の中の物体も、まわりの空気から押される（<b>大気圧</b>）。空気の中でも、水の中と同じしくみで浮力がはたらく。",
+   lead:"空気にも重さがあるので、空気の中の物体も、周りの空気から押される（<b>大気圧</b>）。空気の中でも、水の中と同じ仕組みで浮力がはたらく。",
    secs:["s21","s22"]},
   {id:"mode3", name:"流体からの抵抗力（速度に起因）※物理本編の内容", en:"Drag Forces",
-   lead:"空気や水の中を動く物体は、動きをさまたげる向きに<b>抵抗力</b>を受ける。抵抗力は、速さが大きいほど大きい。",
+   lead:"空気や水の中を動く物体は、動きを妨げる向きに<b>抵抗力</b>を受ける。抵抗力は、速さが大きいほど大きい。",
    secs:["s31","s32","s33"]}
 ];
 var DEFS = {
@@ -1983,20 +2004,20 @@ var DEFS = {
       '<div class="qeq">'+tex("F=pS",true)+'</div></div>'+
       '<div class="qcard"><p class="qt">圧力と力を区別しよう</p>'+
       '<ol class="pts"><li><b>圧力</b>は面積によらない。吸盤が大きくても小さくても、大気圧は '+tex("1.0\\times10^5")+' Pa。</li><li><b>力</b>は面積に比例する。吸盤が大きいほど、大きな力でテーブルに押しつけられる。</li></ol>'+
-      '<p><b>力 '+tex("F")+' は 1 本の矢印でかく。</b>圧力の矢印は面のあちこちにかけるが、それらをすべて合わせたもの（合力）が力 '+tex("F")+'。図の中に力の矢印を何本もかかないように注意しよう。</p>'+
-      '<p>直径 6 cm の吸盤（'+tex("S\\fallingdotseq 28")+' cm² ＝ '+tex("2.8\\times10^{-3}")+' m²）なら、'+tex("F=pS\\fallingdotseq 2.8\\times10^2")+' N。約 29 kg の物体にはたらく重力と同じくらいの大きさになる。実際に引っぱる実験では、約 19 kg 分の力まで耐えたという（中の空気を完全には追い出せないため）。</p>'+
+      '<p><b>力 '+tex("F")+' は 1 本の矢印で描く。</b>圧力の矢印は面のあちこちに描けるが、それらを全て合わせたもの（合力）が力 '+tex("F")+'。図の中に力の矢印を何本も描かないように注意しよう。</p>'+
+      '<p>直径 6 cm の吸盤（'+tex("S\\fallingdotseq 28")+' cm² ＝ '+tex("2.8\\times10^{-3}")+' m²）なら、'+tex("F=pS\\fallingdotseq 2.8\\times10^2")+' N。約 29 kg の物体にはたらく重力と同じくらいの大きさになる。実際に引っ張る実験では、約 19 kg 分の力まで耐えたという（中の空気を完全には追い出せないため）。</p>'+
       '<div class="stp"><p class="sh"><b>参考</b></p><ul class="links"><li><a href="https://www.jsme-fed.org/experiment/2015_10/002.html" target="_blank" rel="noopener">吸盤と大気圧（日本機械学会 流体工学部門）↗</a></li></ul></div></div>'+
       '<div class="qcard hatten"><p class="qt">＜発展＞ 圧力が場所によって違うとき</p>'+
       '<p>水そうの側面のように、面の場所によって圧力が違うときは、面を小さな面積 '+tex("dS")+' に分けて、それぞれが受ける力 '+tex("p\\,dS")+' を足し合わせる。</p>'+
       '<div class="qeq">'+tex("F=\\int_S p\\,dS",true)+'</div>'+
-      '<p>圧力 '+tex("p")+' がどこでも同じなら、'+tex("F=p\\int_S dS=pS")+' にもどる。</p></div>'; }},
+      '<p>圧力 '+tex("p")+' がどこでも同じなら、'+tex("F=p\\int_S dS=pS")+' に戻る。</p></div>'; }},
   s11:{num:2, mode:0, title:"水圧と深さの関係", short:"水圧と深さ", sim:S11,
-    desc:'水そうの側面に、深さの違う 3 つの穴がある。<span class="todo">スタートで栓を抜いて、3 つの穴からの水のふき出し方を比べよう。</span>',
+    desc:'水そうの側面に、深さの違う 3 つの穴がある。<span class="todo">スタートで栓を抜いて、3 つの穴からの水の噴き出し方を比べよう。</span>',
     opts: '',
     note:'',
     right:function(){ return '<div class="qcard"><p class="qt">水圧の性質</p>'+
       '<ol class="pts"><li>同じ深さでは、水圧は<b>どの向きにも同じ大きさ</b></li><li><span class="red">深いほど水圧は大きい</span></li></ol></div>'+
-      '<div class="qcard"><p class="qt">見るポイント</p><p>深い穴ほど、水が勢いよくふき出す。深いところほど、水が強く押しているから。</p>'+
+      '<div class="qcard"><p class="qt">見るポイント</p><p>深い穴ほど、水が勢いよく噴き出す。深いところほど、水が強く押しているから。</p>'+
       '<p>水面が下がるにつれて、どの穴の水も弱くなる。水圧は<b>水面からの深さ</b>で決まる。</p></div>'; }},
   s12:{num:3, mode:0, title:"水圧（水の重さによる圧力）", short:"水圧 ρhg", sim:S12,
     desc:'水の中の物体の表面が受ける水圧を、矢印で表した。<span class="todo">物体を上下にドラッグするか、スタートを押して水の深いところへ運んでみよう。</span><br>注目点：矢印はどこでも面に垂直。球や台形柱、3 次元表示でも確かめよう。',
@@ -2004,7 +2025,7 @@ var DEFS = {
     mid: H_tslider("h","上の面の深さ $h$",0.06,1.5,0.01,0.51),
     headBtn: '<button class="b v3btn pglow" type="button" aria-pressed="false">３次元表示</button>',
     right:function(){ return '<div class="qcard"><p class="qt">水分子をイメージしよう</p>'+molKunSVG()+
-      '<p>深いところの水分子ほど、上にのっている仲間が多いので、強く押されている。押し合う力は、どの向きにもはたらく。</p>'+
+      '<p>深いところの水分子ほど、上に載っている仲間が多いので、強く押されている。押し合う力は、どの向きにもはたらく。</p>'+
       '<div class="stp"><p class="sh"><b>水の中に物体を入れてみると…</b></p>'+molKun2SVG()+
       '<p>物体の上の面（深さ '+tex("h_1")+'）を押す水分子より、下の面（深さ '+tex("h_2")+'）を押す水分子の方が、強く押している。面積を '+tex("S")+' とすると</p>'+
       '<div class="qeq">'+tex("\\begin{aligned}&\\text{下の面全体にはたらく力（上向き）}\\ \\rho Sh_2g\\\\&\\text{上の面全体にはたらく力（下向き）}\\ \\rho Sh_1g\\end{aligned}",true)+'</div>'+
@@ -2015,34 +2036,34 @@ var DEFS = {
       '<p>水の密度を '+tex("\\rho")+'［kg/m³］とすると、深さ '+tex("h")+'［m］での水圧 '+tex("p")+'［Pa］は</p>'+
       '<div class="qeq">'+tex("p=\\rho hg",true)+'</div>'+
       '<div class="stp"><p class="sh"><b>導き方</b>真上の水の柱の重さを考える</p>'+
-      '<p>面積 '+tex("S")+' の面の真上には、高さ '+tex("h")+' の水の柱がのっている。水の柱の質量は '+tex("m=\\rho\\times Sh")+'、重さは</p>'+
+      '<p>面積 '+tex("S")+' の面の真上には、高さ '+tex("h")+' の水の柱が載っている。水の柱の質量は '+tex("m=\\rho\\times Sh")+'、重さは</p>'+
       '<div class="qeq">'+tex("F=mg=\\rho Shg",true)+'</div>'+
-      '<p>これを面積 '+tex("S")+' でわると、'+tex("p=\\dfrac{F}{S}=\\dfrac{\\rho Shg}{S}=\\rho hg")+'</p></div>'+
-      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>矢印はどこでも<b>面に垂直</b>。球や台形柱にすると、ななめの面でも面に垂直に押していることが分かる。同じ深さの左右の矢印は同じ長さで、打ち消しあう。上の面より<b>下の面の矢印の方が長い</b>（→ ①-5 の浮力）。</p></div></div>'; }},
+      '<p>これを面積 '+tex("S")+' で割ると、'+tex("p=\\dfrac{F}{S}=\\dfrac{\\rho Shg}{S}=\\rho hg")+'</p></div>'+
+      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>矢印はどこでも<b>面に垂直</b>。球や台形柱にすると、斜めの面でも面に垂直に押していることが分かる。同じ深さの左右の矢印は同じ長さで、打ち消しあう。上の面より<b>下の面の矢印の方が長い</b>（→ ①-5 の浮力）。</p></div></div>'; }},
   s13:{num:4, mode:0, title:"実際の水圧（大気圧＋水圧）", short:"大気圧＋水圧", sim:S13,
-    desc:'水面には大気圧がかかっているので、水の中の物体は「大気圧＋水圧」で押される。<span class="todo">スタートで物体を沈めて、矢印と棒グラフの変わり方を見よう。</span><br>注目点：上の面と下の面の圧力の差は、深さを変えても同じ。',
+    desc:'実際の水面には大気圧がかかっているので、水の中の物体は「大気圧＋水圧」で押される。<span class="todo">スタートで物体を沈めて、矢印と棒グラフの変わり方を見よう。</span><br>注目点：上の面と下の面の圧力の差は、深さを変えても同じ。',
     opts: H_seg("air","表示",[["on","大気圧もふくめる"],["off","水圧だけ"]],"on") + H_chk("col","水と空気の柱を表示",false),
     mid: H_tslider("h","上の面の深さ $h$",0,40,0.5,20),
     right:function(){ return '<div class="qcard"><p class="qt">水中の圧力</p>'+
       '<p>水面での大気圧を '+tex("p_0")+'［Pa］とすると、深さ '+tex("h")+'［m］の面が受ける圧力 '+tex("p'")+'［Pa］は</p>'+
       '<div class="qeq">'+tex("p'=p_0+\\rho hg",true)+'</div>'+
-      '<p>大気圧 ＋ 上にのっている水の重さのぶん。</p>'+
+      '<p>大気圧 ＋ 上に載っている水の重さの分。</p>'+
       '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>深さ 0 でも矢印は消えない。水面にも大気圧 '+tex("p_0\\fallingdotseq 1.0\\times10^5")+' Pa がかかっているから。</p>'+
-      '<p>水深 10 m の水圧 '+tex("\\rho hg=1.0\\times10^3\\times10\\times9.8\\fallingdotseq 1.0\\times10^5")+' Pa は、大気圧とほぼ同じ。深さ 10 m ごとに、大気圧 1 つぶんずつ増える。</p>'+
-      '<p>下の面と上の面の圧力の差は、大気圧 '+tex("p_0")+' のぶんが打ち消しあって、物体の高さぶんの水圧だけが残る（→ ①-5 の浮力）。</p></div></div>'; }},
+      '<p>水深 10 m の水圧 '+tex("\\rho hg=1.0\\times10^3\\times10\\times9.8\\fallingdotseq 1.0\\times10^5")+' Pa は、大気圧とほぼ同じ。深さ 10 m ごとに、大気圧 1 つ分ずつ増える。</p>'+
+      '<p>下の面と上の面の圧力の差は、大気圧 '+tex("p_0")+' の分が打ち消しあって、物体の高さ分の水圧だけが残る（→ ①-5 の浮力）。</p></div></div>'; }},
   s14:{num:5, mode:0, title:"液体による浮力", short:"浮力", sim:S14, wide:true, kind:"water",
-    desc:'液体の中の物体は、上向きの力（浮力）を受ける。<span class="todo">(a)〜(c) の図をクリックして表示を選び、物体の深さをドラッグで決めてからスタート。</span><br>注目点：全部しずんでいる間は、深さを変えても浮力は変わらない。',
+    desc:'液体の中の物体は、上向きの力（浮力）を受ける。<span class="todo">(a)〜(c) の図をクリックして表示を選び、物体の深さをドラッグで決めてからスタート。</span><br>注目点：全部沈んでいる間は、深さを変えても浮力は変わらない。',
     opts: '',
-    live: '<div class="liverow lsl">'+H_slider("dens","物体",0,DENS.length-1,1,0)+'<div class="cticks" data-lo="密度 小"><span>木</span><span>氷</span><span>水と同じ</span><span>アルミ</span><span>鉄</span></div>'+'</div>'+
-          '<div class="liverow lsl">'+H_slider("liq","液体",0,LIQS.length-1,1,1)+'<div class="cticks" data-lo="密度 小"><span>油</span><span>水</span><span>食塩水</span><span>水銀</span></div>'+'</div>',
+    live: '<div class="liverow lsl">'+H_slider("dens","物体（左ほど密度が小さい）",0,DENS.length-1,1,0)+'<div class="cticks" data-lo="密度 小"><span>木</span><span>氷</span><span>水と同じ</span><span>アルミ</span><span>鉄</span></div>'+'</div>'+
+          '<div class="liverow lsl">'+H_slider("liq","液体（左ほど密度が小さい）",0,LIQS.length-1,1,1)+'<div class="cticks" data-lo="密度 小"><span>油</span><span>水</span><span>食塩水</span><span>水銀</span></div>'+'</div>',
     cells:[["a","水圧による説明","上下左右から押される"],["b","浮力（水圧の合力）による説明","上下の力の差が浮力"],["c","アルキメデスの原理","同じ体積の液体が受ける重力に等しいだけの浮力を受ける"]],
     below:function(){ return '<div class="sRb eq"><div class="qcard"><p class="qt">浮力の大きさ</p>'+
       '<p>水中にある物体の上の面（深さ '+tex("h_1")+'）と下の面（深さ '+tex("h_2")+'）の面積を '+tex("S")+' とする。上の面は下向きに '+tex("F_1")+'、下の面は上向きに '+tex("F_2")+' の力を受ける（横向きの力は打ち消しあう）。</p>'+
       '<div class="qeq">'+tex("\\begin{aligned}F&=F_2-F_1=(p_0+\\rho gh_2)S-(p_0+\\rho gh_1)S\\\\&=\\rho(h_2-h_1)Sg=\\rho Vg\\end{aligned}",true)+'</div>'+
-      '<p>大気圧 '+tex("p_0")+' のぶんは上下で打ち消しあう。'+tex("V")+' は物体が押しのけた水の体積。</p>'+
+      '<p>大気圧 '+tex("p_0")+' の分は上下で打ち消しあう。'+tex("V")+' は物体が押しのけた水の体積。</p>'+
       '<p class="red">アルキメデスの原理：流体中の物体は、それが押しのけた流体の重さに等しい大きさの浮力を受ける。</p></div></div>'+
       '<div class="sRb"><div class="qcard"><p class="qt">見るポイント</p><ol class="pts">'+
-      '<li>全部しずんでいる間は、深さを変えても浮力は変わらない（上下の水圧の差は同じ）。</li>'+
+      '<li>全部沈んでいる間は、深さを変えても浮力は変わらない（上下の水圧の差は同じ）。</li>'+
       '<li>水面から出ると、水の中の体積 '+tex("V'")+' が小さくなり、浮力も小さくなる。</li>'+
       '<li>浮いて止まるとき、浮力と重力がつりあう：'+tex("\\rho V'g=mg")+'。氷なら、水面の上に出るのは約 8 %。</li>'+
       '<li>水より密度が大きい物体は沈み、底から垂直抗力 '+tex("N")+' を受けて止まる（'+tex("F+N=mg")+'）。</li></ol>'+
@@ -2052,18 +2073,18 @@ var DEFS = {
     opts: H_seg("shape","形",[["box","直方体"],["ball","球"]],"box") + H_chk("col","空気の柱を表示",false) + H_chk("mol","気体分子を表示",false),
     mid: H_tslider("z","高さ",0,10,0.1,0),
     right:function(){ return '<div class="qcard"><p class="qt">空気の分子をイメージしよう</p>'+airKunSVG()+
-      '<p>地上に近いほど、上にのっている空気の重さで押しつめられ、分子が多い。そのぶん、物体にたくさんぶつかって強く押す。</p></div>'+
+      '<p>地上に近いほど、上に載っている空気の重さで押しつめられ、分子が多い。その分、物体にたくさんぶつかって強く押す。</p></div>'+
       '<div class="qcard"><p class="qt">大気圧</p>'+
-      '<p>空気（気体）の分子が物体の表面に次々とぶつかることで、圧力が生じる。大気による圧力が<b>大気圧</b>。大気圧は、上にのっている空気の重さによって生じる。</p>'+
+      '<p>空気（気体）の分子が物体の表面に次々とぶつかることで、圧力が生じる。大気による圧力が<b>大気圧</b>。大気圧は、上に載っている空気の重さによって生じる。</p>'+
       '<div class="qeq">'+tex("1\\,\\text{気圧}=1.013\\times10^5\\,\\text{Pa}=1013\\,\\text{hPa}",true)+'</div>'+
-      '<p>海面の高さでは、1 m² の地面の上に約 '+tex("1.0\\times10^4")+' kg の空気がのっていることになる。</p>'+
-      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>高いところほど、上にのっている空気が少ないので、大気圧は小さい。高さ約 5.5 km で地上の約半分。</p>'+
+      '<p>海面の高さでは、1 m² の地面の上に約 '+tex("1.0\\times10^4")+' kg の空気が載っていることになる。</p>'+
+      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>高いところほど、上に載っている空気が少ないので、大気圧は小さい。高さ約 5.5 km で地上の約半分。</p>'+
       '<p>水圧と同じく、大気圧も面に垂直にはたらく。下の面を押す大気圧の方が、上の面を押す大気圧より大きい。この差が、空気の中の浮力（→ ②-2）になる。</p>'+
-      '<p>図では、物体を目盛りどおりの大きさ（高さ約 2 km）とみなして矢印をかいたので、上下の差が大きく見える。ふつうの大きさの物体では、1 m の高さの差で約 12 Pa しか違わない。</p></div></div>'; }},
+      '<p>図では、物体を目盛り通りの大きさ（高さ約 2 km）とみなして矢印を描いたので、上下の差が大きく見える。普通の大きさの物体では、1 m の高さの差で約 12 Pa しか違わない。</p></div></div>'; }},
   s22:{num:2, mode:1, title:"大気による浮力", short:"空気の浮力", sim:S22, wide:true, kind:"air",
-    desc:'空気の中の物体にも、水の中と同じしくみで浮力がはたらく。<span class="todo">(a)〜(c) の図をクリックして表示を選び、風船の高さをドラッグで決めてからスタート。</span><br>注目点：高いところほど空気がうすく、浮力が小さくなる。',
+    desc:'空気の中の物体にも、水の中と同じ仕組みで浮力がはたらく。<span class="todo">(a)〜(c) の図をクリックして表示を選び、風船の高さをドラッグで決めてからスタート。</span><br>注目点：高いところほど空気が薄く、浮力が小さくなる。',
     opts: '',
-    live: '<div class="liverow lsl">'+H_slider("gas","風船の中身",0,1,1,0)+'<div class="cticks" data-lo="密度 小"><span>ヘリウム</span><span>空気</span></div>'+'</div>',
+    live: '<div class="liverow lsl">'+H_slider("gas","風船の中身（左ほど密度が小さい）",0,1,1,0)+'<div class="cticks" data-lo="密度 小"><span>ヘリウム</span><span>空気</span></div>'+'</div>',
     cells:[["a","大気圧による説明","下の方が少し強く押される"],["b","浮力（大気圧の合力）による説明","大気圧の合力が浮力"],["c","アルキメデスの原理","同じ体積の空気が受ける重力に等しいだけの浮力を受ける"]],
     below:function(){ return '<div class="sRb eq"><div class="qcard"><p class="qt">空気による浮力</p>'+
       '<p>空気の密度を '+tex("\\rho_{\\text{空気}}")+'、物体の体積を '+tex("V")+' とすると、浮力の大きさは水のときと同じ式で</p>'+
@@ -2071,12 +2092,12 @@ var DEFS = {
       '<p>空気の密度（地上で約 1.2 kg/m³）は水の約 1/800 なので、同じ体積なら浮力も水の約 1/800。</p></div></div>'+
       '<div class="sRb"><div class="qcard"><p class="qt">見るポイント</p><ol class="pts">'+
       '<li>ヘリウムは空気より軽いので、風船全体の重さより浮力が大きく、浮き上がる。</li>'+
-      '<li>高いところほど空気がうすく（密度が小さく）、浮力が小さくなる。浮力と重力がつりあう高さで止まる。</li>'+
-      '<li>ふつうに空気を入れた風船は、ゴムの重さのぶん重力が大きく、落ちる。</li></ol>'+
-      '<p class="cvnote">風船の体積は変わらないとしている（実際の風船は、高いところでふくらんで割れることがある）。</p></div></div>'; }}
+      '<li>高いところほど空気が薄く（密度が小さく）、浮力が小さくなる。浮力と重力がつりあう高さで止まる。</li>'+
+      '<li>普通に空気を入れた風船は、ゴムの重さの分重力が大きく、落ちる。</li></ol>'+
+      '<p class="cvnote">風船の体積は変わらないとしている（実際の風船は、高いところで膨らんで割れることがある）。</p></div></div>'; }}
 };
 DEFS.s31={num:1, mode:2, title:"空気の抵抗（雨粒の落下）", short:"空気の抵抗", sim:S31,
-    desc:'雲から落ちはじめた雨粒。空気の抵抗力は、速さに比例して大きくなる。<span class="todo">スタートを押して、雨粒の速さと v–t グラフを見よう。質量 m や比例定数 k も変えてみよう。</span>',
+    desc:'雲から落ち始めた雨粒。空気の抵抗力は、速さに比例して大きくなる。<span class="todo">スタートを押して、雨粒の速さと v–t グラフを見よう。質量 m や比例定数 k も変えてみよう。</span>',
     opts:'',
     sliders: H_slider("m","質量 $m$",1.0,4.0,0.5,2.0) + H_slider("k","比例定数 $k$",2.0,8.0,0.5,4.0), sliderCls:"pair",
     right:function(){ return '<div class="qcard"><p class="qt">運動方程式と終端速度</p>'+
@@ -2089,21 +2110,21 @@ DEFS.s31={num:1, mode:2, title:"空気の抵抗（雨粒の落下）", short:"�
       '<p>高校物理の範囲では、この考え方（抵抗力は速さに比例する）で扱ってよい。</p></div>'+
       '<div class="stp"><p class="sh"><b>発展</b>速さの時間変化</p><p>運動方程式を解くと '+tex("v=v_f\\left(1-e^{-\\frac{k}{m}t}\\right)")+'。グラフの曲線はこの式で描いている。</p></div></div>'; }};
 DEFS.s32={num:2, mode:2, title:"水から受ける抵抗（船）", short:"水の抵抗", sim:S32,
-    desc:'水の上の船。水は、船の動きをさまたげる向きに抵抗力をはたらかせる。<span class="todo">船をつかんで左右に速く・ゆっくり走らせて、抵抗力の矢印の長さを比べよう。</span>',
+    desc:'水の上の船。水は、船の動きを妨げる向きに抵抗力をはたらかせる。<span class="todo">船をつかんで左右に速く・ゆっくり走らせて、抵抗力の矢印の長さを比べよう。</span>',
     opts:'',
     right:function(){ return '<div class="qcard"><p class="qt">水の抵抗力</p>'+
-      '<p>水の中や水面を動く物体は、速さが大きいほど大きな抵抗力を受ける。手をはなすと、抵抗力のために船はだんだん遅くなって止まる。</p>'+
+      '<p>水の中や水面を動く物体は、速さが大きいほど大きな抵抗力を受ける。手を放すと、抵抗力のために船はだんだん遅くなって止まる。</p>'+
       '<div class="stp"><p class="sh"><b>このシミュレーションのモデル</b></p>'+
       '<p>水の動きをきちんと計算するのはとても難しい（③-3）。ここでは、抵抗力の大きさを</p>'+
       '<div class="qeq">'+tex("R=bv+cv^2",true)+'</div>'+
       '<p>と近似している（'+tex("b,\\ c")+' は定数）。実際の船の抵抗は、波を作ることによる抵抗なども加わって、もっと複雑になる。右上のグラフは、このモデルの '+tex("R")+' と '+tex("v")+' の関係。</p></div></div>'; }};
 DEFS.s33={num:3, mode:2, title:"流体から受ける力（大学の内容）", short:"大学の内容", sim:S33, static:true,
-    desc:'このページで見てきた水圧・浮力・抵抗力は、すべて 1 つの方程式にまとめられる。大学で学ぶ内容なので、雰囲気だけ紹介する。',
+    desc:'このページで見てきた水圧・浮力・抵抗力は、全て 1 つの方程式にまとめられる。大学で学ぶ内容なので、雰囲気だけ紹介する。',
     body:function(){ return '<div class="qcard"><p class="qt">ナビエ–ストークス方程式</p>'+
       '<p>水や空気などの流体の動きは、<b>ナビエ–ストークス方程式</b>で表される。流体を小さなかたまりに分けて、そのかたまりについて運動方程式（'+tex("ma=F")+'）を立てたものにあたる。密度が変わらない流体では</p>'+
       '<div class="qeq">'+tex("\\rho\\left(\\frac{\\partial\\vec{v}}{\\partial t}+(\\vec{v}\\cdot\\nabla)\\vec{v}\\right)=-\\nabla p+\\mu\\nabla^{2}\\vec{v}+\\rho\\vec{g}",true)+'</div>'+
       '<table class="nstab"><tr><td>'+tex("\\rho\\left(\\frac{\\partial\\vec{v}}{\\partial t}+(\\vec{v}\\cdot\\nabla)\\vec{v}\\right)")+'</td><td>小さなかたまりの「質量×加速度」（1 m³ あたり）</td></tr>'+
-      '<tr><td>'+tex("-\\nabla p")+'</td><td>まわりの圧力の差から受ける力（→ ①・② の水圧・大気圧・浮力）</td></tr>'+
+      '<tr><td>'+tex("-\\nabla p")+'</td><td>周りの圧力の差から受ける力（→ ①・② の水圧・大気圧・浮力）</td></tr>'+
       '<tr><td>'+tex("\\mu\\nabla^{2}\\vec{v}")+'</td><td>粘り気（粘性）による力（→ ③-1・③-2 の抵抗力のもと）。'+tex("\\mu")+' は粘性係数</td></tr>'+
       '<tr><td>'+tex("\\rho\\vec{g}")+'</td><td>重力（1 m³ あたり）</td></tr></table></div>'; },
     right:function(){ return '<div class="qcard"><p class="qt">高校物理とのつながり</p>'+
@@ -2130,11 +2151,12 @@ function secHTML(sid, first){
       '<div class="sR">'+d.right()+'</div></article>';
   }
   var cells=d.cells.map(function(cc,i){ return '<div class="fcell pick'+(i===0?' on':'')+'" data-v="'+cc[0]+'" tabindex="0" role="button" aria-pressed="'+(i===0)+'"><p class="fcap">('+"abc"[i]+') '+cc[1]+'<small>'+cc[2]+'</small></p><canvas data-v="'+cc[0]+'"></canvas></div>'; }).join("");
-  return '<article class="sec wide" id="'+sid+'"><div class="sL">'+head+
+  /* 第10回：左の列（見出し・説明・(a)〜(c)）と右の列（いちばん右の図）を横に並べる。説明文は左の列の中で折り返す */
+  return '<article class="sec wide" id="'+sid+'"><div class="sL"><div class="wgrid"><div class="wleft">'+head+
     (d.opts? '<div class="ctrls"><div class="row1 row1b">'+d.opts+'</div></div>' : '')+
-    '<div class="fourgrid">'+cells+'<div class="fcell live"><div class="livehead">'+H_reset()+'</div>'+(d.live? '<div class="ctrls liveopts">'+d.live+'</div>' : '')+H_play(first)+
+    '<div class="threegrid">'+cells+'</div></div><div class="fcell live"><div class="livehead">'+H_reset()+'</div>'+(d.live? '<div class="ctrls liveopts">'+d.live+'</div>' : '')+H_play(first)+
     '<div class="cvwrap"><canvas class="main"></canvas></div><p class="flegend"><span style="color:'+COL.grav+'">● 重力 <i>mg</i></span><span style="color:'+COL.buoy+'">● 浮力 <i>F</i></span><span style="color:'+COL.norm+'">● 垂直抗力 <i>N</i></span><span style="color:'+COL.press+'">→ '+(d.kind==="air"? "大気圧":"液体の圧力")+'</span></p><table class="forcetab"></table></div></div>'+
-    '<p class="pickhint">👆 (a)〜(c) をクリックすると、いちばん右の図の表示が変わる（重力はいつも表示）。</p>'+
+    '<p class="pickhint">👆 (a)〜(c) をクリックすると、一番右の図の表示が変わる（重力はいつも表示）。</p>'+
     '<div class="msgbox"></div><div class="widebelow">'+d.below()+'</div></div></article>';
 }
 
@@ -2145,11 +2167,11 @@ function buildPage(){
     '<div class="hero-in"><div class="hero-top"><nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="'+SITE_HOME+'" title="楽楽（らくらく）高校物理のトップページへ">'+atom+'<span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="'+SITE_HOME+'#sec-mechanics">力学</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">流体から受ける力</span><span class="kdot"></span><span class="en">'+EN+'</span></nav>'+
     '<div class="topbtns" role="group" aria-label="ページ全体の表示"><button id="btnEq" type="button"></button></div></div>'+
     '<h1 class="hero-title"><span class="t1"><span class="nb">流体から</span><span class="nb">受ける力</span></span><span class="t2">〜水圧・大気圧・浮力〜</span></h1>'+
-    '<div class="introrow"><p class="lead2">水や空気（流体）の中の物体は、まわりから押されている。その押し方は深さ（高さ）によって違う。その違いが、物体を浮かせる力＝浮力になる。</p>'+
+    '<div class="introrow"><p class="lead2">水や空気（流体）の中の物体は、周りから押されている。その押し方は深さ（高さ）によって違う。その違いが、物体を浮かせる力＝浮力になる。</p>'+
     '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>'+
     '<div id="tocpanel" class="tocpanel" hidden></div>'+
-    '<figure class="stage" aria-label="水の中で手をはなした木の物体が、まわりの水圧に押されて浮き上がり、水面で上下にゆれて止まる"><canvas id="heroCv"></canvas>'+
-    '<figcaption class="stagecap"><span class="live" aria-hidden="true"></span><span class="sct">水の中で手をはなした木の物体。まわりの水圧は深いほど大きいので、下の面を押す力の方が大きい。その差が浮力 '+tex("F")+'。浮力が重力 '+tex("mg")+' より大きいので浮き上がり、水面でゆれて止まる。</span>'+
+    '<figure class="stage" aria-label="水の中で手を放した木の物体が、周りの水圧に押されて浮き上がり、水面で上下に揺れて止まる"><canvas id="heroCv"></canvas>'+
+    '<figcaption class="stagecap"><span class="live" aria-hidden="true"></span><span class="sct">水の中で手を放した木の物体。周りの水圧は深いほど大きいので、下の面を押す力の方が大きい。その差が浮力 '+tex("F")+'。浮力が重力 '+tex("mg")+' より大きいので浮き上がり、水面で揺れて止まる。</span>'+
     '<span class="stagectl" role="group" aria-label="アニメの操作"><button type="button" class="slow" aria-pressed="false" title="ゆっくり再生">🐢 スロー</button><button type="button" class="pp" aria-label="一時停止"><i></i></button></span></figcaption></figure>'+
     '<ol class="ideas">'+
     '<li><a href="#1-3"><span class="in" aria-label="①"><b>1</b></span><span class="ie">'+tex("p=\\rho hg")+'</span><span class="ij">水圧は面に垂直に、深いほど大きく</span><span class="ia" aria-hidden="true">→</span></a></li>'+
@@ -2170,7 +2192,7 @@ function buildPage(){
      '<li>水圧は面に垂直にはたらき、深いほど大きいこと（'+tex("p=\\rho hg")+'）を、矢印の長さで見る。</li>'+
      '<li>実際に水中の点が受ける圧力は、大気圧＋水圧（'+tex("p'=p_0+\\rho hg")+'）であることを知る。</li>'+
      '<li>浮力は、上下の面の圧力の差から生まれ、押しのけた流体の重さに等しい（'+tex("F=\\rho Vg")+'）ことを確かめる。</li>'+
-     '<li>空気の中でも、大気圧と浮力が水の中と同じしくみではたらくことを確かめる。</li></ol></div>';
+     '<li>空気の中でも、大気圧と浮力が水の中と同じ仕組みではたらくことを確かめる。</li></ol></div>';
   h+='<footer></footer>';
   document.getElementById("wrap").innerHTML=h;
 
@@ -2227,6 +2249,7 @@ function gotoHash(){
 document.addEventListener("DOMContentLoaded", function(){
   buildPage();
   if(!gotoHash()) activateMode("mode1");
+  watchTicks(document);
   if(document.fonts){ document.fonts.load('italic 14px "KaTeX_Math"').then(function(){ redrawAll(); }); document.fonts.ready.then(function(){ redrawAll(); }); }
 });
 
@@ -2333,7 +2356,7 @@ document.addEventListener("DOMContentLoaded", function(){ buildSiteDrawer(); });
 
 /* =========================================================================
    デザインの動き（キット 5 章）＋ ヒーローのアニメ（このページ専用）
-   ヒーロー：水の中で手をはなした木の物体が、水圧に押されて浮き上がり、水面でゆれて止まる。
+   ヒーロー：水の中で手を放した木の物体が、水圧に押されて浮き上がり、水面で揺れて止まる。
    ========================================================================= */
 (function(){
   var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
