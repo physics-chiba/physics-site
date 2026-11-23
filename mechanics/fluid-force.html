@@ -150,6 +150,8 @@ button.v3btn.pglow{border-color:var(--brand);color:var(--brand-700);font-weight:
 .cticks{position:relative;display:block;height:1.35em;padding:0;margin:.05em 0 .25em}
 .cticks::before,.cticks::after{content:none !important}
 .cticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+/* 第11回（熱は第8回）：スライダーの名前のカッコ内（並び方の説明）は小さい字で */
+.vl .lnote{font-size:.78em;font-weight:600;color:var(--ink-3,#69717d)}
 </style>
 </head>
 <body id="top">
@@ -494,7 +496,7 @@ function wireTSlider(root,k,onchg){
 function H_slider(k,label,min,max,step,val){
   return '<div class="varbox"><div class="vrow cell" data-k="'+k+'"><div class="vhead"><span class="vl">'+TX(label)+'</span><span class="vsp"></span><span class="vv"></span></div>'+
     '<div class="vbar"><button class="tiny nudge" type="button" data-d="-1" title="1 目盛り小さく">−</button>'+
-    '<input type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+val+'" aria-label="'+label.replace(/\$[^$]*\$/g,"").trim()+'">'+
+    '<input type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+val+'" aria-label="'+label.replace(/\$[^$]*\$/g,"").replace(/<[^>]*>/g,"").replace(/&nbsp;/g," ").trim()+'">'+
     '<button class="tiny nudge" type="button" data-d="1" title="1 目盛り大きく">＋</button></div></div></div>';
 }
 function H_seg(group,label,items,on){
@@ -632,7 +634,7 @@ var S10 = {
       '力 <i>F</i> = <i>pS</i> = <span class="num">'+fmt2(F)+'</span> N（約 <span class="num">'+(F/9.8<10? (F/9.8).toFixed(1) : (F/9.8).toFixed(0))+'</span> kg の物体にはたらく重力の大きさ）';
   },
   /* 共通：圧力の矢印を立てる点（吸盤の円の中、格子状） */
-  /* 第9回：圧力の矢印の本数を面積に比例させる。３次元は 1 cm² に 1 本（ひまわりの種のならび方で円の中に均等に） */
+  /* 第9回・第11回：３次元は 1 cm² に 1 本（ひまわりの種の並び方で円の中に均等に）。円の面積に比例した本数なので、矢印の密度は直径によらず同じ */
   arrowPts:function(){ var R=this.R(), n=Math.max(1,Math.round(Math.PI*R*R)), a=[], ga=Math.PI*(3-Math.sqrt(5));
     for(var i=0;i<n;i++){ var rr=R*0.92*Math.sqrt((i+0.5)/n), th=i*ga; a.push([rr*Math.cos(th), rr*Math.sin(th)]); }
     return a; },
@@ -657,10 +659,10 @@ var S10 = {
     c.save(); c.strokeStyle="#e07b18"; c.lineWidth=3; c.beginPath(); c.moveTo(X(-R),Y(0)); c.lineTo(X(R),Y(0)); c.stroke(); c.restore();
     /* 圧力の矢印（同じ長さ）：吸盤の上の面へ下向き */
     var La=1.9;
-    /* ２次元（断面）でも本数を面積に比例させる：半径 r cm なら r² 本 */
-    var n2=Math.round(R*R);
-    for(var i2=0;i2<n2;i2++){ var x2=-R*0.9+(n2>1? 1.8*R*i2/(n2-1) : 0.9*R); var zt=this.cupZ(Math.abs(x2)); arrow(c, X(x2), Y(zt+0.15+La), X(x2), Y(zt+0.15), COL.press, (n2>12? 1.6 : 2.2), (n2>12? 6 : 8)); }
-    T(c,"圧力の矢印の本数は、面積に比例させている（半径 1 cm で 1 本）", 8, H-8, {size:10.5, col:COL.sub, halo:true});
+    /* 第11回：矢印の密度を変えない。２次元（断面）では 1 cm ごとに 1 本（直径 d cm なら d 本、間かくはいつも 1 cm） */
+    var n2=Math.max(1,Math.round(2*R));
+    for(var i2=0;i2<n2;i2++){ var x2=-R+(i2+0.5)*(2*R/n2); var zt=this.cupZ(Math.abs(x2)); arrow(c, X(x2), Y(zt+0.15+La), X(x2), Y(zt+0.15), COL.press, (n2>12? 1.6 : 2.2), (n2>12? 6 : 8)); }
+    T(c,"圧力の矢印は 1 cm ごとに 1 本（矢印の密度はいつも同じ）", 8, H-8, {size:10.5, col:COL.sub, halo:true});
     var wp=T(c,"圧力 ",X(-R)-10,Y(this.cupZ(0)+La*0.6),{size:13,bold:true,col:"#8a6a00",align:"right",halo:true});
     SYM(c,"p",null,X(-R)-8,Y(this.cupZ(0)+La*0.6),{size:15,bold:true,col:"#8a6a00",halo:true});
     /* 力 F：S の中心から下向き（テーブルの中へ、いちばん前に描く） */
@@ -700,7 +702,7 @@ var S10 = {
     this.flash.forEach(function(q){ var p=P([q.x,q.y,q.z]); c.fillStyle="rgba(255,180,60,"+(0.85*q.a).toFixed(2)+")"; c.beginPath(); c.arc(p.x,p.y,4+5*(1-q.a),0,7); c.fill(); });
     /* 圧力の矢印（同じ長さ・下向き） */
     var La=2.0;
-    T(c,"圧力の矢印は 1 cm² に 1 本（本数が面積に比例）", 8, H-8, {size:10.5, col:COL.sub, halo:true});
+    T(c,"圧力の矢印は 1 cm² に 1 本（矢印の密度はいつも同じ）", 8, H-8, {size:10.5, col:COL.sub, halo:true});
     this.arrowPts().forEach(function(q){ var zt=self.cupZ(Math.hypot(q[0],q[1])), a=P([q[0],q[1],zt+0.15+La]), b=P([q[0],q[1],zt+0.15]); arrow(c,a.x,a.y,b.x,b.y,COL.press,2,7); });
     items.filter(function(it){ return it.p.d>=pc; }).forEach(drawMol);
     /* 力 F：S の中心から下向き（いちばん前） */
@@ -2054,8 +2056,8 @@ var DEFS = {
   s14:{num:5, mode:0, title:"液体による浮力", short:"浮力", sim:S14, wide:true, kind:"water",
     desc:'液体の中の物体は、上向きの力（浮力）を受ける。<span class="todo">(a)〜(c) の図をクリックして表示を選び、物体の深さをドラッグで決めてからスタート。</span><br>注目点：全部沈んでいる間は、深さを変えても浮力は変わらない。',
     opts: '',
-    live: '<div class="liverow lsl">'+H_slider("dens","物体（左ほど密度が小さい）",0,DENS.length-1,1,0)+'<div class="cticks" data-lo="密度 小"><span>木</span><span>氷</span><span>水と同じ</span><span>アルミ</span><span>鉄</span></div>'+'</div>'+
-          '<div class="liverow lsl">'+H_slider("liq","液体（左ほど密度が小さい）",0,LIQS.length-1,1,1)+'<div class="cticks" data-lo="密度 小"><span>油</span><span>水</span><span>食塩水</span><span>水銀</span></div>'+'</div>',
+    live: '<div class="liverow lsl">'+H_slider("dens","物体&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど密度が大きい）</span>",0,DENS.length-1,1,0)+'<div class="cticks" data-lo="密度 小"><span>木</span><span>氷</span><span>水と同じ</span><span>アルミ</span><span>鉄</span></div>'+'</div>'+
+          '<div class="liverow lsl">'+H_slider("liq","液体&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど密度が大きい）</span>",0,LIQS.length-1,1,1)+'<div class="cticks" data-lo="密度 小"><span>油</span><span>水</span><span>食塩水</span><span>水銀</span></div>'+'</div>',
     cells:[["a","水圧による説明","上下左右から押される"],["b","浮力（水圧の合力）による説明","上下の力の差が浮力"],["c","アルキメデスの原理","同じ体積の液体が受ける重力に等しいだけの浮力を受ける"]],
     below:function(){ return '<div class="sRb eq"><div class="qcard"><p class="qt">浮力の大きさ</p>'+
       '<p>水中にある物体の上の面（深さ '+tex("h_1")+'）と下の面（深さ '+tex("h_2")+'）の面積を '+tex("S")+' とする。上の面は下向きに '+tex("F_1")+'、下の面は上向きに '+tex("F_2")+' の力を受ける（横向きの力は打ち消しあう）。</p>'+
@@ -2084,7 +2086,7 @@ var DEFS = {
   s22:{num:2, mode:1, title:"大気による浮力", short:"空気の浮力", sim:S22, wide:true, kind:"air",
     desc:'空気の中の物体にも、水の中と同じ仕組みで浮力がはたらく。<span class="todo">(a)〜(c) の図をクリックして表示を選び、風船の高さをドラッグで決めてからスタート。</span><br>注目点：高いところほど空気が薄く、浮力が小さくなる。',
     opts: '',
-    live: '<div class="liverow lsl">'+H_slider("gas","風船の中身（左ほど密度が小さい）",0,1,1,0)+'<div class="cticks" data-lo="密度 小"><span>ヘリウム</span><span>空気</span></div>'+'</div>',
+    live: '<div class="liverow lsl">'+H_slider("gas","風船の中身&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど密度が大きい）</span>",0,1,1,0)+'<div class="cticks" data-lo="密度 小"><span>ヘリウム</span><span>空気</span></div>'+'</div>',
     cells:[["a","大気圧による説明","下の方が少し強く押される"],["b","浮力（大気圧の合力）による説明","大気圧の合力が浮力"],["c","アルキメデスの原理","同じ体積の空気が受ける重力に等しいだけの浮力を受ける"]],
     below:function(){ return '<div class="sRb eq"><div class="qcard"><p class="qt">空気による浮力</p>'+
       '<p>空気の密度を '+tex("\\rho_{\\text{空気}}")+'、物体の体積を '+tex("V")+' とすると、浮力の大きさは水のときと同じ式で</p>'+
