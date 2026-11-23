@@ -213,6 +213,7 @@ button.megaglow{position:relative;background:#e07b18 !important;border-color:#e0
 /* 第8回：列がせまいとき、スライダーの名前と値が重ならないように折り返す */
 .vhead{flex-wrap:wrap;row-gap:0}
 .vhead .vv{margin-left:auto}
+.colgrid .trow .tbar{flex:1 1 180px;max-width:none;min-width:150px}
 </style>
 </head>
 <body id="top">
@@ -1204,7 +1205,7 @@ var S13 = {
         for(var i=0;i<n;i++){ var p=PH[i+40], u=((i*0.618)+self.clk*(0.16+0.10*p[2]))%1, gy=y0-u*span, gx=zx+10+(((i*0.377)+0.08*Math.sin(self.clk*1.7*p[2]+p[0]))%1)*(zw-20);
           var al=(gy<zy)? clamp(1-(zy-gy)/70,0,1) : 1; c.save(); c.globalAlpha=al; ball(c,gx,gy,6.5,0,heatCol(0.9)); c.restore(); } }
       /* 第7回：何が起こっているかを小さく書く */
-      if(st.ph===2) T(c,"蒸発が起こっている（表面からも気体になる）", zx+zw/2, zy+zh+12, {size:10.5, bold:true, col:"#c0392b", align:"center", halo:true});
+      if(st.ph===2) T(c,"蒸発が起こっている", zx+zw/2, zy+zh+12, {size:10.5, bold:true, col:"#c0392b", align:"center", halo:true});
       if(st.ph===3) T(c,"沸騰：液体の内部からも気体になる", zx+zw/2, zy+zh+12, {size:10.5, bold:true, col:"#c0392b", align:"center", halo:true});
       var stName=(this.sub==="water"? [d.sol+"（固体）", "固体と液体", d.liq+"（液体）", "液体と気体", d.gas+"（気体）"] : ["固体","固体と液体","液体","液体と気体","気体"])[st.ph], stCol=(st.ph>=3? "#c0392b" : "#1f6fb2");
       var tx=zx+zw+10, tw=Math.min(104,W-tx-8); c.save(); c.fillStyle=stCol; rrect(c,tx,zy+zh/2-16,tw,32,6); c.fill(); c.restore();
@@ -1282,7 +1283,7 @@ var S14 = {
     this.sg=wireSlider(sec,"sub",function(v){ var d=SUBS[Math.round(v)]; return d.name+"　"+d.c+" J/(g·K)"; },function(v){ self.si=Math.round(v); self.run.reset(); });
     this.mg=wireSlider(sec,"mass",function(v){ return v.toFixed(1)+" kg"+(Math.abs(v-1)<1e-6? "（水と同じ）" : ""); },function(v){ self.m=v; self.run.reset(); });
     this.tb=wireTimeBar(sec, this.run, function(){ return self.Qstop()/self.RATE; }, function(t){ self.Q=Math.min(self.Qstop(), self.RATE*t); });
-    this.cg=colGrid(sec, {lc:"ref", rc:"sub"});
+    this.cg=colGrid(sec, {B:true, lc:"ref", rc:"sub"});
     sec.querySelector(".resetall").addEventListener("click", function(){ self.si=2; self.m=1.0; self.sg.set(2); self.mg.set(1); self.run.rate=1;
       var sb=sec.querySelector(".slowb"); if(sb) sb.classList.remove("on"); self.run.reset(); });
     var anim=function(){ if(self.sec.offsetParent!==null && self.run.state!=="run"){ self.clk+=0.016; self.draw(); } requestAnimationFrame(anim); };
@@ -1290,8 +1291,8 @@ var S14 = {
     this.draw(); requestAnimationFrame(anim);
   },
   sub:function(){ return SUBS[this.si]; },
-  /* その物質の温度と時間のグラフ。もう一方の物質の線も薄く重ねて、比べられるようにする */
-  drawTT:function(c, gx0, gy0, gx1, gy1, i, tEnd, tNow, C){
+  /* 2 つの物質の温度と時間のグラフ（1 つにまとめる。色は物体のわくと同じ） */
+  drawTT:function(c, gx0, gy0, gx1, gy1, tEnd, tNow, C){
     var self=this, X=function(t){ return gx0+(gx1-gx0-12)*t/tEnd; }, Y=function(T){ return gy0-(gy0-gy1-10)*T/100; };
     c.save(); c.strokeStyle="rgba(58,65,76,.10)"; c.lineWidth=1;
     for(var v=20; v<=100; v+=20){ c.beginPath(); c.moveTo(gx0,Y(v)); c.lineTo(gx1-12,Y(v)); c.stroke(); T(c,String(v),gx0-5,Y(v),{size:9.5,col:COL.sub,align:"right"}); }
@@ -1299,27 +1300,29 @@ var S14 = {
     axes(c, gx0, gy0, gx1, gy1);
     T(c,"温度〔℃〕", gx0+6, gy1-4, {size:10.5, col:COL.sub});
     T(c,"時間", gx1, gy0+12, {size:10.5, col:COL.sub, align:"right"});
-    var j=1-i, Tj=function(t){ return self.T0+self.RATE*t/C[j]; }, Ti=function(t){ return self.T0+self.RATE*t/C[i]; };
-    c.save(); c.strokeStyle=this.COLS[j]; c.globalAlpha=0.35; c.lineWidth=1.6; c.setLineDash([5,4]); c.beginPath(); c.moveTo(X(0),Y(Tj(0))); c.lineTo(X(tNow),Y(Tj(tNow))); c.stroke(); c.restore();
-    c.save(); c.strokeStyle=this.COLS[i]; c.lineWidth=2.8; c.beginPath(); c.moveTo(X(0),Y(Ti(0))); c.lineTo(X(tNow),Y(Ti(tNow))); c.stroke();
-    c.fillStyle=this.COLS[i]; c.beginPath(); c.arc(X(tNow),Y(Ti(tNow)),4.5,0,7); c.fill(); c.restore();
-    if(tNow>0) T(c,(j? this.sub().sh : "水")+"（比較）", X(tNow)+4, Y(Tj(tNow))+(Tj(tNow)>Ti(tNow)? -9 : 11), {size:9.5, col:this.COLS[j], halo:true});
+    for(var i=0;i<2;i++){ var Ti=function(t){ return self.T0+self.RATE*t/C[i]; };
+      c.save(); c.strokeStyle=this.COLS[i]; c.lineWidth=2.8; c.beginPath(); c.moveTo(X(0),Y(Ti(0))); c.lineTo(X(tNow),Y(Ti(tNow))); c.stroke();
+      c.fillStyle=this.COLS[i]; c.beginPath(); c.arc(X(tNow),Y(Ti(tNow)),4.5,0,7); c.fill(); c.restore();
+      if(tNow>0){ var other=self.T0+self.RATE*tNow/C[1-i], up=(Ti(tNow)>=other);
+        T(c, i? this.sub().sh : "水", X(tNow)+7, Y(Ti(tNow))+(up? -9 : 11), {size:11, bold:true, col:this.COLS[i], halo:true}); } }
   },
+
   Cs:function(){ return [1000*this.CW, this.m*1000*this.sub().c]; },        /* 熱容量 C＝mc［J/K］ */
   Qstop:function(){ var C=this.Cs(); return Math.min(this.QMAX, 80*Math.min(C[0],C[1])); },   /* 熱い方が 100 ℃ になったら止める */
-  /* 第7回：左右の列をひとつにした図。左半分＝水とその T-t グラフ、右半分＝選んだ物質とその T-t グラフ。
-     操作（左の説明・右のスライダー）は、それぞれの物質の真上にそろえる（colGrid）。色：水＝青、右の物質＝茶 */
+  /* 第9回：1-5 と同じ 3 列。左＝水（青）｜まん中＝比べる物質（茶）｜右＝2 つの物質の T-t グラフ（1 つにまとめる）。
+     操作は、それぞれの物質の真上（左の説明・右のスライダー）と、グラフの真上（スタート類・時間バー）に置く（colGrid） */
   COLS:["#1f6fb2","#b5651d"],
   draw:function(){
     var self=this, wide=(this.cv.parentElement.clientWidth>=760);
-    var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.30, 300, 360) : clamp(W*1.5, 540, 640); }), c=f.c, W=f.W, H=f.H;
+    var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.30, 300, 360) : clamp(W*1.25, 470, 560); }), c=f.c, W=f.W, H=f.H;
     c.clearRect(0,0,W,H); if(this.tb) this.tb.sync();
     var C=this.Cs(), names=["水", this.sub().name], ms=[1.0,this.m], cs=[this.CW,this.sub().c], fills=["#d4ebf9",this.sub().fill];
     var on=(this.run.state==="run"), tEnd=this.Qstop()/this.RATE, tNow=this.Q/this.RATE;
+    var c1=W*0.31, c2=W*0.62, figH=wide? H : H*0.52;
     for(var i=0;i<2;i++){
-      var R = wide? {x:i*W/2, y:0, w:W/2, h:H} : {x:0, y:i*H/2, w:W, h:H/2};
-      var ow=R.w*0.44, cx=R.x+ow/2+4, yDesk=R.y+R.h-12;
-      var bw0=Math.min(130, ow*0.66), sc=(i? Math.cbrt(this.m) : 1), bw=bw0*sc, bh=bw0*0.72*sc, bx=cx-bw/2, by=yDesk-62-bh;
+      var R = wide? {x:(i? c1 : 0), w:(i? c2-c1 : c1)} : {x:i*W/2, w:W/2};
+      var cx=R.x+R.w/2-6, yDesk=figH-12;
+      var bw0=Math.min(130, R.w*0.52), sc=(i? Math.cbrt(this.m) : 1), bw=bw0*sc, bh=bw0*0.72*sc, bx=cx-bw/2, by=yDesk-62-bh;
       var Tn=this.T0+this.Q/C[i], lv=clamp((Tn-this.T0)/80,0,1);
       burner(c, cx, yDesk, on, this.clk+i*0.37, 0.85);
       c.save(); c.fillStyle="#95a5a6"; c.fillRect(cx-bw0*0.7, yDesk-62, bw0*1.4, 6); c.restore();
@@ -1330,12 +1333,12 @@ var S14 = {
       T(c, names[i]+"　"+ms[i].toFixed(1)+" kg", cx-8, by-40, {size:13.5, bold:true, col:this.COLS[i], align:"center", halo:true});
       T(c, "比熱 "+cs[i]+" J/(g·K)", cx-8, by-22, {size:11, col:COL.sub, align:"center", halo:true});
       T(c, Tn.toFixed(1)+" ℃", bx+bw-14, by-64, {size:12, bold:true, col:"#c0392b", align:"center", halo:true});
-      this.drawTT(c, R.x+ow+30, R.y+R.h-26, R.x+R.w-12, R.y+30, i, tEnd, tNow, C);
     }
-    if(wide){ c.save(); c.strokeStyle="rgba(58,65,76,.18)"; c.setLineDash([4,4]); c.beginPath(); c.moveTo(W/2,8); c.lineTo(W/2,H-8); c.stroke(); c.restore(); }
-    T(c,"同じバーナーで、同じ熱量を加える　（粒子は大きく描いています）", W/2, 10, {size:10.5, col:COL.sub, align:"center", halo:true});
+    if(wide) this.drawTT(c, c2+34, H-26, W-14, 30, tEnd, tNow, C);
+    else this.drawTT(c, 40, H-26, W-14, figH+30, tEnd, tNow, C);
+    T(c,"同じバーナーで、同じ熱量を加える　（粒子は大きく描いています）", wide? c2/2 : W/2, 10, {size:10.5, col:COL.sub, align:"center", halo:true});
     notebook(c,W,H);
-    if(this.cg) this.cg.set(this.cv, [W/2], wide);
+    if(this.cg) this.cg.set(this.cv, [c1,c2], wide);
     var dT=[this.Q/C[0], this.Q/C[1]];
     this.msg.innerHTML='加えた熱量 '+tex("Q")+' = <span class="num">'+(this.Q/1000).toFixed(1)+'</span> kJ　'+
       '水：'+tex("\\Delta T")+' = <span class="num">'+dT[0].toFixed(1)+'</span> K　／　'+this.sub().name+'：'+tex("\\Delta T")+' = <span class="num">'+dT[1].toFixed(1)+'</span> K'+
@@ -1394,6 +1397,7 @@ var S15 = {
   changed:function(){ this.compute(); this.run.reset(); },
   /* 最後まで計算しておく（0.05 s きざみ） */
   compute:function(){
+    this.T0=(this.kind==="sl")? 3.0 : 0.6;     /* 第9回：ふれるまでの時間。鉄球はゆっくり等速で入れる */
     var CA=this.CA(), CB=this.CB(), TA=this.TA0, TB=this.TB0, t=0, h=0.05, H=[];
     for(var i=0;i<40000;i++){
       var P=this.K*(TA-TB), La=this.lid? this.KOUT*(TA-this.TR) : 0, Lb=this.lid? this.KOUT*(TB-this.TR) : 0;
@@ -1409,7 +1413,7 @@ var S15 = {
   ts:function(){ return Math.min(this.tEnd, Math.max(0, this.run.t-this.T0)*this.spd); },     /* 実験の中の時刻［s］ */
   at:function(t){ var i=Math.min(this.H.length-1, Math.floor(t/0.05)), a=this.H[i]; return {t:a[0], TA:a[1], TB:a[2], P:a[3]}; },
   /* 第5回：スタート前は、2 つの物体をふれさせない（固体どうしはすき間、鉄球は液体の外）。スタートで 0.5 s かけてふれさせる */
-  touchU:function(){ if(this.run.state==="idle" && this.run.t<=0) return 0; return clamp(this.run.t/0.5,0,1); },
+  touchU:function(){ if(this.run.state==="idle" && this.run.t<=0) return 0; return clamp(this.run.t/this.T0,0,1); },
   draw:function(){
     var self=this, wide=(this.cv.parentElement.clientWidth>=760);
     var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.34, 300, 380) : clamp(W*0.98, 470, 660); }), c=f.c, W=f.W, H=f.H;
@@ -1476,7 +1480,7 @@ var S15 = {
     var lvl=(vh-12)*clamp(0.30+0.30*this.m,0,0.92), wl=vy+vh-lvl;      /* 液体の量で液面の高さが変わる */
     c.save(); c.fillStyle="rgba(90,160,225,.42)"; c.fillRect(vx+6, wl, vw-12, vy+vh-wl-1); c.strokeStyle="#2f6f9f"; c.lineWidth=1.5; c.beginPath(); c.moveTo(vx+6,wl); c.lineTo(vx+vw-6,wl); c.stroke(); c.restore();
     /* スタート前は、鉄球を糸でつるして液体の外に。スタートで沈める */
-    var bxc=vx+vw*0.34, byIn=vy+vh-r-8, byOut=vy-r-16, byc=byOut+(byIn-byOut)*u*u;
+    var bxc=vx+vw*0.34, byIn=vy+vh-r-8, byOut=vy-r-16, byc=byOut+(byIn-byOut)*u;     /* 第9回：落とさずに、等速でそっと入れる */
     if(u<1){ c.save(); c.strokeStyle="#69717d"; c.lineWidth=1.2; c.beginPath(); c.moveTo(bxc,0); c.lineTo(bxc,byc-r); c.stroke(); c.restore(); }
     var lvA=this.lvOf(st.TA), gr=c.createRadialGradient(bxc-r*0.3,byc-r*0.35,2,bxc,byc,r);
     gr.addColorStop(0,"#fff"); gr.addColorStop(1, heatCol(lvA));
@@ -1963,9 +1967,9 @@ var DEFS = {
       '<p>温度は、物体を構成する粒子の熱運動の激しさを表す。温度を下げていくと熱運動は穏やかになり、約 −273 ℃ で最も穏やかになる。これより低い温度はない（<b>絶対零度</b>）。</p>'+
       '<p>絶対零度を 0 とし、目盛りの間隔をセルシウス温度と同じにした温度が<b>絶対温度</b>（単位 K：ケルビン）。セルシウス温度 '+tex("t")+'［℃］と絶対温度 '+tex("T")+'［K］の関係は</p>'+
       '<div class="qeq">'+tex("T=t+273",true)+'</div>'+tempScaleSVG()+'</div>'+
-      '<div class="qcard"><p class="qt">もっと先へ</p>'+
+      '<div class="qcard"><p class="qt">もっと知りたい人へ</p>'+
       '<p>本当は、<b>絶対零度でも、粒子は完全には止まらない</b>（<a href="#3-1">③-1</a>）。</p>'+
-      '<p>また、このブラウン運動は、人類が初めて「原子が本当にある」ことを確かめた、<b>原子の発見</b>につながった（<a href="#3-2">③-2</a>）。</p></div>'; }},
+      '<p>また、このブラウン運動により、人類が初めて「原子」の存在を確かめた（<a href="#3-2">③-2</a>）。</p></div>'; }},
   s12:{num:2, mode:0, title:"物質の三態", short:"物質の三態", sim:S12,
     desc:'物質は、温度と圧力によって固体・液体・気体のどれかの状態をとる（<b>物質の三態</b>）。<span class="todo">スタートを押して、スライダーで温度を上げてみよう。</span><br>注目点：固体はつりあいの位置（＋印）の周りで震え、液体は粒子同士が触れ合いながら動き回り、気体はばらばらに飛び回る。',
     opts:'',
@@ -1993,13 +1997,7 @@ var DEFS = {
     sliders: '<div class="duo"><div class="duoL"><span>左（比べる基準）</span><b>水 1.0 kg（初め 20 ℃）</b><span>比熱 4.18 J/(g·K)</span></div><div class="duoR">'+
       H_slider("sub","右の物質&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど比熱が大きい）</span>",0,SUBS.length-1,1,2)+cTicks(SUBS)+H_slider("mass","右の質量",0.5,2,0.1,1)+'</div></div>',
     mid: H_timebar(),
-    right:function(){ return '<div class="qcard"><p class="qt">熱容量と比熱</p>'+
-      '<p>物体の温度を 1 K 上げるのに必要な熱量を、その物体の<b>熱容量</b> '+tex("C")+'［J/K］という。物体に熱量 '+tex("Q")+'［J］を加えて温度が '+tex("\\Delta T")+'［K］上がるとき</p>'+
-      '<div class="qeq">'+tex("Q=C\\Delta T",true)+'</div>'+
-      '<p>物質 1 g の温度を 1 K 上げるのに必要な熱量を、その物質の<b>比熱</b> '+tex("c")+'［J/(g·K)］という。質量 '+tex("m")+'［g］の物体では '+tex("C=mc")+' なので</p>'+
-      '<div class="qeq">'+tex("Q=mc\\Delta T",true)+'</div>'+
-      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>同じ熱量を加えると、比熱が小さい物質ほど温度が大きく上がる。質量を 2 倍にすると熱容量も 2 倍になり、温度の上がり方は半分になる。</p>'+
-      '<p>水の比熱はとても大きい。そのため、海の近くでは 1 日の気温の変化が小さい。</p></div></div>'; }},
+    right:function(){ return ''; }},   /* 第9回：右の列のカードは全てカット（千葉さん） */
   s15:{num:5, mode:0, title:"熱平衡（熱量の保存）", short:"熱平衡", sim:S15, full:true,
     desc:'温度の違う 2 つの物体を触れさせると、高温の物体から低温の物体へ熱が移り、やがて同じ温度になる（<b>熱平衡</b>）。<span class="todo">「固体同士」「固体と液体」と、右の物質・質量を選んで、スタートを押そう。</span><br>注目点：熱の矢印の中を流れる点が「移っていく熱」。温度の差が小さくなるほど、流れはゆっくりになる。',
     opts: H_seg("kind","組み合わせ",[["ss","固体同士"],["sl","固体と液体"]],"ss") + H_chk("lid","ふたを開ける",false),
@@ -2007,14 +2005,7 @@ var DEFS = {
     sliders: '<div class="duo"><div class="duoL"><span>左（高温・固定）</span><b>鉄 1.0 kg　80 ℃</b><span>比熱 0.448 J/(g·K)</span></div><div class="duoR"><p class="duonote">右は初め 20 ℃</p>'+
       H_slider("sub","右の物質&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど比熱が大きい）</span>",0,5,1,4)+'<div class="cticks"></div>'+H_slider("mass","右の質量",0.5,2,0.1,1)+'</div></div>',
     mid: H_timebar(),
-    right:function(){ return '<div class="qcard"><p class="qt">熱量の保存</p>'+
-      '<p>外との間で熱の出入りがなければ</p>'+
-      '<div class="qeq">'+tex("\\text{高温の物体が失った熱量}=\\text{低温の物体が得た熱量}",true)+'</div>'+
-      '<p>これを<b>熱量の保存</b>という。熱容量 '+tex("C_\\mathrm{A}")+'、温度 '+tex("t_\\mathrm{A}")+' の物体 A と、熱容量 '+tex("C_\\mathrm{B}")+'、温度 '+tex("t_\\mathrm{B}")+' の物体 B（'+tex("t_\\mathrm{A}>t_\\mathrm{B}")+'）が、温度 '+tex("t")+' で熱平衡になったとすると</p>'+
-      '<div class="qeq">'+tex("C_\\mathrm{A}(t_\\mathrm{A}-t)=C_\\mathrm{B}(t-t_\\mathrm{B})",true)+'</div>'+
-      '<p>質量と比熱で書くと '+tex("m_1c_1(t_1-t)=m_2c_2(t-t_2)")+'。</p>'+
-      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>熱容量の大きい物体の温度の方が変わりにくい。2 つの温度の差が小さくなるほど、熱の移り方はゆっくりになる。</p>'+
-      '<p>ふたを開けると、熱が外へ逃げるので、熱量の保存は成り立たない。最後は 2 つとも室温に近づく。</p></div></div>'; }},
+    right:function(){ return ''; }},   /* 第9回：右の列のカードは全てカット（千葉さん） */
   s21:{num:1, mode:1, title:"熱力学第一法則", short:"第一法則", sim:S21,
     desc:'ピストンのついたシリンダーの中の気体。気体の分子の運動エネルギーの和が<b>内部エネルギー</b> '+tex("U")+'。<span class="todo">操作を 1 つ選んでスタート（操作のたびに、初めの状態に戻る）。上下の図は連動する。</span><br>注目点：熱 '+tex("Q")+' でも、仕事 '+tex("W")+' でも、内部エネルギーは変わる。いつでも '+tex("\\Delta U=Q+W")+'。下の図は、同じ変化を気体がした仕事 '+tex("W'")+' で表したもの。',
     opts: H_seg("act","操作",[["heat","気体に熱を与える（ピストン固定）"],["cool","気体の熱を奪う（ピストン固定）"],["free","気体に熱を与える（ピストンは自由）"],["freecool","気体の熱を奪う（ピストンは自由）"],["push","気体に正の仕事をする"],["pull","気体に負の仕事をする"]],"heat"),
@@ -2107,7 +2098,7 @@ function secHTML(sid, first){
     return '<article class="sec'+(d.full? ' full' : '')+'" id="'+sid+'"><div class="sL">'+head+
       '<div class="ctrls">'+(d.opts? '<div class="row1 row1b">'+H_reset()+d.opts+'</div>' : '')+(d.playFirst? H_play(first, d.mid, d.opts? '' : H_reset()) : '')+(d.sliders? '<div class="row2 sliders'+(d.sliderCls? ' '+d.sliderCls : '')+'">'+d.sliders+'</div>' : '')+(d.noplay||d.playFirst? '' : H_play(first, d.mid, d.opts? '' : H_reset()))+'</div>'+
       (d.nocanvas? '' : '<div class="cvwrap"><canvas class="main"></canvas></div>')+'<div class="msgbox"'+(d.nocanvas?' hidden':'')+'></div>'+(d.leftBelow? d.leftBelow() : '')+'</div>'+
-      '<div class="sR">'+d.right()+'</div></article>';
+      (d.right()? '<div class="sR">'+d.right()+'</div>' : '')+'</article>';
   }
   var cells=d.cells.map(function(cc,i){ return '<div class="fcell pick'+(i===0?' on':'')+'" data-v="'+cc[0]+'" tabindex="0" role="button" aria-pressed="'+(i===0)+'"><p class="fcap">('+"abc"[i]+') '+cc[1]+'<small>'+cc[2]+'</small></p><canvas data-v="'+cc[0]+'"></canvas></div>'; }).join("");
   return '<article class="sec wide" id="'+sid+'"><div class="sL">'+head+
