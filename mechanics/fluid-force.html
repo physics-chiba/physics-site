@@ -1047,7 +1047,7 @@ var S14 = {
     var self=this; this.sec=sec;
     this.cvA=sec.querySelector('canvas[data-v="a"]'); this.cvB=sec.querySelector('canvas[data-v="b"]'); this.cvC=sec.querySelector('canvas[data-v="c"]');
     this.cv=sec.querySelector("canvas.main"); this.tab=sec.querySelector(".forcetab"); this.msg=sec.querySelector(".msgbox");
-    this.di=0; this.li=1; this.view="a"; this.z0=0.66; this.z=this.z0; this.v=0; this.calm=0;
+    this.di=0; this.li=1; this.view="a"; this.z0=0.24+this.AH/2; this.z=this.z0;   /* 第13回：既定は上の面の深さ h＝0.24 m */ this.v=0; this.calm=0;
     this.run = new Runner({
       begin:function(){ self.z0=self.z; self.v=0; self.calm=0; },
       step:function(dt,r){ return self.step(dt,r); },
@@ -1068,7 +1068,7 @@ var S14 = {
       self.di=0; self.li=1; self.segD.set(0); self.segL.set(1); self.view="a";
       sec.querySelectorAll(".fcell.pick").forEach(function(x){ x.classList.toggle("on", x.dataset.v==="a"); });
       self.run.rate=1; var sb=sec.querySelector(".slowb"); if(sb) sb.classList.remove("on");
-      self.z0=0.66; self.run.reset(); self.updVals(); self.drawAll(); });
+      self.z0=0.24+self.AH/2; self.run.reset(); self.updVals(); self.drawAll(); });
     bindDrag(this.cv, function(x,y){ var g=self.g; return g && Math.abs(x-g.X(0))<(self.AW/2)*g.s+14 && Math.abs(y-g.Y(self.z))<(self.AH/2)*g.s+12; },
       function(x,y){ var g=self.g; self.z = clamp((y-g.Y(0))/g.s, self.zmin(), self.zmax()); self.z0=self.z; self.v=0; self.run.touch(); self.drawAll(); }, null,
       function(){ return self.run.state!=="run"; });
@@ -2080,7 +2080,7 @@ var DEFS = {
       '<p>面積 '+tex("S")+' の面の真上には、高さ '+tex("h")+' の水の柱が載っている。水の柱の質量は '+tex("m=\\rho\\times Sh")+'、重さは</p>'+
       '<div class="qeq">'+tex("F=mg=\\rho Shg",true)+'</div>'+
       '<p>これを面積 '+tex("S")+' で割ると、'+tex("p=\\dfrac{F}{S}=\\dfrac{\\rho Shg}{S}=\\rho hg")+'</p></div>'+
-      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>矢印はどこでも<b>面に垂直</b>。球や台形柱にすると、斜めの面でも面に垂直に押していることが分かる。同じ深さの左右の矢印は同じ長さで、打ち消しあう。上の面より<b>下の面の矢印の方が長い</b>（→ ①-5 の浮力）。</p></div></div>'; }},
+      '</div>'; }},   /* 第13回：見るポイントのカードを削除 */
   s13:{num:4, mode:0, title:"実際の水圧（大気圧＋水圧）", short:"大気圧＋水圧", sim:S13,
     desc:'実際の水面には大気圧がかかっているので、水の中の物体は「大気圧＋水圧」で押される。<span class="todo">スタートで物体を沈めて、矢印と棒グラフの変わり方を見よう。</span><br>注目点：上の面と下の面の圧力の差は、深さを変えても同じ。',
     opts: H_seg("air","表示",[["on","大気圧もふくめる"],["off","水圧だけ"]],"on") + H_chk("col","水と空気の柱を表示",false),

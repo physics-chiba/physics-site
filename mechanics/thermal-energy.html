@@ -219,6 +219,9 @@ button.megaglow{position:relative;background:#e07b18 !important;border-color:#e0
 .subbtns .subcap{font-weight:800;font-size:.85rem;color:#3a414c;background:rgba(255,255,255,.88);padding:.15em .5em;border-radius:8px}
 .subbtns button.b.seg{font:inherit;font-size:1rem;font-weight:800;padding:.35em 1.1em;border-radius:999px;border:2px solid #1f6fb2;background:#fff;color:#1f6fb2;box-shadow:none;min-height:0}
 .subbtns button.b.seg.on{background:#1f6fb2;color:#fff}
+/* 第11回：③-3 の逆再生中は時間バーを動かせない（うすく表示） */
+.tbar.locked{opacity:.6}
+.tbar.locked input{cursor:not-allowed}
 </style>
 </head>
 <body id="top">
@@ -1387,7 +1390,7 @@ var S15 = {
     this.setList=setList;
     this.sk=wireSeg(sec,"kind",function(v){ self.kind=v; self.si=(v==="ss")? 4 : 3; setList(); self.changed(); });
     /* 第10回：組み合わせのボタンは、①-3 の物質のボタンと同じく、図の右上に大きく置く */
-    var kb=document.createElement("div"); kb.className="subbtns"; kb.innerHTML='<span class="subcap">組み合わせ</span>';
+    var kb=document.createElement("div"); kb.className="subbtns"; this.kb=kb; kb.innerHTML='<span class="subcap">組み合わせ</span>';
     sec.querySelectorAll('button.seg[data-g="kind"]').forEach(function(b){ kb.appendChild(b); });
     var sl0=sec.querySelector(".segl"); if(sl0 && /組み合わせ/.test(sl0.textContent)) sl0.remove();
     this.cv.parentElement.style.position="relative"; this.cv.parentElement.appendChild(kb);
@@ -1441,6 +1444,8 @@ var S15 = {
       this.drawGraph(c, 46, H-26, W-16, figH+34, st);
     }
     if(this.cg) this.cg.set(this.cv, [c1,c2], wide);
+    /* 第11回：組み合わせのボタンは、断熱容器の右上・グラフの左上（2 列目の右はし）に置く */
+    if(this.kb){ var rgt=wide? (this.cv.parentElement.clientWidth-c2+8)+"px" : ""; if(this.kb.style.right!==rgt) this.kb.style.right=rgt; }
     notebook(c,W,H);
     var Qa=this.CA()*(this.TA0-st.TA), Qb=this.CB()*(st.TB-this.TB0), nB=this.sub().name;
     this.msg.innerHTML='熱容量 '+tex("C=mc")+'：鉄 <span class="num">'+this.CA().toFixed(0)+'</span> J/K　／　'+nB+' <span class="num">'+this.CB().toFixed(0)+'</span> J/K<br>'+
@@ -1463,11 +1468,11 @@ var S15 = {
       T(c,"ふたが開いている", x+w-6, y-L*Math.sin(ang)-t+2, {size:11.5, bold:true, col:"#c0392b", align:"right", halo:true});
       if(this.run.state==="run") for(var i=0;i<2;i++){ var xx=x+w*(0.70+0.18*i); heatFlow(c, xx, y+18, xx, y-16, 5, (this.clk*0.5+i*0.3)%1, {k:0.6}); } }
     else { hatch(x-t, y-t, w+2*t, t);
-      T(c,"断熱容器（ふたを閉じている）", x+w/2, y-t-9, {size:11, col:COL.sub, align:"center"}); }
+      T(c,"断熱容器（ふたを閉じている）", x-t, y-t-9, {size:11, col:COL.sub}); }
   },
   lvOf:function(T){ return clamp((T-15)/70,0,1); },
   drawSS:function(c,X0,AW,Hf,st,moving,u){
-    var self=this, vw=Math.min(460, AW*0.86), vx=X0+(AW-vw)/2, vy=36, vh=Hf-vy-this.TW;
+    var self=this, vw=Math.min(460, AW*0.86), vx=X0+(AW-vw)/2, vy=60, vh=Hf-vy-this.TW;
     this.vessel(c, vx, vy, vw, vh);
     var base=Math.min(vw*0.28, vh*0.62), sA=base, sB=base*Math.cbrt(this.m)*0.92, floor=vy+vh-10, gap=40*(1-u), xm=vx+vw/2;
     var blk=function(x, s, T, k0, col){ var y=floor-s; c.save(); c.fillStyle=col; c.strokeStyle="#3a414c"; c.lineWidth=2; c.fillRect(x,y,s,s); c.strokeRect(x,y,s,s); c.restore();
@@ -1515,15 +1520,19 @@ var S15 = {
       c.save(); c.strokeStyle="rgba(224,123,24,.7)"; c.setLineDash([3,3]); c.lineWidth=1; c.beginPath(); c.moveTo(bxc+r*0.95, byc-r*0.3); c.lineTo(zx, zy+zh*0.5); c.stroke(); c.restore();
       c.save(); c.fillStyle="#fff"; c.strokeStyle="#e07b18"; c.lineWidth=2; rrect(c,zx,zy,zw,zh,8); c.fill(); c.stroke(); c.clip();
       var mx=zx+zw*0.42;
-      c.fillStyle="#eceff3"; c.fillRect(zx,zy,mx-zx,zh); c.fillStyle="rgba(90,160,225,.22)"; c.fillRect(mx,zy,zx+zw-mx,zh);
+      /* 第11回：鉄球の表面は少しカーブさせる（球のふくらみ）。境目 x(y)＝mx＋bg×(1−((y−中央)/(0.62 zh))²) */
+      var bg=Math.min(16, zw*0.05), yc0=zy+zh/2, bx=function(y){ var q=(y-yc0)/(zh*0.62); return mx+bg*(1-q*q); };
+      var edge=function(){ for(var k=0;k<=24;k++){ var y=zy+zh*k/24; c.lineTo(bx(y),y); } };
+      c.fillStyle="rgba(90,160,225,.22)"; c.fillRect(zx,zy,zw,zh);
+      c.fillStyle="#eceff3"; c.beginPath(); c.moveTo(zx,zy); edge(); c.lineTo(zx,zy+zh); c.closePath(); c.fill();
       latticeParticles(c, zx+4, zy+8, mx-zx-8, zh-16, lvA, this.clk, {nx:3, ny:4, r:9, a0:0.8, a1:7});
       var lvB=this.lvOf(st.TB), ww=zx+zw-mx;
       if(!this.zw){ this.zw=[]; for(var i=0;i<10;i++){ var th=Math.random()*6.283; this.zw.push({x:Math.random(), y:Math.random(), vx:Math.cos(th), vy:Math.sin(th)}); } }
       var sp=0.12+0.35*lvB, dt=0.016;
       this.zw.forEach(function(p){ p.x+=p.vx*sp*dt; p.y+=p.vy*sp*dt;
-        if(p.x<0.08){ p.x=0.08; p.vx=Math.abs(p.vx); } if(p.x>0.94){ p.x=0.94; p.vx=-Math.abs(p.vx); } if(p.y<0.06){ p.y=0.06; p.vy=Math.abs(p.vy); } if(p.y>0.94){ p.y=0.94; p.vy=-Math.abs(p.vy); }
+        if(p.x<0.12){ p.x=0.12; p.vx=Math.abs(p.vx); } if(p.x>0.94){ p.x=0.94; p.vx=-Math.abs(p.vx); } if(p.y<0.06){ p.y=0.06; p.vy=Math.abs(p.vy); } if(p.y>0.94){ p.y=0.94; p.vy=-Math.abs(p.vy); }
         ball(c, mx+p.x*ww, zy+p.y*zh, 8, 0, heatCol(lvB)); });
-      c.strokeStyle="#3a414c"; c.lineWidth=2; c.beginPath(); c.moveTo(mx,zy); c.lineTo(mx,zy+zh); c.stroke();
+      c.strokeStyle="#3a414c"; c.lineWidth=2; c.beginPath(); c.moveTo(bx(zy),zy); edge(); c.stroke();
       if(moving){ var lw=3+11*clamp(Math.abs(st.P)/this.Pmax,0,1); heatFlow(c, mx-50, zy+zh/2, mx+56, zy+zh/2, lw, this.ph, {k:Math.abs(st.P)/this.Pmax});
         T(c,"熱 Q", mx, zy+zh/2-lw/2-16, {size:12.5, bold:true, col:COL.heat, align:"center", halo:true}); }
       c.restore();
@@ -1906,7 +1915,21 @@ var S23 = {
     this.run.bind(sec);
     this.cr=wireChk(sec,"rev",function(on){ self.rev=on; self.run.reset(); });
     /* 第7回：時間バー（①章と同じ）。つまみで好きな時刻へ */
-    this.tb=wireTimeBar(sec, this.run, function(){ return self.total(); }, function(){});
+    /* 第11回：時間バーは「映像の中の時刻 u」を表す。逆再生中は最大値から戻っていく。逆再生のあいだ（と「逆向きに再生する」が ON のとき）は、つまみを動かせない */
+    this.tb=(function(){
+      var inp=sec.querySelector('.tbar input'), bar=sec.querySelector('.tbar');
+      var upd=function(){ inp.style.setProperty("--p", (inp.value/10).toFixed(1)+"%"); };
+      inp.addEventListener("input", function(){
+        if(inp.disabled) return;
+        if(self.run.state==="run") cancelAnimationFrame(self.run.raf);
+        var t=self.TEND*inp.value/1000; self.run.t=t;
+        self.run.state = (t<=0)? "idle" : "pause";
+        upd(); self.draw(); self.run.label();
+      });
+      return { sync:function(){ var P=self.phase(), lock=(self.rev || P.back);
+        inp.value=Math.round(1000*clamp(P.u/self.TEND,0,1)); upd();
+        if(inp.disabled!==lock){ inp.disabled=lock; bar.classList.toggle("locked", lock); } } };
+    })();
     sec.querySelector(".resetall").addEventListener("click", function(){ self.rev=false; self.cr.set(false); self.run.rate=1; var sb=sec.querySelector(".slowb"); if(sb) sb.classList.remove("on"); self.run.reset(); });
     onResize(this.cv.parentElement, function(){ self.draw(); });
     this.draw();
