@@ -152,6 +152,8 @@ button.v3btn.pglow{border-color:var(--brand);color:var(--brand-700);font-weight:
 .cticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
 /* 第11回（熱は第8回）：スライダーの名前のカッコ内（並び方の説明）は小さい字で */
 .vl .lnote{font-size:.78em;font-weight:600;color:var(--ink-3,#69717d)}
+/* 第12回：図の欄外の注記 */
+.cvnote{margin:.3em 0 0;font-size:.8rem;color:#69717d;text-align:left}
 </style>
 </head>
 <body id="top">
@@ -580,7 +582,7 @@ var S10 = {
       step:function(dt){ self.step(dt); return self.run.t>90; },
       draw:function(){ self.draw(); },
       reset:function(){ self.hits=0; self.flash=[]; self.mols=null; },
-      info:function(r){ return '時間 <b>'+r.t.toFixed(1)+'</b> s<br>吸盤に当たる分子 10 s あたり 約 <b>'+(r.t>1? Math.round(self.hits/r.t*10) : '—')+'</b> 個'; }
+      info:function(r){ return '時間 <b>'+r.t.toFixed(1)+'</b> s<br>吸盤に当たる分子 10 s あたり 平均 約 <b>'+self.avgHits()+'</b> 個'; }
     });
     this.run.bind(sec);
     this.sl=wireSlider(sec,"d",function(v){ return v.toFixed(1)+" cm"; },function(v){ self.d=v; self.hits=0; if(self.run.state==="run") self.run.t=0; else self.run.touch(); self.draw(); self.run.label(); });
@@ -602,8 +604,14 @@ var S10 = {
       self.d=6; self.sl.set(6); self.cam={az:-35, el:25}; set3(false); b3.classList.add("pglow"); self.run.rate=1;
       var sb=sec.querySelector(".slowb"); if(sb) sb.classList.remove("on"); self.run.reset(); });
     onResize(this.cv.parentElement, function(){ self.draw(); });
+    /* 第12回：図の左下の欄外に注記 */
+    var nt=document.createElement("p"); nt.className="cvnote"; nt.textContent="吸盤の中の空気は押し出されてなくなっている状態を考えている。";
+    this.cv.parentElement.parentNode.insertBefore(nt, this.cv.parentElement.nextSibling);
     set3(false);   /* 第9回：はじめは２次元表示。「３次元表示」ボタンは押されるまで光らせる */
   },
+  /* 第12回：10 s あたりに吸盤に当たる分子の数は、数えた値ではなく、いまの設定での平均値を書く。
+     床に当たる数（1 s あたり・1 cm² あたり）＝ N × 〈|vz|〉 ÷（2 × 箱の高さ × 床の面積）。速さは 7〜13 cm/s（平均 10）で向きはばらばら → 〈|vz|〉＝5 cm/s */
+  avgHits:function(){ var A=(2*this.L)*(2*this.L), h=this.ZT; return Math.round(10*this.N*5/(2*h*A)*this.S()); },
   R:function(){ return this.d/2; },
   S:function(){ return Math.PI*this.R()*this.R(); },          /* ［cm²］ */
   F:function(){ return this.P*this.S()*1e-4; },               /* ［N］ */
@@ -1332,6 +1340,22 @@ function S12_draw3d(sim){
     (v3dot(q.n,pj.view)>0? front : back).push({a:a,b:b}); });
   back.forEach(function(r){ arrow(c, r.a.x, r.a.y, r.b.x, r.b.y, "rgba(181,137,0,.55)", 1.6, 7); });
   var oc=P(ctr), orad=0;
+  /* 第12回：３次元表示でも「水分子を表示」。水そうの中に小さな粒を散らす（物体の中には描かない）。物体より奥の粒は先に、手前の粒はあとで描く */
+  var molFront=[];
+  if(sim.mol){
+    if(!sim.m3){ sim.m3=[]; var rs=7; var rnd=function(){ rs=(rs*16807)%2147483647; return rs/2147483647; };
+      for(var i=0;i<520;i++) sim.m3.push({x:-BX+0.03+rnd()*(2*BX-0.06), y:-BX+0.03+rnd()*(2*BX-0.06), z:-0.03-rnd()*(D-0.06), ph:rnd()*6.28, sp:0.7+rnd()*0.6}); }
+    var inside=function(m){ var lx=m.x, ly=m.y, lz=m.z+sim.zc, pad=0.04;
+      if(sim.kind==="circle") return Math.hypot(lx,ly,lz) < sz.r+pad;
+      if(sim.kind==="trap"){ if(Math.abs(lz)>sz.h/2+pad || Math.abs(ly)>0.15+pad) return false; var hw=(sz.wt+(sz.wb-sz.wt)*clamp((-lz+sz.h/2)/sz.h,0,1))/2; return Math.abs(lx)<hw+pad; }
+      return Math.abs(lx)<sz.w/2+pad && Math.abs(ly)<sz.w/2+pad && Math.abs(lz)<sz.h/2+pad; };
+    var rr=Math.max(2.2, Math.min(4.0, S*0.028)), dc=oc.d, molP=[];
+    sim.m3.forEach(function(m){ if(inside(m)) return; var p=P([m.x+0.006*Math.sin(sim.tm*6*m.sp+m.ph), m.y, m.z+0.006*Math.sin(sim.tm*5*m.sp+m.ph*1.3)]); molP.push(p); });
+    molP.sort(function(a,b){ return a.d-b.d; });
+    var dot=function(p){ c.beginPath(); c.arc(p.x,p.y,rr,0,7); c.fill(); c.stroke(); };
+    c.save(); c.fillStyle="rgba(63,127,180,.30)"; c.strokeStyle="rgba(47,111,159,.55)"; c.lineWidth=0.8;
+    molP.forEach(function(p){ if(p.d<dc) dot(p); else molFront.push(p); }); c.restore();
+  }
   if(sim.kind==="circle"){
     orad=sz.r*S; var gr=c.createRadialGradient(oc.x-orad*0.35,oc.y-orad*0.4,orad*0.1,oc.x,oc.y,orad);
     gr.addColorStop(0,"#ffffff"); gr.addColorStop(1,"#c3ccd6"); c.fillStyle=gr; c.beginPath(); c.arc(oc.x,oc.y,orad,0,7); c.fill(); c.strokeStyle="#2b323c"; c.lineWidth=1.6; c.stroke();
@@ -1348,6 +1372,21 @@ function S12_draw3d(sim){
       fc.sp.forEach(function(p){ orad=Math.max(orad, Math.hypot(p.x-oc.x,p.y-oc.y)); }); });
   }
   sim.g3={S:S, ox:oc.x, oy:oc.y, or:orad};
+  /* 第12回：３次元表示でも「水の柱を表示」：物体の上の面から水面までの柱（半透明の面と点線の辺） */
+  if(sim.col){ var hh2=sim.half(), zt=-(sim.zc-hh2), ax=(sim.kind==="rect")? sz.w/2 : (sim.kind==="trap")? sz.wt/2 : 0.06, ay=(sim.kind==="rect")? sz.w/2 : (sim.kind==="trap")? 0.15 : 0.06;
+    if(zt<-0.005){
+      var cf=[{pts:[[-ax,-ay,zt],[ax,-ay,zt],[ax,-ay,0],[-ax,-ay,0]], n:[0,-1,0]}, {pts:[[-ax,ay,zt],[ax,ay,zt],[ax,ay,0],[-ax,ay,0]], n:[0,1,0]},
+              {pts:[[-ax,-ay,zt],[-ax,ay,zt],[-ax,ay,0],[-ax,-ay,0]], n:[-1,0,0]}, {pts:[[ax,-ay,zt],[ax,ay,zt],[ax,ay,0],[ax,-ay,0]], n:[1,0,0]},
+              {pts:[[-ax,-ay,0],[ax,-ay,0],[ax,ay,0],[-ax,ay,0]], n:[0,0,1]}];
+      c.save(); c.setLineDash([5,4]);
+      cf.forEach(function(fc){ poly(fc.pts, v3dot(fc.n,pj.view)>0? "rgba(47,111,159,.14)" : "rgba(47,111,159,.08)", COL.dashed, 1.2); });
+      c.restore();
+      var lp=P([ax, -ay, zt*0.5]);
+      if(Math.abs(zt)*S>36){ T(c,"水の柱", lp.x+8, lp.y-8, {size:12,bold:true,col:COL.dashed,halo:true}); T(c,"重さ ρShg", lp.x+8, lp.y+9, {size:12,col:COL.dashed,halo:true}); }
+    }
+  }
+  if(molFront.length){ c.save(); c.fillStyle="rgba(63,127,180,.30)"; c.strokeStyle="rgba(47,111,159,.55)"; c.lineWidth=0.8;
+    molFront.forEach(function(p){ c.beginPath(); c.arc(p.x,p.y,Math.max(2.2, Math.min(4.0, S*0.028)),0,7); c.fill(); c.stroke(); }); c.restore(); }
   /* スタート後：物体の右下を手でつかんで下へ引く（矢印はこのあと上書き） */
   if(sim.run.state!=="idle"){ var hh=sim.half(), cr=sim.corner(), hp=P([cr[0], -(sim.kind==="trap"? 0.15 : sim.kind==="rect"? sz.w/2 : 0), -sim.zc-cr[1]]); pullHand(c, hp.x, hp.y); }
   front.forEach(function(r){ arrow(c, r.a.x, r.a.y, r.b.x, r.b.y, COL.press, 1.9, 7); });
@@ -1994,9 +2033,9 @@ var MODES = [
    secs:["s31","s32","s33"]}
 ];
 var DEFS = {
-  s10:{num:1, mode:0, title:"圧力と力の違い", short:"圧力と力", sim:S10,
+  s10:{num:1, mode:0, title:"流体から受ける圧力", short:"流体から受ける圧力", sim:S10,
     headBtn: '<button class="b v3btn pglow" type="button" aria-pressed="false">３次元表示</button>',
-    desc:'テーブルに吸盤を押しつけると、中の空気が押し出される。外の空気の分子は吸盤にぶつかり続け、吸盤をテーブルに押しつける。面積 1 m² あたりが受ける力が<b>圧力</b> '+tex("p")+'、面全体が受ける力が<b>力</b> '+tex("F")+'。<span class="todo">スタートで分子を動かし、スライダーで吸盤の直径を変えてみよう。</span><br>注目点：吸盤を大きくしても圧力 '+tex("p")+' は変わらないが、力 '+tex("F")+' は面積に比例して大きくなる。',
+    desc:'<b>水や空気から受ける力は、点ではなく面全体で受けるため、圧力で考える。</b><br>テーブル上の吸盤を考えよう。外の空気の分子は吸盤にぶつかり続け、吸盤をテーブルに押しつける。面積 1 m² あたりが受ける力が<b>圧力</b> '+tex("p")+'、面全体が受ける力が<b>力</b> '+tex("F")+'。<span class="todo">スタートで分子を動かし、スライダーで吸盤の直径を変えてみよう。</span><br>注目点：吸盤を大きくしても圧力 '+tex("p")+' は変わらないが、力 '+tex("F")+' は面積に比例して大きくなる。',
     opts: '',
     sliders: H_slider("d","吸盤の直径 $d$",2,10,2,6),
     right:function(){ return '<div class="qcard"><p class="qt">圧力と力の関係</p>'+

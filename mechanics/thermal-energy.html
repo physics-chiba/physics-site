@@ -214,6 +214,11 @@ button.megaglow{position:relative;background:#e07b18 !important;border-color:#e0
 .vhead{flex-wrap:wrap;row-gap:0}
 .vhead .vv{margin-left:auto}
 .colgrid .trow .tbar{flex:1 1 180px;max-width:none;min-width:150px}
+/* 第10回：図の右上の大きなボタンの前の見出し。①-5 の組み合わせのボタンも同じ形 */
+.subbtns{align-items:center}
+.subbtns .subcap{font-weight:800;font-size:.85rem;color:#3a414c;background:rgba(255,255,255,.88);padding:.15em .5em;border-radius:8px}
+.subbtns button.b.seg{font:inherit;font-size:1rem;font-weight:800;padding:.35em 1.1em;border-radius:999px;border:2px solid #1f6fb2;background:#fff;color:#1f6fb2;box-shadow:none;min-height:0}
+.subbtns button.b.seg.on{background:#1f6fb2;color:#fff}
 </style>
 </head>
 <body id="top">
@@ -881,8 +886,8 @@ var S11 = {
     c.save(); c.strokeStyle="#3a414c"; c.lineWidth=1.3; c.lineJoin="round";
     /* アーム（C の字） */
     c.fillStyle="#5d6773"; c.beginPath(); var a=P(96,205); c.moveTo(a[0],a[1]);
-    a=P(96,80); c.lineTo(a[0],a[1]); a=P(96,48); var b=P(74,40); c.quadraticCurveTo(a[0],a[1],b[0],b[1]);
-    a=P(70,54); c.lineTo(a[0],a[1]); a=P(82,60); b=P(82,84); c.quadraticCurveTo(a[0],a[1],b[0],b[1]);
+    a=P(96,80); c.lineTo(a[0],a[1]); a=P(96,44); var b=P(62,36);   /* 第10回：アームの先を鏡筒の中まで入れて、つなげる */ c.quadraticCurveTo(a[0],a[1],b[0],b[1]);
+    a=P(62,58); c.lineTo(a[0],a[1]); a=P(82,60); b=P(82,84); c.quadraticCurveTo(a[0],a[1],b[0],b[1]);
     a=P(82,205); c.lineTo(a[0],a[1]); c.closePath(); c.fill(); c.stroke();
     /* 台 */
     c.fillStyle="#4a535e"; c.beginPath(); a=P(14,226); c.moveTo(a[0],a[1]); a=P(24,205); c.lineTo(a[0],a[1]); a=P(112,205); c.lineTo(a[0],a[1]); a=P(118,226); c.lineTo(a[0],a[1]); c.closePath(); c.fill(); c.stroke();
@@ -969,7 +974,7 @@ var S11 = {
       c.save(); c.strokeStyle="#8a5a12"; c.lineWidth=1.2; c.beginPath(); c.moveTo(B.x+this.RB*0.75, B.y-this.RB*0.75); c.lineTo(B.x+this.RB+16, B.y-this.RB-14); c.stroke(); c.restore();
       T(c,"花粉", B.x+this.RB+18, B.y-this.RB-18, {size:15, bold:true, col:"#8a5a12", halo:true});
     }
-    var lab=this.showMol? "青い点：水分子（とても大きく描いています）" : "顕微鏡で見えるのは、微粒子（黄色）の動きだけ";
+    var lab=this.showMol? "青い点：水分子" : "顕微鏡で見えるのは、微粒子（黄色）の動きだけ";
     T(c, lab, g.x0+10, g.y0+14, {size:11.5, col:COL.sub, halo:true});
     notebook(c,W,H);
     var K=this.tc+273;
@@ -1056,7 +1061,6 @@ var S12 = {
       thermometer(c, b.x+b.w-24, b.y+b.h-22, 30, tc, -60, 220, {ticks:[-50,0,100,200], side:"left", dec:0, vsize:12});
     }
     var g0=this.box(0,W,H), g2=this.box(2,W,H);
-    T(c,"粒子は大きく描いています", W-12, H-4, {size:10, col:COL.sub, align:"right", base:"bottom"});
     notebook(c,W,H);
     /* 第7回：図の下の数値の箱は出さない（温度は温度計で読む） */
     if(this.msg) this.msg.style.display="none";
@@ -1088,7 +1092,7 @@ var S13 = {
     this.tb=wireTimeBar(sec, this.run, function(){ return self.tEnd; }, function(){ self.bub=[]; self.gasP=[]; });
     /* 右上の大きなボタン：水／エタノール */
     var bx=document.createElement("div"); bx.className="subbtns";
-    bx.innerHTML='<button type="button" data-s="water" class="on">水</button><button type="button" data-s="eth">エタノール</button>';
+    bx.innerHTML='<span class="subcap">物質の種類</span><button type="button" data-s="water" class="on">水</button><button type="button" data-s="eth">エタノール</button>';
     this.cv.parentElement.style.position="relative"; this.cv.parentElement.appendChild(bx); this.subBox=bx;
     var pick=function(k){ self.sub=k; bx.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", b.dataset.s===k); }); self.setup(); self.run.reset(); };
     bx.querySelectorAll("button").forEach(function(b){ b.addEventListener("click", function(){ pick(b.dataset.s); }); });
@@ -1314,7 +1318,7 @@ var S14 = {
   COLS:["#1f6fb2","#b5651d"],
   draw:function(){
     var self=this, wide=(this.cv.parentElement.clientWidth>=760);
-    var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.30, 300, 360) : clamp(W*1.25, 470, 560); }), c=f.c, W=f.W, H=f.H;
+    var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.24, 280, 320) : clamp(W*1.25, 470, 560);   /* 第10回：上の空白をなくす */ }), c=f.c, W=f.W, H=f.H;
     c.clearRect(0,0,W,H); if(this.tb) this.tb.sync();
     var C=this.Cs(), names=["水", this.sub().name], ms=[1.0,this.m], cs=[this.CW,this.sub().c], fills=["#d4ebf9",this.sub().fill];
     var on=(this.run.state==="run"), tEnd=this.Qstop()/this.RATE, tNow=this.Q/this.RATE;
@@ -1336,7 +1340,7 @@ var S14 = {
     }
     if(wide) this.drawTT(c, c2+34, H-26, W-14, 30, tEnd, tNow, C);
     else this.drawTT(c, 40, H-26, W-14, figH+30, tEnd, tNow, C);
-    T(c,"同じバーナーで、同じ熱量を加える　（粒子は大きく描いています）", wide? c2/2 : W/2, 10, {size:10.5, col:COL.sub, align:"center", halo:true});
+    T(c,"同じバーナーで、同じ熱量を加える", wide? c2/2 : W/2, 10, {size:10.5, col:COL.sub, align:"center", halo:true});
     notebook(c,W,H);
     if(this.cg) this.cg.set(this.cv, [c1,c2], wide);
     var dT=[this.Q/C[0], this.Q/C[1]];
@@ -1382,6 +1386,11 @@ var S15 = {
     var setList=function(){ var L=self.list(); inp.max=L.length-1; tk.innerHTML=L.map(function(d){ return '<span'+(d.name==="水"?' class="w"':'')+'>'+d.sh+'</span>'; }).join(''); self.sg.set(self.si); };
     this.setList=setList;
     this.sk=wireSeg(sec,"kind",function(v){ self.kind=v; self.si=(v==="ss")? 4 : 3; setList(); self.changed(); });
+    /* 第10回：組み合わせのボタンは、①-3 の物質のボタンと同じく、図の右上に大きく置く */
+    var kb=document.createElement("div"); kb.className="subbtns"; kb.innerHTML='<span class="subcap">組み合わせ</span>';
+    sec.querySelectorAll('button.seg[data-g="kind"]').forEach(function(b){ kb.appendChild(b); });
+    var sl0=sec.querySelector(".segl"); if(sl0 && /組み合わせ/.test(sl0.textContent)) sl0.remove();
+    this.cv.parentElement.style.position="relative"; this.cv.parentElement.appendChild(kb);
     this.cl=wireChk(sec,"lid",function(on){ self.lid=on; self.changed(); });
     sec.querySelector(".resetall").addEventListener("click", function(){ self.kind="ss"; self.sk.set("ss"); self.si=4; self.m=1.0; self.mg.set(1); setList();
       self.lid=false; self.cl.set(false); self.run.rate=1; var s2=sec.querySelector(".slowb"); if(s2) s2.classList.remove("on"); self.changed(); });
@@ -1416,7 +1425,7 @@ var S15 = {
   touchU:function(){ if(this.run.state==="idle" && this.run.t<=0) return 0; return clamp(this.run.t/this.T0,0,1); },
   draw:function(){
     var self=this, wide=(this.cv.parentElement.clientWidth>=760);
-    var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.34, 300, 380) : clamp(W*0.98, 470, 660); }), c=f.c, W=f.W, H=f.H;
+    var f=fitCanvas(this.cv, function(W){ return wide? clamp(W*0.28, 270, 330) : clamp(W*0.98, 470, 660);   /* 第10回：上の空白をなくす */ }), c=f.c, W=f.W, H=f.H;
     c.clearRect(0,0,W,H); if(this.tb) this.tb.sync();
     var st=this.at(this.ts()), u=this.touchU();
     var moving=(this.run.state==="run" && u>=1 && Math.abs(st.P)>this.Pmax*0.01);   /* 熱が移動している間だけ、熱の矢印を出す */
@@ -1440,19 +1449,25 @@ var S15 = {
       '<br>熱平衡の温度（計算）：'+tex("t=\\dfrac{C_\\mathrm{A}t_\\mathrm{A}+C_\\mathrm{B}t_\\mathrm{B}}{C_\\mathrm{A}+C_\\mathrm{B}}")+' = <span class="num">'+this.Tf().toFixed(1)+'</span> ℃';
   },
   /* 断熱容器とふた（ふたは左はしを軸に少しだけ開ける） */
+  /* 第10回：断熱容器は分厚い壁（断熱材）で描く。中の容器は (x, y, w, h)。壁の厚さ TW は外側に描く */
+  TW:12,
   vessel:function(c, x, y, w, h, open){
-    c.save(); c.fillStyle="#f7f9fb"; c.fillRect(x,y,w,h); c.strokeStyle="#3a414c"; c.lineWidth=2.4; c.strokeRect(x,y,w,h);
-    c.strokeStyle="rgba(58,65,76,.35)"; c.lineWidth=1; c.strokeRect(x+5,y+5,w-10,h-5); c.restore();
+    var t=this.TW;
+    var hatch=function(px,py,pw,ph){ c.save(); c.fillStyle="#e2dccf"; c.fillRect(px,py,pw,ph); c.beginPath(); c.rect(px,py,pw,ph); c.clip();
+      c.strokeStyle="rgba(120,108,88,.45)"; c.lineWidth=1; c.beginPath(); for(var k=-ph; k<pw+ph; k+=7){ c.moveTo(px+k,py+ph); c.lineTo(px+k+ph,py); } c.stroke(); c.restore();
+      c.save(); c.strokeStyle="#3a414c"; c.lineWidth=1.6; c.strokeRect(px,py,pw,ph); c.restore(); };
+    hatch(x-t, y, t, h+t); hatch(x+w, y, t, h+t); hatch(x, y+h, w, t);       /* 左右の壁と底 */
+    c.save(); c.fillStyle="#f7f9fb"; c.fillRect(x,y,w,h); c.strokeStyle="rgba(58,65,76,.45)"; c.lineWidth=1.2; c.strokeRect(x+4,y+4,w-8,h-6); c.restore();
     if(open){ T(c,"断熱容器", x+w/2, y-8, {size:11, col:COL.sub, align:"center"}); return; }
-    if(this.lid){ var ang=0.24, L=w+8; c.save(); c.strokeStyle="#3a414c"; c.lineWidth=4; c.lineCap="round"; c.beginPath(); c.moveTo(x-4,y); c.lineTo(x-4+L*Math.cos(ang), y-L*Math.sin(ang)); c.stroke(); c.restore();
-      T(c,"ふたが開いている", x+w-6, y-L*Math.sin(ang)+2, {size:11.5, bold:true, col:"#c0392b", align:"right", halo:true});
+    if(this.lid){ var ang=0.24, L=w+2*t; c.save(); c.translate(x-t, y); c.rotate(-ang); hatch(0, -t, L, t); c.restore();
+      T(c,"ふたが開いている", x+w-6, y-L*Math.sin(ang)-t+2, {size:11.5, bold:true, col:"#c0392b", align:"right", halo:true});
       if(this.run.state==="run") for(var i=0;i<2;i++){ var xx=x+w*(0.70+0.18*i); heatFlow(c, xx, y+18, xx, y-16, 5, (this.clk*0.5+i*0.3)%1, {k:0.6}); } }
-    else { c.save(); c.strokeStyle="#3a414c"; c.lineWidth=4; c.beginPath(); c.moveTo(x-6,y); c.lineTo(x+w+6,y); c.stroke(); c.restore();
-      T(c,"断熱容器（ふたを閉じている）", x+w/2, y-10, {size:11, col:COL.sub, align:"center"}); }
+    else { hatch(x-t, y-t, w+2*t, t);
+      T(c,"断熱容器（ふたを閉じている）", x+w/2, y-t-9, {size:11, col:COL.sub, align:"center"}); }
   },
   lvOf:function(T){ return clamp((T-15)/70,0,1); },
   drawSS:function(c,X0,AW,Hf,st,moving,u){
-    var self=this, vw=Math.min(460, AW*0.86), vx=X0+(AW-vw)/2, vy=46, vh=Hf-vy;
+    var self=this, vw=Math.min(460, AW*0.86), vx=X0+(AW-vw)/2, vy=36, vh=Hf-vy-this.TW;
     this.vessel(c, vx, vy, vw, vh);
     var base=Math.min(vw*0.28, vh*0.62), sA=base, sB=base*Math.cbrt(this.m)*0.92, floor=vy+vh-10, gap=40*(1-u), xm=vx+vw/2;
     var blk=function(x, s, T, k0, col){ var y=floor-s; c.save(); c.fillStyle=col; c.strokeStyle="#3a414c"; c.lineWidth=2; c.fillRect(x,y,s,s); c.strokeRect(x,y,s,s); c.restore();
@@ -1475,7 +1490,7 @@ var S15 = {
     else if(this.ts()>=this.tEnd-1e-6 && !this.lid) T(c,"熱平衡（熱の移動が止まった）", xm, vy+26, {size:13, bold:true, col:"#1c8f4a", align:"center", halo:true});
   },
   drawSL:function(c,X0,AW,ZX,ZW,Hf,st,moving,u){
-    var self=this, vw=Math.min(250, AW-24), vx=X0+16, r=Math.min(30, vw*0.13), vy=Math.max(46, 2*r+96), vh=Hf-vy;
+    var self=this, vw=Math.min(250, AW-24), vx=X0+16, r=Math.min(30, vw*0.13), vy=Math.max(40, 2*r+74), vh=Hf-vy-this.TW;
     this.vessel(c, vx, vy, vw, vh, u<1);
     var lvl=(vh-12)*clamp(0.30+0.30*this.m,0,0.92), wl=vy+vh-lvl;      /* 液体の量で液面の高さが変わる */
     c.save(); c.fillStyle="rgba(90,160,225,.42)"; c.fillRect(vx+6, wl, vw-12, vy+vh-wl-1); c.strokeStyle="#2f6f9f"; c.lineWidth=1.5; c.beginPath(); c.moveTo(vx+6,wl); c.lineTo(vx+vw-6,wl); c.stroke(); c.restore();
@@ -1644,7 +1659,13 @@ var S21 = {
     c.fillStyle=pg; c.strokeStyle="#5b636e"; c.lineWidth=1.2; c.beginPath(); c.ellipse(g.xp+7,cyM,ex,ry,0,0,7); c.fill(); c.stroke();
     var rodL=W*0.80-(g.x0+(g.x1-g.x0)*0.62), rodE=g.xp+rodL;
     c.fillStyle="#d8d2c4"; c.strokeStyle="#8b8172"; rrect(c,g.xp+10,cyM-5,rodE-g.xp-10,10,4); c.fill(); c.stroke(); c.restore();
-    if(act!=="free" && act!=="freecool") hand(c, rodE-24, cyM+4, 0);
+    if(!dash || (act!=="free" && act!=="freecool")) hand(c, rodE-24, cyM+4, 0);    /* 第10回：上の図はいつも手を描く */
+    /* 第10回：力の向き。上の図＝ピストンが気体を押す力（左向き・押しこむ向き）、下の図＝気体がピストンを押す力（右向き・押し出す向き） */
+    var fy=cyM+ry*0.42, fL=Math.min(64, (g.xp-g.x0)*0.32);
+    if(!dash){ fArrow(c, g.xp, fy, g.xp-fL, fy, "#d1352b", 3.2, 11);
+      T(c,"ピストンが気体を押す力", Math.max(g.xp-6, 4+11*(W<500? 10 : 11.5)), fy+17, {size:W<500? 10 : 11.5, bold:true, col:"#d1352b", align:"right", halo:true}); }
+    else { fArrow(c, g.xp, fy, g.xp+fL, fy, "#d1352b", 3.2, 11);
+      T(c,"気体がピストンを押す力", W<500? g.xp+4 : g.xp+fL+6, W<500? fy+17 : fy+1, {size:W<500? 10 : 11.5, bold:true, col:"#d1352b", halo:true}); }
     T(c,"内部エネルギー U", g.x0+18, g.y0+16, {size:12.5, bold:true, halo:true});
     var Tg=300*U/100-273;
     thermometer(c, g.x0+(g.xp-g.x0)*0.72, cyM+6, Math.max(18, g.y0-26), Tg, -100, 300, {ticks:[0,100,200], noNum:true, dec:0});
@@ -1816,7 +1837,7 @@ var S30 = {
       ball(c, q[0]+q[2], q[1]+q[3], r, 0, heatCol(lv)); }
     var yb=y0+(ny-1)*sy+sy*0.7;
     if(this.T<=0.5) T(c, this.classic? "絶対零度：粒子は止まる（古典的な考え）" : "絶対零度でも、粒子は震え続けている", A.x+A.w/2, Math.min(yb, A.y+A.h-8), {size:12.5, bold:true, col:this.classic? "#3a414c" : "#c0392b", align:"center", halo:true});
-    else T(c,"＋：つりあいの位置　（振動は大きく描いています）", A.x+A.w/2, Math.min(yb, A.y+A.h-8), {size:10.5, col:COL.sub, align:"center"});
+    else T(c,"＋：つりあいの位置", A.x+A.w/2, Math.min(yb, A.y+A.h-8), {size:10.5, col:COL.sub, align:"center"});
   },
   /* 中：ばねにつながれた粒子のエネルギーの階段（量子力学では、とびとびの値しかとれず、一番下も 0 ではない） */
   drawWell:function(c, A){
@@ -1945,7 +1966,7 @@ var S23 = {
    ========================================================================= */
 var MODES = [
   {id:"mode1", name:"物質と比熱", en:"Matter and Specific Heat",
-   lead:"物質を作る粒子は、絶えず不規則に動いている（<b>熱運動</b>）。温度は、その熱運動の激しさを表す。同じ熱量を加えても、物質によって温度の上がり方が違う（<b>比熱</b>）。",
+   lead:"物質を構成する粒子は、絶えず不規則に動いている（<b>熱運動</b>）。温度は、その熱運動の激しさを表す。同じ熱量を加えても、物質によって温度の上がり方が違う（<b>比熱</b>）。",
    secs:["s11","s12","s13","s14","s15"]},
   {id:"mode2", name:"熱と仕事", en:"Heat and Work",
    lead:"気体の内部エネルギーは、熱を加えても、仕事をしても増える（<b>熱力学第一法則</b>）。熱を仕事に変える仕組みが<b>熱機関</b>。",
@@ -1962,7 +1983,7 @@ var DEFS = {
     opts: H_chk("mol","水分子を表示",false) + H_chk("path","動いた道筋を表示",true),
     mid: H_tslider("t","水の温度",-273,100,1,20),
     right:function(){ return '<div class="qcard"><p class="qt">熱運動</p>'+
-      '<p>微粒子が不規則に動くのは、周りの<b>水分子</b>がいろいろな向きから微粒子にぶつかるから。水分子のように、物質を作る粒子は、絶えず不規則に動いている。これを<b>熱運動</b>という。</p></div>'+
+      '<p>微粒子が不規則に動くのは、周りの<b>水分子</b>がいろいろな向きから微粒子にぶつかるから。水分子のように、物質を構成する粒子は、絶えず不規則に動いている。これを<b>熱運動</b>という。</p></div>'+
       '<div class="qcard"><p class="qt">温度と絶対温度</p>'+
       '<p>温度は、物体を構成する粒子の熱運動の激しさを表す。温度を下げていくと熱運動は穏やかになり、約 −273 ℃ で最も穏やかになる。これより低い温度はない（<b>絶対零度</b>）。</p>'+
       '<p>絶対零度を 0 とし、目盛りの間隔をセルシウス温度と同じにした温度が<b>絶対温度</b>（単位 K：ケルビン）。セルシウス温度 '+tex("t")+'［℃］と絶対温度 '+tex("T")+'［K］の関係は</p>'+
@@ -2007,12 +2028,12 @@ var DEFS = {
     mid: H_timebar(),
     right:function(){ return ''; }},   /* 第9回：右の列のカードは全てカット（千葉さん） */
   s21:{num:1, mode:1, title:"熱力学第一法則", short:"第一法則", sim:S21,
-    desc:'ピストンのついたシリンダーの中の気体。気体の分子の運動エネルギーの和が<b>内部エネルギー</b> '+tex("U")+'。<span class="todo">操作を 1 つ選んでスタート（操作のたびに、初めの状態に戻る）。上下の図は連動する。</span><br>注目点：熱 '+tex("Q")+' でも、仕事 '+tex("W")+' でも、内部エネルギーは変わる。いつでも '+tex("\\Delta U=Q+W")+'。下の図は、同じ変化を気体がした仕事 '+tex("W'")+' で表したもの。',
+    desc:'ピストンのついたシリンダーの中の気体。気体の分子の運動エネルギーの和が<b>内部エネルギー</b> '+tex("U")+'。始めの状態に対し、<span class="todo">行う操作を 1 つ選ぼう。</span><br>注目点：熱 '+tex("Q")+' でも、仕事 '+tex("W")+' でも、内部エネルギーは変わる。いつでも '+tex("\\Delta U=Q+W")+'。下の図は、同じ変化を気体がした仕事 '+tex("W'")+' で表したもの。',
     opts: H_seg("act","操作",[["heat","気体に熱を与える（ピストン固定）"],["cool","気体の熱を奪う（ピストン固定）"],["free","気体に熱を与える（ピストンは自由）"],["freecool","気体の熱を奪う（ピストンは自由）"],["push","気体に正の仕事をする"],["pull","気体に負の仕事をする"]],"heat"),
     right:function(){ return '<div class="qcard"><p class="qt">熱力学第一法則</p>'+
       '<p>気体が外から熱量 '+tex("Q")+'［J］を得て、外から仕事 '+tex("W")+'［J］をされると、内部エネルギーの変化 '+tex("\\Delta U")+'［J］は</p>'+
       '<div class="qeq">'+tex("\\Delta U=Q+W",true)+'</div>'+
-      '<p>これを<b>熱力学第一法則</b>という。熱も含めたエネルギー保存則にあたる。</p>'+
+      '<p>これを<b>熱力学第一法則</b>という。<b>熱も含めたエネルギー保存則にあたる。</b></p>'+
       '<div class="stp"><p class="sh"><b>見るポイント</b>ピストンにぶつかった分子</p><p>ピストンを押しているときは、近づいてくるピストンにぶつかった分子が、跳ね返って速くなる。ピストンを引いているときは、遠ざかるピストンにぶつかった分子が遅くなる。</p></div>'+
       '<div class="stp"><p class="sh"><b>気体がした仕事 '+tex("W'")+'</b></p><p>気体がされた仕事 '+tex("W")+' と、気体がした仕事 '+tex("W'")+' の間には '+tex("W=-W'")+' の関係がある。これを使うと</p>'+
       '<div class="qeq">'+tex("Q=\\Delta U+W'",true)+'</div><p>気体が得た熱は、内部エネルギーの増加と、気体が外にした仕事に使われる。</p></div></div>'; }},
@@ -2116,7 +2137,7 @@ function buildPage(){
     '<div class="hero-in"><div class="hero-top"><nav class="crumbs" aria-label="現在地"><a class="crumb-home" href="'+SITE_HOME+'" title="楽楽（らくらく）高校物理のトップページへ">'+atom+'<span>楽楽（らくらく）高校物理</span></a><span class="cs" aria-hidden="true">/</span><a class="crumb" href="'+SITE_HOME+'#sec-mechanics">力学</a><span class="cs" aria-hidden="true">/</span><span class="crumb now" aria-current="page">熱とエネルギー</span><span class="kdot"></span><span class="en">'+EN+'</span></nav>'+
     '<div class="topbtns" role="group" aria-label="ページ全体の表示"><button id="btnEq" type="button"></button></div></div>'+
     '<h1 class="hero-title"><span class="t1"><span class="nb">熱と</span><span class="nb">エネルギー</span></span><span class="t2">〜熱運動・比熱・熱力学第一法則〜</span></h1>'+
-    '<div class="introrow"><p class="lead2">物質を作る粒子は、絶えず動いている。温度はその動きの激しさ。熱はエネルギーの移動で、仕事と同じように物体のエネルギーを変える。</p>'+
+    '<div class="introrow"><p class="lead2">物質を構成する粒子は、絶えず動いている。温度はその動きの激しさ。熱はエネルギーの移動で、仕事と同じように物体のエネルギーを変える。</p>'+
     '<button id="bToc" class="tocbtn" type="button" aria-haspopup="true" aria-expanded="false"><span class="ti" aria-hidden="true"></span>コンテンツ一覧</button></div>'+
     '<div id="tocpanel" class="tocpanel" hidden></div>'+
     '<figure class="stage" aria-label="高温の物体と低温の物体を触れさせると、熱が移動し、粒子の震え方が同じになって止まる"><canvas id="heroCv"></canvas>'+
