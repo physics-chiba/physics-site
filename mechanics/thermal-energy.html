@@ -207,6 +207,14 @@ button.megaglow{position:relative;background:#e07b18 !important;border-color:#e0
 .colgrid .cgB .playbar{display:flex;flex-wrap:wrap;gap:.4em .5em;align-items:center}
 .colgrid .cgB .playbar .row1{flex:0 1 auto}
 .colgrid .cgB .playbar .trow{flex:1 1 200px;min-width:0}
+/* 第15回：①-5 組み合わせのボタンは左右の箱の上。広い画面は 1・2 列をまとめた幅のまん中、グラフの列（cgB）は 2 段ぶん */
+.colgrid .subbtns.cgK{position:static;justify-content:center;flex-wrap:wrap;margin:0 0 2px}
+.colgrid.wide .subbtns.cgK{grid-column:1 / span 2;grid-row:1}
+.colgrid.wide:has(.cgK) .cgL{grid-column:1;grid-row:2}
+.colgrid.wide:has(.cgK) .cgR{grid-column:2;grid-row:2}
+.colgrid.wide:has(.cgK) .cgB{grid-column:3;grid-row:1 / span 2}
+.colgrid.wide > .subbtns.cgK{margin:0 0 6px}
+@media (max-width:520px){ .colgrid .subbtns.cgK button.b.seg{font-size:.9rem;padding:.3em .8em} .colgrid .subbtns.cgK .subcap{font-size:.78rem} }
 #s15 .colgrid .trow .tbar{flex:1 1 180px;max-width:none;min-width:150px}
 /* 第11回（熱は第8回）：スライダーの名前のカッコ内（並び方の説明）は小さい字で */
 .vl .lnote{font-size:.78em;font-weight:600;color:var(--ink-3,#69717d)}
@@ -222,6 +230,15 @@ button.megaglow{position:relative;background:#e07b18 !important;border-color:#e0
 /* 第11回：③-3 の逆再生中は時間バーを動かせない（うすく表示） */
 .tbar.locked{opacity:.6}
 .tbar.locked input{cursor:not-allowed}
+/* 第12回：②-1 の下の図は畳んでおく */
+.cvfold{margin:.5em 0 0}
+.cvfold > summary{cursor:pointer;list-style:none;padding:.35em .7em;border-radius:10px;background:#f2efe8}
+.cvfold > summary::-webkit-details-marker{display:none}
+.cvfold > summary::before{content:"▶ ";color:#e07b18;font-size:.85em}
+.cvfold[open] > summary::before{content:"▼ "}
+.cvfold > summary:hover{background:#ede8dd}
+.cvfold .foldhint{font-size:.8em;color:#69717d;margin-left:.4em}
+.cvfold[open] > .cvwrap{margin-top:.4em}
 </style>
 </head>
 <body id="top">
@@ -722,6 +739,31 @@ function latticeParticles(c, x, y, w, h, lv, clk, o){
       c.moveTo(ex-4,ey); c.lineTo(ex+4,ey); c.moveTo(ex,ey-4); c.lineTo(ex,ey+4); c.stroke(); }
   }
   c.restore();
+}
+/* 第15回：液体の粒子。格子にならばず、近くの粒子と押し合いながら動きまわる（①-2 の液体と同じ動き）。
+   st … 粒子の状態を入れておくオブジェクト（図ごとに 1 つ）。箱の大きさが変わったら位置を伸び縮みさせる */
+function liquidParticles(c, st, x, y, w, h, lv, clk, o){
+  o=o||{}; var r=o.r||8, n=o.n||9;
+  if(!st.p || st.p.length!==n){ st.p=[]; var nx=Math.max(2,Math.round(Math.sqrt(n*w/h))), ny=Math.ceil(n/nx);
+    for(var i=0;i<n;i++){ var p=PH[(i*3+(o.k0||0))%PH.length], ix=i%nx, iy=Math.floor(i/nx);
+      st.p.push({x:w*(ix+0.5+0.3*Math.sin(p[0]))/nx, y:h*(iy+0.5+0.3*Math.sin(p[1]))/ny, vx:30*Math.cos(p[0]*3), vy:30*Math.sin(p[1]*3)}); }
+    st.w=w; st.h=h; st.t=clk; }
+  if(st.w!==w || st.h!==h){ var fx=w/st.w, fy=h/st.h; st.p.forEach(function(q){ q.x*=fx; q.y*=fy; }); st.w=w; st.h=h; }
+  var dt=clk-st.t; st.t=clk; if(!(dt>0)) dt=0; dt=Math.min(dt,0.05);
+  var L=st.p, sp=22+70*lv, m=Math.max(1,Math.ceil(dt/0.01)), hh=dt/m;
+  for(var k=0;k<m;k++){
+    L.forEach(function(q,i){ var p=PH[(i*7)%PH.length], tt=clk+k*hh;
+      q.vx+=Math.sin(tt*9.1*p[2]+p[0]*5)*sp*4*hh; q.vy+=Math.cos(tt*8.3*p[2]+p[1]*5)*sp*4*hh;
+      var v=Math.hypot(q.vx,q.vy); if(v>sp){ q.vx*=sp/v; q.vy*=sp/v; } });
+    for(var i=0;i<L.length;i++) for(var j=i+1;j<L.length;j++){ var A=L[i], B=L[j], dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy)||1;
+      if(d<2*r+1){ var ov=(2*r+1-d)/2, ux=dx/d, uy=dy/d; A.x-=ux*ov; A.y-=uy*ov; B.x+=ux*ov; B.y+=uy*ov;
+        var rv=(B.vx-A.vx)*ux+(B.vy-A.vy)*uy; if(rv<0){ A.vx+=rv*ux; A.vy+=rv*uy; B.vx-=rv*ux; B.vy-=rv*uy; } }
+      else if(d<2*r+9){ var k2=6*hh; A.vx+=dx/d*k2; A.vy+=dy/d*k2; B.vx-=dx/d*k2; B.vy-=dy/d*k2; } }
+    L.forEach(function(q){ q.x+=q.vx*hh; q.y+=q.vy*hh;
+      if(q.x<r){ q.x=r; q.vx=Math.abs(q.vx); } if(q.x>w-r){ q.x=w-r; q.vx=-Math.abs(q.vx); }
+      if(q.y<r){ q.y=r; q.vy=Math.abs(q.vy); } if(q.y>h-r){ q.y=h-r; q.vy=-Math.abs(q.vy); } });
+  }
+  c.save(); L.forEach(function(q){ ball(c, x+q.x, y+q.y, r, lv, o.col); }); c.restore();
 }
 /* 1 個の粒子（液体・気体用） */
 function ball(c, x, y, r, lv, col){
@@ -1270,7 +1312,7 @@ var S13 = {
 var SUBS = [
   {name:"銀", sh:"銀", c:0.235, fill:"#e3e6ea"}, {name:"銅", sh:"銅", c:0.384, fill:"#e8b48a"}, {name:"鉄", sh:"鉄", c:0.448, fill:"#c9ccd1"},
   {name:"コンクリート", sh:"コン", c:0.8, fill:"#d8d4cc"}, {name:"アルミニウム", sh:"アルミ", c:0.902, fill:"#e6e9ee"}, {name:"木材", sh:"木材", c:1.3, fill:"#ecd2a4"},
-  {name:"菜種油", sh:"油", c:2.04, fill:"#f6e7a8"}, {name:"海水", sh:"海水", c:3.93, fill:"#cfe6f5"}, {name:"水", sh:"水", c:4.18, fill:"#d4ebf9"}
+  {name:"菜種油", sh:"油", c:2.04, fill:"#f6e7a8", liq:1}, {name:"海水", sh:"海水", c:3.93, fill:"#cfe6f5", liq:1}, {name:"水", sh:"水", c:4.18, fill:"#d4ebf9", liq:1}
 ];
 /* 比熱のスライダーの下の目盛り（物質の名前） */
 function cTicks(list){ return '<div class="cticks">'+list.map(function(d){ return '<span'+(d.name==="水"?' class="w"':'')+'>'+d.sh+'</span>'; }).join('')+'</div>'; }
@@ -1334,8 +1376,14 @@ var S14 = {
       burner(c, cx, yDesk, on, this.clk+i*0.37, 0.85);
       c.save(); c.fillStyle="#95a5a6"; c.fillRect(cx-bw0*0.7, yDesk-62, bw0*1.4, 6); c.restore();
       c.save(); c.strokeStyle="#7f8a8a"; c.lineWidth=3.5; c.beginPath(); c.moveTo(cx-bw0*0.62,yDesk-56); c.lineTo(cx-bw0*0.72,yDesk); c.moveTo(cx+bw0*0.62,yDesk-56); c.lineTo(cx+bw0*0.72,yDesk); c.stroke(); c.restore();
-      c.save(); c.fillStyle=fills[i]; c.strokeStyle=this.COLS[i]; c.lineWidth=2.2; c.fillRect(bx,by,bw,bh); c.strokeRect(bx,by,bw,bh); c.restore();
-      latticeParticles(c, bx+6, by+6, bw-34, bh-12, lv, this.clk+i*0.7, {nx:(sc>1.1? 4 : 3), ny:(sc>1.1? 3 : 2), r:Math.min(8, bw/16), a0:1.0, a1:6, k0:i*20});
+      var isL=(i===0 || this.sub().liq);
+      /* 第15回：液体（水・油・海水）はビーカーに入れ、粒子は格子にならべず動きまわらせる */
+      if(isL){ c.save(); c.fillStyle=fills[i]; c.fillRect(bx+1,by+8,bw-2,bh-9); c.strokeStyle=this.COLS[i]; c.lineWidth=1.5; c.beginPath(); c.moveTo(bx+1,by+8); c.lineTo(bx+bw-1,by+8); c.stroke(); c.restore();
+        beakerGlass(c, bx, by-6, bw, bh+6);
+        if(!this.lq) this.lq=[{},{}];
+        liquidParticles(c, this.lq[i], bx+5, by+11, bw-32, bh-15, lv, this.clk, {n:(sc>1.1? 12 : (sc<0.85? 5 : 8)), r:Math.min(8, bw/16), k0:i*20}); }
+      else { c.save(); c.fillStyle=fills[i]; c.strokeStyle=this.COLS[i]; c.lineWidth=2.2; c.fillRect(bx,by,bw,bh); c.strokeRect(bx,by,bw,bh); c.restore(); }
+      if(!isL) latticeParticles(c, bx+6, by+6, bw-34, bh-12, lv, this.clk+i*0.7, {nx:(sc>1.1? 4 : 3), ny:(sc>1.1? 3 : 2), r:Math.min(8, bw/16), a0:1.0, a1:6, k0:i*20});
       thermometer(c, bx+bw-14, by+bh-14, by-54, Tn, 0, 100, {ticks:[0,50,100], noNum:true, dec:1});
       T(c, names[i]+"　"+ms[i].toFixed(1)+" kg", cx-8, by-40, {size:13.5, bold:true, col:this.COLS[i], align:"center", halo:true});
       T(c, "比熱 "+cs[i]+" J/(g·K)", cx-8, by-22, {size:11, col:COL.sub, align:"center", halo:true});
@@ -1357,7 +1405,7 @@ var S14 = {
 /* ---------------- ①-5 熱平衡（熱量の保存） ----------------
    第2回：1-4 とレイアウトをそろえる。左は鉄 1.0 kg（80 ℃）に固定。右の物質（比熱）と質量を選ぶ（初め 20 ℃）。
    熱容量 C＝mc は結果として計算して表示する。質量を変えると、右の物体の大きさ（液体なら量）が変わる。
-   「固体同士」：鉄のブロックと、えらんだ固体のブロックをくっつける。
+   「固体と固体」：鉄のブロックと、えらんだ固体のブロックをくっつける。
    「固体と液体」：鉄の球を、えらんだ液体に入れる。境目を拡大した窓で、粒子がエネルギーを渡すようす。
    熱の矢印は、熱が移動している間だけ。矢印そのものは動かさず、中を「熱の粒」が流れる（流れる速さ＝熱の移る速さ）。
    状態は時刻だけで決まる（初めに最後まで計算しておく）ので、時間バーで戻したり進めたりできる。 */
@@ -1393,7 +1441,8 @@ var S15 = {
     var kb=document.createElement("div"); kb.className="subbtns"; this.kb=kb; kb.innerHTML='<span class="subcap">組み合わせ</span>';
     sec.querySelectorAll('button.seg[data-g="kind"]').forEach(function(b){ kb.appendChild(b); });
     var sl0=sec.querySelector(".segl"); if(sl0 && /組み合わせ/.test(sl0.textContent)) sl0.remove();
-    this.cv.parentElement.style.position="relative"; this.cv.parentElement.appendChild(kb);
+    /* 第15回：組み合わせのボタンは、左右の操作の箱の上（2 つの箱をまとめた幅のまん中）に置く */
+    kb.classList.add("cgK"); this.cg.el.insertBefore(kb, this.cg.el.firstChild);
     this.cl=wireChk(sec,"lid",function(on){ self.lid=on; self.changed(); });
     sec.querySelector(".resetall").addEventListener("click", function(){ self.kind="ss"; self.sk.set("ss"); self.si=4; self.m=1.0; self.mg.set(1); setList();
       self.lid=false; self.cl.set(false); self.run.rate=1; var s2=sec.querySelector(".slowb"); if(s2) s2.classList.remove("on"); self.changed(); });
@@ -1445,7 +1494,7 @@ var S15 = {
     }
     if(this.cg) this.cg.set(this.cv, [c1,c2], wide);
     /* 第11回：組み合わせのボタンは、断熱容器の右上・グラフの左上（2 列目の右はし）に置く */
-    if(this.kb){ var rgt=wide? (this.cv.parentElement.clientWidth-c2+8)+"px" : ""; if(this.kb.style.right!==rgt) this.kb.style.right=rgt; }
+
     notebook(c,W,H);
     var Qa=this.CA()*(this.TA0-st.TA), Qb=this.CB()*(st.TB-this.TB0), nB=this.sub().name;
     this.msg.innerHTML='熱容量 '+tex("C=mc")+'：鉄 <span class="num">'+this.CA().toFixed(0)+'</span> J/K　／　'+nB+' <span class="num">'+this.CB().toFixed(0)+'</span> J/K<br>'+
@@ -1579,11 +1628,13 @@ var S21 = {
     var w1=this.cv.parentElement, cap1=document.createElement("p"); cap1.className="cvcap";
     cap1.innerHTML='<b>上の図</b>：気体が<b>された</b>仕事 '+tex("W")+' で表す　'+tex("\\Delta U=Q+W");
     w1.parentNode.insertBefore(cap1, w1);
-    var cap2=document.createElement("p"); cap2.className="cvcap";
-    cap2.innerHTML='<b>下の図</b>：同じ変化を、気体が<b>した</b>仕事 '+tex("W'")+'（'+tex("W'=-W")+'）で表す　'+tex("Q=\\Delta U+W'");
-    var w2=document.createElement("div"); w2.className="cvwrap"; w2.innerHTML='<canvas class="sub21cv"></canvas>';
-    w1.parentNode.insertBefore(cap2, w1.nextSibling); w1.parentNode.insertBefore(w2, cap2.nextSibling);
-    this.cv2=w2.querySelector("canvas");
+    /* 第12回：下の図（W′ で表す）は、はじめは畳んでおく。見出しをクリックすると開く */
+    var fold=document.createElement("details"); fold.className="cvfold";
+    fold.innerHTML='<summary class="cvcap"><b>下の図</b>：同じ変化を、気体が<b>した</b>仕事 '+tex("W'")+'（'+tex("W'=-W")+'）で表す　'+tex("Q=\\Delta U+W'")+'<span class="foldhint">（クリックで開く）</span></summary>'+
+      '<div class="cvwrap"><canvas class="sub21cv"></canvas></div>';
+    w1.parentNode.insertBefore(fold, w1.nextSibling);
+    this.cv2=fold.querySelector("canvas"); this.fold=fold;
+    fold.addEventListener("toggle", function(){ var h=fold.querySelector(".foldhint"); if(h) h.textContent=fold.open? "（クリックで閉じる）" : "（クリックで開く）"; if(fold.open) self.draw(); });
     /* 第6回：説明（数値）の箱は右の列へ */
     var sR=sec.querySelector(".sR"); if(sR) sR.insertBefore(this.msg, sR.firstChild);
     this.run=new Runner({
@@ -1643,7 +1694,7 @@ var S21 = {
     var g=this.geo(f.W,f.H); this.g=g;
     if(!this.mols || this._W!==f.W){ this._W=f.W; this.make(g); }
     this.drawOne(f, false);
-    if(this.cv2){ var f2=fitCanvas(this.cv2, function(W){ return self.hOf(W); }); this.drawOne(f2, true); }
+    if(this.cv2 && this.fold && this.fold.open){ var f2=fitCanvas(this.cv2, function(W){ return self.hOf(W); }); this.drawOne(f2, true); }
     var A=this.ACTS[this.act], U=this.Unow();
     this.msg.innerHTML='<b>'+A.t+'</b>：'+A.s+'<br>'+tex("Q")+' = <span class="num">'+this.Q.toFixed(0)+'</span>　'+tex("W")+' = <span class="num">'+this.W.toFixed(0)+'</span>　'+
       tex("W'")+' = <span class="num">'+(-this.W).toFixed(0)+'</span>　'+tex("\\Delta U")+' = <span class="num">'+(U-100).toFixed(0)+'</span><br>（エネルギーの大きさは、初めの '+tex("U")+' を 100 とした目安）';
@@ -1778,8 +1829,10 @@ var S22 = {
     }
     T(c,"単位：kJ　矢印の太さ＝エネルギーの大きさ", W-8, 12, {size:10, col:COL.sub, align:"right"});
     notebook(c,W,H);
-    this.msg.innerHTML='ランプから受け取る熱量 '+tex("Q_\\mathrm{in}")+' = <span class="num">'+this.Qin.toFixed(0)+'</span> kJ。'+
-      '車の速さは、熱機関がした仕事 '+tex("W'=eQ_\\mathrm{in}")+' に比例させている。<br>'+tex("e=1")+' の車（破線）は、熱力学第二法則によって<b>作ることができない</b>（→ ②-3）。';
+    var mh='ランプから受け取る熱量 '+tex("Q_\\mathrm{in}")+' = <span class="num">'+this.Qin.toFixed(0)+'</span> kJ。'+
+      '車の速さは、熱機関がした仕事 '+tex("W'=eQ_\\mathrm{in}")+' に比例させている。<br>'+tex("e=1")+' の車（破線）は、熱力学第二法則によって<b>作ることができない</b>（→ <a href="#3-3">③-3</a>）。';
+    /* 第12回：中のリンクが押せるように、文が変わったときだけ書きかえる */
+    if(this._mh!==mh){ this.msg.innerHTML=mh; this._mh=mh; }
   }
 };
 
@@ -2043,14 +2096,14 @@ var DEFS = {
     mid: H_timebar(),
     right:function(){ return ''; }},   /* 第9回：右の列のカードは全てカット（千葉さん） */
   s15:{num:5, mode:0, title:"熱平衡（熱量の保存）", short:"熱平衡", sim:S15, full:true,
-    desc:'温度の違う 2 つの物体を触れさせると、高温の物体から低温の物体へ熱が移り、やがて同じ温度になる（<b>熱平衡</b>）。<span class="todo">「固体同士」「固体と液体」と、右の物質・質量を選んで、スタートを押そう。</span><br>注目点：熱の矢印の中を流れる点が「移っていく熱」。温度の差が小さくなるほど、流れはゆっくりになる。',
-    opts: H_seg("kind","組み合わせ",[["ss","固体同士"],["sl","固体と液体"]],"ss") + H_chk("lid","ふたを開ける",false),
+    desc:'温度の違う 2 つの物体を触れさせると、高温の物体から低温の物体へ熱が移り、やがて同じ温度になる（<b>熱平衡</b>）。<span class="todo">「固体と固体」「固体と液体」と、右の物質・質量を選んで、スタートを押そう。</span><br>注目点：熱の矢印の中を流れる点が「移っていく熱」。温度の差が小さくなるほど、流れはゆっくりになる。',
+    opts: H_seg("kind","組み合わせ",[["ss","固体と固体"],["sl","固体と液体"]],"ss") + H_chk("lid","ふたを開ける",false),
     playFirst:true,     /* 第6回：スタートなどは、スライダーの上に置く */
     sliders: '<div class="duo"><div class="duoL"><span>左（高温・固定）</span><b>鉄 1.0 kg　80 ℃</b><span>比熱 0.448 J/(g·K)</span></div><div class="duoR"><p class="duonote">右は初め 20 ℃</p>'+
       H_slider("sub","右の物質&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど比熱が大きい）</span>",0,5,1,4)+'<div class="cticks"></div>'+H_slider("mass","右の質量",0.5,2,0.1,1)+'</div></div>',
     mid: H_timebar(),
     right:function(){ return ''; }},   /* 第9回：右の列のカードは全てカット（千葉さん） */
-  s21:{num:1, mode:1, title:"熱力学第一法則", short:"第一法則", sim:S21,
+  s21:{num:1, mode:1, title:"熱力学第一法則", short:"熱力学第一法則", sim:S21,
     desc:'ピストンのついたシリンダーの中の気体。気体の分子の運動エネルギーの和が<b>内部エネルギー</b> '+tex("U")+'。始めの状態に対し、<span class="todo">行う操作を 1 つ選ぼう。</span><br>注目点：熱 '+tex("Q")+' でも、仕事 '+tex("W")+' でも、内部エネルギーは変わる。いつでも '+tex("\\Delta U=Q+W")+'。下の図は、同じ変化を気体がした仕事 '+tex("W'")+' で表したもの。',
     opts: H_seg("act","操作",[["heat","気体に熱を与える（ピストン固定）"],["cool","気体の熱を奪う（ピストン固定）"],["free","気体に熱を与える（ピストンは自由）"],["freecool","気体の熱を奪う（ピストンは自由）"],["push","気体に正の仕事をする"],["pull","気体に負の仕事をする"]],"heat"),
     right:function(){ return '<div class="qcard"><p class="qt">熱力学第一法則</p>'+
@@ -2068,7 +2121,7 @@ var DEFS = {
       '<p>熱機関が高温の物体から受け取った熱量を '+tex("Q_\\mathrm{in}")+'、低温の物体へ放出した熱量を '+tex("Q_\\mathrm{out}")+'、熱機関がした仕事を '+tex("W'")+' とすると、'+tex("W'=Q_\\mathrm{in}-Q_\\mathrm{out}")+'。受け取った熱量のうち仕事に変わった割合が<b>熱効率</b> '+tex("e")+'：</p>'+
       '<div class="qeq">'+tex("e=\\dfrac{W'}{Q_\\mathrm{in}}=\\dfrac{Q_\\mathrm{in}-Q_\\mathrm{out}}{Q_\\mathrm{in}}",true)+'</div>'+
       '<table class="nstab"><tr><td>蒸気機関</td><td>0.10〜0.20</td></tr><tr><td>ガソリン機関</td><td>0.20〜0.40</td></tr><tr><td>ディーゼル機関</td><td>0.30〜0.45</td></tr></table>'+
-      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>熱機関は、必ず熱の一部 '+tex("Q_\\mathrm{out}")+' を低温の物体に捨てる。'+tex("Q_\\mathrm{out}=0")+'（'+tex("e=1")+'）の熱機関は作れない（→ ③-3）。</p></div></div>'; }},
+      '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>熱機関は、必ず熱の一部 '+tex("Q_\\mathrm{out}")+' を低温の物体に捨てる。'+tex("Q_\\mathrm{out}=0")+'（'+tex("e=1")+'）の熱機関は作れない（→ <a href="#3-3">③-3</a>）。</p></div></div>'; }},
   s30:{num:1, mode:2, title:"絶対零度でも、粒子は完全には止まらない", short:"ゼロ点振動", sim:S30,
     desc:'高校物理では「絶対零度で熱運動が止まる」と考えてよい。しかし、原子や分子のようなミクロの世界を詳しく調べると（量子力学）、絶対零度でも粒子は震え続けている。<span class="todo">スタートを押して、温度を 0 K まで下げてみよう。「量子力学を考えない（古典的な考え）」と比べよう。</span><br>注目点：量子力学では、温度を下げても、振動のエネルギーは '+tex("\\tfrac{1}{2}h\\nu")+' より小さくならない。',
     opts: H_chk("classic","量子力学を考えない（古典的な考え）",false),
@@ -2079,7 +2132,7 @@ var DEFS = {
       '<div class="qcard"><p class="qt">エネルギーの階段</p><p>量子力学では、ばねにつながれた粒子のように振動するもののエネルギーは、とびとびの値 '+tex("\\left(n+\\tfrac{1}{2}\\right)h\\nu")+'（'+tex("n=0,1,2,\\cdots")+'）しかとれない（'+tex("\\nu")+'：振動数、'+tex("h")+'：プランク定数）。一番下の段（'+tex("n=0")+'）でも '+tex("\\tfrac{1}{2}h\\nu")+' のエネルギーが残る。</p>'+
       '<p>温度が高いと、量子力学の曲線は古典的な考え（エネルギーは温度に比例）とほぼ重なる。違いが目立つのは、低温のときだけ。</p></div>'; }},
   s31:{num:2, mode:2, title:"だれが原子を見たか", short:"だれが原子を見たか", sim:S31, static:true,
-    desc:'原子は小さすぎて、ふつうの顕微鏡では見えない。それなのに、人類はどうして「原子は本当にある」と確信できたのだろうか。その決め手になったのが、①-1 の<b>ブラウン運動</b>だった。',
+    desc:'原子は小さすぎて、ふつうの顕微鏡では見えない。それなのに、人類はどうして「原子は本当にある」と確信できたのだろうか。その決め手になったのが、<a href="#1-1">①-1</a> の<b>ブラウン運動</b>だった。',
     body:function(){ return '<div class="qcard"><p class="qt">原子論の始まり（ドルトン）</p>'+
       '<p>1803 年ごろ、イギリスの<b>ドルトン</b>は「物質は、それ以上分けられない小さな粒＝<b>原子</b>からできている」という<b>原子論</b>を唱えた。化学反応で物質の質量が決まった比で結びつくことなどが、原子を考えるとうまく説明できた。</p>'+
       '<p>しかし、原子は誰も直接見たことがない。19 世紀の終わりになっても、マッハやオストワルドのように「原子は計算に便利な考え方にすぎない。本当にあるとは言えない」と考える科学者も少なくなかった。</p></div>'+
@@ -2100,23 +2153,23 @@ var DEFS = {
       '<div class="qcard hatten"><p class="qt">＜発展＞ アインシュタインの関係式</p>'+
       '<p>微粒子が時間 '+tex("t")+' の間に、ある方向へ移動した距離 '+tex("x")+' の 2 乗の平均は、時間に比例する。</p>'+
       '<div class="qeq">'+tex("\\langle x^2\\rangle=2Dt,\\qquad D=\\dfrac{RT}{6\\pi\\eta a N_\\mathrm{A}}",true)+'</div>'+
-      '<p>'+tex("D")+'：拡散係数、'+tex("R")+'：気体定数、'+tex("T")+'：絶対温度、'+tex("\\eta")+'：水の粘性率、'+tex("a")+'：微粒子の半径、'+tex("N_\\mathrm{A}")+'：アボガドロ定数。'+tex("\\langle x^2\\rangle")+' を測れば '+tex("N_\\mathrm{A}")+' が求められる。移動の距離は時間に比例せず、時間の平方根に比例して広がる（①-1 の道筋が「行ったり来たり」になる理由）。</p></div>'+
+      '<p>'+tex("D")+'：拡散係数、'+tex("R")+'：気体定数、'+tex("T")+'：絶対温度、'+tex("\\eta")+'：水の粘性率、'+tex("a")+'：微粒子の半径、'+tex("N_\\mathrm{A}")+'：アボガドロ定数。'+tex("\\langle x^2\\rangle")+' を測れば '+tex("N_\\mathrm{A}")+' が求められる。移動の距離は時間に比例せず、時間の平方根に比例して広がる（<a href="#1-1">①-1</a> の道筋が「行ったり来たり」になる理由）。</p></div>'+
       '<div class="qcard"><p class="qt">もっと知りたい人へ</p><p>江沢洋『だれが原子をみたか』（岩波書店）に、この話が詳しく書かれている。</p></div>'; }},
-  s23:{num:3, mode:2, title:"熱力学第二法則", short:"第二法則", sim:S23, mid: H_timebar(),
-    desc:'熱が関係する現象には「ひとりでには、逆向きに起こらない」という向きがある（<b>不可逆変化</b>）。その向きを決めるのが熱力学第二法則。<span class="todo">スタートを押そう。最後まで進むと、続けて逆再生が始まる。「逆向きに再生する」を ON にすると、初めから逆再生だけを見られる。</span><br>注目点：逆再生中のアニメも、エネルギー保存則には反していない。',
+  s23:{num:3, mode:2, title:"熱力学第二法則", short:"熱力学第二法則", sim:S23, mid: H_timebar(),
+    desc:'熱が関係する現象には「ひとりでには、逆向きに起こらない」という向きがある（<b>不可逆変化</b>）。その向きを決めるのが熱力学第二法則。<span class="todo">スタートを押そう。最後まで進むと、続けて逆再生が始まる。「逆向きに再生する」を ON にすると、初めから逆再生だけを見られる。</span><br>注目点：逆再生中のアニメも、エネルギー保存則には反していない。しかし、自然に氷ができたり振り子が動き始めてしまい、非常に奇妙に感じるはずである。',
     opts: H_chk("rev","逆向きに再生する",false),
     right:function(){ return '<div class="qcard"><p class="qt">熱力学第二法則のいろいろな表し方</p>'+
       '<table class="nstab"><tr><td><b>クラウジウスの原理</b></td><td>熱は、低温の物体から高温の物体へ、ひとりでには移らない。</td></tr>'+
-      '<tr><td><b>トムソン（ケルビン）の原理</b></td><td>熱を全て仕事に変える熱機関は作れない（②-2 の '+tex("e=1")+' の車）。</td></tr>'+
+      '<tr><td><b>トムソン（ケルビン）の原理</b></td><td>熱を全て仕事に変える熱機関は作れない（<a href="#2-2">②-2</a> の '+tex("e=1")+' の車）。</td></tr>'+
       '<tr><td><b>オストワルドの表現</b></td><td>第二種永久機関（熱を 100 % 仕事に変え続ける機関）は存在しない。</td></tr>'+
       '<tr><td><b>エントロピー増大の法則</b></td><td>外とエネルギーのやり取りをしない系（孤立系）では、<b>エントロピー</b>（乱雑さの度合い）は増える方向にしか変化しない。</td></tr></table>'+
       '<p>どれも同じ法則を別の言葉で言ったもの。上の 3 つは熱の流れや熱機関の効率について述べ、エントロピー増大の法則は、自然に起こる変化の向きを量で表している。</p></div>'+
       '<div class="qcard"><p class="qt">エントロピー増大の例</p><ol class="pts">'+
       '<li>仕切りを外すと、気体は容器全体に広がる。ひとりでに元の片側に集まることはない。</li>'+
-      '<li>熱いコーヒーは、周りの空気に熱を渡して冷めていく。ひとりでに元の温度に戻ることはない（①-5 の熱平衡）。</li>'+
+      '<li>熱いコーヒーは、周りの空気に熱を渡して冷めていく。ひとりでに元の温度に戻ることはない（<a href="#1-5">①-5</a> の熱平衡）。</li>'+
       '<li>コーヒーにミルクを入れると混ざる。ひとりでに分かれることはない。</li></ol>'+
       '<p>「エネルギーは保存されるが、使える形のエネルギーは一方的に減っていく」と言うこともできる。</p></div>'+'<div class="qcard"><p class="qt">高校物理とのつながり</p>'+
-      '<p>熱力学第一法則（②-1）はエネルギーの<b>量</b>についての法則、第二法則は変化の<b>向き</b>についての法則。</p>'+
+      '<p>熱力学第一法則（<a href="#2-1">②-1</a>）はエネルギーの<b>量</b>についての法則、第二法則は変化の<b>向き</b>についての法則。</p>'+
       '<p>熱力学には、ほかに第 0 法則（A と B、B と C がそれぞれ熱平衡なら、A と C も熱平衡）と、第三法則（絶対零度ではエントロピーが 0 になる）もある。</p>'+
       '<div class="stp"><p class="sh"><b>勉強したい人は、詳しくはこちら</b></p><ul class="links">'+
       '<li><a href="https://jp.dreamscope.me/blog/2021/4/entropy" target="_blank" rel="noopener">エントロピー増大の法則とは？（簡単な説明）↗</a></li>'+
@@ -2427,7 +2480,7 @@ document.addEventListener("DOMContentLoaded", function(){ buildSiteDrawer(); });
       else { ctx.font="700 14px "+JP; ctx.fillStyle=C.acc2; ctx.textAlign="center"; ctx.fillText("熱平衡（熱の移動が止まった）", xm, y0+bh/2-0); }
       ctx.restore();
     }
-    var HOLD=2.4, FADE=0.45;
+    var HOLD=4.4, FADE=0.45;   /* 第13回：熱平衡になったあと、もう 2 秒長く見せる */
     function frame(ts){
       if(!run) return;
       var dt=last? Math.min(0.05,(ts-last)/1000) : 0; last=ts; dt*=rate;
