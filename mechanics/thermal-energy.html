@@ -1329,8 +1329,8 @@ var S14 = {
       info:function(){ return ''; }
     });
     this.run.bind(sec);
-    this.sg=wireSlider(sec,"sub",function(v){ var d=SUBS[Math.round(v)]; return d.name+"　"+d.c+" J/(g·K)"; },function(v){ self.si=Math.round(v); self.run.reset(); });
-    this.mg=wireSlider(sec,"mass",function(v){ return v.toFixed(1)+" kg"+(Math.abs(v-1)<1e-6? "（水と同じ）" : ""); },function(v){ self.m=v; self.run.reset(); });
+    this.sg=wireSlider(sec,"sub",function(v){ var d=SUBS[Math.round(v)]; return d.name+"　比熱 "+d.c+" J/(g·K)"; },function(v){ self.si=Math.round(v); self.run.reset(); });
+    this.mg=wireSlider(sec,"mass",function(v){ return "質量　"+v.toFixed(1)+" kg"+(Math.abs(v-1)<1e-6? "（水と同じ）" : ""); },function(v){ self.m=v; self.run.reset(); });
     this.tb=wireTimeBar(sec, this.run, function(){ return self.Qstop()/self.RATE; }, function(t){ self.Q=Math.min(self.Qstop(), self.RATE*t); });
     this.cg=colGrid(sec, {B:true, lc:"ref", rc:"sub"});
     sec.querySelector(".resetall").addEventListener("click", function(){ self.si=2; self.m=1.0; self.sg.set(2); self.mg.set(1); self.run.rate=1;
@@ -1368,10 +1368,12 @@ var S14 = {
     var C=this.Cs(), names=["水", this.sub().name], ms=[1.0,this.m], cs=[this.CW,this.sub().c], fills=["#d4ebf9",this.sub().fill];
     var on=(this.run.state==="run"), tEnd=this.Qstop()/this.RATE, tNow=this.Q/this.RATE;
     var c1=W*0.31, c2=W*0.62, figH=wide? H : H*0.52;
+    var E=[];   /* 第17回：2 つの物体の左右のはし（スタート前の「同じ温度」の位置に使う） */
     for(var i=0;i<2;i++){
       var R = wide? {x:(i? c1 : 0), w:(i? c2-c1 : c1)} : {x:i*W/2, w:W/2};
       var cx=R.x+R.w/2-6, yDesk=figH-12;
       var bw0=Math.min(130, R.w*0.52), sc=(i? Math.cbrt(this.m) : 1), bw=bw0*sc, bh=bw0*0.72*sc, bx=cx-bw/2, by=yDesk-62-bh;
+      E.push({l:bx, r:bx+bw, y:by+bh/2});
       var Tn=this.T0+this.Q/C[i], lv=clamp((Tn-this.T0)/80,0,1);
       burner(c, cx, yDesk, on, this.clk+i*0.37, 0.85);
       c.save(); c.fillStyle="#95a5a6"; c.fillRect(cx-bw0*0.7, yDesk-62, bw0*1.4, 6); c.restore();
@@ -1388,6 +1390,13 @@ var S14 = {
       T(c, names[i]+"　"+ms[i].toFixed(1)+" kg", cx-8, by-40, {size:13.5, bold:true, col:this.COLS[i], align:"center", halo:true});
       T(c, "比熱 "+cs[i]+" J/(g·K)", cx-8, by-22, {size:11, col:COL.sub, align:"center", halo:true});
       T(c, Tn.toFixed(1)+" ℃", bx+bw-14, by-64, {size:12, bold:true, col:"#c0392b", align:"center", halo:true});
+    }
+    /* 第17回：スタート前は、2 つの物体の真ん中に「同じ温度／20.0 ℃からスタート」 */
+    if(this.run.state==="idle" && this.Q<=0){
+      var mx=(E[0].r+E[1].l)/2-6, my=E[0].y, gap=E[1].l-E[0].r;
+      var L3=["同じ温度", this.T0.toFixed(1)+" ℃からスタート"];
+      if(gap<170){ mx=W/2; my=29; L3=["同じ温度　"+this.T0.toFixed(1)+" ℃からスタート"]; }   /* せまい画面：2 つの物体の間に入らないので、2 つの真ん中の上に 1 行で */
+      L3.forEach(function(s,k){ T(c, s, mx, my+(k-(L3.length-1)/2)*19, {size:13.5, bold:true, col:"#c0392b", align:"center", halo:true}); });
     }
     if(wide) this.drawTT(c, c2+34, H-26, W-14, 30, tEnd, tNow, C);
     else this.drawTT(c, 40, H-26, W-14, figH+30, tEnd, tNow, C);
@@ -2042,8 +2051,8 @@ var S23 = {
    ========================================================================= */
 var MODES = [
   {id:"mode1", name:"物質と比熱", en:"Matter and Specific Heat",
-   lead:"物質を構成する粒子は、絶えず不規則に動いている（<b>熱運動</b>）。温度は、その熱運動の激しさを表す。同じ熱量を加えても、物質によって温度の上がり方が違う（<b>比熱</b>）。",
-   secs:["s11","s12","s13","s14","s15"]},
+   lead:"物質を構成する粒子は、絶えず不規則に動いている（<b>熱運動</b>）。温度は、その熱運動の激しさを表す。同じ熱量を加えても、物質によって温度の上がり方が違う（<b>比熱</b>）。同じ粒子の違いでも、粒子同士の結びつきの状態の違いで振る舞いが変わる（<b>物質の三態</b>）。",
+   secs:["s11","s14","s15","s12","s13"]}   /* 第17回：比熱・熱平衡を前に、三態・状態変化を後ろに */,
   {id:"mode2", name:"熱と仕事", en:"Heat and Work",
    lead:"気体の内部エネルギーは、熱を加えても、仕事をしても増える（<b>熱力学第一法則</b>）。熱を仕事に変える仕組みが<b>熱機関</b>。",
    secs:["s21","s22"]},
@@ -2066,8 +2075,8 @@ var DEFS = {
       '<div class="qeq">'+tex("T=t+273",true)+'</div>'+tempScaleSVG()+'</div>'+
       '<div class="qcard"><p class="qt">もっと知りたい人へ</p>'+
       '<p>本当は、<b>絶対零度でも、粒子は完全には止まらない</b>（<a href="#3-1">③-1</a>）。</p>'+
-      '<p>また、このブラウン運動により、人類が初めて「原子」の存在を確かめた（<a href="#3-2">③-2</a>）。</p></div>'; }},
-  s12:{num:2, mode:0, title:"物質の三態", short:"物質の三態", sim:S12,
+      '<p>また、このブラウン運動の理論（大きい物体に原子がぶつかることでこの現象が起こる）を考えたのは、かのアインシュタインであり、人類が初めて「原子」の存在を確かめたと言える（<a href="#3-2">③-2</a>）。</p></div>'; }},
+  s12:{num:4, mode:0, title:"物質の三態", short:"物質の三態", sim:S12,
     desc:'物質は、温度と圧力によって固体・液体・気体のどれかの状態をとる（<b>物質の三態</b>）。<span class="todo">スタートを押して、スライダーで温度を上げてみよう。</span><br>注目点：固体はつりあいの位置（＋印）の周りで震え、液体は粒子同士が触れ合いながら動き回り、気体はばらばらに飛び回る。',
     opts:'',
     mid: H_tslider("u","温度　低い → 高い",0,100,1,30),
@@ -2076,7 +2085,7 @@ var DEFS = {
       '<li><b>液体</b>：粒子同士は結びついているが、位置を入れ替えながら動き回る。形は自由に変わるが、体積はほぼ変わらない。</li>'+
       '<li><b>気体</b>：粒子は結びつきを振り切って、空間を自由に飛び回る。</li></ol>'+
       '<p>どの状態になるかは、粒子同士の<b>結びつきの強さ</b>と<b>熱運動の激しさ</b>のどちらが勝るかで決まる。</p></div>'; }},
-  s13:{num:3, mode:0, title:"物質に加えた熱と状態変化", short:"状態変化", sim:S13,
+  s13:{num:5, mode:0, title:"物質に加えた熱と状態変化", short:"状態変化", sim:S13,
     desc:'三脚の上のビーカーに固体 100 g を入れ、バーナーで一定の割合で熱を加える。<span class="todo">右上のボタンで「水」か「エタノール」を選び、スタートを押そう。時間バーで戻したり進めたりもできる。</span><br>注目点：とけている間と、沸騰している間は、熱を加えても温度が上がらない。',
     opts:'',
     mid: H_timebar(),
@@ -2088,14 +2097,14 @@ var DEFS = {
       '<div class="qeq">'+tex("Q=mL",true)+'</div>'+
       '<div class="stp"><p class="sh"><b>見るポイント</b></p><p>グラフの横幅は、実際の熱量の比のまま。水を全部水蒸気にするには、0 ℃ の水を 100 ℃ にするときの 5 倍以上の熱が必要（沸騰の間は早送りしている）。</p>'+
       '<p>拡大の窓では、液面から飛び出した気体の粒子が、窓の外（空気中）へ飛んでいく。湯気（白いもや）は水蒸気が冷えてできた小さな水滴で、水蒸気そのものは目に見えない。</p></div></div>'; }},
-  s14:{num:4, mode:0, title:"比熱", short:"比熱", sim:S14, full:true, playFirst:true,
+  s14:{num:2, mode:0, title:"比熱", short:"比熱", sim:S14, full:true, playFirst:true,
     desc:'水と別の物質に、同じバーナーで同じ熱量を加える。<span class="todo">右の物質（比熱）と質量をスライダーで選んで、スタートを押そう。一番右は水なので、同じ物質同士でも比べられる。</span><br>注目点：水は温度が上がりにくい（比熱が大きい）。',
     opts:'',
-    sliders: '<div class="duo"><div class="duoL"><span>左（比べる基準）</span><b>水 1.0 kg（初め 20 ℃）</b><span>比熱 4.18 J/(g·K)</span></div><div class="duoR">'+
+    sliders: '<div class="duo"><div class="duoL"><span>左（比べる基準）</span><b>水 1.0 kg</b><span>比熱 4.18 J/(g·K)</span></div><div class="duoR">'+
       H_slider("sub","右の物質&nbsp;&nbsp;<span class=\"lnote\">（右にいくほど比熱が大きい）</span>",0,SUBS.length-1,1,2)+cTicks(SUBS)+H_slider("mass","右の質量",0.5,2,0.1,1)+'</div></div>',
     mid: H_timebar(),
     right:function(){ return ''; }},   /* 第9回：右の列のカードは全てカット（千葉さん） */
-  s15:{num:5, mode:0, title:"熱平衡（熱量の保存）", short:"熱平衡", sim:S15, full:true,
+  s15:{num:3, mode:0, title:"熱平衡（熱量の保存）", short:"熱平衡", sim:S15, full:true,
     desc:'温度の違う 2 つの物体を触れさせると、高温の物体から低温の物体へ熱が移り、やがて同じ温度になる（<b>熱平衡</b>）。<span class="todo">「固体と固体」「固体と液体」と、右の物質・質量を選んで、スタートを押そう。</span><br>注目点：熱の矢印の中を流れる点が「移っていく熱」。温度の差が小さくなるほど、流れはゆっくりになる。',
     opts: H_seg("kind","組み合わせ",[["ss","固体と固体"],["sl","固体と液体"]],"ss") + H_chk("lid","ふたを開ける",false),
     playFirst:true,     /* 第6回：スタートなどは、スライダーの上に置く */
@@ -2166,7 +2175,7 @@ var DEFS = {
       '<p>どれも同じ法則を別の言葉で言ったもの。上の 3 つは熱の流れや熱機関の効率について述べ、エントロピー増大の法則は、自然に起こる変化の向きを量で表している。</p></div>'+
       '<div class="qcard"><p class="qt">エントロピー増大の例</p><ol class="pts">'+
       '<li>仕切りを外すと、気体は容器全体に広がる。ひとりでに元の片側に集まることはない。</li>'+
-      '<li>熱いコーヒーは、周りの空気に熱を渡して冷めていく。ひとりでに元の温度に戻ることはない（<a href="#1-5">①-5</a> の熱平衡）。</li>'+
+      '<li>熱いコーヒーは、周りの空気に熱を渡して冷めていく。ひとりでに元の温度に戻ることはない（<a href="#1-3">①-3</a> の熱平衡）。</li>'+
       '<li>コーヒーにミルクを入れると混ざる。ひとりでに分かれることはない。</li></ol>'+
       '<p>「エネルギーは保存されるが、使える形のエネルギーは一方的に減っていく」と言うこともできる。</p></div>'+'<div class="qcard"><p class="qt">高校物理とのつながり</p>'+
       '<p>熱力学第一法則（<a href="#2-1">②-1</a>）はエネルギーの<b>量</b>についての法則、第二法則は変化の<b>向き</b>についての法則。</p>'+
@@ -2221,7 +2230,7 @@ function buildPage(){
     '<span class="stagectl" role="group" aria-label="アニメの操作"><button type="button" class="slow" aria-pressed="false" title="ゆっくり再生">🐢 スロー</button><button type="button" class="pp" aria-label="一時停止"><i></i></button></span></figcaption></figure>'+
     '<ol class="ideas">'+
     '<li><a href="#1-1"><span class="in" aria-label="①"><b>1</b></span><span class="ie">'+tex("T=t+273")+'</span><span class="ij">温度は熱運動の激しさ</span><span class="ia" aria-hidden="true">→</span></a></li>'+
-    '<li><a href="#1-4"><span class="in" aria-label="②"><b>2</b></span><span class="ie">'+tex("Q=mc\\Delta T")+'</span><span class="ij">比熱が大きいほど温まりにくい</span><span class="ia" aria-hidden="true">→</span></a></li>'+
+    '<li><a href="#1-2"><span class="in" aria-label="②"><b>2</b></span><span class="ie">'+tex("Q=mc\\Delta T")+'</span><span class="ij">比熱が大きいほど温まりにくい</span><span class="ia" aria-hidden="true">→</span></a></li>'+
     '<li><a href="#2-1"><span class="in" aria-label="③"><b>3</b></span><span class="ie">'+tex("\\Delta U=Q+W")+'</span><span class="ij">熱と仕事で内部エネルギーが変わる</span><span class="ia" aria-hidden="true">→</span></a></li></ol></div>';
 
   document.getElementById("tabs").innerHTML='<div class="tabs-in"><div class="navsite"><a class="navhome" href="'+SITE_HOME+'" aria-label="ホーム（楽楽高校物理のトップページ）" title="ホーム（楽楽高校物理のトップページ）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 12 4l8.5 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.5V20h4.5v-5.5h3V20H18V9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></a><button class="navpages" id="bPages" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="siteDrawer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor" opacity=".55"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6" fill="currentColor"/></svg><span>ページ一覧</span></button></div>'+
