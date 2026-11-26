@@ -1352,10 +1352,25 @@ P.m15 = {
    動摩擦力（非保存力）が負の仕事をする。すべて閉じた式で出せる。
    W摩擦 = −μ' m g x（x は進んだ距離）、止まる位置 L = v0²/(2μ'g)。 */
 P.m21 = {
+  /* ★第30回★ μ′ = 0 もスライダーで選べるようにした（千葉さんの指示）。
+     μ′ が小さい（0 をふくむ）と、図の床（x ≦ DMAX）の上では止まらない。
+     そのときの点 B は「床のはし（x = DMAX）」＝まだすべっている所にする。
+     L は「A から B までの距離」で、止まるときはそのまま止まる距離になる。 */
+  DMAX: 12.5,                                   /* 図の床のはし [m]（目もり 12.5 m とそろえる） */
   a: function (v) { return -v.mu * G; },
-  tStop: function (v) { return v.v0 / (v.mu * G); },
-  xStop: function (v) { return v.v0 * v.v0 / (2 * v.mu * G); },   /* ★式で出す★ */
-  tEnd: function (v) { return P.m21.tStop(v) * 1.15 + 0.25; },
+  tStop: function (v) { return v.mu > 1e-12 ? v.v0 / (v.mu * G) : Infinity; },
+  xStop: function (v) { return v.mu > 1e-12 ? v.v0 * v.v0 / (2 * v.mu * G) : Infinity; },   /* ★式で出す★ */
+  stopsOnFloor: function (v) { return P.m21.xStop(v) <= P.m21.DMAX + 1e-9; },
+  xB: function (v) { return P.m21.stopsOnFloor(v) ? P.m21.xStop(v) : P.m21.DMAX; },
+  tB: function (v) {
+    if (P.m21.stopsOnFloor(v)) return P.m21.tStop(v);
+    var a = v.mu * G, D = P.m21.DMAX;
+    return a > 1e-12 ? (v.v0 - Math.sqrt(v.v0 * v.v0 - 2 * a * D)) / a : D / v.v0;
+  },
+  vB: function (v) { return Math.sqrt(Math.max(0, v.v0 * v.v0 - 2 * v.mu * G * P.m21.xB(v))); },
+  tEnd: function (v) {
+    return P.m21.stopsOnFloor(v) ? P.m21.tStop(v) * 1.15 + 0.25 : P.m21.tB(v);
+  },
   sample: function (v, t) {
     var ts = P.m21.tStop(v), tt = clamp(t, 0, ts);
     var x = v.v0 * tt - 0.5 * v.mu * G * tt * tt;
@@ -1683,6 +1698,8 @@ P.m24 = {
                                   通る瞬間）でぴたりと止める（そこで吹きだしが出る）
      グラフの横軸は ① だけ（d.tGraph）。 */
   HOLD: 0.6,
+  FREE_HALVES: 6,     /* ★第30回★ μ′ = 0 のときは止まらないので、半周期 6 回（3 往復）で打ち切る */
+  free: function (v) { return !(v.mu > 1e-12); },
   tGraph: function (v) { return P.m24.tStop(v); },
   tEnd: function (v) { return P.m24.tStop(v) + P.m24.HOLD + P.m24.tNat(v); },
   tNat: function (v) {                                        /* はじめて自然長を通る時刻 */
@@ -1709,6 +1726,7 @@ P.m24 = {
       if (Math.abs(c / A) <= 1) cross.push(t0 + Math.acos(-c / A) / om);
       x = c - A;                                  /* 半周期あとの折り返し点 */
       p0 += Math.abs(2 * A); t0 += half; sg = -sg;
+      if (xc <= 1e-12 && segs.length >= P.m24.FREE_HALVES) break;   /* μ′ = 0：3 往復で打ち切る */
       if (Math.abs(x) <= xc + 1e-12) break;       /* 静止摩擦でそこに止まる */
     }
     return { segs: segs, half: half, tStop: t0, xStop: x, path: p0, cross: cross };
@@ -3273,7 +3291,10 @@ function consOf(d, v) { return (typeof d.cons === 'function') ? !!d.cons(v) : (d
 function ptsOf(d, v) {
   return (d.pts || []).map(function (p) {
     var t = (typeof p.t === 'function') ? p.t(v) : p.t;
-    return { name: p.name, jp: p.jp, t: t, sym: p.sym || {}, sym3: p.sym3, hsym: p.hsym,
+    /* ★第30回★ jp・sym は関数でもよい（μ′ によって点 B の意味が変わるシムのため） */
+    var jp = (typeof p.jp === 'function') ? p.jp(v) : p.jp;
+    var sym = (typeof p.sym === 'function') ? p.sym(v) : p.sym;
+    return { name: p.name, jp: jp, t: t, sym: sym || {}, sym3: p.sym3, hsym: p.hsym,
       m: d.sample(v, t) };
   });
 }
@@ -3384,7 +3405,10 @@ var FORCE_LIB = {
   fr: { name: '動摩擦力', sym: '\\mu\' N', color: COL.fric,
     w: function (v, A, B) { return B.m.W - A.m.W; },
     wsym: 'W_{\\text{摩擦}} = -\\mu\' N L',
-    why: '動摩擦力は<b>非保存力</b>で、いつも運動と逆向き。だからいつも<b>負の仕事</b>。' },
+    how: function (W, v) { return fric0Why(W, v); },
+    why: function (W) {
+      return workSign(W) === 0 ? '' : '動摩擦力は<b>非保存力</b>で、いつも運動と逆向き。だからいつも<b>負の仕事</b>。';
+    } },
   hand: { name: '手の力', sym: 'F_{\\text{手}}', color: COL.hand,
     w: function (v, A, B) { return B.m.W - A.m.W; },
     wsym: 'W_{\\text{手}} = \\sum F_{\\text{手}}\\,\\Delta x',
@@ -3417,16 +3441,26 @@ function forcesOf(d, v, jj) {
     if (typeof f !== 'string') for (k in f) o[k] = f[k];
     o.key = (typeof f === 'string') ? f : f.key;
     o.W = o.w ? o.w(v, A, B) : 0;
+    o._v = v;                    /* ★第30回★ 理由の文（how）が μ′ = 0 かどうかを見られるように */
     return o;
   });
 }
 
+/* ★第30回★ 動摩擦係数が 0 のとき、動摩擦力の仕事が 0 になる理由（垂直だからではない） */
+function fric0Why(W, v) {
+  if (workSign(W) !== 0 || !v) return '';
+  var z = (v.mu !== undefined) ? !(v.mu > 1e-12) : (v.mud !== undefined ? !(v.mud > 1e-12) : false);
+  return z ? '動摩擦係数 $\\mu\'$ が <b>0</b> なので、<b>動摩擦力そのものがはたらかない</b>。だから仕事も <b>0</b>。' : '';
+}
 /* その仕事が「正・負・0」のどれか（理由の文をそろえるため） */
 function workSign(W) { return Math.abs(W) < 5e-3 ? 0 : (W > 0 ? 1 : -1); }
 function workWhy(W, f) {
   /* ★力ごとの「理由」があればそれを使う★（第21回）
      糸の張力の合計が 0 なのは「向きが垂直だから」ではない。決まり文句を当てると間違いになる。 */
-  if (f && f.how) return (typeof f.how === 'function') ? f.how(W) : f.how;
+  if (f && f.how) {
+    var hw = (typeof f.how === 'function') ? f.how(W, f._v) : f.how;
+    if (hw) return hw;           /* ★第30回★ 空なら、ふつうの決まり文句にまかせる */
+  }
   var s = workSign(W);
   return s === 0 ? '力の向きと動く向きが<b>垂直</b>（または動いていない）なので、仕事は <b>0</b>。'
     : s > 0 ? '力の向きと動く向きが<b>同じ</b>ほうを向いているので、<b>正の仕事</b>。'
@@ -4306,7 +4340,9 @@ function stepData() {
   }
   return {
     ok: ok, rows: rows, hasUs: hasUs, title2: tt2, okWord: okw,
-    why: ok ? (d.step1 || '保存力（重力・弾性力）だけが仕事をしている')
+    /* ★第30回★ step1 は関数でもよい（μ′ = 0 なら「保存力だけ」になるシムのため） */
+    why: (typeof d.step1 === 'function') ? d.step1(v)
+      : ok ? (d.step1 || '保存力（重力・弾性力）だけが仕事をしている')
       : (d.step1 || '非保存力が仕事をしている'),
     /* ★式は2行で書く★ 1行目＝エネルギーどうしの関係、2行目＝K と U に書きひらいた形 */
     eq1: eq1 || (ok ? 'E_1 = E_2' : 'E_2 - E_1 = W_{非保存}'),
@@ -6866,7 +6902,8 @@ DEFS['m2-1'] = {
   mainVarFocus: 'mu',
   vars: [
     { k: 'v0', label: 'はじめの速さ $v_0$', unit: ' m/s', min: 3, max: 7, step: 0.5, dec: 1, def: 6.0 },
-    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.2, max: 0.5, step: 0.05, dec: 2, def: 0.20 },
+    /* ★第30回★ μ′ = 0 も選べる（千葉さんの指示）。0〜0.15 は床のはし（12.5 m）までに止まらないことがある */
+    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.5, step: 0.05, dec: 2, def: 0.20 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 5, step: 0.5, dec: 1, def: 2.0 }
   ],
   actions: [
@@ -6878,12 +6915,18 @@ DEFS['m2-1'] = {
     { label: 'はじめの設定にもどす', fn: function (s) { s.v.v0 = 6; s.v.mu = 0.20; },
       is: function (v) { return Math.abs(v.v0 - 6) < 1e-9 && Math.abs(v.mu - 0.20) < 1e-9; } }
   ],
-  cons: false,
+  cons: function (v) { return !(v.mu > 1e-12); },      /* ★第30回★ μ′ = 0 なら保存する */
   forces: ['g', 'N', 'fr'],
-  hintFig: '<b>減った力学的エネルギーは熱になって逃げる</b>（図のエネルギーの棒のグレー＝$|W_{\\text{非保存}}|$）',
+  hintFig: function (v) {
+    return !(v.mu > 1e-12) ? '<b>$\\mu\' = 0$ なら動摩擦力がはたらかないので、$E$ は減らず、物体は止まらない</b>（1-1 と同じ）'
+      : '<b>減った力学的エネルギーは熱になって逃げる</b>（図のエネルギーの棒のグレー＝$|W_{\\text{非保存}}|$）';
+  },
   wName: '動摩擦力',
   wSym: "-\\mu' mgL",
-  step1: '動摩擦力（非保存力）が、進む向きと逆向きに負の仕事をしている',
+  step1: function (v) {
+    return !(v.mu > 1e-12) ? '重力と垂直抗力は運動の向きに垂直なので仕事をしない。$\\mu\' = 0$ なので動摩擦力もはたらかない'
+      : '動摩擦力（非保存力）が、進む向きと逆向きに負の仕事をしている';
+  },
   datum: '床（物体のある水平面）',
   hint2: '<b>次は</b>：$\\mu\'$ を変えて、<b>止まる位置</b>と<b>E–t 図の下がり方</b>がどう変わるか見てみよう。',
   tEnd: function (v) { return P.m21.tEnd(v); },
@@ -6891,8 +6934,12 @@ DEFS['m2-1'] = {
   pts: [
     { name: 'A', jp: 'スタート', t: function () { return 0; },
       sym: { K: '\\tfrac{1}{2}mv_0^{\\,2}', Ug: '0' } },
-    { name: 'B', jp: '止まる位置', t: function (v) { return P.m21.tStop(v); },
-      sym: { K: '0', Ug: '0' } }
+    /* ★第30回★ 床の上で止まらないとき（μ′ が小さい・0）は、点 B は「床のはし」（まだすべっている） */
+    { name: 'B', jp: function (v) { return P.m21.stopsOnFloor(v) ? '止まる位置' : '床のはし（まだすべっている）'; },
+      t: function (v) { return P.m21.tB(v); },
+      sym: function (v) {
+        return P.m21.stopsOnFloor(v) ? { K: '0', Ug: '0' } : { K: '\\tfrac{1}{2}mv_B^{\\,2}', Ug: '0' };
+      } }
   ],
   draw: function (ctx, s, t, W, H) {
     var d = DEFS['m2-1'], v = V(s), m = d.sample(v, t);
@@ -6900,16 +6947,18 @@ DEFS['m2-1'] = {
     var SCX = 26.4, gy = H - 128, x0 = 64;
     function X(x) { return x0 + x * SCX; }
     var kz = mSize(d, v), bw = 34 * kz, bh = 24 * kz;
-    var L = P.m21.xStop(v);
+    var L = P.m21.xB(v);           /* ★第30回★ A から B までの距離（止まらないときは床のはしまで） */
 
-    /* 粗い床（ハッチ＋つぶつぶ） */
+    /* 粗い床（ハッチ＋つぶつぶ）。★μ′ = 0 のときは、つぶつぶを描かない（なめらかな床）★ */
     ground(ctx, 20, W - 96, gy);
-    ctx.save();
-    ctx.fillStyle = '#9aa3ac';
-    for (var g2 = 26; g2 < W - 100; g2 += 9) {
-      ctx.beginPath(); ctx.arc(g2, gy - 2.2, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (v.mu > 1e-12) {
+      ctx.save();
+      ctx.fillStyle = '#9aa3ac';
+      for (var g2 = 26; g2 < W - 100; g2 += 9) {
+        ctx.beginPath(); ctx.arc(g2, gy - 2.2, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
     datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', false, true);
     axisX(ctx, X, gy + 86, 0, Math.min(12.5, (W - 110 - x0) / SCX), 'x [m]', 1, { step: 2 });
 
@@ -6938,7 +6987,7 @@ DEFS['m2-1'] = {
       label(ctx, 'mg', ax, cy + mg * fs + 11, { size: 11.5, color: COL.force });
       arrow(ctx, ax, gy, ax, gy - mg * fs, 'force', 1, COL.norm);
       label(ctx, 'N', ax + bw / 2 + 8, gy - mg * fs + 4, { align: 'left', size: 11.5, color: COL.norm });
-      if (qq.moving) {
+      if (qq.moving && qq.f > 1e-9) {        /* ★第30回★ μ′ = 0 なら動摩擦力は描かない */
         var fl = qq.f * fs;
         arrow(ctx, ax, gy - 3, ax - fl, gy - 3, 'force', 1, COL.fric);
         label(ctx, "μ'N", ax - fl - 8, gy - 16,
@@ -6953,7 +7002,7 @@ DEFS['m2-1'] = {
       label(ctx, 'v', va.tx + 10, va.ty, { align: 'left', size: 11.5, color: COL.vel });
     }
     var aOff21 = mg * fs - bh / 2 + 46;      /* 速度の矢印よりさらに外がわ */
-    if (s.o.showA && m.moving) drawAcc(ctx, cx, cy, -v.mu * G, 0, { nx: 0, ny: -1, off: aOff21 });
+    if (s.o.showA && m.moving && v.mu > 1e-12) drawAcc(ctx, cx, cy, -v.mu * G, 0, { nx: 0, ny: -1, off: aOff21 });
     else if (s.o.showA) label(ctx, 'a = 0', cx, cy - aOff21,
       { size: 11.5, color: COL.acc, avoid: true });
     if (hintOn(s, t)) {
@@ -6979,7 +7028,9 @@ DEFS['m2-1'] = {
   },
   /* ★モード2の見どころ★ とちゅうの状態で「動摩擦力が運動と逆向き」を見せる */
   midGhost: function (ctx, s) {
-    var d = DEFS['m2-1'], v = V(s), tm = P.m21.tStop(v) * 0.5, m = d.sample(v, tm);
+    var d = DEFS['m2-1'], v = V(s);
+    if (!(v.mu > 1e-12)) return;     /* ★第30回★ μ′ = 0 なら動摩擦力がないので、とちゅうの姿は出さない */
+    var tm = P.m21.tB(v) * 0.5, m = d.sample(v, tm);
     /* ★ここの定数は draw とそろえる★ ずれると「とちゅうの姿」だけ別の場所に描かれる */
     var SCX = 26.4, gy = CVH - 128, x0 = 64;
     var kz = mSize(d, v), bw = 34 * kz, bh = 24 * kz;
@@ -7002,7 +7053,8 @@ DEFS['m2-1'] = {
   resItems: function (v) {
     return [
       { k: "動摩擦力 $\\mu' mg$", v: fmt(v.mu * v.m * G, 2) + ' N' },
-      { k: "止まるまでの距離（式 $v_0^2/2\\mu' g$）", v: fmt(P.m21.xStop(v), 2) + ' m' }
+      { k: "止まるまでの距離（式 $v_0^2/2\\mu' g$）",
+        v: !(v.mu > 1e-12) ? '止まらない' : fmt(P.m21.xStop(v), 2) + ' m' }
     ];
   },
   info: function (s, t) {
@@ -7010,12 +7062,21 @@ DEFS['m2-1'] = {
     return [
       ['進んだ距離 $x$', fmt(m.x, 2) + ' m'],
       ['加速度 $-\\mu\' g$', fmt(-v.mu * G, 2) + ' m/s²'],
-      ['止まる時刻', fmt(P.m21.tStop(v), 2) + ' s'],
+      ['止まる時刻', !(v.mu > 1e-12) ? '止まらない' : fmt(P.m21.tStop(v), 2) + ' s'],
       ['熱になったエネルギー', fmt(-m.W, 2) + ' J']
     ];
   },
   eq: function (s) {
     var v = V(s);
+    /* ★第30回★ μ′ = 0：止まらない。床の上で止まらないとき：床のはし（L = 12.5 m）での速さ */
+    if (!(v.mu > 1e-12)) {
+      return "\\tfrac{1}{2}mv_0^{\\,2} = \\tfrac{1}{2}mv_B^{\\,2} \\;\\Rightarrow\\; v_B = v_0 = " +
+        fmt(v.v0, 2) + '\\ \\mathrm{m/s}\\;(\\text{止まらない})';
+    }
+    if (!P.m21.stopsOnFloor(v)) {
+      return "\\tfrac{1}{2}mv_0^{\\,2} = \\tfrac{1}{2}mv_B^{\\,2} + \\mu' mgL \\;\\Rightarrow\\; v_B = " +
+        fmt(P.m21.vB(v), 2) + '\\ \\mathrm{m/s}\\;(L = ' + fmt(P.m21.DMAX, 1) + '\\ \\mathrm{m})';
+    }
     return "\\tfrac{1}{2}mv_0^{\\,2} = \\mu' mgL \\;\\Rightarrow\\; L = \\dfrac{v_0^{\\,2}}{2\\mu' g} = " +
       fmt(P.m21.xStop(v), 2) + '\\ \\mathrm{m}';
   },
@@ -7040,7 +7101,7 @@ DEFS['m2-2'] = {
   mainVarFocus: 'mu',
   vars: [
     { k: 'th', label: '斜面の角 $\\theta$', unit: '°', min: 15, max: 45, step: 5, dec: 0, def: 30 },
-    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.10, max: 0.50, step: 0.05, dec: 2, def: 0.30 },
+    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.50, step: 0.05, dec: 2, def: 0.30 },   /* ★第30回★ 0 も選べる */
     { k: 'v0', label: 'はじめの速さ $v_0$', unit: ' m/s', min: 3, max: 7, step: 0.5, dec: 1, def: 6.0 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 5, step: 0.5, dec: 1, def: 2.0 }
   ],
@@ -7053,13 +7114,20 @@ DEFS['m2-2'] = {
     { label: 'はじめの設定にもどす', fn: function (s) { s.v.th = 30; s.v.mu = 0.3; s.v.v0 = 6; },
       is: function (v) { return v.th === 30 && Math.abs(v.mu - 0.3) < 1e-9 && Math.abs(v.v0 - 6) < 1e-9; } }
   ],
-  cons: false,
+  cons: function (v) { return !(v.mu > 1e-12); },      /* ★第30回★ μ′ = 0 なら保存する */
   forces: ['g', 'N', 'fr'],
-  hintFig: '<b>動摩擦力が負の仕事をした分だけ $E$ が減る</b>。' +
-    'なめらかな斜面（1-3）なら $E$ は減らず、もっと高くまで上がる',
+  hintFig: function (v) {
+    return !(v.mu > 1e-12) ? '<b>$\\mu\' = 0$ なら動摩擦力がはたらかないので、$E$ は減らない</b>。' +
+      'いちばん高くまで上がる（なめらかな斜面と同じ）'
+      : '<b>動摩擦力が負の仕事をした分だけ $E$ が減る</b>。' +
+      'なめらかな斜面（1-3）なら $E$ は減らず、もっと高くまで上がる';
+  },
   wName: '動摩擦力',
   wSym: "-\\mu' mg\\cos\\theta\\,L",
-  step1: '重力のほかに、動摩擦力（非保存力）が運動と逆向きに負の仕事をしている',
+  step1: function (v) {
+    return !(v.mu > 1e-12) ? '重力（保存力）だけが仕事をする。$\\mu\' = 0$ なので動摩擦力ははたらかず、垂直抗力は運動の向きに垂直'
+      : '重力のほかに、動摩擦力（非保存力）が運動と逆向きに負の仕事をしている';
+  },
   datum: '出発点（斜面の下端）',
   hint2: '<b>次は</b>：$\\mu\'$ を変えて、<b>止まる位置</b>と<b>失われるエネルギー</b>がどう変わるか見てみよう。',
   tEnd: function (v) { return P.m22.tEnd(v); },
@@ -7082,8 +7150,9 @@ DEFS['m2-2'] = {
        第7回まで nx = +sin(th) と符号をまちがえていて、垂直抗力が斜面に垂直に
        ならず、物体も坂から少しずれて乗っていた（先生の指摘）。 */
     var nx = -Math.sin(th), ny = -Math.cos(th);
-    var sRef = Math.min(9.0, v.v0 * v.v0 /
-      (2 * G * (Math.sin(th) + 0.10 * Math.cos(th))) * 1.2);
+    /* ★第30回★ μ′ = 0 も選べるようにしたので、坂の長さは「μ′ = 0 で上がれる距離」の 1.15 倍。
+       （前は μ′ = 0.10 を基準に上限 9 m。そのままだと μ′ = 0 で坂の上に飛び出す） */
+    var sRef = v.v0 * v.v0 / (2 * G * Math.sin(th)) * 1.15;
     /* 第9回：右の余白が大きかったので上限 70 → 100 */
     var SC = Math.min(88, (W - 96 - x0 - 16) / Math.max(0.5, sRef * Math.cos(th)),
       (gy - 46) / Math.max(0.3, sRef * Math.sin(th)));
@@ -7098,13 +7167,15 @@ DEFS['m2-2'] = {
     ctx.closePath(); ctx.fill();
     ctx.restore();
     hatchLine(ctx, x0, gy, top.x, top.y, -1);
-    ctx.save();
-    ctx.fillStyle = '#9aa3ac';
-    for (var q = 0.12; q < sMax; q += 0.22) {
-      var pp = P2(q);
-      ctx.beginPath(); ctx.arc(pp.x + nx * 2.4, pp.y + ny * 2.4, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (v.mu > 1e-12) {              /* ★第30回★ μ′ = 0 ならつぶつぶ（あらい面の印）を描かない */
+      ctx.save();
+      ctx.fillStyle = '#9aa3ac';
+      for (var q = 0.12; q < sMax; q += 0.22) {
+        var pp = P2(q);
+        ctx.beginPath(); ctx.arc(pp.x + nx * 2.4, pp.y + ny * 2.4, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
     ground(ctx, 20, W - 96, gy);
     /* 基準面の字は右はしに置く（左は物体・手・寸法線でこみあうため） */
     datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
@@ -7161,7 +7232,7 @@ DEFS['m2-2'] = {
       arrow(ctx, sx, sy, sx + nx * qq.N * fs, sy + ny * qq.N * fs, 'force', 1, COL.norm);
       label(ctx, 'N', sx + nx * (qq.N * fs + 12), sy + ny * (qq.N * fs + 12),
         { size: 11.5, color: COL.norm });
-      if (qq.moving) {
+      if (qq.moving && qq.f > 1e-9) {        /* ★第30回★ μ′ = 0 なら動摩擦力は描かない */
         var fl = qq.f * fs;
         arrow(ctx, sx, sy, sx - ux * fl, sy - uy * fl, 'force', 1, COL.fric);
         label(ctx, "μ'N", sx - ux * (fl + 14), sy - uy * (fl + 14), { size: 11.5, color: COL.fric });
@@ -7199,10 +7270,12 @@ DEFS['m2-2'] = {
   },
   /* ★モード2の見どころ★ とちゅうで「動摩擦力が運動と逆向き」を見せる */
   midGhost: function (ctx, s) {
-    var d = DEFS['m2-2'], v = V(s), tm = P.m22.tStop(v) * 0.5, m = d.sample(v, tm);
+    var d = DEFS['m2-2'], v = V(s);
+    if (!(v.mu > 1e-12)) return;     /* ★第30回★ μ′ = 0 なら動摩擦力がないので、とちゅうの姿は出さない */
+    var tm = P.m22.tStop(v) * 0.5, m = d.sample(v, tm);
     /* ★ここの定数は draw とそろえる★ */
     var th = v.th * DEG, gy = CVH - 98, x0 = 96;
-    var sRef = Math.min(9.0, v.v0 * v.v0 / (2 * G * (Math.sin(th) + 0.10 * Math.cos(th))) * 1.2);
+    var sRef = v.v0 * v.v0 / (2 * G * Math.sin(th)) * 1.15;   /* ★第30回★ draw とそろえる */
     var sc = Math.min(88, (CVW - 96 - x0 - 16) / Math.max(0.5, sRef * Math.cos(th)),
       (gy - 46) / Math.max(0.3, sRef * Math.sin(th)));
     var ux = Math.cos(th), uy = -Math.sin(th), nx = -Math.sin(th), ny = -Math.cos(th);
@@ -7453,7 +7526,7 @@ DEFS['m2-4'] = {
   mainVarFocus: 'mu',
   vars: [
     { k: 'x0', label: 'はじめの伸び $x_0$', unit: ' m', min: 0.20, max: 0.40, step: 0.02, dec: 2, def: 0.30 },
-    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.25, step: 0.05, dec: 2, def: 0.20 },
+    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.25, step: 0.05, dec: 2, def: 0.20 },   /* ★第30回★ 0 も選べる */
     { k: 'k', label: 'ばね定数 $k$', unit: ' N/m', min: 40, max: 100, step: 10, dec: 0, def: 40 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 0.5, max: 1.5, step: 0.25, dec: 2, def: 1.0 }
   ],
@@ -7465,13 +7538,20 @@ DEFS['m2-4'] = {
       is: function (v) { return Math.abs(v.mu - 0.25) < 1e-9; } },
     { label: '摩擦なし（1-9）を見る →', jump: 'm1-9' }
   ],
-  cons: false,
+  cons: function (v) { return !(v.mu > 1e-12); },      /* ★第30回★ μ′ = 0 なら保存する（1-9 と同じ） */
   forces: ['g', 'N', 'sp', 'fr'],
-  hintFig: '<b>動摩擦力が負の仕事をした分だけ $E$ が減る</b>。' +
-    '摩擦がなければ（<span data-goto="m1-9">1-9</span>）振れ幅は小さくならない',
+  hintFig: function (v) {
+    return !(v.mu > 1e-12) ? '<b>$\\mu\' = 0$ なら動摩擦力がはたらかないので、$E$ は減らず、振れ幅も小さくならない</b>' +
+      '（<span data-goto="m1-9">1-9</span> と同じ）'
+      : '<b>動摩擦力が負の仕事をした分だけ $E$ が減る</b>。' +
+      '摩擦がなければ（<span data-goto="m1-9">1-9</span>）振れ幅は小さくならない';
+  },
   wName: '動摩擦力',
   wSym: '-\\mu\' mgx_0',
-  step1: 'ばねの弾性力のほかに、動摩擦力（非保存力）が運動と逆向きに負の仕事をしている',
+  step1: function (v) {
+    return !(v.mu > 1e-12) ? 'ばねの弾性力（保存力）だけが仕事をする。$\\mu\' = 0$ なので動摩擦力ははたらかない'
+      : 'ばねの弾性力のほかに、動摩擦力（非保存力）が運動と逆向きに負の仕事をしている';
+  },
   datum: '床（高さは変わらないので $U_g = 0$）',
   hint2: '<b>次は</b>：$\\mu\'$ を変えて、<b>自然長を通る速さ</b>と<b>振れ幅の減り方</b>が' +
     'どう変わるか見てみよう。摩擦なしは <span data-goto="m1-9">1-9</span>。',
@@ -7500,14 +7580,16 @@ DEFS['m2-4'] = {
     function X(x) { return natX + x * sc; }
     var kz = mSize(d, v), bw = 34 * kz, bh = 26 * kz;
 
-    /* 粗い床（ハッチ＋つぶつぶ） */
+    /* 粗い床（ハッチ＋つぶつぶ）。★μ′ = 0 のときは、つぶつぶを描かない（なめらかな床）★ */
     ground(ctx, 20, W - 96, gy);
-    ctx.save();
-    ctx.fillStyle = '#9aa3ac';
-    for (var g2 = 26; g2 < W - 100; g2 += 9) {
-      ctx.beginPath(); ctx.arc(g2, gy - 2.2, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (v.mu > 1e-12) {
+      ctx.save();
+      ctx.fillStyle = '#9aa3ac';
+      for (var g2 = 26; g2 < W - 100; g2 += 9) {
+        ctx.beginPath(); ctx.arc(g2, gy - 2.2, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
     datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
     /* ★何と何をくらべているのかを、図の上に出す★（先生の指示・第14回）
        何往復も見せると動摩擦力の仕事が求めにくいので、このシムは
@@ -7574,7 +7656,7 @@ DEFS['m2-4'] = {
         label(ctx, '弾性力 kx', ax - bw / 2 + fl / 2, cy - 15, { size: 11, color: COL.hand });
       }
       /* 動摩擦力は「運動と逆向き」 */
-      if (qq.moving && Math.abs(qq.vs) > 1e-6) {
+      if (qq.moving && Math.abs(qq.vs) > 1e-6 && qq.f > 1e-9) {   /* ★第30回★ μ′ = 0 なら描かない */
         var dir = (qq.vs > 0 ? -1 : 1), ffl = qq.f * fs;
         arrow(ctx, ax, gy - 3, ax + dir * ffl, gy - 3, 'force', 1, COL.fric);
         label(ctx, 'μ\'N', ax + dir * (ffl + 10), gy - 17,
@@ -7610,7 +7692,9 @@ DEFS['m2-4'] = {
   midGhost: function (ctx, s) {
     /* ★A と B のまん中（伸びが x0/2 の所）に置く★ 時刻で半分にすると、
        物体が B に寄りすぎて本物と重なってしまう。 */
-    var d = DEFS['m2-4'], v = V(s), tm = P.m24.tAtX(v, v.x0 / 2), m = d.sample(v, tm);
+    var d = DEFS['m2-4'], v = V(s);
+    if (!(v.mu > 1e-12)) return;     /* ★第30回★ μ′ = 0 なら動摩擦力がないので、とちゅうの姿は出さない */
+    var tm = P.m24.tAtX(v, v.x0 / 2), m = d.sample(v, tm);
     var sc = 300, gy = CVH - 82, wallX = 46, natX = wallX + 190;
     var kz = mSize(d, v), bw = 34 * kz, bh = 26 * kz;
     var cx = natX + m.x * sc, cy = gy - bh / 2, fs = 76 / Math.max(v.m * G, v.k * v.x0);
@@ -7632,7 +7716,7 @@ DEFS['m2-4'] = {
     return [
       { k: '自然長を通る速さ（式）', v: fmt(P.m24.vNat(v), 2) + ' m/s' },
       { k: '摩擦がなければ（1-9）', v: fmt(v.x0 * Math.sqrt(v.k / v.m), 2) + ' m/s' },
-      { k: '最後に止まる伸び', v: fmt(P.m24.xStop(v), 3) + ' m' }
+      { k: '最後に止まる伸び', v: P.m24.free(v) ? '止まらない（振動が続く）' : fmt(P.m24.xStop(v), 3) + ' m' }
     ];
   },
   info: function (s, t) {
@@ -7669,7 +7753,7 @@ DEFS['m2-5'] = {
   mainVarFocus: 'Ft',
   vars: [
     { k: 'Ft', label: '糸の力 $F$', unit: ' N', min: 32, max: 44, step: 2, dec: 0, def: 36 },
-    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.15, max: 0.50, step: 0.05, dec: 2, def: 0.40 },
+    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.50, step: 0.05, dec: 2, def: 0.40 },   /* ★第30回★ 0 も選べる */
     { k: 'th', label: '斜面の角 $\\theta$', unit: '°', min: 20, max: 45, step: 5, dec: 0, def: 30 },
     { k: 'm', label: '質量 $m$', unit: ' kg', min: 2.0, max: 3.0, step: 0.5, dec: 1, def: 2.0 }
   ],
@@ -7691,10 +7775,17 @@ DEFS['m2-5'] = {
     { key: 'fr', name: '動摩擦力',
       w: function (v, A, B) { return -P.m25.fr(v) * ((B.m.s || 0) - (A.m.s || 0)); } }],
   rate: function (v) { return clamp(P.m25.tEnd(v) / 2.4, 0.3, 1); },
-  hintFig: '<b>糸の力は正の仕事、動摩擦力は負の仕事</b>。合わせた分だけ $E$ が増える',
+  /* ★第30回★ μ′ = 0 でも糸の力（非保存力）が仕事をするので、力学的エネルギーは保存しない（cons は false のまま） */
+  hintFig: function (v) {
+    return !(v.mu > 1e-12) ? '<b>糸の力が正の仕事</b>をした分だけ $E$ が増える（$\\mu\' = 0$ なので動摩擦力の仕事は 0）'
+      : '<b>糸の力は正の仕事、動摩擦力は負の仕事</b>。合わせた分だけ $E$ が増える';
+  },
   wName: '糸の力と動摩擦力',
   wSym: '(F - \\mu\' mg\\cos\\theta)L',
-  step1: '重力のほかに、糸の力（正の仕事）と動摩擦力（負の仕事）＝非保存力が仕事をしている',
+  step1: function (v) {
+    return !(v.mu > 1e-12) ? '重力のほかに、糸の力（非保存力）が正の仕事をしている。$\\mu\' = 0$ なので動摩擦力ははたらかない'
+      : '重力のほかに、糸の力（正の仕事）と動摩擦力（負の仕事）＝非保存力が仕事をしている';
+  },
   datum: '出発点（斜面の下端）',
   /* ★第13回：F は 32〜44 N しか選べないので、「動きだせなくなるまで小さくする」は
      このシムではできない（動きだすのに必要な力は既定の設定で 16.6 N）。
@@ -7730,13 +7821,15 @@ DEFS['m2-5'] = {
     ctx.closePath(); ctx.fill();
     ctx.restore();
     hatchLine(ctx, x0, gy, top.x, top.y, -1);
-    ctx.save();
-    ctx.fillStyle = '#9aa3ac';
-    for (var q = 0.12; q < L * SMAX_PULL; q += 0.22) {
-      var pp = P2(q);
-      ctx.beginPath(); ctx.arc(pp.x + nx * 2.4, pp.y + ny * 2.4, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (v.mu > 1e-12) {              /* ★第30回★ μ′ = 0 ならつぶつぶ（あらい面の印）を描かない */
+      ctx.save();
+      ctx.fillStyle = '#9aa3ac';
+      for (var q = 0.12; q < L * SMAX_PULL; q += 0.22) {
+        var pp = P2(q);
+        ctx.beginPath(); ctx.arc(pp.x + nx * 2.4, pp.y + ny * 2.4, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
     }
-    ctx.restore();
     ground(ctx, 20, W - 96, gy);
     datumLine(ctx, 20, W - 96, gy, '基準面 h = 0', true, true);
     angArc(ctx, x0, gy, 30, -th, 0, '', 0, 0);
@@ -7796,8 +7889,10 @@ DEFS['m2-5'] = {
       label(ctx, 'N', sx + nx * (qq.N * fs + 12), sy + ny * (qq.N * fs + 12),
         { size: 11.5, color: COL.norm });
       var fl = qq.f * fs;
-      arrow(ctx, sx, sy, sx - ux * fl, sy - uy * fl, 'force', 1, COL.fric);
-      label(ctx, 'μ\'N', sx - ux * (fl + 14), sy - uy * (fl + 14), { size: 11.5, color: COL.fric });
+      if (fl > 1e-6) {                 /* ★第30回★ μ′ = 0 なら動摩擦力は描かない */
+        arrow(ctx, sx, sy, sx - ux * fl, sy - uy * fl, 'force', 1, COL.fric);
+        label(ctx, 'μ\'N', sx - ux * (fl + 14), sy - uy * (fl + 14), { size: 11.5, color: COL.fric });
+      }
       var Fl = v.Ft * fs;
       arrow(ctx, ax + ux * bw / 2, ay + uy * bw / 2,
         ax + ux * (bw / 2 + Fl), ay + uy * (bw / 2 + Fl), 'force', 1, COL.hand);
@@ -7846,9 +7941,11 @@ DEFS['m2-5'] = {
     var vl = vArrowLen(m.v, Math.max(1, P.m25.vEnd(v)), 48);
     var va = velArrow(ctx, cx, cy, nx, ny, m.N * fs - bh / 2 + 22, ux, uy, vl);
     label(ctx, 'v', va.tx + ux * 10, va.ty + uy * 10, { size: 11, color: COL.vel });
-    var fl = m.f * fs;
-    arrow(ctx, px, py, px - ux * fl, py - uy * fl, 'force', 1, COL.fric);
-    label(ctx, 'μ\'N', px - ux * (fl + 14), py - uy * (fl + 14), { size: 11, color: COL.fric });
+    var fl = m.f * fs, hasFr = fl > 1e-6;   /* ★第30回★ μ′ = 0 なら動摩擦力の矢印と吹きだしは出さない */
+    if (hasFr) {
+      arrow(ctx, px, py, px - ux * fl, py - uy * fl, 'force', 1, COL.fric);
+      label(ctx, 'μ\'N', px - ux * (fl + 14), py - uy * (fl + 14), { size: 11, color: COL.fric });
+    }
     var Fl = v.Ft * fs;
     arrow(ctx, cx + ux * bw / 2, cy + uy * bw / 2,
       cx + ux * (bw / 2 + Fl), cy + uy * (bw / 2 + Fl), 'force', 1, COL.hand);
@@ -7870,6 +7967,7 @@ DEFS['m2-5'] = {
        箱をそのまま置くと「θ = ○°」の文字とぶつかるので、しっぽの先（＝動摩擦力の
        矢印のまん中）はそのままにして、箱だけ右へずらす（bubble の dx）。
        ずらす量は、箱の左はしが θ の文字より右に来るように、そのつど計算する。 */
+    if (!hasFr) return;
     var txF = 'μ\'N は運動と逆向き → 負の仕事！';
     ctx.save(); ctx.font = 'bold 11.5px ' + FONT;
     var wF = ctx.measureText(txF).width + 18;
@@ -8685,7 +8783,7 @@ DEFS['m3-5'] = {
   vis: ['F', 'V', 'A'],
   mainVars: ['mu', 'M'], mainVarFocus: 'mu',
   fBase: 60,                 /* ★第23回★ 力の矢印を大きく（動摩擦力が見えるように） */
-  vars: [{ k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.40, step: 0.05, dec: 2, def: 0.35 }]
+  vars: [{ k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.40, step: 0.05, dec: 2, def: 0.35 }]   /* ★第30回★ 0 も選べる */
     .concat(twoMass3(2.0, 2.0)),
   actions: [
     { label: 'つるつるにする（μ\'＝0.05）', fn: function (s) { s.v.mu = 0.05; },
@@ -8696,14 +8794,21 @@ DEFS['m3-5'] = {
     { label: 'はじめの設定にもどす', fn: function (s) { s.v.mu = 0.35; s.v.m = 2; s.v.M = 2; },
       is: function (v) { return Math.abs(v.mu - 0.35) < 1e-9 && v.m === 2 && v.M === 2; } }
   ],
-  cons: false, cons3: { both: false, each: false },
+  /* ★第30回★ μ′ = 0 なら 3-2 と同じ（2物体全体で保存＝ケース1） */
+  cons: function (v) { return !(v.mu > 1e-12); },
+  cons3: { both: function (v) { return !(v.mu > 1e-12); }, each: false },
   wName: '動摩擦力', wSym: 'W_{\\text{摩擦}} = -\\mu\' m_1g\\,x',
   forces: ['g', 'N', F_T2,
     { key: 'fr', name: '動摩擦力', sym: "μ'N", color: COL.fric,
       w: function (v, A, B) { return B.m.Wf - A.m.Wf; },
       wsym: "W_{\\text{摩擦}} = -\\mu' m_1g\\,x",
-      why: '動摩擦力は<b>いつも進む向きと逆</b>なので、仕事は<b>必ず負</b>。' }],
-  hintFig: '<b>2物体全体の $E$ も減る。減った分＝摩擦力のした仕事</b>',
+      why: function (W) {
+        return workSign(W) === 0 ? '' : '動摩擦力は<b>いつも進む向きと逆</b>なので、仕事は<b>必ず負</b>。';
+      } }],
+  hintFig: function (v) {         /* ★第30回★ μ′ = 0 なら 3-2 と同じ（ケース1） */
+    return !(v.mu > 1e-12) ? '<b>$\\mu\' = 0$ なら動摩擦力がはたらかないので、2物体全体の $E$ は変わらない</b>（3-2 と同じ・ケース1）'
+      : '<b>2物体全体の $E$ も減る。減った分＝摩擦力のした仕事</b>';
+  },
   datum: '物体2 が下りきる高さ（図の $h=0$ の線）',
   hint2: '<b>次は</b>：$\\mu\'$ を変えて、<b>2物体全体の $E$ の下がり方</b>がどう変わるか見てみよう。',
   ptSide: 'row',
@@ -8801,7 +8906,9 @@ P.plank2 = {
   falls: function (v) { return isFinite(P.plank2.tFall(v)); },
   tEnd: function (v) {
     var ts = P.plank2.tStick(v), tf = P.plank2.tFall(v);
-    if (isFinite(tf)) return Math.max(1.0, Math.min(6, tf + P.plank2.tFly()));
+    /* ★第30回★ 落ちるときは「床に着いた瞬間」でぴったり止める（前は最低 1.0 s にしていて、
+       早く落ちると床に着いたあとも縦の速さが増えつづけ、E が増えていた） */
+    if (isFinite(tf)) return Math.min(6, tf + P.plank2.tFly());
     return Math.max(1.2, Math.min(5, isFinite(ts) ? ts * 1.7 + 0.4 : 2.4));
   },
   /* くらべる点2：落ちるなら「板から落ちる瞬間」、そろうなら「速さがそろったとき」、それ以外は終わり */
@@ -8836,7 +8943,7 @@ P.plank2 = {
     if (t <= tf + 1e-12) {
       r = P.plank2.onBoard(v, t);
     } else {
-      var rf = P.plank2.onBoard(v, tf), t2 = t - tf;
+      var rf = P.plank2.onBoard(v, tf), t2 = Math.min(t - tf, P.plank2.tFly());   /* 着地で打ち切る */
       var aA2 = v.FA / v.mA, aB2 = v.FB / v.mB;
       r = { xA: rf.xA + rf.vA * t2 + 0.5 * aA2 * t2 * t2, vA: rf.vA + aA2 * t2, aA: aA2,
         xB: rf.xB + rf.vB * t2 + 0.5 * aB2 * t2 * t2, vB: rf.vB + aB2 * t2, aB: aB2,
@@ -8873,8 +8980,8 @@ DEFS['m3-4'] = {
     { k: 'FB', label: '物体2 を引く力 $F_2$', unit: ' N', min: 0, max: 40, step: 1, dec: 0, def: 0 },
     { k: 'vA0', label: '板（物体1）の初速度 $v_{1\\mathrm{A}}$', unit: ' m/s', min: 0, max: 8, step: 0.5, dec: 1, def: 0 },
     { k: 'vB0', label: '物体2 の初速度 $v_{2\\mathrm{A}}$', unit: ' m/s', min: 0, max: 8, step: 0.5, dec: 1, def: 3.0 },   /* 第25回：2.5 → 3.0（A 点と B 点を離す） */
-    { k: 'mud', label: '1 と 2 の動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.8, step: 0.05, dec: 2, def: 0.40 },   /* 第23回：0.25 → 0.40（矢印が見えるように） */
-    { k: 'mus', label: '1 と 2 の静止摩擦係数 $\\mu$', unit: '', min: 0.05, max: 0.8, step: 0.05, dec: 2, def: 0.50 },
+    { k: 'mud', label: '1 と 2 の動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.8, step: 0.05, dec: 2, def: 0.40 },   /* ★第30回★ 0 も選べる */   /* 第23回：0.25 → 0.40（矢印が見えるように） */
+    { k: 'mus', label: '1 と 2 の静止摩擦係数 $\\mu$', unit: '', min: 0, max: 0.8, step: 0.05, dec: 2, def: 0.50 },
     { k: 'mA', label: '板（物体1）の質量 $m_1$', unit: ' kg', min: 1, max: 8, step: 0.5, dec: 1, def: 3.0 },
     { k: 'mB', label: '物体2 の質量 $m_2$', unit: ' kg', min: 0.5, max: 6, step: 0.5, dec: 1, def: 2.0 }
   ],
@@ -8896,12 +9003,19 @@ DEFS['m3-4'] = {
       fn: function (s) { s.v.FA = 0; s.v.FB = 0; s.v.vA0 = 0; s.v.vB0 = 3.0; s.v.mud = 0.40; s.v.mus = 0.5; s.v.mA = 3; s.v.mB = 2; },
       is: function (v) { return v.FA === 0 && v.FB === 0 && v.vA0 === 0 && v.vB0 === 3.0 && Math.abs(v.mud - 0.40) < 1e-9 && v.mus === 0.5 && v.mA === 3 && v.mB === 2; } }
   ],
-  cons: false, cons3: { both: false, each: false },
+  /* ★第30回★ 2物体全体で保存するのは「引く力がなく、動摩擦力も仕事をしない」とき：
+     μ′ = 0、または はじめからすべらない（はじめの速さが同じ）とき。静止摩擦力は2物体全体で仕事 0。 */
+  cons: function (v) { return v.FA === 0 && v.FB === 0 && (!(v.mud > 1e-12) || v.vA0 === v.vB0); },
+  cons3: { both: function (v) { return v.FA === 0 && v.FB === 0 && (!(v.mud > 1e-12) || v.vA0 === v.vB0); },
+    each: false },
   wName: '摩擦力や引く力', wSym: 'W_{\\text{摩擦}} + W_{F_1} + W_{F_2}',
   forces: ['g', 'N',
     { key: 'fr', name: '動摩擦力（1 と 2 の合計）', sym: "μ'N", color: COL.fric,
       w: function (v, A, B) { return B.m.Wf - A.m.Wf; },
-      how: function (W) {
+      how: function (W, v) {
+        if (Math.abs(W) < 5e-3 && v && !(v.mud > 1e-12)) {    /* ★第30回★ μ′ = 0 */
+          return '動摩擦係数 $\\mu\'$ が <b>0</b> なので、すべっても<b>動摩擦力ははたらかない</b>。仕事の合計も 0。';
+        }
         return Math.abs(W) < 5e-3 ? 'すべっていない（一体で動く）ので、摩擦の仕事の合計は 0。'
           : '板にはたらく摩擦は<b>板の動く向きと逆</b>（負の仕事）、物体2 にはたらく摩擦は<b>物体2 の動く向きと同じ</b>（正の仕事）。';
       },
@@ -8916,7 +9030,10 @@ DEFS['m3-4'] = {
       w: function (v, A, B) { return B.m.WB - A.m.WB; },
       wsym: 'W_{F_2} = F_2\\,x_2',
       why: '引く力は<b>非保存力</b>。動く向きと同じ向きなので正の仕事。' }],
-  hintFig: '<b>すべった相対距離 × 摩擦力 の分だけ、2物体全体の $E$ が減る</b>（引く力があれば、その分は増える）',
+  hintFig: function (v) {         /* ★第30回★ μ′ = 0 なら動摩擦力は仕事をしない */
+    return !(v.mud > 1e-12) ? '<b>$\\mu\' = 0$ なら、すべっても動摩擦力ははたらかないので、2物体全体の $E$ は減らない</b>（引く力があれば、その分は増える）'
+      : '<b>すべった相対距離 × 摩擦力 の分だけ、2物体全体の $E$ が減る</b>（引く力があれば、その分は増える）';
+  },
   datum: '床（板の上面は高さ $H$ = ' + fmt(P.plank2.HB, 2) + ' m）',
   hint2: '<b>次は</b>：「条件の例」のボタンで「一体」「初速度」に変えて、<b>摩擦の仕事の合計</b>が' +
     'どう変わるか見てみよう。落ちたあと（飛んでいるあいだ）は摩擦がないので、$E$ は減らない。',
@@ -8975,7 +9092,8 @@ DEFS['m3-4'] = {
     if (t > 1e-6) ghost4(0, 0.28);
     if (t > t2b + 1e-6 && t2b > 1e-6) ghost4(t2b, 0.28);
     blockShape(ctx, pxC, gy - ph / 2, 0, pw, ph, '#e9d9bd');
-    hatchLine(ctx, pxL, gy - ph, pxL + pw, gy - ph, 1);      /* あらい上面。左→右で side 1 */
+    /* あらい上面。左→右で side 1。★第30回★ μ′・μ がどちらも 0 ならなめらかなので描かない */
+    if (v.mud > 1e-12 || v.mus > 1e-12) hatchLine(ctx, pxL, gy - ph, pxL + pw, gy - ph, 1);
     blockShape(ctx, bxx, byC, 0, bw, bh, '#f3e8ee');
     marks3(ctx, d, v, posOf);
     /* 板の名前は ○A ○B の印をよけて書く（avoid）。印が先に登録されている必要があるので marks3 のあと */
@@ -9131,7 +9249,7 @@ DEFS['m3-6'] = {
      動摩擦力が 2 N（3 px）しかなく、矢印が見えなかった（千葉さんの指摘）。 */
   vars: [
     { k: 'th', label: '斜面の傾き $\\theta$', unit: '°', min: 10, max: 40, step: 5, dec: 0, def: 30 },
-    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0.05, max: 0.40, step: 0.05, dec: 2, def: 0.40 }
+    { k: 'mu', label: '動摩擦係数 $\\mu\'$', unit: '', min: 0, max: 0.40, step: 0.05, dec: 2, def: 0.40 }   /* ★第30回★ 0 も選べる */
   ].concat(twoMass3(3.0, 3.0)),
   actions: [
     { label: '斜面を急にする（θ＝40°）', fn: function (s) { s.v.th = 40; },
@@ -9143,7 +9261,9 @@ DEFS['m3-6'] = {
       fn: function (s) { s.v.th = 30; s.v.mu = 0.40; s.v.m = 3; s.v.M = 3; },
       is: function (v) { return v.th === 30 && Math.abs(v.mu - 0.40) < 1e-9 && v.m === 3 && v.M === 3; } }
   ],
-  cons: false, cons3: { both: false, each: false },
+  /* ★第30回★ μ′ = 0 なら 2物体全体で保存（ケース1） */
+  cons: function (v) { return !(v.mu > 1e-12); },
+  cons3: { both: function (v) { return !(v.mu > 1e-12); }, each: false },
   wName: '動摩擦力', wSym: 'W_{\\text{摩擦}} = -\\mu\' m_1g\\cos\\theta\\,x',
   forces: [{ key: 'g',
     how: '重力は<b>物体2 には動く向きと同じ（正の仕事 $+m_2gx$）、物体1 には斜面を上るので逆（負の仕事 $-m_1gx\\sin\\theta$）</b>。' },
@@ -9151,8 +9271,13 @@ DEFS['m3-6'] = {
     { key: 'fr', name: '動摩擦力', sym: "μ'N", color: COL.fric,
       w: function (v, A, B) { return B.m.Wf - A.m.Wf; },
       wsym: "W_{\\text{摩擦}} = -\\mu' m_1g\\cos\\theta\\,x",
-      why: '斜面では垂直抗力が $m_1g\\cos\\theta$ になるので、動摩擦力もその分だけ小さくなる。' }],
-  hintFig: '<b>物体2 の $U$ が減った分は、物体1 の $U$ と 2つの $K$、そして摩擦で失われる分に分かれる</b>',
+      why: function (W) {
+        return workSign(W) === 0 ? '' : '斜面では垂直抗力が $m_1g\\cos\\theta$ になるので、動摩擦力もその分だけ小さくなる。';
+      } }],
+  hintFig: function (v) {         /* ★第30回★ μ′ = 0 なら摩擦で失われる分はない（ケース1） */
+    return !(v.mu > 1e-12) ? '<b>$\\mu\' = 0$ なら摩擦で失われる分はなく、物体2 の $U$ が減った分は、物体1 の $U$ と 2つの $K$ に分かれる</b>（ケース1）'
+      : '<b>物体2 の $U$ が減った分は、物体1 の $U$ と 2つの $K$、そして摩擦で失われる分に分かれる</b>';
+  },
   datum: '床（図の $h=0$ の線）',
   hint2: '<b>次は</b>：$\\theta$ を変えて、<b>物体1 の $U$ の増え方</b>と<b>$E$ の減り方</b>が' +
     'どう変わるか見てみよう。',
@@ -9219,7 +9344,7 @@ DEFS['m3-6'] = {
     ctx.lineTo(tx, tyv); ctx.lineTo(tx, gy); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.restore();
     /* あらい面の印は、左はし→てっぺん（左→右）に渡して side 1（印は面の下がわ） */
-    hatchLine(ctx, ex, ey, tx, tyv, 1);
+    if (v.mu > 1e-12) hatchLine(ctx, ex, ey, tx, tyv, 1);   /* ★第30回★ μ′ = 0 ならなめらかな面（印なし） */
     /* θ の弧は斜面の左はし（床に着いていればそのかど、届かなければ図の左はしで切った所）。
        ふもと (x0, y0) に置くと、物体1 のはじめの場所と字が重なる */
     if (hitsGround) angArc(ctx, ex, gy, 30, -th, 0, 'θ = ' + fmt(v.th, 0) + '°', -th * 0.5, 54);
@@ -9270,7 +9395,7 @@ DEFS['m3-6'] = {
         ax + ux * (bw / 2 + Tn * fs), ay + uy * (bw / 2 + Tn * fs), 'force', 1, COL.hand);
       label(ctx, 'S', ax + ux * (bw / 2 + Tn * fs + 12), ay + uy * (bw / 2 + Tn * fs + 12),
         { size: 11.5, color: COL.hand });
-      if (m.v > 0.02) {
+      if (m.v > 0.02 && m.fr > 1e-9) {     /* ★第30回★ μ′ = 0 なら動摩擦力は描かない */
         arrow(ctx, sx, sy, sx - ux * m.fr * fs, sy - uy * m.fr * fs, 'force', 1, COL.fric);
         label(ctx, "μ'N", sx - ux * (m.fr * fs + 14) + nx * 8, sy - uy * (m.fr * fs + 14) + ny * 8,
           { size: 11.5, color: COL.fric });
@@ -10489,7 +10614,9 @@ function placePtBubbles(d, ch) {
 function renderFigHint(d, s, t) {
   var el = $('cvhint');
   if (!el) return;
-  var txt = (d.hintFig && hintOn(s, t)) ? d.hintFig : '';
+  /* ★第30回★ hintFig は関数でもよい（μ′ = 0 なら「E は減らない」と言うため） */
+  var hf = (typeof d.hintFig === 'function') ? d.hintFig(V(s)) : d.hintFig;
+  var txt = (hf && hintOn(s, t)) ? hf : '';
   if (el._key !== txt) {
     el._key = txt;
     el.innerHTML = mathHtml(txt);
@@ -11739,6 +11866,30 @@ function tick(ts) {
         });
       }
       r.pull_moves_all = okMove;
+
+      /* ★第30回★ μ′ = 0 も選べるようにした。どのシムでも
+         ① 時間が有限 ② 途中に NaN がない ③ 保存すると言っているなら E が動かない ④ 保存しないなら動く */
+      var mu0 = {}, mu0bad = [];
+      ['m2-1', 'm2-2', 'm2-4', 'm2-5', 'm3-4', 'm3-5', 'm3-6'].forEach(function (id) {
+        var dd = DEFS[id], vv = {};
+        dd.vars.forEach(function (x) { vv[x.k] = x.def; });
+        if ('mu' in vv) vv.mu = 0;
+        if ('mud' in vv) { vv.mud = 0; vv.mus = 0; }
+        var T = dd.tEnd(vv), nan = 0, e0 = dd.sample(vv, 0).E, eMax = 0;
+        for (var i = 0; i <= 40; i++) {
+          var q = dd.sample(vv, T * i / 40);
+          if (!isFinite(q.E) || !isFinite(q.x === undefined ? 0 : q.x)) nan++;
+          eMax = Math.max(eMax, Math.abs(q.E - e0));
+        }
+        var cs = consOf(dd, vv);
+        mu0[id] = { T: +T.toFixed(3), cons: cs ? 1 : 0, dEmax: +eMax.toFixed(6), nan: nan };
+        if (!isFinite(T) || T <= 0) mu0bad.push(id + ':時間');
+        if (nan) mu0bad.push(id + ':NaN');
+        if (cs && eMax > 1e-6 * Math.max(1, Math.abs(e0))) mu0bad.push(id + ':保存のはずが動く');
+        ptsOf(dd, vv).forEach(function (p) { if (!isFinite(p.t)) mu0bad.push(id + ':点' + p.name); });
+      });
+      r.mu0 = JSON.stringify(mu0);
+      r.mu0_bad = mu0bad.join(',');
 
       /* ★各力の仕事の合計 ＝ 運動エネルギーの変化★（全シム） */
       /* 数値積分のシム（1-5・1-6・1-7 など）は E がごくわずかに動くので、
