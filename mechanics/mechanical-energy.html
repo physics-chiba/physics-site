@@ -1112,17 +1112,28 @@ var P = {};
    斜面にそった加速度 a = −g sinθ。止まる位置までの距離 L = v0²/(2g sinθ)、
    ★上がる高さ h = L sinθ = v0²/(2g) は θ によらない★（1-3 の裏返し）。 */
 P.slopeUp = {
+  /* ★第31回★ 最高点 B で終わると「そこで止まったまま」と誤解されるので、
+     B からすべり下りてくるところまで見せる（斜面にそって L の BACK 倍だけ下りたら終わり）。
+     tEnd は「B に着く時刻」のまま（くらべる点・検算で使う）。アニメの終わりは tAll。 */
+  BACK: 0.45,
   a: function (v) { return G * Math.sin(v.th * DEG); },      /* 減速の大きさ */
-  tEnd: function (v) { return v.v0 / P.slopeUp.a(v); },      /* 止まるまで */
+  tEnd: function (v) { return v.v0 / P.slopeUp.a(v); },      /* 最高点 B に着くまで */
+  tAll: function (v) {
+    return P.slopeUp.tEnd(v) + Math.sqrt(2 * P.slopeUp.BACK * P.slopeUp.len(v) / P.slopeUp.a(v));
+  },
   len: function (v) { return v.v0 * v.v0 / (2 * P.slopeUp.a(v)); },   /* ★式で出す★ */
   hTop: function (v) { return v.v0 * v.v0 / (2 * G); },      /* ★θ によらない★ */
   sample: function (v, t) {
-    var T = P.slopeUp.tEnd(v), tt = clamp(t, 0, T), a = P.slopeUp.a(v);
-    var s = v.v0 * tt - 0.5 * a * tt * tt;
-    var sp = v.v0 - a * tt;
+    var T = P.slopeUp.tEnd(v), tt = clamp(t, 0, P.slopeUp.tAll(v)), a = P.slopeUp.a(v);
+    var s, sp, back = false;
+    if (tt <= T) { s = v.v0 * tt - 0.5 * a * tt * tt; sp = v.v0 - a * tt; }
+    else {                                  /* B を過ぎたら、同じ加速度ですべり下りる */
+      var u = tt - T;
+      s = P.slopeUp.len(v) - 0.5 * a * u * u; sp = -a * u; back = true;
+    }
     var y = s * Math.sin(v.th * DEG);
-    return EN.mix(v, { s: s, x: s * Math.cos(v.th * DEG), y: y, v: Math.max(0, sp),
-      h: y, sp: 0, w: 0, a: -a });
+    return EN.mix(v, { s: s, x: s * Math.cos(v.th * DEG), y: y, v: Math.abs(sp), vs: sp,
+      back: back, h: y, sp: 0, w: 0, a: -a });
   }
 };
 
@@ -1261,10 +1272,21 @@ P.m12 = {
 P.m13 = {
   a: function (v) { return G * Math.sin(v.th * DEG); },
   len: function (v) { return v.h / Math.sin(v.th * DEG); },
-  tEnd: function (v) { return Math.sqrt(2 * P.m13.len(v) / P.m13.a(v)); },
+  tEnd: function (v) { return Math.sqrt(2 * P.m13.len(v) / P.m13.a(v)); },   /* 下端 B に着くまで */
   vEnd: function (v) { return Math.sqrt(2 * G * v.h); },       /* ★θ によらない★ */
+  /* ★第31回★ 下端 B で終わると「B で止まる」と誤解されるので、なめらかにつながった床を
+     等速 √(2gh) で走るところまで見せる（1-14 と同じ考え）。床を走る距離は h だけで決め、
+     θ によらない（図の縮尺を θ で変えないため）。 */
+  LF: function (v) { return 0.30 * v.h / Math.tan(15 * DEG); },
+  tAll: function (v) { return P.m13.tEnd(v) + P.m13.LF(v) / P.m13.vEnd(v); },
   sample: function (v, t) {
-    var T = P.m13.tEnd(v), tt = clamp(t, 0, T), a = P.m13.a(v);
+    var T = P.m13.tEnd(v), a = P.m13.a(v);
+    if (t > T) {
+      var u = Math.min(t, P.m13.tAll(v)) - T, vb = P.m13.vEnd(v), L = P.m13.len(v);
+      return EN.mix(v, { s: L + vb * u, x: L * Math.cos(v.th * DEG) + vb * u, y: 0, v: vb,
+        h: 0, sp: 0, w: 0, a: 0, floor: true });
+    }
+    var tt = clamp(t, 0, T);
     var s = 0.5 * a * tt * tt;
     var y = v.h - s * Math.sin(v.th * DEG);
     return EN.mix(v, { s: s, x: s * Math.cos(v.th * DEG), y: y, v: a * tt, h: y, sp: 0, w: 0, a: a });
@@ -1292,7 +1314,16 @@ P.m14 = {
   table: function (v) { return P.m14._tab('h' + v.h, v); },
   tEnd: function (v) { var o = P.m14.table(v); return o.tab[o.tab.length - 1].t; },
   vEnd: function (v) { return Math.sqrt(2 * G * v.h); },       /* ★形によらない★ */
+  /* ★第31回★ 下端 B を過ぎたら、床を等速 √(2gh) で LF だけ走らせてから終わる（1-3 と同じ） */
+  LF: 2.4,
+  tAll: function (v) { return P.m14.tEnd(v) + P.m14.LF / P.m14.vEnd(v); },
   sample: function (v, t) {
+    var T = P.m14.tEnd(v);
+    if (t > T) {
+      var u = Math.min(t, P.m14.tAll(v)) - T, vb = P.m14.vEnd(v);
+      return EN.mix(v, { s: P.m14.table(v).cv.sMax + vb * u, x: P.m14.L + vb * u, y: 0, v: vb,
+        h: 0, sp: 0, w: 0, a: 0, dyds: 0, floor: true });
+    }
     var o = P.m14.table(v), r = INT.at(o.tab, t, P.m14.DT), p = o.cv.at(r.q);
     return EN.mix(v, { s: r.q, x: p.x, y: p.y, v: Math.abs(r.w), h: p.y, sp: 0, w: 0,
       a: r.a, dyds: p.dyds });
@@ -4739,7 +4770,7 @@ DEFS['m1-3'] = {
   title: '1-3　滑台（直線）1 — すべり下りる',
   sub: 'なめらかな斜面。<b>垂直抗力は運動の向きに垂直</b>なので仕事をしません。仕事をするのは重力だけ。' +
     'だから下端の速さは <b>$v=\\sqrt{2gh}$</b> で、<b>斜面の傾き $\\theta$ を変えても同じ</b>（かかる時間は変わります）。',
-  cw: 580, ch: 290,        /* 第6回：吹きだしが「エネルギー」の字にかかるので少し広く */
+  cw: 680, ch: 290,        /* 第6回：吹きだしが「エネルギー」の字にかかるので少し広く。第31回：床のぶん広げた */
   vis: ['F', 'Fc', 'V', 'A'],
   mainVars: ['th', 'h'],
   mainVarFocus: 'th',
@@ -4763,7 +4794,7 @@ DEFS['m1-3'] = {
   step1: '重力（保存力）だけが仕事をする。垂直抗力は運動の向きに垂直なので仕事をしない',
   datum: '地面（斜面の下端）',
   hint2: '<b>次は</b>：$\\theta$ を変えても<b>下端の速さが同じ</b>になることを確かめよう（かかる時間だけが変わります）。',
-  tEnd: function (v) { return P.m13.tEnd(v); },
+  tEnd: function (v) { return P.m13.tAll(v); },     /* ★第31回★ B を過ぎて床を走るところまで */
   sample: function (v, t) { return P.m13.sample(v, t); },
   pts: [
     { name: 'A', jp: '斜面の上', t: function () { return 0; }, sym: { K: '0', Ug: 'mgh' } },
@@ -4777,9 +4808,12 @@ DEFS['m1-3'] = {
     /* ★縮尺は θ を変えても動かさない★（見どころは「下端の速さは θ によらない」）
        いちばん寝かせた坂（θ = 15°）でも収まる大きさにしておく。 */
     var runMax = v.h / Math.tan(15 * DEG);
-    var sc = Math.min(SC_SLIDE, (W - 210) / Math.max(runMax, 0.4), (H - 118) / v.h);
+    /* ★第31回★ B を過ぎて床を走るところまで見せるので、床のぶん（LF）も横に入れる。
+       LF は h だけで決まるので、縮尺は θ を変えても動かない。 */
+    var LF = P.m13.LF(v);
+    var sc = Math.min(SC_SLIDE, (W - 210) / Math.max(runMax + LF, 0.4), (H - 118) / v.h);
     /* ★急な斜面（run が小さい）だと左すみに固まるので、横の中央に置く★ */
-    var x0 = Math.max(92, 40 + ((W - 150) - run * sc) / 2);
+    var x0 = Math.max(92, 40 + ((W - 150) - (run + LF) * sc) / 2);
     var TX = x0, TY = gy - v.h * sc, BX = x0 + run * sc, BY = gy;
     var ux = Math.cos(th), uy = Math.sin(th);        /* 斜面を下る向き（画面） */
     var nx = Math.sin(th), ny = -Math.cos(th);       /* 斜面から外向き（画面） */
@@ -4803,8 +4837,17 @@ DEFS['m1-3'] = {
     if (!endOn(d, s, t)) heightDim(ctx, 26, TY, gy, 'h = ' + fmt(v.h, 1) + ' m', TX, true);
 
     var kz = mSize(d, v), bw = 30 * kz, bh = 22 * kz;
-    function pos(sv) { return { x: TX + ux * sv * sc, y: TY + uy * sv * sc }; }
-    var pB = pos(P.m13.len(v));
+    var LEN = P.m13.len(v);
+    function pos(sv) {
+      if (sv <= LEN) return { x: TX + ux * sv * sc, y: TY + uy * sv * sc };
+      return { x: BX + (sv - LEN) * sc, y: BY };          /* B を過ぎたら床の上 */
+    }
+    /* 面の向き：斜面の上は傾き θ、床の上は傾き 0（外向きは真上、進む向きは右） */
+    function geo(sv) {
+      return (sv > LEN + 1e-9) ? { ang: 0, nx: 0, ny: -1, ux: 1, uy: 0, fl: true }
+        : { ang: -th, nx: nx, ny: ny, ux: ux, uy: uy, fl: false };
+    }
+    var pB = pos(LEN);
     /* ★印は物体の「坂にそって外がわ」★（第6回）真上は N の矢印が通るのでずらす */
     var pA3 = { x: TX, y: TY };
     var mA3 = markAway(pA3, pB, nx, ny, bh / 2 + 4, bw / 2 + 14);
@@ -4814,20 +4857,30 @@ DEFS['m1-3'] = {
 
     var i;
     for (i = 1; i * 0.2 < t - 1e-9; i++) {
-      var q = pos(d.sample(v, i * 0.2).s);
+      var qsv = d.sample(v, i * 0.2).s, q = pos(qsv), gq = geo(qsv);
       ctx.save(); ctx.globalAlpha = 0.26;
-      blockShape(ctx, q.x + nx * bh / 2, q.y + ny * bh / 2, -th, bw, bh, '#f2f4f7');
+      blockShape(ctx, q.x + gq.nx * bh / 2, q.y + gq.ny * bh / 2, gq.ang, bw, bh, '#f2f4f7');
       ctx.restore();
     }
-    var p = pos(m.s), cx = p.x + nx * bh / 2, cy = p.y + ny * bh / 2;
-    blockShape(ctx, cx, cy, -th, bw, bh, '#e8eef5');
+    var p = pos(m.s), g0 = geo(m.s), cx = p.x + g0.nx * bh / 2, cy = p.y + g0.ny * bh / 2;
+    blockShape(ctx, cx, cy, g0.ang, bw, bh, '#e8eef5');
+    /* ★第31回★ 床の上の本物と mg の矢印に、B の吹きだしがかぶらないように */
+    if (g0.fl) noteObj(cx - bw / 2 - 10, cy - bh / 2 - 10, bw + 20, bh + 20 + (s.o.showF ? 56 : 0));
 
     var hA = (t <= 0.16) ? 1 : Math.max(0, 1 - (t - 0.16) / 0.20);
     if (hA > 0.02) dropHand(ctx, TX + nx * 16 + 4, TY + ny * 16, 0.52, clamp(t / 0.16, 0, 1), hA);
 
     /* ★その点ではたらく力★（第8回）吹きだしを出すとき、各点にも同じ力を描く */
     var mg = v.m * G, fs = 40 / mg;
-    function fAt(sx, sy) {          /* sx, sy＝面に接している点 */
+    function fAt(sx, sy, fl) {      /* sx, sy＝面に接している点／fl＝床の上 */
+      if (fl) {
+        /* 床の上：N = mg。同じ縦の線に重ならないよう、左右に少しずらす */
+        arrow(ctx, sx - 5, sy - bh / 2, sx - 5, sy - bh / 2 + mg * fs, 'force');
+        label(ctx, 'mg', sx - 5, sy - bh / 2 + mg * fs + 11, { size: 11.5, color: COL.force });
+        arrow(ctx, sx + 5, sy, sx + 5, sy - mg * fs, 'force', 1, COL.norm);
+        label(ctx, 'N', sx + bw / 2 + 8, sy - mg * fs + 4, { align: 'left', size: 11.5, color: COL.norm });
+        return;
+      }
       var ax = sx + nx * bh / 2, ay = sy + ny * bh / 2;
       arrow(ctx, ax, ay, ax, ay + mg * fs, 'force');
       label(ctx, 'mg', ax, ay + mg * fs + 11, { size: 11.5, color: COL.force });
@@ -4835,8 +4888,8 @@ DEFS['m1-3'] = {
       arrow(ctx, sx, sy, sx + nx * Nn * fs, sy + ny * Nn * fs, 'force', 1, COL.norm);
       label(ctx, 'N', sx + nx * Nn * fs + 10, sy + ny * Nn * fs - 4, { align: 'left', size: 11.5, color: COL.norm });
     }
-    if (s.o.showF) fAt(p.x, p.y);
-    if (s.o.showFc) {
+    if (s.o.showF) fAt(p.x, p.y, g0.fl);
+    if (s.o.showFc && !g0.fl) {        /* 床の上では重力を分解する向きがない */
       var gs = mg * Math.sin(th), gc = mg * Math.cos(th);
       arrow(ctx, cx, cy, cx + ux * gs * fs, cy + uy * gs * fs, 'comp');
       label(ctx, 'mg sinθ', cx + ux * gs * fs + 6, cy + uy * gs * fs + 10, { align: 'left', size: 11, color: COL.force });
@@ -4846,20 +4899,25 @@ DEFS['m1-3'] = {
     if (s.o.showV && m.v > 0.05) {
       /* ★速度の矢印は物体から離して出す★（物体の上に重ねると読めない） */
       var vof = 34, vl = vArrowLen(m.v, Math.max(1, P.m13.vEnd(v)), 56);
-      var va = velArrow(ctx, cx, cy, nx, ny, vof, ux, uy, vl);
-      label(ctx, 'v', Math.min(va.tx + ux * 10, W - 104), Math.min(va.ty + uy * 10 - 8, gy - 16),
+      var va = velArrow(ctx, cx, cy, g0.nx, g0.ny, vof, g0.ux, g0.uy, vl);
+      label(ctx, 'v', Math.min(va.tx + g0.ux * 10, W - 104), Math.min(va.ty + g0.uy * 10 - 8, gy - 16),
         { align: 'left', size: 11.5, color: COL.vel });
     }
     if (s.o.showA) {
-      var aa = P.m13.a(v);          /* 斜面を下る向きに g sinθ */
-      drawAcc(ctx, cx, cy, ux * aa, uy * aa, { nx: nx, ny: ny, off: 64 });
+      if (g0.fl) {
+        /* 床の上は力がつり合っていて加速度 0。矢印が描けないので、そう書いておく */
+        label(ctx, 'a = 0', cx, cy - bh / 2 - 52, { size: 11.5, color: COL.acc, avoid: true });
+      } else {
+        var aa = P.m13.a(v);          /* 斜面を下る向きに g sinθ */
+        drawAcc(ctx, cx, cy, ux * aa, uy * aa, { nx: nx, ny: ny, off: 64 });
+      }
     }
     drawClock(ctx, W, t);
     drawEnergyBar(ctx, d, s, t, W, H, m);
     drawPts(ctx, d, s, t, function (pt) {
       var q = (pt.name === 'A') ? { x: TX, y: TY } : pB, mk3 = (pt.name === 'A') ? mA3 : mB3;
       return { x: mk3.x, y: mk3.y,
-        fdraw: function () { fAt(q.x, q.y); },
+        fdraw: function () { fAt(q.x, q.y, false); },
         ox: q.x + nx * bh / 2, oy: q.y + ny * bh / 2, bw: bw, bh: bh, ang: -th,
         vx: ux, vy: uy, vref: Math.max(1, P.m13.vEnd(v)), vk: 56, voff: 26, base: gy, hx: 26 };
     });
@@ -4886,6 +4944,7 @@ DEFS['m1-3'] = {
   },
   note: '斜面をすべっても、仕事をするのは<b>重力だけ</b>です（垂直抗力は運動の向きに垂直）。' +
     'だから $mgh=\\tfrac12mv^2$ が成り立ち、<b>下端の速さは傾きによらず $\\sqrt{2gh}$</b>。' +
+    '下端を過ぎると、なめらかにつながった床の上をその速さのまま走っていきます（B で止まるのではありません）。' +
     '$\\theta$ を変えると<b>かかる時間とグラフの横はば</b>だけが変わり、<b>E の高さは変わりません</b>。'
 };
 
@@ -4921,12 +4980,12 @@ DEFS['m1-4'] = {
   step1: '重力（保存力）だけが仕事をする。垂直抗力は運動の向きに垂直なので仕事をしない',
   datum: '地面（斜面の下端）',
   hint2: '<b>次は</b>：$\\theta$ を変えても<b>上がる高さが同じ</b>になることを確かめよう（斜面にそった距離だけが変わります）。',
-  tEnd: function (v) { return P.slopeUp.tEnd(v); },
+  tEnd: function (v) { return P.slopeUp.tAll(v); },     /* ★第31回★ B からすべり下りるところまで */
   sample: function (v, t) { return P.slopeUp.sample(v, t); },
   pts: [
     { name: 'A', jp: 'スタート（下端）', t: function () { return 0; },
       sym: { K: '\\tfrac{1}{2}mv_0^{\\,2}', Ug: '0' } },
-    { name: 'B', jp: '止まる位置', t: function (v) { return P.slopeUp.tEnd(v); },
+    { name: 'B', jp: '最高点（一瞬止まる）', t: function (v) { return P.slopeUp.tEnd(v); },
       sym: { K: '0', Ug: 'mgh' } }
   ],
   draw: function (ctx, s, t, W, H) {
@@ -5011,9 +5070,11 @@ DEFS['m1-4'] = {
         { align: 'right', size: 11, color: COL.force });
     }
     if (s.o.showV && m.v > 0.05) {
+      /* ★第31回★ B を過ぎてすべり下りるときは、速度は斜面を下る向き */
+      var vsg = m.back ? -1 : 1;
       var vof = 34, vl = vArrowLen(m.v, Math.max(1, v.v0), 50);
-      var va = velArrow(ctx, cx, cy, nx, ny, vof, ux, uy, vl);
-      label(ctx, 'v', va.tx + ux * 10, va.ty + uy * 10, { size: 11.5, color: COL.vel });
+      var va = velArrow(ctx, cx, cy, nx, ny, vof, vsg * ux, vsg * uy, vl);
+      label(ctx, 'v', va.tx + vsg * ux * 10, va.ty + vsg * uy * 10, { size: 11.5, color: COL.vel });
     }
     if (s.o.showA) {
       /* 加速度は斜面を下る向き（＝運動と逆）に g sinθ。だから減速する */
@@ -5039,10 +5100,10 @@ DEFS['m1-4'] = {
   info: function (s, t) {
     var v = V(s), m = DEFS['m1-4'].sample(v, t);
     return [
-      ['斜面にそって進んだ距離', fmt(m.s, 2) + ' m'],
+      ['下端からの距離（斜面にそって）', fmt(m.s, 2) + ' m'],
       ['斜面方向の加速度 $-g\\sin\\theta$', fmt(-P.slopeUp.a(v), 2) + ' m/s²'],
       ['垂直抗力 $N=mg\\cos\\theta$', fmt(v.m * G * Math.cos(v.th * DEG), 1) + ' N'],
-      ['止まるまでの時間', fmt(P.slopeUp.tEnd(v), 2) + ' s']
+      ['最高点 B に着くまでの時間', fmt(P.slopeUp.tEnd(v), 2) + ' s']
     ];
   },
   eq: function (s) {
@@ -5050,7 +5111,8 @@ DEFS['m1-4'] = {
     return '\\tfrac{1}{2}mv_0^{\\,2} = mgh \\;\\Rightarrow\\; h = \\dfrac{v_0^{\\,2}}{2g} = ' +
       fmt(P.slopeUp.hTop(v), 2) + '\\ \\mathrm{m}\\quad(\\theta \\text{ によらない})';
   },
-  note: '1-3 の裏返しです。<b>はじめの運動エネルギーが、そっくり位置エネルギーに変わる</b>ところで止まります。' +
+  note: '1-3 の裏返しです。<b>はじめの運動エネルギーが、そっくり位置エネルギーに変わる</b>ところ（最高点 B）で一瞬止まり、' +
+    'そのあとは斜面をすべり下りてきます。' +
     '$\\tfrac12mv_0^{\\,2}=mgh$ の両辺から $m$ が消えるので、<b>上がる高さは質量にも斜面の角にもよりません</b>。' +
     '$\\theta$ を変えると<b>斜面にそった距離 $L=h/\\sin\\theta$ と、かかる時間</b>だけが変わります。'
 };
@@ -5061,7 +5123,7 @@ DEFS['m1-5'] = {
   title: '1-5　滑台（曲線）をすべり下りる',
   sub: '曲がっていても、面からの垂直抗力は<b>いつでも運動の向きに垂直</b>なので仕事をしません。' +
     'だから<b>斜面の形によらず</b> $mgh=\\tfrac12mv^2$ が成り立ち、下端の速さは 1-3 とまったく同じ $\\sqrt{2gh}$。',
-  cw: 520, ch: 290,
+  cw: 600, ch: 290,        /* 第31回：B を過ぎて床を走るぶん広げた */
   vis: ['F', 'V', 'A'],
   mainVars: ['h', 'm'],
   mainVarFocus: 'h',
@@ -5082,7 +5144,7 @@ DEFS['m1-5'] = {
   step1: '重力（保存力）だけが仕事をする。曲面でも垂直抗力は運動の向きに垂直',
   datum: '地面（曲面の下端）',
   hint2: '<b>次は</b>：<a href="#m1-3" data-goto="m1-3">1-3（直線の滑台）</a>と<b>同じ $h$</b> にして、下端の速さをくらべてみよう。',
-  tEnd: function (v) { return P.m14.tEnd(v); },
+  tEnd: function (v) { return P.m14.tAll(v); },     /* ★第31回★ B を過ぎて床を走るところまで */
   sample: function (v, t) { return P.m14.sample(v, t); },
   pts: [
     { name: 'A', jp: '曲面の上', t: function () { return 0; }, sym: { K: '0', Ug: 'mgh' } },
@@ -5092,7 +5154,8 @@ DEFS['m1-5'] = {
   draw: function (ctx, s, t, W, H) {
     var d = DEFS['m1-5'], v = V(s), m = d.sample(v, t), L = P.m14.L;
     var gy = H - 52, x0 = 92;      /* 左に高さの寸法を置くぶんの余白 */
-    var sc = Math.min(SC_SLIDE, (W - 230) / L, (H - 118) / v.h);
+    /* ★第31回★ 床を走るぶん（LF）も横に入れる */
+    var sc = Math.min(SC_SLIDE, (W - 230) / (L + P.m14.LF), (H - 118) / v.h);
     function X(x) { return x0 + x * sc; }
     function Y(y) { return gy - y * sc; }
     var o = P.m14.table(v), cv = o.cv, i, q;
@@ -5131,6 +5194,8 @@ DEFS['m1-5'] = {
     }
     var px = X(m.x), py = Y(m.y) - r;
     ball(ctx, px, py, r);
+    /* ★第31回★ 床の上の本物と mg の矢印に、B の吹きだしがかぶらないように */
+    if (m.floor) noteObj(px - r - 10, py - r - 10, 2 * r + 20, 2 * r + 20 + (s.o.showF ? 56 : 0));
 
     var hA = (t <= 0.16) ? 1 : Math.max(0, 1 - (t - 0.16) / 0.20);
     if (hA > 0.02) dropHand(ctx, X(0), Y(v.h) - r, 0.52, clamp(t / 0.16, 0, 1), hA);
@@ -5145,11 +5210,14 @@ DEFS['m1-5'] = {
       var dd = qq.dyds || 0, tt = Math.sqrt(Math.max(0, 1 - dd * dd));
       var n2x = -dd, n2y = -tt, n2l = Math.hypot(n2x, n2y) || 1;
       n2x /= n2l; n2y /= n2l;
-      arrow(ctx, ax, ay, ax, ay + mg * fs, 'force');
-      label(ctx, 'mg', ax, ay + mg * fs + 11, { size: 11.5, color: COL.force });
+      var gx = (Math.abs(dd) < 0.02) ? -5 : 0;
+      arrow(ctx, ax + gx, ay, ax + gx, ay + mg * fs, 'force');
+      label(ctx, 'mg', ax + gx, ay + mg * fs + 11, { size: 11.5, color: COL.force });
       var Nn = mg * tt;                       /* N = mg cosθ（速さが変わるので目安） */
-      arrow(ctx, ax, ay + r, ax + n2x * Nn * fs, ay + r + n2y * Nn * fs, 'force', 1, COL.norm);
-      label(ctx, 'N', ax + n2x * Nn * fs + 10, ay + r + n2y * Nn * fs - 4,
+      /* ★第31回★ 面が水平（下端・床の上）だと mg と N が同じ縦の線に重なるので、左右にずらす */
+      var dx = (Math.abs(dd) < 0.02) ? 5 : 0;
+      arrow(ctx, ax + dx, ay + r, ax + dx + n2x * Nn * fs, ay + r + n2y * Nn * fs, 'force', 1, COL.norm);
+      label(ctx, 'N', ax + dx + n2x * Nn * fs + 10, ay + r + n2y * Nn * fs - 4,
         { align: 'left', size: 11.5, color: COL.norm });
     }
     if (s.o.showF) fAt(m, px, py);
@@ -5160,7 +5228,10 @@ DEFS['m1-5'] = {
       var va = velArrow(ctx, px, py, nx, ny, 26, vx, vy, vl);
       label(ctx, 'v', va.tx + vx * 10, va.ty + vy * 10, { size: 11.5, color: COL.vel });
     }
-    if (s.o.showA) {
+    if (s.o.showA && m.floor) {
+      /* 床の上は力がつり合っていて加速度 0。矢印が描けないので、そう書いておく */
+      label(ctx, 'a = 0', px, py - r - 50, { size: 11.5, color: COL.acc, avoid: true });
+    } else if (s.o.showA) {
       /* 加速度＝重力＋垂直抗力（合力）／m。曲面では接線方向と向心方向の和になる */
       var Na = mg * tx, ax = nx * Na / v.m, ay = G + ny * Na / v.m;
       drawAcc(ctx, px, py, ax, ay, { nx: nx, ny: ny, off: 56 });
@@ -5196,6 +5267,7 @@ DEFS['m1-5'] = {
   },
   note: '曲面の傾きは場所ごとに変わりますが、<b>垂直抗力はいつでも運動の向きに垂直</b>なので、' +
     'やはり仕事をしません。だから力学的エネルギーは保存され、<b>下端の速さは 1-3 とぴったり同じ</b>になります。' +
+    '下端を過ぎると、床の上をその速さのまま走っていきます。' +
     'この図の運動は式では書けないので<b>数値計算</b>で動かしていますが、' +
     'エネルギーの<b>答えは式（$\\sqrt{2gh}$）から</b>出しています。'
 };
